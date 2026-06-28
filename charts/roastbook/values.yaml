@@ -1,0 +1,148 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/michidk/roastbook
+  pullPolicy: IfNotPresent
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1001
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: roastbook.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+postgresql:
+  # Enable bundled PostgreSQL
+  enabled: false
+  image:
+    repository: postgres
+    tag: "17-alpine"
+    pullPolicy: IfNotPresent
+  service:
+    port: 5432
+  auth:
+    database: "roastbook"
+    username: "roastbook"
+    password: ""
+  primary:
+    resources: {}
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+    persistence:
+      enabled: true
+      size: "5Gi"
+      storageClass: ""
+  # For external database (when enabled: false)
+  external:
+    url: ""
+    host: ""
+    port: "5432"
+  existingSecret: ""
+  existingSecretKey: "url"
+
+storage:
+  provider: "local"
+  local:
+    path: "/data/uploads"
+    size: "10Gi"
+    storageClass: ""
+  s3:
+    bucket: ""
+    region: "us-east-1"
+    endpoint: ""
+    existingSecret: ""
+    existingSecretAccessKeyIdKey: "access-key-id"
+    existingSecretSecretAccessKeyKey: "secret-access-key"
+
+openai:
+  existingSecret: ""
+  existingSecretKey: "api-key"
+  baseUrl: ""  # e.g., "https://openrouter.ai/api/v1" for OpenRouter
+  visionModel: "gpt-4o"  # e.g., "openai/gpt-4o" for OpenRouter
+
+hodor:
+  enabled: true
+  existingSecret: ""
+  existingSecretPasswordKey: "password"
+  existingSecretSecretKey: "secret"
+  image:
+    repository: ghcr.io/michidk/hodor
+    tag: latest
+    pullPolicy: IfNotPresent
+  title: "Roastbook Login"
+  sessionTtl: "86400"
+  secureCookie: "false"
+  logFormat: "compact"
+  resources:
+    limits:
+      cpu: 100m
+      memory: 64Mi
+    requests:
+      cpu: 10m
+      memory: 32Mi

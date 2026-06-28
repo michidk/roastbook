@@ -1,0 +1,41 @@
+$ vite dev --port 3000
+[Client] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <StartClient>
+      <Await promise={Promise}>
+        <AwaitInner promise={Promise}>
+          <RouterProvider router={{...}}>
+            <RouterContextProvider router={{...}}>
+              <Matches>
+                <SafeFragment fallback={null}>
+                  <Transitioner>
+                  <MatchesInner>
+                    <CatchBoundary getResetKey={function getResetKey} errorComponent={function ErrorComponent} ...>
+                      <CatchBoundaryImpl getResetKey={function getResetKey} onCatch={function}>
+                        <MatchImpl matchId="__root__/">
+                          <MatchView router={{...}} matchId="__root__/" resetKey={0} matchState={{routeId:"_...", ...}}>
+                            <RootDocument>
+                              <html
+                                lang="en"
+                                data-tsd-source="/src/routes/__root.tsx:61:5"
+-                               className={" idc0_343 gjuqvgsrve"}
+                              >
+                                <head>
+                                <body
+                                  data-tsd-source="/src/routes/__root.tsx:65:7"
+-                                 data-new-gr-c-s-check-loaded="14.1304.0"
+-                                 data-gr-ext-installed=""
+                                >
+
+error: script "dev" exited with code 143

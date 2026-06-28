@@ -1,0 +1,187 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "roastbook.fullname" . }}
+  labels:
+    {{- include "roastbook.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "roastbook.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "roastbook.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "roastbook.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          env:
+            - name: DATABASE_URL
+              {{- if .Values.postgresql.existingSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgresql.existingSecret }}
+                  key: {{ .Values.postgresql.existingSecretKey }}
+              {{- else if .Values.postgresql.enabled }}
+               valueFrom:
+                 secretKeyRef:
+                   name: {{ include "roastbook.postgresqlSecretName" . }}
+                   key: url
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "roastbook.fullname" . }}-db
+                  key: url
+              {{- end }}
+            - name: STORAGE_PROVIDER
+              value: {{ .Values.storage.provider | quote }}
+            {{- if eq .Values.storage.provider "local" }}
+            - name: STORAGE_PATH
+              value: {{ .Values.storage.local.path | quote }}
+            - name: STORAGE_URL
+              value: "/uploads"
+            {{- else if eq .Values.storage.provider "s3" }}
+            - name: S3_BUCKET
+              value: {{ .Values.storage.s3.bucket | quote }}
+            - name: S3_REGION
+              value: {{ .Values.storage.s3.region | quote }}
+            {{- if .Values.storage.s3.endpoint }}
+            - name: S3_ENDPOINT
+              value: {{ .Values.storage.s3.endpoint | quote }}
+            {{- end }}
+            - name: S3_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.storage.s3.existingSecret }}
+                  key: {{ .Values.storage.s3.existingSecretAccessKeyIdKey }}
+            - name: S3_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.storage.s3.existingSecret }}
+                  key: {{ .Values.storage.s3.existingSecretSecretAccessKeyKey }}
+            {{- end }}
+            {{- if .Values.openai.existingSecret }}
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.openai.existingSecret }}
+                  key: {{ .Values.openai.existingSecretKey }}
+            {{- if .Values.openai.baseUrl }}
+            - name: OPENAI_BASE_URL
+              value: {{ .Values.openai.baseUrl | quote }}
+            {{- end }}
+            {{- if .Values.openai.visionModel }}
+            - name: OPENAI_VISION_MODEL
+              value: {{ .Values.openai.visionModel | quote }}
+            {{- end }}
+            {{- end }}
+          {{- if not .Values.hodor.enabled }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- if eq .Values.storage.provider "local" }}
+          volumeMounts:
+            - name: uploads
+              mountPath: {{ .Values.storage.local.path }}
+          {{- end }}
+        {{- if .Values.hodor.enabled }}
+        - name: hodor
+          image: "{{ .Values.hodor.image.repository }}:{{ .Values.hodor.image.tag }}"
+          imagePullPolicy: {{ .Values.hodor.image.pullPolicy }}
+          ports:
+            - name: gate
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  {{- if .Values.hodor.existingSecret }}
+                  name: {{ .Values.hodor.existingSecret }}
+                  key: {{ .Values.hodor.existingSecretPasswordKey }}
+                  {{- else }}
+                  name: {{ include "roastbook.fullname" . }}-hodor
+                  key: password
+                  {{- end }}
+            - name: UPSTREAM
+              value: "http://localhost:3000"
+            - name: SECRET
+              valueFrom:
+                secretKeyRef:
+                  {{- if .Values.hodor.existingSecret }}
+                  name: {{ .Values.hodor.existingSecret }}
+                  key: {{ .Values.hodor.existingSecretSecretKey }}
+                  {{- else }}
+                  name: {{ include "roastbook.fullname" . }}-hodor
+                  key: secret
+                  {{- end }}
+            - name: TITLE
+              value: {{ .Values.hodor.title | quote }}
+            - name: SESSION_TTL
+              value: {{ .Values.hodor.sessionTtl | quote }}
+            - name: SECURE_COOKIE
+              value: {{ .Values.hodor.secureCookie | quote }}
+            - name: LOG_FORMAT
+              value: {{ .Values.hodor.logFormat | quote }}
+          livenessProbe:
+            httpGet:
+              path: /_gate/health
+              port: gate
+            initialDelaySeconds: 2
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /_gate/health
+              port: gate
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.hodor.resources | nindent 12 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if eq .Values.storage.provider "local" }}
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: {{ include "roastbook.fullname" . }}-uploads
+      {{- end }}

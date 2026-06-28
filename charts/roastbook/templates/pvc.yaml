@@ -1,0 +1,17 @@
+{{- if eq .Values.storage.provider "local" }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "roastbook.fullname" . }}-uploads
+  labels:
+    {{- include "roastbook.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- if .Values.storage.local.storageClass }}
+  storageClassName: {{ .Values.storage.local.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.storage.local.size }}
+{{- end }}

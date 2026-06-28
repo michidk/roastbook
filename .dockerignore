@@ -1,0 +1,13 @@
+node_modules
+.output
+.vinxi
+.git
+.gitignore
+*.md
+!README.md
+Dockerfile
+.dockerignore
+.env*
+!.env.example
+charts/
+.github/

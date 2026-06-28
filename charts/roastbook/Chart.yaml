@@ -1,0 +1,6 @@
+apiVersion: v2
+name: roastbook
+description: A TanStack Start application with hodor authentication
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
