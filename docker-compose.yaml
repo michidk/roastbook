@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: roastbook
+      POSTGRES_USER: roastbook
+      POSTGRES_PASSWORD: roastbook
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U roastbook -d roastbook"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    build:
+      context: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["bun", "run", "db:migrate"]
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql://roastbook:roastbook@postgres:5432/roastbook
+
+  app:
+    build:
+      context: .
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://roastbook:roastbook@postgres:5432/roastbook
+      STORAGE_PROVIDER: local
+      STORAGE_PATH: /uploads
+      STORAGE_URL: /uploads
+      # OPENAI_API_KEY: sk-...
+      # OPENAI_BASE_URL: https://api.openai.com/v1
+      # OPENAI_VISION_MODEL: gpt-4o
+    volumes:
+      - uploads:/uploads
+
+volumes:
+  postgres_data:
+  uploads:
