@@ -72,6 +72,19 @@ autoscaling:
   maxReplicas: 10
   targetCPUUtilizationPercentage: 80
 
+migrations:
+  enabled: true
+  backoffLimit: 3
+  hook:
+    enabled: true
+  resources:
+    limits:
+      cpu: 250m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
 nodeSelector: {}
 tolerations: []
 affinity: {}

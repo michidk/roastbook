@@ -30,7 +30,10 @@ RUN groupadd --system --gid 1001 nodejs && \
 
 # Copy runtime dependencies and built application
 COPY --from=builder --chown=app:nodejs /app/package.json /app/package.json
+COPY --from=builder --chown=app:nodejs /app/node_modules /app/node_modules
 COPY --from=builder --chown=app:nodejs /app/.output /app/.output
+COPY --from=builder --chown=app:nodejs /app/drizzle /app/drizzle
+COPY --from=builder --chown=app:nodejs /app/scripts /app/scripts
 
 USER app
 
