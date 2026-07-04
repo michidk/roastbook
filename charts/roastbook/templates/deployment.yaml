@@ -48,10 +48,10 @@ spec:
                   name: {{ .Values.postgresql.existingSecret }}
                   key: {{ .Values.postgresql.existingSecretKey }}
               {{- else if .Values.postgresql.enabled }}
-               valueFrom:
-                 secretKeyRef:
-                   name: {{ include "roastbook.postgresqlSecretName" . }}
-                   key: url
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "roastbook.postgresqlSecretName" . }}
+                  key: url
               {{- else }}
               valueFrom:
                 secretKeyRef:
