@@ -238,7 +238,7 @@ function GearDetailPage() {
           entityType="gear"
           entityId={gear.id}
           images={gear.images}
-          baseUrl={import.meta.env.VITE_STORAGE_URL || "/uploads"}
+          baseUrl={import.meta.env.VITE_STORAGE_URL || "/api/uploads"}
           onImagesChange={() => router.invalidate()}
         />
       )}

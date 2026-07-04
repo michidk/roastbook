@@ -223,7 +223,7 @@ function BeanDetailPage() {
     }
 
     const thumbnailImage = bean.images.find((img) => img.isThumbnail) || bean.images[0]
-    const baseUrl = import.meta.env.VITE_STORAGE_URL || "/uploads"
+    const baseUrl = import.meta.env.VITE_STORAGE_URL || "/api/uploads"
     const imageUrl = `${baseUrl}/${thumbnailImage.storagePath}`
 
     setIsExtracting(true)
@@ -556,7 +556,7 @@ function BeanDetailPage() {
                 entityType="beans"
                 entityId={bean.id}
                 images={bean.images}
-                baseUrl={import.meta.env.VITE_STORAGE_URL || "/uploads"}
+                baseUrl={import.meta.env.VITE_STORAGE_URL || "/api/uploads"}
                 onImagesChange={() => router.invalidate()}
               />
             )}
@@ -740,7 +740,7 @@ function BeanDetailPage() {
                 entityType="beans"
                 entityId={bean.id}
                 images={bean.images}
-                baseUrl={import.meta.env.VITE_STORAGE_URL || "/uploads"}
+                baseUrl={import.meta.env.VITE_STORAGE_URL || "/api/uploads"}
                 onImagesChange={() => router.invalidate()}
                 readOnly
               />

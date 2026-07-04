@@ -108,7 +108,7 @@ function GearPage() {
 
 function GearCard({ item }: { item: Awaited<ReturnType<typeof getGear>>[number] }) {
   const thumbnail = item.images.find((img) => img.isThumbnail) ?? item.images[0]
-  const baseUrl = import.meta.env.VITE_STORAGE_URL || "/uploads"
+  const baseUrl = import.meta.env.VITE_STORAGE_URL || "/api/uploads"
 
   return (
     <Link to="/gear/$gearId" params={{ gearId: String(item.id) }}>

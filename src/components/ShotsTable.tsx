@@ -45,7 +45,7 @@ export function ShotsTable({ shots, hideBean, hideGear }: ShotsTableProps) {
     )
   }
 
-  const baseUrl = import.meta.env.VITE_STORAGE_URL || "/uploads"
+  const baseUrl = import.meta.env.VITE_STORAGE_URL || "/api/uploads"
 
   const getBeanThumbnail = (bean: Shot["bean"]) => {
     if (!bean?.images?.length) return null
