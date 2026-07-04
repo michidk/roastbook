@@ -15,7 +15,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/dialog"
 import { setImageAsThumbnail, deleteEntityImage } from "@/lib/server/images"
-import { thumbnailUrl, imageUrl } from "@/lib/image-url"
+import { thumbnailUrl } from "@/lib/image-url"
 import { cn } from "@/lib/utils"
 
 interface EntityImage {
