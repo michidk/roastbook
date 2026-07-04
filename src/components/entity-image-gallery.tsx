@@ -15,7 +15,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/dialog"
 import { setImageAsThumbnail, deleteEntityImage } from "@/lib/server/images"
-import { thumbnailUrl } from "@/lib/image-url"
+import { thumbnailUrl, imageUrl } from "@/lib/image-url"
 import { cn } from "@/lib/utils"
 
 interface EntityImage {
@@ -28,7 +28,6 @@ interface EntityImageGalleryProps {
   entityType: "beans" | "gear"
   entityId: number
   images: EntityImage[]
-  baseUrl: string
   onImagesChange: () => void
   readOnly?: boolean
 }
@@ -37,7 +36,6 @@ export function EntityImageGallery({
   entityType,
   entityId,
   images,
-  baseUrl,
   onImagesChange,
   readOnly = false,
 }: EntityImageGalleryProps) {
@@ -82,7 +80,7 @@ export function EntityImageGallery({
           {images.map((image) => (
             <div key={image.id} className="group relative">
               <img
-                src={thumbnailUrl(baseUrl, image.storagePath)}
+                src={thumbnailUrl(image.storagePath)}
                 alt=""
                 loading="lazy"
                 decoding="async"

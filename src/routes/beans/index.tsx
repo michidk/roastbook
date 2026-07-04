@@ -115,7 +115,6 @@ function BeansPage() {
 
 function BeanCard({ bean }: { bean: Bean }) {
   const thumbnail = bean.images.find((img) => img.isThumbnail) ?? bean.images[0]
-  const baseUrl = import.meta.env.VITE_STORAGE_URL || "/api/uploads"
   const gradient =
     bean.roastLevel && roastGradients[bean.roastLevel]
       ? roastGradients[bean.roastLevel]
@@ -148,7 +147,7 @@ function BeanCard({ bean }: { bean: Bean }) {
       >
         {thumbnail && (
           <img
-            src={thumbnailUrl(baseUrl, thumbnail.storagePath)}
+            src={thumbnailUrl(thumbnail.storagePath)}
             alt=""
             loading="lazy"
             decoding="async"

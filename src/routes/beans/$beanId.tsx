@@ -19,6 +19,7 @@ import { RouteError } from "@/components/route-error"
 import { DetailPending } from "@/components/route-pending"
 import { ROAST_LEVELS, PROCESS_METHODS, type RoastLevel } from "@/lib/constants"
 import type { ExtractedBeanInfo } from "@/lib/ai"
+import { imageUrl } from "@/lib/image-url"
 
 export const Route = createFileRoute("/beans/$beanId")({
   loader: async ({ params }) => {
@@ -223,12 +224,11 @@ function BeanDetailPage() {
     }
 
     const thumbnailImage = bean.images.find((img) => img.isThumbnail) || bean.images[0]
-    const baseUrl = import.meta.env.VITE_STORAGE_URL || "/api/uploads"
-    const imageUrl = `${baseUrl}/${thumbnailImage.storagePath}`
+    const imgUrl = imageUrl(thumbnailImage.storagePath)
 
     setIsExtracting(true)
     try {
-      const response = await fetch(imageUrl)
+      const response = await fetch(imgUrl)
       const blob = await response.blob()
       const base64 = await new Promise<string>((resolve) => {
         const reader = new FileReader()
@@ -556,7 +556,7 @@ function BeanDetailPage() {
                 entityType="beans"
                 entityId={bean.id}
                 images={bean.images}
-                baseUrl={import.meta.env.VITE_STORAGE_URL || "/api/uploads"}
+                
                 onImagesChange={() => router.invalidate()}
               />
             )}
@@ -740,7 +740,7 @@ function BeanDetailPage() {
                 entityType="beans"
                 entityId={bean.id}
                 images={bean.images}
-                baseUrl={import.meta.env.VITE_STORAGE_URL || "/api/uploads"}
+                
                 onImagesChange={() => router.invalidate()}
                 readOnly
               />

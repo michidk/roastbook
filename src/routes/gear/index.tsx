@@ -12,6 +12,7 @@ import { getGear } from "@/lib/server/gear"
 import { RouteError } from "@/components/route-error"
 import { ListPending } from "@/components/route-pending"
 import { EmptyState } from "@/components/EmptyState"
+import { imageUrl } from "@/lib/image-url"
 
 export const Route = createFileRoute("/gear/")({
   loader: () => getGear(),
@@ -108,7 +109,6 @@ function GearPage() {
 
 function GearCard({ item }: { item: Awaited<ReturnType<typeof getGear>>[number] }) {
   const thumbnail = item.images.find((img) => img.isThumbnail) ?? item.images[0]
-  const baseUrl = import.meta.env.VITE_STORAGE_URL || "/api/uploads"
 
   return (
     <Link to="/gear/$gearId" params={{ gearId: String(item.id) }}>
@@ -116,7 +116,7 @@ function GearCard({ item }: { item: Awaited<ReturnType<typeof getGear>>[number] 
         {thumbnail && (
           <div className="aspect-[4/3] overflow-hidden">
             <img
-              src={`${baseUrl}/${thumbnail.storagePath}`}
+              src={imageUrl(thumbnail.storagePath)}
               alt=""
               className="h-full w-full object-cover"
             />

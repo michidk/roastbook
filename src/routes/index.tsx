@@ -95,7 +95,7 @@ function Dashboard() {
                   >
                     {beanImage ? (
                       <img
-                        src={thumbnailUrl("/uploads", beanImage.storagePath)}
+                        src={thumbnailUrl(beanImage.storagePath)}
                         alt=""
                         className="h-11 w-11 shrink-0 rounded-xl object-cover"
                       />
