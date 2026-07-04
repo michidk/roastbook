@@ -16,7 +16,7 @@ todos.json
 .playwright-mcp/
 
 # Uploads (user data)
-uploads/
+/uploads/
 
 # Screenshots (debug artifacts)
 *.png

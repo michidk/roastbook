@@ -38,7 +38,7 @@ export function getStorage(): StorageProvider {
         provider: "local",
         local: {
           basePath: process.env.STORAGE_PATH || "./uploads",
-          baseUrl: process.env.STORAGE_URL || "/uploads",
+          baseUrl: process.env.STORAGE_URL || "/api/uploads",
         },
       })
     }
