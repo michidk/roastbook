@@ -21,3 +21,4 @@ uploads/
 # Screenshots (debug artifacts)
 *.png
 logs/
+.omo/
