@@ -66,3 +66,11 @@ Create the name of the service account to use
 {{- define "roastbook.postgresqlSecretName" -}}
 {{- include "roastbook.postgresqlName" . -}}
 {{- end }}
+
+{{- define "roastbook.dbSecretName" -}}
+{{- printf "%s-db" (include "roastbook.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end }}
+
+{{- define "roastbook.migrationDbSecretName" -}}
+{{- printf "%s-migrations-db" (include "roastbook.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end }}

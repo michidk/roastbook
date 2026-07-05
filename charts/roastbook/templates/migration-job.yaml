@@ -58,7 +58,7 @@ spec:
               {{- else }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "roastbook.fullname" . }}-db
+                  name: {{ if .Values.migrations.hook.enabled }}{{ include "roastbook.migrationDbSecretName" . }}{{ else }}{{ include "roastbook.dbSecretName" . }}{{ end }}
                   key: url
               {{- end }}
           resources:
