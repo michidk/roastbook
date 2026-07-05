@@ -20,5 +20,6 @@ todos.json
 
 # Screenshots (debug artifacts)
 *.png
+!public/roastbook-logo.png
 logs/
 .omo/
