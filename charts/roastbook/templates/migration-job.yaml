@@ -2,17 +2,20 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "roastbook.fullname" . }}-migrations
+  name: {{ include "roastbook.fullname" . }}-migrations{{ if not .Values.migrations.hook.enabled }}-{{ .Release.Revision }}{{ end }}
   labels:
     {{- include "roastbook.labels" . | nindent 4 }}
   {{- if .Values.migrations.hook.enabled }}
   annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook": {{ if .Values.postgresql.enabled }}post-install,pre-upgrade{{ else }}pre-install,pre-upgrade{{ end }}
     "helm.sh/hook-weight": "0"
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
   {{- end }}
 spec:
   backoffLimit: {{ .Values.migrations.backoffLimit }}
+  {{- if and (not .Values.migrations.hook.enabled) .Values.migrations.ttlSecondsAfterFinished }}
+  ttlSecondsAfterFinished: {{ .Values.migrations.ttlSecondsAfterFinished }}
+  {{- end }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -48,20 +51,16 @@ spec:
                   name: {{ .Values.postgresql.existingSecret }}
                   key: {{ .Values.postgresql.existingSecretKey }}
               {{- else if .Values.postgresql.enabled }}
-              value: "postgresql://{{ .Values.postgresql.auth.username }}:$(POSTGRES_PASSWORD)@{{ include "roastbook.fullname" . }}-postgresql:5432/{{ .Values.postgresql.auth.database }}"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "roastbook.postgresqlSecretName" . }}
+                  key: url
               {{- else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ include "roastbook.fullname" . }}-db
                   key: url
               {{- end }}
-            {{- if and .Values.postgresql.enabled (not .Values.postgresql.existingSecret) }}
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "roastbook.fullname" . }}-postgresql
-                  key: password
-            {{- end }}
           resources:
             {{- toYaml .Values.migrations.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

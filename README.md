@@ -161,10 +161,16 @@ settings if your environment needs a different image, storage class, or placemen
 
 See [charts/roastbook/values.yaml](charts/roastbook/values.yaml) for all configuration options.
 
-By default, the Helm chart also runs the same migration command as a pre-install and
-pre-upgrade Job. Disable it with `--set migrations.enabled=false` if you prefer to
-manage schema changes outside Helm, or `--set migrations.hook.enabled=false` if you
-want the Job template without Helm hook annotations.
+By default, the Helm chart also runs the same migration command as a Helm hook Job.
+For external databases it runs on `pre-install,pre-upgrade`, but when
+`postgresql.enabled=true` it switches to `post-install,pre-upgrade` so the bundled
+PostgreSQL Secret, Service, and StatefulSet exist before the first migration runs.
+The migration command also retries until PostgreSQL is accepting connections.
+Disable it with `--set migrations.enabled=false` if you prefer to manage schema
+changes outside Helm, or `--set migrations.hook.enabled=false` if you want the Job
+template without Helm hook annotations. In non-hook mode the Job name is suffixed
+with the Helm release revision so upgrades recreate it cleanly, and completed Jobs
+are cleaned up automatically after `migrations.ttlSecondsAfterFinished` seconds.
 
 For Kubernetes environments that already manage secrets externally, set `postgresql.existingSecret` to a secret containing a full `DATABASE_URL` under the `url` key, and set `hodor.existingSecret` to a secret containing Hodor's `password` and `secret` keys.
 
