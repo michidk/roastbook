@@ -37,12 +37,26 @@ async function waitForDatabase() {
       console.log(
         `Waiting for database to become ready (${attempt}/${attempts})`,
       )
+    } catch (error) {
+      if (attempt === attempts) {
+        throw error
+      }
+
+      const err = error as any
+      const nonRetryableCodes = new Set([
+        '28P01', // invalid_password
+        '28000', // invalid_authorization_specification
+        '3D000', // database_does_not_exist
+      ])
+      if (nonRetryableCodes.has(err.code)) {
+        throw error
+      }
+
+      console.log(
+        `Waiting for database to become ready (${attempt}/${attempts})`,
+      )
       await new Promise((resolve) => setTimeout(resolve, delayMs))
     }
-  }
-}
-
-async function closeClient() {
   const timeoutMs = 5000
 
   await Promise.race([
