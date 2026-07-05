@@ -1,4 +1,4 @@
-export const STORAGE_BASE_URL =
+const STORAGE_BASE_URL =
   import.meta.env.VITE_STORAGE_URL || "/api/uploads"
 
 function thumbnailPath(storagePath: string): string {
