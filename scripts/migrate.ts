@@ -24,6 +24,11 @@ const db = drizzle(client)
 async function waitForDatabase() {
   const attempts = 30
   const delayMs = 2000
+  const nonRetryableCodes = new Set([
+    "28P01", // invalid_password
+    "28000", // invalid_authorization_specification
+    "3D000", // database_does_not_exist
+  ])
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
@@ -34,20 +39,7 @@ async function waitForDatabase() {
         throw error
       }
 
-      console.log(
-        `Waiting for database to become ready (${attempt}/${attempts})`,
-      )
-    } catch (error) {
-      if (attempt === attempts) {
-        throw error
-      }
-
       const err = error as any
-      const nonRetryableCodes = new Set([
-        '28P01', // invalid_password
-        '28000', // invalid_authorization_specification
-        '3D000', // database_does_not_exist
-      ])
       if (nonRetryableCodes.has(err.code)) {
         throw error
       }
@@ -57,6 +49,10 @@ async function waitForDatabase() {
       )
       await new Promise((resolve) => setTimeout(resolve, delayMs))
     }
+  }
+}
+
+async function closeClient() {
   const timeoutMs = 5000
 
   await Promise.race([
