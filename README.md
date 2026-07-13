@@ -54,6 +54,7 @@ bun run test             # Run tests
 bun run lint:deadcode    # Check for unused code (knip)
 bun run db:generate      # Generate migrations
 bun run db:migrate       # Run versioned migrations (recommended everywhere)
+bun run db:migrate:cli   # Run migrations via drizzle-kit directly
 bun run db:push          # Push schema directly (local development only)
 bun run db:studio        # Open Drizzle Studio
 bun run db:seed          # Seed database with sample data
@@ -68,6 +69,9 @@ locally, in Docker/Compose, and in Kubernetes.
 
 Use `bun run db:push` only for local throwaway development when you want fast
 schema iteration without creating a migration first.
+
+Use `bun run db:migrate:cli` to run migrations via `drizzle-kit migrate` directly,
+which is useful for dry-run previews or when you need drizzle-kit's CLI flags.
 
 ## Docker
 

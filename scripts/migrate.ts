@@ -21,6 +21,16 @@ const client = postgres(connectionString, {
 
 const db = drizzle(client)
 
+/** Type guard for postgres errors with error codes */
+function hasErrorCode(error: unknown): error is { code: string } {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof (error as { code: unknown }).code === "string"
+  )
+}
+
 async function waitForDatabase() {
   const attempts = 30
   const delayMs = 2000
@@ -39,8 +49,7 @@ async function waitForDatabase() {
         throw error
       }
 
-      const err = error as any
-      if (nonRetryableCodes.has(err.code)) {
+      if (hasErrorCode(error) && nonRetryableCodes.has(error.code)) {
         throw error
       }
 

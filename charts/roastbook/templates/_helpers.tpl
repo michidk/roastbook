@@ -67,10 +67,27 @@ Create the name of the service account to use
 {{- include "roastbook.postgresqlName" . -}}
 {{- end }}
 
+{{/*
+Database secret name - truncate fullname to leave room for "-db" suffix (3 chars)
+*/}}
 {{- define "roastbook.dbSecretName" -}}
-{{- printf "%s-db" (include "roastbook.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- printf "%s-db" (include "roastbook.fullname" . | trunc 60 | trimSuffix "-") -}}
 {{- end }}
 
+{{/*
+Migration database secret name - truncate fullname to leave room for "-migrations-db" suffix (14 chars)
+*/}}
 {{- define "roastbook.migrationDbSecretName" -}}
-{{- printf "%s-migrations-db" (include "roastbook.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- printf "%s-migrations-db" (include "roastbook.fullname" . | trunc 49 | trimSuffix "-") -}}
+{{- end }}
+
+{{/*
+Database URL construction - shared between app and migration secrets
+*/}}
+{{- define "roastbook.databaseUrl" -}}
+{{- if .Values.postgresql.external.url -}}
+{{- .Values.postgresql.external.url -}}
+{{- else -}}
+{{- printf "postgresql://%s:%s@%s:%s/%s" .Values.postgresql.auth.username (required "postgresql.auth.password is required" .Values.postgresql.auth.password) (required "postgresql.external.host is required" .Values.postgresql.external.host) .Values.postgresql.external.port .Values.postgresql.auth.database -}}
+{{- end -}}
 {{- end }}
