@@ -71,7 +71,8 @@ Use `bun run db:push` only for local throwaway development when you want fast
 schema iteration without creating a migration first.
 
 Use `bun run db:migrate:cli` to run migrations via `drizzle-kit migrate` directly,
-which is useful for dry-run previews or when you need drizzle-kit's CLI flags.
+which prints the SQL statements it executes and is useful when you need drizzle-kit's
+CLI output or flags.
 
 ## Docker
 

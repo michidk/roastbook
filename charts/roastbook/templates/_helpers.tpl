@@ -68,10 +68,11 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
-Database secret name - truncate fullname to leave room for "-db" suffix (3 chars)
+Database secret name - truncate fullname to 49 chars (same as migration) to prevent collision
+when fullname ends in "-migrations". Both secrets share the same prefix length.
 */}}
 {{- define "roastbook.dbSecretName" -}}
-{{- printf "%s-db" (include "roastbook.fullname" . | trunc 60 | trimSuffix "-") -}}
+{{- printf "%s-db" (include "roastbook.fullname" . | trunc 49 | trimSuffix "-") -}}
 {{- end }}
 
 {{/*
