@@ -36,8 +36,8 @@ bun install
 cp .env.example .env
 # Edit .env with your database credentials
 
-# Run database migrations
-bun run db:push
+# Initialize or upgrade the database schema
+bun run db:migrate
 
 # Start development server
 bun run dev
@@ -53,20 +53,52 @@ bun run build            # Production build
 bun run test             # Run tests
 bun run lint:deadcode    # Check for unused code (knip)
 bun run db:generate      # Generate migrations
-bun run db:migrate       # Run migrations
-bun run db:push          # Push schema to database
+bun run db:migrate       # Run versioned migrations (recommended everywhere)
+bun run db:migrate:cli   # Run migrations via drizzle-kit directly
+bun run db:push          # Push schema directly (local development only)
 bun run db:studio        # Open Drizzle Studio
 bun run db:seed          # Seed database with sample data
 ```
+
+## Database Migrations
+
+`bun run db:migrate` is the canonical schema initialization and upgrade command for
+shared environments and containerized deployments. It runs the committed Drizzle
+migrations from `drizzle/` using an app-owned script, so the same command works
+locally, in Docker/Compose, and in Kubernetes.
+
+Use `bun run db:push` only for local throwaway development when you want fast
+schema iteration without creating a migration first.
+
+Use `bun run db:migrate:cli` to run migrations via `drizzle-kit migrate` directly,
+which prints the SQL statements it executes and is useful when you need drizzle-kit's
+CLI output or flags.
 
 ## Docker
 
 ```bash
 docker build -t roastbook .
+docker run --rm \
+  -e DATABASE_URL="postgresql://..." \
+  roastbook bun run db:migrate
+
 docker run -p 3000:3000 \
   -e DATABASE_URL="postgresql://..." \
   roastbook
 ```
+
+## Docker Compose
+
+The repository's `docker-compose.yaml` includes a one-shot `migrate` service that
+runs `bun run db:migrate` after PostgreSQL becomes healthy. The `app` service waits
+for that migration container to complete successfully before it starts.
+
+```bash
+docker compose up --build
+```
+
+The app will be available at http://localhost:3000 once the database is ready and
+the migrations have completed.
 
 ## Helm Deployment
 
@@ -133,6 +165,17 @@ the public multi-arch official `postgres` image by default. You can still overri
 settings if your environment needs a different image, storage class, or placement.
 
 See [charts/roastbook/values.yaml](charts/roastbook/values.yaml) for all configuration options.
+
+By default, the Helm chart also runs the same migration command as a Helm hook Job.
+For external databases it runs on `pre-install,pre-upgrade`, but when
+`postgresql.enabled=true` it switches to `post-install,pre-upgrade` so the bundled
+PostgreSQL Secret, Service, and StatefulSet exist before the first migration runs.
+The migration command also retries until PostgreSQL is accepting connections.
+Disable it with `--set migrations.enabled=false` if you prefer to manage schema
+changes outside Helm, or `--set migrations.hook.enabled=false` if you want the Job
+template without Helm hook annotations. In non-hook mode the Job name is suffixed
+with the Helm release revision so upgrades recreate it cleanly, and completed Jobs
+are cleaned up automatically after `migrations.ttlSecondsAfterFinished` seconds.
 
 For Kubernetes environments that already manage secrets externally, set `postgresql.existingSecret` to a secret containing a full `DATABASE_URL` under the `url` key, and set `hodor.existingSecret` to a secret containing Hodor's `password` and `secret` keys.
 
