@@ -15,6 +15,9 @@ todos.json
 # Playwright MCP logs
 .playwright-mcp/
 
+# Agent/session artifacts
+.omo/
+
 # Uploads (user data)
 uploads/
 
