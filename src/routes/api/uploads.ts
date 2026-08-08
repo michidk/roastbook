@@ -10,26 +10,33 @@ const CONTENT_TYPES: Record<string, string> = {
   svg: "image/svg+xml",
 }
 
-export const Route = createFileRoute("/api/uploads/$")({
+export const Route = createFileRoute("/api/uploads")({
   server: {
     handlers: {
-      GET: async ({ params }) => {
-        const path = params._splat
-        if (!path) {
+      GET: async ({ request }) => {
+        const search = new URL(request.url).searchParams
+        const requestedPath = search.get("path")
+        const fallbackPath = search.get("fallback")
+        if (!requestedPath) {
           return new Response("Not found", { status: 404 })
         }
 
-        // Prevent path traversal
-        if (path.includes("..")) {
+        const paths = fallbackPath
+          ? [requestedPath, fallbackPath]
+          : [requestedPath]
+        if (paths.some((path) => path.includes("..") || path.startsWith("/"))) {
           return new Response("Forbidden", { status: 403 })
         }
 
         const storage = getStorage()
 
         try {
-          const exists = await storage.exists(path)
-          if (!exists) {
-            return new Response("Not found", { status: 404 })
+          let path = requestedPath
+          if (!(await storage.exists(path))) {
+            if (!fallbackPath || !(await storage.exists(fallbackPath))) {
+              return new Response("Not found", { status: 404 })
+            }
+            path = fallbackPath
           }
 
           const blob = await storage.download(path)
@@ -43,7 +50,7 @@ export const Route = createFileRoute("/api/uploads/$")({
             },
           })
         } catch (error) {
-          console.error(`Failed to serve upload: ${path}`, error)
+          console.error(`Failed to serve upload: ${requestedPath}`, error)
           return new Response("Internal server error", { status: 500 })
         }
       },

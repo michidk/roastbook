@@ -17,6 +17,7 @@ import {
 import { setImageAsThumbnail, deleteEntityImage } from "@/lib/server/images"
 import { thumbnailUrl } from "@/lib/image-url"
 import { cn } from "@/lib/utils"
+import { ResilientImage } from "@/components/resilient-image"
 
 interface EntityImage {
   id: number
@@ -79,7 +80,7 @@ export function EntityImageGallery({
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           {images.map((image) => (
             <div key={image.id} className="group relative">
-              <img
+              <ResilientImage
                 src={thumbnailUrl(image.storagePath)}
                 alt=""
                 loading="lazy"
@@ -89,11 +90,11 @@ export function EntityImageGallery({
                 className="aspect-square w-full rounded-lg object-cover"
               />
               {!readOnly && (
-                <div className="absolute inset-0 flex items-center justify-center gap-2 rounded-lg bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="absolute inset-0 flex items-start justify-end gap-2 rounded-lg p-2 opacity-100 transition-opacity [@media(hover:hover)]:items-center [@media(hover:hover)]:justify-center [@media(hover:hover)]:bg-black/50 [@media(hover:hover)]:p-0 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
                   <Button
                     size="icon"
                     variant={image.isThumbnail ? "default" : "secondary"}
-                    className="h-8 w-8"
+                    className="h-11 w-11 [@media(hover:hover)]:h-8 [@media(hover:hover)]:w-8"
                     onClick={() => handleSetThumbnail(image.id)}
                     disabled={isSettingThumbnail === image.id || image.isThumbnail}
                     title={image.isThumbnail ? "Current thumbnail" : "Set as thumbnail"}
@@ -105,7 +106,7 @@ export function EntityImageGallery({
                       <Button
                         size="icon"
                         variant="destructive"
-                        className="h-8 w-8"
+                        className="h-11 w-11 [@media(hover:hover)]:h-8 [@media(hover:hover)]:w-8"
                         disabled={isDeletingImage === image.id}
                       >
                         <Trash2 className="h-4 w-4" />

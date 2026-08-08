@@ -8,7 +8,7 @@ import postgres from "postgres"
 import {
   beanImages,
   gearImages,
-  placeImages,
+  coffeeShopImages,
   shotImages,
   cafeVisitImages,
 } from "../src/db/schema"
@@ -59,7 +59,7 @@ async function main() {
   const tables = [
     { name: "beans", table: beanImages },
     { name: "gear", table: gearImages },
-    { name: "places", table: placeImages },
+    { name: "coffee-shops", table: coffeeShopImages },
     { name: "shots", table: shotImages },
     { name: "visits", table: cafeVisitImages },
   ] as const

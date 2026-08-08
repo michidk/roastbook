@@ -48,7 +48,7 @@ export function getStorage(): StorageProvider {
 }
 
 export function generateStoragePath(
-  type: "beans" | "gear" | "places" | "shots" | "cafe-visits",
+  type: "beans" | "gear" | "coffee-shops" | "shots" | "cafe-visits",
   id: number,
   filename: string
 ): string {

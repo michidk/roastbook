@@ -39,7 +39,7 @@ export function ImageUploadField({
               <button
                 type="button"
                 onClick={() => onRemoveImage(index)}
-                className="absolute top-2 right-2 rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                className="absolute top-2 right-2 flex size-11 items-center justify-center rounded-full bg-black/65 text-white opacity-100 transition-opacity [@media(hover:hover)]:size-8 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
                 aria-label={`Remove ${previewAltPrefix.toLowerCase()} image ${index + 1}`}
               >
                 <X className="h-4 w-4" />
@@ -49,14 +49,15 @@ export function ImageUploadField({
         </div>
       )}
 
-      <div
+      <button
+        type="button"
         onClick={onOpenFilePicker}
-        className="cursor-pointer rounded-lg border-2 border-dashed border-muted-foreground/25 p-8 text-center transition-colors hover:border-muted-foreground/50"
+        className="w-full cursor-pointer rounded-lg border-2 border-dashed border-muted-foreground/25 p-8 text-center transition-colors hover:border-muted-foreground/50"
       >
         <ImagePlus className="mx-auto h-8 w-8 text-muted-foreground" />
         <p className="mt-2 text-sm text-muted-foreground">{prompt}</p>
         {helperText ? <div className="mt-1 text-xs text-muted-foreground">{helperText}</div> : null}
-      </div>
+      </button>
 
       <input
         ref={fileInputRef}

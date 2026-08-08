@@ -3,7 +3,7 @@ import { db } from "@/db"
 import {
   beanImages,
   gearImages,
-  placeImages,
+  coffeeShopImages,
   shotImages,
   cafeVisitImages,
 } from "@/db/schema"
@@ -11,13 +11,13 @@ import { eq, and } from "drizzle-orm"
 import { getStorage, generateStoragePath } from "@/lib/storage"
 import { generateAndUploadThumbnail, getThumbnailPath } from "@/lib/server/thumbnails"
 
-type EntityType = "beans" | "gear" | "places" | "shots" | "visits"
+type EntityType = "beans" | "gear" | "coffee-shops" | "shots" | "visits"
 type ThumbnailEntityType = "beans" | "gear"
 
-const storagePathTypeMap: Record<EntityType, "beans" | "gear" | "places" | "shots" | "cafe-visits"> = {
+const storagePathTypeMap: Record<EntityType, "beans" | "gear" | "coffee-shops" | "shots" | "cafe-visits"> = {
   beans: "beans",
   gear: "gear",
-  places: "places",
+  "coffee-shops": "coffee-shops",
   shots: "shots",
   visits: "cafe-visits",
 }
@@ -74,10 +74,10 @@ export const uploadEntityImage = createServerFn({ method: "POST" })
         image = result
         break
       }
-      case "places": {
+      case "coffee-shops": {
         const [result] = await db
-          .insert(placeImages)
-          .values({ ...baseValues, placeId: data.entityId })
+          .insert(coffeeShopImages)
+          .values({ ...baseValues, coffeeShopId: data.entityId })
           .returning()
         image = result
         break
@@ -144,8 +144,8 @@ export const deleteEntityImage = createServerFn({ method: "POST" })
       case "gear":
         await db.delete(gearImages).where(eq(gearImages.id, data.imageId))
         break
-      case "places":
-        await db.delete(placeImages).where(eq(placeImages.id, data.imageId))
+      case "coffee-shops":
+        await db.delete(coffeeShopImages).where(eq(coffeeShopImages.id, data.imageId))
         break
       case "shots":
         await db.delete(shotImages).where(eq(shotImages.id, data.imageId))
