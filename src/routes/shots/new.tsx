@@ -1,18 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { useState } from "react"
+import { useRef, useState, type SyntheticEvent } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { StarRating } from "@/components/ui/star-rating"
-import { InputField, TextareaField } from "@/components/FormField"
+import { InputField, TextareaField } from "@/components/form/form-field"
+import { FormSection } from "@/components/form/form-shell"
+import { CreatableCombobox } from "@/components/form/creatable-combobox"
+import { BeanPicker } from "@/components/beans/bean-picker"
 import { getActiveBeans } from "@/lib/server/beans"
 import { getRecipes } from "@/lib/server/recipes"
 import { getTasteTags } from "@/lib/server/taste-tags"
@@ -50,6 +46,7 @@ function NewShotPage() {
   const [timerSeconds, setTimerSeconds] = useState(0)
   const [isTimerRunning, setIsTimerRunning] = useState(false)
   const [timerInterval, setTimerIntervalState] = useState<NodeJS.Timeout | null>(null)
+  const beanSelectionVersion = useRef(0)
 
   const [formData, setFormData] = useState({
     beanId: "",
@@ -96,16 +93,19 @@ function NewShotPage() {
 
   const handleBeanSelect = async (beanId: string | null) => {
     const id = beanId ?? ""
-    setFormData((prev) => ({ ...prev, beanId: id }))
+    const selectionVersion = ++beanSelectionVersion.current
+    setFormData((prev) => ({ ...prev, beanId: id, recipeId: "" }))
     if (id) {
       const recipeId = await getPrefillRecipe({ data: Number(id) })
-      if (recipeId) {
-        setFormData((prev) => ({ ...prev, beanId: id, recipeId: String(recipeId) }))
+      if (recipeId && selectionVersion === beanSelectionVersion.current) {
+        setFormData((prev) =>
+          prev.beanId === id ? { ...prev, recipeId: String(recipeId) } : prev
+        )
       }
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsSubmitting(true)
 
@@ -151,7 +151,7 @@ function NewShotPage() {
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <h1 className="font-display text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">
+        <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
           New shot
         </h1>
       </div>
@@ -161,11 +161,8 @@ function NewShotPage() {
         className="grid gap-5 lg:grid-cols-[1fr_360px] lg:items-start"
       >
         <div className="space-y-5">
-          <Card>
-            <CardHeader>
-              <CardTitle>Beans</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <FormSection title="Beans">
+            <>
               {recentBeans.length > 0 && (
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold text-muted-foreground">
@@ -180,7 +177,7 @@ function NewShotPage() {
                           type="button"
                           onClick={() => handleBeanSelect(String(bean.id))}
                           className={cn(
-                            "rounded-xl px-3.5 py-1.5 text-xs font-bold transition-colors",
+                            "min-h-11 rounded-xl px-3.5 py-1.5 text-xs font-bold transition-colors sm:min-h-0",
                             isSelected
                               ? "bg-primary text-primary-foreground"
                               : "border border-border bg-secondary text-muted-foreground hover:text-foreground"
@@ -193,30 +190,19 @@ function NewShotPage() {
                   </div>
                 </div>
               )}
-              <div className="space-y-2">
-                <Label htmlFor="bean">Bean</Label>
-                <Select
-                  value={formData.beanId || undefined}
-                  onValueChange={handleBeanSelect}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select beans" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {beans.map((bean) => (
-                      <SelectItem key={bean.id} value={String(bean.id)}>
-                        {bean.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
+              <BeanPicker
+                id="bean"
+                label="Bean"
+                value={formData.beanId}
+                onChange={handleBeanSelect}
+                beans={beans}
+              />
+            </>
+          </FormSection>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Recipe</CardTitle>
+          <FormSection
+            title="Recipe"
+            action={
               <Button
                 type="button"
                 variant="outline"
@@ -247,28 +233,24 @@ function NewShotPage() {
                 <History className="h-4 w-4" />
                 Load from previous
               </Button>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="recipe">Recipe</Label>
-                <Select
-                  value={formData.recipeId || undefined}
-                  onValueChange={(v) =>
-                    setFormData({ ...formData, recipeId: v ?? "" })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select recipe" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {recipes.map((recipe) => (
-                      <SelectItem key={recipe.id} value={String(recipe.id)}>
-                        {recipe.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            }
+          >
+            <>
+              <CreatableCombobox
+                id="recipe"
+                label="Recipe"
+                value={formData.recipeId}
+                onChange={(value) => {
+                  beanSelectionVersion.current += 1
+                  setFormData((prev) => ({ ...prev, recipeId: value }))
+                }}
+                items={recipes}
+                getKey={(recipe) => recipe.id}
+                getLabel={(recipe) => recipe.name}
+                placeholder="Select recipe"
+                searchPlaceholder="Search recipes…"
+                emptyMessage="No matching recipes."
+              />
               {selectedRecipe && selectedRecipe.gear.length > 0 && (
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold text-muted-foreground">
@@ -286,14 +268,10 @@ function NewShotPage() {
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </>
+          </FormSection>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Extraction</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <FormSection title="Extraction">
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                 <InputField
                   id="dose"
@@ -339,14 +317,10 @@ function NewShotPage() {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+          </FormSection>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Tasting notes</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <FormSection title="Tasting notes">
+            <>
               <div className="space-y-2">
                 <Label>Rating</Label>
                 <StarRating
@@ -369,7 +343,7 @@ function NewShotPage() {
                           className={cn(
                             "rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors",
                             selected
-                              ? "bg-[#EAF0DC] text-[#6B8A3D]"
+                              ? "bg-positive/15 text-positive"
                               : "border border-dashed border-border bg-secondary text-muted-foreground hover:text-foreground"
                           )}
                         >
@@ -395,7 +369,7 @@ function NewShotPage() {
                           className={cn(
                             "rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors",
                             selected
-                              ? "bg-[#F8E2DA] text-[#C0573A]"
+                              ? "bg-destructive/10 text-destructive"
                               : "border border-dashed border-border bg-secondary text-muted-foreground hover:text-foreground"
                           )}
                         >
@@ -414,8 +388,8 @@ function NewShotPage() {
                 value={formData.notes}
                 onChange={(value) => setFormData({ ...formData, notes: value })}
               />
-            </CardContent>
-          </Card>
+            </>
+          </FormSection>
 
           <div className="flex gap-3 lg:hidden">
             <Button
@@ -432,7 +406,7 @@ function NewShotPage() {
         </div>
 
         <aside className="space-y-5 lg:sticky lg:top-24">
-          <div className="flex flex-col items-center rounded-3xl bg-coffee p-6 text-coffee-foreground shadow-[0_10px_30px_-18px_rgba(60,42,30,0.55)]">
+          <div className="flex flex-col items-center rounded-3xl bg-coffee p-6 text-coffee-foreground shadow-coffee-strong">
             <TimerRing
               seconds={timerSeconds}
               running={isTimerRunning}
@@ -441,7 +415,7 @@ function NewShotPage() {
               <button
                 type="button"
                 onClick={resetTimer}
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-coffee-foreground transition-colors hover:bg-white/25"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-coffee-foreground/15 text-coffee-foreground transition-colors hover:bg-coffee-foreground/25"
                 aria-label="Reset timer"
               >
                 <RotateCcw className="h-5 w-5" />
@@ -499,10 +473,10 @@ function TimerRing({ seconds, running }: { seconds: number; running: boolean }) 
     <div
       className="flex h-48 w-48 items-center justify-center rounded-full"
       style={{
-        background: `conic-gradient(var(--primary) ${arcDeg}deg, rgba(255,255,255,0.13) 0)`,
+        background: `conic-gradient(var(--primary) ${arcDeg}deg, color-mix(in srgb, var(--coffee-foreground) 13%, transparent) 0)`,
       }}
     >
-      <div className="flex h-[170px] w-[170px] flex-col items-center justify-center rounded-full bg-coffee ring-1 ring-white/15">
+      <div className="flex h-[170px] w-[170px] flex-col items-center justify-center rounded-full bg-coffee ring-1 ring-coffee-foreground/15">
         <div className="flex items-baseline gap-1 font-display font-extrabold text-coffee-foreground">
           <span className="text-5xl leading-none">{seconds}</span>
           <span className="text-xl text-coffee-foreground/70">s</span>
