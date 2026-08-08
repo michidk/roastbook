@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import {
   ArrowLeft,
   ExternalLink,
+  Heart,
   MapPinned,
   Pencil,
   Search,
@@ -20,27 +21,29 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group"
 import { Label } from "@/components/ui/label"
+import { StarRating } from "@/components/ui/star-rating"
 import { Textarea } from "@/components/ui/textarea"
-import { PlaceMap } from "@/components/places/place-map"
-import { searchPlaceCandidates } from "@/lib/server/geocoding"
-import { getPlace, deletePlace, updatePlace } from "@/lib/server/places"
+import { CoffeeShopMap } from "@/components/coffee-shops/coffee-shop-map"
+import { searchCoffeeShopCandidates } from "@/lib/server/geocoding"
+import { getCoffeeShop, deleteCoffeeShop, updateCoffeeShop } from "@/lib/server/coffee-shops"
+import { toNullableRating, toRatingInput } from "@/lib/rating"
 import { DeleteConfirmation } from "@/components/DeleteConfirmation"
 import { RouteError } from "@/components/route-error"
 import { DetailPending } from "@/components/route-pending"
 
-type SearchResult = Awaited<ReturnType<typeof searchPlaceCandidates>>[number]
+type SearchResult = Awaited<ReturnType<typeof searchCoffeeShopCandidates>>[number]
 
-export const Route = createFileRoute("/places/$placeId")({
-  loader: ({ params }) => getPlace({ data: Number(params.placeId) }),
-  component: PlaceDetailPage,
+export const Route = createFileRoute("/coffee-shops/$coffeeShopId")({
+  loader: ({ params }) => getCoffeeShop({ data: Number(params.coffeeShopId) }),
+  component: CoffeeShopDetailPage,
   pendingComponent: DetailPending,
   errorComponent: ({ error }) => (
-    <RouteError error={error} backTo="/places" backLabel="Back to places" />
+    <RouteError error={error} backTo="/coffee-shops" backLabel="Back to coffee shops" />
   ),
 })
 
-function PlaceDetailPage() {
-  const place = Route.useLoaderData()
+function CoffeeShopDetailPage() {
+  const coffeeShop = Route.useLoaderData()
   const navigate = useNavigate()
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
@@ -50,62 +53,69 @@ function PlaceDetailPage() {
   const [selectedSearchResultId, setSelectedSearchResultId] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [formData, setFormData] = useState({
-    name: place?.name ?? "",
-    address: place?.address ?? "",
-    city: place?.city ?? "",
-    country: place?.country ?? "",
-    latitude: place?.latitude ?? "",
-    longitude: place?.longitude ?? "",
-    website: place?.website ?? "",
-    notes: place?.notes ?? "",
+    name: coffeeShop?.name ?? "",
+    address: coffeeShop?.address ?? "",
+    city: coffeeShop?.city ?? "",
+    country: coffeeShop?.country ?? "",
+    latitude: coffeeShop?.latitude ?? "",
+    longitude: coffeeShop?.longitude ?? "",
+    website: coffeeShop?.website ?? "",
+    notes: coffeeShop?.notes ?? "",
+    rating: toRatingInput(coffeeShop?.rating ?? null),
   })
 
   useEffect(() => {
     setFormData({
-      name: place?.name ?? "",
-      address: place?.address ?? "",
-      city: place?.city ?? "",
-      country: place?.country ?? "",
-      latitude: place?.latitude ?? "",
-      longitude: place?.longitude ?? "",
-      website: place?.website ?? "",
-      notes: place?.notes ?? "",
+      name: coffeeShop?.name ?? "",
+      address: coffeeShop?.address ?? "",
+      city: coffeeShop?.city ?? "",
+      country: coffeeShop?.country ?? "",
+      latitude: coffeeShop?.latitude ?? "",
+      longitude: coffeeShop?.longitude ?? "",
+      website: coffeeShop?.website ?? "",
+      notes: coffeeShop?.notes ?? "",
+      rating: toRatingInput(coffeeShop?.rating ?? null),
     })
-  }, [place])
+  }, [coffeeShop])
 
-  if (!place) {
+  if (!coffeeShop) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-xl font-semibold">Place not found</h2>
+        <h2 className="text-xl font-semibold">Coffee shop not found</h2>
         <Button asChild className="mt-4">
-          <Link to="/places">Back to places</Link>
+          <Link to="/coffee-shops">Back to coffee shops</Link>
         </Button>
       </div>
     )
   }
 
   const handleDelete = async () => {
-    await deletePlace({ data: place.id })
-    navigate({ to: "/places" })
+    await deleteCoffeeShop({ data: coffeeShop.id })
+    navigate({ to: "/coffee-shops" })
+  }
+
+  const handleToggleFavorite = async () => {
+    await updateCoffeeShop({ data: { id: coffeeShop.id, isFavorite: !coffeeShop.isFavorite } })
+    router.invalidate()
   }
 
   const handleGeocodeSearch = async () => {
     const normalizedQuery = searchQuery.trim().replace(/\s+/g, " ")
 
     if (normalizedQuery.length < 3) {
-      toast.error("Add a place name or address before searching")
+      toast.error("Add a coffee shop name or address before searching")
       return
     }
 
     setIsSearching(true)
 
     try {
-      const results = await searchPlaceCandidates({ data: { query: normalizedQuery } })
+      const results = await searchCoffeeShopCandidates({ data: { query: normalizedQuery } })
       setSearchResults(results)
       setSelectedSearchResultId(null)
 
       if (results.length === 0) {
-        toast.info("No matching places found")
+        toast.info("No matching coffee shops found")
       }
     } catch {
       toast.error("Could not search OpenStreetMap right now")
@@ -127,19 +137,20 @@ function PlaceDetailPage() {
       website: result.website ?? current.website,
     }))
     setSearchQuery(result.displayName)
-    toast.success("Place details applied")
+    toast.success("Coffee shop details applied")
   }
 
   const resetEditState = () => {
     setFormData({
-      name: place.name,
-      address: place.address ?? "",
-      city: place.city ?? "",
-      country: place.country ?? "",
-      latitude: place.latitude ?? "",
-      longitude: place.longitude ?? "",
-      website: place.website ?? "",
-      notes: place.notes ?? "",
+      name: coffeeShop.name,
+      address: coffeeShop.address ?? "",
+      city: coffeeShop.city ?? "",
+      country: coffeeShop.country ?? "",
+      latitude: coffeeShop.latitude ?? "",
+      longitude: coffeeShop.longitude ?? "",
+      website: coffeeShop.website ?? "",
+      notes: coffeeShop.notes ?? "",
+      rating: toRatingInput(coffeeShop.rating),
     })
     setSearchQuery("")
     setSearchResults([])
@@ -153,16 +164,16 @@ function PlaceDetailPage() {
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      toast.error("Place name is required")
+      toast.error("Coffee shop name is required")
       return
     }
 
     setIsSaving(true)
 
     try {
-      await updatePlace({
+      await updateCoffeeShop({
         data: {
-          id: place.id,
+          id: coffeeShop.id,
           name: formData.name,
           address: formData.address || undefined,
           city: formData.city || undefined,
@@ -171,6 +182,7 @@ function PlaceDetailPage() {
           longitude: formData.longitude || undefined,
           website: formData.website || undefined,
           notes: formData.notes || undefined,
+          rating: toNullableRating(formData.rating),
         },
       })
       await router.invalidate()
@@ -178,55 +190,84 @@ function PlaceDetailPage() {
       setSearchQuery("")
       setSearchResults([])
       setSelectedSearchResultId(null)
-      toast.success("Place updated")
+      toast.success("Coffee shop updated")
     } catch {
-      toast.error("Could not save this place")
+      toast.error("Could not save this coffee shop")
     } finally {
       setIsSaving(false)
     }
   }
 
-  const hasCoordinates = place.latitude !== null && place.longitude !== null
+  const hasCoordinates = coffeeShop.latitude !== null && coffeeShop.longitude !== null
   const openStreetMapUrl = hasCoordinates
-    ? `https://www.openstreetmap.org/?mlat=${place.latitude}&mlon=${place.longitude}#map=18/${place.latitude}/${place.longitude}`
+    ? `https://www.openstreetmap.org/?mlat=${coffeeShop.latitude}&mlon=${coffeeShop.longitude}#map=18/${coffeeShop.latitude}/${coffeeShop.longitude}`
     : null
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link to="/places">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold">{place.name}</h1>
-          {(place.city || place.country) && (
-            <p className="text-muted-foreground">
-              {[place.city, place.country].filter(Boolean).join(", ")}
-            </p>
-          )}
-        </div>
-        {isEditing ? (
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={isSaving || !formData.name.trim()}>
-              {isSaving ? "Saving..." : "Save"}
-            </Button>
-          </div>
-        ) : (
-          <Button variant="outline" onClick={() => setIsEditing(true)}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Edit
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 items-center gap-3">
+          <Button variant="ghost" size="icon" asChild>
+            <Link to="/coffee-shops" aria-label="Back to coffee shops">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
           </Button>
-        )}
-        <DeleteConfirmation
-          title="Delete this place?"
-          description="This will not delete your cafe visits at this location. This action cannot be undone."
-          onConfirm={handleDelete}
-        />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="min-w-0 break-words text-2xl font-bold">{coffeeShop.name}</h1>
+              {coffeeShop.rating ? (
+                <StarRating value={coffeeShop.rating} readOnly sizeClassName="size-4" />
+              ) : null}
+            </div>
+            {(coffeeShop.city || coffeeShop.country) && (
+              <p className="text-muted-foreground">
+                {[coffeeShop.city, coffeeShop.country].filter(Boolean).join(", ")}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 sm:ml-auto sm:justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            type="button"
+            aria-label={coffeeShop.isFavorite ? "Remove from favorites" : "Add to favorites"}
+            className={isEditing ? "min-w-11" : undefined}
+            onClick={handleToggleFavorite}
+          >
+            {coffeeShop.isFavorite ? (
+              <>
+                <Heart className="h-4 w-4 fill-current text-destructive" />
+                <span className={isEditing ? "hidden sm:inline" : undefined}>Favorited</span>
+              </>
+            ) : (
+              <>
+                <Heart className="h-4 w-4" />
+                <span className={isEditing ? "hidden sm:inline" : undefined}>Favorite</span>
+              </>
+            )}
+          </Button>
+          {isEditing ? (
+            <>
+              <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={isSaving || !formData.name.trim()}>
+                {isSaving ? "Saving..." : "Save"}
+              </Button>
+            </>
+          ) : (
+            <Button variant="outline" onClick={() => setIsEditing(true)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit
+            </Button>
+          )}
+          <DeleteConfirmation
+            title="Delete this coffee shop?"
+            description="This will not delete your cafe visits at this location. This action cannot be undone."
+            onConfirm={handleDelete}
+          />
+        </div>
       </div>
 
       {isEditing ? (
@@ -238,33 +279,33 @@ function PlaceDetailPage() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="search">Search OpenStreetMap</Label>
-                <InputGroup className="h-10 items-stretch">
+                <InputGroup className="items-stretch">
                   <InputGroupInput
                     id="search"
                     placeholder="e.g., Blue Bottle Coffee, San Francisco"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-full text-base"
+                    className="h-11 text-base sm:h-full"
                   />
-                  <InputGroupAddon align="inline-end" className="pr-1.5">
+                  <InputGroupAddon align="inline-end" className="pr-0.5 sm:pr-1.5">
                     <InputGroupButton
                       type="button"
                       variant="secondary"
                       size="sm"
+                      aria-label={isSearching ? "Searching OpenStreetMap" : "Search OpenStreetMap"}
                       onClick={handleGeocodeSearch}
                       disabled={isSearching || searchQuery.trim().length < 3}
-                      className="h-8 px-3"
+                      className="size-11 p-0 sm:h-8 sm:w-auto sm:px-3"
                     >
                       <Search className="h-4 w-4" />
-                      {isSearching ? "Searching..." : "Search place"}
+                      <span className="hidden sm:inline">
+                        {isSearching ? "Searching..." : "Search coffee shop"}
+                      </span>
                     </InputGroupButton>
                   </InputGroupAddon>
                 </InputGroup>
                 <div className="flex items-start justify-between gap-3 text-xs text-muted-foreground">
-                  <p>
-                    Search OpenStreetMap, then apply a match to prefill the place name, address,
-                    website, and coordinates.
-                  </p>
+                  <p>Apply a match to prefill contact and location details.</p>
                   <div className="shrink-0 rounded-full border bg-muted px-2 py-0.5 font-medium">
                     OSM
                   </div>
@@ -283,13 +324,16 @@ function PlaceDetailPage() {
                         const isSelected = selectedSearchResultId === result.id
 
                         return (
-                          <button
+                          <div
                             key={result.id}
-                            type="button"
-                            onClick={() => applySearchResult(result)}
-                            className="w-full rounded-lg border bg-card p-3 text-left transition-colors hover:bg-muted/50"
+                            className="flex items-stretch rounded-lg border bg-card transition-colors hover:bg-muted/50"
                           >
-                            <div className="flex items-start justify-between gap-3">
+                            <button
+                              type="button"
+                              onClick={() => applySearchResult(result)}
+                              className="min-w-0 flex-1 p-3 text-left"
+                            >
+                              <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0 space-y-1">
                                 <div className="flex items-center gap-2">
                                   <p className="font-medium">{result.name}</p>
@@ -299,26 +343,24 @@ function PlaceDetailPage() {
                                   {result.displayName}
                                 </p>
                               </div>
-                              <div className="flex items-center gap-2">
-                                {result.openStreetMapUrl && (
-                                  <a
-                                    href={result.openStreetMapUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    onClick={(event) => event.stopPropagation()}
-                                    className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                                  >
-                                    <ExternalLink className="h-3.5 w-3.5" />
-                                    OSM
-                                  </a>
-                                )}
                                 <Badge variant="outline">Use</Badge>
                               </div>
-                            </div>
-                            <p className="mt-2 text-xs text-muted-foreground">
-                              {result.latitude}, {result.longitude}
-                            </p>
-                          </button>
+                              <p className="mt-2 text-xs text-muted-foreground">
+                                {result.latitude}, {result.longitude}
+                              </p>
+                            </button>
+                            {result.openStreetMapUrl && (
+                              <a
+                                href={result.openStreetMapUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="m-2 inline-flex min-h-11 shrink-0 items-center gap-1 self-center rounded-md border px-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                                OSM
+                              </a>
+                            )}
+                          </div>
                         )
                       })}
                     </div>
@@ -337,6 +379,20 @@ function PlaceDetailPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Rating</Label>
+                <StarRating
+                  value={formData.rating}
+                  onChange={(rating) =>
+                    setFormData({
+                      ...formData,
+                      rating: formData.rating === rating ? 0 : rating,
+                    })
+                  }
+                  ariaLabel="Coffee shop rating"
                 />
               </div>
 
@@ -380,8 +436,8 @@ function PlaceDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Add coordinates to pin this place on the map. You can leave these blank and add
-                them later.
+                Add coordinates to pin this coffee shop on the map. You can leave these blank and
+                add them later.
               </p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -429,11 +485,12 @@ function PlaceDetailPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Notes</CardTitle>
+              <CardTitle id="notes-heading">Notes</CardTitle>
             </CardHeader>
             <CardContent>
               <Textarea
-                placeholder="Any notes about this place"
+                aria-labelledby="notes-heading"
+                placeholder="Any notes about this coffee shop"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 rows={3}
@@ -448,19 +505,19 @@ function PlaceDetailPage() {
               <CardTitle>Location</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {hasCoordinates && <PlaceMap places={[place]} heightClassName="h-[280px]" />}
+              {hasCoordinates && <CoffeeShopMap coffeeShops={[coffeeShop]} heightClassName="h-[280px]" />}
               <div className="space-y-2">
-                {place.address && <p className="font-medium">{place.address}</p>}
+                {coffeeShop.address && <p className="font-medium">{coffeeShop.address}</p>}
                 <p className="text-muted-foreground">
-                  {[place.city, place.country].filter(Boolean).join(", ") || "No location info"}
+                  {[coffeeShop.city, coffeeShop.country].filter(Boolean).join(", ") || "No location info"}
                 </p>
                 {hasCoordinates ? (
                   <p className="text-sm text-muted-foreground">
-                    {place.latitude}, {place.longitude}
+                    {coffeeShop.latitude}, {coffeeShop.longitude}
                   </p>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    Add coordinates to see this place on the map.
+                    Add coordinates to see this coffee shop on the map.
                   </p>
                 )}
               </div>
@@ -474,20 +531,17 @@ function PlaceDetailPage() {
                   </Button>
                 </div>
               )}
-              {hasCoordinates && (
-                <p className="text-xs text-muted-foreground">Map data © OpenStreetMap contributors</p>
-              )}
             </CardContent>
           </Card>
 
-          {place.website && (
+          {coffeeShop.website && (
             <Card>
               <CardHeader>
                 <CardTitle>Links</CardTitle>
               </CardHeader>
               <CardContent className="flex gap-2">
                 <Button variant="outline" size="sm" asChild>
-                  <a href={place.website} target="_blank" rel="noopener noreferrer">
+                  <a href={coffeeShop.website} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Website
                   </a>
@@ -496,13 +550,13 @@ function PlaceDetailPage() {
             </Card>
           )}
 
-          {place.notes && (
+          {coffeeShop.notes && (
             <Card>
               <CardHeader>
                 <CardTitle>Notes</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="whitespace-pre-wrap">{place.notes}</p>
+                <p className="whitespace-pre-wrap">{coffeeShop.notes}</p>
               </CardContent>
             </Card>
           )}
@@ -515,28 +569,28 @@ function PlaceDetailPage() {
         </CardHeader>
         <CardContent>
           <Button asChild>
-            <Link to="/visits/new" search={{ placeId: String(place.id) }}>
+            <Link to="/visits/new" search={{ coffeeShopId: String(coffeeShop.id) }}>
               Log a visit here
             </Link>
           </Button>
         </CardContent>
       </Card>
 
-      {place.cafeVisits && place.cafeVisits.length > 0 && (
+      {coffeeShop.cafeVisits && coffeeShop.cafeVisits.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Recent Visits</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {place.cafeVisits.slice(0, 5).map((visit) => (
+              {coffeeShop.cafeVisits.slice(0, 5).map((visit) => (
                 <Link
                   key={visit.id}
                   to="/visits/$visitId"
                   params={{ visitId: String(visit.id) }}
-                  className="block p-2 rounded hover:bg-muted"
+                  className="flex min-h-11 items-center rounded p-2 hover:bg-muted"
                 >
-                  <div className="flex justify-between">
+                  <div className="flex w-full justify-between">
                     <span className="font-medium">{visit.drinkName || "Coffee"}</span>
                     <span className="text-muted-foreground text-sm">
                       {new Date(visit.visitedAt).toLocaleDateString()}

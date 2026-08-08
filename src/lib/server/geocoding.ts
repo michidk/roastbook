@@ -80,7 +80,7 @@ function toWebsite(extratags: NominatimResult["extratags"]) {
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
 }
 
-export const searchPlaceCandidates = createServerFn({ method: "POST" })
+export const searchCoffeeShopCandidates = createServerFn({ method: "POST" })
   .validator((data: { query: string; limit?: number }) => ({
     query: normalizeQuery(data.query),
     limit: Math.min(Math.max(data.limit ?? 5, 1), 5),

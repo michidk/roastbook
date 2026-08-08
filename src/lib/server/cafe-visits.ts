@@ -3,6 +3,11 @@ import { db } from "@/db"
 import { cafeVisits, cafeVisitTasteTags } from "@/db/schema"
 import { eq, desc } from "drizzle-orm"
 import { toDisplayableDatabaseError } from "@/lib/server/database-error"
+import {
+  assertValidUpdate,
+  getCafeVisitUpdateErrors,
+  type CafeVisitUpdateCandidate,
+} from "@/lib/update-validation"
 
 export const getCafeVisits = createServerFn({ method: "GET" }).handler(
   async () => {
@@ -10,7 +15,7 @@ export const getCafeVisits = createServerFn({ method: "GET" }).handler(
       return await db.query.cafeVisits.findMany({
         orderBy: [desc(cafeVisits.visitedAt)],
         with: {
-          place: true,
+          coffeeShop: true,
           bean: true,
           tasteTags: {
             with: {
@@ -33,7 +38,7 @@ export const getCafeVisit = createServerFn({ method: "GET" })
       return await db.query.cafeVisits.findFirst({
         where: eq(cafeVisits.id, id),
         with: {
-          place: true,
+          coffeeShop: true,
           bean: true,
           tasteTags: {
             with: {
@@ -51,7 +56,7 @@ export const getCafeVisit = createServerFn({ method: "GET" })
 export const createCafeVisit = createServerFn({ method: "POST" })
   .validator(
     (data: {
-      placeId?: number
+      coffeeShopId?: number
       beanId?: number
       drinkName?: string
       drinkType?: string
@@ -80,21 +85,10 @@ export const createCafeVisit = createServerFn({ method: "POST" })
   })
 
 export const updateCafeVisit = createServerFn({ method: "POST" })
-  .validator(
-    (data: {
-      id: number
-      placeId?: number | null
-      beanId?: number | null
-      drinkName?: string
-      drinkType?: string
-      price?: string
-      currency?: string
-      rating?: number
-      notes?: string
-      visitedAt?: Date
-      tasteTagIds?: number[]
-    }) => data
-  )
+  .validator((data: CafeVisitUpdateCandidate) => {
+    assertValidUpdate(getCafeVisitUpdateErrors(data))
+    return data
+  })
   .handler(async ({ data }) => {
     const { id, tasteTagIds, ...values } = data
     const [visit] = await db
@@ -125,4 +119,3 @@ export const deleteCafeVisit = createServerFn({ method: "POST" })
   .handler(async ({ data: id }) => {
     await db.delete(cafeVisits).where(eq(cafeVisits.id, id))
   })
-

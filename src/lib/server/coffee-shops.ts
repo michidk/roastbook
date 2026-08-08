@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start"
 import { db } from "@/db"
-import { places } from "@/db/schema"
+import { coffeeShops } from "@/db/schema"
 import { eq, desc } from "drizzle-orm"
 
 type CoordinateInput = string | number | undefined
@@ -28,7 +28,7 @@ function normalizeCoordinate(
   return String(numericValue)
 }
 
-function normalizePlaceInput<T extends { latitude?: CoordinateInput; longitude?: CoordinateInput }>(
+function normalizeCoffeeShopInput<T extends { latitude?: CoordinateInput; longitude?: CoordinateInput }>(
   data: T
 ) {
   return {
@@ -38,20 +38,20 @@ function normalizePlaceInput<T extends { latitude?: CoordinateInput; longitude?:
   }
 }
 
-export const getPlaces = createServerFn({ method: "GET" }).handler(async () => {
-  return db.query.places.findMany({
-    orderBy: [desc(places.createdAt)],
+export const getCoffeeShops = createServerFn({ method: "GET" }).handler(async () => {
+  return db.query.coffeeShops.findMany({
+    orderBy: [desc(coffeeShops.createdAt)],
     with: {
       images: true,
     },
   })
 })
 
-export const getPlace = createServerFn({ method: "GET" })
+export const getCoffeeShop = createServerFn({ method: "GET" })
   .validator((id: number) => id)
   .handler(async ({ data: id }) => {
-    return db.query.places.findFirst({
-      where: eq(places.id, id),
+    return db.query.coffeeShops.findFirst({
+      where: eq(coffeeShops.id, id),
       with: {
         images: true,
         cafeVisits: true,
@@ -59,7 +59,7 @@ export const getPlace = createServerFn({ method: "GET" })
     })
   })
 
-export const createPlace = createServerFn({ method: "POST" })
+export const createCoffeeShop = createServerFn({ method: "POST" })
   .validator(
     (data: {
       name: string
@@ -71,14 +71,14 @@ export const createPlace = createServerFn({ method: "POST" })
       website?: string
       instagramHandle?: string
       notes?: string
-    }) => normalizePlaceInput(data)
+    }) => normalizeCoffeeShopInput(data)
   )
   .handler(async ({ data }) => {
-    const [place] = await db.insert(places).values(data).returning()
-    return place
+    const [coffeeShop] = await db.insert(coffeeShops).values(data).returning()
+    return coffeeShop
   })
 
-export const updatePlace = createServerFn({ method: "POST" })
+export const updateCoffeeShop = createServerFn({ method: "POST" })
   .validator(
     (data: {
       id: number
@@ -91,22 +91,22 @@ export const updatePlace = createServerFn({ method: "POST" })
       website?: string
       instagramHandle?: string
       notes?: string
-    }) => normalizePlaceInput(data)
+      rating?: number | null
+      isFavorite?: boolean
+    }) => normalizeCoffeeShopInput(data)
   )
   .handler(async ({ data }) => {
     const { id, ...values } = data
-    const [place] = await db
-      .update(places)
+    const [coffeeShop] = await db
+      .update(coffeeShops)
       .set({ ...values, updatedAt: new Date() })
-      .where(eq(places.id, id))
+      .where(eq(coffeeShops.id, id))
       .returning()
-    return place
+    return coffeeShop
   })
 
-export const deletePlace = createServerFn({ method: "POST" })
+export const deleteCoffeeShop = createServerFn({ method: "POST" })
   .validator((id: number) => id)
   .handler(async ({ data: id }) => {
-    await db.delete(places).where(eq(places.id, id))
+    await db.delete(coffeeShops).where(eq(coffeeShops.id, id))
   })
-
-
