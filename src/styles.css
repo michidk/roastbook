@@ -39,6 +39,8 @@
   --color-ink-foreground: var(--ink-foreground);
   --color-positive: var(--positive);
   --color-positive-foreground: var(--positive-foreground);
+  --shadow-coffee: var(--coffee-shadow);
+  --shadow-coffee-strong: var(--coffee-shadow-strong);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -81,6 +83,8 @@
     --ink-foreground: #f6eddf;
     --positive: #6b8a3d;
     --positive-foreground: #eaf0dc;
+    --coffee-shadow: 0 8px 24px -18px rgb(60 42 30 / 45%);
+    --coffee-shadow-strong: 0 10px 30px -18px rgb(60 42 30 / 55%);
     /* Sidebar (dark coffee for any future drawer) */
     --sidebar: #6f4e37;
     --sidebar-foreground: #f6eddf;
@@ -122,6 +126,8 @@
     --ink-foreground: #1f1a14;
     --positive: #8aa850;
     --positive-foreground: #1f1a14;
+    --coffee-shadow: 0 8px 24px -18px rgb(0 0 0 / 55%);
+    --coffee-shadow-strong: 0 10px 30px -18px rgb(0 0 0 / 65%);
     --sidebar: #2a2219;
     --sidebar-foreground: #f6eddf;
     --sidebar-primary: #d2873e;
@@ -130,6 +136,57 @@
     --sidebar-accent-foreground: #f6eddf;
     --sidebar-border: #3c2e20;
     --sidebar-ring: #d2873e;
+  }
+}
+
+.roastbook-map-popup .maplibregl-popup-content {
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.roastbook-map-popup:is(
+    .maplibregl-popup-anchor-top,
+    .maplibregl-popup-anchor-top-left,
+    .maplibregl-popup-anchor-top-right
+  )
+  .maplibregl-popup-tip {
+  border-bottom-color: var(--popover);
+}
+
+.roastbook-map-popup:is(
+    .maplibregl-popup-anchor-bottom,
+    .maplibregl-popup-anchor-bottom-left,
+    .maplibregl-popup-anchor-bottom-right
+  )
+  .maplibregl-popup-tip {
+  border-top-color: var(--popover);
+}
+
+.roastbook-map-popup.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--popover);
+}
+
+.roastbook-map-popup.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--popover);
+}
+
+@media (max-width: 639px), (pointer: coarse) {
+  .maplibregl-map .maplibregl-ctrl-group button {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

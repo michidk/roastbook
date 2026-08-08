@@ -193,7 +193,7 @@ function AlertDialogAction({ className, ...props }: React.ComponentProps<typeof 
   return (
     <DialogClose
       render={
-        <Button className={className} {...props} />
+        <Button variant="destructive" className={className} {...props} />
       }
     />
   )
