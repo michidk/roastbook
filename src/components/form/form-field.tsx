@@ -1,3 +1,4 @@
+import type { ReactNode } from "react"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -8,7 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { cn } from "@/lib/utils"
+import { cn, normalizeUrl } from "@/lib/utils"
+import { CURRENCIES } from "@/lib/constants"
 
 interface FormFieldBaseProps {
   label: string
@@ -16,15 +18,48 @@ interface FormFieldBaseProps {
   required?: boolean
   className?: string
   disabled?: boolean
+  error?: string
+}
+
+function FieldShell({
+  label,
+  id,
+  required,
+  className,
+  error,
+  children,
+}: FormFieldBaseProps & { children: ReactNode }) {
+  return (
+    <div className={cn("space-y-2", className)}>
+      {label ? (
+        <Label htmlFor={id}>
+          {label}
+          {required && " *"}
+        </Label>
+      ) : null}
+      {children}
+      {error ? (
+        <p id={`${id}-error`} className="text-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
+function describedBy(id: string, error?: string) {
+  return error ? `${id}-error` : undefined
 }
 
 interface InputFieldProps extends FormFieldBaseProps {
   type?: "text" | "number" | "date" | "url" | "email"
+  inputMode?: "text" | "decimal" | "numeric"
   placeholder?: string
   value: string
   onChange: (value: string) => void
   min?: string | number
   step?: string | number
+  autoFocus?: boolean
 }
 
 export function InputField({
@@ -33,31 +68,48 @@ export function InputField({
   required,
   className,
   disabled,
+  error,
   type = "text",
+  inputMode,
   placeholder,
   value,
   onChange,
   min,
   step,
+  autoFocus,
 }: InputFieldProps) {
   return (
-    <div className={cn("space-y-2", className)}>
-      <Label htmlFor={id}>
-        {label}
-        {required && " *"}
-      </Label>
+    <FieldShell
+      label={label}
+      id={id}
+      required={required}
+      className={className}
+      error={error}
+    >
       <Input
         id={id}
         type={type}
+        inputMode={inputMode}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={
+          type === "url"
+            ? (e) => {
+                const normalized = normalizeUrl(e.target.value)
+                if (normalized !== e.target.value) onChange(normalized)
+              }
+            : undefined
+        }
         required={required}
         disabled={disabled}
         min={min}
         step={step}
+        autoFocus={autoFocus}
+        aria-invalid={Boolean(error)}
+        aria-describedby={describedBy(id, error)}
       />
-    </div>
+    </FieldShell>
   )
 }
 
@@ -74,17 +126,20 @@ export function TextareaField({
   required,
   className,
   disabled,
+  error,
   placeholder,
   value,
   onChange,
   rows = 4,
 }: TextareaFieldProps) {
   return (
-    <div className={cn("space-y-2", className)}>
-      <Label htmlFor={id}>
-        {label}
-        {required && " *"}
-      </Label>
+    <FieldShell
+      label={label}
+      id={id}
+      required={required}
+      className={className}
+      error={error}
+    >
       <Textarea
         id={id}
         placeholder={placeholder}
@@ -93,8 +148,10 @@ export function TextareaField({
         required={required}
         disabled={disabled}
         rows={rows}
+        aria-invalid={Boolean(error)}
+        aria-describedby={describedBy(id, error)}
       />
-    </div>
+    </FieldShell>
   )
 }
 
@@ -116,6 +173,7 @@ export function SelectField({
   required,
   className,
   disabled,
+  error,
   placeholder,
   value,
   onChange,
@@ -124,13 +182,23 @@ export function SelectField({
   const selectedOption = options.find((option) => option.value === value)
 
   return (
-    <div className={cn("space-y-2", className)}>
-      <Label htmlFor={id}>
-        {label}
-        {required && " *"}
-      </Label>
-      <Select value={value} onValueChange={(v) => onChange(v ?? "")} disabled={disabled}>
-        <SelectTrigger id={id}>
+    <FieldShell
+      label={label}
+      id={id}
+      required={required}
+      className={className}
+      error={error}
+    >
+      <Select
+        value={value || null}
+        onValueChange={(v) => onChange(v ?? "")}
+        disabled={disabled}
+      >
+        <SelectTrigger
+          id={id}
+          aria-invalid={Boolean(error)}
+          aria-describedby={describedBy(id, error)}
+        >
           <SelectValue placeholder={placeholder}>
             {selectedOption?.label}
           </SelectValue>
@@ -143,6 +211,17 @@ export function SelectField({
           ))}
         </SelectContent>
       </Select>
-    </div>
+    </FieldShell>
   )
+}
+
+type CurrencyFieldProps = Omit<SelectFieldProps, "options" | "label"> & {
+  label?: string
+}
+
+export function CurrencyField({
+  label = "Currency",
+  ...props
+}: CurrencyFieldProps) {
+  return <SelectField {...props} label={label} options={CURRENCIES} />
 }
