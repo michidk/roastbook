@@ -1,5 +1,8 @@
+import { useMemo, useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
+import { Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import {
   Table,
   TableBody,
@@ -9,6 +12,10 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { thumbnailUrl } from "@/lib/image-url"
+import { ResilientImage } from "@/components/resilient-image"
+import { SortableTableHead } from "@/components/sortable-table-head"
+import { PaginationControls } from "@/components/pagination-controls"
+import { formatDate } from "@/lib/utils"
 
 type Shot = {
   id: number
@@ -36,95 +43,386 @@ interface ShotsTableProps {
   hideGear?: boolean
 }
 
-export function ShotsTable({ shots, hideBean, hideGear }: ShotsTableProps) {
-  const navigate = useNavigate()
+const PAGE_SIZE = 25
 
-  if (shots.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground py-4">No shots recorded yet.</p>
-    )
+type SortKey = "date" | "bean" | "dose" | "yield" | "time" | "rating"
+type SortDirection = "asc" | "desc"
+
+function getBeanThumbnail(bean: Shot["bean"]): string | null {
+  if (!bean?.images?.length) return null
+  const thumbnail = bean.images.find((img) => img.isThumbnail) || bean.images[0]
+  if (!thumbnail?.storagePath) return null
+  return thumbnailUrl(thumbnail.storagePath)
+}
+
+function formatShotSummary(shot: Shot): string {
+  const parts: string[] = []
+  if (shot.doseGrams && shot.yieldGrams) {
+    parts.push(`${shot.doseGrams}g → ${shot.yieldGrams}g`)
+  } else if (shot.doseGrams) {
+    parts.push(`${shot.doseGrams}g dose`)
+  } else if (shot.yieldGrams) {
+    parts.push(`${shot.yieldGrams}g yield`)
+  } else {
+    parts.push("No dose/yield recorded")
+  }
+  if (shot.brewTimeSeconds) parts.push(`${shot.brewTimeSeconds}s`)
+  return parts.join(" · ")
+}
+
+function parseNullableFloat(value: string | null): number | null {
+  if (value === null) return null
+  const parsed = parseFloat(value)
+  return Number.isNaN(parsed) ? null : parsed
+}
+
+function compareNullableNumber(
+  a: number | null,
+  b: number | null,
+  direction: SortDirection,
+): number {
+  if (a === null && b === null) return 0
+  if (a === null) return 1
+  if (b === null) return -1
+  return direction === "asc" ? a - b : b - a
+}
+
+function compareNullableString(
+  a: string | null,
+  b: string | null,
+  direction: SortDirection,
+): number {
+  if (a === null && b === null) return 0
+  if (a === null) return 1
+  if (b === null) return -1
+  const cmp = a.localeCompare(b)
+  return direction === "asc" ? cmp : -cmp
+}
+
+export function ShotsTable({ shots, hideBean, hideGear }: ShotsTableProps) {
+  const [search, setSearch] = useState("")
+  const [sortKey, setSortKey] = useState<SortKey>("date")
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc")
+  const [page, setPage] = useState(1)
+
+  // Computed once from the complete, unfiltered list so columns never
+  // flicker in/out while searching or paginating.
+  const hasRecipe = useMemo(() => shots.some((shot) => Boolean(shot.recipe?.name)), [shots])
+  const hasRating = useMemo(() => shots.some((shot) => Boolean(shot.rating)), [shots])
+
+  const showSearch = !hideBean && shots.length > PAGE_SIZE
+
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase()
+    if (!query) return shots
+    return shots.filter((shot) => shot.bean?.name.toLowerCase().includes(query))
+  }, [shots, search])
+
+  const sorted = useMemo(() => {
+    const copy = [...filtered]
+    copy.sort((a, b) => {
+      switch (sortKey) {
+        case "date": {
+          const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          return sortDirection === "asc" ? diff : -diff
+        }
+        case "bean":
+          return compareNullableString(a.bean?.name ?? null, b.bean?.name ?? null, sortDirection)
+        case "dose":
+          return compareNullableNumber(
+            parseNullableFloat(a.doseGrams),
+            parseNullableFloat(b.doseGrams),
+            sortDirection,
+          )
+        case "yield":
+          return compareNullableNumber(
+            parseNullableFloat(a.yieldGrams),
+            parseNullableFloat(b.yieldGrams),
+            sortDirection,
+          )
+        case "time":
+          return compareNullableNumber(a.brewTimeSeconds, b.brewTimeSeconds, sortDirection)
+        case "rating":
+          return compareNullableNumber(a.rating, b.rating, sortDirection)
+        default:
+          return 0
+      }
+    })
+    return copy
+  }, [filtered, sortKey, sortDirection])
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const showPagination = sorted.length > PAGE_SIZE
+  const paginated = showPagination
+    ? sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+    : sorted
+
+  const handleSort = (key: SortKey) => {
+    setPage(1)
+    if (sortKey === key) {
+      setSortDirection((direction) => (direction === "asc" ? "desc" : "asc"))
+    } else {
+      setSortKey(key)
+      setSortDirection(key === "date" || key === "rating" ? "desc" : "asc")
+    }
   }
 
-  
-
-  const getBeanThumbnail = (bean: Shot["bean"]) => {
-    if (!bean?.images?.length) return null
-    const thumbnail = bean.images.find((img) => img.isThumbnail) || bean.images[0]
-    if (!thumbnail?.storagePath) return null
-    return thumbnailUrl(thumbnail.storagePath)
+  if (shots.length === 0) {
+    return <p className="text-sm text-muted-foreground py-4">No shots recorded yet.</p>
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Date</TableHead>
-          {!hideBean && <TableHead>Bean</TableHead>}
-          <TableHead className="text-right">Dose</TableHead>
-          <TableHead className="text-right">Yield</TableHead>
-          <TableHead className="text-right">Time</TableHead>
-          {!hideGear && <TableHead>Recipe</TableHead>}
-          <TableHead className="text-right">Rating</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {shots.map((shot) => {
-          const beanThumb = getBeanThumbnail(shot.bean)
-          return (
-            <TableRow
-              key={shot.id}
-              className="cursor-pointer"
-              onClick={() => navigate({ to: "/shots/$shotId", params: { shotId: String(shot.id) } })}
-            >
-              <TableCell>
-                {new Date(shot.createdAt).toLocaleDateString()}
-              </TableCell>
-              {!hideBean && (
-                <TableCell>
-                  {shot.bean ? (
-                    <Link
-                      to="/beans/$beanId"
-                      params={{ beanId: String(shot.bean.id) }}
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-2 hover:underline"
-                    >
-                      {beanThumb && (
-                        <img
-                          src={beanThumb}
-                          alt=""
-                          className="h-8 w-8 rounded object-cover"
-                        />
-                      )}
-                      <span>{shot.bean.name}</span>
-                    </Link>
-                  ) : (
-                    "-"
+    <div className="space-y-4">
+      {showSearch && (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full sm:max-w-xs">
+            <Search
+              className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <Input
+              type="search"
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value)
+                setPage(1)
+              }}
+              placeholder="Search by bean name…"
+              aria-label="Search shots by bean name"
+              className="pl-8"
+            />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {sorted.length} shot{sorted.length === 1 ? "" : "s"}
+          </p>
+        </div>
+      )}
+
+      {sorted.length === 0 ? (
+        <p className="py-4 text-sm text-muted-foreground">No shots match “{search}”.</p>
+      ) : (
+        <>
+          <div className="space-y-3 md:hidden" role="list" aria-label="Recorded shots">
+            {paginated.map((shot) => (
+              <MobileShotCard
+                key={shot.id}
+                shot={shot}
+                hideBean={hideBean}
+                hideGear={hideGear}
+                hasRecipe={hasRecipe}
+                hasRating={hasRating}
+              />
+            ))}
+          </div>
+
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <SortableTableHead
+                    label="Date"
+                    active={sortKey === "date"}
+                    direction={sortDirection}
+                    onSort={() => handleSort("date")}
+                  />
+                  {!hideBean && (
+                    <SortableTableHead
+                      label="Bean"
+                      active={sortKey === "bean"}
+                      direction={sortDirection}
+                      onSort={() => handleSort("bean")}
+                    />
                   )}
-                </TableCell>
+                  <SortableTableHead
+                    label="Dose"
+                    align="right"
+                    active={sortKey === "dose"}
+                    direction={sortDirection}
+                    onSort={() => handleSort("dose")}
+                  />
+                  <SortableTableHead
+                    label="Yield"
+                    align="right"
+                    active={sortKey === "yield"}
+                    direction={sortDirection}
+                    onSort={() => handleSort("yield")}
+                  />
+                  <SortableTableHead
+                    label="Time"
+                    align="right"
+                    active={sortKey === "time"}
+                    direction={sortDirection}
+                    onSort={() => handleSort("time")}
+                  />
+                  {!hideGear && hasRecipe && <TableHead>Recipe</TableHead>}
+                  {hasRating && (
+                    <SortableTableHead
+                      label="Rating"
+                      align="right"
+                      active={sortKey === "rating"}
+                      direction={sortDirection}
+                      onSort={() => handleSort("rating")}
+                    />
+                  )}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginated.map((shot) => (
+                  <ShotRow
+                    key={shot.id}
+                    shot={shot}
+                    hideBean={hideBean}
+                    hideGear={hideGear}
+                    hasRecipe={hasRecipe}
+                    hasRating={hasRating}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
+      )}
+
+      {showPagination && (
+        <PaginationControls page={currentPage} totalPages={totalPages} onPageChange={setPage} />
+      )}
+    </div>
+  )
+}
+
+function MobileShotCard({
+  shot,
+  hideBean,
+  hideGear,
+  hasRecipe,
+  hasRating,
+}: {
+  shot: Shot
+  hideBean?: boolean
+  hideGear?: boolean
+  hasRecipe: boolean
+  hasRating: boolean
+}) {
+  const beanThumb = getBeanThumbnail(shot.bean)
+  const shotDate = formatDate(shot.createdAt)
+
+  return (
+    <article role="listitem">
+      <Link
+        to="/shots/$shotId"
+        params={{ shotId: String(shot.id) }}
+        aria-label={`View shot from ${shotDate}`}
+        className="flex items-center gap-3 rounded-xl border bg-card p-4 shadow-coffee transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {!hideBean && beanThumb && (
+          <ResilientImage
+            src={beanThumb}
+            alt=""
+            className="h-11 w-11 shrink-0 rounded-xl object-cover"
+          />
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-display text-base font-bold text-foreground">{shotDate}</p>
+            {hasRating && shot.rating ? (
+              <Badge variant="secondary" className="shrink-0">
+                {shot.rating}/5
+              </Badge>
+            ) : null}
+          </div>
+          {!hideBean && (
+            <p className="truncate text-sm text-muted-foreground">
+              {shot.bean?.name ?? "No bean recorded"}
+            </p>
+          )}
+          <p className="text-sm text-muted-foreground">{formatShotSummary(shot)}</p>
+          {!hideGear && hasRecipe && shot.recipe?.name && (
+            <p className="truncate text-xs text-muted-foreground">Recipe: {shot.recipe.name}</p>
+          )}
+        </div>
+      </Link>
+    </article>
+  )
+}
+
+function ShotRow({
+  shot,
+  hideBean,
+  hideGear,
+  hasRecipe,
+  hasRating,
+}: {
+  shot: Shot
+  hideBean?: boolean
+  hideGear?: boolean
+  hasRecipe: boolean
+  hasRating: boolean
+}) {
+  const navigate = useNavigate()
+  const beanThumb = getBeanThumbnail(shot.bean)
+  const shotDate = formatDate(shot.createdAt)
+
+  const goToShot = () => {
+    navigate({ to: "/shots/$shotId", params: { shotId: String(shot.id) } })
+  }
+
+  return (
+    <TableRow
+      tabIndex={0}
+      role="link"
+      aria-label={`View shot from ${shotDate}`}
+      onClick={goToShot}
+      onKeyDown={(event) => {
+        // Ignore keydowns that bubbled up from the nested bean Link so its
+        // own Enter-to-navigate isn't hijacked into navigating to the shot.
+        if (event.target !== event.currentTarget) return
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault()
+          goToShot()
+        }
+      }}
+      className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+    >
+      <TableCell className="font-medium">{shotDate}</TableCell>
+      {!hideBean && (
+        <TableCell>
+          {shot.bean ? (
+            <Link
+              to="/beans/$beanId"
+              params={{ beanId: String(shot.bean.id) }}
+              onClick={(event) => event.stopPropagation()}
+              className="flex w-fit items-center gap-2 rounded-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {beanThumb && (
+                <ResilientImage
+                  src={beanThumb}
+                  alt=""
+                  className="h-8 w-8 rounded object-cover"
+                />
               )}
-              <TableCell className="text-right">
-                {shot.doseGrams ? `${shot.doseGrams}g` : "-"}
-              </TableCell>
-              <TableCell className="text-right">
-                {shot.yieldGrams ? `${shot.yieldGrams}g` : "-"}
-              </TableCell>
-              <TableCell className="text-right">
-                {shot.brewTimeSeconds ? `${shot.brewTimeSeconds}s` : "-"}
-              </TableCell>
-              {!hideGear && (
-                <TableCell>{shot.recipe?.name || "-"}</TableCell>
-              )}
-              <TableCell className="text-right">
-                {shot.rating ? (
-                  <Badge variant="secondary">{shot.rating}/5</Badge>
-                ) : (
-                  "-"
-                )}
-              </TableCell>
-            </TableRow>
-          )
-        })}
-      </TableBody>
-    </Table>
+              <span>{shot.bean.name}</span>
+            </Link>
+          ) : (
+            "-"
+          )}
+        </TableCell>
+      )}
+      <TableCell className="text-right">
+        {shot.doseGrams ? `${shot.doseGrams}g` : "-"}
+      </TableCell>
+      <TableCell className="text-right">
+        {shot.yieldGrams ? `${shot.yieldGrams}g` : "-"}
+      </TableCell>
+      <TableCell className="text-right">
+        {shot.brewTimeSeconds ? `${shot.brewTimeSeconds}s` : "-"}
+      </TableCell>
+      {!hideGear && hasRecipe && <TableCell>{shot.recipe?.name || "-"}</TableCell>}
+      {hasRating && (
+        <TableCell className="text-right">
+          {shot.rating ? <Badge variant="secondary">{shot.rating}/5</Badge> : "-"}
+        </TableCell>
+      )}
+    </TableRow>
   )
 }

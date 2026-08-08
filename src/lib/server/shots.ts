@@ -2,6 +2,11 @@ import { createServerFn } from "@tanstack/react-start"
 import { db } from "@/db"
 import { shots, shotTasteTags, recipeGear } from "@/db/schema"
 import { eq, desc, and, inArray } from "drizzle-orm"
+import {
+  assertValidUpdate,
+  getShotUpdateErrors,
+  type ShotUpdateCandidate,
+} from "@/lib/update-validation"
 
 export const getShots = createServerFn({ method: "GET" }).handler(async () => {
   return db.query.shots.findMany({
@@ -90,22 +95,10 @@ export const createShot = createServerFn({ method: "POST" })
   })
 
 export const updateShot = createServerFn({ method: "POST" })
-  .validator(
-    (data: {
-      id: number
-      beanId?: number | null
-      recipeId?: number | null
-      doseGrams?: string | null
-      yieldGrams?: string | null
-      brewTimeSeconds?: number | null
-      grindSetting?: string | null
-      waterTempCelsius?: string | null
-      pressure?: string | null
-      rating?: number | null
-      notes?: string | null
-      tasteTagIds?: number[]
-    }) => data
-  )
+  .validator((data: ShotUpdateCandidate) => {
+    assertValidUpdate(getShotUpdateErrors(data))
+    return data
+  })
   .handler(async ({ data }) => {
     const { id, tasteTagIds, ...values } = data
     const [shot] = await db

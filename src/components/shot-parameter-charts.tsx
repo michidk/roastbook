@@ -24,23 +24,23 @@ type ShotParameterChartsProps = {
 const chartConfig = {
   dose: {
     label: "Dose (g)",
-    color: "oklch(var(--chart-1))",
+    color: "var(--chart-1)",
   },
   yield: {
     label: "Yield (g)",
-    color: "oklch(var(--chart-2))",
+    color: "var(--chart-2)",
   },
   grind: {
     label: "Grind",
-    color: "oklch(var(--chart-3))",
+    color: "var(--chart-3)",
   },
   time: {
     label: "Time (s)",
-    color: "oklch(var(--chart-4))",
+    color: "var(--chart-4)",
   },
   ratio: {
     label: "Ratio",
-    color: "oklch(var(--chart-5))",
+    color: "var(--chart-5)",
   },
 } satisfies ChartConfig
 

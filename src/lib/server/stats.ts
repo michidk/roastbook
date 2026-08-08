@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start"
 import { db } from "@/db"
-import { beans, gear, shots, cafeVisits, places, recipeGear } from "@/db/schema"
+import { fillDailyActivity } from "@/lib/stats-activity"
+import { normalizeRatingAverages, toNullableNumber } from "@/lib/stats-number"
+import { beans, gear, shots, cafeVisits, coffeeShops, recipeGear } from "@/db/schema"
 import { eq, count, sql, gte, desc, isNotNull, and } from "drizzle-orm"
 import { toDisplayableDatabaseError } from "@/lib/server/database-error"
 
@@ -17,14 +19,14 @@ export const getDashboardStats = createServerFn({ method: "GET" }).handler(
         .from(gear)
         .where(eq(gear.isArchived, false))
       const [visitsCount] = await db.select({ count: count() }).from(cafeVisits)
-      const [placesCount] = await db.select({ count: count() }).from(places)
+      const [coffeeShopsCount] = await db.select({ count: count() }).from(coffeeShops)
 
       return {
         totalShots: shotsCount.count,
         activeBeans: activeBeansCount.count,
         gearCount: gearCount.count,
         cafeVisits: visitsCount.count,
-        places: placesCount.count,
+        coffeeShops: coffeeShopsCount.count,
       }
     } catch (error) {
       throw await toDisplayableDatabaseError(error)
@@ -94,7 +96,7 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
 
       db
         .select({
-          totalGrams: sql<number>`coalesce(sum(${shots.doseGrams}::numeric), 0)::numeric`,
+          totalGrams: sql<string | number>`coalesce(sum(${shots.doseGrams}::numeric), 0)::numeric`,
           uniqueBeans: sql<number>`count(distinct ${shots.beanId})::int`,
         })
         .from(shots)
@@ -102,7 +104,7 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
 
       db
         .select({
-          avgRating: sql<number>`round(avg(${shots.rating})::numeric, 2)`,
+          avgRating: sql<string | number | null>`round(avg(${shots.rating})::numeric, 2)`,
           totalRated: sql<number>`count(${shots.rating})::int`,
           rating1: sql<number>`count(*) filter (where ${shots.rating} = 1)::int`,
           rating2: sql<number>`count(*) filter (where ${shots.rating} = 2)::int`,
@@ -129,7 +131,7 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
         .select({
           beanId: shots.beanId,
           beanName: beans.name,
-          avgRating: sql<number>`round(avg(${shots.rating})::numeric, 2)`,
+          avgRating: sql<string | number | null>`round(avg(${shots.rating})::numeric, 2)`,
           shotCount: sql<number>`count(*)::int`,
         })
         .from(shots)
@@ -170,10 +172,10 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
 
       db
         .select({
-          avgDose: sql<number>`round(avg(${shots.doseGrams}::numeric), 1)`,
-          avgYield: sql<number>`round(avg(${shots.yieldGrams}::numeric), 1)`,
-          avgTime: sql<number>`round(avg(${shots.brewTimeSeconds})::numeric, 0)::int`,
-          avgRatio: sql<number>`round(avg(${shots.yieldGrams}::numeric / nullif(${shots.doseGrams}::numeric, 0)), 2)`,
+          avgDose: sql<string | number | null>`round(avg(${shots.doseGrams}::numeric), 1)`,
+          avgYield: sql<string | number | null>`round(avg(${shots.yieldGrams}::numeric), 1)`,
+          avgTime: sql<string | number | null>`round(avg(${shots.brewTimeSeconds})::numeric, 0)::int`,
+          avgRatio: sql<string | number | null>`round(avg(${shots.yieldGrams}::numeric / nullif(${shots.doseGrams}::numeric, 0)), 2)`,
         })
         .from(shots)
         .where(and(isNotNull(shots.doseGrams), isNotNull(shots.yieldGrams))),
@@ -214,20 +216,20 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
         totalGramsUsed: Math.round(Number(totalBeansUsed[0]?.totalGrams) || 0),
         uniqueBeansUsed: totalBeansUsed[0]?.uniqueBeans || 0,
         topByShots: topBeansByShots,
-        topByRating: topBeansByRating,
+        topByRating: normalizeRatingAverages(topBeansByRating),
       },
       brewing: {
-        avgDose: brewingAverages[0]?.avgDose,
-        avgYield: brewingAverages[0]?.avgYield,
-        avgTime: brewingAverages[0]?.avgTime,
-        avgRatio: brewingAverages[0]?.avgRatio,
+        avgDose: toNullableNumber(brewingAverages[0]?.avgDose),
+        avgYield: toNullableNumber(brewingAverages[0]?.avgYield),
+        avgTime: toNullableNumber(brewingAverages[0]?.avgTime),
+        avgRatio: toNullableNumber(brewingAverages[0]?.avgRatio),
       },
       gear: {
         grinders: grinderUsage,
         machines: machineUsage,
       },
       ratings: {
-        average: ratingStats[0]?.avgRating ?? null,
+        average: toNullableNumber(ratingStats[0]?.avgRating),
         totalRated: ratingStats[0]?.totalRated ?? 0,
         distribution: {
           1: ratingStats[0]?.rating1 ?? 0,
@@ -237,7 +239,7 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
           5: ratingStats[0]?.rating5 ?? 0,
         },
       },
-      activity: recentActivity,
+      activity: fillDailyActivity(recentActivity, now),
     }
   }
 )
