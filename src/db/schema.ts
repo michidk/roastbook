@@ -191,7 +191,7 @@ export const recipeGearRelations = relations(recipeGear, ({ one }) => ({
   }),
 }))
 
-export const places = pgTable("places", {
+export const coffeeShops = pgTable("coffee_shops", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   address: text("address"),
@@ -202,19 +202,21 @@ export const places = pgTable("places", {
   website: text("website"),
   instagramHandle: text("instagram_handle"),
   notes: text("notes"),
+  rating: integer("rating"),
+  isFavorite: boolean("is_favorite").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 })
 
-export const placesRelations = relations(places, ({ many }) => ({
-  images: many(placeImages),
+export const coffeeShopsRelations = relations(coffeeShops, ({ many }) => ({
+  images: many(coffeeShopImages),
   cafeVisits: many(cafeVisits),
 }))
 
-export const placeImages = pgTable("place_images", {
+export const coffeeShopImages = pgTable("coffee_shop_images", {
   id: serial("id").primaryKey(),
-  placeId: integer("place_id")
-    .references(() => places.id, { onDelete: "cascade" })
+  coffeeShopId: integer("coffee_shop_id")
+    .references(() => coffeeShops.id, { onDelete: "cascade" })
     .notNull(),
   storagePath: text("storage_path").notNull(),
   originalFilename: text("original_filename"),
@@ -223,10 +225,10 @@ export const placeImages = pgTable("place_images", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
 
-export const placeImagesRelations = relations(placeImages, ({ one }) => ({
-  place: one(places, {
-    fields: [placeImages.placeId],
-    references: [places.id],
+export const coffeeShopImagesRelations = relations(coffeeShopImages, ({ one }) => ({
+  coffeeShop: one(coffeeShops, {
+    fields: [coffeeShopImages.coffeeShopId],
+    references: [coffeeShops.id],
   }),
 }))
 
@@ -317,8 +319,8 @@ export const shotTasteTagsRelations = relations(shotTasteTags, ({ one }) => ({
 
 export const cafeVisits = pgTable("cafe_visits", {
   id: serial("id").primaryKey(),
-  placeId: integer("place_id")
-    .references(() => places.id, { onDelete: "set null" }),
+  coffeeShopId: integer("coffee_shop_id")
+    .references(() => coffeeShops.id, { onDelete: "set null" }),
   beanId: integer("bean_id")
     .references(() => beans.id, { onDelete: "set null" }),
   drinkName: text("drink_name"),
@@ -333,9 +335,9 @@ export const cafeVisits = pgTable("cafe_visits", {
 })
 
 export const cafeVisitsRelations = relations(cafeVisits, ({ one, many }) => ({
-  place: one(places, {
-    fields: [cafeVisits.placeId],
-    references: [places.id],
+  coffeeShop: one(coffeeShops, {
+    fields: [cafeVisits.coffeeShopId],
+    references: [coffeeShops.id],
   }),
   bean: one(beans, {
     fields: [cafeVisits.beanId],

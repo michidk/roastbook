@@ -54,8 +54,22 @@
     {
       "idx": 7,
       "version": "7",
-      "when": 1781627322261,
+      "when": 1781949600000,
       "tag": "0007_opposite_leper_queen",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785951799307,
+      "tag": "0008_sweet_invaders",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1785954130289,
+      "tag": "0009_concerned_triathlon",
       "breakpoints": true
     }
   ]
