@@ -68,7 +68,7 @@ export function getErrorDisplayState(error: Error): ErrorDisplayState {
       lowerMessage.includes("relation \"beans\" does not exist") ||
       lowerMessage.includes("relation \"gear\" does not exist") ||
       lowerMessage.includes("relation \"cafe_visits\" does not exist") ||
-      lowerMessage.includes("relation \"places\" does not exist"))
+      lowerMessage.includes("relation \"coffee_shops\" does not exist"))
   ) {
     return {
       title: "Database not initialized",
@@ -120,7 +120,7 @@ export function toDisplayableError(error: unknown): Error {
     lowerMessage.includes("relation \"beans\" does not exist") ||
     lowerMessage.includes("relation \"gear\" does not exist") ||
     lowerMessage.includes("relation \"cafe_visits\" does not exist") ||
-    lowerMessage.includes("relation \"places\" does not exist")
+    lowerMessage.includes("relation \"coffee_shops\" does not exist")
   ) {
     return new Error(
       `${DB_NOT_INITIALIZED_PREFIX} Roastbook connected to PostgreSQL, but the app tables have not been created yet.`
