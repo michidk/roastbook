@@ -5,7 +5,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { InputField, SelectField, TextareaField } from "@/components/FormField"
+import { InputField, SelectField, TextareaField } from "@/components/form/form-field"
 import { getGearById, deleteGear, updateGear } from "@/lib/server/gear"
 import { getShotsByGear } from "@/lib/server/shots"
 import { ShotsTable } from "@/components/ShotsTable"
@@ -153,84 +153,94 @@ function GearDetailPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link to="/gear">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold">{gear.name}</h1>
-            {gear.isArchived && (
-              <Badge variant="secondary">Archived</Badge>
-            )}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 items-center gap-3">
+          <Button variant="ghost" size="icon" asChild>
+            <Link to="/gear" aria-label="Back to gear">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="min-w-0 break-words text-2xl font-bold">{gear.name}</h1>
+              {gear.isArchived && (
+                <Badge variant="secondary">Archived</Badge>
+              )}
+            </div>
+            <Badge variant="outline">{GEAR_TYPE_LABELS[gear.type]}</Badge>
           </div>
-          <Badge variant="outline">{GEAR_TYPE_LABELS[gear.type]}</Badge>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          type="button"
-          onClick={handleToggleArchive}
-        >
-          {gear.isArchived ? (
+        <div className="flex flex-wrap items-center gap-2 sm:ml-auto sm:justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            type="button"
+            onClick={handleToggleArchive}
+          >
+            {gear.isArchived ? (
+              <>
+                <ArchiveRestore className="h-4 w-4 mr-2" />
+                Unarchive
+              </>
+            ) : (
+              <>
+                <Archive className="h-4 w-4 mr-2" />
+                Archive
+              </>
+            )}
+          </Button>
+          {isEditing ? (
             <>
-              <ArchiveRestore className="h-4 w-4 mr-2" />
-              Unarchive
+              <Button
+                variant="outline"
+                type="button"
+                onClick={handleCancelEdit}
+                disabled={isSaving}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                form="gear-edit-form"
+                disabled={isSaving || !formData.name.trim() || !formData.type}
+              >
+                {isSaving ? "Saving..." : "Save"}
+              </Button>
             </>
           ) : (
             <>
-              <Archive className="h-4 w-4 mr-2" />
-              Archive
+              <Button variant="outline" size="sm" type="button" onClick={handleEditStart}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    type="button"
+                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    aria-label="Delete gear"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this gear?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will remove it from your shot records. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </>
           )}
-        </Button>
-        {isEditing ? (
-          <>
-            <Button
-              variant="outline"
-              type="button"
-              onClick={handleCancelEdit}
-              disabled={isSaving}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              form="gear-edit-form"
-              disabled={isSaving || !formData.name.trim() || !formData.type}
-            >
-              {isSaving ? "Saving..." : "Save"}
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button variant="outline" size="sm" type="button" onClick={handleEditStart}>
-              <Pencil className="h-4 w-4 mr-2" />
-              Edit
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="icon" type="button">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete this gear?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will remove it from your shot records. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </>
-        )}
+        </div>
       </div>
 
       {gear.images.length > 0 && !isEditing && (
@@ -411,7 +421,7 @@ function GearDetailPage() {
                     href={gear.productUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm text-primary hover:underline"
+                    className="flex min-h-11 items-center gap-2 rounded text-sm text-primary hover:underline"
                   >
                     <ExternalLink className="h-4 w-4" />
                     Product Page
@@ -422,7 +432,7 @@ function GearDetailPage() {
                     href={gear.manualUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm text-primary hover:underline"
+                    className="flex min-h-11 items-center gap-2 rounded text-sm text-primary hover:underline"
                   >
                     <ExternalLink className="h-4 w-4" />
                     Manual / Documentation

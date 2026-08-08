@@ -11,6 +11,7 @@ import { RouteError } from "@/components/route-error"
 import { ListPending } from "@/components/route-pending"
 import { EmptyState } from "@/components/EmptyState"
 import { thumbnailUrl } from "@/lib/image-url"
+import { ResilientImage } from "@/components/resilient-image"
 
 export const Route = createFileRoute("/beans/")({
   loader: () => getBeans(),
@@ -23,20 +24,23 @@ export const Route = createFileRoute("/beans/")({
 
 type Bean = Awaited<ReturnType<typeof getBeans>>[number]
 
-const roastGradients: Record<string, [string, string]> = {
-  light: ["#dba673", "#a06a3e"],
-  medium_light: ["#c4924f", "#7a5230"],
-  medium: ["#b07a45", "#6f4e37"],
-  medium_dark: ["#9a5e30", "#523019"],
-  dark: ["#7a4e2e", "#3f2614"],
+const roastGradients: Record<string, readonly [string, string]> = {
+  light: ["var(--chart-1)", "var(--accent-foreground)"],
+  medium_light: ["var(--chart-4)", "var(--coffee)"],
+  medium: ["var(--chart-4)", "var(--coffee)"],
+  medium_dark: ["var(--chart-3)", "var(--coffee)"],
+  dark: ["var(--coffee)", "var(--foreground)"],
 }
 
-const roastBadgeStyles: Record<string, { bg: string; fg: string; label: string }> = {
-  light: { bg: "#f6e8d4", fg: "#a26a30", label: "Light" },
-  medium_light: { bg: "#f3e4d0", fg: "#8a5a30", label: "Medium-light" },
-  medium: { bg: "#f3e4d0", fg: "#8a5a30", label: "Medium" },
-  medium_dark: { bg: "#e7d2bc", fg: "#5c3a22", label: "Medium-dark" },
-  dark: { bg: "#dac0a4", fg: "#42261a", label: "Dark" },
+const roastBadgeStyles: Record<
+  string,
+  { readonly className: string; readonly label: string }
+> = {
+  light: { className: "bg-secondary text-accent-foreground", label: "Light" },
+  medium_light: { className: "bg-accent text-accent-foreground", label: "Medium-light" },
+  medium: { className: "bg-accent text-coffee", label: "Medium" },
+  medium_dark: { className: "bg-coffee/20 text-coffee", label: "Medium-dark" },
+  dark: { className: "bg-coffee text-coffee-foreground", label: "Dark" },
 }
 
 function BeansPage() {
@@ -135,7 +139,7 @@ function BeanCard({ bean }: { bean: Bean }) {
     <Link
       to="/beans/$beanId"
       params={{ beanId: String(bean.id) }}
-      className="group block overflow-hidden rounded-3xl bg-card shadow-[0_8px_24px_-18px_rgba(60,42,30,0.45)] transition-transform hover:-translate-y-0.5"
+      className="group block overflow-hidden rounded-3xl bg-card shadow-coffee transition-transform hover:-translate-y-0.5"
     >
       <div
         className="relative h-36 overflow-hidden"
@@ -146,7 +150,7 @@ function BeanCard({ bean }: { bean: Bean }) {
         }}
       >
         {thumbnail && (
-          <img
+          <ResilientImage
             src={thumbnailUrl(thumbnail.storagePath)}
             alt=""
             loading="lazy"
@@ -158,8 +162,7 @@ function BeanCard({ bean }: { bean: Bean }) {
         )}
         {roastBadge && (
           <span
-            className="absolute left-3 top-3 rounded-xl px-2.5 py-1 text-xs font-bold"
-            style={{ background: roastBadge.bg, color: roastBadge.fg }}
+            className={`absolute left-3 top-3 rounded-xl px-2.5 py-1 text-xs font-bold ${roastBadge.className}`}
           >
             {roastBadge.label}
           </span>

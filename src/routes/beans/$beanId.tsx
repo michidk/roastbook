@@ -12,7 +12,8 @@ import { ShotsTable } from "@/components/ShotsTable"
 import { ShotParameterCharts } from "@/components/shot-parameter-charts"
 import { DeleteConfirmation } from "@/components/DeleteConfirmation"
 import { EntityImageGallery } from "@/components/entity-image-gallery"
-import { InputField, SelectField, TextareaField } from "@/components/FormField"
+import { InputField, SelectField, TextareaField } from "@/components/form/form-field"
+import { RoasterPicker } from "@/components/roasters/roaster-picker"
 import { BeanInfoDiffModal, type BeanFormData } from "@/components/BeanInfoDiffModal"
 import { toast } from "sonner"
 import { RouteError } from "@/components/route-error"
@@ -80,7 +81,6 @@ function BeanDetailPage() {
   const [suggestedData, setSuggestedData] = useState<ExtractedBeanInfo | null>(null)
   const [aiSource, setAiSource] = useState<"image" | "web">("web")
 
-  const roasterOptions = roasters.map((r) => ({ value: String(r.id), label: r.name }))
   const currentRoaster = bean?.roasterRef ?? null
 
   const weightStats = useMemo(() => {
@@ -377,15 +377,15 @@ function BeanDetailPage() {
                    required
                  />
 
-                 <SelectField
+                 <RoasterPicker
                     id="roasterId"
                     label="Roaster"
                     placeholder="Select roaster"
                     value={formData.roasterId}
                     onChange={(value) =>
-                      setFormData({ ...formData, roasterId: value ?? "" })
+                      setFormData({ ...formData, roasterId: value })
                     }
-                    options={roasterOptions}
+                    roasters={roasters}
                   />
 
                  <InputField

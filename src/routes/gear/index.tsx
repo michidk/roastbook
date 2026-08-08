@@ -13,6 +13,8 @@ import { RouteError } from "@/components/route-error"
 import { ListPending } from "@/components/route-pending"
 import { EmptyState } from "@/components/EmptyState"
 import { imageUrl } from "@/lib/image-url"
+import { ResilientImage } from "@/components/resilient-image"
+import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/gear/")({
   loader: () => getGear(),
@@ -70,7 +72,12 @@ function GearPage() {
         <>
           {activeGear.length > 0 && (
             <div className="@container">
-              <div className="grid gap-4 @sm:grid-cols-2 @lg:grid-cols-3">
+              <div
+                className={cn(
+                  "grid gap-4 sm:grid-cols-2",
+                  activeGear.length > 2 && "lg:grid-cols-3",
+                )}
+              >
                 {activeGear.map((item) => (
                   <GearCard key={item.id} item={item} />
                 ))}
@@ -92,7 +99,12 @@ function GearPage() {
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <div className="@container">
-                  <div className="grid gap-4 @sm:grid-cols-2 @lg:grid-cols-3">
+                  <div
+                    className={cn(
+                      "grid gap-4 sm:grid-cols-2",
+                      archivedGear.length > 2 && "lg:grid-cols-3",
+                    )}
+                  >
                     {archivedGear.map((item) => (
                       <GearCard key={item.id} item={item} />
                     ))}
@@ -115,7 +127,7 @@ function GearCard({ item }: { item: Awaited<ReturnType<typeof getGear>>[number] 
       <Card className="hover:bg-muted/50 transition-colors cursor-pointer h-full overflow-hidden">
         {thumbnail && (
           <div className="aspect-[4/3] overflow-hidden">
-            <img
+            <ResilientImage
               src={imageUrl(thumbnail.storagePath)}
               alt=""
               className="h-full w-full object-cover"
@@ -123,9 +135,9 @@ function GearCard({ item }: { item: Awaited<ReturnType<typeof getGear>>[number] 
           </div>
         )}
         <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base line-clamp-1">{item.name}</CardTitle>
-            <Badge variant="outline" className="text-xs">
+          <div className="flex items-start justify-between gap-3">
+            <CardTitle className="min-w-0 text-base">{item.name}</CardTitle>
+            <Badge variant="outline" className="shrink-0 text-xs">
               {typeLabels[item.type]}
             </Badge>
           </div>
@@ -137,7 +149,7 @@ function GearCard({ item }: { item: Awaited<ReturnType<typeof getGear>>[number] 
         </CardHeader>
         {item.notes && (
           <CardContent>
-            <p className="text-sm text-muted-foreground line-clamp-2">
+            <p className="line-clamp-3 text-sm text-muted-foreground">
               {item.notes}
             </p>
           </CardContent>

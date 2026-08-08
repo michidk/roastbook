@@ -206,7 +206,7 @@ const GEAR = [
   },
 ]
 
-const PLACES = [
+const COFFEE_SHOPS = [
   {
     name: "The Barn",
     address: "Auguststraße 58",
@@ -347,16 +347,16 @@ async function seed() {
   await db.insert(schema.shotTasteTags).values(shotTagData)
   console.log(`    ✓ ${shotTagData.length} shot taste tags`)
 
-  console.log("  → Inserting places...")
-  const insertedPlaces = await db.insert(schema.places).values(PLACES).returning()
-  console.log(`    ✓ ${insertedPlaces.length} places`)
+  console.log("  → Inserting coffee shops...")
+  const insertedCoffeeShops = await db.insert(schema.coffeeShops).values(COFFEE_SHOPS).returning()
+  console.log(`    ✓ ${insertedCoffeeShops.length} coffee shops`)
 
   console.log("  → Inserting cafe visits...")
   const visitData = []
   for (let i = 0; i < 12; i++) {
-    const place = randomElement(insertedPlaces)
+    const coffeeShop = randomElement(insertedCoffeeShops)
     visitData.push({
-      placeId: place.id,
+      coffeeShopId: coffeeShop.id,
       beanId: Math.random() > 0.7 ? randomElement(activeBeans)?.id ?? null : null,
       drinkName: randomElement(["Flat White", "Cortado", "Espresso", "Filter", "Cappuccino", "V60"]),
       drinkType: randomElement(["espresso", "filter", "milk"]),
@@ -402,7 +402,7 @@ Summary:
   - ${insertedBeans.length} beans (${insertedBeans.filter((b) => b.isArchived).length} archived)
   - ${insertedGear.length} gear items (${insertedGear.filter((g) => g.isArchived).length} archived)
   - ${insertedShots.length} shots
-  - ${insertedPlaces.length} places
+  - ${insertedCoffeeShops.length} coffee shops
   - ${insertedVisits.length} cafe visits
 `)
 

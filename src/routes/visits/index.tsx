@@ -37,7 +37,7 @@ function VisitsPage() {
           </p>
         </div>
         <Button asChild>
-          <Link to="/visits/new" search={{ placeId: undefined }}>
+          <Link to="/visits/new" search={{ coffeeShopId: undefined }}>
             <Plus className="h-4 w-4" />
             Log a visit
           </Link>
@@ -51,7 +51,7 @@ function VisitsPage() {
           description="Track your cafe visits and coffee experiences"
           actionLabel="Log a visit"
           actionHref="/visits/new"
-          actionSearch={{ placeId: undefined }}
+          actionSearch={{ coffeeShopId: undefined }}
         />
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -73,7 +73,7 @@ function VisitCard({ visit }: { visit: Visit }) {
     <Link
       to="/visits/$visitId"
       params={{ visitId: String(visit.id) }}
-      className="block rounded-3xl bg-card p-5 shadow-[0_8px_24px_-18px_rgba(60,42,30,0.45)] transition-transform hover:-translate-y-0.5"
+      className="block rounded-3xl bg-card p-5 shadow-coffee transition-transform hover:-translate-y-0.5"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -81,7 +81,7 @@ function VisitCard({ visit }: { visit: Visit }) {
             {visit.drinkName || "Coffee"}
           </p>
           <p className="mt-0.5 truncate text-sm text-muted-foreground">
-            {visit.place?.name ?? "Unknown café"} · {date}
+            {visit.coffeeShop?.name ?? "Unknown café"} · {date}
           </p>
         </div>
         {visit.drinkType && (
@@ -97,7 +97,7 @@ function VisitCard({ visit }: { visit: Visit }) {
             <Star
               key={n}
               className="h-4 w-4"
-              fill={n <= visit.rating! ? "currentColor" : "transparent"}
+              fill={n <= (visit.rating ?? 0) ? "currentColor" : "transparent"}
               strokeWidth={1.5}
             />
           ))}
@@ -125,7 +125,7 @@ function VisitCard({ visit }: { visit: Visit }) {
           {positiveTags.slice(0, 4).map((tt) => (
             <span
               key={tt.id}
-              className="rounded-xl bg-[#EAF0DC] px-2.5 py-1 text-xs font-semibold text-[#6B8A3D]"
+              className="rounded-xl bg-positive/15 px-2.5 py-1 text-xs font-semibold text-positive"
             >
               {tt.tasteTag.name}
             </span>
@@ -133,7 +133,7 @@ function VisitCard({ visit }: { visit: Visit }) {
           {negativeTags.slice(0, 2).map((tt) => (
             <span
               key={tt.id}
-              className="rounded-xl bg-[#F8E2DA] px-2.5 py-1 text-xs font-semibold text-[#C0573A]"
+              className="rounded-xl bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive"
             >
               {tt.tasteTag.name}
             </span>

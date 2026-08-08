@@ -6,6 +6,7 @@ import { getDashboardStats, getRecentShots } from "@/lib/server/stats"
 import { RouteError } from "@/components/route-error"
 import { RoutePending } from "@/components/route-pending"
 import { thumbnailUrl } from "@/lib/image-url"
+import { ResilientImage } from "@/components/resilient-image"
 
 export const Route = createFileRoute("/")({
   loader: async () => {
@@ -35,7 +36,7 @@ function Dashboard() {
       <header className="space-y-1">
         <p className="text-sm font-semibold text-muted-foreground">{today}</p>
         <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
-          Let's brew something good
+          Let's brew <span className="whitespace-nowrap">something good</span>
         </h1>
       </header>
 
@@ -94,7 +95,7 @@ function Dashboard() {
                     className="flex items-center gap-3.5 rounded-2xl bg-secondary px-4 py-3 transition-colors hover:bg-accent/70"
                   >
                     {beanImage ? (
-                      <img
+                      <ResilientImage
                         src={thumbnailUrl(beanImage.storagePath)}
                         alt=""
                         className="h-11 w-11 shrink-0 rounded-xl object-cover"
@@ -134,7 +135,7 @@ function Dashboard() {
           <CardContent className="space-y-2.5">
             <QuickAddRow icon={Bean} label="Add beans" href="/beans/new" />
             <QuickAddRow icon={Cog} label="Add gear" href="/gear/new" />
-            <QuickAddRow icon={MapPin} label="Add a café" href="/places/new" />
+            <QuickAddRow icon={MapPin} label="Add a coffee shop" href="/coffee-shops/new" />
           </CardContent>
         </Card>
       </section>
@@ -153,7 +154,7 @@ function HeroStatCard({
 }) {
   return (
     <Link to={href} className="block">
-      <div className="rounded-3xl bg-coffee p-6 text-coffee-foreground shadow-[0_10px_30px_-18px_rgba(60,42,30,0.55)] transition-transform hover:-translate-y-0.5">
+      <div className="rounded-3xl bg-coffee p-6 text-coffee-foreground shadow-coffee-strong transition-transform hover:-translate-y-0.5">
         <div className="font-display text-5xl font-extrabold leading-none">
           {value}
         </div>
@@ -216,11 +217,11 @@ function QuickAddRow({
 
 function BeanSwatch({ seed }: { seed: number }) {
   const palettes = [
-    ["#b07a45", "#6f4e37"],
-    ["#7a4e2e", "#3f2614"],
-    ["#a06a3e", "#523019"],
-    ["#9a6a3e", "#5c3a22"],
-    ["#8a5a30", "#452916"],
+    ["var(--chart-4)", "var(--coffee)"],
+    ["var(--coffee)", "var(--foreground)"],
+    ["var(--chart-1)", "var(--coffee)"],
+    ["var(--chart-3)", "var(--coffee)"],
+    ["var(--accent-foreground)", "var(--foreground)"],
   ] as const
   const [light, dark] = palettes[seed % palettes.length]
   return (

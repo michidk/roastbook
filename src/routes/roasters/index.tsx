@@ -1,8 +1,10 @@
+import { useMemo, useState } from "react"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { Plus, Store } from "lucide-react"
+import { Plus, Search, Store } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import {
   Table,
   TableBody,
@@ -15,6 +17,8 @@ import { getRoasters } from "@/lib/server/roasters"
 import { RouteError } from "@/components/route-error"
 import { ListPending } from "@/components/route-pending"
 import { EmptyState } from "@/components/EmptyState"
+import { SortableTableHead } from "@/components/sortable-table-head"
+import { PaginationControls } from "@/components/pagination-controls"
 
 export const Route = createFileRoute("/roasters/")({
   loader: () => getRoasters(),
@@ -27,9 +31,73 @@ export const Route = createFileRoute("/roasters/")({
 
 type Roaster = Awaited<ReturnType<typeof getRoasters>>[number]
 
+const PAGE_SIZE = 25
+
+type SortKey = "name" | "location" | "beans"
+type SortDirection = "asc" | "desc"
+
+function getRoasterLocation(roaster: Roaster): string {
+  return [roaster.location, roaster.country].filter(Boolean).join(", ")
+}
+
 function RoastersPage() {
   const roasters = Route.useLoaderData()
   const navigate = useNavigate()
+  const [search, setSearch] = useState("")
+  const [sortKey, setSortKey] = useState<SortKey>("name")
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
+  const [page, setPage] = useState(1)
+
+  // Computed once from the complete, unfiltered list so columns never
+  // flicker in/out while searching or paginating.
+  const hasLocation = useMemo(
+    () => roasters.some((roaster) => getRoasterLocation(roaster).length > 0),
+    [roasters],
+  )
+  const hasNotes = useMemo(() => roasters.some((roaster) => Boolean(roaster.notes)), [roasters])
+
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase()
+    if (!query) return roasters
+    return roasters.filter((roaster) => roaster.name.toLowerCase().includes(query))
+  }, [roasters, search])
+
+  const sorted = useMemo(() => {
+    const copy = [...filtered]
+    copy.sort((a, b) => {
+      let cmp = 0
+      switch (sortKey) {
+        case "name":
+          cmp = a.name.localeCompare(b.name)
+          break
+        case "location":
+          cmp = getRoasterLocation(a).localeCompare(getRoasterLocation(b))
+          break
+        case "beans":
+          cmp = (a.beans?.length ?? 0) - (b.beans?.length ?? 0)
+          break
+      }
+      return sortDirection === "asc" ? cmp : -cmp
+    })
+    return copy
+  }, [filtered, sortKey, sortDirection])
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const showPagination = sorted.length > PAGE_SIZE
+  const paginated = showPagination
+    ? sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+    : sorted
+
+  const handleSort = (key: SortKey) => {
+    setPage(1)
+    if (sortKey === key) {
+      setSortDirection((direction) => (direction === "asc" ? "desc" : "asc"))
+    } else {
+      setSortKey(key)
+      setSortDirection("asc")
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -60,31 +128,82 @@ function RoastersPage() {
         />
       ) : (
         <Card>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead className="text-right">Beans</TableHead>
-                  <TableHead>Notes</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {roasters.map((roaster) => (
-                  <RoasterRow
-                    key={roaster.id}
-                    roaster={roaster}
-                    onSelect={() =>
-                      navigate({
-                        to: "/roasters/$roasterId",
-                        params: { roasterId: String(roaster.id) },
-                      })
-                    }
-                  />
-                ))}
-              </TableBody>
-            </Table>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative w-full sm:max-w-xs">
+                <Search
+                  className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <Input
+                  type="search"
+                  value={search}
+                  onChange={(event) => {
+                    setSearch(event.target.value)
+                    setPage(1)
+                  }}
+                  placeholder="Search roasters by name…"
+                  aria-label="Search roasters by name"
+                  className="pl-8"
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {sorted.length} roaster{sorted.length === 1 ? "" : "s"}
+              </p>
+            </div>
+
+            {sorted.length === 0 ? (
+              <p className="py-4 text-sm text-muted-foreground">No roasters match “{search}”.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <SortableTableHead
+                      label="Name"
+                      active={sortKey === "name"}
+                      direction={sortDirection}
+                      onSort={() => handleSort("name")}
+                    />
+                    {hasLocation && (
+                      <SortableTableHead
+                        label="Location"
+                        active={sortKey === "location"}
+                        direction={sortDirection}
+                        onSort={() => handleSort("location")}
+                      />
+                    )}
+                    <SortableTableHead
+                      label="Beans"
+                      align="right"
+                      active={sortKey === "beans"}
+                      direction={sortDirection}
+                      onSort={() => handleSort("beans")}
+                    />
+                    {hasNotes && <TableHead>Notes</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginated.map((roaster) => (
+                    <RoasterRow
+                      key={roaster.id}
+                      roaster={roaster}
+                      hasLocation={hasLocation}
+                      hasNotes={hasNotes}
+                      onSelect={() =>
+                        navigate({
+                          to: "/roasters/$roasterId",
+                          params: { roasterId: String(roaster.id) },
+                        })
+                      }
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+
+            {showPagination && (
+              <PaginationControls page={currentPage} totalPages={totalPages} onPageChange={setPage} />
+            )}
           </CardContent>
         </Card>
       )}
@@ -94,20 +213,38 @@ function RoastersPage() {
 
 function RoasterRow({
   roaster,
+  hasLocation,
+  hasNotes,
   onSelect,
 }: {
   roaster: Roaster
+  hasLocation: boolean
+  hasNotes: boolean
   onSelect: () => void
 }) {
   const beanCount = roaster.beans?.length ?? 0
-  const location = [roaster.location, roaster.country].filter(Boolean).join(", ")
+  const location = getRoasterLocation(roaster)
 
   return (
-    <TableRow className="cursor-pointer" onClick={onSelect}>
+    <TableRow
+      tabIndex={0}
+      role="link"
+      aria-label={`View ${roaster.name}`}
+      onClick={onSelect}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault()
+          onSelect()
+        }
+      }}
+      className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+    >
       <TableCell className="font-display font-bold text-foreground">
         {roaster.name}
       </TableCell>
-      <TableCell className="text-muted-foreground">{location || "—"}</TableCell>
+      {hasLocation && (
+        <TableCell className="text-muted-foreground">{location || "—"}</TableCell>
+      )}
       <TableCell className="text-right">
         {beanCount > 0 ? (
           <Badge variant="secondary">{beanCount}</Badge>
@@ -115,9 +252,11 @@ function RoasterRow({
           <span className="text-muted-foreground">—</span>
         )}
       </TableCell>
-      <TableCell className="max-w-[420px] truncate text-muted-foreground">
-        {roaster.notes || "—"}
-      </TableCell>
+      {hasNotes && (
+        <TableCell className="max-w-[420px] truncate text-muted-foreground">
+          {roaster.notes || "—"}
+        </TableCell>
+      )}
     </TableRow>
   )
 }

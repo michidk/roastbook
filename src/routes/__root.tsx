@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
+import { ThemeProvider } from 'next-themes'
 
 import '../styles.css'
 import { AppNavbar } from '@/components/app-navbar'
@@ -16,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
 import { getErrorDisplayState } from '@/lib/error-display'
+import { RouteNotFound } from '@/components/route-not-found'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -23,10 +25,10 @@ export const Route = createRootRoute({
       {
         charSet: 'utf-8',
       },
-      {
-        name: 'viewport',
-        content: 'width=device-width, initial-scale=1',
-      },
+          {
+            name: 'viewport',
+            content: 'width=device-width, initial-scale=1, viewport-fit=cover',
+          },
       {
         title: 'Roastbook',
       },
@@ -50,27 +52,33 @@ export const Route = createRootRoute({
   component: RootComponent,
   shellComponent: RootDocument,
   errorComponent: RootErrorComponent,
+  notFoundComponent: () => <RouteNotFound />,
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
       <body>
-        {children}
-        <TanStackDevtools
-          config={{
-            position: 'bottom-right',
-          }}
-          plugins={[
-            {
-              name: 'Tanstack Router',
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
-        />
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          {children}
+          {import.meta.env.DEV ? (
+            <TanStackDevtools
+              config={{
+                hideUntilHover: true,
+                position: 'middle-right',
+              }}
+              plugins={[
+                {
+                  name: 'Tanstack Router',
+                  render: <TanStackRouterDevtoolsPanel />,
+                },
+              ]}
+            />
+          ) : null}
+        </ThemeProvider>
         <Scripts />
       </body>
     </html>
@@ -83,9 +91,12 @@ function RootErrorComponent({ error }: { error: Error }) {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-[100dvh] flex flex-col">
         <AppNavbar />
-        <main id="main-content" className="flex-1 p-4">
+        <main
+          id="main-content"
+          className="flex-1 p-4 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-4"
+        >
           <div className="flex items-center justify-center min-h-[50vh]">
             <Card className="max-w-md w-full">
               <CardHeader className="text-center">
@@ -137,11 +148,11 @@ function RootErrorComponent({ error }: { error: Error }) {
 function RootComponent() {
   return (
     <TooltipProvider>
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-[100dvh] flex flex-col">
         <AppNavbar />
         <main
           id="main-content"
-          className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 pb-24 md:px-8 md:py-8 md:pb-8"
+          className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:px-8 md:py-8 md:pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8"
         >
           <Outlet />
         </main>

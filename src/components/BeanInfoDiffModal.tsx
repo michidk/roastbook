@@ -187,13 +187,13 @@ export function BeanInfoDiffModal({
           </DialogTitle>
           <DialogDescription>
             {newFieldCount > 0 && (
-              <span className="text-green-600 dark:text-green-400">
+              <span className="text-positive">
                 {newFieldCount} new field{newFieldCount !== 1 ? "s" : ""}
               </span>
             )}
             {newFieldCount > 0 && conflictCount > 0 && " · "}
             {conflictCount > 0 && (
-              <span className="text-amber-600 dark:text-amber-400">
+              <span className="text-primary">
                 {conflictCount} field{conflictCount !== 1 ? "s" : ""} with existing values
               </span>
             )}
@@ -277,7 +277,7 @@ function DiffRow({ diff, selected, onToggle }: DiffRowProps) {
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">{diff.field.label}</span>
             {diff.hasConflict && (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+              <span className="rounded bg-primary/15 px-1.5 py-0.5 text-xs text-primary">
                 has value
               </span>
             )}
@@ -293,7 +293,7 @@ function DiffRow({ diff, selected, onToggle }: DiffRowProps) {
                 <span className="text-foreground truncate max-w-[40%]">{displaySuggested}</span>
               </>
             ) : (
-              <span className="text-green-600 dark:text-green-400 truncate">
+              <span className="truncate text-positive">
                 {displaySuggested}
               </span>
             )}

@@ -29,8 +29,13 @@ export function DeleteConfirmation({
     <AlertDialog>
       <AlertDialogTrigger asChild>
         {trigger ?? (
-          <Button variant="ghost" size="icon">
-            <Trash2 className="h-4 w-4" />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+            aria-label={title}
+          >
+            <Trash2 aria-hidden className="h-4 w-4" />
           </Button>
         )}
       </AlertDialogTrigger>
