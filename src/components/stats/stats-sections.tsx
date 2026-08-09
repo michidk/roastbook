@@ -7,6 +7,7 @@ import type { getDetailedStats } from "@/lib/server/stats"
 import { Star } from "lucide-react"
 import { gearChartConfig, ratingChartConfig } from "./stats-chart-config"
 import { StatsActivityCard } from "./stats-activity-card"
+import { StatsVisitsCard } from "./stats-visits-card"
 
 type DetailedStats = Awaited<ReturnType<typeof getDetailedStats>>
 
@@ -135,6 +136,8 @@ export function StatsSections({ stats }: { readonly stats: DetailedStats }) {
           </Card>
         )}
       </div>
+
+      <StatsVisitsCard visits={stats.visits} places={stats.places} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         {gearData.grinders.length > 0 && (
