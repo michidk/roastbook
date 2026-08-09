@@ -1,6 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&display=swap");
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -40,6 +42,7 @@
   --color-positive: var(--positive);
   --color-positive-foreground: var(--positive-foreground);
   --shadow-coffee: var(--coffee-shadow);
+  --shadow-coffee-inline: var(--coffee-shadow-inline);
   --shadow-coffee-strong: var(--coffee-shadow-strong);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -59,7 +62,7 @@
     --popover: #ffffff;
     --popover-foreground: #3a2a1e;
     --primary: #d2873e;
-    --primary-foreground: #ffffff;
+    --primary-foreground: #3a2a1e;
     --secondary: #fbf5eb;
     --secondary-foreground: #3a2a1e;
     --muted: #fbf5eb;
@@ -68,8 +71,8 @@
     --accent-foreground: #8a5a30;
     --destructive: #c0573a;
     --border: #ead9bf;
-    --input: #ead9bf;
-    --ring: #d2873e;
+    --input: #9f7548;
+    --ring: #9f7548;
     --chart-1: #d2873e;
     --chart-2: #6f4e37;
     --chart-3: #8a5a30;
@@ -84,12 +87,13 @@
     --positive: #6b8a3d;
     --positive-foreground: #eaf0dc;
     --coffee-shadow: 0 8px 24px -18px rgb(60 42 30 / 45%);
+    --coffee-shadow-inline: -8px 0 16px -10px rgb(60 42 30 / 50%);
     --coffee-shadow-strong: 0 10px 30px -18px rgb(60 42 30 / 55%);
     /* Sidebar (dark coffee for any future drawer) */
     --sidebar: #6f4e37;
     --sidebar-foreground: #f6eddf;
     --sidebar-primary: #d2873e;
-    --sidebar-primary-foreground: #ffffff;
+    --sidebar-primary-foreground: #3a2a1e;
     --sidebar-accent: #523823;
     --sidebar-accent-foreground: #f6eddf;
     --sidebar-border: #523823;
@@ -113,7 +117,7 @@
     --accent-foreground: #f3e4d0;
     --destructive: #c0573a;
     --border: #3c2e20;
-    --input: #3c2e20;
+    --input: #9f7548;
     --ring: #d2873e;
     --chart-1: #d2873e;
     --chart-2: #b07a45;
@@ -127,6 +131,7 @@
     --positive: #8aa850;
     --positive-foreground: #1f1a14;
     --coffee-shadow: 0 8px 24px -18px rgb(0 0 0 / 55%);
+    --coffee-shadow-inline: -8px 0 16px -10px rgb(0 0 0 / 60%);
     --coffee-shadow-strong: 0 10px 30px -18px rgb(0 0 0 / 65%);
     --sidebar: #2a2219;
     --sidebar-foreground: #f6eddf;
@@ -170,6 +175,131 @@
 
 .roastbook-map-popup.maplibregl-popup-anchor-right .maplibregl-popup-tip {
   border-left-color: var(--popover);
+}
+
+.roastbook-visits-map .maplibregl-canvas {
+  filter: sepia(0.22) saturate(0.72) brightness(1.04);
+}
+
+.dark .roastbook-visits-map .maplibregl-canvas {
+  filter: sepia(0.18) saturate(0.7) brightness(0.72);
+}
+
+.roastbook-visits-map .maplibregl-ctrl-group {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  box-shadow: var(--coffee-shadow);
+}
+
+.roastbook-visits-map .maplibregl-ctrl-group button {
+  background-color: transparent;
+}
+
+.roastbook-visits-map .maplibregl-ctrl-group button:hover {
+  background-color: var(--secondary);
+}
+
+.roastbook-visits-map-marker {
+  position: relative;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--coffee-foreground);
+  transition: transform 150ms ease-out;
+}
+
+.roastbook-visits-map-marker:hover,
+.roastbook-visits-map-marker:focus-visible,
+.roastbook-visits-map-marker[data-selected="true"] {
+  transform: translateY(-3px) scale(1.08);
+}
+
+.roastbook-visits-map-marker[data-variant="favorite"] {
+  z-index: 2;
+}
+
+.roastbook-visits-map-marker[data-selected="true"] {
+  z-index: 3;
+}
+
+.roastbook-visits-map-marker:focus-visible {
+  border-radius: var(--radius);
+  outline: 3px solid color-mix(in srgb, var(--ring) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.roastbook-visits-map-marker-pin {
+  pointer-events: none;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 3px solid var(--card);
+  border-radius: 13px 13px 13px 4px;
+  background: var(--coffee);
+  box-shadow: var(--coffee-shadow-strong);
+  transform: rotate(-45deg);
+  transition: background-color 200ms ease-in-out, box-shadow 200ms ease-in-out;
+}
+
+.roastbook-visits-map-marker-pin svg {
+  width: 18px;
+  height: 18px;
+  transform: rotate(45deg);
+}
+
+.roastbook-visits-map-marker[data-variant="favorite"] .roastbook-visits-map-marker-pin {
+  border-color: var(--primary);
+  background: var(--ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 28%, transparent), var(--coffee-shadow-strong);
+}
+
+.roastbook-visits-map-marker[data-variant="discovered"] {
+  color: var(--coffee);
+}
+
+.roastbook-visits-map-marker[data-variant="discovered"] .roastbook-visits-map-marker-pin {
+  border-color: var(--coffee);
+  background: var(--card);
+}
+
+.roastbook-visits-map-marker-favorite {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  width: 17px;
+  height: 17px;
+  place-items: center;
+  border: 2px solid var(--card);
+  border-radius: 999px;
+  background: var(--destructive);
+  color: var(--card);
+  box-shadow: var(--coffee-shadow);
+}
+
+.roastbook-visits-map-marker-favorite svg {
+  width: 9px;
+  height: 9px;
+}
+
+.roastbook-visits-map-inspector {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 200ms ease-in-out, transform 200ms ease-in-out;
+}
+
+@starting-style {
+  .roastbook-visits-map-inspector {
+    opacity: 0;
+    transform: translateY(8px);
+  }
 }
 
 @media (max-width: 639px), (pointer: coarse) {

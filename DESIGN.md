@@ -18,6 +18,7 @@ Roastbook should feel like a calm, tactile coffee journal: warm paper beneath cr
 | Primary action | `--primary` | `#d2873e` | `#d2873e` | Calls to action and focus |
 | Coffee surface | `--coffee` | `#6f4e37` | `#b07a45` | Hero metrics and coffee identity |
 | Border | `--border` | `#ead9bf` | `#3c2e20` | Input and structural boundaries |
+| Control boundary | `--input` | `#9f7548` | `#9f7548` | Form-control outlines with at least 3:1 adjacent contrast |
 | Destructive | `--destructive` | `#c0573a` | `#c0573a` | Irreversible actions and errors |
 | Positive | `--positive` | `#6b8a3d` | `#8aa850` | Success and healthy status |
 
@@ -85,16 +86,35 @@ Roastbook should feel like a calm, tactile coffee journal: warm paper beneath cr
 - **Accessibility**: visible summary or text equivalent accompanies charts and maps.
 - **Layout**: plot containers always have an explicit height and width.
 
+### Café explorer map
+- **Structure**: warm-toned MapLibre surface, persistent saved/discovered legend, 44px custom café markers, search control, and a React-rendered place inspector anchored inside the map.
+- **Variants**: saved places use the filled coffee marker; OpenStreetMap discoveries use the cream outlined marker.
+- **States**: loading, ready, search loading, selected saved place, selected discovery, added discovery, no results, and unavailable.
+- **Accessibility**: every marker is a named button, selection is mirrored in the inspector, map search has a persistent label and live status, and every primary action retains a 44px target.
+- **Interaction**: marker selection uses the standard 200ms state transition and a short camera ease; reduced motion makes camera changes immediate. The inspector appears through opacity and transform only.
+- **Layout**: the map owns a fixed responsive height; the inspector spans the lower map edge on mobile and becomes a compact lower-left card from `sm` upward.
+
 ### Form field
 - **Structure**: persistent label, native/shadcn control, optional helper or error.
 - **States**: default, focus, disabled, invalid, loading where relevant.
 - **Accessibility**: deterministic server/client markup, label association, visible focus, and no hidden caret.
 
+### Picture uploader
+- **Structure**: preview grid, mobile-safe file picker, dashed drop target, explicit clipboard action, URL input, and contextual helper/status copy.
+- **States**: empty, drag-active, queued previews, URL downloading, clipboard unavailable, invalid file, and ready.
+- **Accessibility**: every action is keyboard reachable, the drop target opens the native picker, status changes are announced, and coarse-pointer controls retain a 44px minimum target.
+- **Interaction**: dropping, selecting, pasting, and URL import all feed the same preview queue; color and border transitions use the standard motion token without decorative animation.
+
 ### Mobile bottom navigation
-- **Structure**: four destinations plus centered create action.
+- **Structure**: three primary destinations, a centered create action, and a More menu for secondary destinations.
 - **States**: default, active, focus, menu open.
 - **Accessibility**: full-width touch zones, visible labels, 44px minimum actionable region.
 - **Layout**: fixed to the viewport; development tooling must never overlap or intercept it.
+
+### Navigation overflow menu
+- **Structure**: a labeled More trigger and a compact list of icon-led links to Roasters, Gear, Recipes, Stats, and Settings on desktop and mobile.
+- **States**: default, hover, focus, open, and active when the current route is inside the menu.
+- **Accessibility**: uses the shared dropdown primitive, exposes the active destination through the trigger, and preserves 44px mobile menu targets.
 
 ### Responsive record list
 - **Structure**: compact cards on mobile and a shared data table from the `md` breakpoint upward.
@@ -115,6 +135,7 @@ Roastbook should feel like a calm, tactile coffee journal: warm paper beneath cr
 Roastbook uses a mixed strategy: cream/card tonal shifts for hierarchy, coffee-tinted soft shadows for elevation, and borders for controls or structural separation. Errors and empty states remain integrated within the same card geometry instead of introducing unrelated alert styling.
 
 - `--coffee-shadow` is the standard card elevation.
+- `--coffee-shadow-inline` gives attached trailing actions a coffee-tinted shadow toward their input content.
 - `--coffee-shadow-strong` is reserved for coffee-colored focal surfaces.
 
 ## 8. Accessibility Constraints & Accepted Debt
