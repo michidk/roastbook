@@ -1,18 +1,7 @@
-import { drizzle } from "drizzle-orm/postgres-js"
 import { inArray } from "drizzle-orm"
-import postgres from "postgres"
 import * as schema from "../src/db/schema"
 import { normalizeForComparison } from "../src/lib/utils"
-
-const connectionString = process.env.DATABASE_URL
-
-if (!connectionString) {
-  console.error("DATABASE_URL environment variable is required")
-  process.exit(1)
-}
-
-const client = postgres(connectionString)
-const db = drizzle(client, { schema })
+import { client, db } from "./database"
 
 const MERGE_FLAG = "--merge"
 const shouldMerge = process.argv.includes(MERGE_FLAG)
