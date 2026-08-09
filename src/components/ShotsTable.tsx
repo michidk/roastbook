@@ -16,6 +16,10 @@ import { ResilientImage } from "@/components/resilient-image"
 import { SortableTableHead } from "@/components/sortable-table-head"
 import { PaginationControls } from "@/components/pagination-controls"
 import { formatDate } from "@/lib/utils"
+import {
+  useSortablePagination,
+  type SortDirection,
+} from "@/hooks/use-sortable-pagination"
 
 type Shot = {
   id: number
@@ -46,7 +50,6 @@ interface ShotsTableProps {
 const PAGE_SIZE = 25
 
 type SortKey = "date" | "bean" | "dose" | "yield" | "time" | "rating"
-type SortDirection = "asc" | "desc"
 
 function getBeanThumbnail(bean: Shot["bean"]): string | null {
   if (!bean?.images?.length) return null
@@ -99,11 +102,53 @@ function compareNullableString(
   return direction === "asc" ? cmp : -cmp
 }
 
+function compareShots(
+  left: Shot,
+  right: Shot,
+  key: SortKey,
+  direction: SortDirection,
+): number {
+  switch (key) {
+    case "date": {
+      const difference =
+        new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime()
+      return direction === "asc" ? difference : -difference
+    }
+    case "bean":
+      return compareNullableString(
+        left.bean?.name ?? null,
+        right.bean?.name ?? null,
+        direction,
+      )
+    case "dose":
+      return compareNullableNumber(
+        parseNullableFloat(left.doseGrams),
+        parseNullableFloat(right.doseGrams),
+        direction,
+      )
+    case "yield":
+      return compareNullableNumber(
+        parseNullableFloat(left.yieldGrams),
+        parseNullableFloat(right.yieldGrams),
+        direction,
+      )
+    case "time":
+      return compareNullableNumber(
+        left.brewTimeSeconds,
+        right.brewTimeSeconds,
+        direction,
+      )
+    case "rating":
+      return compareNullableNumber(left.rating, right.rating, direction)
+  }
+}
+
+function getShotSortDirection(key: SortKey): SortDirection {
+  return key === "date" || key === "rating" ? "desc" : "asc"
+}
+
 export function ShotsTable({ shots, hideBean, hideGear }: ShotsTableProps) {
   const [search, setSearch] = useState("")
-  const [sortKey, setSortKey] = useState<SortKey>("date")
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc")
-  const [page, setPage] = useState(1)
 
   // Computed once from the complete, unfiltered list so columns never
   // flicker in/out while searching or paginating.
@@ -118,55 +163,24 @@ export function ShotsTable({ shots, hideBean, hideGear }: ShotsTableProps) {
     return shots.filter((shot) => shot.bean?.name.toLowerCase().includes(query))
   }, [shots, search])
 
-  const sorted = useMemo(() => {
-    const copy = [...filtered]
-    copy.sort((a, b) => {
-      switch (sortKey) {
-        case "date": {
-          const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-          return sortDirection === "asc" ? diff : -diff
-        }
-        case "bean":
-          return compareNullableString(a.bean?.name ?? null, b.bean?.name ?? null, sortDirection)
-        case "dose":
-          return compareNullableNumber(
-            parseNullableFloat(a.doseGrams),
-            parseNullableFloat(b.doseGrams),
-            sortDirection,
-          )
-        case "yield":
-          return compareNullableNumber(
-            parseNullableFloat(a.yieldGrams),
-            parseNullableFloat(b.yieldGrams),
-            sortDirection,
-          )
-        case "time":
-          return compareNullableNumber(a.brewTimeSeconds, b.brewTimeSeconds, sortDirection)
-        case "rating":
-          return compareNullableNumber(a.rating, b.rating, sortDirection)
-        default:
-          return 0
-      }
-    })
-    return copy
-  }, [filtered, sortKey, sortDirection])
-
-  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
-  const currentPage = Math.min(page, totalPages)
-  const showPagination = sorted.length > PAGE_SIZE
-  const paginated = showPagination
-    ? sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
-    : sorted
-
-  const handleSort = (key: SortKey) => {
-    setPage(1)
-    if (sortKey === key) {
-      setSortDirection((direction) => (direction === "asc" ? "desc" : "asc"))
-    } else {
-      setSortKey(key)
-      setSortDirection(key === "date" || key === "rating" ? "desc" : "asc")
-    }
-  }
+  const {
+    currentPage,
+    handleSort,
+    paginated,
+    setPage,
+    showPagination,
+    sortDirection,
+    sorted,
+    sortKey,
+    totalPages,
+  } = useSortablePagination<Shot, SortKey>({
+    items: filtered,
+    initialSortKey: "date",
+    initialSortDirection: "desc",
+    pageSize: PAGE_SIZE,
+    compare: compareShots,
+    directionForKey: getShotSortDirection,
+  })
 
   if (shots.length === 0) {
     return <p className="text-sm text-muted-foreground py-4">No shots recorded yet.</p>

@@ -19,6 +19,10 @@ import { ListPending } from "@/components/route-pending"
 import { EmptyState } from "@/components/EmptyState"
 import { SortableTableHead } from "@/components/sortable-table-head"
 import { PaginationControls } from "@/components/pagination-controls"
+import {
+  useSortablePagination,
+  type SortDirection,
+} from "@/hooks/use-sortable-pagination"
 
 export const Route = createFileRoute("/roasters/")({
   loader: () => getRoasters(),
@@ -34,19 +38,40 @@ type Roaster = Awaited<ReturnType<typeof getRoasters>>[number]
 const PAGE_SIZE = 25
 
 type SortKey = "name" | "location" | "beans"
-type SortDirection = "asc" | "desc"
 
 function getRoasterLocation(roaster: Roaster): string {
   return [roaster.location, roaster.country].filter(Boolean).join(", ")
+}
+
+function compareRoasters(
+  left: Roaster,
+  right: Roaster,
+  key: SortKey,
+  direction: SortDirection,
+): number {
+  let comparison = 0
+  switch (key) {
+    case "name":
+      comparison = left.name.localeCompare(right.name)
+      break
+    case "location":
+      comparison = getRoasterLocation(left).localeCompare(getRoasterLocation(right))
+      break
+    case "beans":
+      comparison = (left.beans?.length ?? 0) - (right.beans?.length ?? 0)
+      break
+  }
+  return direction === "asc" ? comparison : -comparison
+}
+
+function getRoasterSortDirection(): SortDirection {
+  return "asc"
 }
 
 function RoastersPage() {
   const roasters = Route.useLoaderData()
   const navigate = useNavigate()
   const [search, setSearch] = useState("")
-  const [sortKey, setSortKey] = useState<SortKey>("name")
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
-  const [page, setPage] = useState(1)
 
   // Computed once from the complete, unfiltered list so columns never
   // flicker in/out while searching or paginating.
@@ -62,42 +87,24 @@ function RoastersPage() {
     return roasters.filter((roaster) => roaster.name.toLowerCase().includes(query))
   }, [roasters, search])
 
-  const sorted = useMemo(() => {
-    const copy = [...filtered]
-    copy.sort((a, b) => {
-      let cmp = 0
-      switch (sortKey) {
-        case "name":
-          cmp = a.name.localeCompare(b.name)
-          break
-        case "location":
-          cmp = getRoasterLocation(a).localeCompare(getRoasterLocation(b))
-          break
-        case "beans":
-          cmp = (a.beans?.length ?? 0) - (b.beans?.length ?? 0)
-          break
-      }
-      return sortDirection === "asc" ? cmp : -cmp
-    })
-    return copy
-  }, [filtered, sortKey, sortDirection])
-
-  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
-  const currentPage = Math.min(page, totalPages)
-  const showPagination = sorted.length > PAGE_SIZE
-  const paginated = showPagination
-    ? sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
-    : sorted
-
-  const handleSort = (key: SortKey) => {
-    setPage(1)
-    if (sortKey === key) {
-      setSortDirection((direction) => (direction === "asc" ? "desc" : "asc"))
-    } else {
-      setSortKey(key)
-      setSortDirection("asc")
-    }
-  }
+  const {
+    currentPage,
+    handleSort,
+    paginated,
+    setPage,
+    showPagination,
+    sortDirection,
+    sorted,
+    sortKey,
+    totalPages,
+  } = useSortablePagination<Roaster, SortKey>({
+    items: filtered,
+    initialSortKey: "name",
+    initialSortDirection: "asc",
+    pageSize: PAGE_SIZE,
+    compare: compareRoasters,
+    directionForKey: getRoasterSortDirection,
+  })
 
   return (
     <div className="space-y-6">
