@@ -3,21 +3,22 @@ import type { StyleSpecification } from "maplibre-gl"
 export const VISITS_BASEMAP_STYLE: StyleSpecification = {
   version: 8,
   sources: {
-    openStreetMap: {
+    minimalBasemap: {
       type: "raster",
-      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+      tiles: ["https://a.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png"],
       tileSize: 256,
-      attribution: "© OpenStreetMap contributors",
+      maxzoom: 20,
+      attribution: "© OpenStreetMap contributors, © CARTO",
     },
   },
   layers: [
     {
-      id: "openStreetMap",
+      id: "minimalBasemap",
       type: "raster",
-      source: "openStreetMap",
+      source: "minimalBasemap",
       paint: {
-        "raster-saturation": -0.55,
-        "raster-contrast": -0.08,
+        "raster-saturation": -0.3,
+        "raster-contrast": -0.04,
       },
     },
   ],

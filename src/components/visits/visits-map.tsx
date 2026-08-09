@@ -67,7 +67,12 @@ export function VisitsMap({ coffeeShops, visits }: VisitsMapProps) {
         Map data ©{" "}
         <a className="underline underline-offset-2 hover:text-foreground" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
           OpenStreetMap contributors
-        </a>.
+        </a>
+        {" · Tiles © "}
+        <a className="underline underline-offset-2 hover:text-foreground" href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">
+          CARTO
+        </a>
+        .
       </p>
     </div>
   )

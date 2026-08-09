@@ -95,12 +95,12 @@ Roastbook should feel like a calm, tactile coffee journal: warm paper beneath cr
 - **Layout**: plot containers always have an explicit height and width.
 
 ### Saved café map
-- **Structure**: warm-toned MapLibre surface on `/visits` with 44px markers for coffee shops already saved in Roastbook, zoom controls, a React-rendered place inspector, and concise OpenStreetMap attribution. `/places` remains the focused list for managing saved places.
-- **Variants**: favorite places add the heart badge and emphasized ink marker; all other saved places use the filled coffee marker.
+- **Structure**: quiet MapLibre surface on `/visits` using a label-free light basemap, 44px targets for coffee shops already saved in Roastbook, restrained zoom controls, a React-rendered place inspector, and concise OpenStreetMap/CARTO attribution. `/places` remains the focused list for managing saved places.
+- **Variants**: saved places use a compact filled dot; favorites use a slightly larger double-ring dot. Marker meaning is carried by shape, size, state, and accessible naming without decorative cup or heart glyphs.
 - **States**: loading, ready, selected place, no saved places with usable coordinates, and unavailable.
 - **Accessibility**: every visible marker is a named button, arrow-key navigation follows markers inside the current viewport, selection is mirrored in the focus-managed inspector, and every primary action retains a 44px target.
 - **Interaction**: marker selection uses the standard 200ms state transition and a short camera ease; reduced motion makes camera changes immediate. The inspector appears through opacity and transform only.
-- **Layout**: the map owns a fixed responsive height; the inspector follows the map in normal flow below `lg` and becomes a compact lower-left map overlay at `lg` and above. The intentional empty state replaces the map when no saved place has usable coordinates.
+- **Layout**: the map owns a fixed responsive height; the inspector follows the map in normal flow below `lg` and becomes a compact lower-left map overlay at `lg` and above. The intentional empty state replaces the map when no saved place has usable coordinates. Basemap labels, POI icons, and unrelated visual noise stay absent so saved cafés remain the only emphasized locations.
 
 ### Form field
 - **Structure**: persistent label, native/shadcn control, optional helper or error.
