@@ -26,6 +26,7 @@ import { Route as ShotsNewRouteImport } from './routes/shots/new'
 import { Route as ShotsShotIdRouteImport } from './routes/shots/$shotId'
 import { Route as RoastersNewRouteImport } from './routes/roasters/new'
 import { Route as RoastersRoasterIdRouteImport } from './routes/roasters/$roasterId'
+import { Route as RecipesNewRouteImport } from './routes/recipes/new'
 import { Route as RecipesRecipeIdRouteImport } from './routes/recipes/$recipeId'
 import { Route as GearNewRouteImport } from './routes/gear/new'
 import { Route as GearGearIdRouteImport } from './routes/gear/$gearId'
@@ -33,7 +34,6 @@ import { Route as CoffeeShopsNewRouteImport } from './routes/coffee-shops/new'
 import { Route as CoffeeShopsCoffeeShopIdRouteImport } from './routes/coffee-shops/$coffeeShopId'
 import { Route as BeansNewRouteImport } from './routes/beans/new'
 import { Route as BeansBeanIdRouteImport } from './routes/beans/$beanId'
-import { Route as ApiUploadsRouteImport } from './routes/api/uploads'
 
 const StatsRoute = StatsRouteImport.update({
   id: '/stats',
@@ -120,6 +120,11 @@ const RoastersRoasterIdRoute = RoastersRoasterIdRouteImport.update({
   path: '/roasters/$roasterId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RecipesNewRoute = RecipesNewRouteImport.update({
+  id: '/recipes/new',
+  path: '/recipes/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RecipesRecipeIdRoute = RecipesRecipeIdRouteImport.update({
   id: '/recipes/$recipeId',
   path: '/recipes/$recipeId',
@@ -155,17 +160,11 @@ const BeansBeanIdRoute = BeansBeanIdRouteImport.update({
   path: '/beans/$beanId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiUploadsRoute = ApiUploadsRouteImport.update({
-  id: '/api/uploads',
-  path: '/api/uploads',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
   '/stats': typeof StatsRoute
-  '/api/uploads': typeof ApiUploadsRoute
   '/beans/$beanId': typeof BeansBeanIdRoute
   '/beans/new': typeof BeansNewRoute
   '/coffee-shops/$coffeeShopId': typeof CoffeeShopsCoffeeShopIdRoute
@@ -173,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/gear/$gearId': typeof GearGearIdRoute
   '/gear/new': typeof GearNewRoute
   '/recipes/$recipeId': typeof RecipesRecipeIdRoute
+  '/recipes/new': typeof RecipesNewRoute
   '/roasters/$roasterId': typeof RoastersRoasterIdRoute
   '/roasters/new': typeof RoastersNewRoute
   '/shots/$shotId': typeof ShotsShotIdRoute
@@ -192,7 +192,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
   '/stats': typeof StatsRoute
-  '/api/uploads': typeof ApiUploadsRoute
   '/beans/$beanId': typeof BeansBeanIdRoute
   '/beans/new': typeof BeansNewRoute
   '/coffee-shops/$coffeeShopId': typeof CoffeeShopsCoffeeShopIdRoute
@@ -200,6 +199,7 @@ export interface FileRoutesByTo {
   '/gear/$gearId': typeof GearGearIdRoute
   '/gear/new': typeof GearNewRoute
   '/recipes/$recipeId': typeof RecipesRecipeIdRoute
+  '/recipes/new': typeof RecipesNewRoute
   '/roasters/$roasterId': typeof RoastersRoasterIdRoute
   '/roasters/new': typeof RoastersNewRoute
   '/shots/$shotId': typeof ShotsShotIdRoute
@@ -220,7 +220,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
   '/stats': typeof StatsRoute
-  '/api/uploads': typeof ApiUploadsRoute
   '/beans/$beanId': typeof BeansBeanIdRoute
   '/beans/new': typeof BeansNewRoute
   '/coffee-shops/$coffeeShopId': typeof CoffeeShopsCoffeeShopIdRoute
@@ -228,6 +227,7 @@ export interface FileRoutesById {
   '/gear/$gearId': typeof GearGearIdRoute
   '/gear/new': typeof GearNewRoute
   '/recipes/$recipeId': typeof RecipesRecipeIdRoute
+  '/recipes/new': typeof RecipesNewRoute
   '/roasters/$roasterId': typeof RoastersRoasterIdRoute
   '/roasters/new': typeof RoastersNewRoute
   '/shots/$shotId': typeof ShotsShotIdRoute
@@ -249,7 +249,6 @@ export interface FileRouteTypes {
     | '/'
     | '/settings'
     | '/stats'
-    | '/api/uploads'
     | '/beans/$beanId'
     | '/beans/new'
     | '/coffee-shops/$coffeeShopId'
@@ -257,6 +256,7 @@ export interface FileRouteTypes {
     | '/gear/$gearId'
     | '/gear/new'
     | '/recipes/$recipeId'
+    | '/recipes/new'
     | '/roasters/$roasterId'
     | '/roasters/new'
     | '/shots/$shotId'
@@ -276,7 +276,6 @@ export interface FileRouteTypes {
     | '/'
     | '/settings'
     | '/stats'
-    | '/api/uploads'
     | '/beans/$beanId'
     | '/beans/new'
     | '/coffee-shops/$coffeeShopId'
@@ -284,6 +283,7 @@ export interface FileRouteTypes {
     | '/gear/$gearId'
     | '/gear/new'
     | '/recipes/$recipeId'
+    | '/recipes/new'
     | '/roasters/$roasterId'
     | '/roasters/new'
     | '/shots/$shotId'
@@ -303,7 +303,6 @@ export interface FileRouteTypes {
     | '/'
     | '/settings'
     | '/stats'
-    | '/api/uploads'
     | '/beans/$beanId'
     | '/beans/new'
     | '/coffee-shops/$coffeeShopId'
@@ -311,6 +310,7 @@ export interface FileRouteTypes {
     | '/gear/$gearId'
     | '/gear/new'
     | '/recipes/$recipeId'
+    | '/recipes/new'
     | '/roasters/$roasterId'
     | '/roasters/new'
     | '/shots/$shotId'
@@ -331,7 +331,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SettingsRoute: typeof SettingsRoute
   StatsRoute: typeof StatsRoute
-  ApiUploadsRoute: typeof ApiUploadsRoute
   BeansBeanIdRoute: typeof BeansBeanIdRoute
   BeansNewRoute: typeof BeansNewRoute
   CoffeeShopsCoffeeShopIdRoute: typeof CoffeeShopsCoffeeShopIdRoute
@@ -339,6 +338,7 @@ export interface RootRouteChildren {
   GearGearIdRoute: typeof GearGearIdRoute
   GearNewRoute: typeof GearNewRoute
   RecipesRecipeIdRoute: typeof RecipesRecipeIdRoute
+  RecipesNewRoute: typeof RecipesNewRoute
   RoastersRoasterIdRoute: typeof RoastersRoasterIdRoute
   RoastersNewRoute: typeof RoastersNewRoute
   ShotsShotIdRoute: typeof ShotsShotIdRoute
@@ -476,6 +476,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RoastersRoasterIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/recipes/new': {
+      id: '/recipes/new'
+      path: '/recipes/new'
+      fullPath: '/recipes/new'
+      preLoaderRoute: typeof RecipesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/recipes/$recipeId': {
       id: '/recipes/$recipeId'
       path: '/recipes/$recipeId'
@@ -525,13 +532,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeansBeanIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/uploads': {
-      id: '/api/uploads'
-      path: '/api/uploads'
-      fullPath: '/api/uploads'
-      preLoaderRoute: typeof ApiUploadsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -539,7 +539,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SettingsRoute: SettingsRoute,
   StatsRoute: StatsRoute,
-  ApiUploadsRoute: ApiUploadsRoute,
   BeansBeanIdRoute: BeansBeanIdRoute,
   BeansNewRoute: BeansNewRoute,
   CoffeeShopsCoffeeShopIdRoute: CoffeeShopsCoffeeShopIdRoute,
@@ -547,6 +546,7 @@ const rootRouteChildren: RootRouteChildren = {
   GearGearIdRoute: GearGearIdRoute,
   GearNewRoute: GearNewRoute,
   RecipesRecipeIdRoute: RecipesRecipeIdRoute,
+  RecipesNewRoute: RecipesNewRoute,
   RoastersRoasterIdRoute: RoastersRoasterIdRoute,
   RoastersNewRoute: RoastersNewRoute,
   ShotsShotIdRoute: ShotsShotIdRoute,

@@ -106,25 +106,33 @@ function RecipeDetailPage() {
   }
 
   const equipment = recipe.gear.map(({ gear }) => gear.name).join(", ")
+  const enabled = new Set(recipe.enabledFields.map(({ fieldKey }) => fieldKey))
   const parameters = [
-    ["Dose", recipe.defaultDoseGrams ? `${Number(recipe.defaultDoseGrams)} g` : null],
-    ["Target yield", recipe.defaultYieldGrams ? `${Number(recipe.defaultYieldGrams)} g` : null],
+    ["Dose", enabled.has("target_dose") ? recipe.targetDoseGrams ? `${Number(recipe.targetDoseGrams)} g` : "Not set" : null],
+    ["Brew water", enabled.has("brew_water") ? recipe.brewWaterGrams ? `${Number(recipe.brewWaterGrams)} g` : "Not set" : null],
+    ["Target yield", enabled.has("target_yield") ? recipe.targetYieldGrams ? `${Number(recipe.targetYieldGrams)} g` : "Not set" : null],
     [
       "Target shot time",
-      recipe.defaultBrewTimeSeconds === null
-        ? null
-        : `${recipe.defaultBrewTimeSeconds} s`,
+      enabled.has("target_time")
+        ? recipe.targetTimeMinSeconds === null
+          ? "Not set"
+          : recipe.targetTimeMinSeconds === recipe.targetTimeMaxSeconds
+            ? `${Number(recipe.targetTimeMinSeconds)} s`
+            : `${Number(recipe.targetTimeMinSeconds)}–${Number(recipe.targetTimeMaxSeconds)} s`
+        : null,
     ],
-    ["Grind setting", recipe.defaultGrindSetting],
+    ["Grind setting", enabled.has("grind_setting") ? recipe.grindSetting ?? "Not set" : null],
     [
       "Brew temperature",
-      recipe.defaultWaterTempCelsius
-        ? `${Number(recipe.defaultWaterTempCelsius)} °C`
+      enabled.has("brew_temperature")
+        ? recipe.brewTemperatureCelsius ? `${Number(recipe.brewTemperatureCelsius)} °C` : "Not set"
         : null,
     ],
     [
       "Target brew pressure",
-      recipe.defaultPressure ? `${Number(recipe.defaultPressure)} bar` : null,
+      enabled.has("target_pressure")
+        ? recipe.targetBrewPressureBar ? `${Number(recipe.targetBrewPressureBar)} bar` : "Not set"
+        : null,
     ],
   ] as const
 
@@ -233,7 +241,7 @@ function RecipeDetailPage() {
             </CardHeader>
             <CardContent>
               <dl className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-                {parameters.map(([label, value]) => (
+                {parameters.map(([label, value]) => value === null ? null : (
                   <div key={label}>
                     <dt className="text-sm font-semibold text-muted-foreground">
                       {label}

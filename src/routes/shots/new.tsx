@@ -11,9 +11,11 @@ import { SuggestionChips } from "@/components/form/suggestion-chips"
 import { BeanCard } from "@/components/beans/bean-card"
 import { BeanPicker } from "@/components/beans/bean-picker"
 import { RecipePicker } from "@/components/recipes/recipe-picker"
+import { CreatableCombobox } from "@/components/form/creatable-combobox"
 import { getActiveBeans } from "@/lib/server/beans"
 import { getRecipes } from "@/lib/server/recipes"
 import { getTasteTags } from "@/lib/server/taste-tags"
+import { getActiveGearByType } from "@/lib/server/gear"
 import {
   createShot,
   getPreviousShotBySetup,
@@ -74,22 +76,23 @@ function NewShotTasteTagGroup({
 
 export const Route = createFileRoute("/shots/new")({
   loader: async () => {
-    const [beans, recipes, tasteTags, beanSuggestions, recipeSuggestions] =
+    const [beans, recipes, tasteTags, beanSuggestions, recipeSuggestions, machines] =
       await Promise.all([
         getActiveBeans(),
         getRecipes(),
         getTasteTags(),
         getBeanSuggestions(),
         getRecipeSuggestions(),
+        getActiveGearByType({ data: "espresso_machine" }),
       ])
 
-    return { beans, recipes, tasteTags, beanSuggestions, recipeSuggestions }
+    return { beans, recipes, tasteTags, beanSuggestions, recipeSuggestions, machines }
   },
   component: NewShotPage,
 })
 
 function NewShotPage() {
-  const { beans, recipes, tasteTags, beanSuggestions, recipeSuggestions } =
+  const { beans, recipes, tasteTags, beanSuggestions, recipeSuggestions, machines } =
     Route.useLoaderData()
   const navigate = useNavigate()
 
@@ -104,11 +107,12 @@ function NewShotPage() {
   const [formData, setFormData] = useState({
     beanId: "",
     recipeId: "",
-    doseGrams: "",
-    yieldGrams: "",
+    machineId: "",
+    actualDoseGrams: "",
+    actualYieldGrams: "",
     grindSetting: "",
-    waterTempCelsius: "",
-    pressure: "",
+    actualTemperatureCelsius: "",
+    actualPressureBar: "",
     rating: 3,
     notes: "",
   })
@@ -166,7 +170,21 @@ function NewShotPage() {
 
   const handleRecipeSelect = (recipeId: string) => {
     beanSelectionVersion.current += 1
-    setFormData((prev) => ({ ...prev, recipeId }))
+    const recipe = recipes.find((item) => String(item.id) === recipeId)
+    const enabled = new Set(recipe?.enabledFields.map(({ fieldKey }) => fieldKey) ?? [])
+    setFormData((prev) => ({
+      ...prev,
+      recipeId,
+      actualDoseGrams: enabled.has("target_dose") ? recipe?.targetDoseGrams ?? "" : "",
+      actualYieldGrams: enabled.has("target_yield") ? recipe?.targetYieldGrams ?? "" : "",
+      actualTemperatureCelsius: enabled.has("brew_temperature") ? recipe?.brewTemperatureCelsius ?? "" : "",
+      actualPressureBar: enabled.has("target_pressure") ? recipe?.targetBrewPressureBar ?? "" : "",
+    }))
+    if (enabled.has("target_time") && recipe?.targetTimeMinSeconds) {
+      setTimerMilliseconds(Number(recipe.targetTimeMinSeconds) * 1000)
+    } else if (recipeId) {
+      setTimerMilliseconds(0)
+    }
   }
 
   const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
@@ -178,15 +196,16 @@ function NewShotPage() {
         data: {
           beanId: formData.beanId ? Number(formData.beanId) : undefined,
           recipeId: formData.recipeId ? Number(formData.recipeId) : undefined,
-          doseGrams: formData.doseGrams || undefined,
-          yieldGrams: formData.yieldGrams || undefined,
-          brewTimeSeconds:
+          machineId: formData.machineId ? Number(formData.machineId) : undefined,
+          actualDoseGrams: formData.actualDoseGrams || undefined,
+          actualYieldGrams: formData.actualYieldGrams || undefined,
+          actualShotTimeSeconds:
             timerMilliseconds > 0
-              ? Math.round(timerMilliseconds / 1000)
+              ? (timerMilliseconds / 1000).toFixed(2)
               : undefined,
           grindSetting: formData.grindSetting || undefined,
-          waterTempCelsius: formData.waterTempCelsius || undefined,
-          pressure: formData.pressure || undefined,
+          actualTemperatureCelsius: formData.actualTemperatureCelsius || undefined,
+          actualPressureBar: formData.actualPressureBar || undefined,
           rating: formData.rating,
           notes: formData.notes || undefined,
           tasteTagIds: selectedTags.length > 0 ? selectedTags : undefined,
@@ -207,9 +226,14 @@ function NewShotPage() {
   const selectedRecipe = recipes.find(
     (recipe) => String(recipe.id) === formData.recipeId
   )
+  const enabledShotFields = new Set(
+    selectedRecipe?.enabledFields.map(({ fieldKey }) => fieldKey) ?? [],
+  )
+  const showShotField = (fieldKey: string) =>
+    !selectedRecipe || enabledShotFields.has(fieldKey)
 
-  const dose = parseFloat(formData.doseGrams) || 0
-  const yieldG = parseFloat(formData.yieldGrams) || 0
+  const dose = parseFloat(formData.actualDoseGrams) || 0
+  const yieldG = parseFloat(formData.actualYieldGrams) || 0
   const ratio = dose > 0 ? yieldG / dose : 0
   const timerSeconds = timerMilliseconds / 1000
   const flow = timerSeconds > 0 && yieldG > 0 ? yieldG / timerSeconds : 0
@@ -273,14 +297,14 @@ function NewShotPage() {
                   if (prevShot) {
                     setFormData((prev) => ({
                       ...prev,
-                      doseGrams: prevShot.doseGrams ?? "",
-                      yieldGrams: prevShot.yieldGrams ?? "",
+                      actualDoseGrams: prevShot.actualDoseGrams ?? "",
+                      actualYieldGrams: prevShot.actualYieldGrams ?? "",
                       grindSetting: prevShot.grindSetting ?? "",
-                      waterTempCelsius: prevShot.waterTempCelsius ?? "",
-                      pressure: prevShot.pressure ?? "",
+                      actualTemperatureCelsius: prevShot.actualTemperatureCelsius ?? "",
+                      actualPressureBar: prevShot.actualPressureBar ?? "",
                     }))
-                    if (prevShot.brewTimeSeconds) {
-                      setTimerMilliseconds(prevShot.brewTimeSeconds * 1000)
+                    if (prevShot.actualShotTimeSeconds) {
+                      setTimerMilliseconds(Number(prevShot.actualShotTimeSeconds) * 1000)
                     }
                   }
                 }}
@@ -304,6 +328,18 @@ function NewShotPage() {
                 onChange={handleRecipeSelect}
                 recipes={recipes}
               />
+              <CreatableCombobox
+                id="shot-machine"
+                label="Espresso machine"
+                value={formData.machineId}
+                onChange={(value) => setFormData((current) => ({ ...current, machineId: value }))}
+                items={machines}
+                getKey={({ id }) => id}
+                getLabel={({ name }) => name}
+                placeholder="Select machine"
+                searchPlaceholder="Search machines…"
+                emptyMessage="No espresso machines found."
+              />
               {selectedRecipe && selectedRecipe.gear.length > 0 && (
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold text-muted-foreground">
@@ -326,49 +362,58 @@ function NewShotPage() {
 
           <FormSection title="Extraction">
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-                <InputField
+                {showShotField("target_dose") ? <InputField
                   id="dose"
                   label="Dose (g)"
                   placeholder="18.0"
-                  value={formData.doseGrams}
-                  onChange={(value) => setFormData({ ...formData, doseGrams: value })}
-                />
-                <InputField
+                  value={formData.actualDoseGrams}
+                  onChange={(value) => setFormData({ ...formData, actualDoseGrams: value })}
+                /> : null}
+                {showShotField("target_yield") ? <InputField
                   id="yield"
                   label="Yield (g)"
                   placeholder="36.0"
-                  value={formData.yieldGrams}
-                  onChange={(value) => setFormData({ ...formData, yieldGrams: value })}
-                />
-                <InputField
+                  value={formData.actualYieldGrams}
+                  onChange={(value) => setFormData({ ...formData, actualYieldGrams: value })}
+                /> : null}
+                {!selectedRecipe ? <InputField
                   id="grindSetting"
                   label="Grind setting"
                   placeholder="e.g., 15"
                   value={formData.grindSetting}
                   onChange={(value) => setFormData({ ...formData, grindSetting: value })}
-                />
-                <InputField
+                /> : null}
+                {showShotField("brew_temperature") ? <InputField
                   id="temp"
                   label="Water temp (°C)"
                   placeholder="93.0"
-                  value={formData.waterTempCelsius}
+                  value={formData.actualTemperatureCelsius}
                   onChange={(value) =>
-                    setFormData({ ...formData, waterTempCelsius: value })
+                    setFormData({ ...formData, actualTemperatureCelsius: value })
                   }
-                />
-                <InputField
+                /> : null}
+                {showShotField("target_pressure") ? <InputField
                   id="pressure"
                   label="Pressure (bar)"
                   placeholder="9.0"
-                  value={formData.pressure}
-                  onChange={(value) => setFormData({ ...formData, pressure: value })}
-                />
-                <div className="space-y-2">
-                  <Label>Brew time</Label>
-                  <div className="flex h-11 items-center rounded-2xl border border-border bg-secondary px-3.5 font-display text-base font-bold text-primary sm:h-8">
-                    {formatTime(timerMilliseconds)}
-                  </div>
-                </div>
+                  value={formData.actualPressureBar}
+                  onChange={(value) => setFormData({ ...formData, actualPressureBar: value })}
+                /> : null}
+                {showShotField("target_time") ? <InputField
+                  id="brewTime"
+                  label="Brew time (seconds)"
+                  inputMode="numeric"
+                  placeholder="30"
+                  value={
+                    timerMilliseconds > 0
+                      ? String(Math.round(timerMilliseconds / 1000))
+                      : ""
+                  }
+                  onChange={(value) =>
+                    setTimerMilliseconds(Number(value.replace(/[^0-9]/g, "")) * 1000)
+                  }
+                  disabled={isTimerRunning}
+                /> : null}
               </div>
           </FormSection>
 
@@ -491,6 +536,7 @@ function TimerRing({
   readonly running: boolean
 }) {
   const seconds = milliseconds / 1000
+  const displaySeconds = getElapsedTenths(milliseconds) / 10
   const progress = Math.min(seconds / SHOT_TARGET_SECONDS, 1)
   const isOverTarget = seconds >= SHOT_TARGET_SECONDS
   const overtimeSeconds = Math.max(seconds - SHOT_TARGET_SECONDS, 0)
@@ -513,7 +559,7 @@ function TimerRing({
     <div
       className="relative flex h-48 w-48 items-center justify-center rounded-full"
       role="timer"
-      aria-label={`${seconds.toFixed(1)} seconds, ${timerStatus}`}
+      aria-label={`${displaySeconds.toFixed(1)} seconds, ${timerStatus}`}
     >
       <svg
         className="absolute inset-0 -rotate-90"
@@ -558,7 +604,7 @@ function TimerRing({
       </svg>
       <div className="flex h-[170px] w-[170px] flex-col items-center justify-center rounded-full bg-coffee ring-1 ring-coffee-foreground/15">
         <div className="flex items-baseline gap-1 font-display font-extrabold tabular-nums text-coffee-foreground">
-          <span className="text-5xl leading-none">{seconds.toFixed(1)}</span>
+          <span className="text-5xl leading-none">{displaySeconds.toFixed(1)}</span>
           <span className="text-xl text-coffee-foreground/70">s</span>
         </div>
         <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-coffee-foreground">
@@ -575,10 +621,6 @@ function TimerRing({
   )
 }
 
-function formatTime(milliseconds: number) {
-  const totalTenths = Math.floor(milliseconds / 100)
-  const mins = Math.floor(totalTenths / 600)
-  const seconds = Math.floor((totalTenths % 600) / 10)
-  const tenths = totalTenths % 10
-  return `${mins}:${seconds.toString().padStart(2, "0")}.${tenths}`
+function getElapsedTenths(milliseconds: number) {
+  return Math.floor(milliseconds / 100)
 }

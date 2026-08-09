@@ -47,7 +47,7 @@ export function MapLocationSettings({
         data: { query: query.trim() },
       })
       if (!result) {
-        setError("No matching city or postal code was found.")
+        setError("No matching location was found.")
         return
       }
       onChange(result)
@@ -86,9 +86,9 @@ export function MapLocationSettings({
       <form onSubmit={lookupLocation} className="space-y-3">
         <InputField
           id="map-location-query"
-          label="City or postal code"
+          label="Location"
           value={query}
-          placeholder="e.g. München or 80331"
+          placeholder="e.g. München"
           disabled={disabled || isLookingUp}
           onChange={setQuery}
         />
@@ -167,7 +167,7 @@ export function MapLocationSettings({
         {error ??
           (location
             ? `Current default: ${location.label}`
-            : "No default set. The map opens at your favorite or first saved café.")}
+            : "No custom default set. The map opens in Berlin.")}
       </p>
     </div>
   )

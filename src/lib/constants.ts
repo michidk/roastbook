@@ -27,6 +27,7 @@ export const GEAR_TYPES = [
   { value: "scale", label: "Scale" },
   { value: "tamper", label: "Tamper" },
   { value: "wdt", label: "WDT Tool" },
+  { value: "basket", label: "Basket" },
   { value: "other", label: "Other" },
 ] as const
 
@@ -66,4 +67,3 @@ export const DRINK_TYPE_OPTIONS = DRINK_TYPES.map((type) => ({
   value: type,
   label: type,
 }))
-

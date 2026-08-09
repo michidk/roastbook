@@ -12,7 +12,7 @@ import {
 import { EmptyState } from "@/components/EmptyState"
 import { ShotsTable } from "@/components/ShotsTable"
 import { ShotsViewToggle, groupShotsByBean } from "@/components/shots-overview"
-import { ResilientImage } from "@/components/resilient-image"
+import { ImageWithFallback } from "@/components/image-with-fallback"
 import { thumbnailUrl } from "@/lib/image-url"
 import { getShots } from "@/lib/server/shots"
 import { RouteError } from "@/components/route-error"
@@ -76,7 +76,7 @@ function ShotsPage() {
                 <Card>
                   <CardHeader className="items-center gap-3">
                     <div className="flex min-w-0 items-center gap-3">
-                      <ResilientImage
+                      <ImageWithFallback
                         src={thumbnail ? thumbnailUrl(thumbnail.storagePath) : undefined}
                         alt=""
                         width={48}

@@ -65,7 +65,7 @@ function BeanDetailPage() {
     if (Number.isNaN(initialWeight) || initialWeight <= 0) return null
 
     const usedWeight = shots.reduce((sum, shot) => {
-      const dose = shot.doseGrams ? parseFloat(shot.doseGrams) : 0
+      const dose = shot.actualDoseGrams ? parseFloat(shot.actualDoseGrams) : 0
       return sum + dose
     }, 0)
 

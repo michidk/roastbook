@@ -12,7 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { thumbnailUrl } from "@/lib/image-url"
-import { ResilientImage } from "@/components/resilient-image"
+import { ImageWithFallback } from "@/components/image-with-fallback"
 import { SortableTableHead } from "@/components/sortable-table-head"
 import { PaginationControls } from "@/components/pagination-controls"
 import { formatDate } from "@/lib/utils"
@@ -24,9 +24,9 @@ import {
 type Shot = {
   id: number
   createdAt: Date
-  doseGrams: string | null
-  yieldGrams: string | null
-  brewTimeSeconds: number | null
+  actualDoseGrams: string | null
+  actualYieldGrams: string | null
+  actualShotTimeSeconds: string | null
   rating: number | null
   bean: {
     id: number
@@ -60,16 +60,16 @@ function getBeanThumbnail(bean: Shot["bean"]): string | null {
 
 function formatShotSummary(shot: Shot): string {
   const parts: string[] = []
-  if (shot.doseGrams && shot.yieldGrams) {
-    parts.push(`${shot.doseGrams}g → ${shot.yieldGrams}g`)
-  } else if (shot.doseGrams) {
-    parts.push(`${shot.doseGrams}g dose`)
-  } else if (shot.yieldGrams) {
-    parts.push(`${shot.yieldGrams}g yield`)
+  if (shot.actualDoseGrams && shot.actualYieldGrams) {
+    parts.push(`${shot.actualDoseGrams}g → ${shot.actualYieldGrams}g`)
+  } else if (shot.actualDoseGrams) {
+    parts.push(`${shot.actualDoseGrams}g dose`)
+  } else if (shot.actualYieldGrams) {
+    parts.push(`${shot.actualYieldGrams}g yield`)
   } else {
     parts.push("No dose/yield recorded")
   }
-  if (shot.brewTimeSeconds) parts.push(`${shot.brewTimeSeconds}s`)
+  if (shot.actualShotTimeSeconds) parts.push(`${shot.actualShotTimeSeconds}s`)
   return parts.join(" · ")
 }
 
@@ -122,20 +122,20 @@ function compareShots(
       )
     case "dose":
       return compareNullableNumber(
-        parseNullableFloat(left.doseGrams),
-        parseNullableFloat(right.doseGrams),
+        parseNullableFloat(left.actualDoseGrams),
+        parseNullableFloat(right.actualDoseGrams),
         direction,
       )
     case "yield":
       return compareNullableNumber(
-        parseNullableFloat(left.yieldGrams),
-        parseNullableFloat(right.yieldGrams),
+        parseNullableFloat(left.actualYieldGrams),
+        parseNullableFloat(right.actualYieldGrams),
         direction,
       )
     case "time":
       return compareNullableNumber(
-        left.brewTimeSeconds,
-        right.brewTimeSeconds,
+        parseNullableFloat(left.actualShotTimeSeconds),
+        parseNullableFloat(right.actualShotTimeSeconds),
         direction,
       )
     case "rating":
@@ -330,7 +330,7 @@ function MobileShotCard({
         className="flex items-center gap-3 rounded-xl border bg-card p-4 shadow-coffee transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         {!hideBean && beanThumb && (
-          <ResilientImage
+          <ImageWithFallback
             src={beanThumb}
             alt=""
             className="h-11 w-11 shrink-0 rounded-xl object-cover"
@@ -409,7 +409,7 @@ function ShotRow({
               className="flex w-fit items-center gap-2 rounded-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {beanThumb && (
-                <ResilientImage
+                <ImageWithFallback
                   src={beanThumb}
                   alt=""
                   className="h-8 w-8 rounded object-cover"
@@ -423,13 +423,13 @@ function ShotRow({
         </TableCell>
       )}
       <TableCell className="text-right">
-        {shot.doseGrams ? `${shot.doseGrams}g` : "-"}
+        {shot.actualDoseGrams ? `${shot.actualDoseGrams}g` : "-"}
       </TableCell>
       <TableCell className="text-right">
-        {shot.yieldGrams ? `${shot.yieldGrams}g` : "-"}
+        {shot.actualYieldGrams ? `${shot.actualYieldGrams}g` : "-"}
       </TableCell>
       <TableCell className="text-right">
-        {shot.brewTimeSeconds ? `${shot.brewTimeSeconds}s` : "-"}
+        {shot.actualShotTimeSeconds ? `${shot.actualShotTimeSeconds}s` : "-"}
       </TableCell>
       {!hideGear && hasRecipe && <TableCell>{shot.recipe?.name || "-"}</TableCell>}
       {hasRating && (

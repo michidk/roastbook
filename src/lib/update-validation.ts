@@ -2,12 +2,13 @@ export type ShotUpdateCandidate = {
   readonly id: number
   readonly beanId?: number | null
   readonly recipeId?: number | null
-  readonly doseGrams?: string | null
-  readonly yieldGrams?: string | null
-  readonly brewTimeSeconds?: number | null
+  readonly machineId?: number | null
+  readonly actualDoseGrams?: string | null
+  readonly actualYieldGrams?: string | null
+  readonly actualShotTimeSeconds?: string | null
   readonly grindSetting?: string | null
-  readonly waterTempCelsius?: string | null
-  readonly pressure?: string | null
+  readonly actualTemperatureCelsius?: string | null
+  readonly actualPressureBar?: string | null
   readonly rating?: number | null
   readonly notes?: string | null
   readonly tasteTagIds?: readonly number[]
@@ -82,33 +83,35 @@ export function getShotUpdateErrors(
   data: ShotUpdateCandidate,
 ): Readonly<Record<string, string>> {
   const errors: Record<string, string> = {}
-  addError(errors, "doseGrams", getDecimalError(data.doseGrams, {
+  addError(errors, "actualDoseGrams", getDecimalError(data.actualDoseGrams, {
     label: "Dose",
     maximum: 999.99,
     fractionDigits: 2,
   }))
-  addError(errors, "yieldGrams", getDecimalError(data.yieldGrams, {
+  addError(errors, "actualYieldGrams", getDecimalError(data.actualYieldGrams, {
     label: "Yield",
     maximum: 999.99,
     fractionDigits: 2,
   }))
-  addError(errors, "waterTempCelsius", getDecimalError(data.waterTempCelsius, {
+  addError(errors, "actualTemperatureCelsius", getDecimalError(data.actualTemperatureCelsius, {
     label: "Water temperature",
     maximum: 999.9,
     fractionDigits: 1,
   }))
-  addError(errors, "pressure", getDecimalError(data.pressure, {
+  addError(errors, "actualPressureBar", getDecimalError(data.actualPressureBar, {
     label: "Pressure",
     maximum: 99.9,
-    fractionDigits: 1,
+    fractionDigits: 2,
   }))
-  if (
-    data.brewTimeSeconds !== null &&
-    data.brewTimeSeconds !== undefined &&
-    (!Number.isInteger(data.brewTimeSeconds) || data.brewTimeSeconds < 0)
-  ) {
-    errors.brewTimeSeconds = "Brew time must be a whole number of seconds"
-  }
+  addError(
+    errors,
+    "actualShotTimeSeconds",
+    getDecimalError(data.actualShotTimeSeconds, {
+      label: "Brew time",
+      maximum: 9999.99,
+      fractionDigits: 2,
+    }),
+  )
   addError(errors, "rating", getRatingError(data.rating))
   return errors
 }

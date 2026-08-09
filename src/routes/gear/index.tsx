@@ -13,7 +13,7 @@ import { RouteError } from "@/components/route-error"
 import { ListPending } from "@/components/route-pending"
 import { EmptyState } from "@/components/EmptyState"
 import { imageUrl } from "@/lib/image-url"
-import { ResilientImage } from "@/components/resilient-image"
+import { ImageWithFallback } from "@/components/image-with-fallback"
 import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/gear/")({
@@ -127,7 +127,7 @@ function GearCard({ item }: { item: Awaited<ReturnType<typeof getGear>>[number] 
       <Card className="hover:bg-muted/50 transition-colors cursor-pointer h-full overflow-hidden">
         {thumbnail && (
           <div className="aspect-[4/3] overflow-hidden">
-            <ResilientImage
+            <ImageWithFallback
               src={imageUrl(thumbnail.storagePath)}
               alt=""
               className="h-full w-full object-cover"

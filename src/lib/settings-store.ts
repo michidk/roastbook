@@ -10,6 +10,12 @@ export type DefaultMapLocation = {
   readonly label: string
 }
 
+export const DEFAULT_MAP_LOCATION = {
+  latitude: 52.52,
+  longitude: 13.405,
+  label: "Berlin",
+} as const satisfies DefaultMapLocation
+
 export const THEME_OPTIONS = [
   { value: "light", label: "Light" },
   { value: "dark", label: "Dark" },

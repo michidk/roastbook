@@ -54,7 +54,7 @@ function SettingsPage() {
 
       <FormSection
         title="Default map location"
-        description="Choose where the café explorer opens. Look up a city or postal code, or enter coordinates directly."
+        description="Choose where the café explorer opens. Look up a location or enter coordinates directly."
         action={<MapPinned className="h-5 w-5 text-primary" />}
       >
         <MapLocationSettings

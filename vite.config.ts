@@ -9,7 +9,16 @@ import tailwindcss from '@tailwindcss/vite'
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
-  plugins: [devtools(), tailwindcss(), tanstackStart(), nitro({ preset: 'bun' }), viteReact()],
+  plugins: [
+    devtools(),
+    tailwindcss(),
+    tanstackStart(),
+    nitro({
+      preset: 'bun',
+      routes: { '/media/**': './src/lib/server/media-handler.ts' },
+    }),
+    viteReact(),
+  ],
 })
 
 export default config

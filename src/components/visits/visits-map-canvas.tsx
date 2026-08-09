@@ -240,7 +240,7 @@ export function VisitsMapCanvas({
   }, [places, selectedPlaceId, status, synchronizeMarkerSelection])
 
   return (
-    <div className="relative h-[460px] w-full md:h-[500px] lg:h-[540px]">
+    <div className="relative h-[460px] w-full overflow-hidden rounded-t-3xl bg-secondary md:h-[500px] lg:h-[540px]">
       <div
         ref={containerRef}
         className="roastbook-visits-map h-full w-full"

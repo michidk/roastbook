@@ -10,6 +10,7 @@ import { getActiveBeans } from "@/lib/server/beans"
 import { getRecipes } from "@/lib/server/recipes"
 import { getShot, updateShot } from "@/lib/server/shots"
 import { getTasteTags } from "@/lib/server/taste-tags"
+import { getActiveGearByType } from "@/lib/server/gear"
 import { toNullableRating, toRatingInput } from "@/lib/rating"
 import { getShotUpdateErrors } from "@/lib/update-validation"
 
@@ -19,6 +20,7 @@ export type ShotEditData = {
   readonly beans: Awaited<ReturnType<typeof getActiveBeans>>
   readonly recipes: Awaited<ReturnType<typeof getRecipes>>
   readonly tasteTags: Awaited<ReturnType<typeof getTasteTags>>
+  readonly machines: Awaited<ReturnType<typeof getActiveGearByType>>
 }
 
 type ShotEditFormProps = {
@@ -41,15 +43,16 @@ export function ShotEditForm({
   const form = useFormState(() => ({
     beanId: shot.beanId ? String(shot.beanId) : "",
     recipeId: shot.recipeId ? String(shot.recipeId) : "",
-    doseGrams: shot.doseGrams ?? "",
-    yieldGrams: shot.yieldGrams ?? "",
-    brewTimeSeconds:
-      shot.brewTimeSeconds !== null && shot.brewTimeSeconds !== undefined
-        ? String(shot.brewTimeSeconds)
+    machineId: shot.machineId ? String(shot.machineId) : "",
+    actualDoseGrams: shot.actualDoseGrams ?? "",
+    actualYieldGrams: shot.actualYieldGrams ?? "",
+    actualShotTimeSeconds:
+      shot.actualShotTimeSeconds !== null && shot.actualShotTimeSeconds !== undefined
+        ? String(shot.actualShotTimeSeconds)
         : "",
     grindSetting: shot.grindSetting ?? "",
-    waterTempCelsius: shot.waterTempCelsius ?? "",
-    pressure: shot.pressure ?? "",
+    actualTemperatureCelsius: shot.actualTemperatureCelsius ?? "",
+    actualPressureBar: shot.actualPressureBar ?? "",
     rating: toRatingInput(shot.rating),
     notes: shot.notes ?? "",
     tasteTagIds: shot.tasteTags.map((tag) => tag.tasteTagId),
@@ -70,6 +73,13 @@ export function ShotEditForm({
     !editData.recipes.some((recipe) => recipe.id === shot.recipe?.id)
       ? [shot.recipe, ...editData.recipes]
       : editData.recipes
+  const selectedRecipe = recipeOptions.find(
+    (recipe) => String(recipe.id) === form.values.recipeId,
+  )
+  const enabled = new Set(
+    selectedRecipe?.enabledFields.map(({ fieldKey }) => fieldKey) ?? [],
+  )
+  const showField = (fieldKey: string) => !selectedRecipe || enabled.has(fieldKey)
 
   const toggleTag = (tagId: number) => {
     form.set(
@@ -86,14 +96,13 @@ export function ShotEditForm({
       id: shot.id,
       beanId: form.values.beanId ? Number(form.values.beanId) : null,
       recipeId: form.values.recipeId ? Number(form.values.recipeId) : null,
-      doseGrams: form.values.doseGrams || null,
-      yieldGrams: form.values.yieldGrams || null,
-      brewTimeSeconds: form.values.brewTimeSeconds
-        ? Number(form.values.brewTimeSeconds)
-        : null,
+      machineId: form.values.machineId ? Number(form.values.machineId) : null,
+      actualDoseGrams: form.values.actualDoseGrams || null,
+      actualYieldGrams: form.values.actualYieldGrams || null,
+      actualShotTimeSeconds: form.values.actualShotTimeSeconds || null,
       grindSetting: form.values.grindSetting || null,
-      waterTempCelsius: form.values.waterTempCelsius || null,
-      pressure: form.values.pressure || null,
+      actualTemperatureCelsius: form.values.actualTemperatureCelsius || null,
+      actualPressureBar: form.values.actualPressureBar || null,
       rating: toNullableRating(form.values.rating),
       notes: form.values.notes || null,
       tasteTagIds: form.values.tasteTagIds,
@@ -145,66 +154,78 @@ export function ShotEditForm({
           searchPlaceholder="Search recipes…"
           emptyMessage="No matching recipes."
         />
+        <CreatableCombobox
+          id="machine"
+          label="Espresso machine"
+          value={form.values.machineId}
+          onChange={form.setField("machineId")}
+          items={editData.machines}
+          getKey={(machine) => machine.id}
+          getLabel={(machine) => machine.name}
+          placeholder="Select machine"
+          searchPlaceholder="Search machines…"
+          emptyMessage="No espresso machines found."
+        />
       </FormSection>
 
       <FormSection title="Extraction">
         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-          <InputField
+          {showField("target_dose") ? <InputField
             id="dose"
             label="Dose (g)"
             inputMode="decimal"
             placeholder="18.0"
-            value={form.values.doseGrams}
-            onChange={form.setField("doseGrams")}
-            error={fieldErrors.doseGrams}
-          />
-          <InputField
+            value={form.values.actualDoseGrams}
+            onChange={form.setField("actualDoseGrams")}
+            error={fieldErrors.actualDoseGrams}
+          /> : null}
+          {showField("target_yield") ? <InputField
             id="yield"
             label="Yield (g)"
             inputMode="decimal"
             placeholder="36.0"
-            value={form.values.yieldGrams}
-            onChange={form.setField("yieldGrams")}
-            error={fieldErrors.yieldGrams}
-          />
-          <InputField
+            value={form.values.actualYieldGrams}
+            onChange={form.setField("actualYieldGrams")}
+            error={fieldErrors.actualYieldGrams}
+          /> : null}
+          {!selectedRecipe ? <InputField
             id="grindSetting"
             label="Grind Setting"
             placeholder="e.g., 15"
             value={form.values.grindSetting}
             onChange={form.setField("grindSetting")}
-          />
+          /> : null}
         </div>
-        <InputField
+        {showField("target_time") ? <InputField
           id="brewTime"
           label="Brew Time (seconds)"
           inputMode="numeric"
           placeholder="30"
-          value={form.values.brewTimeSeconds}
+          value={form.values.actualShotTimeSeconds}
           onChange={(value) =>
-            form.set("brewTimeSeconds", value.replace(/[^0-9]/g, ""))
+            form.set("actualShotTimeSeconds", value.replace(/[^0-9.]/g, ""))
           }
-          error={fieldErrors.brewTimeSeconds}
-        />
+          error={fieldErrors.actualShotTimeSeconds}
+        /> : null}
         <div className="grid gap-4 sm:grid-cols-2">
-          <InputField
+          {showField("brew_temperature") ? <InputField
             id="temp"
             label="Water Temp (°C)"
             inputMode="decimal"
             placeholder="93.0"
-            value={form.values.waterTempCelsius}
-            onChange={form.setField("waterTempCelsius")}
-            error={fieldErrors.waterTempCelsius}
-          />
-          <InputField
+            value={form.values.actualTemperatureCelsius}
+            onChange={form.setField("actualTemperatureCelsius")}
+            error={fieldErrors.actualTemperatureCelsius}
+          /> : null}
+          {showField("target_pressure") ? <InputField
             id="pressure"
             label="Pressure (bar)"
             inputMode="decimal"
             placeholder="9.0"
-            value={form.values.pressure}
-            onChange={form.setField("pressure")}
-            error={fieldErrors.pressure}
-          />
+            value={form.values.actualPressureBar}
+            onChange={form.setField("actualPressureBar")}
+            error={fieldErrors.actualPressureBar}
+          /> : null}
         </div>
       </FormSection>
 

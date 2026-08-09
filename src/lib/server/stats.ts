@@ -124,7 +124,7 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
 
       db
         .select({
-          totalGrams: sql<string | number>`coalesce(sum(${shots.doseGrams}::numeric), 0)::numeric`,
+      totalGrams: sql<string | number>`coalesce(sum(${shots.actualDoseGrams}::numeric), 0)::numeric`,
           uniqueBeans: sql<number>`count(distinct ${shots.beanId})::int`,
         })
         .from(shots)
@@ -176,13 +176,13 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
 
       db
         .select({
-          avgDose: sql<string | number | null>`round(avg(${shots.doseGrams}::numeric), 1)`,
-          avgYield: sql<string | number | null>`round(avg(${shots.yieldGrams}::numeric), 1)`,
-          avgTime: sql<string | number | null>`round(avg(${shots.brewTimeSeconds})::numeric, 0)::int`,
-          avgRatio: sql<string | number | null>`round(avg(${shots.yieldGrams}::numeric / nullif(${shots.doseGrams}::numeric, 0)), 2)`,
+      avgDose: sql<string | number | null>`round(avg(${shots.actualDoseGrams}::numeric), 1)`,
+      avgYield: sql<string | number | null>`round(avg(${shots.actualYieldGrams}::numeric), 1)`,
+      avgTime: sql<string | number | null>`round(avg(${shots.actualShotTimeSeconds})::numeric, 0)::int`,
+      avgRatio: sql<string | number | null>`round(avg(${shots.actualYieldGrams}::numeric / nullif(${shots.actualDoseGrams}::numeric, 0)), 2)`,
         })
         .from(shots)
-        .where(and(isNotNull(shots.doseGrams), isNotNull(shots.yieldGrams))),
+    .where(and(isNotNull(shots.actualDoseGrams), isNotNull(shots.actualYieldGrams))),
 
       db
         .select({

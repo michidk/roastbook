@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router"
 import { ArrowUpRight, Bean, CalendarDays, MapPin, Scale } from "lucide-react"
-import { ResilientImage } from "@/components/resilient-image"
+import { ImageWithFallback } from "@/components/image-with-fallback"
 import { Card, CardContent } from "@/components/ui/card"
 import { thumbnailUrl } from "@/lib/image-url"
 import type { getBeans } from "@/lib/server/beans"
@@ -54,7 +54,7 @@ export function BeanCard({ bean }: BeanCardProps) {
       >
         <div className="absolute inset-0">
           {thumbnail ? (
-            <ResilientImage
+            <ImageWithFallback
               src={thumbnailUrl(thumbnail.storagePath)}
               alt=""
               loading="lazy"

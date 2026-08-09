@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { ArrowUpRight, BookOpen, ChevronDown } from "lucide-react"
+import { ArrowUpRight, BookOpen, ChevronDown, Plus } from "lucide-react"
 import { RouteError } from "@/components/route-error"
 import { ListPending } from "@/components/route-pending"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import {
   Collapsible,
   CollapsibleContent,
@@ -30,13 +31,12 @@ function RecipesPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
-          Recipes
-        </h1>
-        <p className="mt-1 text-sm font-semibold text-muted-foreground">
-          {recipes.length === 1 ? "1 saved recipe" : `${recipes.length} saved recipes`}
-        </p>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">Recipes</h1>
+          <p className="mt-1 text-sm font-semibold text-muted-foreground">{recipes.length === 1 ? "1 saved recipe" : `${recipes.length} saved recipes`}</p>
+        </div>
+        <Button asChild><Link to="/recipes/new"><Plus />Add recipe</Link></Button>
       </header>
 
       {recipes.length === 0 ? (
@@ -45,7 +45,7 @@ function RecipesPage() {
             <BookOpen className="mb-4 h-12 w-12 text-muted-foreground" />
             <h2 className="text-lg font-semibold">No recipes saved yet</h2>
             <p className="mt-1 max-w-md text-sm text-muted-foreground">
-              Recipes created while logging a shot will appear here.
+              Start with a beginner preset or build a custom brew.
             </p>
           </CardContent>
         </Card>
@@ -95,40 +95,43 @@ function RecipeGrid({ recipes }: { readonly recipes: readonly Recipe[] }) {
 }
 
 function RecipeCard({ recipe }: { readonly recipe: Recipe }) {
-  const dose = recipe.defaultDoseGrams ? Number(recipe.defaultDoseGrams) : null
-  const targetYield = recipe.defaultYieldGrams
-    ? Number(recipe.defaultYieldGrams)
+  const enabled = new Set(recipe.enabledFields.map(({ fieldKey }) => fieldKey))
+  const dose = recipe.targetDoseGrams ? Number(recipe.targetDoseGrams) : null
+  const targetYield = recipe.targetYieldGrams
+    ? Number(recipe.targetYieldGrams)
     : null
   const brewRatio = dose && targetYield ? targetYield / dose : null
   const equipment = recipe.gear.map(({ gear }) => gear.name).join(", ")
   const parameters = [
-    { label: "Dose", value: dose === null ? null : `${dose.toLocaleString()} g` },
+    { label: "Dose", value: enabled.has("target_dose") && dose !== null ? `${dose.toLocaleString()} g` : null },
     {
       label: "Target yield",
-      value: targetYield === null ? null : `${targetYield.toLocaleString()} g`,
+      value: enabled.has("target_yield") && targetYield !== null ? `${targetYield.toLocaleString()} g` : null,
     },
     {
       label: "Brew ratio",
-      value: brewRatio === null ? null : `1:${brewRatio.toFixed(1)}`,
+      value: enabled.has("brew_ratio") && brewRatio !== null ? `1:${brewRatio.toFixed(1)}` : null,
     },
     {
       label: "Target shot time",
       value:
-        recipe.defaultBrewTimeSeconds === null
+        !enabled.has("target_time") || recipe.targetTimeMinSeconds === null
           ? null
-          : `${recipe.defaultBrewTimeSeconds} s`,
+          : recipe.targetTimeMinSeconds === recipe.targetTimeMaxSeconds
+            ? `${Number(recipe.targetTimeMinSeconds).toLocaleString()} s`
+            : `${Number(recipe.targetTimeMinSeconds).toLocaleString()}–${Number(recipe.targetTimeMaxSeconds).toLocaleString()} s`,
     },
-    { label: "Grind setting", value: recipe.defaultGrindSetting },
+    { label: "Grind setting", value: enabled.has("grind_setting") ? recipe.grindSetting : null },
     {
       label: "Brew temperature",
-      value: recipe.defaultWaterTempCelsius
-        ? `${Number(recipe.defaultWaterTempCelsius).toLocaleString()} °C`
+      value: enabled.has("brew_temperature") && recipe.brewTemperatureCelsius
+        ? `${Number(recipe.brewTemperatureCelsius).toLocaleString()} °C`
         : null,
     },
     {
       label: "Target brew pressure",
-      value: recipe.defaultPressure
-        ? `${Number(recipe.defaultPressure).toLocaleString()} bar`
+      value: enabled.has("target_pressure") && recipe.targetBrewPressureBar
+        ? `${Number(recipe.targetBrewPressureBar).toLocaleString()} bar`
         : null,
     },
   ] as const

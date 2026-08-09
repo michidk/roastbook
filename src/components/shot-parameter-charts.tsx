@@ -10,10 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 type Shot = {
   id: number
-  doseGrams: string | null
-  yieldGrams: string | null
+  actualDoseGrams: string | null
+  actualYieldGrams: string | null
   grindSetting: string | null
-  brewTimeSeconds: number | null
+  actualShotTimeSeconds: string | null
   createdAt: Date | string
 }
 
@@ -105,8 +105,8 @@ export function ShotParameterCharts({ shots }: ShotParameterChartsProps) {
     )
 
     return sortedShots.map((shot, index) => {
-      const dose = shot.doseGrams ? parseFloat(shot.doseGrams) : null
-      const yieldG = shot.yieldGrams ? parseFloat(shot.yieldGrams) : null
+      const dose = shot.actualDoseGrams ? parseFloat(shot.actualDoseGrams) : null
+      const yieldG = shot.actualYieldGrams ? parseFloat(shot.actualYieldGrams) : null
       const grind = parseGrindSetting(shot.grindSetting)
       const ratio = dose && yieldG ? Math.round((yieldG / dose) * 100) / 100 : null
 
@@ -116,7 +116,9 @@ export function ShotParameterCharts({ shots }: ShotParameterChartsProps) {
         dose,
         yield: yieldG,
         grind,
-        time: shot.brewTimeSeconds,
+        time: shot.actualShotTimeSeconds
+          ? parseFloat(shot.actualShotTimeSeconds)
+          : null,
         ratio,
       }
     })

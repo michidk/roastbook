@@ -25,6 +25,10 @@ import { RouteError } from "@/components/route-error"
 import { DetailPending } from "@/components/route-pending"
 import { GEAR_TYPES, GEAR_TYPE_LABELS, type GearType } from "@/lib/constants"
 import { FormSection } from "@/components/form/form-shell"
+import {
+  EMPTY_GEAR_SUBTYPE_VALUES,
+  GearSubtypeFields,
+} from "@/components/gear/gear-subtype-fields"
 
 export const Route = createFileRoute("/gear/$gearId")({
   loader: async ({ params }) => {
@@ -70,6 +74,19 @@ function GearDetailPage() {
     manualUrl: gear?.manualUrl ?? "",
     productUrl: gear?.productUrl ?? "",
     notes: gear?.notes ?? "",
+    ...EMPTY_GEAR_SUBTYPE_VALUES,
+    brewPressureOpvBar: gear?.machineSettings?.brewPressureOpvBar ?? "",
+    supportsPreinfusion: gear?.machineSettings?.supportsPreinfusion === null || gear?.machineSettings?.supportsPreinfusion === undefined ? "" : String(gear.machineSettings.supportsPreinfusion),
+    defaultPreinfusionEnabled: gear?.machineSettings?.defaultPreinfusionEnabled === null || gear?.machineSettings?.defaultPreinfusionEnabled === undefined ? "" : String(gear.machineSettings.defaultPreinfusionEnabled),
+    defaultPreinfusionTimeSeconds: gear?.machineSettings?.defaultPreinfusionTimeSeconds ?? "",
+    defaultPreinfusionPressureBar: gear?.machineSettings?.defaultPreinfusionPressureBar ?? "",
+    defaultFlowLimitMlPerSecond: gear?.machineSettings?.defaultFlowLimitMlPerSecond ?? "",
+    temperatureOffsetCelsius: gear?.machineSettings?.temperatureOffsetCelsius ?? "",
+    volumetricShotVolumeMl: gear?.machineSettings?.volumetricShotVolumeMl ?? "",
+    autoStopMode: gear?.machineSettings?.autoStopMode ?? "",
+    steamTemperatureCelsius: gear?.machineSettings?.steamTemperatureCelsius ?? "",
+    steamPressureBar: gear?.machineSettings?.steamPressureBar ?? "",
+    nominalDoseGrams: gear?.basketDetails?.nominalDoseGrams ?? "",
   })
 
   const [isEditing, setIsEditing] = useState(false)
@@ -140,6 +157,20 @@ function GearDetailPage() {
             ? formData.productUrl.trim()
             : null,
           notes: formData.notes,
+          machineSettings: formData.type === "espresso_machine" ? {
+            brewPressureOpvBar: formData.brewPressureOpvBar || null,
+            supportsPreinfusion: formData.supportsPreinfusion === "" ? null : formData.supportsPreinfusion === "true",
+            defaultPreinfusionEnabled: formData.defaultPreinfusionEnabled === "" ? null : formData.defaultPreinfusionEnabled === "true",
+            defaultPreinfusionTimeSeconds: formData.defaultPreinfusionTimeSeconds || null,
+            defaultPreinfusionPressureBar: formData.defaultPreinfusionPressureBar || null,
+            defaultFlowLimitMlPerSecond: formData.defaultFlowLimitMlPerSecond || null,
+            temperatureOffsetCelsius: formData.temperatureOffsetCelsius || null,
+            volumetricShotVolumeMl: formData.volumetricShotVolumeMl || null,
+            autoStopMode: formData.autoStopMode === "manual" || formData.autoStopMode === "weight" || formData.autoStopMode === "time" || formData.autoStopMode === "volume" ? formData.autoStopMode : null,
+            steamTemperatureCelsius: formData.steamTemperatureCelsius || null,
+            steamPressureBar: formData.steamPressureBar || null,
+          } : null,
+          basketDetails: formData.type === "basket" ? { nominalDoseGrams: formData.nominalDoseGrams || null } : null,
         },
       })
 
@@ -304,6 +335,11 @@ function GearDetailPage() {
               />
             </CardContent>
           </Card>
+          <GearSubtypeFields
+            type={formData.type}
+            values={formData}
+            onChange={(key, value) => setFormData((current) => ({ ...current, [key]: value }))}
+          />
 
           <Card>
             <CardHeader>
@@ -338,6 +374,25 @@ function GearDetailPage() {
               </div>
             </CardContent>
           </Card>
+
+          {gear.machineSettings ? (
+            <Card>
+              <CardHeader><CardTitle>Machine settings</CardTitle></CardHeader>
+              <CardContent><dl className="grid gap-4 sm:grid-cols-2">
+                {[
+                  ["Brew pressure / OPV", gear.machineSettings.brewPressureOpvBar ? `${gear.machineSettings.brewPressureOpvBar} bar` : "Not set"],
+                  ["Supports pre-infusion", gear.machineSettings.supportsPreinfusion === null ? "Unknown" : gear.machineSettings.supportsPreinfusion ? "Yes" : "No"],
+                  ["Default pre-infusion", gear.machineSettings.defaultPreinfusionEnabled === null ? "Unknown" : gear.machineSettings.defaultPreinfusionEnabled ? "Enabled" : "Disabled"],
+                  ["Auto-stop", gear.machineSettings.autoStopMode ?? "Not set"],
+                  ["Default flow limit", gear.machineSettings.defaultFlowLimitMlPerSecond ? `${gear.machineSettings.defaultFlowLimitMlPerSecond} mL/s` : "Not set"],
+                  ["Volumetric shot", gear.machineSettings.volumetricShotVolumeMl ? `${gear.machineSettings.volumetricShotVolumeMl} mL` : "Not set"],
+                ].map(([label, value]) => <div key={label}><dt className="text-sm text-muted-foreground">{label}</dt><dd className="font-medium">{value}</dd></div>)}
+              </dl></CardContent>
+            </Card>
+          ) : null}
+          {gear.basketDetails ? (
+            <Card><CardHeader><CardTitle>Basket details</CardTitle></CardHeader><CardContent><p><span className="text-sm text-muted-foreground">Nominal dose</span><br /><strong>{gear.basketDetails.nominalDoseGrams ? `${gear.basketDetails.nominalDoseGrams} g` : "Not set"}</strong></p></CardContent></Card>
+          ) : null}
 
           <FormSection title="Links">
               <InputField

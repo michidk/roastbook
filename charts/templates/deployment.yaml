@@ -64,7 +64,7 @@ spec:
             - name: STORAGE_PATH
               value: {{ .Values.storage.local.path | quote }}
             - name: STORAGE_URL
-              value: "/uploads"
+              value: "/media"
             {{- else if eq .Values.storage.provider "s3" }}
             - name: S3_BUCKET
               value: {{ .Values.storage.s3.bucket | quote }}

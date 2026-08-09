@@ -1,7 +1,10 @@
 import { useCallback, useMemo, useState } from "react"
 import { MapPin } from "lucide-react"
 import { EmptyState } from "@/components/EmptyState"
-import { useSettingsStore } from "@/lib/settings-store"
+import {
+  DEFAULT_MAP_LOCATION,
+  useSettingsStore,
+} from "@/lib/settings-store"
 import { VisitsMapCanvas } from "./visits-map-canvas"
 import { VisitsMapPlaceCard } from "./visits-map-place-card"
 import {
@@ -51,7 +54,7 @@ export function VisitsMap({ coffeeShops, visits }: VisitsMapProps) {
       <div className="relative scroll-mt-16">
         <VisitsMapCanvas
           places={savedPlaces}
-          initialLocation={defaultMapLocation}
+          initialLocation={defaultMapLocation ?? DEFAULT_MAP_LOCATION}
           selectedPlaceId={selectedPlaceId}
           onSelectPlace={selectPlace}
         />
@@ -64,11 +67,11 @@ export function VisitsMap({ coffeeShops, visits }: VisitsMapProps) {
         )}
       </div>
       <p className="border-t border-border bg-card px-4 py-3 text-xs text-muted-foreground">
-        Map data ©{" "}
+        ©{" "}
         <a className="underline underline-offset-2 hover:text-foreground" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
           OpenStreetMap contributors
         </a>
-        {" · Tiles © "}
+        {" · © "}
         <a className="underline underline-offset-2 hover:text-foreground" href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">
           CARTO
         </a>

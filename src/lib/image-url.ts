@@ -1,17 +1,14 @@
 const STORAGE_BASE_URL =
-  import.meta.env.VITE_STORAGE_URL || "/api/uploads"
+  import.meta.env.VITE_STORAGE_URL || "/media"
 
 function storageUrl(storagePath: string, fallbackPath?: string): string {
-  if (STORAGE_BASE_URL !== "/api/uploads") {
-    const encodedPath = storagePath.split("/").map(encodeURIComponent).join("/")
-    return `${STORAGE_BASE_URL.replace(/\/$/, "")}/${encodedPath}`
-  }
+  const encodedPath = storagePath.split("/").map(encodeURIComponent).join("/")
+  const url = `${STORAGE_BASE_URL.replace(/\/$/, "")}/${encodedPath}`
 
-  const search = new URLSearchParams({ path: storagePath })
-  if (fallbackPath) {
-    search.set("fallback", fallbackPath)
-  }
-  return `${STORAGE_BASE_URL}?${search}`
+  if (!fallbackPath || STORAGE_BASE_URL !== "/media") return url
+
+  const search = new URLSearchParams({ fallback: fallbackPath })
+  return `${url}?${search}`
 }
 
 function thumbnailPath(storagePath: string): string {

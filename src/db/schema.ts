@@ -7,8 +7,10 @@ import {
   decimal,
   boolean,
   pgEnum,
+  check,
+  primaryKey,
 } from "drizzle-orm/pg-core"
-import { relations } from "drizzle-orm"
+import { relations, sql } from "drizzle-orm"
 
 const timestamps = () => ({
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -36,6 +38,7 @@ export const gearTypeEnum = pgEnum("gear_type", [
   "scale",
   "tamper",
   "wdt",
+  "basket",
   "other",
 ])
 
@@ -133,9 +136,88 @@ export const gear = pgTable("gear", {
   ...archiveState(),
 })
 
-export const gearRelations = relations(gear, ({ many }) => ({
+export const machineSettings = pgTable(
+  "machine_settings",
+  {
+    gearId: integer("gear_id")
+      .primaryKey()
+      .references(() => gear.id, { onDelete: "cascade" }),
+    brewPressureOpvBar: decimal("brew_pressure_opv_bar", {
+      precision: 4,
+      scale: 2,
+    }),
+    supportsPreinfusion: boolean("supports_preinfusion"),
+    defaultPreinfusionEnabled: boolean("default_preinfusion_enabled"),
+    defaultPreinfusionTimeSeconds: decimal(
+      "default_preinfusion_time_seconds",
+      { precision: 5, scale: 2 },
+    ),
+    defaultPreinfusionPressureBar: decimal(
+      "default_preinfusion_pressure_bar",
+      { precision: 4, scale: 2 },
+    ),
+    defaultFlowLimitMlPerSecond: decimal(
+      "default_flow_limit_ml_per_second",
+      { precision: 4, scale: 2 },
+    ),
+    temperatureOffsetCelsius: decimal("temperature_offset_celsius", {
+      precision: 4,
+      scale: 1,
+    }),
+    volumetricShotVolumeMl: decimal("volumetric_shot_volume_ml", {
+      precision: 6,
+      scale: 2,
+    }),
+    autoStopMode: text("auto_stop_mode"),
+    steamTemperatureCelsius: decimal("steam_temperature_celsius", {
+      precision: 4,
+      scale: 1,
+    }),
+    steamPressureBar: decimal("steam_pressure_bar", {
+      precision: 4,
+      scale: 2,
+    }),
+  },
+  (table) => [
+    check(
+      "machine_settings_auto_stop_mode_check",
+      sql`${table.autoStopMode} in ('manual', 'weight', 'time', 'volume')`,
+    ),
+  ],
+)
+
+export const basketDetails = pgTable("basket_details", {
+  gearId: integer("gear_id")
+    .primaryKey()
+    .references(() => gear.id, { onDelete: "cascade" }),
+  nominalDoseGrams: decimal("nominal_dose_grams", {
+    precision: 5,
+    scale: 2,
+  }),
+})
+
+export const gearRelations = relations(gear, ({ one, many }) => ({
   images: many(gearImages),
   recipeGear: many(recipeGear),
+  machineSettings: one(machineSettings),
+  basketDetails: one(basketDetails),
+  grinderRecipes: many(recipes, { relationName: "recipeGrinder" }),
+  basketRecipes: many(recipes, { relationName: "recipeBasket" }),
+  shots: many(shots, { relationName: "shotMachine" }),
+}))
+
+export const machineSettingsRelations = relations(machineSettings, ({ one }) => ({
+  gear: one(gear, {
+    fields: [machineSettings.gearId],
+    references: [gear.id],
+  }),
+}))
+
+export const basketDetailsRelations = relations(basketDetails, ({ one }) => ({
+  gear: one(gear, {
+    fields: [basketDetails.gearId],
+    references: [gear.id],
+  }),
 }))
 
 export const gearImages = pgTable("gear_images", {
@@ -155,26 +237,138 @@ export const gearImagesRelations = relations(gearImages, ({ one }) => ({
   }),
 }))
 
-export const recipes = pgTable("recipes", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  brewingMethod: brewingMethodEnum("brewing_method").default("espresso").notNull(),
-  
-  defaultDoseGrams: decimal("default_dose_grams", { precision: 5, scale: 2 }),
-  defaultYieldGrams: decimal("default_yield_grams", { precision: 5, scale: 2 }),
-  defaultBrewTimeSeconds: integer("default_brew_time_seconds"),
-  defaultGrindSetting: text("default_grind_setting"),
-  defaultWaterTempCelsius: decimal("default_water_temp_celsius", { precision: 4, scale: 1 }),
-  defaultPressure: decimal("default_pressure", { precision: 3, scale: 1 }),
-  
-  notes: text("notes"),
-  ...archiveState(),
-})
+export const recipes = pgTable(
+  "recipes",
+  {
+    id: serial("id").primaryKey(),
+    name: text("name").notNull(),
+    brewingMethod: brewingMethodEnum("brewing_method")
+      .default("espresso")
+      .notNull(),
+    beanId: integer("bean_id").references(() => beans.id, {
+      onDelete: "set null",
+    }),
+    targetDoseGrams: decimal("target_dose_grams", {
+      precision: 5,
+      scale: 2,
+    }),
+    brewWaterGrams: decimal("brew_water_grams", {
+      precision: 7,
+      scale: 2,
+    }),
+    ratioBasis: text("ratio_basis"),
+    grinderId: integer("grinder_id").references(() => gear.id, {
+      onDelete: "set null",
+    }),
+    grindSetting: text("grind_setting"),
+    targetYieldGrams: decimal("target_yield_grams", {
+      precision: 6,
+      scale: 2,
+    }),
+    targetTimeMinSeconds: decimal("target_time_min_seconds", {
+      precision: 8,
+      scale: 2,
+    }),
+    targetTimeMaxSeconds: decimal("target_time_max_seconds", {
+      precision: 8,
+      scale: 2,
+    }),
+    brewTemperatureCelsius: decimal("brew_temperature_celsius", {
+      precision: 4,
+      scale: 1,
+    }),
+    preinfusionTimeSeconds: decimal("preinfusion_time_seconds", {
+      precision: 5,
+      scale: 2,
+    }),
+    preinfusionPressureBar: decimal("preinfusion_pressure_bar", {
+      precision: 4,
+      scale: 2,
+    }),
+    bloomTimeSeconds: decimal("bloom_time_seconds", {
+      precision: 5,
+      scale: 2,
+    }),
+    targetBrewPressureBar: decimal("target_brew_pressure_bar", {
+      precision: 4,
+      scale: 2,
+    }),
+    targetFlowRateMlPerSecond: decimal("target_flow_rate_ml_per_second", {
+      precision: 4,
+      scale: 2,
+    }),
+    basketId: integer("basket_id").references(() => gear.id, {
+      onDelete: "set null",
+    }),
+    usesPuckScreen: boolean("uses_puck_screen"),
+    paperFilterPosition: text("paper_filter_position"),
+    distributionMethod: text("distribution_method"),
+    tampForceKg: decimal("tamp_force_kg", { precision: 5, scale: 2 }),
+    notes: text("notes"),
+    ...archiveState(),
+  },
+  (table) => [
+    check(
+      "recipes_ratio_basis_check",
+      sql`${table.ratioBasis} in ('target_yield', 'brew_water')`,
+    ),
+    check(
+      "recipes_paper_filter_position_check",
+      sql`${table.paperFilterPosition} in ('none', 'top', 'bottom', 'both')`,
+    ),
+    check(
+      "recipes_target_time_range_check",
+      sql`${table.targetTimeMinSeconds} is null or ${table.targetTimeMaxSeconds} is null or ${table.targetTimeMinSeconds} <= ${table.targetTimeMaxSeconds}`,
+    ),
+  ],
+)
 
-export const recipesRelations = relations(recipes, ({ many }) => ({
+export const recipeEnabledFields = pgTable(
+  "recipe_enabled_fields",
+  {
+    recipeId: integer("recipe_id")
+      .references(() => recipes.id, { onDelete: "cascade" })
+      .notNull(),
+    fieldKey: text("field_key").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.recipeId, table.fieldKey] }),
+    check(
+      "recipe_enabled_fields_key_check",
+      sql`${table.fieldKey} in ('bean', 'target_dose', 'brew_water', 'grinder', 'grind_setting', 'target_yield', 'brew_ratio', 'target_time', 'brew_temperature', 'preinfusion_time', 'preinfusion_pressure', 'bloom_time', 'target_pressure', 'target_flow_rate', 'basket', 'puck_screen', 'paper_filter', 'distribution_method', 'tamp_force', 'accessories', 'notes')`,
+    ),
+  ],
+)
+
+export const recipesRelations = relations(recipes, ({ one, many }) => ({
+  bean: one(beans, {
+    fields: [recipes.beanId],
+    references: [beans.id],
+  }),
+  grinder: one(gear, {
+    fields: [recipes.grinderId],
+    references: [gear.id],
+    relationName: "recipeGrinder",
+  }),
+  basket: one(gear, {
+    fields: [recipes.basketId],
+    references: [gear.id],
+    relationName: "recipeBasket",
+  }),
+  enabledFields: many(recipeEnabledFields),
   gear: many(recipeGear),
   shots: many(shots),
 }))
+
+export const recipeEnabledFieldsRelations = relations(
+  recipeEnabledFields,
+  ({ one }) => ({
+    recipe: one(recipes, {
+      fields: [recipeEnabledFields.recipeId],
+      references: [recipes.id],
+    }),
+  }),
+)
 
 export const recipeGear = pgTable("recipe_gear", {
   id: serial("id").primaryKey(),
@@ -238,13 +432,25 @@ export const shots = pgTable("shots", {
   id: serial("id").primaryKey(),
   beanId: integer("bean_id").references(() => beans.id, { onDelete: "set null" }),
   recipeId: integer("recipe_id").references(() => recipes.id, { onDelete: "set null" }),
+  machineId: integer("machine_id").references(() => gear.id, {
+    onDelete: "set null",
+  }),
 
-  doseGrams: decimal("dose_grams", { precision: 5, scale: 2 }),
-  yieldGrams: decimal("yield_grams", { precision: 5, scale: 2 }),
-  brewTimeSeconds: integer("brew_time_seconds"),
+  actualDoseGrams: decimal("actual_dose_grams", { precision: 6, scale: 2 }),
+  actualYieldGrams: decimal("actual_yield_grams", { precision: 6, scale: 2 }),
+  actualShotTimeSeconds: decimal("actual_shot_time_seconds", {
+    precision: 6,
+    scale: 2,
+  }),
   grindSetting: text("grind_setting"),
-  waterTempCelsius: decimal("water_temp_celsius", { precision: 4, scale: 1 }),
-  pressure: decimal("pressure", { precision: 3, scale: 1 }),
+  actualTemperatureCelsius: decimal("actual_temperature_celsius", {
+    precision: 4,
+    scale: 1,
+  }),
+  actualPressureBar: decimal("actual_pressure_bar", {
+    precision: 4,
+    scale: 2,
+  }),
 
   rating: integer("rating"),
   notes: text("notes"),
@@ -260,6 +466,11 @@ export const shotsRelations = relations(shots, ({ one, many }) => ({
   recipe: one(recipes, {
     fields: [shots.recipeId],
     references: [recipes.id],
+  }),
+  machine: one(gear, {
+    fields: [shots.machineId],
+    references: [gear.id],
+    relationName: "shotMachine",
   }),
   tasteTags: many(shotTasteTags),
   images: many(shotImages),

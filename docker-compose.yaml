@@ -38,7 +38,7 @@ services:
       DATABASE_URL: postgresql://roastbook:roastbook@postgres:5432/roastbook
       STORAGE_PROVIDER: local
       STORAGE_PATH: /uploads
-      STORAGE_URL: /uploads
+      STORAGE_URL: /media
       # OPENAI_API_KEY: sk-...
       # OPENAI_BASE_URL: https://api.openai.com/v1
       # OPENAI_VISION_MODEL: gpt-4o

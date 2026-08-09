@@ -1,97 +1,141 @@
 import { createServerFn } from "@tanstack/react-start"
+import { and, desc, eq } from "drizzle-orm"
 import { db } from "@/db"
-import { gear } from "@/db/schema"
-import { eq, desc } from "drizzle-orm"
+import { basketDetails, gear, machineSettings } from "@/db/schema"
+import type { GearType } from "@/lib/constants"
+import type {
+  BasketDetailsValues,
+  MachineSettingsValues,
+} from "@/lib/recipe-fields"
 
-export const getGear = createServerFn({ method: "GET" }).handler(async () => {
-  return db.query.gear.findMany({
+type GearValues = {
+  readonly name: string
+  readonly brand?: string | null
+  readonly model?: string | null
+  readonly type: GearType
+  readonly purchaseDate?: Date | null
+  readonly purchasePrice?: string | null
+  readonly priceCurrency?: string | null
+  readonly manualUrl?: string | null
+  readonly productUrl?: string | null
+  readonly notes?: string | null
+  readonly isArchived?: boolean
+  readonly machineSettings?: MachineSettingsValues | null
+  readonly basketDetails?: BasketDetailsValues | null
+}
+
+type GearUpdate = Partial<GearValues> & { readonly id: number }
+
+class GearPersistenceError extends Error {
+  constructor() {
+    super("Gear could not be persisted")
+    this.name = "GearPersistenceError"
+  }
+}
+
+const gearRelations = {
+  images: true,
+  machineSettings: true,
+  basketDetails: true,
+} as const
+
+function toGearUpdateRow(data: Partial<GearValues>) {
+  const {
+    machineSettings: _machineSettings,
+    basketDetails: _basketDetails,
+    ...values
+  } = data
+  return values
+}
+
+async function replaceSubtype(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  gearId: number,
+  data: GearValues,
+) {
+  await tx.delete(machineSettings).where(eq(machineSettings.gearId, gearId))
+  await tx.delete(basketDetails).where(eq(basketDetails.gearId, gearId))
+
+  if (data.type === "espresso_machine" && data.machineSettings) {
+    await tx
+      .insert(machineSettings)
+      .values({ gearId, ...data.machineSettings })
+  }
+  if (data.type === "basket" && data.basketDetails) {
+    await tx.insert(basketDetails).values({ gearId, ...data.basketDetails })
+  }
+}
+
+export const getGear = createServerFn({ method: "GET" }).handler(async () =>
+  db.query.gear.findMany({
     orderBy: [desc(gear.createdAt)],
-    with: {
-      images: true,
-    },
-  })
-})
+    with: gearRelations,
+  }),
+)
+
+export const getActiveGearByType = createServerFn({ method: "GET" })
+  .validator((type: GearType) => type)
+  .handler(async ({ data: type }) =>
+    db.query.gear.findMany({
+      where: and(eq(gear.type, type), eq(gear.isArchived, false)),
+      orderBy: [desc(gear.updatedAt)],
+      with: gearRelations,
+    }),
+  )
 
 export const getGearById = createServerFn({ method: "GET" })
   .validator((id: number) => id)
-  .handler(async ({ data: id }) => {
-    return db.query.gear.findFirst({
+  .handler(async ({ data: id }) =>
+    db.query.gear.findFirst({
       where: eq(gear.id, id),
-      with: {
-        images: true,
-      },
-    })
-  })
-
-
+      with: gearRelations,
+    }),
+  )
 
 export const createGear = createServerFn({ method: "POST" })
-  .validator(
-    (data: {
-      name: string
-      brand?: string
-      model?: string
-      type:
-        | "espresso_machine"
-        | "grinder"
-        | "kettle"
-        | "scale"
-        | "tamper"
-        | "wdt"
-        | "other"
-      purchaseDate?: Date
-      purchasePrice?: string
-      priceCurrency?: string
-      manualUrl?: string
-      productUrl?: string
-      notes?: string
-    }) => data
+  .validator((data: GearValues) => data)
+  .handler(async ({ data }) =>
+    db.transaction(async (tx) => {
+      const {
+        machineSettings: _machineSettings,
+        basketDetails: _basketDetails,
+        ...gearValues
+      } = data
+      const [item] = await tx.insert(gear).values(gearValues).returning()
+      if (!item) throw new GearPersistenceError()
+      await replaceSubtype(tx, item.id, data)
+      return item
+    }),
   )
-  .handler(async ({ data }) => {
-    const [item] = await db.insert(gear).values(data).returning()
-    return item
-  })
 
 export const updateGear = createServerFn({ method: "POST" })
-  .validator(
-    (data: {
-      id: number
-      name?: string
-      brand?: string
-      model?: string
-      type?:
-        | "espresso_machine"
-        | "grinder"
-        | "kettle"
-        | "scale"
-        | "tamper"
-        | "wdt"
-        | "other"
-      purchaseDate?: Date | null
-      purchasePrice?: string | null
-      priceCurrency?: string | null
-      manualUrl?: string | null
-      productUrl?: string | null
-      notes?: string
-      isArchived?: boolean
-    }) => data
+  .validator((data: GearUpdate) => data)
+  .handler(async ({ data }) =>
+    db.transaction(async (tx) => {
+      const { id, ...values } = data
+      const [item] = await tx
+        .update(gear)
+        .set({ ...toGearUpdateRow(values), updatedAt: new Date() })
+        .where(eq(gear.id, id))
+        .returning()
+      if (!item) throw new GearPersistenceError()
+      if (
+        values.type !== undefined ||
+        values.machineSettings !== undefined ||
+        values.basketDetails !== undefined
+      ) {
+        await replaceSubtype(tx, id, {
+          ...values,
+          name: values.name ?? item.name,
+          type: values.type ?? item.type,
+        })
+      }
+      return item
+    }),
   )
-  .handler(async ({ data }) => {
-    const { id, ...values } = data
-    const [item] = await db
-      .update(gear)
-      .set({ ...values, updatedAt: new Date() })
-      .where(eq(gear.id, id))
-      .returning()
-    return item
-  })
 
 export const deleteGear = createServerFn({ method: "POST" })
   .validator((id: number) => id)
   .handler(async ({ data: id }) => {
     await db.delete(gear).where(eq(gear.id, id))
   })
-
-
-
-

@@ -6,7 +6,7 @@ import { getDashboardStats, getRecentShots } from "@/lib/server/stats"
 import { RouteError } from "@/components/route-error"
 import { RoutePending } from "@/components/route-pending"
 import { thumbnailUrl } from "@/lib/image-url"
-import { ResilientImage } from "@/components/resilient-image"
+import { ImageWithFallback } from "@/components/image-with-fallback"
 import { getDailyHeadline } from "@/lib/daily-headline"
 
 export const Route = createFileRoute("/")({
@@ -103,7 +103,7 @@ function Dashboard() {
                     className="flex items-center gap-3.5 rounded-2xl bg-secondary px-4 py-3 transition-colors hover:bg-accent/70"
                   >
                     {beanImage ? (
-                      <ResilientImage
+                      <ImageWithFallback
                         src={thumbnailUrl(beanImage.storagePath)}
                         alt=""
                         className="h-11 w-11 shrink-0 rounded-xl object-cover"
@@ -116,11 +116,11 @@ function Dashboard() {
                         {shot.bean?.name ?? "Unknown beans"}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {shot.doseGrams && shot.yieldGrams
-                          ? `${shot.doseGrams}g → ${shot.yieldGrams}g`
+                        {shot.actualDoseGrams && shot.actualYieldGrams
+                          ? `${shot.actualDoseGrams}g → ${shot.actualYieldGrams}g`
                           : "No recipe recorded"}
-                        {shot.brewTimeSeconds
-                          ? ` · ${shot.brewTimeSeconds}s`
+                        {shot.actualShotTimeSeconds
+                          ? ` · ${shot.actualShotTimeSeconds}s`
                           : ""}
                       </p>
                     </div>

@@ -14,6 +14,10 @@ import { createGear } from "@/lib/server/gear"
 import { uploadEntityImage } from "@/lib/server/images"
 import { GEAR_TYPES, type GearType } from "@/lib/constants"
 import { useSettingsStore } from "@/lib/settings-store"
+import {
+  EMPTY_GEAR_SUBTYPE_VALUES,
+  GearSubtypeFields,
+} from "@/components/gear/gear-subtype-fields"
 
 type CreatedGear = Awaited<ReturnType<typeof createGear>>
 
@@ -32,6 +36,7 @@ export function GearForm({
 }: GearFormProps) {
   const defaultCurrency = useSettingsStore((state) => state.defaultCurrency)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [subtype, setSubtype] = useState(EMPTY_GEAR_SUBTYPE_VALUES)
   const imageUpload = useImageUpload()
   const { images } = imageUpload
 
@@ -73,6 +78,20 @@ export function GearForm({
           manualUrl: form.values.manualUrl || undefined,
           productUrl: form.values.productUrl || undefined,
           notes: form.values.notes || undefined,
+          machineSettings: form.values.type === "espresso_machine" ? {
+            brewPressureOpvBar: subtype.brewPressureOpvBar || null,
+            supportsPreinfusion: subtype.supportsPreinfusion === "" ? null : subtype.supportsPreinfusion === "true",
+            defaultPreinfusionEnabled: subtype.defaultPreinfusionEnabled === "" ? null : subtype.defaultPreinfusionEnabled === "true",
+            defaultPreinfusionTimeSeconds: subtype.defaultPreinfusionTimeSeconds || null,
+            defaultPreinfusionPressureBar: subtype.defaultPreinfusionPressureBar || null,
+            defaultFlowLimitMlPerSecond: subtype.defaultFlowLimitMlPerSecond || null,
+            temperatureOffsetCelsius: subtype.temperatureOffsetCelsius || null,
+            volumetricShotVolumeMl: subtype.volumetricShotVolumeMl || null,
+            autoStopMode: subtype.autoStopMode === "manual" || subtype.autoStopMode === "weight" || subtype.autoStopMode === "time" || subtype.autoStopMode === "volume" ? subtype.autoStopMode : null,
+            steamTemperatureCelsius: subtype.steamTemperatureCelsius || null,
+            steamPressureBar: subtype.steamPressureBar || null,
+          } : null,
+          basketDetails: form.values.type === "basket" ? { nominalDoseGrams: subtype.nominalDoseGrams || null } : null,
         },
       })
 
@@ -158,6 +177,12 @@ export function GearForm({
           rows={3}
         />
       </FormSection>
+
+      <GearSubtypeFields
+        type={form.values.type}
+        values={subtype}
+        onChange={(key, value) => setSubtype((current) => ({ ...current, [key]: value }))}
+      />
 
       <FormSection title="Purchase Info">
         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">

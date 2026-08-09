@@ -17,7 +17,7 @@ import {
 import { setImageAsThumbnail, deleteEntityImage } from "@/lib/server/images"
 import { thumbnailUrl } from "@/lib/image-url"
 import { cn } from "@/lib/utils"
-import { ResilientImage } from "@/components/resilient-image"
+import { ImageWithFallback } from "@/components/image-with-fallback"
 import { ImageUploadField } from "@/components/image-upload-field"
 import { useImageUpload, type ImageFile } from "@/hooks/useImageUpload"
 import { uploadEntityImage } from "@/lib/server/images"
@@ -125,7 +125,7 @@ export function EntityImageGallery({
         {images.length > 0 && <div className={cn("grid grid-cols-2 gap-4", !imageAction && "sm:grid-cols-3")}>
           {images.map((image, index) => (
             <div key={image.id} className="group relative">
-              <ResilientImage
+              <ImageWithFallback
                 src={thumbnailUrl(image.storagePath)}
                 alt={`${entityType === "beans" ? "Bean" : "Gear"} picture ${index + 1}`}
                 loading="lazy"

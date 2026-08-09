@@ -12,6 +12,7 @@ import { getTasteTags } from "@/lib/server/taste-tags"
 import { DeleteConfirmation } from "@/components/DeleteConfirmation"
 import { ShotEditForm, type ShotEditData } from "@/components/shots/shot-edit-form"
 import { toast } from "sonner"
+import { getActiveGearByType } from "@/lib/server/gear"
 
 export const Route = createFileRoute("/shots/$shotId")({
   loader: async ({ params }) => {
@@ -36,12 +37,13 @@ function ShotDetailPage() {
     if (!editData) {
       setIsLoadingEditData(true)
       try {
-        const [beans, recipes, tasteTags] = await Promise.all([
+        const [beans, recipes, tasteTags, machines] = await Promise.all([
           getActiveBeans(),
           getRecipes(),
           getTasteTags(),
+          getActiveGearByType({ data: "espresso_machine" }),
         ])
-        setEditData({ beans, recipes, tasteTags })
+        setEditData({ beans, recipes, tasteTags, machines })
       } finally {
         setIsLoadingEditData(false)
       }
@@ -80,27 +82,29 @@ function ShotDetailPage() {
     requestAnimationFrame(() => editButtonRef.current?.focus())
   }
 
-  const ratio = shot.doseGrams && shot.yieldGrams
-    ? (Number(shot.yieldGrams) / Number(shot.doseGrams)).toFixed(1)
+  const ratio = shot.actualDoseGrams && shot.actualYieldGrams
+    ? (Number(shot.actualYieldGrams) / Number(shot.actualDoseGrams)).toFixed(1)
     : null
 
   const recipeGearNames = shot.recipe?.gear.map((rg) => rg.gear.name).join(", ")
   const extractionMetrics = [
-    shot.doseGrams ? { label: "Dose", value: `${shot.doseGrams}g` } : null,
-    shot.yieldGrams ? { label: "Yield", value: `${shot.yieldGrams}g` } : null,
+    shot.actualDoseGrams ? { label: "Dose", value: `${shot.actualDoseGrams}g` } : null,
+    shot.actualYieldGrams ? { label: "Yield", value: `${shot.actualYieldGrams}g` } : null,
     ratio ? { label: "Ratio", value: `1:${ratio}` } : null,
-    shot.brewTimeSeconds !== null
-      ? { label: "Time", value: `${shot.brewTimeSeconds}s` }
+    shot.actualShotTimeSeconds !== null
+      ? { label: "Time", value: `${shot.actualShotTimeSeconds}s` }
       : null,
   ].filter((field) => field !== null)
   const extractionDetails = [
     shot.grindSetting?.trim()
       ? { label: "Grind", value: shot.grindSetting }
       : null,
-    shot.waterTempCelsius
-      ? { label: "Temperature", value: `${shot.waterTempCelsius}°C` }
+    shot.actualTemperatureCelsius
+      ? { label: "Temperature", value: `${shot.actualTemperatureCelsius}°C` }
       : null,
-    shot.pressure ? { label: "Pressure", value: `${shot.pressure} bar` } : null,
+    shot.actualPressureBar
+      ? { label: "Pressure", value: `${shot.actualPressureBar} bar` }
+      : null,
   ].filter((field) => field !== null)
   const recipeName = shot.recipe?.name.trim()
   const hasRecipe = Boolean(recipeName || recipeGearNames)

@@ -81,7 +81,7 @@ Roastbook should feel like a calm, tactile coffee journal: warm paper beneath cr
 - **Accessibility**: the whole card remains a named Link, the image stays decorative, the scrim maintains readable contrast independent of photo brightness, and the arrow remains decorative instead of becoming a nested control.
 - **Layout**: active cards retain the tall reference geometry. Archived cards use a visibly denser 320px mobile/tablet and 304px desktop height while keeping the same one/two/three-column anatomy; long names clamp to two lines.
 
-### Resilient image
+### Image with fallback
 - **Structure**: fixed-aspect media wrapper, image, and token-driven fallback.
 - **Variants**: thumbnail and gallery/detail.
 - **States**: loading, loaded, unavailable; no native broken-image glyph.
@@ -112,6 +112,23 @@ Roastbook should feel like a calm, tactile coffee journal: warm paper beneath cr
 - **States**: unselected, hover/focus, and selected using the primary action tokens.
 - **Accessibility**: suggestion buttons retain a 44px mobile target and update the same labeled picker as manual selection.
 - **Layout**: suggestions wrap naturally without horizontal overflow; selected entity previews reuse their route card and responsive grid geometry.
+
+### Configurable recipe form
+- **Structure**: preset picker, identity section, enabled-field selector, then conditional context, brew target, advanced preparation, accessory, and notes sections using shared form cards.
+- **Variants**: full-page create/edit exposes all enabled-field controls; compact shot-time creation exposes name, method, dose, primary amount, and target time with a clear link to the full editor.
+- **States**: blank custom recipe, six populated beginner presets, enabled fields with unset values, dirty preset switch confirmation, saving, validation error, and archived linked equipment.
+- **Accessibility**: preset and field selectors use labeled native/shadcn controls, field toggles expose checked state, and every action retains a 44px mobile target.
+- **Layout**: one column at 375px, two-column field grids from `sm`, and no horizontally scrolling control groups.
+
+### Conditional equipment details
+- **Structure**: generic equipment identity followed by a machine-settings section for espresso machines or basket-details section for baskets.
+- **States**: subtype absent, partially populated, fully populated, invalid value, and pending type-change confirmation when populated subtype values would be discarded.
+- **Accessibility**: capability/default labels remain explicit, nullable booleans offer an Unknown option, and units are part of visible labels.
+
+### Recipe-driven shot measurements
+- **Structure**: selected recipe context is read-only; actual measurement inputs are derived from the saved recipe field set. With no recipe, all existing free-form measurements remain available.
+- **States**: no recipe, recipe selected, previous-shot prefill, recipe switch with hidden stale values cleared, timer running, invalid measurement, and saving.
+- **Accessibility**: conditional fields remain in document order, timer changes are announced through its existing timer role, and machine selection is separately labeled.
 
 ### Picture uploader
 - **Structure**: preview grid, mobile-safe file picker, dashed drop target, explicit clipboard action, URL input, and contextual helper/status copy.

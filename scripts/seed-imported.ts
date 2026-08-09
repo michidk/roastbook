@@ -416,7 +416,7 @@ async function seed() {
     .values({
       name: "Breville Espresso",
       brewingMethod: "espresso",
-      defaultDoseGrams: "18",
+      targetDoseGrams: "18",
       notes: "Default espresso recipe using Breville Barista Express",
     })
     .returning()
@@ -446,9 +446,9 @@ async function seed() {
     return {
       beanId: beanIdMap.get(shot.bean_id)!,
       recipeId: recipe.id,
-      doseGrams: shot.dose_grams?.toString() ?? null,
-      yieldGrams: shot.yield_grams?.toString() ?? null,
-      brewTimeSeconds: shot.brew_time_seconds ? Math.round(shot.brew_time_seconds) : null,
+          actualDoseGrams: shot.dose_grams?.toString() ?? null,
+          actualYieldGrams: shot.yield_grams?.toString() ?? null,
+          actualShotTimeSeconds: shot.brew_time_seconds?.toString() ?? null,
       grindSetting: shot.grind_setting,
       notes: [shot.basket ? `Basket: ${shot.basket}` : null, shot.notes].filter(Boolean).join(" | ") || null,
       createdAt,
