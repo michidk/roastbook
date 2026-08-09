@@ -73,6 +73,14 @@ Roastbook should feel like a calm, tactile coffee journal: warm paper beneath cr
 - **Accessibility**: cards are not interactive by themselves; navigable cards use a real Link.
 - **Depth**: coffee-tinted soft shadow with tonal background separation.
 
+### Editorial bean card
+- **Reference**: the supplied bean-grid screenshot is the visual contract: three full-bleed photographic cards with dark image grading, a compact roast badge at upper left, a circular northeast arrow at upper right, and all copy anchored near the lower edge.
+- **Structure**: one shared Card contains a full-surface image, a restrained dark scrim, a top control row, then bottom-aligned roaster, two-line bean name, origin/process line, divider, and two-column roast-date/weight footer.
+- **Material**: cinematic bag photography carries the surface. White typography and translucent white rules sit directly over the darkened image; there is no inset frame, parchment panel, paper grain, inner card, or visible drop shadow.
+- **States**: rich data, sparse data, image fallback, hover, focus, and reduced motion. Missing roaster, roast, origin/process, date, and weight are omitted; the card never invents “not set” or “not added” values.
+- **Accessibility**: the whole card remains a named Link, the image stays decorative, the scrim maintains readable contrast independent of photo brightness, and the arrow remains decorative instead of becoming a nested control.
+- **Layout**: active cards retain the tall reference geometry. Archived cards use a visibly denser 320px mobile/tablet and 304px desktop height while keeping the same one/two/three-column anatomy; long names clamp to two lines.
+
 ### Resilient image
 - **Structure**: fixed-aspect media wrapper, image, and token-driven fallback.
 - **Variants**: thumbnail and gallery/detail.
@@ -86,18 +94,24 @@ Roastbook should feel like a calm, tactile coffee journal: warm paper beneath cr
 - **Accessibility**: visible summary or text equivalent accompanies charts and maps.
 - **Layout**: plot containers always have an explicit height and width.
 
-### Café explorer map
-- **Structure**: warm-toned MapLibre surface on `/visits`, automatically loaded OpenStreetMap cafés for the visible map area, persistent saved/discovered legend, 44px custom café markers, search control, and a React-rendered place inspector. `/places` remains a focused saved-place list without a map.
-- **Variants**: saved places use the filled coffee marker; OpenStreetMap discoveries use the cream outlined marker.
-- **States**: loading, ready, visible-area discovery loading/error, zoom-in prompt, search loading, selected saved place, selected discovery, added discovery, no results, and unavailable.
-- **Accessibility**: every marker is a named button, selection is mirrored in the inspector, map search has a persistent label and live status, and every primary action retains a 44px target.
+### Saved café map
+- **Structure**: warm-toned MapLibre surface on `/visits` with 44px markers for coffee shops already saved in Roastbook, zoom controls, a React-rendered place inspector, and concise OpenStreetMap attribution. `/places` remains the focused list for managing saved places.
+- **Variants**: favorite places add the heart badge and emphasized ink marker; all other saved places use the filled coffee marker.
+- **States**: loading, ready, selected place, no saved places with usable coordinates, and unavailable.
+- **Accessibility**: every visible marker is a named button, arrow-key navigation follows markers inside the current viewport, selection is mirrored in the focus-managed inspector, and every primary action retains a 44px target.
 - **Interaction**: marker selection uses the standard 200ms state transition and a short camera ease; reduced motion makes camera changes immediate. The inspector appears through opacity and transform only.
-- **Layout**: the map owns a fixed responsive height; the inspector follows the map in normal flow below `lg` and becomes a compact lower-left map overlay at `lg` and above.
+- **Layout**: the map owns a fixed responsive height; the inspector follows the map in normal flow below `lg` and becomes a compact lower-left map overlay at `lg` and above. The intentional empty state replaces the map when no saved place has usable coordinates.
 
 ### Form field
 - **Structure**: persistent label, native/shadcn control, optional helper or error.
 - **States**: default, focus, disabled, invalid, loading where relevant.
 - **Accessibility**: deterministic server/client markup, label association, visible focus, and no hidden caret.
+
+### Form suggestions
+- **Structure**: a persistent Suggestions label followed by wrapping compact buttons above the related picker.
+- **States**: unselected, hover/focus, and selected using the primary action tokens.
+- **Accessibility**: suggestion buttons retain a 44px mobile target and update the same labeled picker as manual selection.
+- **Layout**: suggestions wrap naturally without horizontal overflow; selected entity previews reuse their route card and responsive grid geometry.
 
 ### Picture uploader
 - **Structure**: preview grid, mobile-safe file picker, dashed drop target, explicit clipboard action, URL input, and contextual helper/status copy.

@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -257,15 +257,6 @@
   border-color: var(--primary);
   background: var(--ink);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 28%, transparent), var(--coffee-shadow-strong);
-}
-
-.roastbook-visits-map-marker[data-variant="discovered"] {
-  color: var(--coffee);
-}
-
-.roastbook-visits-map-marker[data-variant="discovered"] .roastbook-visits-map-marker-pin {
-  border-color: var(--coffee);
-  background: var(--card);
 }
 
 .roastbook-visits-map-marker-favorite {
