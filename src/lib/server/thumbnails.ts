@@ -1,25 +1,14 @@
-import sharp from "sharp"
 import { getStorage } from "@/lib/storage"
+import { createThumbnail, getThumbnailPath } from "@/lib/thumbnail-image"
 
-const THUMB_WIDTH = 640
-const THUMB_QUALITY = 78
-
-export function getThumbnailPath(storagePath: string): string {
-  const dot = storagePath.lastIndexOf(".")
-  const base = dot === -1 ? storagePath : storagePath.slice(0, dot)
-  return `${base}.thumb.webp`
-}
+export { getThumbnailPath } from "@/lib/thumbnail-image"
 
 export async function generateAndUploadThumbnail(
   buffer: Buffer,
   storagePath: string,
 ): Promise<string | null> {
   try {
-    const thumbBuffer = await sharp(buffer)
-      .rotate()
-      .resize({ width: THUMB_WIDTH, withoutEnlargement: true })
-      .webp({ quality: THUMB_QUALITY })
-      .toBuffer()
+    const thumbBuffer = await createThumbnail(buffer)
 
     const thumbPath = getThumbnailPath(storagePath)
     const storage = getStorage()

@@ -1,6 +1,5 @@
 import { readFile, stat } from "node:fs/promises"
 import { join } from "node:path"
-import sharp from "sharp"
 import { writeFile, mkdir } from "node:fs/promises"
 import { dirname } from "node:path"
 import { drizzle } from "drizzle-orm/postgres-js"
@@ -12,16 +11,9 @@ import {
   shotImages,
   cafeVisitImages,
 } from "../src/db/schema"
+import { createThumbnail, getThumbnailPath } from "../src/lib/thumbnail-image"
 
-const THUMB_WIDTH = 640
-const THUMB_QUALITY = 78
 const STORAGE_BASE = process.env.STORAGE_PATH || "./uploads"
-
-function getThumbnailPath(storagePath: string): string {
-  const dot = storagePath.lastIndexOf(".")
-  const base = dot === -1 ? storagePath : storagePath.slice(0, dot)
-  return `${base}.thumb.webp`
-}
 
 async function exists(path: string) {
   try {
@@ -40,11 +32,7 @@ async function processOne(storagePath: string) {
   if (!(await exists(fullOriginal))) return { status: "missing" as const }
 
   const input = await readFile(fullOriginal)
-  const thumb = await sharp(input)
-    .rotate()
-    .resize({ width: THUMB_WIDTH, withoutEnlargement: true })
-    .webp({ quality: THUMB_QUALITY })
-    .toBuffer()
+  const thumb = await createThumbnail(input)
   await mkdir(dirname(fullThumb), { recursive: true })
   await writeFile(fullThumb, thumb)
   return { status: "wrote" as const, bytes: thumb.length }
