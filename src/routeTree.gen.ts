@@ -26,6 +26,7 @@ import { Route as ShotsNewRouteImport } from './routes/shots/new'
 import { Route as ShotsShotIdRouteImport } from './routes/shots/$shotId'
 import { Route as RoastersNewRouteImport } from './routes/roasters/new'
 import { Route as RoastersRoasterIdRouteImport } from './routes/roasters/$roasterId'
+import { Route as RecipesRecipeIdRouteImport } from './routes/recipes/$recipeId'
 import { Route as GearNewRouteImport } from './routes/gear/new'
 import { Route as GearGearIdRouteImport } from './routes/gear/$gearId'
 import { Route as CoffeeShopsNewRouteImport } from './routes/coffee-shops/new'
@@ -119,6 +120,11 @@ const RoastersRoasterIdRoute = RoastersRoasterIdRouteImport.update({
   path: '/roasters/$roasterId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RecipesRecipeIdRoute = RecipesRecipeIdRouteImport.update({
+  id: '/recipes/$recipeId',
+  path: '/recipes/$recipeId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GearNewRoute = GearNewRouteImport.update({
   id: '/gear/new',
   path: '/gear/new',
@@ -166,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/coffee-shops/new': typeof CoffeeShopsNewRoute
   '/gear/$gearId': typeof GearGearIdRoute
   '/gear/new': typeof GearNewRoute
+  '/recipes/$recipeId': typeof RecipesRecipeIdRoute
   '/roasters/$roasterId': typeof RoastersRoasterIdRoute
   '/roasters/new': typeof RoastersNewRoute
   '/shots/$shotId': typeof ShotsShotIdRoute
@@ -192,6 +199,7 @@ export interface FileRoutesByTo {
   '/coffee-shops/new': typeof CoffeeShopsNewRoute
   '/gear/$gearId': typeof GearGearIdRoute
   '/gear/new': typeof GearNewRoute
+  '/recipes/$recipeId': typeof RecipesRecipeIdRoute
   '/roasters/$roasterId': typeof RoastersRoasterIdRoute
   '/roasters/new': typeof RoastersNewRoute
   '/shots/$shotId': typeof ShotsShotIdRoute
@@ -219,6 +227,7 @@ export interface FileRoutesById {
   '/coffee-shops/new': typeof CoffeeShopsNewRoute
   '/gear/$gearId': typeof GearGearIdRoute
   '/gear/new': typeof GearNewRoute
+  '/recipes/$recipeId': typeof RecipesRecipeIdRoute
   '/roasters/$roasterId': typeof RoastersRoasterIdRoute
   '/roasters/new': typeof RoastersNewRoute
   '/shots/$shotId': typeof ShotsShotIdRoute
@@ -247,6 +256,7 @@ export interface FileRouteTypes {
     | '/coffee-shops/new'
     | '/gear/$gearId'
     | '/gear/new'
+    | '/recipes/$recipeId'
     | '/roasters/$roasterId'
     | '/roasters/new'
     | '/shots/$shotId'
@@ -273,6 +283,7 @@ export interface FileRouteTypes {
     | '/coffee-shops/new'
     | '/gear/$gearId'
     | '/gear/new'
+    | '/recipes/$recipeId'
     | '/roasters/$roasterId'
     | '/roasters/new'
     | '/shots/$shotId'
@@ -299,6 +310,7 @@ export interface FileRouteTypes {
     | '/coffee-shops/new'
     | '/gear/$gearId'
     | '/gear/new'
+    | '/recipes/$recipeId'
     | '/roasters/$roasterId'
     | '/roasters/new'
     | '/shots/$shotId'
@@ -326,6 +338,7 @@ export interface RootRouteChildren {
   CoffeeShopsNewRoute: typeof CoffeeShopsNewRoute
   GearGearIdRoute: typeof GearGearIdRoute
   GearNewRoute: typeof GearNewRoute
+  RecipesRecipeIdRoute: typeof RecipesRecipeIdRoute
   RoastersRoasterIdRoute: typeof RoastersRoasterIdRoute
   RoastersNewRoute: typeof RoastersNewRoute
   ShotsShotIdRoute: typeof ShotsShotIdRoute
@@ -463,6 +476,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RoastersRoasterIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/recipes/$recipeId': {
+      id: '/recipes/$recipeId'
+      path: '/recipes/$recipeId'
+      fullPath: '/recipes/$recipeId'
+      preLoaderRoute: typeof RecipesRecipeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/gear/new': {
       id: '/gear/new'
       path: '/gear/new'
@@ -526,6 +546,7 @@ const rootRouteChildren: RootRouteChildren = {
   CoffeeShopsNewRoute: CoffeeShopsNewRoute,
   GearGearIdRoute: GearGearIdRoute,
   GearNewRoute: GearNewRoute,
+  RecipesRecipeIdRoute: RecipesRecipeIdRoute,
   RoastersRoasterIdRoute: RoastersRoasterIdRoute,
   RoastersNewRoute: RoastersNewRoute,
   ShotsShotIdRoute: ShotsShotIdRoute,

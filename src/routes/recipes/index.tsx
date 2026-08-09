@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { BookOpen, ChevronDown } from "lucide-react"
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { ArrowUpRight, BookOpen, ChevronDown } from "lucide-react"
 import { RouteError } from "@/components/route-error"
 import { ListPending } from "@/components/route-pending"
 import { Badge } from "@/components/ui/badge"
@@ -10,6 +10,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { getAllRecipes } from "@/lib/server/recipes"
+import { BREWING_METHOD_LABELS } from "@/lib/recipes"
 
 export const Route = createFileRoute("/recipes/")({
   loader: () => getAllRecipes(),
@@ -21,16 +22,6 @@ export const Route = createFileRoute("/recipes/")({
 })
 
 type Recipe = Awaited<ReturnType<typeof getAllRecipes>>[number]
-
-const brewingMethodLabels = {
-  espresso: "Espresso",
-  pourover: "Pour over",
-  aeropress: "AeroPress",
-  french_press: "French press",
-  moka_pot: "Moka pot",
-  cold_brew: "Cold brew",
-  other: "Other",
-} as const satisfies Record<Recipe["brewingMethod"], string>
 
 function RecipesPage() {
   const recipes = Route.useLoaderData()
@@ -78,8 +69,8 @@ function RecipesPage() {
 
           {archivedRecipes.length > 0 && (
             <Collapsible className="space-y-4">
-              <CollapsibleTrigger className="group flex items-center gap-2 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground">
-                <ChevronDown className="h-4 w-4 transition-transform group-data-[open]:rotate-180" />
+              <CollapsibleTrigger className="group -mx-2 flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <ChevronDown className="h-4 w-4 transition-transform group-data-[open]:rotate-180 motion-reduce:transition-none" />
                 Archived ({archivedRecipes.length})
               </CollapsibleTrigger>
               <CollapsibleContent>
@@ -144,16 +135,29 @@ function RecipeCard({ recipe }: { readonly recipe: Recipe }) {
   const hasParameters = parameters.some(({ value }) => value !== null)
 
   return (
-    <Card className="h-full">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-3">
-          <CardTitle className="min-w-0 text-base">{recipe.name}</CardTitle>
-          <Badge variant="outline" className="shrink-0">
-            {brewingMethodLabels[recipe.brewingMethod]}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <Card className="h-full overflow-hidden p-0 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-coffee-strong motion-reduce:transform-none motion-reduce:transition-none">
+      <Link
+        to="/recipes/$recipeId"
+        params={{ recipeId: String(recipe.id) }}
+        aria-label={`Open recipe ${recipe.name}`}
+        className="flex h-full flex-col rounded-[inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+      >
+        <CardHeader className="p-5 pb-3">
+          <div className="flex items-start justify-between gap-3">
+            <CardTitle as="h3" className="min-w-0 text-base">
+              {recipe.name}
+            </CardTitle>
+            <div className="flex shrink-0 items-center gap-2">
+              <Badge variant="outline">
+                {BREWING_METHOD_LABELS[recipe.brewingMethod]}
+              </Badge>
+              <span className="flex size-8 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+                <ArrowUpRight className="h-4 w-4" aria-hidden />
+              </span>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="flex-1 space-y-4 p-5 pt-0">
         {hasParameters ? (
           <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
             {parameters.map(({ label, value }) =>
@@ -187,7 +191,8 @@ function RecipeCard({ recipe }: { readonly recipe: Recipe }) {
             {recipe.notes}
           </p>
         )}
-      </CardContent>
+        </CardContent>
+      </Link>
     </Card>
   )
 }
