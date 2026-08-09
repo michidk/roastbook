@@ -50,7 +50,6 @@ The app will be available at http://localhost:3000
 ```bash
 bun run dev              # Development server (port 3000)
 bun run build            # Production build
-bun run test             # Run tests
 bun run lint:deadcode    # Check for unused code (knip)
 bun run db:generate      # Generate migrations
 bun run db:migrate       # Run versioned migrations (recommended everywhere)

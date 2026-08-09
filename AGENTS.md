@@ -53,7 +53,6 @@ A self-hosted coffee logging application for tracking espresso shots, cafe visit
 bun install              # Install dependencies
 bun run dev              # Development server (port 3000)
 bun run build            # Production build
-bun run test             # Run tests
 bun run generate-routes  # Regenerate route tree
 ```
 
@@ -61,7 +60,7 @@ bun run generate-routes  # Regenerate route tree
 
 - Use the Playwright MCP for temporary browser-based verification when needed.
 - Do not add Playwright test files, Playwright configuration, Playwright dependencies, or generated Playwright test artifacts to the codebase.
-- Keep browser QA ephemeral; repository tests remain on the existing Bun/Vitest setup.
+- Keep browser QA ephemeral; the repository has no automated test suite, so browser QA and manual verification are the primary behavioral checks.
 
 ## Adding UI Components
 
