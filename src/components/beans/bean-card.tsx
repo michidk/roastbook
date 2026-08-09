@@ -57,7 +57,7 @@ export function BeanCard({ bean }: BeanCardProps) {
       aria-label={`View ${bean.name}`}
       className="group block h-full rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
-      <Card className="h-full gap-0 py-0 transition-transform duration-200 group-hover:-translate-y-1 motion-reduce:transform-none">
+      <Card className="h-full gap-0 py-0 transition-transform duration-200 group-hover:-translate-y-1 motion-reduce:translate-none">
         <div
           className="relative aspect-[16/9] overflow-hidden bg-secondary"
           style={{
@@ -74,7 +74,7 @@ export function BeanCard({ bean }: BeanCardProps) {
               decoding="async"
               width={640}
               height={400}
-              className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03] motion-reduce:transform-none"
+              className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03] motion-reduce:scale-none"
               fallback={
                 <div className="flex size-20 rotate-6 items-center justify-center rounded-[2rem] border-2 border-card/70 bg-coffee text-coffee-foreground shadow-coffee-strong ring-8 ring-card/15">
                   <Bean className="size-10 -rotate-6 drop-shadow-sm" strokeWidth={1.75} />
@@ -95,7 +95,7 @@ export function BeanCard({ bean }: BeanCardProps) {
           >
             {roastBadge.label}
           </span>
-          <span className="absolute top-3 right-3 flex size-9 items-center justify-center rounded-xl border border-card bg-card text-foreground shadow-sm transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transform-none">
+          <span className="absolute top-3 right-3 flex size-9 items-center justify-center rounded-xl border border-card bg-card text-foreground shadow-sm transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:translate-none">
             <ArrowUpRight className="size-4" aria-hidden="true" />
           </span>
         </div>
