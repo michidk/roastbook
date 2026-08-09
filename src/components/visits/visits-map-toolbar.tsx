@@ -1,4 +1,4 @@
-import type { FormEventHandler } from "react"
+import type { ComponentProps } from "react"
 import { Coffee, Heart, Loader2, Search, Sparkles } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -19,7 +19,7 @@ type VisitsMapToolbarProps = {
   readonly searchError: string | null
   readonly nearbyStatus: NearbyStatus
   readonly onQueryChange: (query: string) => void
-  readonly onSubmit: FormEventHandler<HTMLFormElement>
+  readonly onSubmit: ComponentProps<"form">["onSubmit"]
 }
 
 export function VisitsMapToolbar({
