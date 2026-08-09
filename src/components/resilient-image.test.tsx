@@ -7,6 +7,18 @@ import { describe, expect, it, vi } from "vitest"
 import { ResilientImage } from "./resilient-image"
 
 describe("ResilientImage", () => {
+  it("keeps a decorative fallback hidden from assistive technology", () => {
+    // Given
+    const element = <ResilientImage alt="" width={48} height={48} />
+
+    // When
+    const markup = renderToString(element)
+
+    // Then
+    expect(markup).not.toContain('role="img"')
+    expect(markup).not.toContain("Image unavailable")
+  })
+
   it("shows the fallback when an image failed before hydration", async () => {
     // Given
     const container = document.createElement("div")
