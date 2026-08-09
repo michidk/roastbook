@@ -22,7 +22,7 @@ const RANKING_EMPTY_MESSAGES = {
   "unlinked-visits": "Link visits to a saved coffee shop to see your most visited places here.",
 } as const
 
-export function getPlacesRankingState(
+function getPlacesRankingState(
   totalVisits: number,
   rankedPlaces: number,
 ): "ranked" | keyof typeof RANKING_EMPTY_MESSAGES {

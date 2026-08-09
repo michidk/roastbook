@@ -54,7 +54,7 @@ export async function getVisitsAndPlacesStats(startOfMonth: Date) {
   }
 }
 
-export function buildVisitsThisMonthQuery(startOfMonth: Date) {
+function buildVisitsThisMonthQuery(startOfMonth: Date) {
   return db
     .select({ count: count() })
     .from(cafeVisits)

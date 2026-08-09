@@ -12,7 +12,7 @@ type ActivityDay = {
   readonly count: number
 }
 
-export function formatActivityDate(value: string): string {
+function formatActivityDate(value: string): string {
   return new Date(`${value}T00:00:00Z`).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
