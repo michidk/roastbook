@@ -46,6 +46,7 @@ export function FormPageHeader({
 
 interface FormSectionProps {
   title?: string
+  titleAs?: "h2" | "h3"
   description?: string
   action?: ReactNode
   children: ReactNode
@@ -55,6 +56,7 @@ interface FormSectionProps {
 
 export function FormSection({
   title,
+  titleAs = "h2",
   description,
   action,
   children,
@@ -74,7 +76,9 @@ export function FormSection({
           className={cn(action && "flex flex-row items-center justify-between")}
         >
           <div className="space-y-1">
-            <CardTitle id={headingId}>{title}</CardTitle>
+            <CardTitle as={titleAs} id={headingId}>
+              {title}
+            </CardTitle>
             {description ? (
               <p className="text-sm text-muted-foreground">{description}</p>
             ) : null}
@@ -89,7 +93,7 @@ export function FormSection({
   )
 }
 
-interface FormActionsProps {
+export interface FormActionsProps {
   onCancel: () => void
   isSubmitting?: boolean
   disabled?: boolean
@@ -132,6 +136,7 @@ export function FormActions({
 interface EntityFormProps {
   onSubmit: (event: SyntheticEvent<HTMLFormElement>) => void
   children: ReactNode
+  actions?: FormActionsProps
   id?: string
   className?: string
 }
@@ -139,6 +144,7 @@ interface EntityFormProps {
 export function EntityForm({
   onSubmit,
   children,
+  actions,
   id,
   className,
 }: EntityFormProps) {
@@ -156,6 +162,7 @@ export function EntityForm({
       className={cn("space-y-6", className)}
     >
       {children}
+      {actions ? <FormActions {...actions} /> : null}
     </form>
   )
 }

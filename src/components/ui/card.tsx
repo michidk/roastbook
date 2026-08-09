@@ -33,9 +33,13 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
+function CardTitle({
+  as: Comp = "div",
+  className,
+  ...props
+}: React.ComponentProps<"div"> & { as?: "div" | "h2" | "h3" }) {
   return (
-    <div
+    <Comp
       data-slot="card-title"
       className={cn(
         "font-display text-lg leading-snug font-bold tracking-tight group-data-[size=sm]/card:text-base",

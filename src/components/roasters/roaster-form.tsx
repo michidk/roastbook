@@ -1,6 +1,6 @@
 import { useState, type SyntheticEvent } from "react"
 import { toast } from "sonner"
-import { EntityForm, FormActions, FormSection } from "@/components/form/form-shell"
+import { EntityForm, FormSection } from "@/components/form/form-shell"
 import { InputField, TextareaField } from "@/components/form/form-field"
 import { useFormState } from "@/hooks/use-form-state"
 import { createRoaster } from "@/lib/server/roasters"
@@ -55,7 +55,16 @@ export function RoasterForm({
   }
 
   return (
-    <EntityForm onSubmit={handleSubmit}>
+    <EntityForm
+      onSubmit={handleSubmit}
+      actions={{
+        onCancel,
+        isSubmitting,
+        disabled: !form.values.name.trim(),
+        submitLabel,
+        submittingLabel: "Creating...",
+      }}
+    >
       <FormSection title="Roaster Info">
         <InputField
           id="roaster-name"
@@ -112,13 +121,6 @@ export function RoasterForm({
         />
       </FormSection>
 
-      <FormActions
-        onCancel={onCancel}
-        isSubmitting={isSubmitting}
-        disabled={!form.values.name.trim()}
-        submitLabel={submitLabel}
-        submittingLabel="Creating..."
-      />
     </EntityForm>
   )
 }

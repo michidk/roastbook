@@ -58,6 +58,7 @@ interface InputFieldProps extends FormFieldBaseProps {
   value: string
   onChange: (value: string) => void
   min?: string | number
+  max?: string | number
   step?: string | number
   autoFocus?: boolean
 }
@@ -75,6 +76,7 @@ export function InputField({
   value,
   onChange,
   min,
+  max,
   step,
   autoFocus,
 }: InputFieldProps) {
@@ -104,6 +106,7 @@ export function InputField({
         required={required}
         disabled={disabled}
         min={min}
+        max={max}
         step={step}
         autoFocus={autoFocus}
         aria-invalid={Boolean(error)}
