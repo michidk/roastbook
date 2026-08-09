@@ -561,7 +561,7 @@ function TimerRing({
           <span className="text-5xl leading-none">{seconds.toFixed(1)}</span>
           <span className="text-xl text-coffee-foreground/70">s</span>
         </div>
-        <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-coffee-foreground/70">
+        <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-coffee-foreground">
           {running && isOverTarget
             ? "Over target"
             : running
