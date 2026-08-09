@@ -17,19 +17,6 @@ export type PlaceVisitInput = {
   readonly coffeeShopId: number | null
 }
 
-export type DiscoveredPlaceInput = {
-  readonly id: number | string
-  readonly name: string
-  readonly displayName: string
-  readonly latitude: string
-  readonly longitude: string
-  readonly openStreetMapUrl?: string
-  readonly address?: string
-  readonly city?: string
-  readonly country?: string
-  readonly website?: string
-}
-
 type MapPlaceBase = {
   readonly id: string
   readonly name: string
@@ -42,22 +29,13 @@ type MapPlaceBase = {
 }
 
 export type SavedMapPlace = MapPlaceBase & {
-  readonly kind: "saved"
   readonly coffeeShopId: number
   readonly rating: number | null
   readonly isFavorite: boolean
   readonly visitCount: number
 }
 
-export type DiscoveredMapPlace = MapPlaceBase & {
-  readonly kind: "discovered"
-  readonly sourceId: number | string
-  readonly displayName: string
-  readonly openStreetMapUrl: string | null
-}
-
-export type VisitsMapPlace = SavedMapPlace | DiscoveredMapPlace
-export type MapMarkerVariant = "favorite" | "saved" | "discovered"
+export type MapMarkerVariant = "favorite" | "saved"
 
 export function toSavedMapPlaces(
   coffeeShops: readonly SavedPlaceInput[],
@@ -79,7 +57,6 @@ export function toSavedMapPlaces(
 
     return [
       {
-        kind: "saved" as const,
         id: `saved:${coffeeShop.id}`,
         coffeeShopId: coffeeShop.id,
         name: coffeeShop.name,
@@ -97,61 +74,6 @@ export function toSavedMapPlaces(
   })
 }
 
-export function toDiscoveredMapPlaces(
-  candidates: readonly DiscoveredPlaceInput[],
-): DiscoveredMapPlace[] {
-  return candidates.flatMap((candidate) => {
-    const latitude = parseCoordinate(candidate.latitude, "latitude")
-    const longitude = parseCoordinate(candidate.longitude, "longitude")
-    if (latitude === null || longitude === null) return []
-
-    return [
-      {
-        kind: "discovered" as const,
-        id: `discovered:${candidate.id}`,
-        sourceId: candidate.id,
-        name: candidate.name,
-        displayName: candidate.displayName,
-        address: candidate.address ?? null,
-        city: candidate.city ?? null,
-        country: candidate.country ?? null,
-        latitude,
-        longitude,
-        website: candidate.website ?? null,
-        openStreetMapUrl: candidate.openStreetMapUrl ?? null,
-      },
-    ]
-  })
-}
-
-export function getVisibleMapPlaces(
-  savedPlaces: readonly SavedMapPlace[],
-  discoveredPlaces: readonly DiscoveredMapPlace[],
-): VisitsMapPlace[] {
-  return [
-    ...savedPlaces,
-    ...discoveredPlaces.filter(
-      (discovered) =>
-        !savedPlaces.some((saved) => isSameCoffeeShop(saved, discovered)),
-    ),
-  ]
-}
-
-export function getMapMarkerVariant(place: VisitsMapPlace): MapMarkerVariant {
-  if (place.kind === "discovered") return "discovered"
+export function getMapMarkerVariant(place: SavedMapPlace): MapMarkerVariant {
   return place.isFavorite ? "favorite" : "saved"
-}
-
-function isSameCoffeeShop(
-  saved: SavedMapPlace,
-  discovered: DiscoveredMapPlace,
-): boolean {
-  const sameName = normalizeName(saved.name) === normalizeName(discovered.name)
-  const latitudeDistance = Math.abs(saved.latitude - discovered.latitude)
-  const longitudeDistance = Math.abs(saved.longitude - discovered.longitude)
-  return sameName && latitudeDistance < 0.0005 && longitudeDistance < 0.0005
-}
-
-function normalizeName(name: string): string {
-  return name.trim().toLocaleLowerCase().replace(/[^a-z0-9]+/g, "")
 }

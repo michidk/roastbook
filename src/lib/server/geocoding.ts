@@ -1,12 +1,7 @@
 import { createServerFn } from "@tanstack/react-start"
 import { prioritizeCoffeeShopCandidates } from "@/lib/geocoding-ranking"
-import { parseNearbyCoffeeShops } from "@/lib/nearby-coffee-shops"
 
 const NOMINATIM_CANDIDATE_LIMIT = 40
-const OVERPASS_ENDPOINTS = [
-  "https://overpass.kumi.systems/api/interpreter",
-  "https://overpass-api.de/api/interpreter",
-] as const
 
 type NominatimResult = {
   readonly place_id?: number
@@ -109,6 +104,7 @@ export const searchCoffeeShopCandidates = createServerFn({ method: "POST" })
         Accept: "application/json",
         "User-Agent": "Roastbook/1.0 (self-hosted coffee journal geocoding)",
       },
+      signal: AbortSignal.timeout(15_000),
     })
 
     if (!response.ok) {
@@ -184,66 +180,3 @@ export const geocodeDefaultMapLocation = createServerFn({ method: "POST" })
       label: result.display_name,
     }
   })
-
-type CoffeeShopMapBounds = {
-  readonly south: number
-  readonly west: number
-  readonly north: number
-  readonly east: number
-}
-
-export const discoverCoffeeShopsInBounds = createServerFn({ method: "POST" })
-  .validator((data: CoffeeShopMapBounds) => normalizeMapBounds(data))
-  .handler(async ({ data }) => {
-    const box = `${data.south},${data.west},${data.north},${data.east}`
-    const query = `[out:json][timeout:30];(
-      nwr["amenity"="cafe"]["name"](${box});
-      nwr["shop"="coffee"]["name"](${box});
-    );out center;`
-    let lastStatus = 503
-    let lastError: Error | null = null
-    for (const endpoint of OVERPASS_ENDPOINTS) {
-      try {
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-            "User-Agent": "Roastbook/1.0 (self-hosted coffee journal discovery)",
-          },
-          body: new URLSearchParams({ data: query }),
-          signal: AbortSignal.timeout(25_000),
-        })
-        if (response.ok) {
-          return parseNearbyCoffeeShops(await response.json())
-        }
-        lastStatus = response.status
-        if (response.status !== 429 && response.status < 500) break
-      } catch (requestError) {
-        if (!(requestError instanceof Error)) throw requestError
-        lastError = requestError
-      }
-    }
-    if (lastError) throw lastError
-    throw new Error(`Nearby café discovery failed: ${lastStatus}`)
-  })
-
-function normalizeMapBounds(bounds: CoffeeShopMapBounds): CoffeeShopMapBounds {
-  const coordinates = [bounds.south, bounds.west, bounds.north, bounds.east]
-  if (!coordinates.every(Number.isFinite)) {
-    throw new Error("Invalid map bounds")
-  }
-  if (
-    bounds.south < -90 ||
-    bounds.north > 90 ||
-    bounds.west < -180 ||
-    bounds.east > 180 ||
-    bounds.south >= bounds.north ||
-    bounds.west >= bounds.east
-  ) {
-    throw new Error("Invalid map bounds")
-  }
-  if (bounds.north - bounds.south > 1 || bounds.east - bounds.west > 1.5) {
-    throw new Error("Map bounds are too large for café discovery")
-  }
-  return bounds
-}
