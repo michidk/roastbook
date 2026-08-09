@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useState, type SyntheticEvent } from "react"
+import { useEffect, useState, type SyntheticEvent } from "react"
 import { toast } from "sonner"
 import {
   EntityForm,
@@ -21,6 +21,7 @@ import { getCoffeeShops } from "@/lib/server/coffee-shops"
 import { getTasteTags } from "@/lib/server/taste-tags"
 import { createCafeVisit } from "@/lib/server/cafe-visits"
 import { DRINK_TYPE_OPTIONS } from "@/lib/constants"
+import { useSettingsStore } from "@/lib/settings-store"
 
 export const Route = createFileRoute("/visits/new")({
   validateSearch: (search: Record<string, unknown>) => {
@@ -44,6 +45,7 @@ export const Route = createFileRoute("/visits/new")({
 })
 
 function NewVisitPage() {
+  const defaultCurrency = useSettingsStore((state) => state.defaultCurrency)
   const { coffeeShops, tasteTags, beans } = Route.useLoaderData()
   const search = Route.useSearch()
   const navigate = useNavigate()
@@ -68,6 +70,10 @@ function NewVisitPage() {
     rating: 3,
     notes: "",
   })
+
+  useEffect(() => {
+    form.set("currency", defaultCurrency)
+  }, [defaultCurrency, form.set])
 
   const toggleTag = (tagId: number) => {
     setSelectedTags((prev) =>
