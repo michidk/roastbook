@@ -16,7 +16,7 @@ const IMAGE_MIME_TYPES = new Set([
   "image/webp",
 ])
 
-export class RemoteImageError extends Error {
+class RemoteImageError extends Error {
   constructor(message: string) {
     super(message)
     this.name = "RemoteImageError"

@@ -7,7 +7,7 @@ export interface ImageFile {
   readonly base64: string
 }
 
-export class ImageUploadError extends Error {
+class ImageUploadError extends Error {
   constructor(message: string) {
     super(message)
     this.name = "ImageUploadError"
