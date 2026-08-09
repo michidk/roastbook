@@ -9,21 +9,23 @@ import {
   type CafeVisitUpdateCandidate,
 } from "@/lib/update-validation"
 
+const cafeVisitRelations = {
+  coffeeShop: true,
+  bean: true,
+  tasteTags: {
+    with: {
+      tasteTag: true,
+    },
+  },
+  images: true,
+} as const
+
 export const getCafeVisits = createServerFn({ method: "GET" }).handler(
   async () => {
     try {
       return await db.query.cafeVisits.findMany({
         orderBy: [desc(cafeVisits.visitedAt)],
-        with: {
-          coffeeShop: true,
-          bean: true,
-          tasteTags: {
-            with: {
-              tasteTag: true,
-            },
-          },
-          images: true,
-        },
+        with: cafeVisitRelations,
       })
     } catch (error) {
       throw await toDisplayableDatabaseError(error)
@@ -37,16 +39,7 @@ export const getCafeVisit = createServerFn({ method: "GET" })
     try {
       return await db.query.cafeVisits.findFirst({
         where: eq(cafeVisits.id, id),
-        with: {
-          coffeeShop: true,
-          bean: true,
-          tasteTags: {
-            with: {
-              tasteTag: true,
-            },
-          },
-          images: true,
-        },
+        with: cafeVisitRelations,
       })
     } catch (error) {
       throw await toDisplayableDatabaseError(error)

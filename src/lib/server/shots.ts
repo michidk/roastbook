@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start"
 import { db } from "@/db"
-import { shots, shotTasteTags, recipeGear } from "@/db/schema"
+import { recipes, shots, shotTasteTags, recipeGear } from "@/db/schema"
 import { eq, desc, and, inArray } from "drizzle-orm"
 import {
   assertValidUpdate,
@@ -8,31 +8,38 @@ import {
   type ShotUpdateCandidate,
 } from "@/lib/update-validation"
 
+const shotRelations = {
+  bean: true,
+  recipe: {
+    with: {
+      gear: {
+        with: {
+          gear: true,
+        },
+      },
+    },
+  },
+  tasteTags: {
+    with: {
+      tasteTag: true,
+    },
+  },
+  images: true,
+} as const
+
+const shotRelationsWithBeanImages = {
+  ...shotRelations,
+  bean: {
+    with: {
+      images: true,
+    },
+  },
+} as const
+
 export const getShots = createServerFn({ method: "GET" }).handler(async () => {
   return db.query.shots.findMany({
     orderBy: [desc(shots.createdAt)],
-    with: {
-      bean: {
-        with: {
-          images: true,
-        },
-      },
-      recipe: {
-        with: {
-          gear: {
-            with: {
-              gear: true,
-            },
-          },
-        },
-      },
-      tasteTags: {
-        with: {
-          tasteTag: true,
-        },
-      },
-      images: true,
-    },
+    with: shotRelationsWithBeanImages,
   })
 })
 
@@ -41,24 +48,7 @@ export const getShot = createServerFn({ method: "GET" })
   .handler(async ({ data: id }) => {
     return db.query.shots.findFirst({
       where: eq(shots.id, id),
-      with: {
-        bean: true,
-        recipe: {
-          with: {
-            gear: {
-              with: {
-                gear: true,
-              },
-            },
-          },
-        },
-        tasteTags: {
-          with: {
-            tasteTag: true,
-          },
-        },
-        images: true,
-      },
+      with: shotRelations,
     })
   })
 
@@ -154,16 +144,23 @@ export const getPrefillRecipe = createServerFn({ method: "GET" })
   .validator((beanId: number | null) => beanId)
   .handler(async ({ data: beanId }) => {
     if (beanId) {
-      const lastShotForBean = await db.query.shots.findFirst({
-        where: eq(shots.beanId, beanId),
-        orderBy: [desc(shots.createdAt)],
-      })
-      if (lastShotForBean?.recipeId) return lastShotForBean.recipeId
+      const [lastShotForBean] = await db
+        .select({ recipeId: shots.recipeId })
+        .from(shots)
+        .innerJoin(recipes, eq(shots.recipeId, recipes.id))
+        .where(and(eq(shots.beanId, beanId), eq(recipes.isArchived, false)))
+        .orderBy(desc(shots.createdAt))
+        .limit(1)
+      if (lastShotForBean) return lastShotForBean.recipeId
     }
 
-    const lastShot = await db.query.shots.findFirst({
-      orderBy: [desc(shots.createdAt)],
-    })
+    const [lastShot] = await db
+      .select({ recipeId: shots.recipeId })
+      .from(shots)
+      .innerJoin(recipes, eq(shots.recipeId, recipes.id))
+      .where(eq(recipes.isArchived, false))
+      .orderBy(desc(shots.createdAt))
+      .limit(1)
     return lastShot?.recipeId ?? null
   })
 
@@ -173,24 +170,7 @@ export const getShotsByBean = createServerFn({ method: "GET" })
     return db.query.shots.findMany({
       where: eq(shots.beanId, beanId),
       orderBy: [desc(shots.createdAt)],
-      with: {
-        bean: true,
-        recipe: {
-          with: {
-            gear: {
-              with: {
-                gear: true,
-              },
-            },
-          },
-        },
-        tasteTags: {
-          with: {
-            tasteTag: true,
-          },
-        },
-        images: true,
-      },
+      with: shotRelations,
     })
   })
 
@@ -207,45 +187,6 @@ export const getShotsByGear = createServerFn({ method: "GET" })
     return db.query.shots.findMany({
       where: inArray(shots.recipeId, recipeIds),
       orderBy: [desc(shots.createdAt)],
-      with: {
-        bean: true,
-        recipe: {
-          with: {
-            gear: {
-              with: {
-                gear: true,
-              },
-            },
-          },
-        },
-        tasteTags: {
-          with: {
-            tasteTag: true,
-          },
-        },
-        images: true,
-      },
+      with: shotRelations,
     })
   })
-
-export const getRecentlyUsedBeans = createServerFn({ method: "GET" }).handler(
-  async () => {
-    const recentShots = await db.query.shots.findMany({
-      orderBy: [desc(shots.createdAt)],
-      limit: 20,
-      with: {
-        bean: true,
-      },
-    })
-    const seen = new Set<number>()
-    const recentBeans: { id: number; name: string }[] = []
-    for (const shot of recentShots) {
-      if (shot.bean && !seen.has(shot.bean.id)) {
-        seen.add(shot.bean.id)
-        recentBeans.push({ id: shot.bean.id, name: shot.bean.name })
-      }
-      if (recentBeans.length >= 5) break
-    }
-    return recentBeans
-  }
-)
