@@ -11,37 +11,66 @@ import {
   BrandLink,
   CreateMenuItems,
   isNavItemActive,
-  mobileMoreNavItems,
-  mobilePrimaryNavItems,
   MoreMenuItems,
   moreNavItems,
   primaryCreateAction,
   primaryNavItems,
 } from "@/components/app-navbar-items"
 import type { NavItem } from "@/components/app-navbar-items"
+import type { ReactNode } from "react"
 
-function DesktopNavLink({ item }: { item: NavItem }) {
+function useNavItemIsActive(item: NavItem): boolean {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
-  const isActive = isNavItemActive(pathname, item)
+  return isNavItemActive(pathname, item)
+}
 
+function useMoreNavIsActive(): boolean {
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
+  return moreNavItems.some((item) => isNavItemActive(pathname, item))
+}
+
+function NavItemLink({
+  item,
+  isActive,
+  className,
+  activeClassName,
+  children,
+}: {
+  readonly item: NavItem
+  readonly isActive: boolean
+  readonly className: string
+  readonly activeClassName: string
+  readonly children: ReactNode
+}) {
   return (
     <Link
       to={item.url}
       activeOptions={{ exact: item.url === "/" }}
       aria-current={isActive ? "page" : undefined}
-      className={cn(
-        "rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground",
-        isActive && "bg-primary text-primary-foreground"
-      )}
+      className={cn(className, isActive && activeClassName)}
     >
-      {item.title}
+      {children}
     </Link>
   )
 }
 
+function DesktopNavLink({ item }: { item: NavItem }) {
+  const isActive = useNavItemIsActive(item)
+
+  return (
+    <NavItemLink
+      item={item}
+      isActive={isActive}
+      className="rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+      activeClassName="bg-primary text-primary-foreground"
+    >
+      {item.title}
+    </NavItemLink>
+  )
+}
+
 function DesktopMoreMenu() {
-  const pathname = useRouterState({ select: (state) => state.location.pathname })
-  const isActive = moreNavItems.some((item) => isNavItemActive(pathname, item))
+  const isActive = useMoreNavIsActive()
 
   return (
     <DropdownMenu>
@@ -94,18 +123,14 @@ function DesktopCreateButton() {
 }
 
 function MobileNavLink({ item }: { item: NavItem }) {
-  const pathname = useRouterState({ select: (state) => state.location.pathname })
-  const isActive = isNavItemActive(pathname, item)
+  const isActive = useNavItemIsActive(item)
 
   return (
-    <Link
-      to={item.url}
-      activeOptions={{ exact: item.url === "/" }}
-      aria-current={isActive ? "page" : undefined}
-      className={cn(
-        "flex flex-1 flex-col items-center justify-center gap-1 rounded-lg py-2 text-muted-foreground transition-colors",
-        isActive && "bg-accent text-foreground"
-      )}
+    <NavItemLink
+      item={item}
+      isActive={isActive}
+      className="flex flex-1 flex-col items-center justify-center gap-1 rounded-lg py-2 text-muted-foreground transition-colors"
+      activeClassName="bg-accent text-foreground"
     >
       <div className="relative">
         <item.icon className={cn("h-5 w-5", isActive && "stroke-[2.5]")} />
@@ -114,13 +139,12 @@ function MobileNavLink({ item }: { item: NavItem }) {
         )}
       </div>
       <span className="text-[10px] font-semibold">{item.title}</span>
-    </Link>
+    </NavItemLink>
   )
 }
 
 function MobileMoreMenu() {
-  const pathname = useRouterState({ select: (state) => state.location.pathname })
-  const isActive = mobileMoreNavItems.some((item) => isNavItemActive(pathname, item))
+  const isActive = useMoreNavIsActive()
 
   return (
     <DropdownMenu>
@@ -141,7 +165,7 @@ function MobileMoreMenu() {
         <span className="text-[10px] font-semibold">More</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" side="top" sideOffset={12}>
-        <MoreMenuItems items={mobileMoreNavItems} />
+        <MoreMenuItems items={moreNavItems} />
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -187,7 +211,7 @@ export function AppNavbar() {
         className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
         <div className="flex h-16 items-center justify-around px-1">
-          {mobilePrimaryNavItems.slice(0, 2).map((item) => (
+          {primaryNavItems.slice(0, 2).map((item) => (
             <MobileNavLink key={item.url} item={item} />
           ))}
 
@@ -206,7 +230,7 @@ export function AppNavbar() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {mobilePrimaryNavItems.slice(2).map((item) => (
+          {primaryNavItems.slice(2).map((item) => (
             <MobileNavLink key={item.url} item={item} />
           ))}
           <MobileMoreMenu />

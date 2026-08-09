@@ -38,9 +38,6 @@ export const moreNavItems: readonly NavItem[] = [
   { title: "Settings", url: "/settings", icon: Settings },
 ]
 
-export const mobilePrimaryNavItems = primaryNavItems
-export const mobileMoreNavItems = moreNavItems
-
 export const primaryCreateAction: NavItem = {
   title: "New shot",
   url: "/shots/new",
