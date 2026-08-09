@@ -85,6 +85,28 @@ function ShotDetailPage() {
     : null
 
   const recipeGearNames = shot.recipe?.gear.map((rg) => rg.gear.name).join(", ")
+  const extractionMetrics = [
+    shot.doseGrams ? { label: "Dose", value: `${shot.doseGrams}g` } : null,
+    shot.yieldGrams ? { label: "Yield", value: `${shot.yieldGrams}g` } : null,
+    ratio ? { label: "Ratio", value: `1:${ratio}` } : null,
+    shot.brewTimeSeconds !== null
+      ? { label: "Time", value: `${shot.brewTimeSeconds}s` }
+      : null,
+  ].filter((field) => field !== null)
+  const extractionDetails = [
+    shot.grindSetting?.trim()
+      ? { label: "Grind", value: shot.grindSetting }
+      : null,
+    shot.waterTempCelsius
+      ? { label: "Temperature", value: `${shot.waterTempCelsius}°C` }
+      : null,
+    shot.pressure ? { label: "Pressure", value: `${shot.pressure} bar` } : null,
+  ].filter((field) => field !== null)
+  const recipeName = shot.recipe?.name.trim()
+  const hasRecipe = Boolean(recipeName || recipeGearNames)
+  const hasTasteTags = shot.tasteTags.length > 0
+  const hasNotes = Boolean(shot.notes?.trim())
+  const hasTasting = Boolean(shot.rating || hasTasteTags || hasNotes)
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -124,106 +146,100 @@ function ShotDetailPage() {
         />
       ) : (
         <>
-          <Card>
-            <CardHeader>
-              <CardTitle>Extraction</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Dose</p>
-                  <p className="text-xl font-semibold">{shot.doseGrams || "-"}g</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Yield</p>
-                  <p className="text-xl font-semibold">{shot.yieldGrams || "-"}g</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Ratio</p>
-                  <p className="text-xl font-semibold">{ratio ? `1:${ratio}` : "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Time</p>
-                  <p className="text-xl font-semibold">{shot.brewTimeSeconds || "-"}s</p>
-                </div>
-              </div>
-
-              <Separator className="my-4" />
-
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3">
-                <div>
-                  <p className="text-sm text-muted-foreground">Grind</p>
-                  <p className="font-medium">{shot.grindSetting || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Temperature</p>
-                  <p className="font-medium">
-                    {shot.waterTempCelsius ? `${shot.waterTempCelsius}°C` : "-"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Pressure</p>
-                  <p className="font-medium">
-                    {shot.pressure ? `${shot.pressure} bar` : "-"}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Recipe</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div>
-                  <p className="text-sm text-muted-foreground">Recipe</p>
-                  <p className="font-medium">{shot.recipe?.name || "-"}</p>
-                </div>
-                {recipeGearNames && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Gear</p>
-                    <p className="font-medium">{recipeGearNames}</p>
+          {(extractionMetrics.length > 0 || extractionDetails.length > 0) && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Extraction</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {extractionMetrics.length > 0 && (
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-4">
+                    {extractionMetrics.map((field) => (
+                      <div key={field.label}>
+                        <p className="text-sm text-muted-foreground">{field.label}</p>
+                        <p className="text-xl font-semibold">{field.value}</p>
+                      </div>
+                    ))}
                   </div>
                 )}
-              </div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Tasting</CardTitle>
-                {shot.rating && (
-                  <Badge variant="secondary" className="text-lg">
-                    {shot.rating}/5
-                  </Badge>
+                {extractionMetrics.length > 0 && extractionDetails.length > 0 && (
+                  <Separator className="my-4" />
                 )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {shot.tasteTags && shot.tasteTags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {shot.tasteTags.map((tt) => (
-                    <Badge
-                      key={tt.id}
-                      variant={tt.tasteTag.category === "negative" ? "destructive" : "default"}
-                    >
-                      {tt.tasteTag.name}
-                    </Badge>
-                  ))}
-                </div>
-              )}
 
-              {shot.notes && (
-                <div>
-                  <p className="mb-1 text-sm text-muted-foreground">Notes</p>
-                  <p className="whitespace-pre-wrap">{shot.notes}</p>
+                {extractionDetails.length > 0 && (
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3">
+                    {extractionDetails.map((field) => (
+                      <div key={field.label}>
+                        <p className="text-sm text-muted-foreground">{field.label}</p>
+                        <p className="font-medium">{field.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {hasRecipe && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Recipe</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {recipeName && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Recipe</p>
+                      <p className="font-medium">{recipeName}</p>
+                    </div>
+                  )}
+                  {recipeGearNames && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Gear</p>
+                      <p className="font-medium">{recipeGearNames}</p>
+                    </div>
+                  )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
+
+          {hasTasting && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Tasting</CardTitle>
+                  {shot.rating && (
+                    <Badge variant="secondary" className="text-lg">
+                      {shot.rating}/5
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {hasTasteTags && (
+                  <div className="flex flex-wrap gap-2">
+                    {shot.tasteTags.map((tt) => (
+                      <Badge
+                        key={tt.id}
+                        variant={tt.tasteTag.category === "negative" ? "destructive" : "default"}
+                      >
+                        {tt.tasteTag.name}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                {hasNotes && (
+                  <div>
+                    <p className="mb-1 text-sm text-muted-foreground">Notes</p>
+                    <p className="whitespace-pre-wrap">{shot.notes}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
     </div>
