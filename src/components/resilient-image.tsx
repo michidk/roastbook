@@ -4,11 +4,13 @@ import {
   useRef,
   useState,
   type ComponentProps,
+  type ReactNode,
 } from "react"
 import { ImageOff } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type ResilientImageProps = ComponentProps<"img"> & {
+  readonly fallback?: ReactNode
   readonly fallbackLabel?: string
 }
 
@@ -20,6 +22,7 @@ type LoadedUpload = {
 export function ResilientImage({
   alt,
   className,
+  fallback,
   fallbackLabel = "Image unavailable",
   height,
   loading,
@@ -125,7 +128,7 @@ export function ResilientImage({
           className,
         )}
       >
-        <ImageOff aria-hidden className="size-5" />
+        {fallback ?? <ImageOff aria-hidden className="size-5" />}
         {alt ? <span className="sr-only">{fallbackLabel}</span> : null}
       </div>
     )
