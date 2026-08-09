@@ -7,6 +7,24 @@ import { eq, count, sql, gte, lt, desc, isNotNull, and } from "drizzle-orm"
 import { toDisplayableDatabaseError } from "@/lib/server/database-error"
 import { getVisitsAndPlacesStats } from "@/lib/server/stats-visits"
 
+type ShotGearType = "grinder" | "espresso_machine"
+
+function getGearUsage(type: ShotGearType) {
+  return db
+    .select({
+      gearId: gear.id,
+      gearName: gear.name,
+      shotCount: sql<number>`count(*)::int`,
+    })
+    .from(gear)
+    .innerJoin(recipeGear, eq(recipeGear.gearId, gear.id))
+    .innerJoin(shots, eq(shots.recipeId, recipeGear.recipeId))
+    .where(eq(gear.type, type))
+    .groupBy(gear.id, gear.name)
+    .orderBy(desc(sql`count(*)`))
+    .limit(5)
+}
+
 export const getDashboardStats = createServerFn({ method: "GET" }).handler(
   async () => {
     try {
@@ -152,33 +170,9 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
         .orderBy(desc(sql`avg(${shots.rating})`))
         .limit(5),
 
-      db
-        .select({
-          gearId: gear.id,
-          gearName: gear.name,
-          shotCount: sql<number>`count(*)::int`,
-        })
-        .from(gear)
-        .innerJoin(recipeGear, eq(recipeGear.gearId, gear.id))
-        .innerJoin(shots, eq(shots.recipeId, recipeGear.recipeId))
-        .where(eq(gear.type, "grinder"))
-        .groupBy(gear.id, gear.name)
-        .orderBy(desc(sql`count(*)`))
-        .limit(5),
+      getGearUsage("grinder"),
 
-      db
-        .select({
-          gearId: gear.id,
-          gearName: gear.name,
-          shotCount: sql<number>`count(*)::int`,
-        })
-        .from(gear)
-        .innerJoin(recipeGear, eq(recipeGear.gearId, gear.id))
-        .innerJoin(shots, eq(shots.recipeId, recipeGear.recipeId))
-        .where(eq(gear.type, "espresso_machine"))
-        .groupBy(gear.id, gear.name)
-        .orderBy(desc(sql`count(*)`))
-        .limit(5),
+      getGearUsage("espresso_machine"),
 
       db
         .select({

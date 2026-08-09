@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useMemo, type ReactNode } from "react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts"
 import {
   ChartContainer,
@@ -55,6 +55,49 @@ function parseGrindSetting(grindSetting: string | null): number | null {
   return isNaN(num) ? null : num
 }
 
+type ChartDatum = {
+  readonly index: number
+  readonly date: string
+  readonly dose: number | null
+  readonly yield: number | null
+  readonly grind: number | null
+  readonly time: number | null
+  readonly ratio: number | null
+}
+
+function ShotLineChartSection({
+  title,
+  data,
+  unit,
+  children,
+}: {
+  readonly title: string
+  readonly data: readonly ChartDatum[]
+  readonly unit?: string
+  readonly children: ReactNode
+}) {
+  return (
+    <div>
+      <p className="mb-2 text-sm font-medium text-muted-foreground">{title}</p>
+      <ChartContainer config={chartConfig} className="h-[200px] w-full">
+        <LineChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" fontSize={12} tickLine={false} axisLine={false} />
+          <YAxis
+            fontSize={12}
+            tickLine={false}
+            axisLine={false}
+            unit={unit}
+            domain={["auto", "auto"]}
+          />
+          <ChartTooltip content={<ChartTooltipContent />} />
+          {children}
+        </LineChart>
+      </ChartContainer>
+    </div>
+  )
+}
+
 export function ShotParameterCharts({ shots }: ShotParameterChartsProps) {
   const chartData = useMemo(() => {
     const sortedShots = [...shots].sort(
@@ -99,87 +142,54 @@ export function ShotParameterCharts({ shots }: ShotParameterChartsProps) {
       </CardHeader>
       <CardContent className="space-y-6">
         {(hasDoseData || hasYieldData) && (
-          <div>
-            <p className="text-sm font-medium mb-2 text-muted-foreground">
-              Dose & Yield
-            </p>
-            <ChartContainer config={chartConfig} className="h-[200px] w-full">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis fontSize={12} tickLine={false} axisLine={false} domain={["auto", "auto"]} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                {hasDoseData && (
-                  <Line
-                    type="monotone"
-                    dataKey="dose"
-                    stroke="var(--color-dose)"
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                    connectNulls
-                  />
-                )}
-                {hasYieldData && (
-                  <Line
-                    type="monotone"
-                    dataKey="yield"
-                    stroke="var(--color-yield)"
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                    connectNulls
-                  />
-                )}
-              </LineChart>
-            </ChartContainer>
-          </div>
+          <ShotLineChartSection title="Dose & Yield" data={chartData}>
+            {hasDoseData && (
+              <Line
+                type="monotone"
+                dataKey="dose"
+                stroke="var(--color-dose)"
+                strokeWidth={2}
+                dot={{ r: 3 }}
+                connectNulls
+              />
+            )}
+            {hasYieldData && (
+              <Line
+                type="monotone"
+                dataKey="yield"
+                stroke="var(--color-yield)"
+                strokeWidth={2}
+                dot={{ r: 3 }}
+                connectNulls
+              />
+            )}
+          </ShotLineChartSection>
         )}
 
         {hasGrindData && (
-          <div>
-            <p className="text-sm font-medium mb-2 text-muted-foreground">
-              Grind Setting
-            </p>
-            <ChartContainer config={chartConfig} className="h-[200px] w-full">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis fontSize={12} tickLine={false} axisLine={false} domain={["auto", "auto"]} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Line
-                  type="monotone"
-                  dataKey="grind"
-                  stroke="var(--color-grind)"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                  connectNulls
-                />
-              </LineChart>
-            </ChartContainer>
-          </div>
+          <ShotLineChartSection title="Grind Setting" data={chartData}>
+            <Line
+              type="monotone"
+              dataKey="grind"
+              stroke="var(--color-grind)"
+              strokeWidth={2}
+              dot={{ r: 3 }}
+              connectNulls
+            />
+          </ShotLineChartSection>
         )}
 
         {hasTimeData && (
-          <div>
-            <p className="text-sm font-medium mb-2 text-muted-foreground">
-              Brew Time
-            </p>
-            <ChartContainer config={chartConfig} className="h-[200px] w-full">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis fontSize={12} tickLine={false} axisLine={false} unit="s" domain={["auto", "auto"]} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Line
-                  type="monotone"
-                  dataKey="time"
-                  stroke="var(--color-time)"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                  connectNulls
-                />
-              </LineChart>
-            </ChartContainer>
-          </div>
+          <ShotLineChartSection title="Brew Time" data={chartData} unit="s">
+            <Line
+              type="monotone"
+              dataKey="time"
+              stroke="var(--color-time)"
+              strokeWidth={2}
+              dot={{ r: 3 }}
+              connectNulls
+            />
+          </ShotLineChartSection>
         )}
       </CardContent>
     </Card>
