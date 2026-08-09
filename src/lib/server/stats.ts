@@ -3,28 +3,37 @@ import { db } from "@/db"
 import { fillDailyActivity } from "@/lib/stats-activity"
 import { normalizeRatingAverages, toNullableNumber } from "@/lib/stats-number"
 import { beans, gear, shots, cafeVisits, coffeeShops, recipeGear } from "@/db/schema"
-import { eq, count, sql, gte, desc, isNotNull, and } from "drizzle-orm"
+import { eq, count, sql, gte, lt, desc, isNotNull, and } from "drizzle-orm"
 import { toDisplayableDatabaseError } from "@/lib/server/database-error"
+import { getVisitsAndPlacesStats } from "@/lib/server/stats-visits"
 
 export const getDashboardStats = createServerFn({ method: "GET" }).handler(
   async () => {
     try {
+      const now = new Date()
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+      const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
       const [shotsCount] = await db.select({ count: count() }).from(shots)
       const [activeBeansCount] = await db
         .select({ count: count() })
         .from(beans)
         .where(eq(beans.isArchived, false))
-      const [gearCount] = await db
+      const [shotsThisMonthCount] = await db
         .select({ count: count() })
-        .from(gear)
-        .where(eq(gear.isArchived, false))
+        .from(shots)
+        .where(
+          and(
+            gte(shots.createdAt, startOfMonth),
+            lt(shots.createdAt, startOfNextMonth),
+          ),
+        )
       const [visitsCount] = await db.select({ count: count() }).from(cafeVisits)
       const [coffeeShopsCount] = await db.select({ count: count() }).from(coffeeShops)
 
       return {
         totalShots: shotsCount.count,
         activeBeans: activeBeansCount.count,
-        gearCount: gearCount.count,
+        shotsThisMonth: shotsThisMonthCount.count,
         cafeVisits: visitsCount.count,
         coffeeShops: coffeeShopsCount.count,
       }
@@ -81,6 +90,7 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
       brewingAverages,
       recentActivity,
       firstShotDate,
+      visitsAndPlaces,
     ] = await Promise.all([
       db.select({ count: sql<number>`count(*)::int` }).from(shots),
 
@@ -193,6 +203,8 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
         .orderBy(sql`date(${shots.createdAt})`),
 
       db.select({ date: sql<Date>`min(${shots.createdAt})` }).from(shots),
+
+      getVisitsAndPlacesStats(startOfMonth),
     ])
 
     const daysSinceFirst = firstShotDate[0]?.date
@@ -240,6 +252,7 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
         },
       },
       activity: fillDailyActivity(recentActivity, now),
+      ...visitsAndPlaces,
     }
   }
 )

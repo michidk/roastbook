@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { Bean, Cog, MapPin } from "lucide-react"
+import { Bean, Cog, Coffee, MapPin, UtensilsCrossed } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { getDashboardStats, getRecentShots } from "@/lib/server/stats"
@@ -7,6 +7,7 @@ import { RouteError } from "@/components/route-error"
 import { RoutePending } from "@/components/route-pending"
 import { thumbnailUrl } from "@/lib/image-url"
 import { ResilientImage } from "@/components/resilient-image"
+import { getDailyHeadline } from "@/lib/daily-headline"
 
 export const Route = createFileRoute("/")({
   loader: async () => {
@@ -27,16 +28,23 @@ const dateFormatter = new Intl.DateTimeFormat("en-GB", {
   month: "long",
 })
 
+const recentShotDateFormatter = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+})
+
 function Dashboard() {
   const { stats, recentShots } = Route.useLoaderData()
-  const today = dateFormatter.format(new Date())
+  const now = new Date()
+  const today = dateFormatter.format(now)
+  const headline = getDailyHeadline(now)
 
   return (
     <div className="space-y-6">
       <header className="space-y-1">
         <p className="text-sm font-semibold text-muted-foreground">{today}</p>
         <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
-          Let's brew <span className="whitespace-nowrap">something good</span>
+          {headline}
         </h1>
       </header>
 
@@ -52,9 +60,9 @@ function Dashboard() {
           href="/beans"
         />
         <StatCard
-          value={stats.gearCount}
-          label="pieces of equipment"
-          href="/gear"
+          value={stats.shotsThisMonth}
+          label="shots this month"
+          href="/shots"
         />
         <StatCard
           value={stats.cafeVisits}
@@ -116,11 +124,19 @@ function Dashboard() {
                           : ""}
                       </p>
                     </div>
-                    {shot.rating && (
-                      <div className="shrink-0 rounded-xl bg-card px-3 py-1.5 font-display text-sm font-bold text-primary">
-                        {shot.rating.toFixed(1)}★
-                      </div>
-                    )}
+                    <div className="flex shrink-0 self-stretch flex-col items-end justify-between">
+                      <time
+                        dateTime={new Date(shot.createdAt).toISOString()}
+                        className="text-xs font-semibold text-muted-foreground"
+                      >
+                        {recentShotDateFormatter.format(new Date(shot.createdAt))}
+                      </time>
+                      {shot.rating && (
+                        <div className="rounded-xl bg-card px-3 py-1.5 font-display text-sm font-bold text-primary">
+                          {shot.rating.toFixed(1)}★
+                        </div>
+                      )}
+                    </div>
                   </Link>
                 )
               })
@@ -133,6 +149,12 @@ function Dashboard() {
             <CardTitle>Quick add</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2.5">
+            <QuickAddRow icon={Coffee} label="Log a shot" href="/shots/new" />
+            <QuickAddRow
+              icon={UtensilsCrossed}
+              label="Log a visit"
+              href="/visits/new"
+            />
             <QuickAddRow icon={Bean} label="Add beans" href="/beans/new" />
             <QuickAddRow icon={Cog} label="Add gear" href="/gear/new" />
             <QuickAddRow icon={MapPin} label="Add a coffee shop" href="/coffee-shops/new" />
