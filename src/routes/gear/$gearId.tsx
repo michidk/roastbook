@@ -24,6 +24,7 @@ import {
 import { RouteError } from "@/components/route-error"
 import { DetailPending } from "@/components/route-pending"
 import { GEAR_TYPES, GEAR_TYPE_LABELS, type GearType } from "@/lib/constants"
+import { FormSection } from "@/components/form/form-shell"
 
 export const Route = createFileRoute("/gear/$gearId")({
   loader: async ({ params }) => {
@@ -338,11 +339,7 @@ function GearDetailPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Links</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <FormSection title="Links">
               <InputField
                 id="productUrl"
                 label="Product Page"
@@ -359,8 +356,7 @@ function GearDetailPage() {
                 value={formData.manualUrl}
                 onChange={(value) => setFormData({ ...formData, manualUrl: value })}
               />
-            </CardContent>
-          </Card>
+          </FormSection>
         </form>
       ) : (
         <>

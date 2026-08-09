@@ -10,6 +10,7 @@ import { DeleteConfirmation } from "@/components/DeleteConfirmation"
 import { toast } from "sonner"
 import { RouteError } from "@/components/route-error"
 import { DetailPending } from "@/components/route-pending"
+import { FormSection } from "@/components/form/form-shell"
 
 export const Route = createFileRoute("/roasters/$roasterId")({
   loader: ({ params }) => getRoaster({ data: Number(params.roasterId) }),
@@ -170,11 +171,7 @@ function RoasterDetailPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Links</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <FormSection title="Links">
               <InputField
                 id="website"
                 label="Website"
@@ -190,8 +187,7 @@ function RoasterDetailPage() {
                 value={formData.instagramHandle}
                 onChange={(value) => setFormData({ ...formData, instagramHandle: value })}
               />
-            </CardContent>
-          </Card>
+          </FormSection>
 
           <Card>
             <CardHeader>
