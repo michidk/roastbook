@@ -1,6 +1,6 @@
 import { useState, type SyntheticEvent } from "react"
 import { toast } from "sonner"
-import { EntityForm, FormActions, FormSection } from "@/components/form/form-shell"
+import { EntityForm, FormSection } from "@/components/form/form-shell"
 import { InputField, TextareaField } from "@/components/form/form-field"
 import {
   CoffeeShopOsmSearch,
@@ -8,6 +8,10 @@ import {
 } from "@/components/coffee-shops/coffee-shop-osm-search"
 import { useFormState } from "@/hooks/use-form-state"
 import { createCoffeeShop } from "@/lib/server/coffee-shops"
+import {
+  applyCoffeeShopSearchResult,
+  createCoffeeShopFormValues,
+} from "@/components/coffee-shops/coffee-shop-form-values"
 
 type CreatedCoffeeShop = Awaited<ReturnType<typeof createCoffeeShop>>
 
@@ -25,28 +29,10 @@ export function CoffeeShopForm({
   submitLabel = "Add Coffee Shop",
 }: CoffeeShopFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const form = useFormState({
-    name: initialName,
-    address: "",
-    city: "",
-    country: "",
-    latitude: "",
-    longitude: "",
-    website: "",
-    notes: "",
-  })
+  const form = useFormState(createCoffeeShopFormValues(null, initialName))
 
   const applySearchResult = (result: CoffeeShopSearchResult) => {
-    form.setValues((current) => ({
-      ...current,
-      name: result.name || current.name,
-      latitude: result.latitude,
-      longitude: result.longitude,
-      address: result.address ?? current.address,
-      city: result.city ?? current.city,
-      country: result.country ?? current.country,
-      website: result.website ?? current.website,
-    }))
+    form.setValues((current) => applyCoffeeShopSearchResult(current, result))
   }
 
   const handleSubmit = async (event: SyntheticEvent<HTMLFormElement>) => {
@@ -78,7 +64,15 @@ export function CoffeeShopForm({
   }
 
   return (
-    <EntityForm onSubmit={handleSubmit}>
+    <EntityForm
+      onSubmit={handleSubmit}
+      actions={{
+        onCancel,
+        isSubmitting,
+        disabled: !form.values.name.trim(),
+        submitLabel,
+      }}
+    >
       <FormSection title="Basic Info">
         <CoffeeShopOsmSearch
           onApply={applySearchResult}
@@ -166,12 +160,6 @@ export function CoffeeShopForm({
         />
       </FormSection>
 
-      <FormActions
-        onCancel={onCancel}
-        isSubmitting={isSubmitting}
-        disabled={!form.values.name.trim()}
-        submitLabel={submitLabel}
-      />
     </EntityForm>
   )
 }

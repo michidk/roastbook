@@ -30,6 +30,10 @@ import { toNullableRating, toRatingInput } from "@/lib/rating"
 import { DeleteConfirmation } from "@/components/DeleteConfirmation"
 import { RouteError } from "@/components/route-error"
 import { DetailPending } from "@/components/route-pending"
+import {
+  applyCoffeeShopSearchResult,
+  createCoffeeShopFormValues,
+} from "@/components/coffee-shops/coffee-shop-form-values"
 
 type SearchResult = Awaited<ReturnType<typeof searchCoffeeShopCandidates>>[number]
 
@@ -52,28 +56,14 @@ function CoffeeShopDetailPage() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [selectedSearchResultId, setSelectedSearchResultId] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
-  const [formData, setFormData] = useState({
-    name: coffeeShop?.name ?? "",
-    address: coffeeShop?.address ?? "",
-    city: coffeeShop?.city ?? "",
-    country: coffeeShop?.country ?? "",
-    latitude: coffeeShop?.latitude ?? "",
-    longitude: coffeeShop?.longitude ?? "",
-    website: coffeeShop?.website ?? "",
-    notes: coffeeShop?.notes ?? "",
+  const [formData, setFormData] = useState(() => ({
+    ...createCoffeeShopFormValues(coffeeShop),
     rating: toRatingInput(coffeeShop?.rating ?? null),
-  })
+  }))
 
   useEffect(() => {
     setFormData({
-      name: coffeeShop?.name ?? "",
-      address: coffeeShop?.address ?? "",
-      city: coffeeShop?.city ?? "",
-      country: coffeeShop?.country ?? "",
-      latitude: coffeeShop?.latitude ?? "",
-      longitude: coffeeShop?.longitude ?? "",
-      website: coffeeShop?.website ?? "",
-      notes: coffeeShop?.notes ?? "",
+      ...createCoffeeShopFormValues(coffeeShop),
       rating: toRatingInput(coffeeShop?.rating ?? null),
     })
   }, [coffeeShop])
@@ -126,30 +116,14 @@ function CoffeeShopDetailPage() {
 
   const applySearchResult = (result: SearchResult) => {
     setSelectedSearchResultId(result.id)
-    setFormData((current) => ({
-      ...current,
-      name: result.name || current.name,
-      latitude: result.latitude,
-      longitude: result.longitude,
-      address: result.address ?? current.address,
-      city: result.city ?? current.city,
-      country: result.country ?? current.country,
-      website: result.website ?? current.website,
-    }))
+    setFormData((current) => applyCoffeeShopSearchResult(current, result))
     setSearchQuery(result.displayName)
     toast.success("Coffee shop details applied")
   }
 
   const resetEditState = () => {
     setFormData({
-      name: coffeeShop.name,
-      address: coffeeShop.address ?? "",
-      city: coffeeShop.city ?? "",
-      country: coffeeShop.country ?? "",
-      latitude: coffeeShop.latitude ?? "",
-      longitude: coffeeShop.longitude ?? "",
-      website: coffeeShop.website ?? "",
-      notes: coffeeShop.notes ?? "",
+      ...createCoffeeShopFormValues(coffeeShop),
       rating: toRatingInput(coffeeShop.rating),
     })
     setSearchQuery("")
