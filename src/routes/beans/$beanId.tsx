@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router"
 import { useEffect, useState, useMemo } from "react"
-import { ArrowLeft, Trash2, Archive, ArchiveRestore, Pencil, Plus, Search, ImageIcon, Loader2 } from "lucide-react"
+import { ArrowLeft, Trash2, Archive, ArchiveRestore, Pencil, Plus, Search, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -11,7 +11,7 @@ import { getRoasters } from "@/lib/server/roasters"
 import { ShotsTable } from "@/components/ShotsTable"
 import { ShotParameterCharts } from "@/components/shot-parameter-charts"
 import { DeleteConfirmation } from "@/components/DeleteConfirmation"
-import { EntityImageGallery } from "@/components/entity-image-gallery"
+import { EntityImageGallery, type EntityImage } from "@/components/entity-image-gallery"
 import { InputField, SelectField, TextareaField } from "@/components/form/form-field"
 import { RoasterPicker } from "@/components/roasters/roaster-picker"
 import { BeanInfoDiffModal, type BeanFormData } from "@/components/BeanInfoDiffModal"
@@ -76,7 +76,7 @@ function BeanDetailPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isResearching, setIsResearching] = useState(false)
-  const [isExtracting, setIsExtracting] = useState(false)
+  const [extractingImageId, setExtractingImageId] = useState<number | null>(null)
   const [diffModalOpen, setDiffModalOpen] = useState(false)
   const [suggestedData, setSuggestedData] = useState<ExtractedBeanInfo | null>(null)
   const [aiSource, setAiSource] = useState<"image" | "web">("web")
@@ -217,16 +217,10 @@ function BeanDetailPage() {
     }
   }
 
-  const handleExtractFromImage = async () => {
-    if (!bean?.images.length) {
-      toast.error("No images to extract from")
-      return
-    }
+  const handleExtractFromImage = async (image: EntityImage) => {
+    const imgUrl = imageUrl(image.storagePath)
 
-    const thumbnailImage = bean.images.find((img) => img.isThumbnail) || bean.images[0]
-    const imgUrl = imageUrl(thumbnailImage.storagePath)
-
-    setIsExtracting(true)
+    setExtractingImageId(image.id)
     try {
       const response = await fetch(imgUrl)
       const blob = await response.blob()
@@ -255,7 +249,7 @@ function BeanDetailPage() {
       const message = error instanceof Error ? error.message : "Extraction failed"
       toast.error(message)
     } finally {
-      setIsExtracting(false)
+      setExtractingImageId(null)
     }
   }
 
@@ -361,8 +355,28 @@ function BeanDetailPage() {
         <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
           <div className="space-y-6">
            <Card>
-             <CardHeader>
+             <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-4">
                <CardTitle>Basic Info</CardTitle>
+               {researchEnabled && (
+                 <Button
+                   variant="outline"
+                   size="sm"
+                   onClick={handleResearchOnline}
+                   disabled={isResearching || extractingImageId !== null || !formData.name.trim()}
+                   aria-busy={isResearching}
+                   className="h-11 sm:h-11 [@media(hover:hover)]:h-8"
+                 >
+                   {isResearching ? (
+                     <Loader2 className="h-4 w-4 animate-spin" />
+                   ) : (
+                     <Search className="h-4 w-4" />
+                   )}
+                   {isResearching ? "Researching…" : "Research online"}
+                 </Button>
+               )}
+               <span className="sr-only" role="status">
+                 {isResearching ? "Researching for bean information" : ""}
+               </span>
              </CardHeader>
              <CardContent className="space-y-4">
                <div className="grid gap-4 sm:grid-cols-2">
@@ -551,62 +565,20 @@ function BeanDetailPage() {
           </div>
 
           <div className="space-y-6">
-            {bean.images.length > 0 && (
-              <EntityImageGallery
-                entityType="beans"
-                entityId={bean.id}
-                images={bean.images}
-                
-                onImagesChange={() => router.invalidate()}
-              />
-            )}
-
-            {(visionEnabled || researchEnabled) && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>AI Tools</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-col gap-2">
-                    {visionEnabled && bean.images.length > 0 && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleExtractFromImage}
-                        disabled={isExtracting || isResearching}
-                        className="w-full justify-start"
-                      >
-                        {isExtracting ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <ImageIcon className="h-4 w-4" />
-                        )}
-                        Fill from image
-                      </Button>
-                    )}
-                    {researchEnabled && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleResearchOnline}
-                        disabled={isResearching || isExtracting || !formData.name.trim()}
-                        className="w-full justify-start"
-                      >
-                        {isResearching ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Search className="h-4 w-4" />
-                        )}
-                        Research online
-                      </Button>
-                    )}
-                  </div>
-                  <p className="mt-3 text-xs text-muted-foreground">
-                    Use AI to find or extract bean information. Review suggestions before applying.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+            <EntityImageGallery
+              entityType="beans"
+              entityId={bean.id}
+              images={bean.images}
+              onImagesChange={() => router.invalidate()}
+              imageAction={visionEnabled
+                ? {
+                    label: "Fill from image",
+                    pendingImageId: extractingImageId,
+                    disabled: isResearching,
+                    onSelect: handleExtractFromImage,
+                  }
+                : undefined}
+            />
           </div>
         </div>
       ) : (
