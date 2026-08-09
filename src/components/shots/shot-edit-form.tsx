@@ -1,10 +1,10 @@
 import { useState, type SyntheticEvent } from "react"
 import { toast } from "sonner"
-import { EntityForm, FormActions, FormSection } from "@/components/form/form-shell"
+import { EntityForm, FormSection } from "@/components/form/form-shell"
 import { InputField } from "@/components/form/form-field"
 import { CreatableCombobox } from "@/components/form/creatable-combobox"
 import { BeanPicker } from "@/components/beans/bean-picker"
-import { ShotTastingFields } from "@/components/shots/shot-tasting-fields"
+import { TastingFields } from "@/components/form/tasting-fields"
 import { useFormState } from "@/hooks/use-form-state"
 import { getActiveBeans } from "@/lib/server/beans"
 import { getRecipes } from "@/lib/server/recipes"
@@ -116,7 +116,11 @@ export function ShotEditForm({
   }
 
   return (
-    <EntityForm id="shot-edit-form" onSubmit={handleSave}>
+    <EntityForm
+      id="shot-edit-form"
+      onSubmit={handleSave}
+      actions={{ onCancel, isSubmitting: isSaving, submitLabel: "Save Changes" }}
+    >
       <FormSection title="Beans">
         <BeanPicker
           id="bean"
@@ -204,24 +208,13 @@ export function ShotEditForm({
         </div>
       </FormSection>
 
-      <ShotTastingFields
-        rating={form.values.rating}
-        onRatingChange={(rating) =>
-          form.set("rating", form.values.rating === rating ? 0 : rating)
-        }
-        notes={form.values.notes}
-        onNotesChange={form.setField("notes")}
-        negativeTags={negativeTags}
-        positiveTags={positiveTags}
-        selectedTagIds={form.values.tasteTagIds}
-        onToggleTag={toggleTag}
+      <TastingFields
+        kind="shot"
+        rating={{ value: form.values.rating, onChange: (rating) => form.set("rating", form.values.rating === rating ? 0 : rating) }}
+        notes={{ value: form.values.notes, onChange: form.setField("notes") }}
+        tags={{ negative: negativeTags, positive: positiveTags, selectedIds: form.values.tasteTagIds, onToggle: toggleTag }}
       />
 
-      <FormActions
-        onCancel={onCancel}
-        isSubmitting={isSaving}
-        submitLabel="Save Changes"
-      />
     </EntityForm>
   )
 }
