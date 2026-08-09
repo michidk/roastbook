@@ -7,7 +7,7 @@ import {
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import { ThemeProvider } from 'next-themes'
+import { useEffect } from 'react'
 
 import '../styles.css'
 import { AppNavbar } from '@/components/app-navbar'
@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
 import { getErrorDisplayState } from '@/lib/error-display'
 import { RouteNotFound } from '@/components/route-not-found'
+import { useSettingsStore } from '@/lib/settings-store'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -62,27 +63,54 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          {children}
-          {import.meta.env.DEV ? (
-            <TanStackDevtools
-              config={{
-                hideUntilHover: true,
-                position: 'middle-right',
-              }}
-              plugins={[
-                {
-                  name: 'Tanstack Router',
-                  render: <TanStackRouterDevtoolsPanel />,
-                },
-              ]}
-            />
-          ) : null}
-        </ThemeProvider>
+        <SettingsHydrator />
+        {children}
+        {import.meta.env.DEV ? (
+          <TanStackDevtools
+            config={{
+              hideUntilHover: true,
+              position: 'middle-right',
+            }}
+            plugins={[
+              {
+                name: 'Tanstack Router',
+                render: <TanStackRouterDevtoolsPanel />,
+              },
+            ]}
+          />
+        ) : null}
         <Scripts />
       </body>
     </html>
   )
+}
+
+function SettingsHydrator() {
+  const theme = useSettingsStore((state) => state.theme)
+  const hasHydrated = useSettingsStore((state) => state.hasHydrated)
+
+  useEffect(() => {
+    void useSettingsStore.persist.rehydrate()
+  }, [])
+
+  useEffect(() => {
+    if (!hasHydrated) return
+
+    const browserTheme = window.matchMedia('(prefers-color-scheme: dark)')
+    const applyTheme = () => {
+      const isDark = theme === 'dark' || (theme === 'system' && browserTheme.matches)
+      document.documentElement.classList.toggle('dark', isDark)
+      document.documentElement.style.colorScheme = isDark ? 'dark' : 'light'
+    }
+
+    applyTheme()
+    if (theme !== 'system') return
+
+    browserTheme.addEventListener('change', applyTheme)
+    return () => browserTheme.removeEventListener('change', applyTheme)
+  }, [hasHydrated, theme])
+
+  return null
 }
 
 function RootErrorComponent({ error }: { error: Error }) {
