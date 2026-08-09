@@ -1,7 +1,22 @@
 import { createServerFn } from "@tanstack/react-start"
 import { db } from "@/db"
 import { recipes } from "@/db/schema"
-import { eq, desc } from "drizzle-orm"
+import { asc, desc, eq } from "drizzle-orm"
+
+export const getAllRecipes = createServerFn({ method: "GET" }).handler(
+  async () => {
+    return db.query.recipes.findMany({
+      orderBy: [asc(recipes.isArchived), desc(recipes.updatedAt)],
+      with: {
+        gear: {
+          with: {
+            gear: true,
+          },
+        },
+      },
+    })
+  },
+)
 
 export const getRecipes = createServerFn({ method: "GET" }).handler(async () => {
   return db.query.recipes.findMany({
@@ -17,3 +32,23 @@ export const getRecipes = createServerFn({ method: "GET" }).handler(async () => 
   })
 })
 
+export const createRecipe = createServerFn({ method: "POST" })
+  .validator(
+    (data: {
+      name: string
+      defaultDoseGrams?: string
+      defaultYieldGrams?: string
+      defaultBrewTimeSeconds?: number
+      defaultGrindSetting?: string
+      defaultWaterTempCelsius?: string
+      defaultPressure?: string
+      notes?: string
+    }) => data
+  )
+  .handler(async ({ data }) => {
+    const [recipe] = await db
+      .insert(recipes)
+      .values({ ...data, brewingMethod: "espresso" })
+      .returning()
+    return recipe
+  })
