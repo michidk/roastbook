@@ -1,18 +1,8 @@
-import { drizzle } from "drizzle-orm/postgres-js"
-import postgres from "postgres"
 import { mkdir, copyFile, stat } from "node:fs/promises"
 import { join, dirname } from "node:path"
 import * as schema from "../src/db/schema"
-
-const connectionString = process.env.DATABASE_URL
-
-if (!connectionString) {
-  console.error("DATABASE_URL environment variable is required")
-  process.exit(1)
-}
-
-const client = postgres(connectionString)
-const db = drizzle(client, { schema })
+import { client, db } from "./database"
+import { TASTE_TAGS } from "./taste-tags"
 
 const GEAR = [
   {
@@ -24,29 +14,6 @@ const GEAR = [
     image_source: "/tmp/opencode/breville-barista-express.webp",
     notes: "Integrated grinder, 15 bar pump, PID temperature control",
   },
-]
-
-const TASTE_TAGS = [
-  { name: "Fruity", category: "Flavor", extractionAxis: "0.3", strengthAxis: "0.5" },
-  { name: "Citrus", category: "Flavor", extractionAxis: "0.4", strengthAxis: "0.4" },
-  { name: "Berry", category: "Flavor", extractionAxis: "0.3", strengthAxis: "0.5" },
-  { name: "Chocolate", category: "Flavor", extractionAxis: "0.6", strengthAxis: "0.7" },
-  { name: "Nutty", category: "Flavor", extractionAxis: "0.5", strengthAxis: "0.6" },
-  { name: "Caramel", category: "Flavor", extractionAxis: "0.6", strengthAxis: "0.6" },
-  { name: "Floral", category: "Flavor", extractionAxis: "0.2", strengthAxis: "0.3" },
-  { name: "Honey", category: "Flavor", extractionAxis: "0.5", strengthAxis: "0.5" },
-  { name: "Spicy", category: "Flavor", extractionAxis: "0.7", strengthAxis: "0.6" },
-  { name: "Earthy", category: "Flavor", extractionAxis: "0.7", strengthAxis: "0.7" },
-  { name: "Bright", category: "Acidity", extractionAxis: "0.2", strengthAxis: "0.3" },
-  { name: "Crisp", category: "Acidity", extractionAxis: "0.3", strengthAxis: "0.4" },
-  { name: "Mellow", category: "Acidity", extractionAxis: "0.6", strengthAxis: "0.5" },
-  { name: "Sour", category: "Defect", extractionAxis: "0.1", strengthAxis: "0.3" },
-  { name: "Bitter", category: "Defect", extractionAxis: "0.9", strengthAxis: "0.8" },
-  { name: "Astringent", category: "Defect", extractionAxis: "0.8", strengthAxis: "0.7" },
-  { name: "Syrupy", category: "Body", extractionAxis: "0.6", strengthAxis: "0.8" },
-  { name: "Creamy", category: "Body", extractionAxis: "0.5", strengthAxis: "0.7" },
-  { name: "Thin", category: "Body", extractionAxis: "0.3", strengthAxis: "0.2" },
-  { name: "Full", category: "Body", extractionAxis: "0.6", strengthAxis: "0.8" },
 ]
 
 type RoastLevel = "light" | "medium_light" | "medium" | "medium_dark" | "dark"
@@ -345,7 +312,11 @@ async function seed() {
   console.log("🌱 Seeding database with imported coffee log data...")
 
   console.log("  → Inserting taste tags...")
-  const insertedTags = await db.insert(schema.tasteTags).values(TASTE_TAGS).onConflictDoNothing().returning()
+  const insertedTags = await db
+    .insert(schema.tasteTags)
+    .values([...TASTE_TAGS])
+    .onConflictDoNothing()
+    .returning()
   console.log(`    ✓ ${insertedTags.length} taste tags`)
 
   const uniqueRoasters = [...new Set(IMPORTED_BEANS.map((b) => b.roaster).filter(Boolean))] as string[]
