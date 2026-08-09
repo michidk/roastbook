@@ -10,10 +10,13 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StatsRouteImport } from './routes/stats'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as VisitsIndexRouteImport } from './routes/visits/index'
 import { Route as ShotsIndexRouteImport } from './routes/shots/index'
 import { Route as RoastersIndexRouteImport } from './routes/roasters/index'
+import { Route as RecipesIndexRouteImport } from './routes/recipes/index'
+import { Route as PlacesIndexRouteImport } from './routes/places/index'
 import { Route as GearIndexRouteImport } from './routes/gear/index'
 import { Route as CoffeeShopsIndexRouteImport } from './routes/coffee-shops/index'
 import { Route as BeansIndexRouteImport } from './routes/beans/index'
@@ -36,6 +39,11 @@ const StatsRoute = StatsRouteImport.update({
   path: '/stats',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -54,6 +62,16 @@ const ShotsIndexRoute = ShotsIndexRouteImport.update({
 const RoastersIndexRoute = RoastersIndexRouteImport.update({
   id: '/roasters/',
   path: '/roasters/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecipesIndexRoute = RecipesIndexRouteImport.update({
+  id: '/recipes/',
+  path: '/recipes/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlacesIndexRoute = PlacesIndexRouteImport.update({
+  id: '/places/',
+  path: '/places/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GearIndexRoute = GearIndexRouteImport.update({
@@ -139,6 +157,7 @@ const ApiUploadsRoute = ApiUploadsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRoute
   '/stats': typeof StatsRoute
   '/api/uploads': typeof ApiUploadsRoute
   '/beans/$beanId': typeof BeansBeanIdRoute
@@ -156,12 +175,15 @@ export interface FileRoutesByFullPath {
   '/beans/': typeof BeansIndexRoute
   '/coffee-shops/': typeof CoffeeShopsIndexRoute
   '/gear/': typeof GearIndexRoute
+  '/places/': typeof PlacesIndexRoute
+  '/recipes/': typeof RecipesIndexRoute
   '/roasters/': typeof RoastersIndexRoute
   '/shots/': typeof ShotsIndexRoute
   '/visits/': typeof VisitsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRoute
   '/stats': typeof StatsRoute
   '/api/uploads': typeof ApiUploadsRoute
   '/beans/$beanId': typeof BeansBeanIdRoute
@@ -179,6 +201,8 @@ export interface FileRoutesByTo {
   '/beans': typeof BeansIndexRoute
   '/coffee-shops': typeof CoffeeShopsIndexRoute
   '/gear': typeof GearIndexRoute
+  '/places': typeof PlacesIndexRoute
+  '/recipes': typeof RecipesIndexRoute
   '/roasters': typeof RoastersIndexRoute
   '/shots': typeof ShotsIndexRoute
   '/visits': typeof VisitsIndexRoute
@@ -186,6 +210,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRoute
   '/stats': typeof StatsRoute
   '/api/uploads': typeof ApiUploadsRoute
   '/beans/$beanId': typeof BeansBeanIdRoute
@@ -203,6 +228,8 @@ export interface FileRoutesById {
   '/beans/': typeof BeansIndexRoute
   '/coffee-shops/': typeof CoffeeShopsIndexRoute
   '/gear/': typeof GearIndexRoute
+  '/places/': typeof PlacesIndexRoute
+  '/recipes/': typeof RecipesIndexRoute
   '/roasters/': typeof RoastersIndexRoute
   '/shots/': typeof ShotsIndexRoute
   '/visits/': typeof VisitsIndexRoute
@@ -211,6 +238,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/settings'
     | '/stats'
     | '/api/uploads'
     | '/beans/$beanId'
@@ -228,12 +256,15 @@ export interface FileRouteTypes {
     | '/beans/'
     | '/coffee-shops/'
     | '/gear/'
+    | '/places/'
+    | '/recipes/'
     | '/roasters/'
     | '/shots/'
     | '/visits/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/settings'
     | '/stats'
     | '/api/uploads'
     | '/beans/$beanId'
@@ -251,12 +282,15 @@ export interface FileRouteTypes {
     | '/beans'
     | '/coffee-shops'
     | '/gear'
+    | '/places'
+    | '/recipes'
     | '/roasters'
     | '/shots'
     | '/visits'
   id:
     | '__root__'
     | '/'
+    | '/settings'
     | '/stats'
     | '/api/uploads'
     | '/beans/$beanId'
@@ -274,6 +308,8 @@ export interface FileRouteTypes {
     | '/beans/'
     | '/coffee-shops/'
     | '/gear/'
+    | '/places/'
+    | '/recipes/'
     | '/roasters/'
     | '/shots/'
     | '/visits/'
@@ -281,6 +317,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SettingsRoute: typeof SettingsRoute
   StatsRoute: typeof StatsRoute
   ApiUploadsRoute: typeof ApiUploadsRoute
   BeansBeanIdRoute: typeof BeansBeanIdRoute
@@ -298,6 +335,8 @@ export interface RootRouteChildren {
   BeansIndexRoute: typeof BeansIndexRoute
   CoffeeShopsIndexRoute: typeof CoffeeShopsIndexRoute
   GearIndexRoute: typeof GearIndexRoute
+  PlacesIndexRoute: typeof PlacesIndexRoute
+  RecipesIndexRoute: typeof RecipesIndexRoute
   RoastersIndexRoute: typeof RoastersIndexRoute
   ShotsIndexRoute: typeof ShotsIndexRoute
   VisitsIndexRoute: typeof VisitsIndexRoute
@@ -310,6 +349,13 @@ declare module '@tanstack/react-router' {
       path: '/stats'
       fullPath: '/stats'
       preLoaderRoute: typeof StatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -338,6 +384,20 @@ declare module '@tanstack/react-router' {
       path: '/roasters'
       fullPath: '/roasters/'
       preLoaderRoute: typeof RoastersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recipes/': {
+      id: '/recipes/'
+      path: '/recipes'
+      fullPath: '/recipes/'
+      preLoaderRoute: typeof RecipesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/places/': {
+      id: '/places/'
+      path: '/places'
+      fullPath: '/places/'
+      preLoaderRoute: typeof PlacesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gear/': {
@@ -457,6 +517,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  SettingsRoute: SettingsRoute,
   StatsRoute: StatsRoute,
   ApiUploadsRoute: ApiUploadsRoute,
   BeansBeanIdRoute: BeansBeanIdRoute,
@@ -474,6 +535,8 @@ const rootRouteChildren: RootRouteChildren = {
   BeansIndexRoute: BeansIndexRoute,
   CoffeeShopsIndexRoute: CoffeeShopsIndexRoute,
   GearIndexRoute: GearIndexRoute,
+  PlacesIndexRoute: PlacesIndexRoute,
+  RecipesIndexRoute: RecipesIndexRoute,
   RoastersIndexRoute: RoastersIndexRoute,
   ShotsIndexRoute: ShotsIndexRoute,
   VisitsIndexRoute: VisitsIndexRoute,
@@ -481,3 +544,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
