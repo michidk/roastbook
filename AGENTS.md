@@ -40,7 +40,7 @@ A self-hosted coffee logging application for tracking espresso shots, cafe visit
 │   ├── router.tsx        # Router configuration
 │   └── routeTree.gen.ts  # Auto-generated route tree
 ├── drizzle/              # Generated migrations
-├── charts/roastbook/     # Helm chart
+├── charts/               # Helm chart
 ├── .github/workflows/    # CI pipeline
 ├── Dockerfile
 ├── components.json       # shadcn/ui configuration
@@ -97,7 +97,7 @@ docker run -p 3000:3000 roastbook
 ## Helm Deployment
 
 ```bash
-helm install roastbook ./charts/roastbook \
+helm install roastbook ./charts \
   --set hodor.password="your-password" \
   --set hodor.secret="$(openssl rand -hex 32)" \
   --set image.tag="latest"

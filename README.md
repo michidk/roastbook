@@ -107,7 +107,7 @@ The simplest path is to give the chart a full connection string and let it creat
 the internal secret for you:
 
 ```bash
-helm install roastbook ./charts/roastbook \
+helm install roastbook ./charts \
   --set hodor.password="your-password" \
   --set hodor.secret="$(openssl rand -hex 32)" \
   --set image.tag="latest" \
@@ -118,7 +118,7 @@ If you prefer to keep the connection parts separate, the chart can still assembl
 the URL from host and auth values:
 
 ```bash
-helm install roastbook ./charts/roastbook \
+helm install roastbook ./charts \
   --set hodor.password="your-password" \
   --set hodor.secret="$(openssl rand -hex 32)" \
   --set image.tag="latest" \
@@ -136,7 +136,7 @@ when public image availability or registry policy changes upstream.
 If you already store a full `DATABASE_URL` in a Kubernetes secret, point the chart at it instead:
 
 ```bash
-helm install roastbook ./charts/roastbook \
+helm install roastbook ./charts \
   --set hodor.password="your-password" \
   --set hodor.secret="$(openssl rand -hex 32)" \
   --set image.tag="latest" \
@@ -150,7 +150,7 @@ If you want Roastbook to deploy PostgreSQL for you, enable the bundled database 
 set a database password explicitly:
 
 ```bash
-helm install roastbook ./charts/roastbook \
+helm install roastbook ./charts \
   --set hodor.password="your-password" \
   --set hodor.secret="$(openssl rand -hex 32)" \
   --set image.tag="latest" \
@@ -163,7 +163,7 @@ the public multi-arch official `postgres` image by default. You can still overri
 `postgresql.image.repository`, `postgresql.image.tag`, and the `postgresql.primary.*`
 settings if your environment needs a different image, storage class, or placement.
 
-See [charts/roastbook/values.yaml](charts/roastbook/values.yaml) for all configuration options.
+See [charts/values.yaml](charts/values.yaml) for all configuration options.
 
 By default, the Helm chart also runs the same migration command as a Helm hook Job.
 For external databases it runs on `pre-install,pre-upgrade`, but when
