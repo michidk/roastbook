@@ -20,6 +20,7 @@ import { checkVisionEnabled, createBean, extractBeanInfo } from "@/lib/server/be
 import { uploadEntityImage } from "@/lib/server/images"
 import { getRoasters } from "@/lib/server/roasters"
 import { PROCESS_METHODS, ROAST_LEVELS, type RoastLevel } from "@/lib/constants"
+import { useSettingsStore } from "@/lib/settings-store"
 
 type CreatedBean = Awaited<ReturnType<typeof createBean>>
 
@@ -38,14 +39,22 @@ export function BeanForm({
   submitLabel = "Add Beans",
   roasters,
 }: BeanFormProps) {
+  const defaultCurrency = useSettingsStore((state) => state.defaultCurrency)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isExtracting, setIsExtracting] = useState(false)
   const [visionEnabled, setVisionEnabled] = useState(false)
   const [loadedRoasters, setLoadedRoasters] = useState<readonly RoasterOption[]>(
     []
   )
-  const { images, fileInputRef, handleImageSelect, removeImage, openFilePicker } =
-    useImageUpload()
+  const {
+    images,
+    fileInputRef,
+    addFiles,
+    importFromUrl,
+    pasteFromClipboard,
+    removeImage,
+    openFilePicker,
+  } = useImageUpload()
 
   const form = useFormState({
     name: initialName,
@@ -63,6 +72,10 @@ export function BeanForm({
     roastDate: "",
     notes: "",
   })
+
+  useEffect(() => {
+    form.set("priceCurrency", defaultCurrency)
+  }, [defaultCurrency, form.set])
 
   useEffect(() => {
     checkVisionEnabled().then((result) => setVisionEnabled(result.enabled))
@@ -169,18 +182,22 @@ export function BeanForm({
 
   return (
     <EntityForm onSubmit={handleSubmit}>
-      <FormSection title="Photos">
+      <FormSection title="Pictures">
         <ImageUploadField
           images={images}
           fileInputRef={fileInputRef}
-          onImageSelect={handleImageSelect}
+          onFilesAdded={addFiles}
+          onImportFromUrl={importFromUrl}
+          onPasteFromClipboard={pasteFromClipboard}
           onRemoveImage={removeImage}
           onOpenFilePicker={openFilePicker}
-          prompt="Click to add photos of the coffee bag"
+          prompt="Add pictures of the coffee bag"
           previewAltPrefix="Bean"
+          isBusy={isSubmitting}
+          statusText={isSubmitting ? "Saving bean pictures" : undefined}
           helperText={
             visionEnabled
-              ? "AI can extract bean info from your photos"
+              ? "AI can extract bean info from your pictures"
               : undefined
           }
           footer={

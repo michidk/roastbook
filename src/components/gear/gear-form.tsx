@@ -1,4 +1,4 @@
-import { useState, type SyntheticEvent } from "react"
+import { useEffect, useState, type SyntheticEvent } from "react"
 import { toast } from "sonner"
 import { EntityForm, FormActions, FormSection } from "@/components/form/form-shell"
 import {
@@ -13,6 +13,7 @@ import { useImageUpload } from "@/hooks/useImageUpload"
 import { createGear } from "@/lib/server/gear"
 import { uploadEntityImage } from "@/lib/server/images"
 import { GEAR_TYPES, type GearType } from "@/lib/constants"
+import { useSettingsStore } from "@/lib/settings-store"
 
 type CreatedGear = Awaited<ReturnType<typeof createGear>>
 
@@ -29,9 +30,17 @@ export function GearForm({
   initialName = "",
   submitLabel = "Add Gear",
 }: GearFormProps) {
+  const defaultCurrency = useSettingsStore((state) => state.defaultCurrency)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { images, fileInputRef, handleImageSelect, removeImage, openFilePicker } =
-    useImageUpload()
+  const {
+    images,
+    fileInputRef,
+    addFiles,
+    importFromUrl,
+    pasteFromClipboard,
+    removeImage,
+    openFilePicker,
+  } = useImageUpload()
 
   const form = useFormState({
     name: initialName,
@@ -45,6 +54,10 @@ export function GearForm({
     productUrl: "",
     notes: "",
   })
+
+  useEffect(() => {
+    form.set("priceCurrency", defaultCurrency)
+  }, [defaultCurrency, form.set])
 
   const handleSubmit = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -93,15 +106,19 @@ export function GearForm({
 
   return (
     <EntityForm onSubmit={handleSubmit}>
-      <FormSection title="Photos">
+      <FormSection title="Pictures">
         <ImageUploadField
           images={images}
           fileInputRef={fileInputRef}
-          onImageSelect={handleImageSelect}
+          onFilesAdded={addFiles}
+          onImportFromUrl={importFromUrl}
+          onPasteFromClipboard={pasteFromClipboard}
           onRemoveImage={removeImage}
           onOpenFilePicker={openFilePicker}
-          prompt="Click to add photos of your equipment"
+          prompt="Add pictures of your equipment"
           previewAltPrefix="Gear"
+          isBusy={isSubmitting}
+          statusText={isSubmitting ? "Saving equipment pictures" : undefined}
         />
       </FormSection>
 
