@@ -83,7 +83,7 @@ function CoffeeShopDetailPage() {
       <div className="text-center py-12">
         <h2 className="text-xl font-semibold">Coffee shop not found</h2>
         <Button asChild className="mt-4">
-          <Link to="/coffee-shops">Back to coffee shops</Link>
+          <Link to="/visits">Back to visits</Link>
         </Button>
       </div>
     )
@@ -208,7 +208,7 @@ function CoffeeShopDetailPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="flex min-w-0 items-center gap-3">
           <Button variant="ghost" size="icon" asChild>
-            <Link to="/coffee-shops" aria-label="Back to coffee shops">
+            <Link to="/visits" aria-label="Back to visits">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
