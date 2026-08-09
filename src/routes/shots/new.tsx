@@ -492,15 +492,28 @@ function TimerRing({
 }) {
   const seconds = milliseconds / 1000
   const progress = Math.min(seconds / SHOT_TARGET_SECONDS, 1)
+  const isOverTarget = seconds >= SHOT_TARGET_SECONDS
+  const overtimeSeconds = Math.max(seconds - SHOT_TARGET_SECONDS, 0)
+  const overtimeProgress =
+    (overtimeSeconds % SHOT_TARGET_SECONDS) / SHOT_TARGET_SECONDS
+  const overtimeLap = Math.floor(overtimeSeconds / SHOT_TARGET_SECONDS)
   const radius = 88
   const circumference = 2 * Math.PI * radius
   const strokeOffset = circumference * (1 - progress)
+  const overtimeStrokeOffset = circumference * (1 - overtimeProgress)
+  const timerStatus = running
+    ? isOverTarget
+      ? "over target"
+      : "extracting"
+    : seconds > 0
+      ? "paused"
+      : "ready"
 
   return (
     <div
       className="relative flex h-48 w-48 items-center justify-center rounded-full"
       role="timer"
-      aria-label={`${seconds.toFixed(1)} seconds, ${running ? "extracting" : seconds > 0 ? "paused" : "ready"}`}
+      aria-label={`${seconds.toFixed(1)} seconds, ${timerStatus}`}
     >
       <svg
         className="absolute inset-0 -rotate-90"
@@ -527,6 +540,21 @@ function TimerRing({
           strokeDashoffset={strokeOffset}
           className="transition-[stroke-dashoffset] duration-100 ease-linear motion-reduce:transition-none"
         />
+        {isOverTarget && (
+          <circle
+            key={overtimeLap}
+            cx="96"
+            cy="96"
+            r={radius}
+            fill="none"
+            stroke="var(--coffee-foreground)"
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={overtimeStrokeOffset}
+            className="transition-[stroke-dashoffset] duration-100 ease-linear motion-reduce:transition-none"
+          />
+        )}
       </svg>
       <div className="flex h-[170px] w-[170px] flex-col items-center justify-center rounded-full bg-coffee ring-1 ring-coffee-foreground/15">
         <div className="flex items-baseline gap-1 font-display font-extrabold tabular-nums text-coffee-foreground">
@@ -534,7 +562,13 @@ function TimerRing({
           <span className="text-xl text-coffee-foreground/70">s</span>
         </div>
         <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-coffee-foreground/70">
-          {running ? "Extracting" : seconds > 0 ? "Paused" : "Ready"}
+          {running && isOverTarget
+            ? "Over target"
+            : running
+              ? "Extracting"
+              : seconds > 0
+                ? "Paused"
+                : "Ready"}
         </div>
       </div>
     </div>
