@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { useRef, useState, type SyntheticEvent } from "react"
+import { useEffect, useRef, useState, type SyntheticEvent } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -7,6 +7,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { StarRating } from "@/components/ui/star-rating"
 import { InputField, TextareaField } from "@/components/form/form-field"
 import { FormSection } from "@/components/form/form-shell"
+import { SuggestionChips } from "@/components/form/suggestion-chips"
+import { BeanCard } from "@/components/beans/bean-card"
 import { BeanPicker } from "@/components/beans/bean-picker"
 import { RecipePicker } from "@/components/recipes/recipe-picker"
 import { getActiveBeans } from "@/lib/server/beans"
@@ -16,36 +18,87 @@ import {
   createShot,
   getPreviousShotBySetup,
   getPrefillRecipe,
-  getRecentlyUsedBeans,
 } from "@/lib/server/shots"
+import {
+  getBeanSuggestions,
+  getRecipeSuggestions,
+} from "@/lib/server/suggestions"
 import { cn } from "@/lib/utils"
 import { ArrowLeft, Play, Pause, RotateCcw, History } from "lucide-react"
 
 const SHOT_TARGET_SECONDS = 30
 
+type TasteTag = Awaited<ReturnType<typeof getTasteTags>>[number]
+
+function NewShotTasteTagGroup({
+  label,
+  tags,
+  selectedTags,
+  selectedClassName,
+  onToggle,
+}: {
+  readonly label: string
+  readonly tags: readonly TasteTag[]
+  readonly selectedTags: readonly number[]
+  readonly selectedClassName: string
+  readonly onToggle: (tagId: number) => void
+}) {
+  if (tags.length === 0) return null
+
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <div className="flex flex-wrap gap-2">
+        {tags.map((tag) => {
+          const selected = selectedTags.includes(tag.id)
+          return (
+            <button
+              key={tag.id}
+              type="button"
+              onClick={() => onToggle(tag.id)}
+              className={cn(
+                "rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors",
+                selected
+                  ? selectedClassName
+                  : "border border-dashed border-border bg-secondary text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {tag.name}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export const Route = createFileRoute("/shots/new")({
   loader: async () => {
-    const [beans, recipes, tasteTags, recentBeans] = await Promise.all([
-      getActiveBeans(),
-      getRecipes(),
-      getTasteTags(),
-      getRecentlyUsedBeans(),
-    ])
-    return { beans, recipes, tasteTags, recentBeans }
+    const [beans, recipes, tasteTags, beanSuggestions, recipeSuggestions] =
+      await Promise.all([
+        getActiveBeans(),
+        getRecipes(),
+        getTasteTags(),
+        getBeanSuggestions(),
+        getRecipeSuggestions(),
+      ])
+
+    return { beans, recipes, tasteTags, beanSuggestions, recipeSuggestions }
   },
   component: NewShotPage,
 })
 
 function NewShotPage() {
-  const { beans, recipes, tasteTags, recentBeans } = Route.useLoaderData()
+  const { beans, recipes, tasteTags, beanSuggestions, recipeSuggestions } =
+    Route.useLoaderData()
   const navigate = useNavigate()
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedTags, setSelectedTags] = useState<number[]>([])
 
-  const [timerSeconds, setTimerSeconds] = useState(0)
+  const [timerMilliseconds, setTimerMilliseconds] = useState(0)
   const [isTimerRunning, setIsTimerRunning] = useState(false)
-  const [timerInterval, setTimerIntervalState] = useState<NodeJS.Timeout | null>(null)
+  const timerStartedAt = useRef(0)
   const beanSelectionVersion = useRef(0)
 
   const [formData, setFormData] = useState({
@@ -60,27 +113,33 @@ function NewShotPage() {
     notes: "",
   })
 
+  useEffect(() => {
+    if (!isTimerRunning) return
+
+    const updateElapsedTime = () => {
+      setTimerMilliseconds(performance.now() - timerStartedAt.current)
+    }
+    const interval = window.setInterval(updateElapsedTime, 100)
+    updateElapsedTime()
+
+    return () => window.clearInterval(interval)
+  }, [isTimerRunning])
+
   const startTimer = () => {
     if (isTimerRunning) return
+    timerStartedAt.current = performance.now() - timerMilliseconds
     setIsTimerRunning(true)
-    const interval = setInterval(() => {
-      setTimerSeconds((prev) => prev + 1)
-    }, 1000)
-    setTimerIntervalState(interval)
   }
 
   const stopTimer = () => {
     if (!isTimerRunning) return
+    setTimerMilliseconds(performance.now() - timerStartedAt.current)
     setIsTimerRunning(false)
-    if (timerInterval) {
-      clearInterval(timerInterval)
-      setTimerIntervalState(null)
-    }
   }
 
   const resetTimer = () => {
-    stopTimer()
-    setTimerSeconds(0)
+    setIsTimerRunning(false)
+    setTimerMilliseconds(0)
   }
 
   const toggleTag = (tagId: number) => {
@@ -105,6 +164,11 @@ function NewShotPage() {
     }
   }
 
+  const handleRecipeSelect = (recipeId: string) => {
+    beanSelectionVersion.current += 1
+    setFormData((prev) => ({ ...prev, recipeId }))
+  }
+
   const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -116,7 +180,10 @@ function NewShotPage() {
           recipeId: formData.recipeId ? Number(formData.recipeId) : undefined,
           doseGrams: formData.doseGrams || undefined,
           yieldGrams: formData.yieldGrams || undefined,
-          brewTimeSeconds: timerSeconds || undefined,
+          brewTimeSeconds:
+            timerMilliseconds > 0
+              ? Math.round(timerMilliseconds / 1000)
+              : undefined,
           grindSetting: formData.grindSetting || undefined,
           waterTempCelsius: formData.waterTempCelsius || undefined,
           pressure: formData.pressure || undefined,
@@ -136,11 +203,15 @@ function NewShotPage() {
   const negativeTags = tasteTags.filter((t) => t.category === "negative")
   const positiveTags = tasteTags.filter((t) => t.category === "positive")
 
-  const selectedRecipe = recipes.find((r) => String(r.id) === formData.recipeId)
+  const selectedBean = beans.find((bean) => String(bean.id) === formData.beanId)
+  const selectedRecipe = recipes.find(
+    (recipe) => String(recipe.id) === formData.recipeId
+  )
 
   const dose = parseFloat(formData.doseGrams) || 0
   const yieldG = parseFloat(formData.yieldGrams) || 0
   const ratio = dose > 0 ? yieldG / dose : 0
+  const timerSeconds = timerMilliseconds / 1000
   const flow = timerSeconds > 0 && yieldG > 0 ? yieldG / timerSeconds : 0
 
   return (
@@ -163,33 +234,12 @@ function NewShotPage() {
         <div className="space-y-5">
           <FormSection title="Beans">
             <>
-              {recentBeans.length > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-muted-foreground">
-                    Recently used
-                  </Label>
-                  <div className="flex flex-wrap gap-2">
-                    {recentBeans.map((bean) => {
-                      const isSelected = String(bean.id) === formData.beanId
-                      return (
-                        <button
-                          key={bean.id}
-                          type="button"
-                          onClick={() => handleBeanSelect(String(bean.id))}
-                          className={cn(
-                            "min-h-11 rounded-xl px-3.5 py-1.5 text-xs font-bold transition-colors sm:min-h-0",
-                            isSelected
-                              ? "bg-primary text-primary-foreground"
-                              : "border border-border bg-secondary text-muted-foreground hover:text-foreground"
-                          )}
-                        >
-                          {bean.name}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
+              <SuggestionChips
+                label="Bean"
+                items={beanSuggestions}
+                value={formData.beanId}
+                onChange={handleBeanSelect}
+              />
               <BeanPicker
                 id="bean"
                 label="Bean"
@@ -197,6 +247,11 @@ function NewShotPage() {
                 onChange={handleBeanSelect}
                 beans={beans}
               />
+              {selectedBean && (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <BeanCard bean={selectedBean} />
+                </div>
+              )}
             </>
           </FormSection>
 
@@ -225,7 +280,7 @@ function NewShotPage() {
                       pressure: prevShot.pressure ?? "",
                     }))
                     if (prevShot.brewTimeSeconds) {
-                      setTimerSeconds(prevShot.brewTimeSeconds)
+                      setTimerMilliseconds(prevShot.brewTimeSeconds * 1000)
                     }
                   }
                 }}
@@ -236,14 +291,17 @@ function NewShotPage() {
             }
           >
             <>
+              <SuggestionChips
+                label="Recipe"
+                items={recipeSuggestions}
+                value={formData.recipeId}
+                onChange={handleRecipeSelect}
+              />
               <RecipePicker
                 id="recipe"
                 label="Recipe"
                 value={formData.recipeId}
-                onChange={(value) => {
-                  beanSelectionVersion.current += 1
-                  setFormData((prev) => ({ ...prev, recipeId: value }))
-                }}
+                onChange={handleRecipeSelect}
                 recipes={recipes}
               />
               {selectedRecipe && selectedRecipe.gear.length > 0 && (
@@ -308,7 +366,7 @@ function NewShotPage() {
                 <div className="space-y-2">
                   <Label>Brew time</Label>
                   <div className="flex h-11 items-center rounded-2xl border border-border bg-secondary px-3.5 font-display text-base font-bold text-primary sm:h-8">
-                    {formatTime(timerSeconds)}
+                    {formatTime(timerMilliseconds)}
                   </div>
                 </div>
               </div>
@@ -324,57 +382,21 @@ function NewShotPage() {
                 />
               </div>
 
-              {positiveTags.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Positive</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {positiveTags.map((tag) => {
-                      const selected = selectedTags.includes(tag.id)
-                      return (
-                        <button
-                          key={tag.id}
-                          type="button"
-                          onClick={() => toggleTag(tag.id)}
-                          className={cn(
-                            "rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors",
-                            selected
-                              ? "bg-positive/15 text-positive"
-                              : "border border-dashed border-border bg-secondary text-muted-foreground hover:text-foreground"
-                          )}
-                        >
-                          {tag.name}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
+              <NewShotTasteTagGroup
+                label="Positive"
+                tags={positiveTags}
+                selectedTags={selectedTags}
+                selectedClassName="bg-positive/15 text-positive"
+                onToggle={toggleTag}
+              />
 
-              {negativeTags.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Issues</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {negativeTags.map((tag) => {
-                      const selected = selectedTags.includes(tag.id)
-                      return (
-                        <button
-                          key={tag.id}
-                          type="button"
-                          onClick={() => toggleTag(tag.id)}
-                          className={cn(
-                            "rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors",
-                            selected
-                              ? "bg-destructive/10 text-destructive"
-                              : "border border-dashed border-border bg-secondary text-muted-foreground hover:text-foreground"
-                          )}
-                        >
-                          {tag.name}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
+              <NewShotTasteTagGroup
+                label="Issues"
+                tags={negativeTags}
+                selectedTags={selectedTags}
+                selectedClassName="bg-destructive/10 text-destructive"
+                onToggle={toggleTag}
+              />
 
               <TextareaField
                 id="notes"
@@ -403,7 +425,7 @@ function NewShotPage() {
         <aside className="space-y-5 lg:sticky lg:top-24">
           <div className="flex flex-col items-center rounded-3xl bg-coffee p-6 text-coffee-foreground shadow-coffee-strong">
             <TimerRing
-              seconds={timerSeconds}
+              milliseconds={timerMilliseconds}
               running={isTimerRunning}
             />
             <div className="mt-5 flex items-center gap-3">
@@ -461,19 +483,54 @@ function NewShotPage() {
   )
 }
 
-function TimerRing({ seconds, running }: { seconds: number; running: boolean }) {
+function TimerRing({
+  milliseconds,
+  running,
+}: {
+  readonly milliseconds: number
+  readonly running: boolean
+}) {
+  const seconds = milliseconds / 1000
   const progress = Math.min(seconds / SHOT_TARGET_SECONDS, 1)
-  const arcDeg = Math.round(progress * 360)
+  const radius = 88
+  const circumference = 2 * Math.PI * radius
+  const strokeOffset = circumference * (1 - progress)
+
   return (
     <div
-      className="flex h-48 w-48 items-center justify-center rounded-full"
-      style={{
-        background: `conic-gradient(var(--primary) ${arcDeg}deg, color-mix(in srgb, var(--coffee-foreground) 13%, transparent) 0)`,
-      }}
+      className="relative flex h-48 w-48 items-center justify-center rounded-full"
+      role="timer"
+      aria-label={`${seconds.toFixed(1)} seconds, ${running ? "extracting" : seconds > 0 ? "paused" : "ready"}`}
     >
+      <svg
+        className="absolute inset-0 -rotate-90"
+        viewBox="0 0 192 192"
+        aria-hidden="true"
+      >
+        <circle
+          cx="96"
+          cy="96"
+          r={radius}
+          fill="none"
+          stroke="color-mix(in srgb, var(--coffee-foreground) 13%, transparent)"
+          strokeWidth="10"
+        />
+        <circle
+          cx="96"
+          cy="96"
+          r={radius}
+          fill="none"
+          stroke="var(--primary)"
+          strokeWidth="10"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeOffset}
+          className="transition-[stroke-dashoffset] duration-100 ease-linear motion-reduce:transition-none"
+        />
+      </svg>
       <div className="flex h-[170px] w-[170px] flex-col items-center justify-center rounded-full bg-coffee ring-1 ring-coffee-foreground/15">
-        <div className="flex items-baseline gap-1 font-display font-extrabold text-coffee-foreground">
-          <span className="text-5xl leading-none">{seconds}</span>
+        <div className="flex items-baseline gap-1 font-display font-extrabold tabular-nums text-coffee-foreground">
+          <span className="text-5xl leading-none">{seconds.toFixed(1)}</span>
           <span className="text-xl text-coffee-foreground/70">s</span>
         </div>
         <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-coffee-foreground/70">
@@ -484,8 +541,10 @@ function TimerRing({ seconds, running }: { seconds: number; running: boolean }) 
   )
 }
 
-function formatTime(seconds: number) {
-  const mins = Math.floor(seconds / 60)
-  const secs = seconds % 60
-  return `${mins}:${secs.toString().padStart(2, "0")}`
+function formatTime(milliseconds: number) {
+  const totalTenths = Math.floor(milliseconds / 100)
+  const mins = Math.floor(totalTenths / 600)
+  const seconds = Math.floor((totalTenths % 600) / 10)
+  const tenths = totalTenths % 10
+  return `${mins}:${seconds.toString().padStart(2, "0")}.${tenths}`
 }
