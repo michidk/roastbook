@@ -178,27 +178,31 @@
 }
 
 .roastbook-visits-map .maplibregl-canvas {
-  filter: sepia(0.22) saturate(0.72) brightness(1.04);
+  filter: sepia(0.1) saturate(0.66) brightness(1.02) contrast(0.96);
 }
 
 .dark .roastbook-visits-map .maplibregl-canvas {
-  filter: sepia(0.18) saturate(0.7) brightness(0.72);
+  filter: sepia(0.12) saturate(0.58) brightness(0.62) contrast(0.9);
 }
 
 .roastbook-visits-map .maplibregl-ctrl-group {
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: color-mix(in srgb, var(--card) 92%, transparent);
-  box-shadow: var(--coffee-shadow);
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  box-shadow: none;
 }
 
 .roastbook-visits-map .maplibregl-ctrl-group button {
   background-color: transparent;
+  opacity: 0.72;
+  transition: background-color 150ms ease-out, opacity 150ms ease-out;
 }
 
-.roastbook-visits-map .maplibregl-ctrl-group button:hover {
+.roastbook-visits-map .maplibregl-ctrl-group button:hover,
+.roastbook-visits-map .maplibregl-ctrl-group button:focus-visible {
   background-color: var(--secondary);
+  opacity: 1;
 }
 
 .roastbook-visits-map-marker {
@@ -209,14 +213,13 @@
   place-items: center;
   border: 0;
   background: transparent;
-  color: var(--coffee-foreground);
   transition: transform 150ms ease-out;
 }
 
 .roastbook-visits-map-marker:hover,
 .roastbook-visits-map-marker:focus-visible,
 .roastbook-visits-map-marker[data-selected="true"] {
-  transform: translateY(-3px) scale(1.08);
+  transform: scale(1.1);
 }
 
 .roastbook-visits-map-marker[data-variant="favorite"] {
@@ -228,56 +231,32 @@
 }
 
 .roastbook-visits-map-marker:focus-visible {
-  border-radius: var(--radius);
+  border-radius: 999px;
   outline: 3px solid color-mix(in srgb, var(--ring) 55%, transparent);
   outline-offset: 2px;
 }
 
 .roastbook-visits-map-marker-pin {
   pointer-events: none;
-  display: grid;
-  width: 36px;
-  height: 36px;
-  place-items: center;
-  border: 3px solid var(--card);
-  border-radius: 13px 13px 13px 4px;
-  background: var(--coffee);
-  box-shadow: var(--coffee-shadow-strong);
-  transform: rotate(-45deg);
-  transition: background-color 200ms ease-in-out, box-shadow 200ms ease-in-out;
-}
-
-.roastbook-visits-map-marker-pin svg {
   width: 18px;
   height: 18px;
-  transform: rotate(45deg);
+  border: 3px solid var(--card);
+  border-radius: 999px;
+  background: var(--coffee);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--ink) 22%, transparent);
+  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
 }
 
 .roastbook-visits-map-marker[data-variant="favorite"] .roastbook-visits-map-marker-pin {
-  border-color: var(--primary);
+  width: 22px;
+  height: 22px;
   background: var(--ink);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 28%, transparent), var(--coffee-shadow-strong);
+  box-shadow: 0 0 0 2px var(--primary);
 }
 
-.roastbook-visits-map-marker-favorite {
-  pointer-events: none;
-  position: absolute;
-  top: 0;
-  right: 0;
-  display: grid;
-  width: 17px;
-  height: 17px;
-  place-items: center;
-  border: 2px solid var(--card);
-  border-radius: 999px;
-  background: var(--destructive);
-  color: var(--card);
-  box-shadow: var(--coffee-shadow);
-}
-
-.roastbook-visits-map-marker-favorite svg {
-  width: 9px;
-  height: 9px;
+.roastbook-visits-map-marker[data-selected="true"] .roastbook-visits-map-marker-pin {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--primary);
 }
 
 .roastbook-visits-map-inspector {

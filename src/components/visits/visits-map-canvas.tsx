@@ -186,7 +186,7 @@ export function VisitsMapCanvas({
         markerElementsRef.current.clear()
         for (const place of places) {
           const element = createVisitsMapMarkerElement(place, onSelectPlace)
-          const marker = new maplibregl.Marker({ element, anchor: "bottom" })
+          const marker = new maplibregl.Marker({ element, anchor: "center" })
             .setLngLat([place.longitude, place.latitude])
             .addTo(map)
           markersRef.current.set(place.id, marker)
