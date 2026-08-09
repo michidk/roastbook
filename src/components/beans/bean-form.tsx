@@ -2,14 +2,14 @@ import { useEffect, useState, type SyntheticEvent } from "react"
 import { Loader2, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { EntityForm, FormActions, FormSection } from "@/components/form/form-shell"
+import { EntityForm, FormSection } from "@/components/form/form-shell"
 import {
   CurrencyField,
   InputField,
   SelectField,
   TextareaField,
 } from "@/components/form/form-field"
-import { ImageUploadField } from "@/components/image-upload-field"
+import { EntityImageUploadSection } from "@/components/form/entity-image-upload-section"
 import {
   RoasterPicker,
   type RoasterOption,
@@ -21,6 +21,7 @@ import { uploadEntityImage } from "@/lib/server/images"
 import { getRoasters } from "@/lib/server/roasters"
 import { PROCESS_METHODS, ROAST_LEVELS, type RoastLevel } from "@/lib/constants"
 import { useSettingsStore } from "@/lib/settings-store"
+import { createEmptyBeanFormValues } from "@/components/beans/bean-form-values"
 
 type CreatedBean = Awaited<ReturnType<typeof createBean>>
 
@@ -46,32 +47,10 @@ export function BeanForm({
   const [loadedRoasters, setLoadedRoasters] = useState<readonly RoasterOption[]>(
     []
   )
-  const {
-    images,
-    fileInputRef,
-    addFiles,
-    importFromUrl,
-    pasteFromClipboard,
-    removeImage,
-    openFilePicker,
-  } = useImageUpload()
+  const imageUpload = useImageUpload()
+  const { images } = imageUpload
 
-  const form = useFormState({
-    name: initialName,
-    roasterId: "",
-    weight: "",
-    price: "",
-    priceCurrency: "EUR",
-    shopUrl: "",
-    origin: "",
-    region: "",
-    farm: "",
-    variety: "",
-    process: "",
-    roastLevel: "" as RoastLevel | "",
-    roastDate: "",
-    notes: "",
-  })
+  const form = useFormState(createEmptyBeanFormValues(initialName))
 
   useEffect(() => {
     form.set("priceCurrency", defaultCurrency)
@@ -181,26 +160,27 @@ export function BeanForm({
   }
 
   return (
-    <EntityForm onSubmit={handleSubmit}>
-      <FormSection title="Pictures">
-        <ImageUploadField
-          images={images}
-          fileInputRef={fileInputRef}
-          onFilesAdded={addFiles}
-          onImportFromUrl={importFromUrl}
-          onPasteFromClipboard={pasteFromClipboard}
-          onRemoveImage={removeImage}
-          onOpenFilePicker={openFilePicker}
-          prompt="Add pictures of the coffee bag"
-          previewAltPrefix="Bean"
-          isBusy={isSubmitting}
-          statusText={isSubmitting ? "Saving bean pictures" : undefined}
-          helperText={
+    <EntityForm
+      onSubmit={handleSubmit}
+      actions={{
+        onCancel,
+        isSubmitting,
+        disabled: !form.values.name.trim(),
+        submitLabel,
+      }}
+    >
+      <EntityImageUploadSection
+        upload={imageUpload}
+        prompt="Add pictures of the coffee bag"
+        previewAltPrefix="Bean"
+        isBusy={isSubmitting}
+        statusText={isSubmitting ? "Saving bean pictures" : undefined}
+        helperText={
             visionEnabled
               ? "AI can extract bean info from your pictures"
               : undefined
-          }
-          footer={
+        }
+        footer={
             visionEnabled ? (
               <Button
                 type="button"
@@ -217,9 +197,8 @@ export function BeanForm({
                 Fill using AI
               </Button>
             ) : undefined
-          }
-        />
-      </FormSection>
+        }
+      />
 
       <FormSection title="Basic Info">
         <div className="grid gap-4 sm:grid-cols-2">
@@ -349,12 +328,6 @@ export function BeanForm({
         />
       </FormSection>
 
-      <FormActions
-        onCancel={onCancel}
-        isSubmitting={isSubmitting}
-        disabled={!form.values.name.trim()}
-        submitLabel={submitLabel}
-      />
     </EntityForm>
   )
 }

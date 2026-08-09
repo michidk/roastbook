@@ -21,6 +21,10 @@ import { DetailPending } from "@/components/route-pending"
 import { ROAST_LEVELS, PROCESS_METHODS, type RoastLevel } from "@/lib/constants"
 import type { ExtractedBeanInfo } from "@/lib/ai"
 import { imageUrl } from "@/lib/image-url"
+import {
+  createEmptyBeanFormValues,
+  toBeanFormValues,
+} from "@/components/beans/bean-form-values"
 
 export const Route = createFileRoute("/beans/$beanId")({
   loader: async ({ params }) => {
@@ -40,34 +44,6 @@ export const Route = createFileRoute("/beans/$beanId")({
     <RouteError error={error} backTo="/beans" backLabel="Back to beans" />
   ),
 })
-
-function formatRoastDate(value: string | Date | null | undefined) {
-  if (!value) return ""
-
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return ""
-
-  return date.toISOString().slice(0, 10)
-}
-
-function getInitialFormData(bean: NonNullable<ReturnType<typeof Route.useLoaderData>["bean"]>) {
-  return {
-    name: bean.name ?? "",
-    roasterId: bean.roasterId ? String(bean.roasterId) : "",
-    weight: bean.weight ?? "",
-    price: bean.price ?? "",
-    priceCurrency: bean.priceCurrency ?? "EUR",
-    shopUrl: bean.shopUrl ?? "",
-    origin: bean.origin ?? "",
-    region: bean.region ?? "",
-    farm: bean.farm ?? "",
-    variety: bean.variety ?? "",
-    process: bean.process ?? "",
-    roastLevel: (bean.roastLevel ?? "") as RoastLevel | "",
-    roastDate: formatRoastDate(bean.roastDate),
-    notes: bean.notes ?? "",
-  }
-}
 
 function BeanDetailPage() {
   const { bean, shots, roasters, visionEnabled, researchEnabled } = Route.useLoaderData()
@@ -101,28 +77,13 @@ function BeanDetailPage() {
 
   const [formData, setFormData] = useState(() =>
     bean
-      ? getInitialFormData(bean)
-      : {
-          name: "",
-          roasterId: "",
-          weight: "",
-          price: "",
-          priceCurrency: "EUR",
-          shopUrl: "",
-          origin: "",
-          region: "",
-          farm: "",
-          variety: "",
-          process: "",
-          roastLevel: "" as RoastLevel | "",
-          roastDate: "",
-          notes: "",
-        }
+      ? toBeanFormValues(bean)
+      : createEmptyBeanFormValues()
   )
 
   useEffect(() => {
     if (!bean) return
-    setFormData(getInitialFormData(bean))
+    setFormData(toBeanFormValues(bean))
   }, [bean])
 
   if (!bean) {
@@ -147,7 +108,7 @@ function BeanDetailPage() {
   }
 
   const handleCancelEdit = () => {
-    setFormData(getInitialFormData(bean))
+    setFormData(toBeanFormValues(bean))
     setIsEditing(false)
   }
 
