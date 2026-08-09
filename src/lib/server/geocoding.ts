@@ -1,33 +1,39 @@
 import { createServerFn } from "@tanstack/react-start"
+import { prioritizeCoffeeShopCandidates } from "@/lib/geocoding-ranking"
+import { parseNearbyCoffeeShops } from "@/lib/nearby-coffee-shops"
+
+const NOMINATIM_CANDIDATE_LIMIT = 40
 
 type NominatimResult = {
-  place_id?: number
-  display_name?: string
-  lat?: string
-  lon?: string
-  osm_type?: "node" | "way" | "relation"
-  osm_id?: number | string
-  class?: string
-  type?: string
-  address?: {
-    house_number?: string
-    road?: string
-    pedestrian?: string
-    suburb?: string
-    neighbourhood?: string
-    city?: string
-    town?: string
-    village?: string
-    municipality?: string
-    county?: string
-    state?: string
-    country?: string
+  readonly place_id?: number
+  readonly display_name?: string
+  readonly lat?: string
+  readonly lon?: string
+  readonly osm_type?: "node" | "way" | "relation"
+  readonly osm_id?: number | string
+  readonly category?: string
+  readonly class?: string
+  readonly type?: string
+  readonly address?: {
+    readonly house_number?: string
+    readonly road?: string
+    readonly pedestrian?: string
+    readonly suburb?: string
+    readonly neighbourhood?: string
+    readonly city?: string
+    readonly town?: string
+    readonly village?: string
+    readonly municipality?: string
+    readonly county?: string
+    readonly state?: string
+    readonly country?: string
   }
-  extratags?: {
-    website?: string
-    "contact:website"?: string
-    url?: string
-  }
+  readonly extratags?: {
+    readonly cuisine?: string
+    readonly website?: string
+    readonly "contact:website"?: string
+    readonly url?: string
+  } | null
 }
 
 function toOpenStreetMapUrl(result: Pick<NominatimResult, "osm_type" | "osm_id" | "lat" | "lon">) {
@@ -91,7 +97,7 @@ export const searchCoffeeShopCandidates = createServerFn({ method: "POST" })
       format: "jsonv2",
       addressdetails: "1",
       extratags: "1",
-      limit: String(data.limit),
+      limit: String(NOMINATIM_CANDIDATE_LIMIT),
     })
 
     const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
@@ -107,7 +113,7 @@ export const searchCoffeeShopCandidates = createServerFn({ method: "POST" })
 
     const payload = (await response.json()) as NominatimResult[]
 
-    return payload.flatMap((item) => {
+    return prioritizeCoffeeShopCandidates(payload, data.limit).flatMap((item) => {
       if (!item.place_id || !item.display_name || !item.lat || !item.lon) {
         return []
       }
@@ -128,7 +134,7 @@ export const searchCoffeeShopCandidates = createServerFn({ method: "POST" })
           longitude: String(longitude),
           osmType: item.osm_type,
           osmId: item.osm_id ? String(item.osm_id) : undefined,
-          osmClass: item.class,
+          osmClass: item.category ?? item.class,
           osmValueType: item.type,
           openStreetMapUrl: toOpenStreetMapUrl(item),
           address: toAddressLine(item.address),
@@ -138,4 +144,39 @@ export const searchCoffeeShopCandidates = createServerFn({ method: "POST" })
         },
       ]
     })
+  })
+
+export const discoverNearbyCoffeeShops = createServerFn({ method: "POST" })
+  .validator(
+    (data: { latitude: number; longitude: number; radiusMeters?: number }) => {
+      if (!Number.isFinite(data.latitude) || Math.abs(data.latitude) > 90) {
+        throw new Error("Invalid latitude")
+      }
+      if (!Number.isFinite(data.longitude) || Math.abs(data.longitude) > 180) {
+        throw new Error("Invalid longitude")
+      }
+      return {
+        latitude: data.latitude,
+        longitude: data.longitude,
+        radiusMeters: Math.min(Math.max(data.radiusMeters ?? 4_000, 500), 10_000),
+      }
+    },
+  )
+  .handler(async ({ data }) => {
+    const query = `[out:json][timeout:20];(
+      nwr(around:${data.radiusMeters},${data.latitude},${data.longitude})["amenity"="cafe"];
+      nwr(around:${data.radiusMeters},${data.latitude},${data.longitude})["shop"="coffee"];
+    );out center 40;`
+    const response = await fetch("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+        "User-Agent": "Roastbook/1.0 (self-hosted coffee journal discovery)",
+      },
+      body: new URLSearchParams({ data: query }),
+    })
+    if (!response.ok) {
+      throw new Error(`Nearby café discovery failed: ${response.status}`)
+    }
+    return parseNearbyCoffeeShops(await response.json())
   })
