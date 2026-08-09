@@ -38,7 +38,7 @@ export function isThemePreference(value: unknown): value is ThemePreference {
   return THEME_OPTIONS.some((theme) => theme.value === value)
 }
 
-export function isDefaultMapLocation(
+function isDefaultMapLocation(
   value: unknown,
 ): value is DefaultMapLocation {
   if (typeof value !== "object" || value === null) return false
