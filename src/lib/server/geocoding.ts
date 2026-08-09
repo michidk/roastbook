@@ -3,6 +3,10 @@ import { prioritizeCoffeeShopCandidates } from "@/lib/geocoding-ranking"
 import { parseNearbyCoffeeShops } from "@/lib/nearby-coffee-shops"
 
 const NOMINATIM_CANDIDATE_LIMIT = 40
+const OVERPASS_ENDPOINTS = [
+  "https://overpass.kumi.systems/api/interpreter",
+  "https://overpass-api.de/api/interpreter",
+] as const
 
 type NominatimResult = {
   readonly place_id?: number
@@ -146,37 +150,100 @@ export const searchCoffeeShopCandidates = createServerFn({ method: "POST" })
     })
   })
 
-export const discoverNearbyCoffeeShops = createServerFn({ method: "POST" })
-  .validator(
-    (data: { latitude: number; longitude: number; radiusMeters?: number }) => {
-      if (!Number.isFinite(data.latitude) || Math.abs(data.latitude) > 90) {
-        throw new Error("Invalid latitude")
-      }
-      if (!Number.isFinite(data.longitude) || Math.abs(data.longitude) > 180) {
-        throw new Error("Invalid longitude")
-      }
-      return {
-        latitude: data.latitude,
-        longitude: data.longitude,
-        radiusMeters: Math.min(Math.max(data.radiusMeters ?? 4_000, 500), 10_000),
-      }
-    },
-  )
+export const geocodeDefaultMapLocation = createServerFn({ method: "POST" })
+  .validator((data: { query: string }) => ({ query: normalizeQuery(data.query) }))
   .handler(async ({ data }) => {
-    const query = `[out:json][timeout:20];(
-      nwr(around:${data.radiusMeters},${data.latitude},${data.longitude})["amenity"="cafe"];
-      nwr(around:${data.radiusMeters},${data.latitude},${data.longitude})["shop"="coffee"];
-    );out center 40;`
-    const response = await fetch("https://overpass-api.de/api/interpreter", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-        "User-Agent": "Roastbook/1.0 (self-hosted coffee journal discovery)",
-      },
-      body: new URLSearchParams({ data: query }),
+    const params = new URLSearchParams({
+      q: data.query,
+      format: "jsonv2",
+      addressdetails: "1",
+      limit: "1",
     })
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?${params.toString()}`,
+      {
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "Roastbook/1.0 (self-hosted coffee journal geocoding)",
+        },
+        signal: AbortSignal.timeout(15_000),
+      },
+    )
     if (!response.ok) {
-      throw new Error(`Nearby café discovery failed: ${response.status}`)
+      throw new Error(`Location lookup failed: ${response.status}`)
     }
-    return parseNearbyCoffeeShops(await response.json())
+    const payload = (await response.json()) as NominatimResult[]
+    const result = payload[0]
+    if (!result?.display_name || !result.lat || !result.lon) return null
+    const latitude = Number(result.lat)
+    const longitude = Number(result.lon)
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null
+    return {
+      latitude,
+      longitude,
+      label: result.display_name,
+    }
   })
+
+type CoffeeShopMapBounds = {
+  readonly south: number
+  readonly west: number
+  readonly north: number
+  readonly east: number
+}
+
+export const discoverCoffeeShopsInBounds = createServerFn({ method: "POST" })
+  .validator((data: CoffeeShopMapBounds) => normalizeMapBounds(data))
+  .handler(async ({ data }) => {
+    const box = `${data.south},${data.west},${data.north},${data.east}`
+    const query = `[out:json][timeout:30];(
+      nwr["amenity"="cafe"]["name"](${box});
+      nwr["shop"="coffee"]["name"](${box});
+    );out center;`
+    let lastStatus = 503
+    let lastError: Error | null = null
+    for (const endpoint of OVERPASS_ENDPOINTS) {
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+            "User-Agent": "Roastbook/1.0 (self-hosted coffee journal discovery)",
+          },
+          body: new URLSearchParams({ data: query }),
+          signal: AbortSignal.timeout(25_000),
+        })
+        if (response.ok) {
+          return parseNearbyCoffeeShops(await response.json())
+        }
+        lastStatus = response.status
+        if (response.status !== 429 && response.status < 500) break
+      } catch (requestError) {
+        if (!(requestError instanceof Error)) throw requestError
+        lastError = requestError
+      }
+    }
+    if (lastError) throw lastError
+    throw new Error(`Nearby café discovery failed: ${lastStatus}`)
+  })
+
+function normalizeMapBounds(bounds: CoffeeShopMapBounds): CoffeeShopMapBounds {
+  const coordinates = [bounds.south, bounds.west, bounds.north, bounds.east]
+  if (!coordinates.every(Number.isFinite)) {
+    throw new Error("Invalid map bounds")
+  }
+  if (
+    bounds.south < -90 ||
+    bounds.north > 90 ||
+    bounds.west < -180 ||
+    bounds.east > 180 ||
+    bounds.south >= bounds.north ||
+    bounds.west >= bounds.east
+  ) {
+    throw new Error("Invalid map bounds")
+  }
+  if (bounds.north - bounds.south > 1 || bounds.east - bounds.west > 1.5) {
+    throw new Error("Map bounds are too large for café discovery")
+  }
+  return bounds
+}
