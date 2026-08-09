@@ -10,6 +10,16 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { createVisitsMapMarkerElement } from "./visits-map-marker"
 import type { VisitsMapPlace } from "./visits-map-utils"
 
+export type CoffeeShopViewport = {
+  readonly bounds: {
+    readonly south: number
+    readonly west: number
+    readonly north: number
+    readonly east: number
+  }
+  readonly zoom: number
+}
+
 const BASEMAP_STYLE: StyleSpecification = {
   version: 8,
   sources: {
@@ -35,22 +45,35 @@ const BASEMAP_STYLE: StyleSpecification = {
 
 type VisitsMapCanvasProps = {
   readonly places: readonly VisitsMapPlace[]
+  readonly initialLocation: {
+    readonly latitude: number
+    readonly longitude: number
+  } | null
   readonly selectedPlaceId: string | null
   readonly onSelectPlace: (
     placeId: string | null,
     focusInspector?: boolean,
   ) => void
+  readonly onViewportChange: (viewport: CoffeeShopViewport) => void
 }
 
 export function VisitsMapCanvas({
   places,
+  initialLocation,
   selectedPlaceId,
   onSelectPlace,
+  onViewportChange,
 }: VisitsMapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
+  const initialPlaceRef = useRef(
+    places.find((place) => place.kind === "saved" && place.isFavorite) ??
+      places[0],
+  )
   const markersRef = useRef<Map<string, MapLibreMarker>>(new Map())
   const markerElementsRef = useRef<Map<string, HTMLButtonElement>>(new Map())
+  const viewportTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastViewportKeyRef = useRef<string | null>(null)
   const [mapAttempt, setMapAttempt] = useState(0)
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading")
 
@@ -61,14 +84,17 @@ export function VisitsMapCanvas({
 
     void import("maplibre-gl").then((maplibregl) => {
       if (disposed) return
-      const firstPlace = places[0]
+      const firstPlace = initialPlaceRef.current
+      const center: [number, number] = initialLocation
+        ? [initialLocation.longitude, initialLocation.latitude]
+        : firstPlace
+          ? [firstPlace.longitude, firstPlace.latitude]
+          : [10, 48]
       const map = new maplibregl.Map({
         container,
         style: BASEMAP_STYLE,
-        center: firstPlace
-          ? [firstPlace.longitude, firstPlace.latitude]
-          : [10, 48],
-        zoom: firstPlace ? 11 : 3,
+        center,
+        zoom: initialLocation || firstPlace ? 13 : 3,
         attributionControl: false,
       })
       mapRef.current = map
@@ -77,7 +103,15 @@ export function VisitsMapCanvas({
         "top-right",
       )
       map.on("load", () => {
-        if (!disposed) setStatus("ready")
+        if (disposed) return
+        setStatus("ready")
+        notifyViewportChange(map, onViewportChange, lastViewportKeyRef)
+      })
+      map.on("moveend", () => {
+        if (viewportTimerRef.current) clearTimeout(viewportTimerRef.current)
+        viewportTimerRef.current = setTimeout(() => {
+          notifyViewportChange(map, onViewportChange, lastViewportKeyRef)
+        }, 400)
       })
       map.on("error", () => {
         if (!disposed) setStatus("error")
@@ -94,10 +128,17 @@ export function VisitsMapCanvas({
       for (const marker of markersRef.current.values()) marker.remove()
       markersRef.current.clear()
       markerElementsRef.current.clear()
+      if (viewportTimerRef.current) clearTimeout(viewportTimerRef.current)
       mapRef.current?.remove()
       mapRef.current = null
     }
-  }, [mapAttempt])
+  }, [
+    initialLocation?.latitude,
+    initialLocation?.longitude,
+    mapAttempt,
+    onSelectPlace,
+    onViewportChange,
+  ])
 
   useEffect(() => {
     if (status !== "ready" || !mapRef.current) return
@@ -109,8 +150,6 @@ export function VisitsMapCanvas({
       for (const marker of markersRef.current.values()) marker.remove()
       markersRef.current.clear()
       markerElementsRef.current.clear()
-      const bounds = new maplibregl.LngLatBounds()
-
       for (const place of places) {
         const element = createVisitsMapMarkerElement(place, onSelectPlace)
         const isSelected = place.id === selectedPlaceId
@@ -123,14 +162,6 @@ export function VisitsMapCanvas({
           .addTo(map)
         markersRef.current.set(place.id, marker)
         markerElementsRef.current.set(place.id, element)
-        bounds.extend([place.longitude, place.latitude])
-      }
-
-      if (places.length === 1) {
-        const place = places[0]
-        if (place) map.jumpTo({ center: [place.longitude, place.latitude], zoom: 14 })
-      } else if (!bounds.isEmpty()) {
-        map.fitBounds(bounds, { padding: 72, duration: 0, maxZoom: 13 })
       }
 
       const selectedPlace = places.find((place) => place.id === selectedPlaceId)
@@ -178,6 +209,35 @@ export function VisitsMapCanvas({
       )}
     </div>
   )
+}
+
+function notifyViewportChange(
+  map: MapLibreMap,
+  onViewportChange: VisitsMapCanvasProps["onViewportChange"],
+  lastViewportKeyRef: { current: string | null },
+): void {
+  const bounds = map.getBounds()
+  const viewport = {
+    bounds: {
+      south: bounds.getSouth(),
+      west: bounds.getWest(),
+      north: bounds.getNorth(),
+      east: bounds.getEast(),
+    },
+    zoom: map.getZoom(),
+  }
+  const viewportKey = [
+    viewport.bounds.south,
+    viewport.bounds.west,
+    viewport.bounds.north,
+    viewport.bounds.east,
+    viewport.zoom,
+  ]
+    .map((value) => value.toFixed(5))
+    .join(":")
+  if (viewportKey === lastViewportKeyRef.current) return
+  lastViewportKeyRef.current = viewportKey
+  onViewportChange(viewport)
 }
 
 function positionSelectedPlace(

@@ -8,7 +8,7 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group"
 
-type NearbyStatus = "idle" | "loading" | "ready" | "error"
+type NearbyStatus = "idle" | "loading" | "ready" | "error" | "zoom-required"
 
 type VisitsMapToolbarProps = {
   readonly query: string
@@ -42,7 +42,7 @@ export function VisitsMapToolbar({
             <h3 className="font-display text-lg font-bold">Explore cafés</h3>
           </div>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Nearby coffee places appear automatically. Search OpenStreetMap to explore elsewhere.
+            Coffee places update automatically as you pan and zoom. Search to jump elsewhere.
           </p>
         </div>
         <Badge variant="secondary">{savedCount} saved on map</Badge>
@@ -145,11 +145,14 @@ function getStatusText({
       ? "No informational places remain. Try another café name, neighborhood, or city."
       : `${visibleDiscoveryCount} informational ${visibleDiscoveryCount === 1 ? "place" : "places"} found`
   }
-  if (nearbyStatus === "loading") return "Finding cafés near your saved places…"
+  if (nearbyStatus === "loading") return "Finding every café in the visible map area…"
+  if (nearbyStatus === "zoom-required") {
+    return "Zoom in to discover cafés in the visible map area."
+  }
   if (nearbyStatus === "error") {
-    return "Nearby discovery is unavailable. Search to explore cafés elsewhere."
+    return "Café discovery is unavailable. Pan the map or search to try another area."
   }
   return visibleDiscoveryCount > 0
-    ? `${visibleDiscoveryCount} nearby informational ${visibleDiscoveryCount === 1 ? "place is" : "places are"} shown on the map.`
-    : "Search OpenStreetMap to discover cafés beyond your saved places."
+    ? `${visibleDiscoveryCount} informational ${visibleDiscoveryCount === 1 ? "place is" : "places are"} shown in the visible map area.`
+    : "Pan or zoom the map to discover cafés in this area."
 }

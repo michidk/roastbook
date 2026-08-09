@@ -38,10 +38,13 @@ export function VisitsMapPlaceCard({
       : `https://www.openstreetmap.org/?mlat=${place.latitude}&mlon=${place.longitude}#map=18/${place.latitude}/${place.longitude}`
 
   useEffect(() => {
-    if (focusRequest === 0 || !cardRef.current) return
-    cardRef.current.scrollIntoView({ block: "center" })
-    cardRef.current.focus({ preventScroll: true })
-  }, [focusRequest])
+    const card = cardRef.current
+    if (!card) return
+    if (window.matchMedia("(max-width: 1023px)").matches) {
+      card.scrollIntoView({ block: "center" })
+    }
+    if (focusRequest > 0) card.focus({ preventScroll: true })
+  }, [focusRequest, place.id])
 
   return (
     <article
@@ -49,7 +52,7 @@ export function VisitsMapPlaceCard({
       id="visits-map-place-inspector"
       tabIndex={-1}
       aria-labelledby="visits-map-place-title"
-      className="roastbook-visits-map-inspector absolute inset-x-3 bottom-3 z-20 scroll-mt-20 rounded-3xl border border-border/80 bg-card/95 p-4 shadow-coffee-strong backdrop-blur-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:right-auto sm:left-4 sm:bottom-4 sm:w-[22rem]"
+      className="roastbook-visits-map-inspector relative z-20 m-3 scroll-mt-20 rounded-3xl border border-border/80 bg-card/95 p-4 shadow-coffee-strong backdrop-blur-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50 lg:absolute lg:bottom-4 lg:left-4 lg:m-0 lg:w-[22rem]"
     >
       <div className="flex items-start gap-3">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-secondary text-coffee">

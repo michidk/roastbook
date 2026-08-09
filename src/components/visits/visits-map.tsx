@@ -1,18 +1,22 @@
 import {
   useCallback,
-  useEffect,
   useMemo,
+  useRef,
   useState,
   type SyntheticEvent,
 } from "react"
 import { useRouter } from "@tanstack/react-router"
 import { toast } from "sonner"
 import { createCoffeeShop } from "@/lib/server/coffee-shops"
+import { useSettingsStore } from "@/lib/settings-store"
 import {
-  discoverNearbyCoffeeShops,
+  discoverCoffeeShopsInBounds,
   searchCoffeeShopCandidates,
 } from "@/lib/server/geocoding"
-import { VisitsMapCanvas } from "./visits-map-canvas"
+import {
+  VisitsMapCanvas,
+  type CoffeeShopViewport,
+} from "./visits-map-canvas"
 import { VisitsMapPlaceCard } from "./visits-map-place-card"
 import { VisitsMapToolbar } from "./visits-map-toolbar"
 import {
@@ -30,8 +34,13 @@ type VisitsMapProps = {
   readonly visits: readonly PlaceVisitInput[]
 }
 
+const MIN_COFFEE_SHOP_DISCOVERY_ZOOM = 11
+
 export function VisitsMap({ coffeeShops, visits }: VisitsMapProps) {
   const router = useRouter()
+  const defaultMapLocation = useSettingsStore(
+    (state) => state.defaultMapLocation,
+  )
   const [query, setQuery] = useState("")
   const [hasSearched, setHasSearched] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
@@ -39,8 +48,9 @@ export function VisitsMap({ coffeeShops, visits }: VisitsMapProps) {
   const [nearbyPlaces, setNearbyPlaces] = useState<DiscoveredMapPlace[]>([])
   const [searchedPlaces, setSearchedPlaces] = useState<DiscoveredMapPlace[]>([])
   const [nearbyStatus, setNearbyStatus] = useState<
-    "idle" | "loading" | "ready" | "error"
+    "idle" | "loading" | "ready" | "error" | "zoom-required"
   >("idle")
+  const discoveryRequestRef = useRef(0)
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null)
   const [inspectorFocusRequest, setInspectorFocusRequest] = useState(0)
   const [addingPlaceId, setAddingPlaceId] = useState<string | null>(null)
@@ -49,8 +59,6 @@ export function VisitsMap({ coffeeShops, visits }: VisitsMapProps) {
     () => toSavedMapPlaces(coffeeShops, visits),
     [coffeeShops, visits],
   )
-  const discoveryCenter =
-    savedPlaces.find((place) => place.isFavorite) ?? savedPlaces[0] ?? null
   const discoveredPlaces = useMemo(() => {
     const placesById = new Map<string, DiscoveredMapPlace>()
     for (const place of [...nearbyPlaces, ...searchedPlaces]) {
@@ -73,31 +81,30 @@ export function VisitsMap({ coffeeShops, visits }: VisitsMapProps) {
     }
   }, [])
 
-  useEffect(() => {
-    if (!discoveryCenter) return
-    let disposed = false
-    setNearbyStatus("loading")
-
-    void discoverNearbyCoffeeShops({
-      data: {
-        latitude: discoveryCenter.latitude,
-        longitude: discoveryCenter.longitude,
-      },
-    })
-      .then((candidates) => {
-        if (disposed) return
+  const discoverVisibleCoffeeShops = useCallback(
+    async ({ bounds, zoom }: CoffeeShopViewport) => {
+      const requestId = discoveryRequestRef.current + 1
+      discoveryRequestRef.current = requestId
+      if (zoom < MIN_COFFEE_SHOP_DISCOVERY_ZOOM) {
+        setNearbyPlaces([])
+        setNearbyStatus("zoom-required")
+        return
+      }
+      setNearbyStatus("loading")
+      try {
+        const candidates = await discoverCoffeeShopsInBounds({ data: bounds })
+        if (requestId !== discoveryRequestRef.current) return
         setNearbyPlaces(toDiscoveredMapPlaces(candidates))
         setNearbyStatus("ready")
-      })
-      .catch((error) => {
+      } catch (error) {
         if (!(error instanceof Error)) throw error
-        if (!disposed) setNearbyStatus("error")
-      })
-
-    return () => {
-      disposed = true
-    }
-  }, [discoveryCenter?.latitude, discoveryCenter?.longitude])
+        if (requestId === discoveryRequestRef.current) {
+          setNearbyStatus("error")
+        }
+      }
+    },
+    [],
+  )
 
   const handleSearch = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -173,8 +180,10 @@ export function VisitsMap({ coffeeShops, visits }: VisitsMapProps) {
       <div className="relative">
         <VisitsMapCanvas
           places={places}
+          initialLocation={defaultMapLocation}
           selectedPlaceId={selectedPlaceId}
           onSelectPlace={selectPlace}
+          onViewportChange={discoverVisibleCoffeeShops}
         />
         {selectedPlace && (
           <VisitsMapPlaceCard
