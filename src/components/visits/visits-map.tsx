@@ -6,15 +6,7 @@ import {
   type SyntheticEvent,
 } from "react"
 import { useRouter } from "@tanstack/react-router"
-import { Coffee, Heart, Loader2, Search, Sparkles } from "lucide-react"
 import { toast } from "sonner"
-import { Badge } from "@/components/ui/badge"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupInput,
-} from "@/components/ui/input-group"
 import { createCoffeeShop } from "@/lib/server/coffee-shops"
 import {
   discoverNearbyCoffeeShops,
@@ -22,6 +14,7 @@ import {
 } from "@/lib/server/geocoding"
 import { VisitsMapCanvas } from "./visits-map-canvas"
 import { VisitsMapPlaceCard } from "./visits-map-place-card"
+import { VisitsMapToolbar } from "./visits-map-toolbar"
 import {
   getVisibleMapPlaces,
   toDiscoveredMapPlaces,
@@ -165,87 +158,17 @@ export function VisitsMap({ coffeeShops, visits }: VisitsMapProps) {
 
   return (
     <div className="overflow-hidden rounded-3xl bg-card shadow-coffee">
-      <div className="space-y-4 border-b border-border bg-secondary/60 p-4 sm:p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <Sparkles className="size-4 text-primary" aria-hidden />
-              <h3 className="font-display text-lg font-bold">Explore cafés</h3>
-            </div>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              Search OpenStreetMap to preview coffee places alongside your Roastbook map.
-            </p>
-          </div>
-          <Badge variant="secondary">{savedPlaces.length} saved on map</Badge>
-        </div>
-
-        <form onSubmit={handleSearch} role="search">
-          <label htmlFor="cafe-map-search" className="sr-only">
-            Search for cafés by name, neighborhood, or city
-          </label>
-          <InputGroup className="h-11! bg-card shadow-coffee">
-            <InputGroupInput
-              id="cafe-map-search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Try “coffee in Kreuzberg” or a café name"
-              aria-describedby="cafe-map-search-status"
-              className="h-11! text-base"
-            />
-            <InputGroupAddon align="inline-end" className="p-0 has-[>button]:mr-0">
-              <InputGroupButton
-                type="submit"
-                variant="secondary"
-                disabled={query.trim().length < 3 || isSearching}
-                aria-label={isSearching ? "Searching for cafés" : "Search for cafés"}
-                className="h-11! min-w-11 rounded-none px-3"
-              >
-                {isSearching ? <Loader2 className="animate-spin" /> : <Search />}
-                <span className="hidden sm:inline">{isSearching ? "Searching…" : "Discover"}</span>
-              </InputGroupButton>
-            </InputGroupAddon>
-          </InputGroup>
-          <p id="cafe-map-search-status" className="mt-2 min-h-5 text-xs text-muted-foreground" role="status">
-            {isSearching
-              ? "Searching OpenStreetMap"
-              : searchError ?? (hasSearched
-                ? visibleDiscoveryCount === 0
-                  ? "No informational places remain. Try another café name, neighborhood, or city."
-                  : `${visibleDiscoveryCount} informational ${visibleDiscoveryCount === 1 ? "place" : "places"} found`
-                : nearbyStatus === "loading"
-                  ? "Finding cafés near your saved places…"
-                  : nearbyStatus === "error"
-                    ? "Nearby discovery is unavailable. Search to explore cafés elsewhere."
-                    : visibleDiscoveryCount > 0
-                      ? `${visibleDiscoveryCount} nearby informational ${visibleDiscoveryCount === 1 ? "place is" : "places are"} shown on the map.`
-                      : "Search OpenStreetMap to discover cafés beyond your saved places.")}
-          </p>
-        </form>
-
-        <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold text-muted-foreground" aria-label="Map marker legend">
-          <span className="flex items-center gap-1.5">
-            <span className="relative size-5">
-              <span className="flex size-5 -rotate-45 items-center justify-center rounded-[7px_7px_7px_2px] border-2 border-primary bg-ink text-ink-foreground">
-                <Coffee className="size-3 rotate-45" aria-hidden />
-              </span>
-              <Heart className="absolute -top-1.5 -right-1.5 size-3 fill-destructive text-destructive" aria-hidden />
-            </span>
-            Favorite
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="flex size-5 -rotate-45 items-center justify-center rounded-[7px_7px_7px_2px] border-2 border-card bg-coffee text-coffee-foreground shadow-coffee">
-              <Coffee className="size-3 rotate-45" aria-hidden />
-            </span>
-            Saved
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="flex size-5 -rotate-45 items-center justify-center rounded-[7px_7px_7px_2px] border-2 border-coffee bg-card text-coffee">
-              <Coffee className="size-3 rotate-45" aria-hidden />
-            </span>
-            Discovered
-          </span>
-        </div>
-      </div>
+      <VisitsMapToolbar
+        query={query}
+        savedCount={savedPlaces.length}
+        visibleDiscoveryCount={visibleDiscoveryCount}
+        isSearching={isSearching}
+        hasSearched={hasSearched}
+        searchError={searchError}
+        nearbyStatus={nearbyStatus}
+        onQueryChange={setQuery}
+        onSubmit={handleSearch}
+      />
 
       <div className="relative">
         <VisitsMapCanvas
