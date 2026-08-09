@@ -7,8 +7,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { StarRating } from "@/components/ui/star-rating"
 import { InputField, TextareaField } from "@/components/form/form-field"
 import { FormSection } from "@/components/form/form-shell"
-import { CreatableCombobox } from "@/components/form/creatable-combobox"
 import { BeanPicker } from "@/components/beans/bean-picker"
+import { RecipePicker } from "@/components/recipes/recipe-picker"
 import { getActiveBeans } from "@/lib/server/beans"
 import { getRecipes } from "@/lib/server/recipes"
 import { getTasteTags } from "@/lib/server/taste-tags"
@@ -236,7 +236,7 @@ function NewShotPage() {
             }
           >
             <>
-              <CreatableCombobox
+              <RecipePicker
                 id="recipe"
                 label="Recipe"
                 value={formData.recipeId}
@@ -244,12 +244,7 @@ function NewShotPage() {
                   beanSelectionVersion.current += 1
                   setFormData((prev) => ({ ...prev, recipeId: value }))
                 }}
-                items={recipes}
-                getKey={(recipe) => recipe.id}
-                getLabel={(recipe) => recipe.name}
-                placeholder="Select recipe"
-                searchPlaceholder="Search recipes…"
-                emptyMessage="No matching recipes."
+                recipes={recipes}
               />
               {selectedRecipe && selectedRecipe.gear.length > 0 && (
                 <div className="space-y-2">
@@ -312,7 +307,7 @@ function NewShotPage() {
                 />
                 <div className="space-y-2">
                   <Label>Brew time</Label>
-                  <div className="flex h-10 items-center rounded-2xl border border-border bg-secondary px-3.5 font-display text-base font-bold text-primary">
+                  <div className="flex h-11 items-center rounded-2xl border border-border bg-secondary px-3.5 font-display text-base font-bold text-primary sm:h-8">
                     {formatTime(timerSeconds)}
                   </div>
                 </div>
