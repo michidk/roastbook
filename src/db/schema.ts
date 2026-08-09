@@ -10,6 +10,25 @@ import {
 } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 
+const timestamps = () => ({
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+})
+
+const archiveState = () => ({
+  isArchived: boolean("is_archived").default(false).notNull(),
+  ...timestamps(),
+})
+
+const imageFile = () => ({
+  storagePath: text("storage_path").notNull(),
+  originalFilename: text("original_filename"),
+  mimeType: text("mime_type"),
+  sizeBytes: integer("size_bytes"),
+})
+
+const createdAt = () => timestamp("created_at").defaultNow().notNull()
+
 export const gearTypeEnum = pgEnum("gear_type", [
   "espresso_machine",
   "grinder",
@@ -46,8 +65,7 @@ export const roasters = pgTable("roasters", {
   website: text("website"),
   instagramHandle: text("instagram_handle"),
   notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  ...timestamps(),
 })
 
 export const roastersRelations = relations(roasters, ({ many }) => ({
@@ -71,9 +89,7 @@ export const beans = pgTable("beans", {
   priceCurrency: text("price_currency").default("EUR"),
   shopUrl: text("shop_url"),
   notes: text("notes"),
-  isArchived: boolean("is_archived").default(false).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  ...archiveState(),
 })
 
 export const beansRelations = relations(beans, ({ one, many }) => ({
@@ -90,12 +106,9 @@ export const beanImages = pgTable("bean_images", {
   beanId: integer("bean_id")
     .references(() => beans.id, { onDelete: "cascade" })
     .notNull(),
-  storagePath: text("storage_path").notNull(),
-  originalFilename: text("original_filename"),
-  mimeType: text("mime_type"),
-  sizeBytes: integer("size_bytes"),
+  ...imageFile(),
   isThumbnail: boolean("is_thumbnail").default(false).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: createdAt(),
 })
 
 export const beanImagesRelations = relations(beanImages, ({ one }) => ({
@@ -117,9 +130,7 @@ export const gear = pgTable("gear", {
   manualUrl: text("manual_url"),
   productUrl: text("product_url"),
   notes: text("notes"),
-  isArchived: boolean("is_archived").default(false).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  ...archiveState(),
 })
 
 export const gearRelations = relations(gear, ({ many }) => ({
@@ -132,12 +143,9 @@ export const gearImages = pgTable("gear_images", {
   gearId: integer("gear_id")
     .references(() => gear.id, { onDelete: "cascade" })
     .notNull(),
-  storagePath: text("storage_path").notNull(),
-  originalFilename: text("original_filename"),
-  mimeType: text("mime_type"),
-  sizeBytes: integer("size_bytes"),
+  ...imageFile(),
   isThumbnail: boolean("is_thumbnail").default(false).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: createdAt(),
 })
 
 export const gearImagesRelations = relations(gearImages, ({ one }) => ({
@@ -160,9 +168,7 @@ export const recipes = pgTable("recipes", {
   defaultPressure: decimal("default_pressure", { precision: 3, scale: 1 }),
   
   notes: text("notes"),
-  isArchived: boolean("is_archived").default(false).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  ...archiveState(),
 })
 
 export const recipesRelations = relations(recipes, ({ many }) => ({
@@ -204,8 +210,7 @@ export const coffeeShops = pgTable("coffee_shops", {
   notes: text("notes"),
   rating: integer("rating"),
   isFavorite: boolean("is_favorite").default(false).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  ...timestamps(),
 })
 
 export const coffeeShopsRelations = relations(coffeeShops, ({ many }) => ({
@@ -218,11 +223,8 @@ export const coffeeShopImages = pgTable("coffee_shop_images", {
   coffeeShopId: integer("coffee_shop_id")
     .references(() => coffeeShops.id, { onDelete: "cascade" })
     .notNull(),
-  storagePath: text("storage_path").notNull(),
-  originalFilename: text("original_filename"),
-  mimeType: text("mime_type"),
-  sizeBytes: integer("size_bytes"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  ...imageFile(),
+  createdAt: createdAt(),
 })
 
 export const coffeeShopImagesRelations = relations(coffeeShopImages, ({ one }) => ({
@@ -247,8 +249,7 @@ export const shots = pgTable("shots", {
   rating: integer("rating"),
   notes: text("notes"),
 
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  ...timestamps(),
 })
 
 export const shotsRelations = relations(shots, ({ one, many }) => ({
@@ -269,11 +270,8 @@ export const shotImages = pgTable("shot_images", {
   shotId: integer("shot_id")
     .references(() => shots.id, { onDelete: "cascade" })
     .notNull(),
-  storagePath: text("storage_path").notNull(),
-  originalFilename: text("original_filename"),
-  mimeType: text("mime_type"),
-  sizeBytes: integer("size_bytes"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  ...imageFile(),
+  createdAt: createdAt(),
 })
 
 export const shotImagesRelations = relations(shotImages, ({ one }) => ({
@@ -330,8 +328,7 @@ export const cafeVisits = pgTable("cafe_visits", {
   rating: integer("rating"),
   notes: text("notes"),
   visitedAt: timestamp("visited_at").defaultNow().notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  ...timestamps(),
 })
 
 export const cafeVisitsRelations = relations(cafeVisits, ({ one, many }) => ({
@@ -352,11 +349,8 @@ export const cafeVisitImages = pgTable("cafe_visit_images", {
   cafeVisitId: integer("cafe_visit_id")
     .references(() => cafeVisits.id, { onDelete: "cascade" })
     .notNull(),
-  storagePath: text("storage_path").notNull(),
-  originalFilename: text("original_filename"),
-  mimeType: text("mime_type"),
-  sizeBytes: integer("size_bytes"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  ...imageFile(),
+  createdAt: createdAt(),
 })
 
 export const cafeVisitImagesRelations = relations(cafeVisitImages, ({ one }) => ({
