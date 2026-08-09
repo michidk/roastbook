@@ -15,6 +15,7 @@ export const getBeans = createServerFn({ method: "GET" }).handler(async () => {
     orderBy: [desc(beans.createdAt)],
     with: {
       images: true,
+      roasterRef: true,
     },
   })
 })

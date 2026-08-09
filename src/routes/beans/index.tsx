@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { Plus, Bean, ChevronDown } from "lucide-react"
+import { BeanCard } from "@/components/beans/bean-card"
 import { Button } from "@/components/ui/button"
 import {
   Collapsible,
@@ -10,8 +11,6 @@ import { getBeans } from "@/lib/server/beans"
 import { RouteError } from "@/components/route-error"
 import { ListPending } from "@/components/route-pending"
 import { EmptyState } from "@/components/EmptyState"
-import { thumbnailUrl } from "@/lib/image-url"
-import { ResilientImage } from "@/components/resilient-image"
 
 export const Route = createFileRoute("/beans/")({
   loader: () => getBeans(),
@@ -21,27 +20,6 @@ export const Route = createFileRoute("/beans/")({
     <RouteError error={error} backTo="/" backLabel="Go to dashboard" />
   ),
 })
-
-type Bean = Awaited<ReturnType<typeof getBeans>>[number]
-
-const roastGradients: Record<string, readonly [string, string]> = {
-  light: ["var(--chart-1)", "var(--accent-foreground)"],
-  medium_light: ["var(--chart-4)", "var(--coffee)"],
-  medium: ["var(--chart-4)", "var(--coffee)"],
-  medium_dark: ["var(--chart-3)", "var(--coffee)"],
-  dark: ["var(--coffee)", "var(--foreground)"],
-}
-
-const roastBadgeStyles: Record<
-  string,
-  { readonly className: string; readonly label: string }
-> = {
-  light: { className: "bg-secondary text-accent-foreground", label: "Light" },
-  medium_light: { className: "bg-accent text-accent-foreground", label: "Medium-light" },
-  medium: { className: "bg-accent text-coffee", label: "Medium" },
-  medium_dark: { className: "bg-coffee/20 text-coffee", label: "Medium-dark" },
-  dark: { className: "bg-coffee text-coffee-foreground", label: "Dark" },
-}
 
 function BeansPage() {
   const beans = Route.useLoaderData()
@@ -98,7 +76,7 @@ function BeansPage() {
 
           {archivedBeans.length > 0 && (
             <Collapsible className="space-y-4">
-              <CollapsibleTrigger className="group flex items-center gap-2 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground">
+              <CollapsibleTrigger className="group -mx-2 flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 <ChevronDown className="h-4 w-4 transition-transform group-data-[open]:rotate-180" />
                 Archived ({archivedBeans.length})
               </CollapsibleTrigger>
@@ -115,127 +93,4 @@ function BeansPage() {
       )}
     </div>
   )
-}
-
-function BeanCard({ bean }: { bean: Bean }) {
-  const thumbnail = bean.images.find((img) => img.isThumbnail) ?? bean.images[0]
-  const gradient =
-    bean.roastLevel && roastGradients[bean.roastLevel]
-      ? roastGradients[bean.roastLevel]
-      : roastGradients.medium
-  const roastBadge =
-    bean.roastLevel && roastBadgeStyles[bean.roastLevel]
-      ? roastBadgeStyles[bean.roastLevel]
-      : null
-  const weightStats = computeWeightStats(bean)
-  const roastDate = bean.roastDate
-    ? new Date(bean.roastDate).toLocaleDateString(undefined, {
-        day: "numeric",
-        month: "short",
-      })
-    : null
-
-  return (
-    <Link
-      to="/beans/$beanId"
-      params={{ beanId: String(bean.id) }}
-      className="group block overflow-hidden rounded-3xl bg-card shadow-coffee transition-transform hover:-translate-y-0.5"
-    >
-      <div
-        className="relative h-36 overflow-hidden"
-        style={{
-          background: thumbnail
-            ? undefined
-            : `radial-gradient(circle at 38% 32%, ${gradient[0]}, ${gradient[1]})`,
-        }}
-      >
-        {thumbnail && (
-          <ResilientImage
-            src={thumbnailUrl(thumbnail.storagePath)}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            width={640}
-            height={400}
-            className="h-full w-full object-cover"
-          />
-        )}
-        {roastBadge && (
-          <span
-            className={`absolute left-3 top-3 rounded-xl px-2.5 py-1 text-xs font-bold ${roastBadge.className}`}
-          >
-            {roastBadge.label}
-          </span>
-        )}
-      </div>
-      <div className="space-y-3 px-5 py-4">
-        <div>
-          <p className="font-display text-lg font-bold text-foreground">{bean.name}</p>
-          {bean.roaster && (
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              {bean.roaster}
-            </p>
-          )}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {bean.region && bean.origin ? (
-            <Pill>{bean.region}, {bean.origin}</Pill>
-          ) : bean.origin ? (
-            <Pill>{bean.origin}</Pill>
-          ) : null}
-          {bean.process && <Pill className="capitalize">{bean.process}</Pill>}
-        </div>
-        <div className="flex items-center justify-between border-t border-border pt-3 text-xs">
-          <span className="text-muted-foreground">
-            {roastDate ? `Roasted ${roastDate}` : "No roast date"}
-          </span>
-          {weightStats && (
-            <div className="flex items-center gap-2">
-              <div className="h-1.5 w-16 overflow-hidden rounded-full bg-secondary">
-                <div
-                  className="h-full"
-                  style={{
-                    width: `${weightStats.percent}%`,
-                    background:
-                      weightStats.percent < 30 ? "var(--destructive)" : "var(--primary)",
-                  }}
-                />
-              </div>
-              <span className="font-bold text-foreground">
-                {Math.round(weightStats.remaining)}g
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-    </Link>
-  )
-}
-
-function Pill({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode
-  className?: string
-}) {
-  return (
-    <span
-      className={`rounded-xl border border-border bg-secondary px-2.5 py-1 text-xs font-semibold text-muted-foreground ${className}`}
-    >
-      {children}
-    </span>
-  )
-}
-
-function computeWeightStats(bean: Bean) {
-  if (!bean.weight) return null
-  const initial = parseFloat(bean.weight)
-  if (Number.isNaN(initial) || initial <= 0) return null
-  // Without joined shots data we can only show the initial bag weight as
-  // remaining; the detail page handles the precise computation.
-  return {
-    remaining: initial,
-    percent: 100,
-  }
 }
