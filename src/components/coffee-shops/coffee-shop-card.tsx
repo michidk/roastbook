@@ -4,6 +4,7 @@ import { ChevronRight, Heart, MapPin, MapPinOff } from "lucide-react"
 export type CoffeeShopCardItem = {
   readonly id: number
   readonly name: string
+  readonly address: string | null
   readonly city: string | null
   readonly country: string | null
   readonly latitude: string | null
@@ -19,7 +20,7 @@ export function CoffeeShopCard({
   const hasCoordinates =
     coffeeShop.latitude !== null && coffeeShop.longitude !== null
   const LocationIcon = hasCoordinates ? MapPin : MapPinOff
-  const location = [coffeeShop.city, coffeeShop.country]
+  const location = [coffeeShop.address, coffeeShop.city, coffeeShop.country]
     .filter(Boolean)
     .join(", ")
 
@@ -27,7 +28,7 @@ export function CoffeeShopCard({
     <Link
       to="/coffee-shops/$coffeeShopId"
       params={{ coffeeShopId: String(coffeeShop.id) }}
-      className="group flex items-center gap-3 rounded-3xl bg-card p-4 shadow-coffee transition-transform hover:-translate-y-0.5"
+      className="group flex min-w-0 items-center gap-3 rounded-3xl bg-card p-4 shadow-coffee transition-transform hover:-translate-y-0.5"
     >
       <span
         className={

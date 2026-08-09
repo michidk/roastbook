@@ -15,13 +15,7 @@ export function getFeaturedCoffeeShops<T extends RankableCoffeeShop>(
   recentLimit: number,
 ): T[] {
   const latestVisitByCoffeeShop = getLatestVisitByCoffeeShop(visits)
-
-  const byLatestVisit = (left: T, right: T) => {
-    const latestDifference =
-      (latestVisitByCoffeeShop.get(right.id) ?? Number.NEGATIVE_INFINITY) -
-      (latestVisitByCoffeeShop.get(left.id) ?? Number.NEGATIVE_INFINITY)
-    return latestDifference || left.name.localeCompare(right.name)
-  }
+  const byLatestVisit = createLatestVisitComparator<T>(latestVisitByCoffeeShop)
 
   const favorites = coffeeShops
     .filter((coffeeShop) => coffeeShop.isFavorite)
@@ -41,17 +35,26 @@ export function sortCoffeeShopsByFavoriteAndLastVisit<
   T extends RankableCoffeeShop,
 >(coffeeShops: readonly T[], visits: readonly CoffeeShopVisit[]): T[] {
   const latestVisitByCoffeeShop = getLatestVisitByCoffeeShop(visits)
+  const byLatestVisit = createLatestVisitComparator<T>(latestVisitByCoffeeShop)
 
   return [...coffeeShops].sort((left, right) => {
     if (left.isFavorite !== right.isFavorite) {
       return left.isFavorite ? -1 : 1
     }
 
+    return byLatestVisit(left, right)
+  })
+}
+
+function createLatestVisitComparator<T extends RankableCoffeeShop>(
+  latestVisitByCoffeeShop: ReadonlyMap<number, number>,
+): (left: T, right: T) => number {
+  return (left, right) => {
     const latestDifference =
       (latestVisitByCoffeeShop.get(right.id) ?? Number.NEGATIVE_INFINITY) -
       (latestVisitByCoffeeShop.get(left.id) ?? Number.NEGATIVE_INFINITY)
     return latestDifference || left.name.localeCompare(right.name)
-  })
+  }
 }
 
 function getLatestVisitByCoffeeShop(

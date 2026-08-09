@@ -167,10 +167,15 @@ function VisitCard({ visit }: { visit: Visit }) {
       </div>
 
       {visit.rating != null && (
-        <div className="mt-3 flex items-center gap-0.5 text-primary">
+        <div
+          className="mt-3 flex items-center gap-0.5 text-primary"
+          aria-label={`Rating ${visit.rating} out of 5`}
+          role="img"
+        >
           {[1, 2, 3, 4, 5].map((n) => (
             <Star
               key={n}
+              aria-hidden
               className="h-4 w-4"
               fill={n <= (visit.rating ?? 0) ? "currentColor" : "transparent"}
               strokeWidth={1.5}

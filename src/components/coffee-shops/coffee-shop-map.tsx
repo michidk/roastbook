@@ -90,7 +90,8 @@ export function CoffeeShopMap({
             setMapStatus("ready")
           }
         })
-        map.on("error", () => {
+        map.on("error", (event) => {
+          console.error("Coffee shop map failed", event.error)
           if (!isDisposed) {
             mapHadErrorRef.current = true
             if (loadTimeoutRef.current) clearTimeout(loadTimeoutRef.current)
