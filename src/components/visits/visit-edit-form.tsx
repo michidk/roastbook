@@ -1,6 +1,6 @@
 import { useState, type SyntheticEvent } from "react"
 import { toast } from "sonner"
-import { EntityForm, FormActions, FormSection } from "@/components/form/form-shell"
+import { EntityForm, FormSection } from "@/components/form/form-shell"
 import {
   CurrencyField,
   InputField,
@@ -8,7 +8,7 @@ import {
 } from "@/components/form/form-field"
 import { BeanPicker } from "@/components/beans/bean-picker"
 import { CoffeeShopPicker } from "@/components/coffee-shops/coffee-shop-picker"
-import { VisitTastingFields } from "@/components/visits/visit-tasting-fields"
+import { TastingFields } from "@/components/form/tasting-fields"
 import { useFormState } from "@/hooks/use-form-state"
 import { DRINK_TYPE_OPTIONS } from "@/lib/constants"
 import { getActiveBeans } from "@/lib/server/beans"
@@ -100,7 +100,11 @@ export function VisitEditForm({
   }
 
   return (
-    <EntityForm id="visit-edit-form" onSubmit={handleSave}>
+    <EntityForm
+      id="visit-edit-form"
+      onSubmit={handleSave}
+      actions={{ onCancel, isSubmitting, submitLabel: "Save Visit" }}
+    >
       <FormSection title="Location">
         <CoffeeShopPicker
           id="coffeeShop"
@@ -153,24 +157,13 @@ export function VisitEditForm({
         </div>
       </FormSection>
 
-      <VisitTastingFields
-        rating={form.values.rating}
-        onRatingChange={(rating) =>
-          form.set("rating", form.values.rating === rating ? 0 : rating)
-        }
-        notes={form.values.notes}
-        onNotesChange={form.setField("notes")}
-        negativeTags={negativeTags}
-        positiveTags={positiveTags}
-        selectedTagIds={selectedTagIds}
-        onToggleTag={toggleTag}
+      <TastingFields
+        kind="visit"
+        rating={{ value: form.values.rating, onChange: (rating) => form.set("rating", form.values.rating === rating ? 0 : rating) }}
+        notes={{ value: form.values.notes, onChange: form.setField("notes") }}
+        tags={{ negative: negativeTags, positive: positiveTags, selectedIds: selectedTagIds, onToggle: toggleTag }}
       />
 
-      <FormActions
-        onCancel={onCancel}
-        isSubmitting={isSubmitting}
-        submitLabel="Save Visit"
-      />
     </EntityForm>
   )
 }

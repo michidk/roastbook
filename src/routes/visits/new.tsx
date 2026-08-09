@@ -14,7 +14,7 @@ import {
 } from "@/components/form/form-field"
 import { BeanPicker } from "@/components/beans/bean-picker"
 import { CoffeeShopPicker } from "@/components/coffee-shops/coffee-shop-picker"
-import { VisitTastingFields } from "@/components/visits/visit-tasting-fields"
+import { TastingFields } from "@/components/form/tasting-fields"
 import { useFormState } from "@/hooks/use-form-state"
 import { getActiveBeans } from "@/lib/server/beans"
 import { getCoffeeShops } from "@/lib/server/coffee-shops"
@@ -169,15 +169,11 @@ function NewVisitPage() {
           </div>
         </FormSection>
 
-        <VisitTastingFields
-          rating={form.values.rating}
-          onRatingChange={form.setField("rating")}
-          notes={form.values.notes}
-          onNotesChange={form.setField("notes")}
-          negativeTags={negativeTags}
-          positiveTags={positiveTags}
-          selectedTagIds={selectedTags}
-          onToggleTag={toggleTag}
+        <TastingFields
+          kind="visit"
+          rating={{ value: form.values.rating, onChange: form.setField("rating") }}
+          notes={{ value: form.values.notes, onChange: form.setField("notes") }}
+          tags={{ negative: negativeTags, positive: positiveTags, selectedIds: selectedTags, onToggle: toggleTag }}
         />
 
         <FormActions
