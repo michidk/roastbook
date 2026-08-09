@@ -87,9 +87,9 @@ Roastbook should feel like a calm, tactile coffee journal: warm paper beneath cr
 - **Layout**: plot containers always have an explicit height and width.
 
 ### Café explorer map
-- **Structure**: warm-toned MapLibre surface, persistent saved/discovered legend, 44px custom café markers, search control, and a React-rendered place inspector anchored inside the map.
+- **Structure**: warm-toned MapLibre surface on `/visits`, automatically loaded nearby OpenStreetMap cafés, persistent saved/discovered legend, 44px custom café markers, search control, and a React-rendered place inspector anchored inside the map. `/places` remains a focused saved-place list without a map.
 - **Variants**: saved places use the filled coffee marker; OpenStreetMap discoveries use the cream outlined marker.
-- **States**: loading, ready, search loading, selected saved place, selected discovery, added discovery, no results, and unavailable.
+- **States**: loading, ready, nearby discovery loading/error, search loading, selected saved place, selected discovery, added discovery, no results, and unavailable.
 - **Accessibility**: every marker is a named button, selection is mirrored in the inspector, map search has a persistent label and live status, and every primary action retains a 44px target.
 - **Interaction**: marker selection uses the standard 200ms state transition and a short camera ease; reduced motion makes camera changes immediate. The inspector appears through opacity and transform only.
 - **Layout**: the map owns a fixed responsive height; the inspector spans the lower map edge on mobile and becomes a compact lower-left card from `sm` upward.
