@@ -34,7 +34,7 @@ export function VisitsMapPlaceCard({
       card.parentElement?.scrollIntoView({ block: "start" })
     }
     if (focusRequest > 0) card.focus({ preventScroll: true })
-  }, [focusRequest, place.id])
+  }, [focusRequest])
 
   return (
     <article

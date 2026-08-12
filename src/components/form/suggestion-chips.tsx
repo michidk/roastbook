@@ -25,11 +25,8 @@ export function SuggestionChips({
       <p className="text-xs font-semibold text-muted-foreground">
         Suggestions
       </p>
-      <div
-        role="group"
-        aria-label={`${label} suggestions`}
-        className="flex flex-wrap gap-2"
-      >
+      <fieldset className="flex min-w-0 flex-wrap gap-2 border-0 p-0">
+        <legend className="sr-only">{label} suggestions</legend>
         {items.map((item) => {
           const isSelected = String(item.id) === value
           return (
@@ -46,7 +43,7 @@ export function SuggestionChips({
             </Button>
           )
         })}
-      </div>
+      </fieldset>
     </div>
   )
 }

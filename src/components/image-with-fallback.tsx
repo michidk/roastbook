@@ -46,10 +46,25 @@ export function ImageWithFallback({
   }, [source])
 
   if (!source || failedSource === source) {
+    if (!alt) {
+      return (
+        <div
+          aria-hidden="true"
+          style={placeholderStyle}
+          className={cn(
+            "flex items-center justify-center bg-secondary text-muted-foreground",
+            className,
+          )}
+        >
+          {fallback ?? <ImageOff aria-hidden className="size-5" />}
+        </div>
+      )
+    }
+
     return (
       <div
-        role={alt ? "img" : undefined}
-        aria-label={alt ? `${alt}. ${fallbackLabel}` : undefined}
+        role="img"
+        aria-label={`${alt}. ${fallbackLabel}`}
         style={placeholderStyle}
         className={cn(
           "flex items-center justify-center bg-secondary text-muted-foreground",
@@ -57,7 +72,6 @@ export function ImageWithFallback({
         )}
       >
         {fallback ?? <ImageOff aria-hidden className="size-5" />}
-        {alt ? <span className="sr-only">{fallbackLabel}</span> : null}
       </div>
     )
   }

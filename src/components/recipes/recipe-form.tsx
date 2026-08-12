@@ -17,7 +17,7 @@ import { BEGINNER_RECIPE_PRESETS, getRecipePreset } from "@/lib/recipe-presets"
 import { BREWING_METHOD_OPTIONS } from "@/lib/recipes"
 import {
   createRecipe,
-  getRecipe,
+  type getRecipe,
   updateRecipe,
   type RecipeMutation,
 } from "@/lib/server/recipes"

@@ -33,7 +33,7 @@ export function VisitsMapCanvas({
   selectedPlaceId,
   onSelectPlace,
 }: VisitsMapCanvasProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null)
+  const containerRef = useRef<HTMLElement | null>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
   const initialPlaceRef = useRef(
     places.find((place) => place.isFavorite) ?? places[0],
@@ -89,6 +89,8 @@ export function VisitsMapCanvas({
     retryButtonRef.current?.focus()
   }, [status])
 
+  // mapAttempt intentionally re-runs initialization after the user requests a retry.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: primitive coordinates keep location dependencies stable
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
@@ -241,7 +243,7 @@ export function VisitsMapCanvas({
 
   return (
     <div className="relative h-[460px] w-full overflow-hidden rounded-t-3xl bg-secondary md:h-[500px] lg:h-[540px]">
-      <div
+      <section
         ref={containerRef}
         className="roastbook-visits-map h-full w-full"
         aria-label="Map of your saved cafés"

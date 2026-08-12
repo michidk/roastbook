@@ -82,7 +82,7 @@ export function BeanForm({
 
       const matchedRoaster = extracted.roaster
         ? roasterOptions.find((roaster) =>
-            roaster.name.toLowerCase().includes(extracted.roaster!.toLowerCase())
+            roaster.name.toLowerCase().includes(extracted.roaster.toLowerCase())
           )
         : null
 

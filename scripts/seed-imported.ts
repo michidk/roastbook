@@ -275,7 +275,7 @@ const STORAGE_BASE = process.env.STORAGE_PATH || "./uploads"
 function parseDate(dateStr: string | null): Date | null {
   if (!dateStr) return null
   const parsed = new Date(dateStr)
-  return isNaN(parsed.getTime()) ? null : parsed
+  return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 
 async function copyImageToStorage(sourceFilename: string, beanId: number): Promise<{ storagePath: string; sizeBytes: number } | null> {
@@ -431,10 +431,9 @@ async function seed() {
   const baseDate = new Date("2026-01-01T08:00:00")
   let fakeDateIndex = 0
   
-  const shotsData = IMPORTED_SHOTS.filter((shot) => {
+  const shotsData = IMPORTED_SHOTS.flatMap((shot) => {
     const dbBeanId = beanIdMap.get(shot.bean_id)
-    return dbBeanId !== undefined
-  }).map((shot) => {
+    if (dbBeanId === undefined) return []
     const parsedDate = parseDate(shot.date)
     let createdAt: Date
     if (parsedDate) {
@@ -443,8 +442,8 @@ async function seed() {
       createdAt = new Date(baseDate.getTime() + fakeDateIndex * 24 * 60 * 60 * 1000)
       fakeDateIndex++
     }
-    return {
-      beanId: beanIdMap.get(shot.bean_id)!,
+    return [{
+      beanId: dbBeanId,
       recipeId: recipe.id,
           actualDoseGrams: shot.dose_grams?.toString() ?? null,
           actualYieldGrams: shot.yield_grams?.toString() ?? null,
@@ -452,7 +451,7 @@ async function seed() {
       grindSetting: shot.grind_setting,
       notes: [shot.basket ? `Basket: ${shot.basket}` : null, shot.notes].filter(Boolean).join(" | ") || null,
       createdAt,
-    }
+    }]
   })
 
   const insertedShots = await db.insert(schema.shots).values(shotsData).returning()

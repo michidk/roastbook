@@ -75,6 +75,7 @@ async function closeClient() {
 }
 
 let migrationError: unknown
+let closeError: unknown
 
 try {
   await waitForDatabase()
@@ -86,15 +87,14 @@ try {
 } finally {
   try {
     await closeClient()
-  } catch (closeError) {
-    if (!migrationError) {
-      throw closeError
-    }
-
-    console.error("Failed to close database client cleanly:", closeError)
+  } catch (error) {
+    closeError = error
   }
 }
 
 if (migrationError) {
+  if (closeError) console.error("Failed to close database client cleanly:", closeError)
   throw migrationError
 }
+
+if (closeError) throw closeError

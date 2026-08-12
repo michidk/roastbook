@@ -257,7 +257,6 @@ function NewShotPage() {
       >
         <div className="space-y-5">
           <FormSection title="Beans">
-            <>
               <SuggestionChips
                 label="Bean"
                 items={beanSuggestions}
@@ -276,7 +275,6 @@ function NewShotPage() {
                   <BeanCard bean={selectedBean} />
                 </div>
               )}
-            </>
           </FormSection>
 
           <FormSection
@@ -314,7 +312,6 @@ function NewShotPage() {
               </Button>
             }
           >
-            <>
               <SuggestionChips
                 label="Recipe"
                 items={recipeSuggestions}
@@ -357,7 +354,6 @@ function NewShotPage() {
                   </div>
                 </div>
               )}
-            </>
           </FormSection>
 
           <FormSection title="Extraction">
@@ -418,7 +414,6 @@ function NewShotPage() {
           </FormSection>
 
           <FormSection title="Tasting notes">
-            <>
               <div className="space-y-2">
                 <Label>Rating</Label>
                 <StarRating
@@ -450,7 +445,6 @@ function NewShotPage() {
                 value={formData.notes}
                 onChange={(value) => setFormData({ ...formData, notes: value })}
               />
-            </>
           </FormSection>
 
           <div className="flex gap-3 lg:hidden">

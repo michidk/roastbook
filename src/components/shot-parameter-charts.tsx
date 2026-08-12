@@ -52,7 +52,7 @@ function formatDate(date: Date | string) {
 function parseGrindSetting(grindSetting: string | null): number | null {
   if (!grindSetting) return null
   const num = parseFloat(grindSetting.replace(/[^\d.-]/g, ""))
-  return isNaN(num) ? null : num
+  return Number.isNaN(num) ? null : num
 }
 
 type ChartDatum = {

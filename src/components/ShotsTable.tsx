@@ -217,7 +217,7 @@ export function ShotsTable({ shots, hideBean, hideGear }: ShotsTableProps) {
         <p className="py-4 text-sm text-muted-foreground">No shots match “{search}”.</p>
       ) : (
         <>
-          <div className="space-y-3 md:hidden" role="list" aria-label="Recorded shots">
+          <ul className="space-y-3 md:hidden" aria-label="Recorded shots">
             {paginated.map((shot) => (
               <MobileShotCard
                 key={shot.id}
@@ -228,7 +228,7 @@ export function ShotsTable({ shots, hideBean, hideGear }: ShotsTableProps) {
                 hasRating={hasRating}
               />
             ))}
-          </div>
+          </ul>
 
           <div className="hidden md:block">
             <Table>
@@ -322,7 +322,7 @@ function MobileShotCard({
   const shotDate = formatDate(shot.createdAt)
 
   return (
-    <article role="listitem">
+    <li className="list-none">
       <Link
         to="/shots/$shotId"
         params={{ shotId: String(shot.id) }}
@@ -356,7 +356,7 @@ function MobileShotCard({
           )}
         </div>
       </Link>
-    </article>
+    </li>
   )
 }
 

@@ -22,7 +22,7 @@ Roastbook should feel like a calm, tactile coffee journal: warm paper beneath cr
 | Destructive | `--destructive` | `#c0573a` | `#c0573a` | Irreversible actions and errors |
 | Positive | `--positive` | `#6b8a3d` | `#8aa850` | Success and healthy status |
 
-### Rules
+### Typography rules
 
 - Use semantic CSS variables from `src/styles.css`; add new roles there before use.
 - Amber identifies interaction and current state, not decoration.

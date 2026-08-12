@@ -51,6 +51,8 @@ export function CoffeeShopMap({
   const [mapAttempt, setMapAttempt] = useState(0)
   const mappableCoffeeShops = useMemo(() => getMappableCoffeeShops(coffeeShops), [coffeeShops])
 
+  // mapAttempt intentionally re-runs initialization after the user requests a retry.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the retry counter is an intentional trigger
   useEffect(() => {
     if (!containerRef.current || mappableCoffeeShops.length === 0 || mapRef.current) {
       return
@@ -107,7 +109,9 @@ export function CoffeeShopMap({
         resizeObserver.observe(containerRef.current)
         cleanup = () => {
           resizeObserver.disconnect()
-          markersRef.current.forEach((marker) => marker.remove())
+          markersRef.current.forEach((marker) => {
+            marker.remove()
+          })
           markersRef.current = []
           if (loadTimeoutRef.current) clearTimeout(loadTimeoutRef.current)
           loadTimeoutRef.current = null
@@ -146,7 +150,9 @@ export function CoffeeShopMap({
         return
       }
 
-      markersRef.current.forEach((marker) => marker.remove())
+      markersRef.current.forEach((marker) => {
+        marker.remove()
+      })
       markersRef.current = []
 
       const bounds = new maplibregl.LngLatBounds()
