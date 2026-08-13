@@ -1,12 +1,24 @@
-import { drizzle } from "drizzle-orm/postgres-js"
-import postgres from "postgres"
+import type { PostgresJsDatabase } from "drizzle-orm/postgres-js"
 import * as schema from "./schema"
 
-const connectionString = process.env.DATABASE_URL
+let db: PostgresJsDatabase<typeof schema>
 
-if (!connectionString) {
-  throw new Error("DATABASE_URL environment variable is required")
+if (import.meta.env.SSR) {
+  const [{ drizzle }, { default: postgres }] = await Promise.all([
+    import("drizzle-orm/postgres-js"),
+    import("postgres"),
+  ])
+  const connectionString = process.env.DATABASE_URL
+
+  if (!connectionString) {
+    throw new Error("DATABASE_URL environment variable is required")
+  }
+
+  db = drizzle(postgres(connectionString), { schema })
+} else {
+  // Server-function implementations are replaced with RPC stubs in the client.
+  // Keep this module browser-safe when route modules import those functions.
+  db = undefined as unknown as PostgresJsDatabase<typeof schema>
 }
 
-const client = postgres(connectionString)
-export const db = drizzle(client, { schema })
+export { db }

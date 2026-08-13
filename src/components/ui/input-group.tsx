@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import type * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 
 function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
+    // biome-ignore lint/a11y/useSemanticElements: this generic visual wrapper cannot safely render a fieldset
     <div
       data-slot="input-group"
       role="group"
@@ -49,6 +50,8 @@ function InputGroupAddon({
   ...props
 }: React.ComponentProps<"div"> & VariantProps<typeof inputGroupAddonVariants>) {
   return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: click behavior is supplied optionally by callers
+    // biome-ignore lint/a11y/useSemanticElements: this addon is not a form fieldset
     <div
       role="group"
       data-slot="input-group-addon"

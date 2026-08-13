@@ -33,8 +33,7 @@ export function VisitsMapStatus({
       <div className="max-w-sm space-y-3">
         <p className="font-display text-lg font-bold">Map unavailable</p>
         <p className="text-sm text-muted-foreground">
-          The café list is still available. Retry when the map service is
-          reachable.
+          Retry when the map service is reachable.
         </p>
         <Button
           ref={retryButtonRef}

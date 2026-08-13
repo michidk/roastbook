@@ -1,26 +1,28 @@
 import { useState, type SyntheticEvent } from "react"
 import { toast } from "sonner"
-import { EntityForm, FormSection } from "@/components/form/form-shell"
-import { InputField } from "@/components/form/form-field"
-import { CreatableCombobox } from "@/components/form/creatable-combobox"
 import { BeanPicker } from "@/components/beans/bean-picker"
+import { SelectField } from "@/components/form/form-field"
 import { TastingFields } from "@/components/form/tasting-fields"
-import { useFormState } from "@/hooks/use-form-state"
-import { getActiveBeans } from "@/lib/server/beans"
-import { getRecipes } from "@/lib/server/recipes"
-import { getShot, updateShot } from "@/lib/server/shots"
-import { getTasteTags } from "@/lib/server/taste-tags"
-import { getActiveGearByType } from "@/lib/server/gear"
-import { toNullableRating, toRatingInput } from "@/lib/rating"
+import { EntityForm, FormSection } from "@/components/form/form-shell"
+import {
+  ShotParameterFields,
+  shotFormValuesFrom,
+  type ShotFormValues,
+} from "@/components/shots/shot-parameter-fields"
+import type { getActiveBeans } from "@/lib/server/beans"
+import type { getGear } from "@/lib/server/gear"
+import type { getBrewingMethods } from "@/lib/server/brewing-methods"
+import { type getShot, updateShot } from "@/lib/server/shots"
+import type { getTasteTags } from "@/lib/server/taste-tags"
 import { getShotUpdateErrors } from "@/lib/update-validation"
 
 type Shot = NonNullable<Awaited<ReturnType<typeof getShot>>>
 
 export type ShotEditData = {
   readonly beans: Awaited<ReturnType<typeof getActiveBeans>>
-  readonly recipes: Awaited<ReturnType<typeof getRecipes>>
   readonly tasteTags: Awaited<ReturnType<typeof getTasteTags>>
-  readonly machines: Awaited<ReturnType<typeof getActiveGearByType>>
+  readonly gear: Awaited<ReturnType<typeof getGear>>
+  readonly methods: Awaited<ReturnType<typeof getBrewingMethods>>
 }
 
 type ShotEditFormProps = {
@@ -30,212 +32,94 @@ type ShotEditFormProps = {
   readonly onSaved: () => Promise<void>
 }
 
-export function ShotEditForm({
-  shot,
-  editData,
-  onCancel,
-  onSaved,
-}: ShotEditFormProps) {
-  const [isSaving, setIsSaving] = useState(false)
-  const [fieldErrors, setFieldErrors] = useState<
-    Readonly<Record<string, string>>
-  >({})
-  const form = useFormState(() => ({
-    beanId: shot.beanId ? String(shot.beanId) : "",
-    recipeId: shot.recipeId ? String(shot.recipeId) : "",
-    machineId: shot.machineId ? String(shot.machineId) : "",
-    actualDoseGrams: shot.actualDoseGrams ?? "",
-    actualYieldGrams: shot.actualYieldGrams ?? "",
-    actualShotTimeSeconds:
-      shot.actualShotTimeSeconds !== null && shot.actualShotTimeSeconds !== undefined
-        ? String(shot.actualShotTimeSeconds)
-        : "",
-    grindSetting: shot.grindSetting ?? "",
-    actualTemperatureCelsius: shot.actualTemperatureCelsius ?? "",
-    actualPressureBar: shot.actualPressureBar ?? "",
-    rating: toRatingInput(shot.rating),
+export function ShotEditForm({ shot, editData, onCancel, onSaved }: ShotEditFormProps) {
+  const [values, setValues] = useState<ShotFormValues>(() => ({
+    ...shotFormValuesFrom(shot),
+    rating: shot.rating ?? 0,
     notes: shot.notes ?? "",
-    tasteTagIds: shot.tasteTags.map((tag) => tag.tasteTagId),
   }))
-
-  const negativeTags = editData.tasteTags.filter(
-    (tag) => tag.category === "negative"
-  )
-  const positiveTags = editData.tasteTags.filter(
-    (tag) => tag.category === "positive"
-  )
-  const beanOptions =
-    shot.bean && !editData.beans.some((bean) => bean.id === shot.bean?.id)
-      ? [shot.bean, ...editData.beans]
-      : editData.beans
-  const recipeOptions =
-    shot.recipe &&
-    !editData.recipes.some((recipe) => recipe.id === shot.recipe?.id)
-      ? [shot.recipe, ...editData.recipes]
-      : editData.recipes
-  const selectedRecipe = recipeOptions.find(
-    (recipe) => String(recipe.id) === form.values.recipeId,
-  )
-  const enabled = new Set(
-    selectedRecipe?.enabledFields.map(({ fieldKey }) => fieldKey) ?? [],
-  )
-  const showField = (fieldKey: string) => !selectedRecipe || enabled.has(fieldKey)
-
-  const toggleTag = (tagId: number) => {
-    form.set(
-      "tasteTagIds",
-      form.values.tasteTagIds.includes(tagId)
-        ? form.values.tasteTagIds.filter((id) => id !== tagId)
-        : [...form.values.tasteTagIds, tagId]
-    )
-  }
+  const [tasteTagIds, setTasteTagIds] = useState(shot.tasteTags.map((tag) => tag.tasteTagId))
+  const [fieldErrors, setFieldErrors] = useState<Readonly<Record<string, string>>>({})
+  const [isSaving, setIsSaving] = useState(false)
+  const set = <Key extends keyof ShotFormValues>(key: Key, value: ShotFormValues[Key]) => setValues((current) => ({ ...current, [key]: value }))
 
   const handleSave = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const updateData = {
+    const data = {
       id: shot.id,
-      beanId: form.values.beanId ? Number(form.values.beanId) : null,
-      recipeId: form.values.recipeId ? Number(form.values.recipeId) : null,
-      machineId: form.values.machineId ? Number(form.values.machineId) : null,
-      actualDoseGrams: form.values.actualDoseGrams || null,
-      actualYieldGrams: form.values.actualYieldGrams || null,
-      actualShotTimeSeconds: form.values.actualShotTimeSeconds || null,
-      grindSetting: form.values.grindSetting || null,
-      actualTemperatureCelsius: form.values.actualTemperatureCelsius || null,
-      actualPressureBar: form.values.actualPressureBar || null,
-      rating: toNullableRating(form.values.rating),
-      notes: form.values.notes || null,
-      tasteTagIds: form.values.tasteTagIds,
+       brewingMethodId: Number(values.brewingMethodId),
+      beanId: values.beanId ? Number(values.beanId) : null,
+      machineId: values.machineId ? Number(values.machineId) : null,
+      doseGrams: values.doseGrams || null,
+      brewWaterGrams: values.brewWaterGrams || null,
+      ratioBasis: values.ratioBasis || null,
+      grinderId: values.grinderId ? Number(values.grinderId) : null,
+      grindSetting: values.grindSetting || null,
+      yieldGrams: values.yieldGrams || null,
+      shotTimeSeconds: values.shotTimeSeconds || null,
+      brewTemperatureCelsius: values.brewTemperatureCelsius || null,
+      preinfusionTimeSeconds: values.preinfusionTimeSeconds || null,
+      preinfusionPressureBar: values.preinfusionPressureBar || null,
+      bloomTimeSeconds: values.bloomTimeSeconds || null,
+      brewPressureBar: values.brewPressureBar || null,
+      flowRateMlPerSecond: values.flowRateMlPerSecond || null,
+      basketId: values.basketId ? Number(values.basketId) : null,
+      usesPuckScreen: values.usesPuckScreen,
+      paperFilterPosition: values.paperFilterPosition || null,
+      distributionMethod: values.distributionMethod || null,
+      tampForceKg: values.tampForceKg || null,
+      accessoryGearIds: values.accessoryGearIds,
+      rating: values.rating || null,
+      notes: values.notes || null,
+      tasteTagIds,
     }
-    const errors = getShotUpdateErrors(updateData)
+    const errors = getShotUpdateErrors(data)
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
 
     setIsSaving(true)
     try {
-      await updateShot({ data: updateData })
+      await updateShot({ data })
       await onSaved()
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to update shot"
-      )
+      toast.error(error instanceof Error ? error.message : "Failed to update shot")
     } finally {
       setIsSaving(false)
     }
   }
 
+  const positive = editData.tasteTags.filter((tag) => tag.category === "positive")
+  const negative = editData.tasteTags.filter((tag) => tag.category === "negative")
+  const beans = shot.bean && !editData.beans.some((bean) => bean.id === shot.bean?.id) ? [shot.bean, ...editData.beans] : editData.beans
+  const selectedMethod = editData.methods.find(
+    (method) => String(method.id) === values.brewingMethodId,
+  )
+  const methodOptions = editData.methods.map((method) => ({
+    value: String(method.id),
+    label: method.name,
+  }))
+  const selectedGearIds = new Set([
+    values.machineId,
+    values.grinderId,
+    values.basketId,
+    ...values.accessoryGearIds.map(String),
+  ])
+  const gear = editData.gear.filter(
+    (item) => !item.isArchived || selectedGearIds.has(String(item.id)),
+  )
+  const toggleTag = (id: number) => setTasteTagIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
+
   return (
-    <EntityForm
-      id="shot-edit-form"
-      onSubmit={handleSave}
-      actions={{ onCancel, isSubmitting: isSaving, submitLabel: "Save Changes" }}
-    >
-      <FormSection title="Beans">
-        <BeanPicker
-          id="bean"
-          label="Select Beans"
-          value={form.values.beanId}
-          onChange={form.setField("beanId")}
-          beans={beanOptions}
-          autoFocus
-        />
-      </FormSection>
-
-      <FormSection title="Recipe">
-        <CreatableCombobox
-          id="recipe"
-          label="Select Recipe"
-          value={form.values.recipeId}
-          onChange={form.setField("recipeId")}
-          items={recipeOptions}
-          getKey={(recipe) => recipe.id}
-          getLabel={(recipe) => recipe.name}
-          placeholder="Select recipe"
-          searchPlaceholder="Search recipes…"
-          emptyMessage="No matching recipes."
-        />
-        <CreatableCombobox
-          id="machine"
-          label="Espresso machine"
-          value={form.values.machineId}
-          onChange={form.setField("machineId")}
-          items={editData.machines}
-          getKey={(machine) => machine.id}
-          getLabel={(machine) => machine.name}
-          placeholder="Select machine"
-          searchPlaceholder="Search machines…"
-          emptyMessage="No espresso machines found."
-        />
-      </FormSection>
-
-      <FormSection title="Extraction">
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-          {showField("target_dose") ? <InputField
-            id="dose"
-            label="Dose (g)"
-            inputMode="decimal"
-            placeholder="18.0"
-            value={form.values.actualDoseGrams}
-            onChange={form.setField("actualDoseGrams")}
-            error={fieldErrors.actualDoseGrams}
-          /> : null}
-          {showField("target_yield") ? <InputField
-            id="yield"
-            label="Yield (g)"
-            inputMode="decimal"
-            placeholder="36.0"
-            value={form.values.actualYieldGrams}
-            onChange={form.setField("actualYieldGrams")}
-            error={fieldErrors.actualYieldGrams}
-          /> : null}
-          {!selectedRecipe ? <InputField
-            id="grindSetting"
-            label="Grind Setting"
-            placeholder="e.g., 15"
-            value={form.values.grindSetting}
-            onChange={form.setField("grindSetting")}
-          /> : null}
-        </div>
-        {showField("target_time") ? <InputField
-          id="brewTime"
-          label="Brew Time (seconds)"
-          inputMode="numeric"
-          placeholder="30"
-          value={form.values.actualShotTimeSeconds}
-          onChange={(value) =>
-            form.set("actualShotTimeSeconds", value.replace(/[^0-9.]/g, ""))
-          }
-          error={fieldErrors.actualShotTimeSeconds}
-        /> : null}
-        <div className="grid gap-4 sm:grid-cols-2">
-          {showField("brew_temperature") ? <InputField
-            id="temp"
-            label="Water Temp (°C)"
-            inputMode="decimal"
-            placeholder="93.0"
-            value={form.values.actualTemperatureCelsius}
-            onChange={form.setField("actualTemperatureCelsius")}
-            error={fieldErrors.actualTemperatureCelsius}
-          /> : null}
-          {showField("target_pressure") ? <InputField
-            id="pressure"
-            label="Pressure (bar)"
-            inputMode="decimal"
-            placeholder="9.0"
-            value={form.values.actualPressureBar}
-            onChange={form.setField("actualPressureBar")}
-            error={fieldErrors.actualPressureBar}
-          /> : null}
-        </div>
-      </FormSection>
-
+    <EntityForm id="shot-edit-form" onSubmit={handleSave} actions={{ onCancel, isSubmitting: isSaving, submitLabel: "Save changes" }}>
+      <FormSection title="Beans"><BeanPicker id="edit-bean" label="Beans" value={values.beanId} onChange={(value) => set("beanId", value ?? "")} beans={beans} autoFocus /></FormSection>
+      <FormSection title="Brewing method"><SelectField id="edit-brewing-method" label="Method" value={values.brewingMethodId} options={methodOptions} onChange={(value) => set("brewingMethodId", value)} required /></FormSection>
+      <ShotParameterFields values={values} gear={gear} enabledParameters={selectedMethod?.enabledParameters ?? []} errors={fieldErrors} onChange={set} />
       <TastingFields
         kind="shot"
-        rating={{ value: form.values.rating, onChange: (rating) => form.set("rating", form.values.rating === rating ? 0 : rating) }}
-        notes={{ value: form.values.notes, onChange: form.setField("notes") }}
-        tags={{ negative: negativeTags, positive: positiveTags, selectedIds: form.values.tasteTagIds, onToggle: toggleTag }}
+        rating={{ value: values.rating, onChange: (rating) => set("rating", values.rating === rating ? 0 : rating) }}
+        notes={{ value: values.notes, onChange: (value) => set("notes", value) }}
+        tags={{ negative, positive, selectedIds: tasteTagIds, onToggle: toggleTag }}
       />
-
     </EntityForm>
   )
 }

@@ -116,11 +116,11 @@ function Dashboard() {
                         {shot.bean?.name ?? "Unknown beans"}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {shot.actualDoseGrams && shot.actualYieldGrams
-                          ? `${shot.actualDoseGrams}g → ${shot.actualYieldGrams}g`
-                          : "No recipe recorded"}
-                        {shot.actualShotTimeSeconds
-                          ? ` · ${shot.actualShotTimeSeconds}s`
+                        {shot.doseGrams && shot.yieldGrams
+                          ? `${shot.doseGrams}g → ${shot.yieldGrams}g`
+                          : "No dose or yield recorded"}
+                        {shot.shotTimeSeconds
+                          ? ` · ${shot.shotTimeSeconds}s`
                           : ""}
                       </p>
                     </div>
@@ -157,7 +157,7 @@ function Dashboard() {
             />
             <QuickAddRow icon={Bean} label="Add beans" href="/beans/new" />
             <QuickAddRow icon={Cog} label="Add gear" href="/gear/new" />
-            <QuickAddRow icon={MapPin} label="Add a coffee shop" href="/coffee-shops/new" />
+            <QuickAddRow icon={MapPin} label="Add a coffee shop" href="/shops/new" />
           </CardContent>
         </Card>
       </section>

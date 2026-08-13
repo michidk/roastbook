@@ -1,12 +1,12 @@
 import { createServerFn } from "@tanstack/react-start"
-import { and, desc, eq } from "drizzle-orm"
+import { desc, eq } from "drizzle-orm"
 import { db } from "@/db"
 import { basketDetails, gear, machineSettings } from "@/db/schema"
 import type { GearType } from "@/lib/constants"
 import type {
   BasketDetailsValues,
   MachineSettingsValues,
-} from "@/lib/recipe-fields"
+} from "@/lib/gear-parameters"
 
 type GearValues = {
   readonly name: string
@@ -72,16 +72,6 @@ export const getGear = createServerFn({ method: "GET" }).handler(async () =>
     with: gearRelations,
   }),
 )
-
-export const getActiveGearByType = createServerFn({ method: "GET" })
-  .validator((type: GearType) => type)
-  .handler(async ({ data: type }) =>
-    db.query.gear.findMany({
-      where: and(eq(gear.type, type), eq(gear.isArchived, false)),
-      orderBy: [desc(gear.updatedAt)],
-      with: gearRelations,
-    }),
-  )
 
 export const getGearById = createServerFn({ method: "GET" })
   .validator((id: number) => id)

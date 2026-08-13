@@ -22,7 +22,7 @@ Roastbook should feel like a calm, tactile coffee journal: warm paper beneath cr
 | Destructive | `--destructive` | `#c0573a` | `#c0573a` | Irreversible actions and errors |
 | Positive | `--positive` | `#6b8a3d` | `#8aa850` | Success and healthy status |
 
-### Rules
+### Typography rules
 
 - Use semantic CSS variables from `src/styles.css`; add new roles there before use.
 - Amber identifies interaction and current state, not decoration.
@@ -97,14 +97,14 @@ Roastbook should feel like a calm, tactile coffee journal: warm paper beneath cr
 ### Saved café map
 - **Structure**: quiet MapLibre surface on `/visits` using a label-free light basemap, 44px targets for coffee shops already saved in Roastbook, restrained zoom controls, a React-rendered place inspector, and concise OpenStreetMap/CARTO attribution. `/places` remains the focused list for managing saved places.
 - **Variants**: saved places use a compact filled dot; favorites use a slightly larger double-ring dot. Marker meaning is carried by shape, size, state, and accessible naming without decorative cup or heart glyphs.
-- **States**: loading, ready, selected place, no saved places with usable coordinates, and unavailable.
+- **States**: loading, ready, selected place, no saved places with usable coordinates, unavailable, and prominent favorite treatment in Quick Picks.
 - **Accessibility**: every visible marker is a named button, arrow-key navigation follows markers inside the current viewport, selection is mirrored in the focus-managed inspector, and every primary action retains a 44px target.
 - **Interaction**: marker selection uses the standard 200ms state transition and a short camera ease; reduced motion makes camera changes immediate. The inspector appears through opacity and transform only.
-- **Layout**: the map owns a fixed responsive height; the inspector follows the map in normal flow below `lg` and becomes a compact lower-left map overlay at `lg` and above. The intentional empty state replaces the map when no saved place has usable coordinates. Basemap labels, POI icons, and unrelated visual noise stay absent so saved cafés remain the only emphasized locations.
+- **Layout**: the map owns a fixed responsive height; the inspector follows the map in normal flow below `lg` and becomes a compact lower-left map overlay at `lg` and above. On `/visits`, the map and Quick Picks stack below `lg`, where Quick Picks remain full-width and use normal page scrolling; from `lg`, they share a four-column grid with the map spanning three columns and Quick Picks occupying a scrollable right rail. Favorite Quick Picks use a stronger heart-led treatment and inset ring so the state does not depend on a small inline glyph. The intentional empty state replaces the map when no saved place has usable coordinates. Basemap labels, POI icons, and unrelated visual noise stay absent so saved cafés remain the only emphasized locations.
 
 ### Form field
 - **Structure**: persistent label, native/shadcn control, optional helper or error.
-- **States**: default, focus, disabled, invalid, loading where relevant.
+- **States**: default, focus, disabled, invalid, loading where relevant, a non-interactive setup hint when no options exist, and an automatically selected sole option when the form opts into setup defaults.
 - **Accessibility**: deterministic server/client markup, label association, visible focus, and no hidden caret.
 
 ### Form suggestions
@@ -113,22 +113,22 @@ Roastbook should feel like a calm, tactile coffee journal: warm paper beneath cr
 - **Accessibility**: suggestion buttons retain a 44px mobile target and update the same labeled picker as manual selection.
 - **Layout**: suggestions wrap naturally without horizontal overflow; selected entity previews reuse their route card and responsive grid geometry.
 
-### Configurable recipe form
-- **Structure**: preset picker, identity section, enabled-field selector, then conditional context, brew target, advanced preparation, accessory, and notes sections using shared form cards.
-- **Variants**: full-page create/edit exposes all enabled-field controls; compact shot-time creation exposes name, method, dose, primary amount, and target time with a clear link to the full editor.
-- **States**: blank custom recipe, six populated beginner presets, enabled fields with unset values, dirty preset switch confirmation, saving, validation error, and archived linked equipment.
-- **Accessibility**: preset and field selectors use labeled native/shadcn controls, field toggles expose checked state, and every action retains a 44px mobile target.
-- **Layout**: one column at 375px, two-column field grids from `sm`, and no horizontally scrolling control groups.
+### Brewing methods and recipes
+- **Structure**: The More navigation opens a dedicated Brewing methods page. Each method has a name, description, and grouped toggle matrix defining its shot fields. Recipes are reusable value snapshots that belong to exactly one method.
+- **States**: seeded method, custom method, editing, saving, referenced deletion blocked, empty parameter set, recipe loaded, and last bean shot loaded.
+- **Accessibility**: every parameter toggle exposes pressed state, method and recipe selectors remain persistently labeled, status feedback is announced, and actions retain a 44px mobile target.
+- **Layout**: method editors stack vertically; parameter controls use one column at 375px and two columns from `sm`; shot parameter grids never require horizontal scrolling.
 
 ### Conditional equipment details
 - **Structure**: generic equipment identity followed by a machine-settings section for espresso machines or basket-details section for baskets.
 - **States**: subtype absent, partially populated, fully populated, invalid value, and pending type-change confirmation when populated subtype values would be discarded.
 - **Accessibility**: capability/default labels remain explicit, nullable booleans offer an Unknown option, and units are part of visible labels.
 
-### Recipe-driven shot measurements
-- **Structure**: selected recipe context is read-only; actual measurement inputs are derived from the saved recipe field set. With no recipe, all existing free-form measurements remain available.
-- **States**: no recipe, recipe selected, previous-shot prefill, recipe switch with hidden stale values cleared, timer running, invalid measurement, and saving.
-- **Accessibility**: conditional fields remain in document order, timer changes are announced through its existing timer role, and machine selection is separately labeled.
+### Configurable shot measurements
+- **Structure**: every brew setup value belongs to the shot. The selected brewing method decides which inputs render and which values persist; recipes and bean history only copy values into that same shot state.
+- **States**: blank shot, method changed, recipe loaded, last bean shot loaded, timer available, timer omitted, invalid measurement, and saving.
+- **Accessibility**: conditional fields remain in document order, timer changes are announced through its existing timer role when enabled, and equipment selectors are separately labeled.
+- **Timer**: when shot time is enabled, the timer uses the established circular 30-second progress ring with an inner status disc; disabling shot time removes the complete timer surface.
 
 ### Picture uploader
 - **Structure**: preview grid, mobile-safe file picker, dashed drop target, explicit clipboard action, URL input, and contextual helper/status copy.
@@ -143,7 +143,7 @@ Roastbook should feel like a calm, tactile coffee journal: warm paper beneath cr
 - **Layout**: fixed to the viewport; development tooling must never overlap or intercept it.
 
 ### Navigation overflow menu
-- **Structure**: a labeled More trigger and a compact list of icon-led links to Roasters, Gear, Recipes, Stats, and Settings on desktop and mobile.
+- **Structure**: a labeled More trigger and a compact list of icon-led links to Roasters, Gear, Brewing methods, Recipes, Stats, and Settings on desktop and mobile.
 - **States**: default, hover, focus, open, and active when the current route is inside the menu.
 - **Accessibility**: uses the shared dropdown primitive, exposes the active destination through the trigger, and preserves 44px mobile menu targets.
 

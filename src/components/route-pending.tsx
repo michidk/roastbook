@@ -1,6 +1,9 @@
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 
+const LIST_PLACEHOLDERS = ["first", "second", "third", "fourth", "fifth", "sixth"]
+const DETAIL_PLACEHOLDERS = ["first", "second", "third", "fourth"]
+
 export function RoutePending() {
   return (
     <div className="space-y-6">
@@ -33,8 +36,8 @@ export function ListPending() {
         <Skeleton className="h-10 w-32" />
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Card key={i}>
+        {LIST_PLACEHOLDERS.map((placeholder) => (
+          <Card key={placeholder}>
             <CardHeader>
               <Skeleton className="h-5 w-3/4" />
             </CardHeader>
@@ -65,8 +68,8 @@ export function DetailPending() {
           <Skeleton className="h-6 w-24" />
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="space-y-1">
+          {DETAIL_PLACEHOLDERS.map((placeholder) => (
+            <div key={placeholder} className="space-y-1">
               <Skeleton className="h-3 w-16" />
               <Skeleton className="h-5 w-24" />
             </div>

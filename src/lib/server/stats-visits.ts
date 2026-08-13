@@ -3,12 +3,14 @@ import { db } from "@/db"
 import { cafeVisits, coffeeShops } from "@/db/schema"
 import { normalizeRatingAverages, toNullableNumber } from "@/lib/stats-number"
 
+const averageVisitRatingSql = sql<string | number | null>`round(avg(${cafeVisits.rating})::numeric, 2)`
+
 export async function getVisitsAndPlacesStats(startOfMonth: Date) {
   const [visitTotals, visitsThisMonth, placeTotals, topPlacesByVisits] = await Promise.all([
     db
       .select({
         total: sql<number>`count(*)::int`,
-        averageRating: sql<string | number | null>`round(avg(${cafeVisits.rating})::numeric, 2)`,
+        averageRating: averageVisitRatingSql,
         totalRated: sql<number>`count(${cafeVisits.rating})::int`,
         uniquePlaces: sql<number>`count(distinct ${cafeVisits.coffeeShopId})::int`,
       })
@@ -29,7 +31,7 @@ export async function getVisitsAndPlacesStats(startOfMonth: Date) {
         coffeeShopName: coffeeShops.name,
         city: coffeeShops.city,
         visitCount: sql<number>`count(*)::int`,
-        avgRating: sql<string | number | null>`round(avg(${cafeVisits.rating})::numeric, 2)`,
+        avgRating: averageVisitRatingSql,
       })
       .from(cafeVisits)
       .innerJoin(coffeeShops, eq(cafeVisits.coffeeShopId, coffeeShops.id))

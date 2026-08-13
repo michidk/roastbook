@@ -27,11 +27,13 @@ export const Route = createFileRoute("/gear/")({
 
 const typeLabels: Record<string, string> = {
   espresso_machine: "Espresso Machine",
+  brewer: "Brewer",
   grinder: "Grinder",
   kettle: "Kettle",
   scale: "Scale",
   tamper: "Tamper",
   wdt: "WDT Tool",
+  basket: "Basket",
   other: "Other",
 }
 

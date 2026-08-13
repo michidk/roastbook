@@ -2,14 +2,31 @@ import { createServerFn } from "@tanstack/react-start"
 import { db } from "@/db"
 import { fillDailyActivity } from "@/lib/stats-activity"
 import { normalizeRatingAverages, toNullableNumber } from "@/lib/stats-number"
-import { beans, gear, shots, cafeVisits, coffeeShops, recipeGear } from "@/db/schema"
+import { beans, gear, shots, cafeVisits, coffeeShops } from "@/db/schema"
 import { eq, count, sql, gte, lt, desc, isNotNull, and } from "drizzle-orm"
-import { toDisplayableDatabaseError } from "@/lib/server/database-error"
+import { toDisplayableDatabaseError } from "@/lib/server/database-error.server"
 import { getVisitsAndPlacesStats } from "@/lib/server/stats-visits"
 
 type ShotGearType = "grinder" | "espresso_machine"
 
+const shotCountSql = sql<number>`count(*)::int`
+const averageShotRatingSql = sql<string | number | null>`round(avg(${shots.rating})::numeric, 2)`
+
+function getShotCountSince(start?: Date) {
+  const query = db.select({ count: shotCountSql }).from(shots)
+  return start ? query.where(gte(shots.createdAt, start)) : query
+}
+
+const beanShotSelection = {
+  beanId: shots.beanId,
+  beanName: beans.name,
+  shotCount: shotCountSql,
+}
+
 function getGearUsage(type: ShotGearType) {
+  const joinCondition = type === "grinder"
+    ? eq(shots.grinderId, gear.id)
+    : eq(shots.machineId, gear.id)
   return db
     .select({
       gearId: gear.id,
@@ -17,8 +34,7 @@ function getGearUsage(type: ShotGearType) {
       shotCount: sql<number>`count(*)::int`,
     })
     .from(gear)
-    .innerJoin(recipeGear, eq(recipeGear.gearId, gear.id))
-    .innerJoin(shots, eq(shots.recipeId, recipeGear.recipeId))
+    .innerJoin(shots, joinCondition)
     .where(eq(gear.type, type))
     .groupBy(gear.id, gear.name)
     .orderBy(desc(sql`count(*)`))
@@ -110,21 +126,15 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
       firstShotDate,
       visitsAndPlaces,
     ] = await Promise.all([
-      db.select({ count: sql<number>`count(*)::int` }).from(shots),
+      getShotCountSince(),
 
-      db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(shots)
-        .where(gte(shots.createdAt, startOfWeek)),
+      getShotCountSince(startOfWeek),
 
-      db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(shots)
-        .where(gte(shots.createdAt, startOfMonth)),
+      getShotCountSince(startOfMonth),
 
       db
         .select({
-      totalGrams: sql<string | number>`coalesce(sum(${shots.actualDoseGrams}::numeric), 0)::numeric`,
+          totalGrams: sql<string | number>`coalesce(sum(${shots.doseGrams}::numeric), 0)::numeric`,
           uniqueBeans: sql<number>`count(distinct ${shots.beanId})::int`,
         })
         .from(shots)
@@ -132,7 +142,7 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
 
       db
         .select({
-          avgRating: sql<string | number | null>`round(avg(${shots.rating})::numeric, 2)`,
+          avgRating: averageShotRatingSql,
           totalRated: sql<number>`count(${shots.rating})::int`,
           rating1: sql<number>`count(*) filter (where ${shots.rating} = 1)::int`,
           rating2: sql<number>`count(*) filter (where ${shots.rating} = 2)::int`,
@@ -144,11 +154,7 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
         .where(isNotNull(shots.rating)),
 
       db
-        .select({
-          beanId: shots.beanId,
-          beanName: beans.name,
-          shotCount: sql<number>`count(*)::int`,
-        })
+        .select(beanShotSelection)
         .from(shots)
         .innerJoin(beans, eq(shots.beanId, beans.id))
         .groupBy(shots.beanId, beans.name)
@@ -157,10 +163,8 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
 
       db
         .select({
-          beanId: shots.beanId,
-          beanName: beans.name,
-          avgRating: sql<string | number | null>`round(avg(${shots.rating})::numeric, 2)`,
-          shotCount: sql<number>`count(*)::int`,
+          ...beanShotSelection,
+          avgRating: averageShotRatingSql,
         })
         .from(shots)
         .innerJoin(beans, eq(shots.beanId, beans.id))
@@ -176,13 +180,13 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
 
       db
         .select({
-      avgDose: sql<string | number | null>`round(avg(${shots.actualDoseGrams}::numeric), 1)`,
-      avgYield: sql<string | number | null>`round(avg(${shots.actualYieldGrams}::numeric), 1)`,
-      avgTime: sql<string | number | null>`round(avg(${shots.actualShotTimeSeconds})::numeric, 0)::int`,
-      avgRatio: sql<string | number | null>`round(avg(${shots.actualYieldGrams}::numeric / nullif(${shots.actualDoseGrams}::numeric, 0)), 2)`,
+          avgDose: sql<string | number | null>`round(avg(${shots.doseGrams}::numeric), 1)`,
+          avgYield: sql<string | number | null>`round(avg(${shots.yieldGrams}::numeric), 1)`,
+          avgTime: sql<string | number | null>`round(avg(${shots.shotTimeSeconds})::numeric, 0)::int`,
+          avgRatio: sql<string | number | null>`round(avg(${shots.yieldGrams}::numeric / nullif(${shots.doseGrams}::numeric, 0)), 2)`,
         })
         .from(shots)
-    .where(and(isNotNull(shots.actualDoseGrams), isNotNull(shots.actualYieldGrams))),
+        .where(and(isNotNull(shots.doseGrams), isNotNull(shots.yieldGrams))),
 
       db
         .select({

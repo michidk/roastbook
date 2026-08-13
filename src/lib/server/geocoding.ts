@@ -85,6 +85,28 @@ function toWebsite(extratags: NominatimResult["extratags"]) {
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
 }
 
+async function fetchNominatim(
+  params: URLSearchParams,
+  errorMessage: string,
+): Promise<NominatimResult[]> {
+  const response = await fetch(
+    `https://nominatim.openstreetmap.org/search?${params.toString()}`,
+    {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "Roastbook/1.0 (self-hosted coffee journal geocoding)",
+      },
+      signal: AbortSignal.timeout(15_000),
+    },
+  )
+
+  if (!response.ok) {
+    throw new Error(`${errorMessage}: ${response.status}`)
+  }
+
+  return response.json() as Promise<NominatimResult[]>
+}
+
 export const searchCoffeeShopCandidates = createServerFn({ method: "POST" })
   .validator((data: { query: string; limit?: number }) => ({
     query: normalizeQuery(data.query),
@@ -99,19 +121,7 @@ export const searchCoffeeShopCandidates = createServerFn({ method: "POST" })
       limit: String(NOMINATIM_CANDIDATE_LIMIT),
     })
 
-    const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
-      headers: {
-        Accept: "application/json",
-        "User-Agent": "Roastbook/1.0 (self-hosted coffee journal geocoding)",
-      },
-      signal: AbortSignal.timeout(15_000),
-    })
-
-    if (!response.ok) {
-      throw new Error(`Geocoding request failed: ${response.status}`)
-    }
-
-    const payload = (await response.json()) as NominatimResult[]
+    const payload = await fetchNominatim(params, "Geocoding request failed")
 
     return prioritizeCoffeeShopCandidates(payload, data.limit).flatMap((item) => {
       if (!item.place_id || !item.display_name || !item.lat || !item.lon) {
@@ -155,20 +165,7 @@ export const geocodeDefaultMapLocation = createServerFn({ method: "POST" })
       addressdetails: "1",
       limit: "1",
     })
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?${params.toString()}`,
-      {
-        headers: {
-          Accept: "application/json",
-          "User-Agent": "Roastbook/1.0 (self-hosted coffee journal geocoding)",
-        },
-        signal: AbortSignal.timeout(15_000),
-      },
-    )
-    if (!response.ok) {
-      throw new Error(`Location lookup failed: ${response.status}`)
-    }
-    const payload = (await response.json()) as NominatimResult[]
+    const payload = await fetchNominatim(params, "Location lookup failed")
     const result = payload[0]
     if (!result?.display_name || !result.lat || !result.lon) return null
     const latitude = Number(result.lat)

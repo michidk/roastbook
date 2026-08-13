@@ -3,34 +3,41 @@ import {
   Link,
   useNavigate,
   useRouter,
-} from "@tanstack/react-router"
-import { useState } from "react"
-import { toast } from "sonner"
+} from '@tanstack/react-router'
+import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
+import { type SyntheticEvent, useEffect, useState } from 'react'
+import { toast } from 'sonner'
+import { BeanPicker } from '@/components/beans/bean-picker'
+import { DeleteConfirmation } from '@/components/DeleteConfirmation'
+import { InputField, SelectField } from '@/components/form/form-field'
+import { FormSection } from '@/components/form/form-shell'
+import { RouteError } from '@/components/route-error'
+import { DetailPending } from '@/components/route-pending'
 import {
-  Archive,
-  ArchiveRestore,
-  ArrowLeft,
-  Copy,
-  Pencil,
-  Trash2,
-} from "lucide-react"
-import { DeleteConfirmation } from "@/components/DeleteConfirmation"
-import { RecipeForm } from "@/components/recipes/recipe-form"
-import { RouteError } from "@/components/route-error"
-import { DetailPending } from "@/components/route-pending"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { BREWING_METHOD_LABELS } from "@/lib/recipes"
-import {
-  deleteRecipe,
-  duplicateRecipe,
-  getRecipe,
-  setRecipeArchived,
-} from "@/lib/server/recipes"
+  type ShotFormValues,
+  ShotParameterFields,
+  shotFormValuesFrom,
+} from '@/components/shots/shot-parameter-fields'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { getActiveBeans } from '@/lib/server/beans'
+import { getBrewingMethods } from '@/lib/server/brewing-methods'
+import { getGear } from '@/lib/server/gear'
+import { deleteRecipe, getRecipe, updateRecipe } from '@/lib/server/recipes'
+import { getShotUpdateErrors } from '@/lib/update-validation'
 
-export const Route = createFileRoute("/recipes/$recipeId")({
-  loader: ({ params }) => getRecipe({ data: Number(params.recipeId) }),
+export const Route = createFileRoute('/recipes/$recipeId')({
+  loader: async ({ params }) => {
+    const recipeId = Number(params.recipeId)
+    const [recipe, beans, methods, gear] = await Promise.all([
+      getRecipe({ data: recipeId }),
+      getActiveBeans(),
+      getBrewingMethods(),
+      getGear(),
+    ])
+    return { recipe, beans, methods, gear }
+  },
   component: RecipeDetailPage,
   pendingComponent: DetailPending,
   errorComponent: ({ error }) => (
@@ -38,245 +45,395 @@ export const Route = createFileRoute("/recipes/$recipeId")({
   ),
 })
 
+type Recipe = NonNullable<Awaited<ReturnType<typeof getRecipe>>>
+
+function createFormValues(recipe?: Recipe): ShotFormValues {
+  return recipe
+    ? { ...shotFormValuesFrom(recipe), rating: 0, notes: '' }
+    : {
+        brewingMethodId: '',
+        beanId: '',
+        machineId: '',
+        doseGrams: '',
+        brewWaterGrams: '',
+        ratioBasis: '',
+        grinderId: '',
+        grindSetting: '',
+        yieldGrams: '',
+        shotTimeSeconds: '',
+        brewTemperatureCelsius: '',
+        preinfusionTimeSeconds: '',
+        preinfusionPressureBar: '',
+        bloomTimeSeconds: '',
+        brewPressureBar: '',
+        flowRateMlPerSecond: '',
+        basketId: '',
+        usesPuckScreen: null,
+        paperFilterPosition: '',
+        distributionMethod: '',
+        tampForceKg: '',
+        accessoryGearIds: [],
+        rating: 0,
+        notes: '',
+      }
+}
+
 function RecipeDetailPage() {
-  const recipe = Route.useLoaderData()
+  const { recipe, beans, methods, gear } = Route.useLoaderData()
   const navigate = useNavigate()
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
-  const [pendingAction, setPendingAction] = useState<
-    "archive" | "duplicate" | null
-  >(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [name, setName] = useState(recipe?.name ?? '')
+  const [values, setValues] = useState(() => createFormValues(recipe))
+  const [fieldErrors, setFieldErrors] = useState<
+    Readonly<Record<string, string>>
+  >({})
+
+  useEffect(() => {
+    if (!recipe) return
+    setName(recipe.name)
+    setValues(createFormValues(recipe))
+  }, [recipe])
 
   if (!recipe) {
     return (
-      <Card>
-        <CardContent className="flex flex-col items-center py-12 text-center">
-          <h1 className="font-display text-xl font-bold">Recipe not found</h1>
-          <Button asChild className="mt-4">
-            <Link to="/recipes">Back to recipes</Link>
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="py-12 text-center">
+        <h1 className="text-xl font-semibold">Recipe not found</h1>
+        <Button asChild className="mt-4">
+          <Link to="/recipes">Back to recipes</Link>
+        </Button>
+      </div>
     )
   }
 
-  const handleArchive = async () => {
-    setPendingAction("archive")
+  const selectedMethod = methods.find(
+    (method) => String(method.id) === values.brewingMethodId,
+  )
+  const methodOptions = methods.map((method) => ({
+    value: String(method.id),
+    label: method.name,
+  }))
+  const beanOptions =
+    recipe.bean && !beans.some((bean) => bean.id === recipe.bean?.id)
+      ? [recipe.bean, ...beans]
+      : beans
+  const selectedGearIds = new Set([
+    values.machineId,
+    values.grinderId,
+    values.basketId,
+    ...values.accessoryGearIds.map(String),
+  ])
+  const gearOptions = gear.filter(
+    (item) => !item.isArchived || selectedGearIds.has(String(item.id)),
+  )
+  const set = <Key extends keyof ShotFormValues>(
+    key: Key,
+    value: ShotFormValues[Key],
+  ) => setValues((current) => ({ ...current, [key]: value }))
+
+  const cancelEdit = () => {
+    setName(recipe.name)
+    setValues(createFormValues(recipe))
+    setFieldErrors({})
+    setIsEditing(false)
+  }
+
+  const handleSave = async (event: SyntheticEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const data = {
+      id: recipe.id,
+      name,
+      brewingMethodId: Number(values.brewingMethodId),
+      beanId: values.beanId ? Number(values.beanId) : null,
+      machineId: values.machineId ? Number(values.machineId) : null,
+      doseGrams: values.doseGrams || null,
+      brewWaterGrams: values.brewWaterGrams || null,
+      ratioBasis: values.ratioBasis || null,
+      grinderId: values.grinderId ? Number(values.grinderId) : null,
+      grindSetting: values.grindSetting || null,
+      yieldGrams: values.yieldGrams || null,
+      shotTimeSeconds: values.shotTimeSeconds || null,
+      brewTemperatureCelsius: values.brewTemperatureCelsius || null,
+      preinfusionTimeSeconds: values.preinfusionTimeSeconds || null,
+      preinfusionPressureBar: values.preinfusionPressureBar || null,
+      bloomTimeSeconds: values.bloomTimeSeconds || null,
+      brewPressureBar: values.brewPressureBar || null,
+      flowRateMlPerSecond: values.flowRateMlPerSecond || null,
+      basketId: values.basketId ? Number(values.basketId) : null,
+      usesPuckScreen: values.usesPuckScreen,
+      paperFilterPosition: values.paperFilterPosition || null,
+      distributionMethod: values.distributionMethod || null,
+      tampForceKg: values.tampForceKg || null,
+      accessoryGearIds: values.accessoryGearIds,
+    }
+    const errors = getShotUpdateErrors(data)
+    setFieldErrors(errors)
+    if (!name.trim() || Object.keys(errors).length > 0) return
+
+    setIsSaving(true)
     try {
-      await setRecipeArchived({
-        data: { id: recipe.id, isArchived: !recipe.isArchived },
-      })
+      await updateRecipe({ data })
+      setIsEditing(false)
       await router.invalidate()
-      toast.success(recipe.isArchived ? "Recipe restored" : "Recipe archived")
+      toast.success('Recipe updated')
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Could not update this recipe",
+        error instanceof Error ? error.message : 'Could not update recipe',
       )
     } finally {
-      setPendingAction(null)
+      setIsSaving(false)
     }
   }
-
-  const handleDuplicate = async () => {
-    setPendingAction("duplicate")
-    try {
-      const copy = await duplicateRecipe({ data: recipe.id })
-      if (!copy) {
-        toast.error("Could not find the recipe to duplicate")
-        return
-      }
-      toast.success("Recipe duplicated")
-      await navigate({
-        to: "/recipes/$recipeId",
-        params: { recipeId: String(copy.id) },
-      })
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Could not duplicate this recipe",
-      )
-    } finally {
-      setPendingAction(null)
-    }
-  }
-
-  const handleDelete = async () => {
-    await deleteRecipe({ data: recipe.id })
-    toast.success("Recipe deleted")
-    await navigate({ to: "/recipes" })
-  }
-
-  const equipment = recipe.gear.map(({ gear }) => gear.name).join(", ")
-  const enabled = new Set(recipe.enabledFields.map(({ fieldKey }) => fieldKey))
-  const parameters = [
-    ["Dose", enabled.has("target_dose") ? recipe.targetDoseGrams ? `${Number(recipe.targetDoseGrams)} g` : "Not set" : null],
-    ["Brew water", enabled.has("brew_water") ? recipe.brewWaterGrams ? `${Number(recipe.brewWaterGrams)} g` : "Not set" : null],
-    ["Target yield", enabled.has("target_yield") ? recipe.targetYieldGrams ? `${Number(recipe.targetYieldGrams)} g` : "Not set" : null],
-    [
-      "Target shot time",
-      enabled.has("target_time")
-        ? recipe.targetTimeMinSeconds === null
-          ? "Not set"
-          : recipe.targetTimeMinSeconds === recipe.targetTimeMaxSeconds
-            ? `${Number(recipe.targetTimeMinSeconds)} s`
-            : `${Number(recipe.targetTimeMinSeconds)}–${Number(recipe.targetTimeMaxSeconds)} s`
-        : null,
-    ],
-    ["Grind setting", enabled.has("grind_setting") ? recipe.grindSetting ?? "Not set" : null],
-    [
-      "Brew temperature",
-      enabled.has("brew_temperature")
-        ? recipe.brewTemperatureCelsius ? `${Number(recipe.brewTemperatureCelsius)} °C` : "Not set"
-        : null,
-    ],
-    [
-      "Target brew pressure",
-      enabled.has("target_pressure")
-        ? recipe.targetBrewPressureBar ? `${Number(recipe.targetBrewPressureBar)} bar` : "Not set"
-        : null,
-    ],
-  ] as const
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-start gap-4">
-        <Button
-          variant="outline"
-          size="icon"
-          asChild
-          className="shrink-0 sm:size-11"
-        >
-          <Link to="/recipes" aria-label="Back to recipes">
-            <ArrowLeft aria-hidden />
-          </Link>
-        </Button>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
+    <div className="mx-auto max-w-2xl space-y-6">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 items-center gap-3">
+          <Button variant="ghost" size="icon" asChild>
+            <Link to="/recipes" aria-label="Back to recipes">
+              <ArrowLeft />
+            </Link>
+          </Button>
+          <div className="min-w-0 flex-1">
+            <h1 className="min-w-0 break-words text-2xl font-bold">
               {recipe.name}
             </h1>
-            <Badge variant="outline">
-              {BREWING_METHOD_LABELS[recipe.brewingMethod]}
-            </Badge>
-            {recipe.isArchived && <Badge variant="secondary">Archived</Badge>}
+            <Badge variant="outline">{recipe.brewingMethod.name}</Badge>
           </div>
-          <p className="mt-1 text-sm font-semibold text-muted-foreground">
-            Saved brewing defaults and preparation notes
-          </p>
         </div>
-        <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            className="sm:h-11"
-            onClick={handleArchive}
-            disabled={pendingAction !== null}
-          >
-            {recipe.isArchived ? <ArchiveRestore /> : <Archive />}
-            {pendingAction === "archive"
-              ? "Saving…"
-              : recipe.isArchived
-                ? "Unarchive"
-                : "Archive"}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="sm:h-11"
-            onClick={handleDuplicate}
-            disabled={pendingAction !== null}
-          >
-            <Copy />
-            {pendingAction === "duplicate" ? "Duplicating…" : "Duplicate"}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="sm:h-11"
-            onClick={() => setIsEditing((current) => !current)}
-          >
-            <Pencil />
-            {isEditing ? "Close editor" : "Edit"}
-          </Button>
-          <DeleteConfirmation
-            title="Delete this recipe?"
-            description="The recipe will be removed from your library. Existing shot records will be kept, but will no longer reference it."
-            onConfirm={handleDelete}
-            trigger={
+        <div className="flex flex-wrap items-center gap-2 sm:ml-auto sm:justify-end">
+          {isEditing ? (
+            <>
               <Button
                 variant="outline"
                 size="sm"
-                className="text-destructive sm:h-11"
+                type="button"
+                onClick={cancelEdit}
+                disabled={isSaving}
               >
-                <Trash2 />
-                Delete
+                Cancel
               </Button>
-            }
-          />
+              <Button
+                size="sm"
+                type="submit"
+                form="recipe-edit-form"
+                disabled={isSaving || !name.trim() || !values.brewingMethodId}
+              >
+                {isSaving ? 'Saving…' : 'Save changes'}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                onClick={() => setIsEditing(true)}
+              >
+                <Pencil /> Edit
+              </Button>
+              <DeleteConfirmation
+                title="Delete this recipe?"
+                description="This recipe will be removed permanently. Existing shots are not affected."
+                onConfirm={async () => {
+                  await deleteRecipe({ data: recipe.id })
+                  toast.success('Recipe deleted')
+                  await navigate({ to: '/recipes' })
+                }}
+                trigger={
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    aria-label="Delete recipe"
+                  >
+                    <Trash2 />
+                  </Button>
+                }
+              />
+            </>
+          )}
         </div>
       </header>
 
       {isEditing ? (
+        <form id="recipe-edit-form" onSubmit={handleSave} className="space-y-6">
+          <FormSection
+            title="Brewing method"
+            description="Choose the method first. It controls which recipe fields are available."
+          >
+            <SelectField
+              id="recipe-method"
+              label="Method"
+              placeholder="Choose a brewing method"
+              value={values.brewingMethodId}
+              options={methodOptions}
+              onChange={(value) => set('brewingMethodId', value)}
+              required
+              error={fieldErrors.brewingMethodId}
+            />
+          </FormSection>
+          {selectedMethod ? (
+            <>
+              <FormSection title="Recipe">
+                <InputField
+                  id="recipe-name"
+                  label="Name"
+                  value={name}
+                  onChange={setName}
+                  required
+                  autoFocus
+                />
+              </FormSection>
+              <FormSection title="Beans">
+                <BeanPicker
+                  id="recipe-bean"
+                  label="Beans"
+                  value={values.beanId}
+                  onChange={(value) => set('beanId', value)}
+                  beans={beanOptions}
+                />
+              </FormSection>
+              <ShotParameterFields
+                values={values}
+                gear={gearOptions}
+                enabledParameters={selectedMethod.enabledParameters}
+                errors={fieldErrors}
+                onChange={set}
+              />
+            </>
+          ) : null}
+        </form>
+      ) : (
+        <RecipeSummary recipe={recipe} gear={gear} />
+      )}
+    </div>
+  )
+}
+
+function RecipeSummary({
+  recipe,
+  gear,
+}: {
+  recipe: Recipe
+  gear: Awaited<ReturnType<typeof getGear>>
+}) {
+  const enabled = new Set(recipe.brewingMethod.enabledParameters)
+  const rows = [
+    enabled.has('doseGrams') && [
+      'Dose',
+      recipe.doseGrams && `${recipe.doseGrams} g`,
+    ],
+    enabled.has('brewWaterGrams') && [
+      'Brew water',
+      recipe.brewWaterGrams && `${recipe.brewWaterGrams} g`,
+    ],
+    enabled.has('yieldGrams') && [
+      'Yield',
+      recipe.yieldGrams && `${recipe.yieldGrams} g`,
+    ],
+    enabled.has('shotTimeSeconds') && [
+      'Brew time',
+      recipe.shotTimeSeconds && `${recipe.shotTimeSeconds} s`,
+    ],
+    enabled.has('grindSetting') && ['Grind setting', recipe.grindSetting],
+    enabled.has('brewTemperatureCelsius') && [
+      'Temperature',
+      recipe.brewTemperatureCelsius && `${recipe.brewTemperatureCelsius} °C`,
+    ],
+    enabled.has('brewPressureBar') && [
+      'Brew pressure',
+      recipe.brewPressureBar && `${recipe.brewPressureBar} bar`,
+    ],
+    enabled.has('flowRateMlPerSecond') && [
+      'Flow rate',
+      recipe.flowRateMlPerSecond && `${recipe.flowRateMlPerSecond} mL/s`,
+    ],
+    enabled.has('preinfusionTimeSeconds') && [
+      'Pre-infusion',
+      recipe.preinfusionTimeSeconds && `${recipe.preinfusionTimeSeconds} s`,
+    ],
+    enabled.has('bloomTimeSeconds') && [
+      'Bloom',
+      recipe.bloomTimeSeconds && `${recipe.bloomTimeSeconds} s`,
+    ],
+  ].filter(Boolean) as [string, string | null][]
+  const accessories = gear.filter((item) =>
+    recipe.accessoryGearIds.includes(item.id),
+  )
+  const equipment = [
+    recipe.machine,
+    recipe.grinder,
+    recipe.basket,
+    ...accessories,
+  ]
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
+    .filter(
+      (item, index, items) =>
+        items.findIndex(({ id }) => id === item.id) === index,
+    )
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Details</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm text-muted-foreground">Brewing method</p>
+            <p className="font-medium">{recipe.brewingMethod.name}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Beans</p>
+            <p className="font-medium">{recipe.bean?.name ?? 'Any beans'}</p>
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Recipe values</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {rows.length > 0 ? (
+            <dl className="grid gap-4 sm:grid-cols-2">
+              {rows.map(([label, value]) => (
+                <div key={label}>
+                  <dt className="text-sm text-muted-foreground">{label}</dt>
+                  <dd className="font-medium">{value || 'Not set'}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : (
+            <p className="text-muted-foreground">No brewing values saved.</p>
+          )}
+        </CardContent>
+      </Card>
+      {equipment.length > 0 ? (
         <Card>
           <CardHeader>
-            <CardTitle as="h2">Edit recipe</CardTitle>
+            <CardTitle>Equipment</CardTitle>
           </CardHeader>
-          <CardContent>
-            <RecipeForm
-              mode="edit"
-              recipe={recipe}
-              onCancel={() => setIsEditing(false)}
-              onSaved={async () => {
-                setIsEditing(false)
-                await router.invalidate()
-                toast.success("Recipe updated")
-              }}
-            />
+          <CardContent className="grid grid-cols-2 gap-4">
+            {equipment.map((item) => (
+              <div key={item.id}>
+                <p className="text-sm text-muted-foreground">
+                  {item.type === 'grinder'
+                    ? 'Grinder'
+                    : item.type === 'basket'
+                      ? 'Basket'
+                      : item.type === 'espresso_machine' ||
+                          item.type === 'brewer'
+                        ? 'Brewer / machine'
+                        : 'Accessory'}
+                </p>
+                <p className="font-medium">{item.name}</p>
+              </div>
+            ))}
           </CardContent>
         </Card>
-      ) : (
-        <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-          <Card>
-            <CardHeader>
-              <CardTitle as="h2">Brewing defaults</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <dl className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-                {parameters.map(([label, value]) => value === null ? null : (
-                  <div key={label}>
-                    <dt className="text-sm font-semibold text-muted-foreground">
-                      {label}
-                    </dt>
-                    <dd className="mt-1 font-display text-lg font-bold tabular-nums">
-                      {value ?? "Not set"}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            </CardContent>
-          </Card>
-
-          <div className="space-y-6">
-            {equipment && (
-              <Card>
-                <CardHeader>
-                  <CardTitle as="h2">Equipment</CardTitle>
-                </CardHeader>
-                <CardContent>{equipment}</CardContent>
-              </Card>
-            )}
-            <Card>
-              <CardHeader>
-                <CardTitle as="h2">Notes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                  {recipe.notes || "No preparation notes saved."}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      )}
+      ) : null}
     </div>
   )
 }

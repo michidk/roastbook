@@ -1,30 +1,25 @@
 import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router"
-import { useEffect, useState, useMemo } from "react"
-import { ArrowLeft, Trash2, Archive, ArchiveRestore, Pencil, Plus, Search, Loader2 } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress"
 import { getBean, deleteBean, updateBean, extractBeanInfo, researchBeanInfo, checkVisionEnabled, checkResearchEnabled } from "@/lib/server/beans"
 import { getShotsByBean } from "@/lib/server/shots"
 import { getRoasters } from "@/lib/server/roasters"
 import { ShotsTable } from "@/components/ShotsTable"
 import { ShotParameterCharts } from "@/components/shot-parameter-charts"
-import { DeleteConfirmation } from "@/components/DeleteConfirmation"
-import { EntityImageGallery, type EntityImage } from "@/components/entity-image-gallery"
-import { InputField, SelectField, TextareaField } from "@/components/form/form-field"
-import { RoasterPicker } from "@/components/roasters/roaster-picker"
 import { BeanInfoDiffModal, type BeanFormData } from "@/components/BeanInfoDiffModal"
-import { toast } from "sonner"
 import { RouteError } from "@/components/route-error"
 import { DetailPending } from "@/components/route-pending"
-import { ROAST_LEVELS, PROCESS_METHODS, type RoastLevel } from "@/lib/constants"
 import type { ExtractedBeanInfo } from "@/lib/ai"
 import { imageUrl } from "@/lib/image-url"
+import { createEmptyBeanFormValues, toBeanFormValues } from "@/components/beans/bean-form-values"
+import type { EntityImage } from "@/components/entity-image-gallery"
 import {
-  createEmptyBeanFormValues,
-  toBeanFormValues,
-} from "@/components/beans/bean-form-values"
+  BeanDetailHeader,
+  BeanEditContent,
+  BeanReadOnlyContent,
+} from "@/components/beans/bean-detail-content"
 
 export const Route = createFileRoute("/beans/$beanId")({
   loader: async ({ params }) => {
@@ -56,650 +51,161 @@ function BeanDetailPage() {
   const [diffModalOpen, setDiffModalOpen] = useState(false)
   const [suggestedData, setSuggestedData] = useState<ExtractedBeanInfo | null>(null)
   const [aiSource, setAiSource] = useState<"image" | "web">("web")
-
-  const currentRoaster = bean?.roasterRef ?? null
-
-  const weightStats = useMemo(() => {
-    if (!bean?.weight) return null
-    const initialWeight = parseFloat(bean.weight)
-    if (Number.isNaN(initialWeight) || initialWeight <= 0) return null
-
-    const usedWeight = shots.reduce((sum, shot) => {
-      const dose = shot.actualDoseGrams ? parseFloat(shot.actualDoseGrams) : 0
-      return sum + dose
-    }, 0)
-
-    const remainingWeight = Math.max(0, initialWeight - usedWeight)
-    const percentRemaining = Math.round((remainingWeight / initialWeight) * 100)
-
-    return { initialWeight, usedWeight, remainingWeight, percentRemaining }
-  }, [bean?.weight, shots])
-
   const [formData, setFormData] = useState(() =>
-    bean
-      ? toBeanFormValues(bean)
-      : createEmptyBeanFormValues()
+    bean ? toBeanFormValues(bean) : createEmptyBeanFormValues(),
   )
 
   useEffect(() => {
-    if (!bean) return
-    setFormData(toBeanFormValues(bean))
+    if (bean) setFormData(toBeanFormValues(bean))
   }, [bean])
+
+  const weightStats = useMemo(() => {
+    if (!bean?.weight) return null
+    const initialWeight = Number.parseFloat(bean.weight)
+    if (!Number.isFinite(initialWeight) || initialWeight <= 0) return null
+    const usedWeight = shots.reduce(
+      (sum, shot) => sum + (shot.doseGrams ? Number.parseFloat(shot.doseGrams) : 0),
+      0,
+    )
+    const remainingWeight = Math.max(0, initialWeight - usedWeight)
+    return {
+      initialWeight,
+      usedWeight,
+      remainingWeight,
+      percentRemaining: Math.round((remainingWeight / initialWeight) * 100),
+    }
+  }, [bean?.weight, shots])
 
   if (!bean) {
     return (
-      <div className="text-center py-12">
+      <div className="py-12 text-center">
         <h2 className="text-xl font-semibold">Bean not found</h2>
-        <Button asChild className="mt-4">
-          <Link to="/beans">Back to beans</Link>
-        </Button>
+        <Button asChild className="mt-4"><Link to="/beans">Back to beans</Link></Button>
       </div>
     )
   }
 
-  const handleDelete = async () => {
-    await deleteBean({ data: bean.id })
-    navigate({ to: "/beans" })
-  }
-
-  const handleToggleArchive = async () => {
-    await updateBean({ data: { id: bean.id, isArchived: !bean.isArchived } })
-    router.invalidate()
-  }
-
-  const handleCancelEdit = () => {
-    setFormData(toBeanFormValues(bean))
-    setIsEditing(false)
-  }
-
   const handleSave = async () => {
     if (!formData.name.trim()) return
-
     setIsSaving(true)
-
     try {
-      await updateBean({
-        data: {
-          id: bean.id,
-          name: formData.name,
-          roasterId: formData.roasterId ? Number(formData.roasterId) : null,
-          weight: formData.weight || null,
-          price: formData.price || null,
-          priceCurrency: formData.priceCurrency || null,
-          shopUrl: formData.shopUrl || null,
-          origin: formData.origin,
-          region: formData.region,
-          farm: formData.farm,
-          variety: formData.variety,
-          process: formData.process,
-          roastLevel: formData.roastLevel || null,
-          roastDate: formData.roastDate ? new Date(formData.roastDate) : null,
-          notes: formData.notes,
-        },
-      })
+      await updateBean({ data: {
+        id: bean.id,
+        name: formData.name,
+        roasterId: formData.roasterId ? Number(formData.roasterId) : null,
+        weight: formData.weight || null,
+        price: formData.price || null,
+        priceCurrency: formData.priceCurrency || null,
+        shopUrl: formData.shopUrl || null,
+        origin: formData.origin,
+        region: formData.region,
+        farm: formData.farm,
+        variety: formData.variety,
+        process: formData.process,
+        roastLevel: formData.roastLevel || null,
+        roastDate: formData.roastDate ? new Date(formData.roastDate) : null,
+        notes: formData.notes,
+      } })
       setIsEditing(false)
       await router.invalidate()
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to update bean"
-      toast.error(message)
+      toast.error(error instanceof Error ? error.message : "Failed to update bean")
     } finally {
       setIsSaving(false)
     }
   }
 
-  const handleResearchOnline = async () => {
-    if (!formData.name.trim()) {
-      toast.error("Enter a bean name first")
+  const showSuggestion = (result: ExtractedBeanInfo, source: "image" | "web") => {
+    if (Object.keys(result).length === 0) {
+      toast.error(source === "web" ? "No information found" : "Couldn't extract any information")
       return
     }
+    setSuggestedData(result)
+    setAiSource(source)
+    setDiffModalOpen(true)
+  }
 
+  const handleResearchOnline = async () => {
+    if (!formData.name.trim()) return toast.error("Enter a bean name first")
     setIsResearching(true)
     try {
       const roasterName = formData.roasterId
-        ? roasters.find((r) => String(r.id) === formData.roasterId)?.name
+        ? roasters.find((roaster) => String(roaster.id) === formData.roasterId)?.name
         : undefined
-      const result = await researchBeanInfo({
-        data: { beanName: formData.name, roasterName },
-      })
-
-      if (Object.keys(result).length === 0) {
-        toast.error("No information found")
-        return
-      }
-
-      setSuggestedData(result)
-      setAiSource("web")
-      setDiffModalOpen(true)
+      showSuggestion(await researchBeanInfo({ data: { beanName: formData.name, roasterName } }), "web")
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Research failed"
-      toast.error(message)
+      toast.error(error instanceof Error ? error.message : "Research failed")
     } finally {
       setIsResearching(false)
     }
   }
 
   const handleExtractFromImage = async (image: EntityImage) => {
-    const imgUrl = imageUrl(image.storagePath)
-
     setExtractingImageId(image.id)
     try {
-      const response = await fetch(imgUrl)
-      const blob = await response.blob()
-      const base64 = await new Promise<string>((resolve) => {
+      const blob = await fetch(imageUrl(image.storagePath)).then((response) => response.blob())
+      const dataUrl = await new Promise<string>((resolve) => {
         const reader = new FileReader()
-        reader.onloadend = () => {
-          const dataUrl = reader.result as string
-          resolve(dataUrl.split(",")[1])
-        }
+        reader.onloadend = () => resolve(reader.result as string)
         reader.readAsDataURL(blob)
       })
-
-      const result = await extractBeanInfo({
-        data: { imageBase64: base64, mimeType: blob.type },
-      })
-
-      if (Object.keys(result).length === 0) {
-        toast.error("Couldn't extract any information")
-        return
-      }
-
-      setSuggestedData(result)
-      setAiSource("image")
-      setDiffModalOpen(true)
+      showSuggestion(await extractBeanInfo({ data: {
+        imageBase64: dataUrl.split(",")[1],
+        mimeType: blob.type,
+      } }), "image")
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Extraction failed"
-      toast.error(message)
+      toast.error(error instanceof Error ? error.message : "Extraction failed")
     } finally {
       setExtractingImageId(null)
     }
   }
 
-  const handleApplyDiff = (updates: Partial<BeanFormData>) => {
-    setFormData((prev) => ({ ...prev, ...updates }))
-    toast.success(`Applied ${Object.keys(updates).length} changes`)
-  }
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start gap-4">
-        <Button variant="outline" size="icon" asChild className="shrink-0">
-          <Link to="/beans">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="font-display text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">
-              {isEditing ? formData.name || bean.name : bean.name}
-            </h1>
-            {bean.isArchived && (
-              <Badge variant="secondary">Archived</Badge>
-            )}
-          </div>
-          {isEditing ? (
-            formData.roasterId && roasters.find((r) => String(r.id) === formData.roasterId) && (
-              <p className="mt-1 text-sm text-muted-foreground">
-                by{" "}
-                <span className="font-bold text-primary">
-                  {roasters.find((r) => String(r.id) === formData.roasterId)?.name}
-                </span>
-              </p>
-            )
-          ) : currentRoaster ? (
-            <p className="mt-1 text-sm text-muted-foreground">
-              by{" "}
-              <Link
-                to="/roasters/$roasterId"
-                params={{ roasterId: String(currentRoaster.id) }}
-                className="font-bold text-primary hover:underline"
-              >
-                {currentRoaster.name}
-              </Link>
-            </p>
-          ) : bean.roaster ? (
-            <p className="mt-1 text-sm text-muted-foreground">
-              by <span className="font-bold text-primary">{bean.roaster}</span>
-            </p>
-          ) : null}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleToggleArchive}>
-            {bean.isArchived ? (
-              <>
-                <ArchiveRestore className="h-4 w-4" />
-                Unarchive
-              </>
-            ) : (
-              <>
-                <Archive className="h-4 w-4" />
-                Archive
-              </>
-            )}
-          </Button>
-          {isEditing ? (
-            <>
-              <Button variant="outline" size="sm" onClick={handleCancelEdit}>
-                Cancel
-              </Button>
-              <Button size="sm" onClick={handleSave} disabled={isSaving || !formData.name.trim()}>
-                {isSaving ? "Saving…" : "Save"}
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-                <Pencil className="h-4 w-4" />
-                Edit
-              </Button>
-              <Button size="sm" asChild>
-                <Link to="/shots/new" search={{ beanId: bean.id }}>
-                  <Plus className="h-4 w-4" />
-                  Log a shot
-                </Link>
-              </Button>
-            </>
-          )}
-          <DeleteConfirmation
-            title="Delete this bean?"
-            description="This will also remove it from any shot records. This action cannot be undone."
-            onConfirm={handleDelete}
-            trigger={
-              <Button variant="ghost" size="icon-sm" aria-label="Delete bean">
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            }
-          />
-        </div>
-      </div>
-
+      <BeanDetailHeader
+        bean={bean}
+        formData={formData}
+        roasters={roasters}
+        isEditing={isEditing}
+        isSaving={isSaving}
+        onToggleArchive={async () => {
+          await updateBean({ data: { id: bean.id, isArchived: !bean.isArchived } })
+          await router.invalidate()
+        }}
+        onStartEdit={() => setIsEditing(true)}
+        onCancelEdit={() => { setFormData(toBeanFormValues(bean)); setIsEditing(false) }}
+        onSave={handleSave}
+        onDelete={async () => { await deleteBean({ data: bean.id }); await navigate({ to: "/beans" }) }}
+      />
       {isEditing ? (
-        <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
-          <div className="space-y-6">
-           <Card>
-             <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-4">
-               <CardTitle>Basic Info</CardTitle>
-               {researchEnabled && (
-                 <Button
-                   variant="outline"
-                   size="sm"
-                   onClick={handleResearchOnline}
-                   disabled={isResearching || extractingImageId !== null || !formData.name.trim()}
-                   aria-busy={isResearching}
-                   className="h-11 sm:h-11 [@media(hover:hover)]:h-8"
-                 >
-                   {isResearching ? (
-                     <Loader2 className="h-4 w-4 animate-spin" />
-                   ) : (
-                     <Search className="h-4 w-4" />
-                   )}
-                   {isResearching ? "Researching…" : "Research online"}
-                 </Button>
-               )}
-               <span className="sr-only" role="status">
-                 {isResearching ? "Researching for bean information" : ""}
-               </span>
-             </CardHeader>
-             <CardContent className="space-y-4">
-               <div className="grid gap-4 sm:grid-cols-2">
-                 <InputField
-                   id="name"
-                   label="Name"
-                   placeholder="e.g., Ethiopia Yirgacheffe"
-                   value={formData.name}
-                   onChange={(value) =>
-                     setFormData({ ...formData, name: value })
-                   }
-                   required
-                 />
-
-                 <RoasterPicker
-                    id="roasterId"
-                    label="Roaster"
-                    placeholder="Select roaster"
-                    value={formData.roasterId}
-                    onChange={(value) =>
-                      setFormData({ ...formData, roasterId: value })
-                    }
-                    roasters={roasters}
-                  />
-
-                 <InputField
-                   id="weight"
-                   label="Bag Weight (g)"
-                   type="number"
-                   placeholder="e.g., 250"
-                   value={formData.weight}
-                   onChange={(value) =>
-                     setFormData({ ...formData, weight: value })
-                   }
-                 />
-                 <div className="flex gap-2">
-                   <div className="flex-1">
-                     <InputField
-                       id="price"
-                       label="Price"
-                       type="number"
-                       step="0.01"
-                       placeholder="e.g., 15.00"
-                       value={formData.price}
-                       onChange={(value) =>
-                         setFormData({ ...formData, price: value })
-                       }
-                     />
-                   </div>
-                   <div className="w-24">
-                     <InputField
-                       id="priceCurrency"
-                       label="Currency"
-                       placeholder="EUR"
-                       value={formData.priceCurrency}
-                       onChange={(value) =>
-                         setFormData({ ...formData, priceCurrency: value })
-                       }
-                     />
-                   </div>
-                 </div>
-                 <InputField
-                   id="shopUrl"
-                   label="Shop URL"
-                   type="url"
-                   placeholder="https://..."
-                   value={formData.shopUrl}
-                   onChange={(value) =>
-                     setFormData({ ...formData, shopUrl: value })
-                   }
-                 />
-               </div>
-             </CardContent>
-           </Card>
-
-           <Card>
-             <CardHeader>
-               <CardTitle>Origin</CardTitle>
-             </CardHeader>
-             <CardContent className="space-y-4">
-               <div className="grid gap-4 sm:grid-cols-2">
-                 <InputField
-                   id="origin"
-                   label="Country"
-                   placeholder="e.g., Ethiopia"
-                   value={formData.origin}
-                   onChange={(value) =>
-                     setFormData({ ...formData, origin: value })
-                   }
-                 />
-
-                 <InputField
-                   id="region"
-                   label="Region"
-                   placeholder="e.g., Yirgacheffe"
-                   value={formData.region}
-                   onChange={(value) =>
-                     setFormData({ ...formData, region: value })
-                   }
-                 />
-
-                 <InputField
-                   id="farm"
-                   label="Farm/Producer"
-                   placeholder="e.g., Konga Cooperative"
-                   value={formData.farm}
-                   onChange={(value) =>
-                     setFormData({ ...formData, farm: value })
-                   }
-                 />
-
-                 <InputField
-                   id="variety"
-                   label="Variety"
-                   placeholder="e.g., Heirloom"
-                   value={formData.variety}
-                   onChange={(value) =>
-                     setFormData({ ...formData, variety: value })
-                   }
-                 />
-               </div>
-             </CardContent>
-           </Card>
-
-           <Card>
-             <CardHeader>
-               <CardTitle>Processing</CardTitle>
-             </CardHeader>
-             <CardContent className="space-y-4">
-               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-                 <SelectField
-                   id="process"
-                   label="Process"
-                   placeholder="Select process"
-                   value={formData.process}
-                   onChange={(value) =>
-                     setFormData({ ...formData, process: value ?? "" })
-                   }
-                   options={PROCESS_METHODS}
-                 />
-
-                 <SelectField
-                   id="roastLevel"
-                   label="Roast Level"
-                   placeholder="Select level"
-                   value={formData.roastLevel}
-                   onChange={(value) =>
-                     setFormData({
-                       ...formData,
-                       roastLevel: (value ?? "") as RoastLevel | "",
-                     })
-                   }
-                   options={ROAST_LEVELS}
-                 />
-
-                 <InputField
-                   id="roastDate"
-                   label="Roast Date"
-                   type="date"
-                   value={formData.roastDate}
-                   onChange={(value) =>
-                     setFormData({ ...formData, roastDate: value })
-                   }
-                 />
-               </div>
-             </CardContent>
-           </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Notes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <TextareaField
-                  id="notes"
-                  label=""
-                  placeholder="Tasting notes, brewing tips, or other observations"
-                  value={formData.notes}
-                  onChange={(value) =>
-                    setFormData({ ...formData, notes: value })
-                  }
-                  rows={4}
-                />
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="space-y-6">
-            <EntityImageGallery
-              entityType="beans"
-              entityId={bean.id}
-              images={bean.images}
-              onImagesChange={() => router.invalidate()}
-              imageAction={visionEnabled
-                ? {
-                    label: "Fill from image",
-                    pendingImageId: extractingImageId,
-                    disabled: isResearching,
-                    onSelect: handleExtractFromImage,
-                  }
-                : undefined}
-            />
-          </div>
-        </div>
+        <BeanEditContent
+          bean={bean}
+          formData={formData}
+          setFormData={setFormData}
+          roasters={roasters}
+          researchEnabled={researchEnabled}
+          visionEnabled={visionEnabled}
+          isResearching={isResearching}
+          extractingImageId={extractingImageId}
+          onResearch={handleResearchOnline}
+          onExtractFromImage={handleExtractFromImage}
+          onImagesChange={() => router.invalidate()}
+        />
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
-          <div className="space-y-6">
-          {weightStats && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Remaining Weight</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Progress value={weightStats.percentRemaining}>
-                  <ProgressLabel>
-                    {weightStats.remainingWeight.toFixed(0)}g remaining
-                  </ProgressLabel>
-                  <ProgressValue>
-                    {(formattedValue) =>
-                      `${formattedValue ?? `${weightStats.percentRemaining}`}% of ${weightStats.initialWeight.toFixed(0)}g`
-                    }
-                  </ProgressValue>
-                </Progress>
-                <p className="text-sm text-muted-foreground">
-                  {weightStats.usedWeight.toFixed(1)}g used across {shots.length} shot{shots.length !== 1 ? "s" : ""}
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {(bean.price || bean.shopUrl) && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Purchase Info</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  {bean.price && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Price</p>
-                      <p className="font-medium">
-                        {bean.price} {bean.priceCurrency || "EUR"}
-                      </p>
-                    </div>
-                  )}
-                  {bean.shopUrl && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Shop</p>
-                      <a
-                        href={bean.shopUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-medium text-primary hover:underline"
-                      >
-                        Visit shop →
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Origin</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Country</p>
-                  <p className="font-medium">{bean.origin || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Region</p>
-                  <p className="font-medium">{bean.region || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Farm/Producer</p>
-                  <p className="font-medium">{bean.farm || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Variety</p>
-                  <p className="font-medium">{bean.variety || "-"}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Processing</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Process</p>
-                  <p className="font-medium">{bean.process || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Roast Level</p>
-                  <p className="font-medium capitalize">
-                    {bean.roastLevel?.replace("_", " ") || "-"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Roast Date</p>
-                  <p className="font-medium">
-                    {bean.roastDate
-                      ? new Date(bean.roastDate).toLocaleDateString()
-                      : "-"}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {bean.notes && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Notes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="whitespace-pre-wrap">{bean.notes}</p>
-              </CardContent>
-            </Card>
-          )}
-          </div>
-
-          {bean.images.length > 0 && (
-            <div className="space-y-6">
-              <EntityImageGallery
-                entityType="beans"
-                entityId={bean.id}
-                images={bean.images}
-                
-                onImagesChange={() => router.invalidate()}
-                readOnly
-              />
-            </div>
-          )}
-        </div>
+        <BeanReadOnlyContent bean={bean} shotCount={shots.length} weightStats={weightStats} onImagesChange={() => router.invalidate()} />
       )}
-
       <ShotParameterCharts shots={shots} />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Shot History</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ShotsTable shots={shots} hideBean />
-        </CardContent>
-      </Card>
-
+      <Card><CardHeader><CardTitle>Shot History</CardTitle></CardHeader><CardContent><ShotsTable shots={shots} hideBean /></CardContent></Card>
       {suggestedData && (
         <BeanInfoDiffModal
           open={diffModalOpen}
           onOpenChange={setDiffModalOpen}
           currentData={formData}
           suggestedData={suggestedData}
-          onApply={handleApplyDiff}
+          onApply={(updates: Partial<BeanFormData>) => {
+            setFormData((current) => ({ ...current, ...updates }))
+            toast.success(`Applied ${Object.keys(updates).length} changes`)
+          }}
           source={aiSource}
         />
       )}

@@ -6,9 +6,10 @@ import {
   UtensilsCrossed,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { EmptyState } from "@/components/EmptyState"
 import { CoffeeShopCard } from "@/components/coffee-shops/coffee-shop-card"
-import { VisitsMap } from "@/components/visits/visits-map"
+import { CoffeeShopMap } from "@/components/coffee-shops/coffee-shop-map"
 import { getFeaturedCoffeeShops } from "@/lib/coffee-shop-ranking"
 import { getCafeVisits } from "@/lib/server/cafe-visits"
 import { getCoffeeShops } from "@/lib/server/coffee-shops"
@@ -98,21 +99,30 @@ function VisitsPage() {
             </Button>
           }
         />
-
-        <VisitsMap coffeeShops={coffeeShops} visits={visits} />
-
-        {featuredCoffeeShops.length > 0 && (
-          <div className="space-y-3 pt-2">
-            <h3 className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
-              Quick picks · {featuredCoffeeShops.length}
-            </h3>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {featuredCoffeeShops.map((coffeeShop) => (
-                <CoffeeShopCard key={coffeeShop.id} coffeeShop={coffeeShop} />
-              ))}
-            </div>
+        <div className="grid items-stretch gap-4 lg:grid-cols-4">
+          <div className="min-w-0 lg:col-span-3">
+            <CoffeeShopMap coffeeShops={coffeeShops} visits={visits} />
           </div>
-        )}
+
+          {featuredCoffeeShops.length > 0 && (
+            <aside className="min-w-0 space-y-3 lg:col-span-1 lg:flex lg:min-h-0 lg:flex-col lg:space-y-0 lg:gap-3">
+              <h3 className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                Quick picks · {featuredCoffeeShops.length}
+              </h3>
+              <ScrollArea className="lg:h-[540px]">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 lg:pr-3">
+                  {featuredCoffeeShops.map((coffeeShop) => (
+                    <CoffeeShopCard
+                      key={coffeeShop.id}
+                      coffeeShop={coffeeShop}
+                      emphasizeFavorite
+                    />
+                  ))}
+                </div>
+              </ScrollArea>
+            </aside>
+          )}
+        </div>
       </section>
 
       <section className="space-y-3">

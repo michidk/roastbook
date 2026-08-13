@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { CoffeeShopForm } from "@/components/coffee-shops/coffee-shop-form"
 import { FormPageHeader } from "@/components/form/form-shell"
 
-export const Route = createFileRoute("/coffee-shops/new")({
+export const Route = createFileRoute("/shops/new")({
   component: NewCoffeeShopPage,
 })
 
@@ -15,11 +15,11 @@ function NewCoffeeShopPage() {
       <CoffeeShopForm
         onCreated={(coffeeShop) =>
           navigate({
-            to: "/coffee-shops/$coffeeShopId",
+            to: "/shops/$coffeeShopId",
             params: { coffeeShopId: String(coffeeShop.id) },
           })
         }
-        onCancel={() => navigate({ to: "/coffee-shops" })}
+        onCancel={() => navigate({ to: "/shops" })}
       />
     </div>
   )

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertTriangle, RefreshCw, ArrowLeft } from "lucide-react"
 import { getErrorDisplayState } from "@/lib/error-display"
+import { ErrorDetails } from "@/components/error-details"
 
 interface RouteErrorProps {
   error: Error
@@ -44,15 +45,8 @@ export function RouteError({ error, backTo, backLabel = "Go back" }: RouteErrorP
               Try again
             </Button>
           </div>
-          {process.env.NODE_ENV === "development" && error.stack && (
-            <details className="mt-4">
-              <summary className="text-xs text-muted-foreground cursor-pointer">
-                Error details
-              </summary>
-              <pre className="mt-2 text-xs bg-muted p-2 rounded overflow-auto max-h-32">
-                {error.stack}
-              </pre>
-            </details>
+          {process.env.NODE_ENV === "development" && (
+            <ErrorDetails error={error} />
           )}
         </CardContent>
       </Card>

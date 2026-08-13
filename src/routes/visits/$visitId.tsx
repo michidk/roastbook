@@ -180,7 +180,7 @@ function VisitDetailPage() {
                       <p className="font-medium">{visit.coffeeShop.name}</p>
                       <Button variant="ghost" size="icon" asChild className="h-8 w-8">
                         <Link
-                          to="/coffee-shops/$coffeeShopId"
+                          to="/shops/$coffeeShopId"
                           params={{ coffeeShopId: String(visit.coffeeShop.id) }}
                           aria-label={`View ${visit.coffeeShop.name} details`}
                         >

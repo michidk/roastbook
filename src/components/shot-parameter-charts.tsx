@@ -10,10 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 type Shot = {
   id: number
-  actualDoseGrams: string | null
-  actualYieldGrams: string | null
+  doseGrams: string | null
+  yieldGrams: string | null
   grindSetting: string | null
-  actualShotTimeSeconds: string | null
+  shotTimeSeconds: string | null
   createdAt: Date | string
 }
 
@@ -52,7 +52,7 @@ function formatDate(date: Date | string) {
 function parseGrindSetting(grindSetting: string | null): number | null {
   if (!grindSetting) return null
   const num = parseFloat(grindSetting.replace(/[^\d.-]/g, ""))
-  return isNaN(num) ? null : num
+  return Number.isNaN(num) ? null : num
 }
 
 type ChartDatum = {
@@ -105,8 +105,8 @@ export function ShotParameterCharts({ shots }: ShotParameterChartsProps) {
     )
 
     return sortedShots.map((shot, index) => {
-      const dose = shot.actualDoseGrams ? parseFloat(shot.actualDoseGrams) : null
-      const yieldG = shot.actualYieldGrams ? parseFloat(shot.actualYieldGrams) : null
+      const dose = shot.doseGrams ? parseFloat(shot.doseGrams) : null
+      const yieldG = shot.yieldGrams ? parseFloat(shot.yieldGrams) : null
       const grind = parseGrindSetting(shot.grindSetting)
       const ratio = dose && yieldG ? Math.round((yieldG / dose) * 100) / 100 : null
 
@@ -116,8 +116,8 @@ export function ShotParameterCharts({ shots }: ShotParameterChartsProps) {
         dose,
         yield: yieldG,
         grind,
-        time: shot.actualShotTimeSeconds
-          ? parseFloat(shot.actualShotTimeSeconds)
+        time: shot.shotTimeSeconds
+          ? parseFloat(shot.shotTimeSeconds)
           : null,
         ratio,
       }

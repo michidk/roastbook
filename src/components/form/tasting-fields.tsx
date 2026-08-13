@@ -161,10 +161,10 @@ function TasteTagGroup({
   readonly onToggleTag: (tagId: number) => void
 }) {
   return (
-    <div role="group" aria-labelledby={id} className="space-y-2">
-      <p id={id} className={cn("text-sm font-medium", labelClassName)}>
+    <fieldset className="min-w-0 space-y-2 border-0 p-0">
+      <legend id={id} className={cn("text-sm font-medium", labelClassName)}>
         {label}
-      </p>
+      </legend>
       <div className="flex flex-wrap gap-2">
         {tags.map((tag) => {
           const isSelected = selectedTagIds.includes(tag.id)
@@ -185,7 +185,7 @@ function TasteTagGroup({
           )
         })}
       </div>
-    </div>
+    </fieldset>
   )
 }
 

@@ -1,6 +1,7 @@
 import * as schema from "../src/db/schema"
 import { client, db } from "./database"
 import { TASTE_TAGS } from "./taste-tags"
+import { DEFAULT_BREWING_METHODS } from "../src/lib/brewing-methods"
 
 const ROASTERS = [
   {
@@ -234,8 +235,28 @@ function randomElement<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]
 }
 
+function randomSubset<T>(items: readonly T[], min: number, max: number): T[] {
+  const count = randomInt(min, max)
+  return [...items].sort(() => Math.random() - 0.5).slice(0, count)
+}
+
 async function seed() {
   console.log("🌱 Seeding database...")
+
+  console.log("  → Inserting brewing methods...")
+  await db
+    .insert(schema.brewingMethods)
+    .values(DEFAULT_BREWING_METHODS.map((method) => ({
+      name: method.name,
+      description: method.description,
+      enabledParameters: [...method.enabledParameters],
+      timerEnabled: method.timerEnabled,
+    })))
+    .onConflictDoNothing()
+  const espressoMethod = await db.query.brewingMethods.findFirst({
+    where: (methods, { eq }) => eq(methods.name, "Espresso"),
+  })
+  if (!espressoMethod) throw new Error("Espresso brewing method is missing")
 
   console.log("  → Inserting taste tags...")
   const insertedTags = await db
@@ -280,13 +301,13 @@ async function seed() {
       beanId: bean?.id ?? null,
       grinderId: grinder?.id ?? null,
       machineId: machine?.id ?? null,
-      brewingMethod: "espresso" as const,
+      brewingMethodId: espressoMethod.id,
       doseGrams: (17 + Math.random() * 2).toFixed(1),
       yieldGrams: (34 + Math.random() * 8).toFixed(1),
-      brewTimeSeconds: randomInt(24, 35),
+      shotTimeSeconds: String(randomInt(24, 35)),
       grindSetting: String(randomInt(10, 20)),
-      waterTempCelsius: (92 + Math.random() * 4).toFixed(1),
-      pressure: (8 + Math.random() * 2).toFixed(1),
+      brewTemperatureCelsius: (92 + Math.random() * 4).toFixed(1),
+      brewPressureBar: (8 + Math.random() * 2).toFixed(1),
       rating: randomInt(3, 5),
       notes: randomElement([
         "Good balance, slight channeling at the end.",
@@ -306,12 +327,10 @@ async function seed() {
   console.log("  → Adding taste tags to shots...")
   const shotTagData = []
   for (const shot of insertedShots) {
-    const numTags = randomInt(1, 4)
-    const shuffled = [...allTags].sort(() => Math.random() - 0.5)
-    for (let i = 0; i < numTags && i < shuffled.length; i++) {
+    for (const tag of randomSubset(allTags, 1, 4)) {
       shotTagData.push({
         shotId: shot.id,
-        tasteTagId: shuffled[i].id,
+        tasteTagId: tag.id,
       })
     }
   }
@@ -351,12 +370,10 @@ async function seed() {
   console.log("  → Adding taste tags to visits...")
   const visitTagData = []
   for (const visit of insertedVisits) {
-    const numTags = randomInt(0, 3)
-    const shuffled = [...allTags].sort(() => Math.random() - 0.5)
-    for (let i = 0; i < numTags && i < shuffled.length; i++) {
+    for (const tag of randomSubset(allTags, 0, 3)) {
       visitTagData.push({
         cafeVisitId: visit.id,
-        tasteTagId: shuffled[i].id,
+        tasteTagId: tag.id,
       })
     }
   }

@@ -26,3 +26,6 @@ todos.json
 !public/roastbook-logo.png
 logs/
 .omo/
+
+# Repository-local Codacy CLI installation
+.codacy/

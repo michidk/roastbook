@@ -1,70 +1,45 @@
-import { createServerFn } from "@tanstack/react-start"
-import { asc, desc, eq } from "drizzle-orm"
-import { db } from "@/db"
-import { recipeEnabledFields, recipeGear, recipes } from "@/db/schema"
+import { createServerFn } from '@tanstack/react-start'
+import { desc, eq } from 'drizzle-orm'
+import { db } from '@/db'
+import { recipes, shots } from '@/db/schema'
+import { projectShotParameters } from '@/lib/server/shot-parameter-projection'
 import {
-  isRecipeFieldKey,
-  type RecipeFieldKey,
-  type RecipeValues,
-} from "@/lib/recipe-fields"
+  assertValidUpdate,
+  getShotUpdateErrors,
+  type ShotUpdateCandidate,
+} from '@/lib/update-validation'
 
-export type RecipeMutation = RecipeValues & {
-  readonly accessoryIds: readonly number[]
+type RecipeUpdate = Omit<
+  ShotUpdateCandidate,
+  'rating' | 'notes' | 'tasteTagIds'
+> & {
+  readonly name: string
+  readonly beanId: number | null
+}
+
+class RecipeInputError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'RecipeInputError'
+  }
 }
 
 const recipeRelations = {
-  bean: true,
+  bean: { with: { images: true, roasterRef: true } },
+  machine: true,
   grinder: true,
   basket: true,
-  enabledFields: true,
-  gear: { with: { gear: true } },
+  brewingMethod: true,
 } as const
 
-function toRecipeRow(data: RecipeValues) {
-  const { enabledFields: _enabledFields, ...values } = data
-  return values
-}
-
-async function replaceRecipeRelations(
-  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
-  recipeId: number,
-  enabledFields: readonly RecipeFieldKey[],
-  accessoryIds: readonly number[],
-) {
-  await tx
-    .delete(recipeEnabledFields)
-    .where(eq(recipeEnabledFields.recipeId, recipeId))
-  await tx.delete(recipeGear).where(eq(recipeGear.recipeId, recipeId))
-
-  if (enabledFields.length > 0) {
-    await tx.insert(recipeEnabledFields).values(
-      [...new Set(enabledFields)].map((fieldKey) => ({ recipeId, fieldKey })),
-    )
-  }
-  if (accessoryIds.length > 0) {
-    await tx.insert(recipeGear).values(
-      [...new Set(accessoryIds)].map((gearId) => ({ recipeId, gearId })),
-    )
-  }
-}
-
-export const getAllRecipes = createServerFn({ method: "GET" }).handler(
-  async () =>
-    db.query.recipes.findMany({
-      orderBy: [asc(recipes.isArchived), desc(recipes.updatedAt)],
-      with: recipeRelations,
-    }),
-)
-
-export const getRecipes = createServerFn({ method: "GET" }).handler(async () =>
+export const getRecipes = createServerFn({ method: 'GET' }).handler(async () =>
   db.query.recipes.findMany({
-    where: eq(recipes.isArchived, false),
     orderBy: [desc(recipes.updatedAt)],
     with: recipeRelations,
   }),
 )
 
-export const getRecipe = createServerFn({ method: "GET" })
+export const getRecipe = createServerFn({ method: 'GET' })
   .validator((id: number) => id)
   .handler(async ({ data: id }) =>
     db.query.recipes.findFirst({
@@ -73,108 +48,64 @@ export const getRecipe = createServerFn({ method: "GET" })
     }),
   )
 
-export const createRecipe = createServerFn({ method: "POST" })
-  .validator((data: RecipeMutation) => data)
+export const updateRecipe = createServerFn({ method: 'POST' })
+  .validator((data: RecipeUpdate) => {
+    const name = data.name.trim()
+    if (!name) throw new RecipeInputError('Enter a recipe name')
+    assertValidUpdate(getShotUpdateErrors(data))
+    return { ...data, name }
+  })
   .handler(async ({ data }) =>
     db.transaction(async (tx) => {
-      const { accessoryIds, ...recipeValues } = data
-      const [recipe] = await tx
-        .insert(recipes)
-        .values(toRecipeRow(recipeValues))
-        .returning()
-      if (!recipe) return null
-      await replaceRecipeRelations(
-        tx,
-        recipe.id,
-        data.enabledFields,
-        accessoryIds,
-      )
-      return recipe
-    }),
-  )
+      const method = await tx.query.brewingMethods.findFirst({
+        where: (brewingMethods, { eq }) =>
+          eq(brewingMethods.id, data.brewingMethodId),
+      })
+      if (!method) throw new RecipeInputError('Brewing method not found')
 
-export const updateRecipe = createServerFn({ method: "POST" })
-  .validator((data: RecipeMutation & { readonly id: number }) => data)
-  .handler(async ({ data }) =>
-    db.transaction(async (tx) => {
-      const { id, accessoryIds, ...recipeValues } = data
+      const { id, name, brewingMethodId, beanId, ...parameters } = data
       const [recipe] = await tx
         .update(recipes)
-        .set({ ...toRecipeRow(recipeValues), updatedAt: new Date() })
+        .set({
+          name,
+          brewingMethodId,
+          beanId,
+          ...projectShotParameters(parameters, method.enabledParameters),
+          updatedAt: new Date(),
+        })
         .where(eq(recipes.id, id))
         .returning()
-      if (!recipe) return null
-      await replaceRecipeRelations(tx, id, data.enabledFields, accessoryIds)
+      if (!recipe) throw new RecipeInputError('Recipe not found')
       return recipe
     }),
   )
 
-export const setRecipeArchived = createServerFn({ method: "POST" })
-  .validator(
-    (data: { readonly id: number; readonly isArchived: boolean }) => data,
-  )
+export const saveShotAsRecipe = createServerFn({ method: 'POST' })
+  .validator((data: { readonly shotId: number; readonly name: string }) => ({
+    shotId: data.shotId,
+    name: data.name.trim(),
+  }))
   .handler(async ({ data }) => {
+    if (!data.name) return null
+    const shot = await db.query.shots.findFirst({
+      where: eq(shots.id, data.shotId),
+      with: { brewingMethod: true },
+    })
+    if (!shot) return null
+
     const [recipe] = await db
-      .update(recipes)
-      .set({ isArchived: data.isArchived, updatedAt: new Date() })
-      .where(eq(recipes.id, data.id))
+      .insert(recipes)
+      .values({
+        name: data.name,
+        brewingMethodId: shot.brewingMethodId,
+        beanId: shot.beanId,
+        ...projectShotParameters(shot, shot.brewingMethod.enabledParameters),
+      })
       .returning()
-    return recipe
+    return recipe ?? null
   })
 
-export const duplicateRecipe = createServerFn({ method: "POST" })
-  .validator((id: number) => id)
-  .handler(async ({ data: id }) =>
-    db.transaction(async (tx) => {
-      const source = await tx.query.recipes.findFirst({
-        where: eq(recipes.id, id),
-        with: recipeRelations,
-      })
-      if (!source) return null
-
-      const [copy] = await tx
-        .insert(recipes)
-        .values({
-          name: `${source.name} copy`,
-          brewingMethod: source.brewingMethod,
-          beanId: source.beanId,
-          targetDoseGrams: source.targetDoseGrams,
-          brewWaterGrams: source.brewWaterGrams,
-          ratioBasis: source.ratioBasis,
-          grinderId: source.grinderId,
-          grindSetting: source.grindSetting,
-          targetYieldGrams: source.targetYieldGrams,
-          targetTimeMinSeconds: source.targetTimeMinSeconds,
-          targetTimeMaxSeconds: source.targetTimeMaxSeconds,
-          brewTemperatureCelsius: source.brewTemperatureCelsius,
-          preinfusionTimeSeconds: source.preinfusionTimeSeconds,
-          preinfusionPressureBar: source.preinfusionPressureBar,
-          bloomTimeSeconds: source.bloomTimeSeconds,
-          targetBrewPressureBar: source.targetBrewPressureBar,
-          targetFlowRateMlPerSecond: source.targetFlowRateMlPerSecond,
-          basketId: source.basketId,
-          usesPuckScreen: source.usesPuckScreen,
-          paperFilterPosition: source.paperFilterPosition,
-          distributionMethod: source.distributionMethod,
-          tampForceKg: source.tampForceKg,
-          notes: source.notes,
-        })
-        .returning()
-      if (!copy) return null
-
-      await replaceRecipeRelations(
-        tx,
-        copy.id,
-        source.enabledFields
-          .map(({ fieldKey }) => fieldKey)
-          .filter(isRecipeFieldKey),
-        source.gear.map(({ gearId }) => gearId),
-      )
-      return copy
-    }),
-  )
-
-export const deleteRecipe = createServerFn({ method: "POST" })
+export const deleteRecipe = createServerFn({ method: 'POST' })
   .validator((id: number) => id)
   .handler(async ({ data: id }) => {
     await db.delete(recipes).where(eq(recipes.id, id))

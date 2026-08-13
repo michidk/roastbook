@@ -21,7 +21,16 @@
       "react": "recommended"
     },
     "rules": {
-      "preset": "recommended"
+      "preset": "recommended",
+      "complexity": {
+        "noImportantStyles": "off"
+      },
+      "performance": {
+        "noImgElement": "off"
+      },
+      "style": {
+        "noDescendingSpecificity": "off"
+      }
     }
   },
   "javascript": {

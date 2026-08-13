@@ -6,6 +6,12 @@ export type { StorageProvider }
 
 let storageInstance: StorageProvider | null = null
 
+function requireEnvironmentVariable(name: string): string {
+  const value = process.env[name]
+  if (!value) throw new Error(`${name} environment variable is required`)
+  return value
+}
+
 function createStorage(config: StorageConfig): StorageProvider {
   if (config.provider === "s3" && config.s3) {
     return new S3StorageProvider(config.s3)
@@ -26,11 +32,11 @@ export function getStorage(): StorageProvider {
       storageInstance = createStorage({
         provider: "s3",
         s3: {
-          bucket: process.env.S3_BUCKET!,
+          bucket: requireEnvironmentVariable("S3_BUCKET"),
           region: process.env.S3_REGION || "us-east-1",
           endpoint: process.env.S3_ENDPOINT,
-          accessKeyId: process.env.S3_ACCESS_KEY_ID!,
-          secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
+          accessKeyId: requireEnvironmentVariable("S3_ACCESS_KEY_ID"),
+          secretAccessKey: requireEnvironmentVariable("S3_SECRET_ACCESS_KEY"),
         },
       })
     } else {

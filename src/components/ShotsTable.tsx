@@ -7,7 +7,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
@@ -24,9 +23,9 @@ import {
 type Shot = {
   id: number
   createdAt: Date
-  actualDoseGrams: string | null
-  actualYieldGrams: string | null
-  actualShotTimeSeconds: string | null
+  doseGrams: string | null
+  yieldGrams: string | null
+  shotTimeSeconds: string | null
   rating: number | null
   bean: {
     id: number
@@ -36,15 +35,11 @@ type Shot = {
       isThumbnail: boolean | null
     }>
   } | null
-  recipe: {
-    name: string
-  } | null
 }
 
 interface ShotsTableProps {
   shots: Shot[]
   hideBean?: boolean
-  hideGear?: boolean
 }
 
 const PAGE_SIZE = 25
@@ -60,16 +55,16 @@ function getBeanThumbnail(bean: Shot["bean"]): string | null {
 
 function formatShotSummary(shot: Shot): string {
   const parts: string[] = []
-  if (shot.actualDoseGrams && shot.actualYieldGrams) {
-    parts.push(`${shot.actualDoseGrams}g → ${shot.actualYieldGrams}g`)
-  } else if (shot.actualDoseGrams) {
-    parts.push(`${shot.actualDoseGrams}g dose`)
-  } else if (shot.actualYieldGrams) {
-    parts.push(`${shot.actualYieldGrams}g yield`)
+  if (shot.doseGrams && shot.yieldGrams) {
+    parts.push(`${shot.doseGrams}g → ${shot.yieldGrams}g`)
+  } else if (shot.doseGrams) {
+    parts.push(`${shot.doseGrams}g dose`)
+  } else if (shot.yieldGrams) {
+    parts.push(`${shot.yieldGrams}g yield`)
   } else {
     parts.push("No dose/yield recorded")
   }
-  if (shot.actualShotTimeSeconds) parts.push(`${shot.actualShotTimeSeconds}s`)
+  if (shot.shotTimeSeconds) parts.push(`${shot.shotTimeSeconds}s`)
   return parts.join(" · ")
 }
 
@@ -122,20 +117,20 @@ function compareShots(
       )
     case "dose":
       return compareNullableNumber(
-        parseNullableFloat(left.actualDoseGrams),
-        parseNullableFloat(right.actualDoseGrams),
+        parseNullableFloat(left.doseGrams),
+        parseNullableFloat(right.doseGrams),
         direction,
       )
     case "yield":
       return compareNullableNumber(
-        parseNullableFloat(left.actualYieldGrams),
-        parseNullableFloat(right.actualYieldGrams),
+        parseNullableFloat(left.yieldGrams),
+        parseNullableFloat(right.yieldGrams),
         direction,
       )
     case "time":
       return compareNullableNumber(
-        parseNullableFloat(left.actualShotTimeSeconds),
-        parseNullableFloat(right.actualShotTimeSeconds),
+        parseNullableFloat(left.shotTimeSeconds),
+        parseNullableFloat(right.shotTimeSeconds),
         direction,
       )
     case "rating":
@@ -147,12 +142,11 @@ function getShotSortDirection(key: SortKey): SortDirection {
   return key === "date" || key === "rating" ? "desc" : "asc"
 }
 
-export function ShotsTable({ shots, hideBean, hideGear }: ShotsTableProps) {
+export function ShotsTable({ shots, hideBean }: ShotsTableProps) {
   const [search, setSearch] = useState("")
 
   // Computed once from the complete, unfiltered list so columns never
   // flicker in/out while searching or paginating.
-  const hasRecipe = useMemo(() => shots.some((shot) => Boolean(shot.recipe?.name)), [shots])
   const hasRating = useMemo(() => shots.some((shot) => Boolean(shot.rating)), [shots])
 
   const showSearch = !hideBean && shots.length > PAGE_SIZE
@@ -217,18 +211,16 @@ export function ShotsTable({ shots, hideBean, hideGear }: ShotsTableProps) {
         <p className="py-4 text-sm text-muted-foreground">No shots match “{search}”.</p>
       ) : (
         <>
-          <div className="space-y-3 md:hidden" role="list" aria-label="Recorded shots">
+          <ul className="space-y-3 md:hidden" aria-label="Recorded shots">
             {paginated.map((shot) => (
               <MobileShotCard
                 key={shot.id}
                 shot={shot}
                 hideBean={hideBean}
-                hideGear={hideGear}
-                hasRecipe={hasRecipe}
                 hasRating={hasRating}
               />
             ))}
-          </div>
+          </ul>
 
           <div className="hidden md:block">
             <Table>
@@ -269,7 +261,6 @@ export function ShotsTable({ shots, hideBean, hideGear }: ShotsTableProps) {
                     direction={sortDirection}
                     onSort={() => handleSort("time")}
                   />
-                  {!hideGear && hasRecipe && <TableHead>Recipe</TableHead>}
                   {hasRating && (
                     <SortableTableHead
                       label="Rating"
@@ -287,8 +278,6 @@ export function ShotsTable({ shots, hideBean, hideGear }: ShotsTableProps) {
                     key={shot.id}
                     shot={shot}
                     hideBean={hideBean}
-                    hideGear={hideGear}
-                    hasRecipe={hasRecipe}
                     hasRating={hasRating}
                   />
                 ))}
@@ -308,21 +297,17 @@ export function ShotsTable({ shots, hideBean, hideGear }: ShotsTableProps) {
 function MobileShotCard({
   shot,
   hideBean,
-  hideGear,
-  hasRecipe,
   hasRating,
 }: {
   shot: Shot
   hideBean?: boolean
-  hideGear?: boolean
-  hasRecipe: boolean
   hasRating: boolean
 }) {
   const beanThumb = getBeanThumbnail(shot.bean)
   const shotDate = formatDate(shot.createdAt)
 
   return (
-    <article role="listitem">
+    <li className="list-none">
       <Link
         to="/shots/$shotId"
         params={{ shotId: String(shot.id) }}
@@ -351,26 +336,19 @@ function MobileShotCard({
             </p>
           )}
           <p className="text-sm text-muted-foreground">{formatShotSummary(shot)}</p>
-          {!hideGear && hasRecipe && shot.recipe?.name && (
-            <p className="truncate text-xs text-muted-foreground">Recipe: {shot.recipe.name}</p>
-          )}
         </div>
       </Link>
-    </article>
+    </li>
   )
 }
 
 function ShotRow({
   shot,
   hideBean,
-  hideGear,
-  hasRecipe,
   hasRating,
 }: {
   shot: Shot
   hideBean?: boolean
-  hideGear?: boolean
-  hasRecipe: boolean
   hasRating: boolean
 }) {
   const navigate = useNavigate()
@@ -423,15 +401,14 @@ function ShotRow({
         </TableCell>
       )}
       <TableCell className="text-right">
-        {shot.actualDoseGrams ? `${shot.actualDoseGrams}g` : "-"}
+        {shot.doseGrams ? `${shot.doseGrams}g` : "-"}
       </TableCell>
       <TableCell className="text-right">
-        {shot.actualYieldGrams ? `${shot.actualYieldGrams}g` : "-"}
+        {shot.yieldGrams ? `${shot.yieldGrams}g` : "-"}
       </TableCell>
       <TableCell className="text-right">
-        {shot.actualShotTimeSeconds ? `${shot.actualShotTimeSeconds}s` : "-"}
+        {shot.shotTimeSeconds ? `${shot.shotTimeSeconds}s` : "-"}
       </TableCell>
-      {!hideGear && hasRecipe && <TableCell>{shot.recipe?.name || "-"}</TableCell>}
       {hasRating && (
         <TableCell className="text-right">
           {shot.rating ? <Badge variant="secondary">{shot.rating}/5</Badge> : "-"}

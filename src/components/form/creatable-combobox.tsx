@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Plus } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import {
@@ -55,6 +55,8 @@ export interface CreatableComboboxProps<T> {
   placeholder?: string
   searchPlaceholder?: string
   emptyMessage?: string
+  readonly autoSelectSingleItem?: boolean
+  readonly emptyStateMessage?: string
   required?: boolean
   disabled?: boolean
   className?: string
@@ -76,6 +78,8 @@ export function CreatableCombobox<T>({
   placeholder = "Select an option",
   searchPlaceholder = "Search…",
   emptyMessage = "No matches.",
+  autoSelectSingleItem = false,
+  emptyStateMessage,
   required,
   disabled,
   className,
@@ -135,80 +139,106 @@ export function CreatableCombobox<T>({
 
   const selected =
     itemEntries.find((entry) => entry.key === value) ?? fallbackEntry
+  const singleItemKey = itemEntries.length === 1 ? itemEntries[0]?.key : undefined
+  const showEmptyState = itemEntries.length === 0 && Boolean(emptyStateMessage)
+  const labelContent = (
+    <>
+      {label}
+      {required && " *"}
+    </>
+  )
+
+  useEffect(() => {
+    if (autoSelectSingleItem && !value && singleItemKey !== undefined) {
+      onChange(singleItemKey)
+    }
+  }, [autoSelectSingleItem, onChange, singleItemKey, value])
 
   return (
     <div className={cn("space-y-2", className)}>
-      <Label htmlFor={id}>
-        {label}
-        {required && " *"}
-      </Label>
-      <Combobox
-        items={entries}
-        value={selected}
-        onValueChange={(next: Entry | null) => {
-          if (next?.kind === "create") {
-            onCreateRequest?.(next.query)
-            return
-          }
-          onChange(next ? next.key : "")
-        }}
-        itemToStringLabel={(entry: Entry) => entry.label}
-        isItemEqualToValue={(a: Entry, b: Entry) => a.key === b.key}
-        filter={matchesQuery}
-        inputValue={query}
-        onInputValueChange={setQuery}
-        onOpenChange={(open) => {
-          if (!open) setQuery("")
-        }}
-        disabled={disabled}
-      >
-        <ComboboxTrigger id={id} autoFocus={autoFocus}>
-          <span
-            className={cn(
-              "flex flex-1 truncate text-left",
-              !selected && "text-muted-foreground"
-            )}
-          >
-            {selected ? selected.label : placeholder}
+      {showEmptyState ? (
+        <>
+          <span className="flex items-center gap-2 text-sm leading-none font-medium">
+            {labelContent}
           </span>
-        </ComboboxTrigger>
-        <ComboboxContent>
-          <ComboboxInput placeholder={searchPlaceholder} />
-          <ComboboxEmpty>{emptyMessage}</ComboboxEmpty>
-          <ComboboxList>
-            {(entry: Entry) =>
-              entry.kind === "create" ? (
-                <ComboboxItem
-                  key={entry.key}
-                  value={entry}
-                  className="border-t border-border text-primary"
-                >
-                  <Plus className="mt-0.5 self-start" />
-                  <span className="flex min-w-0 flex-col gap-0.5">
-                    <span className="truncate font-medium">{entry.label}</span>
-                    {entry.hint ? (
-                      <span className="truncate text-xs font-normal text-muted-foreground">
-                        {entry.hint}
+          <p
+            className="flex min-h-11 items-center rounded-lg border border-dashed border-border bg-secondary/50 px-3 py-2 text-sm leading-5 text-muted-foreground lg:min-h-8 lg:py-1"
+          >
+            {emptyStateMessage}
+          </p>
+        </>
+      ) : (
+        <>
+          <Label htmlFor={id}>{labelContent}</Label>
+          <Combobox
+            items={entries}
+            value={selected}
+            onValueChange={(next: Entry | null) => {
+              if (next?.kind === "create") {
+                onCreateRequest?.(next.query)
+                return
+              }
+              onChange(next ? next.key : "")
+            }}
+            itemToStringLabel={(entry: Entry) => entry.label}
+            isItemEqualToValue={(a: Entry, b: Entry) => a.key === b.key}
+            filter={matchesQuery}
+            inputValue={query}
+            onInputValueChange={setQuery}
+            onOpenChange={(open) => {
+              if (!open) setQuery("")
+            }}
+            disabled={disabled}
+          >
+            <ComboboxTrigger id={id} autoFocus={autoFocus}>
+              <span
+                className={cn(
+                  "flex flex-1 truncate text-left",
+                  !selected && "text-muted-foreground"
+                )}
+              >
+                {selected ? selected.label : placeholder}
+              </span>
+            </ComboboxTrigger>
+            <ComboboxContent>
+              <ComboboxInput placeholder={searchPlaceholder} />
+              <ComboboxEmpty>{emptyMessage}</ComboboxEmpty>
+              <ComboboxList>
+                {(entry: Entry) =>
+                  entry.kind === "create" ? (
+                    <ComboboxItem
+                      key={entry.key}
+                      value={entry}
+                      className="border-t border-border text-primary"
+                    >
+                      <Plus className="mt-0.5 self-start" />
+                      <span className="flex min-w-0 flex-col gap-0.5">
+                        <span className="truncate font-medium">{entry.label}</span>
+                        {entry.hint ? (
+                          <span className="truncate text-xs font-normal text-muted-foreground">
+                            {entry.hint}
+                          </span>
+                        ) : null}
                       </span>
-                    ) : null}
-                  </span>
-                </ComboboxItem>
-              ) : (
-                <ComboboxItem key={entry.key} value={entry}>
-                  <span className="flex min-w-0 flex-col gap-0.5">
-                    <span className="truncate">{entry.label}</span>
-                    {entry.description ? (
-                      <span className="truncate text-xs text-muted-foreground">
-                        {entry.description}
+                    </ComboboxItem>
+                  ) : (
+                    <ComboboxItem key={entry.key} value={entry}>
+                      <span className="flex min-w-0 flex-col gap-0.5">
+                        <span className="truncate">{entry.label}</span>
+                        {entry.description ? (
+                          <span className="truncate text-xs text-muted-foreground">
+                            {entry.description}
+                          </span>
+                        ) : null}
                       </span>
-                    ) : null}
-                  </span>
-                </ComboboxItem>
-              )
-            }
-          </ComboboxList>
-        </ComboboxContent>
-      </Combobox>
+                    </ComboboxItem>
+                  )
+                }
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+        </>
+      )}
     </div>
   )
 }

@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start"
 import { db } from "@/db"
 import { cafeVisits, cafeVisitTasteTags } from "@/db/schema"
 import { eq, desc } from "drizzle-orm"
-import { toDisplayableDatabaseError } from "@/lib/server/database-error"
+import { toDisplayableDatabaseError } from "@/lib/server/database-error.server"
 import {
   assertValidUpdate,
   getCafeVisitUpdateErrors,

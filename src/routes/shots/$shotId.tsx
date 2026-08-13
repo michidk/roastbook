@@ -1,20 +1,40 @@
-import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router"
-import { useRef, useState } from "react"
-import { ArrowLeft, Pencil } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { getShot, deleteShot } from "@/lib/server/shots"
-import { getActiveBeans } from "@/lib/server/beans"
-import { getRecipes } from "@/lib/server/recipes"
-import { getTasteTags } from "@/lib/server/taste-tags"
-import { DeleteConfirmation } from "@/components/DeleteConfirmation"
-import { ShotEditForm, type ShotEditData } from "@/components/shots/shot-edit-form"
-import { toast } from "sonner"
-import { getActiveGearByType } from "@/lib/server/gear"
+import {
+  createFileRoute,
+  Link,
+  useNavigate,
+  useRouter,
+} from '@tanstack/react-router'
+import { ArrowLeft, BookOpen, Pencil } from 'lucide-react'
+import { type SyntheticEvent, useRef, useState } from 'react'
+import { toast } from 'sonner'
+import { DeleteConfirmation } from '@/components/DeleteConfirmation'
+import { InputField } from '@/components/form/form-field'
+import {
+  type ShotEditData,
+  ShotEditForm,
+} from '@/components/shots/shot-edit-form'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Separator } from '@/components/ui/separator'
+import { getActiveBeans } from '@/lib/server/beans'
+import { getBrewingMethods } from '@/lib/server/brewing-methods'
+import { getGear } from '@/lib/server/gear'
+import { saveShotAsRecipe } from '@/lib/server/recipes'
+import { deleteShot, getShot } from '@/lib/server/shots'
+import { getTasteTags } from '@/lib/server/taste-tags'
 
-export const Route = createFileRoute("/shots/$shotId")({
+export const Route = createFileRoute('/shots/$shotId')({
   loader: async ({ params }) => {
     const shotId = Number(params.shotId)
     const shot = await getShot({ data: shotId })
@@ -31,19 +51,22 @@ function ShotDetailPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [isLoadingEditData, setIsLoadingEditData] = useState(false)
   const [editData, setEditData] = useState<ShotEditData | null>(null)
+  const [isRecipeDialogOpen, setIsRecipeDialogOpen] = useState(false)
+  const [recipeName, setRecipeName] = useState('')
+  const [isSavingRecipe, setIsSavingRecipe] = useState(false)
   const editButtonRef = useRef<HTMLButtonElement>(null)
 
   const handleStartEdit = async () => {
     if (!editData) {
       setIsLoadingEditData(true)
       try {
-        const [beans, recipes, tasteTags, machines] = await Promise.all([
+        const [beans, tasteTags, gear, methods] = await Promise.all([
           getActiveBeans(),
-          getRecipes(),
           getTasteTags(),
-          getActiveGearByType({ data: "espresso_machine" }),
+          getGear(),
+          getBrewingMethods(),
         ])
-        setEditData({ beans, recipes, tasteTags, machines })
+        setEditData({ beans, tasteTags, gear, methods })
       } finally {
         setIsLoadingEditData(false)
       }
@@ -65,9 +88,9 @@ function ShotDetailPage() {
   const handleDelete = async () => {
     try {
       await deleteShot({ data: shot.id })
-      navigate({ to: "/shots" })
+      navigate({ to: '/shots' })
     } catch {
-      toast.error("Failed to delete shot")
+      toast.error('Failed to delete shot')
     }
   }
 
@@ -82,63 +105,162 @@ function ShotDetailPage() {
     requestAnimationFrame(() => editButtonRef.current?.focus())
   }
 
-  const ratio = shot.actualDoseGrams && shot.actualYieldGrams
-    ? (Number(shot.actualYieldGrams) / Number(shot.actualDoseGrams)).toFixed(1)
-    : null
+  const handleSaveRecipe = async (event: SyntheticEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const name = recipeName.trim()
+    if (!name) return
+    setIsSavingRecipe(true)
+    try {
+      const recipe = await saveShotAsRecipe({ data: { shotId: shot.id, name } })
+      if (!recipe) {
+        toast.error('Could not save this recipe')
+        return
+      }
+      setRecipeName('')
+      setIsRecipeDialogOpen(false)
+      toast.success('Recipe saved')
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Could not save this recipe',
+      )
+    } finally {
+      setIsSavingRecipe(false)
+    }
+  }
 
-  const recipeGearNames = shot.recipe?.gear.map((rg) => rg.gear.name).join(", ")
+  const ratio =
+    shot.doseGrams && shot.yieldGrams
+      ? (Number(shot.yieldGrams) / Number(shot.doseGrams)).toFixed(1)
+      : null
+  const methodParameters = shot.brewingMethod.enabledParameters
+
   const extractionMetrics = [
-    shot.actualDoseGrams ? { label: "Dose", value: `${shot.actualDoseGrams}g` } : null,
-    shot.actualYieldGrams ? { label: "Yield", value: `${shot.actualYieldGrams}g` } : null,
-    ratio ? { label: "Ratio", value: `1:${ratio}` } : null,
-    shot.actualShotTimeSeconds !== null
-      ? { label: "Time", value: `${shot.actualShotTimeSeconds}s` }
+    methodParameters.includes('doseGrams') && shot.doseGrams
+      ? { label: 'Dose', value: `${shot.doseGrams}g` }
+      : null,
+    methodParameters.includes('yieldGrams') && shot.yieldGrams
+      ? { label: 'Yield', value: `${shot.yieldGrams}g` }
+      : null,
+    methodParameters.includes('yieldGrams') && ratio
+      ? { label: 'Ratio', value: `1:${ratio}` }
+      : null,
+    methodParameters.includes('shotTimeSeconds') &&
+    shot.shotTimeSeconds !== null
+      ? { label: 'Time', value: `${shot.shotTimeSeconds}s` }
       : null,
   ].filter((field) => field !== null)
   const extractionDetails = [
-    shot.grindSetting?.trim()
-      ? { label: "Grind", value: shot.grindSetting }
+    methodParameters.includes('grindSetting') && shot.grindSetting?.trim()
+      ? { label: 'Grind', value: shot.grindSetting }
       : null,
-    shot.actualTemperatureCelsius
-      ? { label: "Temperature", value: `${shot.actualTemperatureCelsius}°C` }
+    methodParameters.includes('brewTemperatureCelsius') &&
+    shot.brewTemperatureCelsius
+      ? { label: 'Temperature', value: `${shot.brewTemperatureCelsius}°C` }
       : null,
-    shot.actualPressureBar
-      ? { label: "Pressure", value: `${shot.actualPressureBar} bar` }
+    methodParameters.includes('brewPressureBar') && shot.brewPressureBar
+      ? { label: 'Pressure', value: `${shot.brewPressureBar} bar` }
       : null,
   ].filter((field) => field !== null)
-  const recipeName = shot.recipe?.name.trim()
-  const hasRecipe = Boolean(recipeName || recipeGearNames)
   const hasTasteTags = shot.tasteTags.length > 0
   const hasNotes = Boolean(shot.notes?.trim())
   const hasTasting = Boolean(shot.rating || hasTasteTags || hasNotes)
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-3 sm:gap-4">
         <Button variant="ghost" size="icon" asChild>
           <Link to="/shots" aria-label="Back to shots">
             <ArrowLeft aria-hidden className="h-4 w-4" />
           </Link>
         </Button>
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold">
-            {shot.bean?.name || "Unknown beans"}
+            {shot.bean?.name || 'Unknown beans'}
           </h1>
-          <p className="text-muted-foreground">
-            {new Date(shot.createdAt).toLocaleString()}
-          </p>
+          <time
+            dateTime={new Date(shot.createdAt).toISOString()}
+            className="text-sm text-muted-foreground"
+          >
+            {shot.brewingMethod.name} ·{' '}
+            {new Date(shot.createdAt).toLocaleDateString(undefined, {
+              dateStyle: 'medium',
+            })}{' '}
+            ·{' '}
+            {new Date(shot.createdAt).toLocaleTimeString(undefined, {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </time>
         </div>
-        {!isEditing && (
-          <Button ref={editButtonRef} variant="outline" onClick={handleStartEdit} disabled={isLoadingEditData}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Edit
-          </Button>
-        )}
-        <DeleteConfirmation
-          title="Delete this shot?"
-          description="This action cannot be undone."
-          onConfirm={handleDelete}
-        />
+        <div className="ml-14 flex items-center gap-2 sm:ml-0">
+          {!isEditing && (
+            <>
+              <Dialog
+                open={isRecipeDialogOpen}
+                onOpenChange={setIsRecipeDialogOpen}
+              >
+                <DialogTrigger render={<Button variant="outline" size="sm" />}>
+                  <BookOpen />
+                  Save as recipe
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Save as recipe</DialogTitle>
+                    <DialogDescription>
+                      Save this shot’s brewing method, equipment, and recipe
+                      values for reuse.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleSaveRecipe} className="space-y-4">
+                    <InputField
+                      id="recipe-name"
+                      label="Recipe name"
+                      value={recipeName}
+                      onChange={setRecipeName}
+                      autoFocus
+                      required
+                    />
+                    <DialogFooter>
+                      <DialogClose
+                        render={
+                          <Button
+                            type="button"
+                            variant="outline"
+                            disabled={isSavingRecipe}
+                          />
+                        }
+                      >
+                        Cancel
+                      </DialogClose>
+                      <Button
+                        type="submit"
+                        disabled={!recipeName.trim() || isSavingRecipe}
+                        aria-busy={isSavingRecipe}
+                      >
+                        {isSavingRecipe ? 'Saving…' : 'Save recipe'}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+              <Button
+                ref={editButtonRef}
+                variant="outline"
+                size="sm"
+                onClick={handleStartEdit}
+                disabled={isLoadingEditData}
+              >
+                <Pencil />
+                Edit
+              </Button>
+            </>
+          )}
+          <DeleteConfirmation
+            title="Delete this shot?"
+            description="This action cannot be undone."
+            onConfirm={handleDelete}
+          />
+        </div>
       </div>
 
       {isEditing && editData ? (
@@ -153,29 +275,34 @@ function ShotDetailPage() {
           {(extractionMetrics.length > 0 || extractionDetails.length > 0) && (
             <Card>
               <CardHeader>
-                <CardTitle>Extraction</CardTitle>
+                <CardTitle as="h2">Extraction</CardTitle>
               </CardHeader>
               <CardContent>
                 {extractionMetrics.length > 0 && (
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-4">
                     {extractionMetrics.map((field) => (
                       <div key={field.label}>
-                        <p className="text-sm text-muted-foreground">{field.label}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {field.label}
+                        </p>
                         <p className="text-xl font-semibold">{field.value}</p>
                       </div>
                     ))}
                   </div>
                 )}
 
-                {extractionMetrics.length > 0 && extractionDetails.length > 0 && (
-                  <Separator className="my-4" />
-                )}
+                {extractionMetrics.length > 0 &&
+                  extractionDetails.length > 0 && (
+                    <Separator className="my-4" />
+                  )}
 
                 {extractionDetails.length > 0 && (
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3">
                     {extractionDetails.map((field) => (
                       <div key={field.label}>
-                        <p className="text-sm text-muted-foreground">{field.label}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {field.label}
+                        </p>
                         <p className="font-medium">{field.value}</p>
                       </div>
                     ))}
@@ -185,35 +312,11 @@ function ShotDetailPage() {
             </Card>
           )}
 
-          {hasRecipe && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Recipe</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {recipeName && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Recipe</p>
-                      <p className="font-medium">{recipeName}</p>
-                    </div>
-                  )}
-                  {recipeGearNames && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Gear</p>
-                      <p className="font-medium">{recipeGearNames}</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           {hasTasting && (
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>Tasting</CardTitle>
+                  <CardTitle as="h2">Tasting</CardTitle>
                   {shot.rating && (
                     <Badge variant="secondary" className="text-lg">
                       {shot.rating}/5
@@ -227,7 +330,11 @@ function ShotDetailPage() {
                     {shot.tasteTags.map((tt) => (
                       <Badge
                         key={tt.id}
-                        variant={tt.tasteTag.category === "negative" ? "destructive" : "default"}
+                        variant={
+                          tt.tasteTag.category === 'negative'
+                            ? 'destructive'
+                            : 'default'
+                        }
                       >
                         {tt.tasteTag.name}
                       </Badge>

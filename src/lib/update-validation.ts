@@ -1,14 +1,11 @@
-export type ShotUpdateCandidate = {
+import type { ShotParameterInput } from "@/lib/shot-parameters"
+
+export type ShotUpdateCandidate = ShotParameterInput & {
   readonly id: number
+  readonly brewingMethodId: number
   readonly beanId?: number | null
-  readonly recipeId?: number | null
-  readonly machineId?: number | null
-  readonly actualDoseGrams?: string | null
-  readonly actualYieldGrams?: string | null
-  readonly actualShotTimeSeconds?: string | null
-  readonly grindSetting?: string | null
-  readonly actualTemperatureCelsius?: string | null
-  readonly actualPressureBar?: string | null
+  readonly ratioBasis?: "target_yield" | "brew_water" | null
+  readonly paperFilterPosition?: "none" | "top" | "bottom" | "both" | null
   readonly rating?: number | null
   readonly notes?: string | null
   readonly tasteTagIds?: readonly number[]
@@ -83,30 +80,33 @@ export function getShotUpdateErrors(
   data: ShotUpdateCandidate,
 ): Readonly<Record<string, string>> {
   const errors: Record<string, string> = {}
-  addError(errors, "actualDoseGrams", getDecimalError(data.actualDoseGrams, {
+  if (!Number.isInteger(data.brewingMethodId) || data.brewingMethodId <= 0) {
+    errors.brewingMethodId = "Choose a brewing method"
+  }
+  addError(errors, "doseGrams", getDecimalError(data.doseGrams, {
     label: "Dose",
     maximum: 999.99,
     fractionDigits: 2,
   }))
-  addError(errors, "actualYieldGrams", getDecimalError(data.actualYieldGrams, {
+  addError(errors, "yieldGrams", getDecimalError(data.yieldGrams, {
     label: "Yield",
     maximum: 999.99,
     fractionDigits: 2,
   }))
-  addError(errors, "actualTemperatureCelsius", getDecimalError(data.actualTemperatureCelsius, {
+  addError(errors, "brewTemperatureCelsius", getDecimalError(data.brewTemperatureCelsius, {
     label: "Water temperature",
     maximum: 999.9,
     fractionDigits: 1,
   }))
-  addError(errors, "actualPressureBar", getDecimalError(data.actualPressureBar, {
+  addError(errors, "brewPressureBar", getDecimalError(data.brewPressureBar, {
     label: "Pressure",
     maximum: 99.9,
     fractionDigits: 2,
   }))
   addError(
     errors,
-    "actualShotTimeSeconds",
-    getDecimalError(data.actualShotTimeSeconds, {
+    "shotTimeSeconds",
+    getDecimalError(data.shotTimeSeconds, {
       label: "Brew time",
       maximum: 9999.99,
       fractionDigits: 2,

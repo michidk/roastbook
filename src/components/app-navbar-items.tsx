@@ -7,6 +7,7 @@ import {
   Coffee,
   Cog,
   Settings,
+  SlidersHorizontal,
   Store,
   UtensilsCrossed,
 } from "lucide-react"
@@ -33,6 +34,7 @@ export const primaryNavItems: readonly NavItem[] = [
 export const moreNavItems: readonly NavItem[] = [
   { title: "Roasters", url: "/roasters", icon: Store },
   { title: "Gear", url: "/gear", icon: Cog },
+  { title: "Brewing methods", url: "/brewing-methods", icon: SlidersHorizontal },
   { title: "Recipes", url: "/recipes", icon: BookOpen },
   { title: "Stats", url: "/stats", icon: BarChart3 },
   { title: "Settings", url: "/settings", icon: Settings },

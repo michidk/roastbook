@@ -112,7 +112,7 @@ export function StatsVisitsCard({ visits, places }: StatsVisitsCardProps) {
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                       <div className="min-w-0">
                         <Link
-                          to="/coffee-shops/$coffeeShopId"
+                          to="/shops/$coffeeShopId"
                           params={{ coffeeShopId: String(place.coffeeShopId) }}
                           className="inline-flex min-h-11 items-center rounded-md py-3 font-medium underline-offset-4 hover:underline lg:min-h-0 lg:py-0"
                         >

@@ -132,7 +132,7 @@ async function downloadImage(value: string) {
 
     const content = await readLimitedBody(response)
     const pathName = basename(decodeURIComponent(url.pathname))
-    const filename = pathName && pathName.includes(".") ? pathName : `picture.${mimeType.split("/")[1]}`
+    const filename = pathName?.includes(".") ? pathName : `picture.${mimeType.split("/")[1]}`
     return {
       base64: content.toString("base64"),
       filename,

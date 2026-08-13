@@ -29,7 +29,7 @@ export async function toDisplayableDatabaseError(error: unknown): Promise<Error>
 
   try {
     const result = await sql.unsafe<{ table_name: string | null }[]>(
-      "select to_regclass('public.shots') as table_name"
+      "select to_regclass('public.shots') as table_name",
     )
 
     if (!result[0]?.table_name) {

@@ -1,7 +1,7 @@
 import type { ComponentProps } from "react"
 import { ImageUploadField } from "@/components/image-upload-field"
 import { FormSection } from "@/components/form/form-shell"
-import { useImageUpload } from "@/hooks/useImageUpload"
+import type { useImageUpload } from "@/hooks/useImageUpload"
 
 type ImageUploadDisplayProps = Pick<
   ComponentProps<typeof ImageUploadField>,

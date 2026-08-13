@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router"
 import { ChevronRight, Heart, MapPin, MapPinOff } from "lucide-react"
+import { cn } from "@/lib/utils"
 
-export type CoffeeShopCardItem = {
+type CoffeeShopCardItem = {
   readonly id: number
   readonly name: string
   readonly address: string | null
@@ -12,39 +13,57 @@ export type CoffeeShopCardItem = {
   readonly isFavorite: boolean
 }
 
+type CoffeeShopCardProps = {
+  readonly coffeeShop: CoffeeShopCardItem
+  readonly emphasizeFavorite?: boolean
+}
+
 export function CoffeeShopCard({
   coffeeShop,
-}: {
-  readonly coffeeShop: CoffeeShopCardItem
-}) {
+  emphasizeFavorite = false,
+}: CoffeeShopCardProps) {
   const hasCoordinates =
     coffeeShop.latitude !== null && coffeeShop.longitude !== null
-  const LocationIcon = hasCoordinates ? MapPin : MapPinOff
+  const isProminentFavorite = emphasizeFavorite && coffeeShop.isFavorite
+  const LocationIcon = isProminentFavorite
+    ? Heart
+    : hasCoordinates
+      ? MapPin
+      : MapPinOff
   const location = [coffeeShop.address, coffeeShop.city, coffeeShop.country]
     .filter(Boolean)
     .join(", ")
 
   return (
     <Link
-      to="/coffee-shops/$coffeeShopId"
+      to="/shops/$coffeeShopId"
       params={{ coffeeShopId: String(coffeeShop.id) }}
-      className="group flex min-w-0 items-center gap-3 rounded-3xl bg-card p-4 shadow-coffee transition-transform hover:-translate-y-0.5"
+      className={cn(
+        "group flex min-w-0 items-center gap-3 rounded-3xl bg-card p-4 shadow-coffee transition-transform hover:-translate-y-0.5",
+        isProminentFavorite && "ring-2 ring-destructive/35 ring-inset",
+      )}
     >
       <span
         className={
-          hasCoordinates
+          isProminentFavorite
+            ? "flex size-10 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive"
+            : hasCoordinates
             ? "flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
             : "flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
         }
       >
-        <LocationIcon aria-hidden className="size-4" />
+        <LocationIcon
+          aria-hidden
+          className={cn("size-4", isProminentFavorite && "fill-current")}
+        />
       </span>
       <span className="min-w-0 flex-1 space-y-0.5">
         <span className="flex items-center gap-1.5">
+          {isProminentFavorite && <span className="sr-only">Favorite café: </span>}
           <span className="truncate font-display text-base font-bold text-foreground">
             {coffeeShop.name}
           </span>
-          {coffeeShop.isFavorite && (
+          {coffeeShop.isFavorite && !isProminentFavorite && (
             <Heart
               aria-label="Favorite"
               className="size-3.5 shrink-0 fill-current text-destructive"

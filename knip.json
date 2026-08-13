@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@latest/schema.json",
-  "entry": ["src/routes/**/*.tsx", "src/router.tsx"],
+  "entry": ["src/routes/**/*.tsx", "src/router.tsx", "src/lib/server/media-handler.ts"],
   "project": ["src/**/*.{ts,tsx}"],
   "ignore": ["src/components/ui/**"],
   "ignoreDependencies": ["tailwindcss"]

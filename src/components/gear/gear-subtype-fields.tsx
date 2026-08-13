@@ -1,6 +1,6 @@
 import { InputField, SelectField } from "@/components/form/form-field"
 import { FormSection } from "@/components/form/form-shell"
-import { AUTO_STOP_OPTIONS } from "@/lib/recipe-fields"
+import { AUTO_STOP_OPTIONS } from "@/lib/gear-parameters"
 import type { GearType } from "@/lib/constants"
 
 export type GearSubtypeFormValues = {

@@ -19,6 +19,7 @@ import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
 import { getErrorDisplayState } from '@/lib/error-display'
 import { RouteNotFound } from '@/components/route-not-found'
 import { useSettingsStore } from '@/lib/settings-store'
+import { ErrorDetails } from '@/components/error-details'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -154,14 +155,7 @@ function RootErrorComponent({ error }: { error: Error }) {
                   </Button>
                 </div>
                 {process.env.NODE_ENV === 'development' && (
-                  <details className="mt-4">
-                    <summary className="text-xs text-muted-foreground cursor-pointer">
-                      Error details
-                    </summary>
-                    <pre className="mt-2 text-xs bg-muted p-2 rounded overflow-auto max-h-32">
-                      {error.stack}
-                    </pre>
-                  </details>
+                  <ErrorDetails error={error} />
                 )}
               </CardContent>
             </Card>

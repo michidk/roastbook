@@ -22,6 +22,26 @@ function resolveModel(
 const visionModel = resolveModel(process.env.OPENAI_VISION_MODEL, "gpt-4o")
 const researchModel = resolveModel(process.env.OPENAI_RESEARCH_MODEL, "gpt-4o")
 
+const BEAN_INFO_FIELDS = `- name: the coffee name/blend name
+- roaster: the roasting company name
+- origin: country of origin (e.g., "Ethiopia", "Colombia")
+- region: specific region within the country (e.g., "Yirgacheffe", "Huila")
+- farm: farm or producer name if specified
+- variety: coffee variety (e.g., "Bourbon", "Gesha", "SL28")
+- process: processing method, must be one of: "washed", "natural", "honey", "anaerobic", "wet_hulled", "carbonic_maceration", "other"
+- roastLevel: one of "light", "medium_light", "medium", "medium_dark", "dark"
+- roastDate: roast date in ISO format (YYYY-MM-DD) if available
+- notes: ALL flavor descriptions, tasting notes, and flavor profiles go here. Format as "Tasting notes: [notes]" if tasting notes are found. Include any cupping scores, SCA scores, or quality descriptors.`
+
+function beanInfoPrompt(task: string, evidenceRule: string): string {
+  return `You are a coffee expert assistant. ${task}
+Return a JSON object with the following fields:
+${BEAN_INFO_FIELDS}
+
+${evidenceRule}
+Return ONLY valid JSON, no markdown code blocks.`
+}
+
 function createAdapter(model: OpenAIChatModel) {
   if (!apiKey) {
     throw new Error("OPENAI_API_KEY is not configured")
@@ -59,21 +79,10 @@ export async function extractBeanInfoFromImage(
     return {}
   }
 
-  const systemPrompt = `You are a coffee expert assistant. Extract coffee bean information from product images (bags, labels, packaging).
-Return a JSON object with the following fields (omit fields if not visible/readable):
-- name: the coffee name/blend name
-- roaster: the roasting company name
-- origin: country of origin (e.g., "Ethiopia", "Colombia")
-- region: specific region within the country (e.g., "Yirgacheffe", "Huila")
-- farm: farm or producer name if specified
-- variety: coffee variety (e.g., "Bourbon", "Gesha", "SL28")
-- process: processing method, must be one of: "washed", "natural", "honey", "anaerobic", "wet_hulled", "carbonic_maceration", "other"
-- roastLevel: one of "light", "medium_light", "medium", "medium_dark", "dark"
-- roastDate: roast date in ISO format (YYYY-MM-DD) if visible
-- notes: ALL flavor descriptions, tasting notes, and flavor profiles go here. Format as "Tasting notes: [notes]" if tasting notes are found. Include any cupping scores, SCA scores, or quality descriptors.
-
-Only include fields where you can clearly read the information. Do not guess.
-Return ONLY valid JSON, no markdown code blocks.`
+  const systemPrompt = beanInfoPrompt(
+    "Extract coffee bean information from product images (bags, labels, packaging).",
+    "Only include fields where you can clearly read the information. Do not guess.",
+  )
 
   const content = await chat({
     adapter: createAdapter(visionModel),
@@ -130,20 +139,10 @@ export async function researchBeanFromWeb(
     model: researchModel,
   })
 
-  const systemPrompt = `You are a coffee expert researcher. Search the web to find information about the specified coffee bean.
-Return a JSON object with the following fields (omit fields if you cannot find reliable information):
-- name: the coffee name/blend name
-- roaster: the roasting company name
-- origin: country of origin (e.g., "Ethiopia", "Colombia")
-- region: specific region within the country (e.g., "Yirgacheffe", "Huila")
-- farm: farm or producer name if specified
-- variety: coffee variety (e.g., "Bourbon", "Gesha", "SL28")
-- process: processing method, must be one of: "washed", "natural", "honey", "anaerobic", "wet_hulled", "carbonic_maceration", "other"
-- roastLevel: one of "light", "medium_light", "medium", "medium_dark", "dark"
-- notes: ALL flavor descriptions, tasting notes, and flavor profiles. Format as "Tasting notes: [notes]". Include any cupping scores, SCA scores, or quality descriptors.
-
-Only include fields where you find reliable information from coffee roaster websites, coffee review sites, or specialty coffee databases.
-Return ONLY valid JSON, no markdown code blocks.`
+  const systemPrompt = beanInfoPrompt(
+    "Search the web to find information about the specified coffee bean.",
+    "Only include fields supported by reliable coffee roaster websites, review sites, or specialty coffee databases.",
+  )
 
   const content = await chat({
     adapter: createAdapter(researchModel),

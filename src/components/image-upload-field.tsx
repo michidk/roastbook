@@ -81,7 +81,7 @@ export function ImageUploadField({
             <div key={image.preview} className="group relative">
               <img
                 src={image.preview}
-                alt={`${previewAltPrefix} picture ${index + 1}`}
+                alt={`${previewAltPrefix} ${index + 1}`}
                 width={320}
                 height={320}
                 className="aspect-square w-full rounded-lg object-cover"
@@ -162,7 +162,8 @@ export function ImageUploadField({
           Paste picture
         </Button>
 
-        <div className="flex min-w-0 gap-2" role="group" aria-label="Add picture from URL">
+        <fieldset className="flex min-w-0 gap-2 border-0 p-0">
+          <legend className="sr-only">Add picture from URL</legend>
           <Input
             type="url"
             inputMode="url"
@@ -189,7 +190,7 @@ export function ImageUploadField({
             {isImporting ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
             Add URL
           </Button>
-        </div>
+        </fieldset>
       </div>
 
       <div className="sr-only" role="status" aria-live="polite">

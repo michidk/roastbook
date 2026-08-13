@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start"
 import { desc, eq, max } from "drizzle-orm"
 import { db } from "@/db"
-import { beans, recipes, shots } from "@/db/schema"
+import { beans, shots } from "@/db/schema"
 
 type Suggestion = {
   readonly id: number
@@ -48,26 +48,6 @@ export const getBeanSuggestions = createServerFn({ method: "GET" }).handler(
         .from(beans)
         .where(eq(beans.isArchived, false))
         .orderBy(desc(beans.createdAt))
-        .limit(2),
-    ),
-)
-
-export const getRecipeSuggestions = createServerFn({ method: "GET" }).handler(
-  () =>
-    loadSuggestions(
-      db
-        .select({ id: recipes.id, name: recipes.name, lastUsedAt })
-        .from(shots)
-        .innerJoin(recipes, eq(shots.recipeId, recipes.id))
-        .where(eq(recipes.isArchived, false))
-        .groupBy(recipes.id, recipes.name)
-        .orderBy(desc(lastUsedAt))
-        .limit(5),
-      db
-        .select({ id: recipes.id, name: recipes.name })
-        .from(recipes)
-        .where(eq(recipes.isArchived, false))
-        .orderBy(desc(recipes.createdAt))
         .limit(2),
     ),
 )

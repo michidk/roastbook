@@ -34,7 +34,7 @@ export function VisitsMapPlaceCard({
       card.parentElement?.scrollIntoView({ block: "start" })
     }
     if (focusRequest > 0) card.focus({ preventScroll: true })
-  }, [focusRequest, place.id])
+  }, [focusRequest])
 
   return (
     <article
@@ -92,7 +92,7 @@ export function VisitsMapPlaceCard({
       <div className="mt-4 flex flex-wrap gap-2">
         <Button asChild size="sm" className="min-h-11">
           <Link
-            to="/coffee-shops/$coffeeShopId"
+            to="/shops/$coffeeShopId"
             params={{ coffeeShopId: String(place.coffeeShopId) }}
           >
             View place

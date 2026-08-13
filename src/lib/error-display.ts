@@ -79,7 +79,6 @@ export function getErrorDisplayState(error: Error): ErrorDisplayState {
 
   return {
     ...DEFAULT_ERROR_STATE,
-    message: rawMessage || DEFAULT_ERROR_STATE.message,
   }
 }
 

@@ -167,7 +167,7 @@ export function MapLocationSettings({
         {error ??
           (location
             ? `Current default: ${location.label}`
-            : "No custom default set. The map opens in Berlin.")}
+            : "No custom default set. The map opens around your saved cafés.")}
       </p>
     </div>
   )

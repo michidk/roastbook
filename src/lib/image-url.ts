@@ -11,16 +11,11 @@ function storageUrl(storagePath: string, fallbackPath?: string): string {
   return `${url}?${search}`
 }
 
-function thumbnailPath(storagePath: string): string {
-  const dot = storagePath.lastIndexOf(".")
-  const base = dot === -1 ? storagePath : storagePath.slice(0, dot)
-  return `${base}.thumb.webp`
-}
-
 export function imageUrl(storagePath: string): string {
   return storageUrl(storagePath)
 }
 
 export function thumbnailUrl(storagePath: string): string {
-  return storageUrl(thumbnailPath(storagePath), storagePath)
+  return storageUrl(getThumbnailPath(storagePath), storagePath)
 }
+import { getThumbnailPath } from "@/lib/image-path"

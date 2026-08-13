@@ -39,7 +39,7 @@ function PlacesPage() {
           </p>
         </div>
         <Button asChild>
-          <Link to="/coffee-shops/new">
+          <Link to="/shops/new">
             <Plus aria-hidden className="h-4 w-4" />
             Add a place
           </Link>
@@ -52,7 +52,7 @@ function PlacesPage() {
           title="No places added yet"
           description="Add your favorite cafés and coffee spots"
           actionLabel="Add a place"
-          actionHref="/coffee-shops/new"
+          actionHref="/shops/new"
         />
       ) : (
         <div className="@container">

@@ -22,6 +22,7 @@ export const PROCESS_METHODS = [
 
 export const GEAR_TYPES = [
   { value: "espresso_machine", label: "Espresso Machine" },
+  { value: "brewer", label: "Brewer" },
   { value: "grinder", label: "Grinder" },
   { value: "kettle", label: "Kettle" },
   { value: "scale", label: "Scale" },

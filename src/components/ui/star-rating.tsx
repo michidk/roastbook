@@ -28,13 +28,13 @@ function StarRating({
         aria-label={`${ariaLabel}: ${value} out of ${max}`}
         className={cn("flex items-center gap-1", className)}
       >
-        {Array.from({ length: max }, (_, index) => (
+        {Array.from({ length: max }, (_, index) => index + 1).map((starValue) => (
           <Star
             aria-hidden
-            key={index + 1}
+            key={starValue}
             className={cn(
               sizeClassName,
-              index < value ? "fill-primary text-primary" : "text-muted-foreground"
+              starValue <= value ? "fill-primary text-primary" : "text-muted-foreground"
             )}
           />
         ))}
@@ -43,7 +43,8 @@ function StarRating({
   }
 
   return (
-    <div role="group" aria-label={ariaLabel} className={cn("flex items-center gap-0 sm:gap-1", className)}>
+    <fieldset className={cn("flex min-w-0 items-center gap-0 border-0 p-0 sm:gap-1", className)}>
+      <legend className="sr-only">{ariaLabel}</legend>
       {Array.from({ length: max }, (_, index) => {
         const starValue = index + 1
         const filled = starValue <= value
@@ -53,7 +54,7 @@ function StarRating({
             key={starValue}
             type="button"
             onClick={() => onChange(starValue)}
-            className="flex size-11 shrink-0 items-center justify-center transition-transform hover:scale-110 sm:size-8"
+            className="flex size-11 shrink-0 items-center justify-center transition-transform hover:scale-110 lg:size-8"
             aria-label={`Rate ${starValue} out of ${max}`}
             aria-pressed={starValue === value}
           >
@@ -67,7 +68,7 @@ function StarRating({
           </button>
         )
       })}
-    </div>
+    </fieldset>
   )
 }
 
