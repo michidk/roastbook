@@ -20,16 +20,29 @@ tedious part — transcribing labels, hunting down specs, remembering what chang
 between shots — happens for you, while every gram of your data stays on your own
 infrastructure.
 
+And it stays out of your way. Log a shot with dose, yield, and time and you are
+done; the depth is there when you want it, not in your face when you don't.
+Roastbook runs equally well on the phone in your hand at the machine and on the
+desktop where you dig through the numbers afterwards.
+
 ## Why Roastbook
 
+- **Simple first, deep when you ask.** Each brewing method shows only the fields
+  that apply to it, so an espresso form is not a pour-over form. A quick entry
+  takes three numbers.
+- **Serious when you want to be.** Pre-infusion time and pressure, brew pressure,
+  flow rate, brew temperature, grind setting, tamp force, basket, puck screen, and
+  paper filter position per shot — plus documented machine-level OPV, factory
+  pre-infusion, flow limit, and volumetric defaults on your gear.
+- **Numbers that answer questions.** Parameter charts and statistics over your
+  history show what a change to grind, dose, or pressure actually did.
+- **Mobile and desktop, both first-class.** Large touch targets and compact cards
+  next to the machine; full data tables, charts, and maps at the desk.
 - **AI-native, not AI-bolted-on.** Research and extraction are wired into the
   forms you already use and return typed, validated fields you confirm before
   anything is saved.
 - **Yours, end to end.** Self-hosted on your own PostgreSQL and your own storage,
   behind your own auth proxy. No accounts, no telemetry, no upsell.
-- **Built for people who chase shots.** Dose, yield, time, grind, pressure, and
-  temperature per shot, with charts and statistics that show what your changes
-  actually did.
 - **A journal, not just a log.** Beans, roasters, gear, recipes, brewing methods,
   and café visits are linked, so every shot carries its whole story.
 - **Deploys in one command.** Docker Compose for a home server, a Helm chart for
