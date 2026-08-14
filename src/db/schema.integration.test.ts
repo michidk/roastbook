@@ -50,8 +50,8 @@ databaseDescribe('PostgreSQL schema', () => {
     expect(indexes.map(({ indexname }) => indexname).sort()).toEqual([
       'bean_images_one_thumbnail_idx',
       'recipe_accessory_gear_recipe_gear_idx',
-      'shot_accessory_gear_shot_gear_idx',
       'roasters_name_idx',
+      'shot_accessory_gear_shot_gear_idx',
       'shot_taste_tags_shot_tag_idx',
     ])
   })
