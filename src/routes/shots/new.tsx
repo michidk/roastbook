@@ -9,6 +9,7 @@ import { SelectField, TextareaField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
 import { SuggestionChips } from '@/components/form/suggestion-chips'
 import {
+  availableGearForShot,
   EMPTY_SHOT_FORM_VALUES,
   type ShotFormValues,
   ShotParameterFields,
@@ -163,15 +164,7 @@ function NewShotPage() {
   const selectedBean = beanOptions.find(
     (bean) => String(bean.id) === values.beanId,
   )
-  const selectedGearIds = new Set([
-    values.machineId,
-    values.grinderId,
-    values.basketId,
-    ...values.accessoryGearIds.map(String),
-  ])
-  const gearOptions = gear.filter(
-    (item) => !item.isArchived || selectedGearIds.has(String(item.id)),
-  )
+  const gearOptions = availableGearForShot(values, gear)
   const methodOptions = methods.map((method) => ({
     value: String(method.id),
     label: method.name,
@@ -274,25 +267,13 @@ function NewShotPage() {
               label="Positive"
               tags={positiveTags}
               selected={selectedTags}
-              onToggle={(id) =>
-                setSelectedTags((current) =>
-                  current.includes(id)
-                    ? current.filter((item) => item !== id)
-                    : [...current, id],
-                )
-              }
+              onToggle={toggleTag}
             />
             <TasteTagSelector
               label="Issues"
               tags={negativeTags}
               selected={selectedTags}
-              onToggle={(id) =>
-                setSelectedTags((current) =>
-                  current.includes(id)
-                    ? current.filter((item) => item !== id)
-                    : [...current, id],
-                )
-              }
+              onToggle={toggleTag}
             />
             <TextareaField
               id="notes"

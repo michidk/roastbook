@@ -50,6 +50,8 @@ export const roastLevelEnum = pgEnum("roast_level", [
   "dark",
 ])
 
+export const beanTypeEnum = pgEnum("bean_type", ["espresso", "filter", "decaf"])
+
 export const roasters = pgTable("roasters", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -68,6 +70,7 @@ export const roastersRelations = relations(roasters, ({ many }) => ({
 export const beans = pgTable("beans", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  type: beanTypeEnum("type"),
   roaster: text("roaster"), // Legacy text field
   roasterId: integer("roaster_id").references(() => roasters.id, { onDelete: "set null" }),
   origin: text("origin"),

@@ -4,6 +4,7 @@ import { ImageWithFallback } from "@/components/image-with-fallback"
 import { Card, CardContent } from "@/components/ui/card"
 import { thumbnailUrl } from "@/lib/image-url"
 import type { getBeans } from "@/lib/server/beans"
+import { BEAN_TYPE_LABELS } from "@/lib/constants"
 
 type BeanRecord = Awaited<ReturnType<typeof getBeans>>[number]
 
@@ -86,11 +87,18 @@ export function BeanCard({ bean }: BeanCardProps) {
 
         <div className="relative z-10 flex h-full flex-col p-4">
           <div className="flex items-start justify-between gap-3">
-            {roastLabel && (
-              <span className={`flex min-h-9 items-center rounded-full border border-white/60 bg-black/65 px-3 py-1.5 text-xs font-bold tracking-[0.04em] uppercase backdrop-blur-[2px] ${roastLabelColor}`}>
-                {roastLabel}
-              </span>
-            )}
+            <div className="flex flex-wrap gap-2">
+              {bean.type && (
+                <span className="flex min-h-9 items-center rounded-full border border-white/60 bg-black/65 px-3 py-1.5 text-xs font-bold tracking-[0.04em] text-white uppercase backdrop-blur-[2px]">
+                  {BEAN_TYPE_LABELS[bean.type]}
+                </span>
+              )}
+              {roastLabel && (
+                <span className={`flex min-h-9 items-center rounded-full border border-white/60 bg-black/65 px-3 py-1.5 text-xs font-bold tracking-[0.04em] uppercase backdrop-blur-[2px] ${roastLabelColor}`}>
+                  {roastLabel}
+                </span>
+              )}
+            </div>
             <span className="ml-auto flex size-10 shrink-0 items-center justify-center rounded-full border border-white/60 bg-black/55 text-white transition-[background-color,transform] duration-150 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:bg-black/70 motion-reduce:group-hover:translate-none">
               <ArrowUpRight className="size-5" aria-hidden="true" />
             </span>

@@ -1,8 +1,8 @@
-import { useState, type SyntheticEvent } from "react"
 import { toast } from "sonner"
 import { EntityForm, FormSection } from "@/components/form/form-shell"
 import { InputField, TextareaField } from "@/components/form/form-field"
 import { useFormState } from "@/hooks/use-form-state"
+import { useFormSubmission } from "@/hooks/use-form-submission"
 import { createRoaster } from "@/lib/server/roasters"
 
 type CreatedRoaster = Awaited<ReturnType<typeof createRoaster>>
@@ -20,7 +20,6 @@ export function RoasterForm({
   initialName = "",
   submitLabel = "Create Roaster",
 }: RoasterFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const form = useFormState({
     name: initialName,
     location: "",
@@ -30,12 +29,9 @@ export function RoasterForm({
     notes: "",
   })
 
-  const handleSubmit = async (event: SyntheticEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (!form.values.name.trim()) return
-
-    setIsSubmitting(true)
-    try {
+  const { isSubmitting, handleSubmit } = useFormSubmission({
+    canSubmit: () => Boolean(form.values.name.trim()),
+    submit: async () => {
       const roaster = await createRoaster({
         data: {
           name: form.values.name.trim(),
@@ -47,12 +43,9 @@ export function RoasterForm({
         },
       })
       await onCreated(roaster)
-    } catch {
-      toast.error("Failed to create roaster")
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+    },
+    onError: () => toast.error("Failed to create roaster"),
+  })
 
   return (
     <EntityForm

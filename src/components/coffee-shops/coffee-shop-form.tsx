@@ -1,4 +1,3 @@
-import { useState, type SyntheticEvent } from "react"
 import { toast } from "sonner"
 import { EntityForm, FormSection } from "@/components/form/form-shell"
 import { InputField, TextareaField } from "@/components/form/form-field"
@@ -7,6 +6,7 @@ import {
   type CoffeeShopSearchResult,
 } from "@/components/coffee-shops/coffee-shop-osm-search"
 import { useFormState } from "@/hooks/use-form-state"
+import { useFormSubmission } from "@/hooks/use-form-submission"
 import { createCoffeeShop } from "@/lib/server/coffee-shops"
 import {
   applyCoffeeShopSearchResult,
@@ -28,20 +28,15 @@ export function CoffeeShopForm({
   initialName = "",
   submitLabel = "Add Coffee Shop",
 }: CoffeeShopFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const form = useFormState(createCoffeeShopFormValues(null, initialName))
 
   const applySearchResult = (result: CoffeeShopSearchResult) => {
     form.setValues((current) => applyCoffeeShopSearchResult(current, result))
   }
 
-  const handleSubmit = async (event: SyntheticEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (!form.values.name.trim()) return
-
-    setIsSubmitting(true)
-
-    try {
+  const { isSubmitting, handleSubmit } = useFormSubmission({
+    canSubmit: () => Boolean(form.values.name.trim()),
+    submit: async () => {
       const coffeeShop = await createCoffeeShop({
         data: {
           name: form.values.name,
@@ -56,12 +51,9 @@ export function CoffeeShopForm({
       })
       toast.success("Coffee shop created")
       await onCreated(coffeeShop)
-    } catch {
-      toast.error("Could not save this coffee shop")
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+    },
+    onError: () => toast.error("Could not save this coffee shop"),
+  })
 
   return (
     <EntityForm

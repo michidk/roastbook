@@ -24,6 +24,7 @@ const researchModel = resolveModel(process.env.OPENAI_RESEARCH_MODEL, "gpt-4o")
 
 const BEAN_INFO_FIELDS = `- name: the coffee name/blend name
 - roaster: the roasting company name
+- type: intended coffee type, must be one of: "espresso", "filter", "decaf"
 - origin: country of origin (e.g., "Ethiopia", "Colombia")
 - region: specific region within the country (e.g., "Yirgacheffe", "Huila")
 - farm: farm or producer name if specified
@@ -60,6 +61,7 @@ export function isResearchEnabled(): boolean {
 
 export interface ExtractedBeanInfo {
   name?: string
+  type?: "espresso" | "filter" | "decaf"
   roaster?: string
   origin?: string
   region?: string

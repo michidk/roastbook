@@ -1,9 +1,6 @@
 import type { ShotFormValues } from "@/components/shots/shot-parameter-fields"
 
-export function newShotPayload(
-  values: ShotFormValues,
-  tasteTagIds: readonly number[],
-) {
+export function shotParameterPayload(values: ShotFormValues) {
   return {
     brewingMethodId: Number(values.brewingMethodId),
     beanId: values.beanId ? Number(values.beanId) : null,
@@ -27,6 +24,15 @@ export function newShotPayload(
     distributionMethod: values.distributionMethod || null,
     tampForceKg: values.tampForceKg || null,
     accessoryGearIds: values.accessoryGearIds,
+  }
+}
+
+export function newShotPayload(
+  values: ShotFormValues,
+  tasteTagIds: readonly number[],
+) {
+  return {
+    ...shotParameterPayload(values),
     rating: values.rating,
     notes: values.notes || null,
     tasteTagIds,

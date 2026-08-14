@@ -1,7 +1,8 @@
-import type { RoastLevel } from "@/lib/constants"
+import type { BeanType, RoastLevel } from "@/lib/constants"
 
 export type BeanFormValues = {
   readonly name: string
+  readonly type: BeanType | ""
   readonly roasterId: string
   readonly weight: string
   readonly price: string
@@ -19,6 +20,7 @@ export type BeanFormValues = {
 
 type BeanFormValueSource = {
   readonly name: string | null
+  readonly type: BeanType | null
   readonly roasterId: number | null
   readonly weight: string | null
   readonly price: string | null
@@ -37,6 +39,7 @@ type BeanFormValueSource = {
 export function createEmptyBeanFormValues(initialName = ""): BeanFormValues {
   return {
     name: initialName,
+    type: "",
     roasterId: "",
     weight: "",
     price: "",
@@ -56,6 +59,7 @@ export function createEmptyBeanFormValues(initialName = ""): BeanFormValues {
 export function toBeanFormValues(bean: BeanFormValueSource): BeanFormValues {
   return {
     name: bean.name ?? "",
+    type: bean.type ?? "",
     roasterId: bean.roasterId ? String(bean.roasterId) : "",
     weight: bean.weight ?? "",
     price: bean.price ?? "",

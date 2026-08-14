@@ -14,6 +14,7 @@ import { FormSection } from '@/components/form/form-shell'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import {
+  availableGearForShot,
   type ShotFormValues,
   ShotParameterFields,
   shotFormValuesFrom,
@@ -24,6 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getActiveBeans } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getGear } from '@/lib/server/gear'
+import { shotParameterPayload } from '@/lib/new-shot-payload'
 import { deleteRecipe, getRecipe, updateRecipe } from '@/lib/server/recipes'
 import { getShotUpdateErrors } from '@/lib/update-validation'
 
@@ -118,15 +120,7 @@ function RecipeDetailPage() {
     recipe.bean && !beans.some((bean) => bean.id === recipe.bean?.id)
       ? [recipe.bean, ...beans]
       : beans
-  const selectedGearIds = new Set([
-    values.machineId,
-    values.grinderId,
-    values.basketId,
-    ...values.accessoryGearIds.map(String),
-  ])
-  const gearOptions = gear.filter(
-    (item) => !item.isArchived || selectedGearIds.has(String(item.id)),
-  )
+  const gearOptions = availableGearForShot(values, gear)
   const set = <Key extends keyof ShotFormValues>(
     key: Key,
     value: ShotFormValues[Key],
@@ -144,28 +138,7 @@ function RecipeDetailPage() {
     const data = {
       id: recipe.id,
       name,
-      brewingMethodId: Number(values.brewingMethodId),
-      beanId: values.beanId ? Number(values.beanId) : null,
-      machineId: values.machineId ? Number(values.machineId) : null,
-      doseGrams: values.doseGrams || null,
-      brewWaterGrams: values.brewWaterGrams || null,
-      ratioBasis: values.ratioBasis || null,
-      grinderId: values.grinderId ? Number(values.grinderId) : null,
-      grindSetting: values.grindSetting || null,
-      yieldGrams: values.yieldGrams || null,
-      shotTimeSeconds: values.shotTimeSeconds || null,
-      brewTemperatureCelsius: values.brewTemperatureCelsius || null,
-      preinfusionTimeSeconds: values.preinfusionTimeSeconds || null,
-      preinfusionPressureBar: values.preinfusionPressureBar || null,
-      bloomTimeSeconds: values.bloomTimeSeconds || null,
-      brewPressureBar: values.brewPressureBar || null,
-      flowRateMlPerSecond: values.flowRateMlPerSecond || null,
-      basketId: values.basketId ? Number(values.basketId) : null,
-      usesPuckScreen: values.usesPuckScreen,
-      paperFilterPosition: values.paperFilterPosition || null,
-      distributionMethod: values.distributionMethod || null,
-      tampForceKg: values.tampForceKg || null,
-      accessoryGearIds: values.accessoryGearIds,
+      ...shotParameterPayload(values),
     }
     const errors = getShotUpdateErrors(data)
     setFieldErrors(errors)

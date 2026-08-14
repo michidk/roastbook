@@ -1,4 +1,4 @@
-import { useEffect, useState, type SyntheticEvent } from "react"
+import { useEffect, useState } from "react"
 import { Loader2, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -15,13 +15,14 @@ import {
   type RoasterOption,
 } from "@/components/roasters/roaster-picker"
 import { useFormState } from "@/hooks/use-form-state"
+import { useFormSubmission } from "@/hooks/use-form-submission"
 import { useImageUpload } from "@/hooks/useImageUpload"
 import { checkVisionEnabled, createBean, extractBeanInfo } from "@/lib/server/beans"
-import { uploadEntityImage } from "@/lib/server/images"
 import { getRoasters } from "@/lib/server/roasters"
-import { PROCESS_METHODS, ROAST_LEVELS, type RoastLevel } from "@/lib/constants"
+import { BEAN_TYPES, PROCESS_METHODS, ROAST_LEVELS, type BeanType, type RoastLevel } from "@/lib/constants"
 import { useSettingsStore } from "@/lib/settings-store"
 import { createEmptyBeanFormValues } from "@/components/beans/bean-form-values"
+import { uploadEntityImages } from "@/lib/upload-entity-images"
 
 type CreatedBean = Awaited<ReturnType<typeof createBean>>
 
@@ -41,7 +42,6 @@ export function BeanForm({
   roasters,
 }: BeanFormProps) {
   const defaultCurrency = useSettingsStore((state) => state.defaultCurrency)
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [isExtracting, setIsExtracting] = useState(false)
   const [visionEnabled, setVisionEnabled] = useState(false)
   const [loadedRoasters, setLoadedRoasters] = useState<readonly RoasterOption[]>(
@@ -89,6 +89,7 @@ export function BeanForm({
       form.setValues((current) => ({
         ...current,
         name: extracted.name || current.name,
+        type: extracted.type || current.type,
         roasterId: matchedRoaster ? String(matchedRoaster.id) : current.roasterId,
         origin: extracted.origin || current.origin,
         region: extracted.region || current.region,
@@ -108,16 +109,13 @@ export function BeanForm({
     }
   }
 
-  const handleSubmit = async (event: SyntheticEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (!form.values.name.trim()) return
-
-    setIsSubmitting(true)
-
-    try {
+  const { isSubmitting, handleSubmit } = useFormSubmission({
+    canSubmit: () => Boolean(form.values.name.trim()),
+    submit: async () => {
       const bean = await createBean({
         data: {
           name: form.values.name,
+          type: form.values.type || undefined,
           roasterId: form.values.roasterId
             ? Number(form.values.roasterId)
             : undefined,
@@ -138,26 +136,11 @@ export function BeanForm({
         },
       })
 
-      for (const image of images) {
-        await uploadEntityImage({
-          data: {
-            entityType: "beans",
-            entityId: bean.id,
-            fileBase64: image.base64,
-            filename: image.file.name,
-            mimeType: image.file.type,
-            sizeBytes: image.file.size,
-          },
-        })
-      }
-
+      await uploadEntityImages("beans", bean.id, images)
       await onCreated(bean)
-    } catch {
-      toast.error("Could not save these beans")
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+    },
+    onError: () => toast.error("Could not save these beans"),
+  })
 
   return (
     <EntityForm
@@ -216,6 +199,14 @@ export function BeanForm({
             value={form.values.roasterId}
             onChange={form.setField("roasterId")}
             roasters={roasterOptions}
+          />
+          <SelectField
+            id="bean-type"
+            label="Type"
+            placeholder="Select type"
+            value={form.values.type}
+            onChange={(value) => form.set("type", value as BeanType | "")}
+            options={BEAN_TYPES}
           />
           <InputField
             id="bean-weight"

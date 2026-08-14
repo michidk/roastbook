@@ -20,6 +20,7 @@ import { getActiveBeans } from "@/lib/server/beans"
 import { getCoffeeShops } from "@/lib/server/coffee-shops"
 import { getTasteTags } from "@/lib/server/taste-tags"
 import { createCafeVisit } from "@/lib/server/cafe-visits"
+import { cafeVisitDetailsPayload } from "@/lib/cafe-visit-payload"
 import { DRINK_TYPE_OPTIONS } from "@/lib/constants"
 import { useSettingsStore } from "@/lib/settings-store"
 
@@ -93,13 +94,8 @@ function NewVisitPage() {
           coffeeShopId: form.values.coffeeShopId
             ? Number(form.values.coffeeShopId)
             : undefined,
-          beanId: form.values.beanId ? Number(form.values.beanId) : undefined,
-          drinkName: form.values.drinkName || undefined,
-          drinkType: form.values.drinkType || undefined,
-          price: form.values.price || undefined,
-          currency: form.values.currency || undefined,
+          ...cafeVisitDetailsPayload(form.values, undefined),
           rating: form.values.rating,
-          notes: form.values.notes || undefined,
           tasteTagIds: selectedTags.length > 0 ? selectedTags : undefined,
         },
       })

@@ -19,11 +19,12 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress"
 import type { BeanFormValues } from "@/components/beans/bean-form-values"
-import { PROCESS_METHODS, ROAST_LEVELS, type RoastLevel } from "@/lib/constants"
+import { BEAN_TYPES, BEAN_TYPE_LABELS, PROCESS_METHODS, ROAST_LEVELS, type BeanType, type RoastLevel } from "@/lib/constants"
 
 type Bean = {
   id: number
   name: string
+  type: BeanType | null
   isArchived: boolean
   roaster: string | null
   roasterRef: { id: number; name: string } | null
@@ -190,6 +191,7 @@ export function BeanEditContent({
             <div className="grid gap-4 sm:grid-cols-2">
               <InputField id="name" label="Name" placeholder="e.g., Ethiopia Yirgacheffe" value={formData.name} onChange={(value) => set("name", value)} required />
               <RoasterPicker id="roasterId" label="Roaster" placeholder="Select roaster" value={formData.roasterId} onChange={(value) => set("roasterId", value)} roasters={roasters} />
+              <SelectField id="type" label="Type" placeholder="Select type" value={formData.type} onChange={(value) => set("type", (value ?? "") as BeanType | "")} options={BEAN_TYPES} />
               <InputField id="weight" label="Bag Weight (g)" type="number" placeholder="e.g., 250" value={formData.weight} onChange={(value) => set("weight", value)} />
               <div className="flex gap-2">
                 <InputField id="price" label="Price" type="number" step="0.01" placeholder="e.g., 15.00" value={formData.price} onChange={(value) => set("price", value)} className="flex-1" />
@@ -276,7 +278,8 @@ export function BeanReadOnlyContent({ bean, shotCount, weightStats, onImagesChan
         </Card>
         <Card>
           <CardHeader><CardTitle>Processing</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-3 gap-4">
+          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div><p className="text-sm text-muted-foreground">Type</p><p className="font-medium">{bean.type ? BEAN_TYPE_LABELS[bean.type] : "-"}</p></div>
             <div><p className="text-sm text-muted-foreground">Process</p><p className="font-medium">{bean.process || "-"}</p></div>
             <div><p className="text-sm text-muted-foreground">Roast Level</p><p className="font-medium capitalize">{bean.roastLevel?.replace("_", " ") || "-"}</p></div>
             <div><p className="text-sm text-muted-foreground">Roast Date</p><p className="font-medium">{bean.roastDate ? new Date(bean.roastDate).toLocaleDateString() : "-"}</p></div>

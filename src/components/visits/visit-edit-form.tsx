@@ -11,6 +11,7 @@ import { CoffeeShopPicker } from "@/components/coffee-shops/coffee-shop-picker"
 import { TastingFields } from "@/components/form/tasting-fields"
 import { useFormState } from "@/hooks/use-form-state"
 import { DRINK_TYPE_OPTIONS } from "@/lib/constants"
+import { cafeVisitDetailsPayload } from "@/lib/cafe-visit-payload"
 import type { getActiveBeans } from "@/lib/server/beans"
 import { type getCafeVisit, updateCafeVisit } from "@/lib/server/cafe-visits"
 import type { getCoffeeShops } from "@/lib/server/coffee-shops"
@@ -73,13 +74,8 @@ export function VisitEditForm({
       coffeeShopId: form.values.coffeeShopId
         ? Number(form.values.coffeeShopId)
         : null,
-      beanId: form.values.beanId ? Number(form.values.beanId) : null,
-      drinkName: form.values.drinkName || undefined,
-      drinkType: form.values.drinkType || undefined,
-      price: form.values.price || undefined,
-      currency: form.values.currency || undefined,
+      ...cafeVisitDetailsPayload(form.values, null),
       rating: toNullableRating(form.values.rating),
-      notes: form.values.notes || undefined,
       tasteTagIds: selectedTagIds,
     }
     const errors = getCafeVisitUpdateErrors(updateData)

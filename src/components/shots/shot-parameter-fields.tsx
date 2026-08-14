@@ -98,7 +98,27 @@ export function shotFormValuesFrom(source: ShotParameterSource): ShotFormValues 
   }
 }
 
-type GearOption = { readonly id: number; readonly name: string; readonly type: string }
+type GearOption = {
+  readonly id: number
+  readonly name: string
+  readonly type: string
+  readonly isArchived?: boolean
+}
+
+export function availableGearForShot(
+  values: ShotFormValues,
+  gear: readonly GearOption[],
+): GearOption[] {
+  const selectedIds = new Set([
+    values.machineId,
+    values.grinderId,
+    values.basketId,
+    ...values.accessoryGearIds.map(String),
+  ])
+  return gear.filter(
+    (item) => !item.isArchived || selectedIds.has(String(item.id)),
+  )
+}
 
 type ShotParameterFieldsProps = {
   readonly values: ShotFormValues

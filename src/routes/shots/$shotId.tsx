@@ -43,6 +43,21 @@ export const Route = createFileRoute('/shots/$shotId')({
   component: ShotDetailPage,
 })
 
+function ShotDataFields({
+  fields,
+  valueClassName,
+}: {
+  readonly fields: readonly { readonly label: string; readonly value: string }[]
+  readonly valueClassName: string
+}) {
+  return fields.map((field) => (
+    <div key={field.label}>
+      <p className="text-sm text-muted-foreground">{field.label}</p>
+      <p className={valueClassName}>{field.value}</p>
+    </div>
+  ))
+}
+
 function ShotDetailPage() {
   const { shot } = Route.useLoaderData()
   const navigate = useNavigate()
@@ -280,14 +295,10 @@ function ShotDetailPage() {
               <CardContent>
                 {extractionMetrics.length > 0 && (
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-4">
-                    {extractionMetrics.map((field) => (
-                      <div key={field.label}>
-                        <p className="text-sm text-muted-foreground">
-                          {field.label}
-                        </p>
-                        <p className="text-xl font-semibold">{field.value}</p>
-                      </div>
-                    ))}
+                    <ShotDataFields
+                      fields={extractionMetrics}
+                      valueClassName="text-xl font-semibold"
+                    />
                   </div>
                 )}
 
@@ -298,14 +309,10 @@ function ShotDetailPage() {
 
                 {extractionDetails.length > 0 && (
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3">
-                    {extractionDetails.map((field) => (
-                      <div key={field.label}>
-                        <p className="text-sm text-muted-foreground">
-                          {field.label}
-                        </p>
-                        <p className="font-medium">{field.value}</p>
-                      </div>
-                    ))}
+                    <ShotDataFields
+                      fields={extractionDetails}
+                      valueClassName="font-medium"
+                    />
                   </div>
                 )}
               </CardContent>

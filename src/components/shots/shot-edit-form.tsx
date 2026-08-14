@@ -5,6 +5,7 @@ import { SelectField } from "@/components/form/form-field"
 import { TastingFields } from "@/components/form/tasting-fields"
 import { EntityForm, FormSection } from "@/components/form/form-shell"
 import {
+  availableGearForShot,
   ShotParameterFields,
   shotFormValuesFrom,
   type ShotFormValues,
@@ -14,6 +15,7 @@ import type { getGear } from "@/lib/server/gear"
 import type { getBrewingMethods } from "@/lib/server/brewing-methods"
 import { type getShot, updateShot } from "@/lib/server/shots"
 import type { getTasteTags } from "@/lib/server/taste-tags"
+import { shotParameterPayload } from "@/lib/new-shot-payload"
 import { getShotUpdateErrors } from "@/lib/update-validation"
 
 type Shot = NonNullable<Awaited<ReturnType<typeof getShot>>>
@@ -47,28 +49,7 @@ export function ShotEditForm({ shot, editData, onCancel, onSaved }: ShotEditForm
     event.preventDefault()
     const data = {
       id: shot.id,
-       brewingMethodId: Number(values.brewingMethodId),
-      beanId: values.beanId ? Number(values.beanId) : null,
-      machineId: values.machineId ? Number(values.machineId) : null,
-      doseGrams: values.doseGrams || null,
-      brewWaterGrams: values.brewWaterGrams || null,
-      ratioBasis: values.ratioBasis || null,
-      grinderId: values.grinderId ? Number(values.grinderId) : null,
-      grindSetting: values.grindSetting || null,
-      yieldGrams: values.yieldGrams || null,
-      shotTimeSeconds: values.shotTimeSeconds || null,
-      brewTemperatureCelsius: values.brewTemperatureCelsius || null,
-      preinfusionTimeSeconds: values.preinfusionTimeSeconds || null,
-      preinfusionPressureBar: values.preinfusionPressureBar || null,
-      bloomTimeSeconds: values.bloomTimeSeconds || null,
-      brewPressureBar: values.brewPressureBar || null,
-      flowRateMlPerSecond: values.flowRateMlPerSecond || null,
-      basketId: values.basketId ? Number(values.basketId) : null,
-      usesPuckScreen: values.usesPuckScreen,
-      paperFilterPosition: values.paperFilterPosition || null,
-      distributionMethod: values.distributionMethod || null,
-      tampForceKg: values.tampForceKg || null,
-      accessoryGearIds: values.accessoryGearIds,
+      ...shotParameterPayload(values),
       rating: values.rating || null,
       notes: values.notes || null,
       tasteTagIds,
@@ -98,15 +79,7 @@ export function ShotEditForm({ shot, editData, onCancel, onSaved }: ShotEditForm
     value: String(method.id),
     label: method.name,
   }))
-  const selectedGearIds = new Set([
-    values.machineId,
-    values.grinderId,
-    values.basketId,
-    ...values.accessoryGearIds.map(String),
-  ])
-  const gear = editData.gear.filter(
-    (item) => !item.isArchived || selectedGearIds.has(String(item.id)),
-  )
+  const gear = availableGearForShot(values, editData.gear)
   const toggleTag = (id: number) => setTasteTagIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
 
   return (

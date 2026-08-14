@@ -9,6 +9,7 @@ import {
   researchBeanFromWeb,
   type ExtractedBeanInfo,
 } from "@/lib/ai"
+import type { BeanType } from "@/lib/constants"
 
 export const getBeans = createServerFn({ method: "GET" }).handler(async () => {
   return db.query.beans.findMany({
@@ -49,6 +50,7 @@ export const createBean = createServerFn({ method: "POST" })
   .validator(
     (data: {
       name: string
+      type?: BeanType
       roaster?: string
       roasterId?: number
       origin?: string
@@ -75,6 +77,7 @@ export const updateBean = createServerFn({ method: "POST" })
     (data: {
       id: number
       name?: string
+      type?: BeanType | null
       roaster?: string
       roasterId?: number | null
       origin?: string

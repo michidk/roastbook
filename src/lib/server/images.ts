@@ -11,7 +11,7 @@ import { eq, and } from "drizzle-orm"
 import { getStorage, generateStoragePath } from "@/lib/storage"
 import { generateAndUploadThumbnail, getThumbnailPath } from "@/lib/server/thumbnails"
 
-type EntityType = "beans" | "gear" | "coffee-shops" | "shots" | "visits"
+export type EntityType = "beans" | "gear" | "coffee-shops" | "shots" | "visits"
 type ThumbnailEntityType = "beans" | "gear"
 
 const storagePathTypeMap: Record<EntityType, "beans" | "gear" | "coffee-shops" | "shots" | "cafe-visits"> = {

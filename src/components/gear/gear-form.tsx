@@ -1,4 +1,4 @@
-import { useEffect, useState, type SyntheticEvent } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { EntityForm, FormSection } from "@/components/form/form-shell"
 import {
@@ -9,9 +9,10 @@ import {
 } from "@/components/form/form-field"
 import { EntityImageUploadSection } from "@/components/form/entity-image-upload-section"
 import { useFormState } from "@/hooks/use-form-state"
+import { useFormSubmission } from "@/hooks/use-form-submission"
 import { useImageUpload } from "@/hooks/useImageUpload"
 import { createGear } from "@/lib/server/gear"
-import { uploadEntityImage } from "@/lib/server/images"
+import { uploadEntityImages } from "@/lib/upload-entity-images"
 import { GEAR_TYPES, type GearType } from "@/lib/constants"
 import { useSettingsStore } from "@/lib/settings-store"
 import {
@@ -35,7 +36,6 @@ export function GearForm({
   submitLabel = "Add Gear",
 }: GearFormProps) {
   const defaultCurrency = useSettingsStore((state) => state.defaultCurrency)
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [subtype, setSubtype] = useState(EMPTY_GEAR_SUBTYPE_VALUES)
   const imageUpload = useImageUpload()
   const { images } = imageUpload
@@ -57,13 +57,9 @@ export function GearForm({
     form.set("priceCurrency", defaultCurrency)
   }, [defaultCurrency, form.set])
 
-  const handleSubmit = async (event: SyntheticEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (!form.values.name.trim() || !form.values.type) return
-
-    setIsSubmitting(true)
-
-    try {
+  const { isSubmitting, handleSubmit } = useFormSubmission({
+    canSubmit: () => Boolean(form.values.name.trim() && form.values.type),
+    submit: async () => {
       const item = await createGear({
         data: {
           name: form.values.name,
@@ -95,26 +91,11 @@ export function GearForm({
         },
       })
 
-      for (const image of images) {
-        await uploadEntityImage({
-          data: {
-            entityType: "gear",
-            entityId: item.id,
-            fileBase64: image.base64,
-            filename: image.file.name,
-            mimeType: image.file.type,
-            sizeBytes: image.file.size,
-          },
-        })
-      }
-
+      await uploadEntityImages("gear", item.id, images)
       await onCreated(item)
-    } catch {
-      toast.error("Could not save this gear")
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+    },
+    onError: () => toast.error("Could not save this gear"),
+  })
 
   return (
     <EntityForm

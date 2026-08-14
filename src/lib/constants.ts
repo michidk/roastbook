@@ -8,6 +8,18 @@ export const ROAST_LEVELS = [
 
 export type RoastLevel = (typeof ROAST_LEVELS)[number]["value"]
 
+export const BEAN_TYPES = [
+  { value: "espresso", label: "Espresso" },
+  { value: "filter", label: "Filter" },
+  { value: "decaf", label: "Decaf" },
+] as const
+
+export type BeanType = (typeof BEAN_TYPES)[number]["value"]
+
+export const BEAN_TYPE_LABELS: Record<BeanType, string> = Object.fromEntries(
+  BEAN_TYPES.map((type) => [type.value, type.label])
+) as Record<BeanType, string>
+
 export const PROCESS_METHODS = [
   { value: "washed", label: "Washed" },
   { value: "natural", label: "Natural" },

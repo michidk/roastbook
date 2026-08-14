@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import type { ExtractedBeanInfo } from "@/lib/ai"
-import type { RoastLevel } from "@/lib/constants"
+import type { BeanType, RoastLevel } from "@/lib/constants"
 
 interface FieldDef {
   key: keyof ExtractedBeanInfo
@@ -22,6 +22,7 @@ interface FieldDef {
 
 const FIELD_DEFINITIONS: FieldDef[] = [
   { key: "name", label: "Name", formKey: "name" },
+  { key: "type", label: "Type", formKey: "type" },
   { key: "origin", label: "Country", formKey: "origin" },
   { key: "region", label: "Region", formKey: "region" },
   { key: "farm", label: "Farm/Producer", formKey: "farm" },
@@ -44,6 +45,7 @@ const FIELD_DEFINITIONS: FieldDef[] = [
 
 export interface BeanFormData {
   name: string
+  type: BeanType | ""
   roasterId: string
   weight: string
   price: string
@@ -145,6 +147,8 @@ export function BeanInfoDiffModal({
       if (selectedFields.has(diff.field.formKey)) {
         if (diff.field.formKey === "roastLevel") {
           updates.roastLevel = diff.suggestedValue as RoastLevel
+        } else if (diff.field.formKey === "type") {
+          updates.type = diff.suggestedValue as BeanType
         } else {
           ;(updates as Record<string, string>)[diff.field.formKey] = diff.suggestedValue
         }

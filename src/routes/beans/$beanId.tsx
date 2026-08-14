@@ -92,6 +92,7 @@ function BeanDetailPage() {
       await updateBean({ data: {
         id: bean.id,
         name: formData.name,
+        type: formData.type || null,
         roasterId: formData.roasterId ? Number(formData.roasterId) : null,
         weight: formData.weight || null,
         price: formData.price || null,

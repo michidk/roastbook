@@ -74,27 +74,17 @@ function parseNullableFloat(value: string | null): number | null {
   return Number.isNaN(parsed) ? null : parsed
 }
 
-function compareNullableNumber(
-  a: number | null,
-  b: number | null,
+function compareNullable<Value>(
+  a: Value | null,
+  b: Value | null,
   direction: SortDirection,
+  compare: (left: Value, right: Value) => number,
 ): number {
   if (a === null && b === null) return 0
   if (a === null) return 1
   if (b === null) return -1
-  return direction === "asc" ? a - b : b - a
-}
-
-function compareNullableString(
-  a: string | null,
-  b: string | null,
-  direction: SortDirection,
-): number {
-  if (a === null && b === null) return 0
-  if (a === null) return 1
-  if (b === null) return -1
-  const cmp = a.localeCompare(b)
-  return direction === "asc" ? cmp : -cmp
+  const result = compare(a, b)
+  return direction === "asc" ? result : -result
 }
 
 function compareShots(
@@ -110,31 +100,35 @@ function compareShots(
       return direction === "asc" ? difference : -difference
     }
     case "bean":
-      return compareNullableString(
+      return compareNullable(
         left.bean?.name ?? null,
         right.bean?.name ?? null,
         direction,
+        (a, b) => a.localeCompare(b),
       )
     case "dose":
-      return compareNullableNumber(
+      return compareNullable(
         parseNullableFloat(left.doseGrams),
         parseNullableFloat(right.doseGrams),
         direction,
+        (a, b) => a - b,
       )
     case "yield":
-      return compareNullableNumber(
+      return compareNullable(
         parseNullableFloat(left.yieldGrams),
         parseNullableFloat(right.yieldGrams),
         direction,
+        (a, b) => a - b,
       )
     case "time":
-      return compareNullableNumber(
+      return compareNullable(
         parseNullableFloat(left.shotTimeSeconds),
         parseNullableFloat(right.shotTimeSeconds),
         direction,
+        (a, b) => a - b,
       )
     case "rating":
-      return compareNullableNumber(left.rating, right.rating, direction)
+      return compareNullable(left.rating, right.rating, direction, (a, b) => a - b)
   }
 }
 
