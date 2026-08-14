@@ -64,7 +64,13 @@ export function BrandLink({ className }: { readonly className?: string }) {
       className={cn("flex shrink-0 items-center gap-2", className)}
     >
       <div className="flex size-9 items-center justify-center overflow-hidden rounded-xl">
-        <img src="/roastbook-logo.png" alt="" className="size-full object-cover" />
+        <img
+          src="/roastbook-logo.png"
+          alt=""
+          width={36}
+          height={36}
+          className="size-full object-cover"
+        />
       </div>
       <span className="font-display text-xl font-extrabold tracking-tight text-foreground">
         Roastbook
