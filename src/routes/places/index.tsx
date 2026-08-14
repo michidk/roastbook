@@ -1,22 +1,26 @@
-import { createFileRoute, Link } from "@tanstack/react-router"
-import { MapPin, Plus } from "lucide-react"
-import { CoffeeShopCard } from "@/components/coffee-shops/coffee-shop-card"
-import { EmptyState } from "@/components/EmptyState"
-import { RouteError } from "@/components/route-error"
-import { ListPending } from "@/components/route-pending"
-import { Button } from "@/components/ui/button"
-import { sortCoffeeShopsByFavoriteAndLastVisit } from "@/lib/coffee-shop-ranking"
-import { getCafeVisits } from "@/lib/server/cafe-visits"
-import { getCoffeeShops } from "@/lib/server/coffee-shops"
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { MapPin, Plus } from 'lucide-react'
+import { z } from 'zod'
+import { CoffeeShopCard } from '@/components/coffee-shops/coffee-shop-card'
+import { CollectionToolbar } from '@/components/collection-toolbar'
+import { EmptyState } from '@/components/EmptyState'
+import { Page, PageHeader } from '@/components/page-layout'
+import { PaginationControls } from '@/components/pagination-controls'
+import { RouteError } from '@/components/route-error'
+import { ListPending } from '@/components/route-pending'
+import { Button } from '@/components/ui/button'
+import { getCoffeeShopPage } from '@/lib/server/coffee-shops'
 
-export const Route = createFileRoute("/places/")({
-  loader: async () => {
-    const [coffeeShops, visits] = await Promise.all([
-      getCoffeeShops(),
-      getCafeVisits(),
-    ])
-    return sortCoffeeShopsByFavoriteAndLastVisit(coffeeShops, visits)
-  },
+const placesSearchSchema = z.object({
+  page: z.number().int().min(1).default(1).catch(1),
+  query: z.string().max(200).default('').catch(''),
+})
+
+export const Route = createFileRoute('/places/')({
+  validateSearch: placesSearchSchema,
+  loaderDeps: ({ search }) => ({ page: search.page, query: search.query }),
+  loader: ({ deps }) => getCoffeeShopPage({ data: deps }),
+  staleTime: 15_000,
   component: PlacesPage,
   pendingComponent: ListPending,
   errorComponent: ({ error }) => (
@@ -25,44 +29,71 @@ export const Route = createFileRoute("/places/")({
 })
 
 function PlacesPage() {
-  const coffeeShops = Route.useLoaderData()
+  const pageData = Route.useLoaderData()
+  const search = Route.useSearch()
+  const navigate = useNavigate({ from: '/places/' })
+  const coffeeShops = pageData.items
+  const updateSearch = (values: Partial<typeof search>) =>
+    navigate({ search: (current) => ({ ...current, ...values }) })
 
   return (
-    <div className="space-y-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
-            Places
-          </h1>
-          <p className="mt-1 text-sm font-semibold text-muted-foreground">
-            Manage {coffeeShops.length} saved {coffeeShops.length === 1 ? "café" : "cafés"}
-          </p>
-        </div>
-        <Button asChild>
-          <Link to="/shops/new">
-            <Plus aria-hidden className="h-4 w-4" />
-            Add a place
-          </Link>
-        </Button>
-      </header>
+    <Page>
+      <PageHeader
+        title="Cafés"
+        description={
+          <>
+            Manage {pageData.totalItems} saved{' '}
+            {pageData.totalItems === 1 ? 'café' : 'cafés'}
+          </>
+        }
+        actions={
+          <Button asChild>
+            <Link to="/shops/new">
+              <Plus aria-hidden className="h-4 w-4" />
+              Add café
+            </Link>
+          </Button>
+        }
+      />
 
-      {coffeeShops.length === 0 ? (
+      <CollectionToolbar
+        value={search.query}
+        onValueChange={(query) => updateSearch({ query, page: 1 })}
+        placeholder="Search cafés…"
+        ariaLabel="Search cafés"
+        resultLabel={`${pageData.totalItems} ${pageData.totalItems === 1 ? 'café' : 'cafés'}`}
+      />
+
+      {pageData.totalItems === 0 && !search.query ? (
         <EmptyState
           icon={MapPin}
-          title="No places added yet"
-          description="Add your favorite cafés and coffee spots"
-          actionLabel="Add a place"
+          title="No cafés added yet"
+          description="Add the cafés you want to remember"
+          actionLabel="Add café"
           actionHref="/shops/new"
         />
+      ) : pageData.totalItems === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No cafés match “{search.query}”.
+        </p>
       ) : (
-        <div className="@container">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {coffeeShops.map((coffeeShop) => (
-              <CoffeeShopCard key={coffeeShop.id} coffeeShop={coffeeShop} />
-            ))}
+        <>
+          <div className="@container">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {coffeeShops.map((coffeeShop) => (
+                <CoffeeShopCard key={coffeeShop.id} coffeeShop={coffeeShop} />
+              ))}
+            </div>
           </div>
-        </div>
+          {pageData.totalPages > 1 && (
+            <PaginationControls
+              page={pageData.page}
+              totalPages={pageData.totalPages}
+              onPageChange={(page) => updateSearch({ page })}
+            />
+          )}
+        </>
       )}
-    </div>
+    </Page>
   )
 }

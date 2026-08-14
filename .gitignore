@@ -17,15 +17,14 @@ todos.json
 
 # Agent/session artifacts
 .omo/
+.artifacts/
 
 # Uploads (user data)
 /uploads/
 
-# Screenshots (debug artifacts)
-*.png
-!public/roastbook-logo.png
+# Legacy root-level screenshots (new QA artifacts belong in .artifacts/qa/)
+/*.png
 logs/
-.omo/
 
 # Repository-local Codacy CLI installation
 .codacy/

@@ -4,10 +4,11 @@ export interface StorageProvider {
   delete(path: string): Promise<void>
   getUrl(path: string): string
   exists(path: string): Promise<boolean>
+  list(prefix?: string): Promise<string[]>
 }
 
 export interface StorageConfig {
-  provider: "local" | "s3"
+  provider: 'local' | 's3'
   local?: {
     basePath: string
     baseUrl: string

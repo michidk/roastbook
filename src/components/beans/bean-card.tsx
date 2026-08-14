@@ -1,10 +1,16 @@
-import { Link } from "@tanstack/react-router"
-import { ArrowUpRight, Bean, CalendarDays, MapPin, Scale } from "lucide-react"
-import { ImageWithFallback } from "@/components/image-with-fallback"
-import { Card, CardContent } from "@/components/ui/card"
-import { thumbnailUrl } from "@/lib/image-url"
-import type { getBeans } from "@/lib/server/beans"
-import { BEAN_TYPE_LABELS } from "@/lib/constants"
+import { Link } from '@tanstack/react-router'
+import { ArrowUpRight, Bean, CalendarDays, MapPin, Scale } from 'lucide-react'
+import { ImageWithFallback } from '@/components/image-with-fallback'
+import {
+  Card,
+  CardContent,
+  interactiveCardLinkClassName,
+} from '@/components/ui/card'
+import { useDateFormatter } from '@/hooks/use-date-formatter'
+import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { BEAN_TYPE_LABELS } from '@/lib/constants'
+import { thumbnailUrl } from '@/lib/image-url'
+import type { getBeans } from '@/lib/server/beans'
 
 type BeanRecord = Awaited<ReturnType<typeof getBeans>>[number]
 
@@ -13,45 +19,43 @@ type BeanCardProps = {
 }
 
 const roastLabels = {
-  light: "Light",
-  medium_light: "Medium-light",
-  medium: "Medium",
-  medium_dark: "Medium-dark",
-  dark: "Dark",
+  light: 'Light',
+  medium_light: 'Medium-light',
+  medium: 'Medium',
+  medium_dark: 'Medium-dark',
+  dark: 'Dark',
 } as const
 
 export function BeanCard({ bean }: BeanCardProps) {
-  const thumbnail = bean.images.find((image) => image.isThumbnail) ?? bean.images[0]
+  const formatDate = useDateFormatter()
+  const formatNumber = useNumberFormatter()
+  const thumbnail =
+    bean.images.find((image) => image.isThumbnail) ?? bean.images[0]
   const roastLabel = bean.roastLevel ? roastLabels[bean.roastLevel] : null
-  const roastLabelColor = bean.roastLevel === "medium_light" ? "text-primary" : "text-white"
+  const roastLabelColor =
+    bean.roastLevel === 'medium_light' ? 'text-primary' : 'text-white'
   const roasterName = bean.roasterRef?.name ?? bean.roaster
-  const origin = [bean.region, bean.origin].filter(Boolean).join(", ")
+  const origin = [bean.region, bean.origin].filter(Boolean).join(', ')
   const process = bean.process
     ? bean.process
-        .replaceAll("_", " ")
+        .replaceAll('_', ' ')
         .replace(/^./, (firstLetter) => firstLetter.toUpperCase())
     : null
   const originAndProcess =
     origin && process ? `${origin} · ${process}` : origin || process || null
   const bagWeight = parseBagWeight(bean.weight)
-  const roastDate = bean.roastDate
-    ? new Date(bean.roastDate).toLocaleDateString("en", {
-        day: "numeric",
-        month: "short",
-        timeZone: "UTC",
-      })
-    : null
+  const roastDate = bean.roastDate ? formatDate(bean.roastDate) : null
 
   return (
     <Link
       to="/beans/$beanId"
       params={{ beanId: String(bean.id) }}
       aria-label={`View ${bean.name}`}
-      className="group block h-full min-w-0 rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      className={`${interactiveCardLinkClassName} rounded-2xl`}
     >
       <Card
         size="sm"
-        className={`relative isolate min-w-0 overflow-hidden rounded-2xl border-0 bg-coffee p-0 text-white shadow-none transition-transform duration-200 group-hover:-translate-y-0.5 motion-reduce:group-hover:translate-none ${bean.isArchived ? "h-[20rem] lg:h-[19rem]" : "h-[23rem] sm:h-[23.5rem] lg:h-[22rem]"}`}
+        className={`relative isolate min-w-0 overflow-hidden rounded-2xl border-0 bg-coffee p-0 text-white shadow-none ${bean.isArchived ? 'h-[20rem] lg:h-[19rem]' : 'h-[23rem] sm:h-[23.5rem] lg:h-[22rem]'}`}
       >
         <div className="absolute inset-0">
           {thumbnail ? (
@@ -94,7 +98,9 @@ export function BeanCard({ bean }: BeanCardProps) {
                 </span>
               )}
               {roastLabel && (
-                <span className={`flex min-h-9 items-center rounded-full border border-white/60 bg-black/65 px-3 py-1.5 text-xs font-bold tracking-[0.04em] uppercase backdrop-blur-[2px] ${roastLabelColor}`}>
+                <span
+                  className={`flex min-h-9 items-center rounded-full border border-white/60 bg-black/65 px-3 py-1.5 text-xs font-bold tracking-[0.04em] uppercase backdrop-blur-[2px] ${roastLabelColor}`}
+                >
                   {roastLabel}
                 </span>
               )}
@@ -121,17 +127,26 @@ export function BeanCard({ bean }: BeanCardProps) {
             )}
 
             {(roastDate || bagWeight !== null) && (
-              <div className={`mt-4 grid border-t border-white/35 pt-4 text-xs text-white/85 lg:text-base ${roastDate && bagWeight !== null ? "grid-cols-2" : "grid-cols-1"}`}>
+              <div
+                className={`mt-4 grid border-t border-white/35 pt-4 text-xs text-white/85 lg:text-base ${roastDate && bagWeight !== null ? 'grid-cols-2' : 'grid-cols-1'}`}
+              >
                 {roastDate && (
                   <span className="flex min-w-0 items-center gap-2 pr-3">
-                    <CalendarDays className="size-4 shrink-0" aria-hidden="true" />
+                    <CalendarDays
+                      className="size-4 shrink-0"
+                      aria-hidden="true"
+                    />
                     <span className="truncate">{roastDate}</span>
                   </span>
                 )}
                 {bagWeight !== null && (
-                  <span className={`flex min-w-0 items-center gap-2 ${roastDate ? "border-l border-white/30 pl-4" : ""}`}>
+                  <span
+                    className={`flex min-w-0 items-center gap-2 ${roastDate ? 'border-l border-white/30 pl-4' : ''}`}
+                  >
                     <Scale className="size-4 shrink-0" aria-hidden="true" />
-                    <span className="truncate tabular-nums">{Math.round(bagWeight)}g</span>
+                    <span className="truncate tabular-nums">
+                      {formatNumber(Math.round(bagWeight))} g
+                    </span>
                   </span>
                 )}
               </div>

@@ -1,14 +1,14 @@
-import { useCallback, useMemo, useState } from "react"
-import { MapPin } from "lucide-react"
-import { EmptyState } from "@/components/EmptyState"
-import { VisitsMapCanvas } from "@/components/visits/visits-map-canvas"
-import { VisitsMapPlaceCard } from "@/components/visits/visits-map-place-card"
+import { MapPin } from 'lucide-react'
+import { useCallback, useMemo, useState } from 'react'
+import { EmptyState } from '@/components/EmptyState'
+import { VisitsMapCanvas } from '@/components/visits/visits-map-canvas'
+import { VisitsMapPlaceCard } from '@/components/visits/visits-map-place-card'
 import {
-  toSavedMapPlaces,
   type PlaceVisitInput,
   type SavedPlaceInput,
-} from "@/components/visits/visits-map-utils"
-import { useSettingsStore } from "@/lib/settings-store"
+  toSavedMapPlaces,
+} from '@/components/visits/visits-map-utils'
+import { useAppSettings } from '@/hooks/use-app-settings'
 
 type CoffeeShopMapProps = {
   readonly coffeeShops: readonly SavedPlaceInput[]
@@ -19,9 +19,7 @@ export function CoffeeShopMap({
   coffeeShops,
   visits = [],
 }: CoffeeShopMapProps) {
-  const defaultMapLocation = useSettingsStore(
-    (state) => state.defaultMapLocation,
-  )
+  const { defaultMapLocation } = useAppSettings()
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null)
   const [inspectorFocusRequest, setInspectorFocusRequest] = useState(0)
   const savedPlaces = useMemo(
@@ -45,8 +43,8 @@ export function CoffeeShopMap({
       <EmptyState
         icon={MapPin}
         title="No cafés on the map yet"
-        description="Add a location to a saved coffee shop to see it here."
-        actionLabel="Add a place"
+        description="Add a location to a saved café to see it here."
+        actionLabel="Add a café"
         actionHref="/shops/new"
       />
     )
@@ -70,7 +68,7 @@ export function CoffeeShopMap({
         )}
       </div>
       <p className="border-t border-border bg-card px-4 py-3 text-xs text-muted-foreground">
-        ©{" "}
+        ©{' '}
         <a
           className="underline underline-offset-2 hover:text-foreground"
           href="https://www.openstreetmap.org/copyright"
@@ -79,7 +77,7 @@ export function CoffeeShopMap({
         >
           OpenStreetMap contributors
         </a>
-        {" · © "}
+        {' · © '}
         <a
           className="underline underline-offset-2 hover:text-foreground"
           href="https://carto.com/attributions"

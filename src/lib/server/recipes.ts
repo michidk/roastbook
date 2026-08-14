@@ -1,21 +1,24 @@
 import { createServerFn } from '@tanstack/react-start'
 import { desc, eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from '@/db'
 import { recipes, shots } from '@/db/schema'
 import { projectShotParameters } from '@/lib/server/shot-parameter-projection'
 import {
-  assertValidUpdate,
-  getShotUpdateErrors,
-  type ShotUpdateCandidate,
-} from '@/lib/update-validation'
+  nameSchema,
+  positiveIdSchema,
+  shotUpdateSchema,
+} from '@/lib/server-validation'
+import { assertValidUpdate, getShotUpdateErrors } from '@/lib/update-validation'
 
-type RecipeUpdate = Omit<
-  ShotUpdateCandidate,
-  'rating' | 'notes' | 'tasteTagIds'
-> & {
-  readonly name: string
-  readonly beanId: number | null
-}
+const recipeUpdateSchema = shotUpdateSchema
+  .omit({ rating: true, notes: true, tasteTagIds: true })
+  .extend({ name: nameSchema })
+
+const saveShotAsRecipeSchema = z.object({
+  shotId: positiveIdSchema,
+  name: nameSchema,
+})
 
 class RecipeInputError extends Error {
   constructor(message: string) {
@@ -40,7 +43,7 @@ export const getRecipes = createServerFn({ method: 'GET' }).handler(async () =>
 )
 
 export const getRecipe = createServerFn({ method: 'GET' })
-  .validator((id: number) => id)
+  .validator(positiveIdSchema)
   .handler(async ({ data: id }) =>
     db.query.recipes.findFirst({
       where: eq(recipes.id, id),
@@ -49,11 +52,10 @@ export const getRecipe = createServerFn({ method: 'GET' })
   )
 
 export const updateRecipe = createServerFn({ method: 'POST' })
-  .validator((data: RecipeUpdate) => {
-    const name = data.name.trim()
-    if (!name) throw new RecipeInputError('Enter a recipe name')
+  .validator((input: unknown) => {
+    const data = recipeUpdateSchema.parse(input)
     assertValidUpdate(getShotUpdateErrors(data))
-    return { ...data, name }
+    return data
   })
   .handler(async ({ data }) =>
     db.transaction(async (tx) => {
@@ -81,10 +83,7 @@ export const updateRecipe = createServerFn({ method: 'POST' })
   )
 
 export const saveShotAsRecipe = createServerFn({ method: 'POST' })
-  .validator((data: { readonly shotId: number; readonly name: string }) => ({
-    shotId: data.shotId,
-    name: data.name.trim(),
-  }))
+  .validator(saveShotAsRecipeSchema)
   .handler(async ({ data }) => {
     if (!data.name) return null
     const shot = await db.query.shots.findFirst({
@@ -106,7 +105,7 @@ export const saveShotAsRecipe = createServerFn({ method: 'POST' })
   })
 
 export const deleteRecipe = createServerFn({ method: 'POST' })
-  .validator((id: number) => id)
+  .validator(positiveIdSchema)
   .handler(async ({ data: id }) => {
     await db.delete(recipes).where(eq(recipes.id, id))
   })

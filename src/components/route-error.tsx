@@ -1,9 +1,10 @@
-import { useRouter, Link } from "@tanstack/react-router"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertTriangle, RefreshCw, ArrowLeft } from "lucide-react"
-import { getErrorDisplayState } from "@/lib/error-display"
-import { ErrorDetails } from "@/components/error-details"
+import { Link, useRouter } from '@tanstack/react-router'
+import { AlertTriangle, ArrowLeft, RefreshCw } from 'lucide-react'
+import { ErrorDetails } from '@/components/error-details'
+import { Page } from '@/components/page-layout'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { getErrorDisplayState } from '@/lib/error-display'
 
 interface RouteErrorProps {
   error: Error
@@ -11,13 +12,20 @@ interface RouteErrorProps {
   backLabel?: string
 }
 
-export function RouteError({ error, backTo, backLabel = "Go back" }: RouteErrorProps) {
+export function RouteError({
+  error,
+  backTo,
+  backLabel = 'Go back',
+}: RouteErrorProps) {
   const router = useRouter()
   const errorState = getErrorDisplayState(error)
 
   return (
-    <div className="flex items-center justify-center min-h-[50vh]">
-      <Card className="max-w-md w-full">
+    <Page
+      width="form"
+      className="flex min-h-[50vh] items-center justify-center"
+    >
+      <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
             <AlertTriangle className="h-6 w-6 text-destructive" />
@@ -45,11 +53,9 @@ export function RouteError({ error, backTo, backLabel = "Go back" }: RouteErrorP
               Try again
             </Button>
           </div>
-          {process.env.NODE_ENV === "development" && (
-            <ErrorDetails error={error} />
-          )}
+          {import.meta.env.DEV && <ErrorDetails error={error} />}
         </CardContent>
       </Card>
-    </div>
+    </Page>
   )
 }

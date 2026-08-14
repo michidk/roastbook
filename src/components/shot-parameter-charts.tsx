@@ -1,12 +1,13 @@
-import { useMemo, type ReactNode } from "react"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts"
+import { type ReactNode, useMemo } from 'react'
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
+  type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+} from '@/components/ui/chart'
+import { useDateFormatter } from '@/hooks/use-date-formatter'
 
 type Shot = {
   id: number
@@ -23,35 +24,30 @@ type ShotParameterChartsProps = {
 
 const chartConfig = {
   dose: {
-    label: "Dose (g)",
-    color: "var(--chart-1)",
+    label: 'Dose (g)',
+    color: 'var(--chart-1)',
   },
   yield: {
-    label: "Yield (g)",
-    color: "var(--chart-2)",
+    label: 'Yield (g)',
+    color: 'var(--chart-2)',
   },
   grind: {
-    label: "Grind",
-    color: "var(--chart-3)",
+    label: 'Grind',
+    color: 'var(--chart-3)',
   },
   time: {
-    label: "Time (s)",
-    color: "var(--chart-4)",
+    label: 'Time (s)',
+    color: 'var(--chart-4)',
   },
   ratio: {
-    label: "Ratio",
-    color: "var(--chart-5)",
+    label: 'Ratio',
+    color: 'var(--chart-5)',
   },
 } satisfies ChartConfig
 
-function formatDate(date: Date | string) {
-  const d = new Date(date)
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" })
-}
-
 function parseGrindSetting(grindSetting: string | null): number | null {
   if (!grindSetting) return null
-  const num = parseFloat(grindSetting.replace(/[^\d.-]/g, ""))
+  const num = parseFloat(grindSetting.replace(/[^\d.-]/g, ''))
   return Number.isNaN(num) ? null : num
 }
 
@@ -82,13 +78,18 @@ function ShotLineChartSection({
       <ChartContainer config={chartConfig} className="h-[200px] w-full">
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="date" fontSize={12} tickLine={false} axisLine={false} />
+          <XAxis
+            dataKey="date"
+            fontSize={12}
+            tickLine={false}
+            axisLine={false}
+          />
           <YAxis
             fontSize={12}
             tickLine={false}
             axisLine={false}
             unit={unit}
-            domain={["auto", "auto"]}
+            domain={['auto', 'auto']}
           />
           <ChartTooltip content={<ChartTooltipContent />} />
           {children}
@@ -99,16 +100,19 @@ function ShotLineChartSection({
 }
 
 export function ShotParameterCharts({ shots }: ShotParameterChartsProps) {
+  const formatDate = useDateFormatter()
   const chartData = useMemo(() => {
     const sortedShots = [...shots].sort(
-      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     )
 
     return sortedShots.map((shot, index) => {
       const dose = shot.doseGrams ? parseFloat(shot.doseGrams) : null
       const yieldG = shot.yieldGrams ? parseFloat(shot.yieldGrams) : null
       const grind = parseGrindSetting(shot.grindSetting)
-      const ratio = dose && yieldG ? Math.round((yieldG / dose) * 100) / 100 : null
+      const ratio =
+        dose && yieldG ? Math.round((yieldG / dose) * 100) / 100 : null
 
       return {
         index: index + 1,
@@ -116,13 +120,11 @@ export function ShotParameterCharts({ shots }: ShotParameterChartsProps) {
         dose,
         yield: yieldG,
         grind,
-        time: shot.shotTimeSeconds
-          ? parseFloat(shot.shotTimeSeconds)
-          : null,
+        time: shot.shotTimeSeconds ? parseFloat(shot.shotTimeSeconds) : null,
         ratio,
       }
     })
-  }, [shots])
+  }, [formatDate, shots])
 
   const hasDoseData = chartData.some((d) => d.dose !== null)
   const hasYieldData = chartData.some((d) => d.yield !== null)
@@ -140,11 +142,11 @@ export function ShotParameterCharts({ shots }: ShotParameterChartsProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Shot Parameters Over Time</CardTitle>
+        <CardTitle>Shot parameters over time</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {(hasDoseData || hasYieldData) && (
-          <ShotLineChartSection title="Dose & Yield" data={chartData}>
+          <ShotLineChartSection title="Dose & yield" data={chartData}>
             {hasDoseData && (
               <Line
                 type="monotone"
@@ -169,7 +171,7 @@ export function ShotParameterCharts({ shots }: ShotParameterChartsProps) {
         )}
 
         {hasGrindData && (
-          <ShotLineChartSection title="Grind Setting" data={chartData}>
+          <ShotLineChartSection title="Grind setting" data={chartData}>
             <Line
               type="monotone"
               dataKey="grind"
@@ -182,7 +184,7 @@ export function ShotParameterCharts({ shots }: ShotParameterChartsProps) {
         )}
 
         {hasTimeData && (
-          <ShotLineChartSection title="Brew Time" data={chartData} unit="s">
+          <ShotLineChartSection title="Brew time" data={chartData} unit="s">
             <Line
               type="monotone"
               dataKey="time"

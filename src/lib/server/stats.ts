@@ -1,16 +1,29 @@
-import { createServerFn } from "@tanstack/react-start"
-import { db } from "@/db"
-import { fillDailyActivity } from "@/lib/stats-activity"
-import { normalizeRatingAverages, toNullableNumber } from "@/lib/stats-number"
-import { beans, gear, shots, cafeVisits, coffeeShops } from "@/db/schema"
-import { eq, count, sql, gte, lt, desc, isNotNull, and } from "drizzle-orm"
-import { toDisplayableDatabaseError } from "@/lib/server/database-error.server"
-import { getVisitsAndPlacesStats } from "@/lib/server/stats-visits"
+import { createServerFn } from '@tanstack/react-start'
+import {
+  and,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNotNull,
+  lt,
+  sql,
+} from 'drizzle-orm'
+import { z } from 'zod'
+import { db } from '@/db'
+import { beans, cafeVisits, coffeeShops, gear, shots } from '@/db/schema'
+import { toDisplayableDatabaseError } from '@/lib/server/database-error.server'
+import { getVisitsAndPlacesStats } from '@/lib/server/stats-visits'
+import { fillDailyActivity } from '@/lib/stats-activity'
+import { normalizeRatingAverages, toNullableNumber } from '@/lib/stats-number'
 
-type ShotGearType = "grinder" | "espresso_machine"
+type ShotGearType = 'grinder' | 'espresso_machine'
 
 const shotCountSql = sql<number>`count(*)::int`
-const averageShotRatingSql = sql<string | number | null>`round(avg(${shots.rating})::numeric, 2)`
+const averageShotRatingSql = sql<
+  string | number | null
+>`round(avg(${shots.rating})::numeric, 2)`
 
 function getShotCountSince(start?: Date) {
   const query = db.select({ count: shotCountSql }).from(shots)
@@ -24,9 +37,10 @@ const beanShotSelection = {
 }
 
 function getGearUsage(type: ShotGearType) {
-  const joinCondition = type === "grinder"
-    ? eq(shots.grinderId, gear.id)
-    : eq(shots.machineId, gear.id)
+  const joinCondition =
+    type === 'grinder'
+      ? eq(shots.grinderId, gear.id)
+      : eq(shots.machineId, gear.id)
   return db
     .select({
       gearId: gear.id,
@@ -35,18 +49,29 @@ function getGearUsage(type: ShotGearType) {
     })
     .from(gear)
     .innerJoin(shots, joinCondition)
-    .where(eq(gear.type, type))
+    .where(
+      inArray(
+        gear.type,
+        type === 'grinder'
+          ? ['grinder', 'espresso_machine_with_grinder']
+          : ['espresso_machine', 'espresso_machine_with_grinder'],
+      ),
+    )
     .groupBy(gear.id, gear.name)
     .orderBy(desc(sql`count(*)`))
     .limit(5)
 }
 
-export const getDashboardStats = createServerFn({ method: "GET" }).handler(
+export const getDashboardStats = createServerFn({ method: 'GET' }).handler(
   async () => {
     try {
       const now = new Date()
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-      const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+      const startOfNextMonth = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        1,
+      )
       const [shotsCount] = await db.select({ count: count() }).from(shots)
       const [activeBeansCount] = await db
         .select({ count: count() })
@@ -62,7 +87,9 @@ export const getDashboardStats = createServerFn({ method: "GET" }).handler(
           ),
         )
       const [visitsCount] = await db.select({ count: count() }).from(cafeVisits)
-      const [coffeeShopsCount] = await db.select({ count: count() }).from(coffeeShops)
+      const [coffeeShopsCount] = await db
+        .select({ count: count() })
+        .from(coffeeShops)
 
       return {
         totalShots: shotsCount.count,
@@ -74,11 +101,11 @@ export const getDashboardStats = createServerFn({ method: "GET" }).handler(
     } catch (error) {
       throw await toDisplayableDatabaseError(error)
     }
-  }
+  },
 )
 
-export const getRecentShots = createServerFn({ method: "GET" })
-  .validator((limit: number = 5) => limit)
+export const getRecentShots = createServerFn({ method: 'GET' })
+  .validator(z.number().int().min(1).max(50).default(5))
   .handler(async ({ data: limit }) => {
     try {
       return await db.query.shots.findMany({
@@ -102,7 +129,7 @@ export const getRecentShots = createServerFn({ method: "GET" })
     }
   })
 
-export const getDetailedStats = createServerFn({ method: "GET" }).handler(
+export const getDetailedStats = createServerFn({ method: 'GET' }).handler(
   async () => {
     const now = new Date()
     const startOfWeek = new Date(now)
@@ -134,7 +161,9 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
 
       db
         .select({
-          totalGrams: sql<string | number>`coalesce(sum(${shots.doseGrams}::numeric), 0)::numeric`,
+          totalGrams: sql<
+            string | number
+          >`coalesce(sum(${shots.doseGrams}::numeric), 0)::numeric`,
           uniqueBeans: sql<number>`count(distinct ${shots.beanId})::int`,
         })
         .from(shots)
@@ -174,16 +203,24 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
         .orderBy(desc(sql`avg(${shots.rating})`))
         .limit(5),
 
-      getGearUsage("grinder"),
+      getGearUsage('grinder'),
 
-      getGearUsage("espresso_machine"),
+      getGearUsage('espresso_machine'),
 
       db
         .select({
-          avgDose: sql<string | number | null>`round(avg(${shots.doseGrams}::numeric), 1)`,
-          avgYield: sql<string | number | null>`round(avg(${shots.yieldGrams}::numeric), 1)`,
-          avgTime: sql<string | number | null>`round(avg(${shots.shotTimeSeconds})::numeric, 0)::int`,
-          avgRatio: sql<string | number | null>`round(avg(${shots.yieldGrams}::numeric / nullif(${shots.doseGrams}::numeric, 0)), 2)`,
+          avgDose: sql<
+            string | number | null
+          >`round(avg(${shots.doseGrams}::numeric), 1)`,
+          avgYield: sql<
+            string | number | null
+          >`round(avg(${shots.yieldGrams}::numeric), 1)`,
+          avgTime: sql<
+            string | number | null
+          >`round(avg(${shots.shotTimeSeconds})::numeric, 0)::int`,
+          avgRatio: sql<
+            string | number | null
+          >`round(avg(${shots.yieldGrams}::numeric / nullif(${shots.doseGrams}::numeric, 0)), 2)`,
         })
         .from(shots)
         .where(and(isNotNull(shots.doseGrams), isNotNull(shots.yieldGrams))),
@@ -195,7 +232,10 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
         })
         .from(shots)
         .where(
-          gte(shots.createdAt, new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000))
+          gte(
+            shots.createdAt,
+            new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
+          ),
         )
         .groupBy(sql`date(${shots.createdAt})`)
         .orderBy(sql`date(${shots.createdAt})`),
@@ -208,7 +248,7 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
     const daysSinceFirst = firstShotDate[0]?.date
       ? Math.ceil(
           (now.getTime() - new Date(firstShotDate[0].date).getTime()) /
-            (1000 * 60 * 60 * 24)
+            (1000 * 60 * 60 * 24),
         )
       : 0
 
@@ -252,5 +292,5 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
       activity: fillDailyActivity(recentActivity, now),
       ...visitsAndPlaces,
     }
-  }
+  },
 )

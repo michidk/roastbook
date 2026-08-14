@@ -1,5 +1,5 @@
-import { EntityPicker } from "@/components/form/entity-picker"
-import { RoasterForm } from "@/components/roasters/roaster-form"
+import { EntityPicker } from '@/components/form/entity-picker'
+import { RoasterForm } from '@/components/roasters/roaster-form'
 
 export interface RoasterOption {
   id: number
@@ -26,7 +26,7 @@ export function RoasterPicker({
   value,
   onChange,
   roasters,
-  placeholder = "Select roaster",
+  placeholder = 'Select roaster',
   required,
   disabled,
   className,
@@ -41,7 +41,7 @@ export function RoasterPicker({
       getKey={(roaster) => roaster.id}
       getLabel={(roaster) => roaster.name}
       getDescription={(roaster) =>
-        [roaster.location, roaster.country].filter(Boolean).join(", ") || null
+        [roaster.location, roaster.country].filter(Boolean).join(', ') || null
       }
       placeholder={placeholder}
       searchPlaceholder="Search roasters…"

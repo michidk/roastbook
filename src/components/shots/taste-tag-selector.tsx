@@ -1,5 +1,5 @@
-import { Label } from "@/components/ui/label"
-import { cn } from "@/lib/utils"
+import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
 
 type TasteTag = {
   readonly id: number
@@ -33,10 +33,10 @@ export function TasteTagSelector({
               aria-pressed={isSelected}
               onClick={() => onToggle(tag.id)}
               className={cn(
-                "min-h-11 rounded-xl border px-3 py-2 text-sm font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                'min-h-11 rounded-xl border px-3 py-2 text-sm font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
                 isSelected
-                  ? "border-foreground bg-primary text-primary-foreground"
-                  : "border-border bg-secondary",
+                  ? 'border-foreground bg-primary text-primary-foreground'
+                  : 'border-border bg-secondary',
               )}
             >
               {tag.name}

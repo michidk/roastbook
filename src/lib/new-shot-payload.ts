@@ -1,4 +1,4 @@
-import type { ShotFormValues } from "@/components/shots/shot-parameter-fields"
+import type { ShotFormValues } from '@/components/shots/shot-parameter-fields'
 
 export function shotParameterPayload(values: ShotFormValues) {
   return {

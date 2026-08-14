@@ -1,236 +1,137 @@
-# Roastbook
+# Roastbook agent guide
 
-A self-hosted coffee logging application for tracking espresso shots, cafe visits, beans, and gear. Built with TanStack Start, shadcn/ui, PostgreSQL/Drizzle, deployed via Helm with hodor authentication.
+Roastbook is a self-hosted coffee journal built with Bun, TanStack Start,
+React 19, shadcn/ui, PostgreSQL/Drizzle, and local or S3-compatible storage.
+Production deployments use Docker or the Helm chart and normally place the
+Hodor authentication proxy in front of the application.
 
-## Stack
+## Sources of truth
 
-| Layer | Technology |
-|-------|------------|
-| Runtime | [Bun](https://bun.sh) |
-| Framework | [TanStack Start](https://tanstack.com/start) (React 19, Vite 8) |
-| Routing | [TanStack Router](https://tanstack.com/router) (file-based) |
-| UI | [shadcn/ui](https://ui.shadcn.com) with base components, Tailwind CSS v4 |
-| Database | PostgreSQL with [Drizzle ORM](https://orm.drizzle.team) |
-| Storage | Local filesystem or S3-compatible (abstraction layer) |
-| AI | OpenAI GPT-4o Vision (bean info extraction from images) |
-| Auth Gate | [hodor](https://github.com/michidk/hodor) (sidecar reverse proxy) |
-| Container | Docker (multi-stage, bun:1-slim) |
-| Orchestration | Kubernetes via Helm |
-| CI/CD | GitHub Actions |
+- Product setup and entry points: `README.md`
+- Local development and verification: `docs/development.md`
+- Runtime configuration: `docs/configuration.md`
+- Docker, Helm, and security boundary: `docs/deployment.md`
+- Visual and interaction rules: `DESIGN.md`
+- Database schema: `src/db/schema.ts`
+- Helm defaults: `charts/values.yaml`
 
-## Project Structure
+Do not duplicate configuration tables or deployment examples here. Update the
+source-of-truth document alongside behavior changes.
 
-```
-├── src/
-│   ├── routes/           # File-based routes (TanStack Router)
-│   ├── components/ui/    # shadcn/ui components
-│   ├── db/               # Database (Drizzle ORM)
-│   │   ├── schema.ts     # Table definitions (beans, gear, places, shots, cafe_visits, taste_tags)
-│   │   └── index.ts      # Database connection
-│   ├── lib/
-│   │   ├── utils.ts      # cn helper
-│   │   ├── openai.ts     # OpenAI vision integration
-│   │   └── storage/      # Storage abstraction layer
-│   │       ├── index.ts  # Factory and singleton
-│   │       ├── types.ts  # StorageProvider interface
-│   │       ├── local.ts  # Local filesystem provider
-│   │       └── s3.ts     # S3-compatible provider
-│   ├── hooks/            # Custom React hooks
-│   ├── styles.css        # Global styles + Tailwind + CSS variables
-│   ├── router.tsx        # Router configuration
-│   └── routeTree.gen.ts  # Auto-generated route tree
-├── drizzle/              # Generated migrations
-├── charts/               # Helm chart
-├── .github/workflows/    # CI pipeline
-├── Dockerfile
-├── components.json       # shadcn/ui configuration
-└── vite.config.ts
-```
+## Architecture boundaries
+
+- Routes live in `src/routes/` and use TanStack Router file-based routing.
+- Shared UI primitives live in `src/components/ui/`; extend them with `cn()`
+  instead of recreating their behavior in route components.
+- Reusable page, form, dialog, and entity components live in
+  `src/components/`.
+- Server-side domain operations live in `src/lib/server/`.
+- `src/lib/ai.ts`, database access, storage providers, and secrets are
+  server-only. Never import them into browser code or expose non-`VITE_`
+  environment variables to the client.
+- Define and validate server variables in `src/lib/env.server.ts`. Define
+  browser-visible `VITE_` variables in `src/lib/env.ts`; do not read application
+  configuration directly from `process.env` or `import.meta.env` elsewhere.
+- Hodor is the production authentication boundary. TanStack server functions
+  must not be exposed publicly by bypassing it.
+
+## Generated and stateful files
+
+- Never edit `src/routeTree.gen.ts` manually. Run `bun run generate-routes`.
+- Change `src/db/schema.ts` first, then run `bun run db:generate` and commit the
+  generated migration and Drizzle metadata together.
+- Use `bun run db:migrate` for committed migrations. `db:push` is only for
+  disposable local databases.
+- Treat uploads and database contents as user data. Do not delete, rewrite, or
+  migrate them unless the task explicitly requires it.
+- Put temporary browser screenshots and recordings under `.artifacts/qa/`.
+  Never add browser automation dependencies or generated test artifacts.
 
 ## Commands
 
 ```bash
-bun install              # Install dependencies
-bun run dev              # Development server (port 3000)
-bun run build            # Production build
-bun run generate-routes  # Regenerate route tree
+bun install --frozen-lockfile
+bun run dev
+bun run check
+bun run typecheck
+bun run test
+bun run lint:deadcode
+bun run build
+bun run verify
 ```
 
-## Browser QA
+Use `bun run test:integration` only with the required isolated PostgreSQL and
+S3-compatible test services. It intentionally fails when their environment
+variables are absent.
 
-- Use the Playwright MCP for temporary browser-based verification when needed.
-- Do not add Playwright test files, Playwright configuration, Playwright dependencies, or generated Playwright test artifacts to the codebase.
-- Keep browser QA ephemeral; the repository has no automated test suite, so browser QA and manual verification are the primary behavioral checks.
+## Required verification
 
-## Adding UI Components
+- Documentation/config-only change: `bun run check`; also validate the affected
+  format, such as `docker compose config` or `helm lint charts`.
+- TypeScript logic change: targeted tests, `bun run check`, and
+  `bun run typecheck`.
+- Route or UI behavior change: the TypeScript checks plus an ephemeral browser
+  pass at 375px, 768px, and 1280px. Inspect console errors and failed requests.
+- Schema/storage change: relevant unit and integration tests, migrations, and a
+  production build.
+- Before handoff of a broad change: `bun run verify`. CI additionally runs the
+  integration services and deployment-config checks.
 
-```bash
-bunx shadcn@latest add button
-bunx shadcn@latest add card dialog
-```
+Do not claim integration or browser coverage when it was skipped or unavailable.
 
-## UI Guidelines
+## UI rules
 
-**Always prefer shadcn/ui components** over custom implementations. The project uses `base-nova` style with neutral base colors.
+- Prefer existing shadcn/ui components; install a missing primitive with
+  `bunx shadcn@latest add <component>`.
+- Follow `DESIGN.md` for tokens, shared page widths, responsive behavior,
+  accessibility, and dialog structure.
+- Use Lucide icons and accessible names for icon-only controls.
+- Preserve keyboard access, visible focus, 44px coarse-pointer targets, and
+  intentional loading, empty, and error states.
+- Use real links for navigation and semantic controls for actions.
 
-### Theming
+## Implementation style
 
-Theme colors should match the app's vibe - a warm, inviting aesthetic appropriate for a coffee roasting journal:
-- Use warm neutrals and earthy tones
-- CSS variables are configured in `src/styles.css`
-- Customize shadcn theme colors to evoke coffee/roasting aesthetics (browns, ambers, warm grays)
-
-### Component Usage
-
-1. **Check existing components first**: Look in `src/components/ui/` before creating new ones
-2. **Install missing components**: `bunx shadcn@latest add <component>`
-3. **Extend, don't override**: Use the `cn()` helper from `@/lib/utils` to extend component styles
-4. **Icons**: Use `lucide-react` (configured in `components.json`)
-
-## Docker
-
-```bash
-docker build -t roastbook .
-docker run -p 3000:3000 roastbook
-```
-
-## Helm Deployment
-
-```bash
-helm install roastbook ./charts \
-  --set hodor.password="your-password" \
-  --set hodor.secret="$(openssl rand -hex 32)" \
-  --set image.tag="latest"
-  --set postgresql.host="postgres.default.svc" \
-  --set postgresql.password="db-password"
-```
-
-### Storage Configuration
-
-| Value | Description | Default |
-|-------|-------------|---------|
-| `storage.provider` | Storage backend (`local` or `s3`) | `local` |
-| `storage.local.path` | Mount path for uploads | `/data/uploads` |
-| `storage.local.size` | PVC size | `10Gi` |
-| `storage.local.storageClass` | Storage class | `""` |
-| `storage.s3.bucket` | S3 bucket name | `""` |
-| `storage.s3.region` | S3 region | `us-east-1` |
-| `storage.s3.endpoint` | Custom endpoint (MinIO, etc.) | `""` |
-| `storage.s3.existingSecret` | Secret with S3 credentials | `""` |
-
-### OpenAI Configuration
-
-| Value | Description | Default |
-|-------|-------------|---------|
-| `openai.existingSecret` | Secret containing API key | `""` |
-| `openai.existingSecretKey` | Key within secret | `api-key` |
-
-### Hodor Configuration
-
-hodor runs as a sidecar, gating access with a shared password:
-
-| Value | Description | Default |
-|-------|-------------|---------|
-| `hodor.enabled` | Enable auth gate | `true` |
-| `hodor.password` | Login password (required) | - |
-| `hodor.secret` | Cookie signing key | auto-generated |
-| `hodor.title` | Login page title | `"Roastbook Login"` |
-| `hodor.sessionTtl` | Session duration (seconds) | `86400` |
-| `hodor.secureCookie` | Require HTTPS | `false` |
-
-Reserved paths: `/_gate/login`, `/_gate/logout`, `/_gate/health`
-
-## Routes
-
-Routes are file-based in `src/routes/`. Create a new file and TanStack Router auto-generates the route tree.
-
-```tsx
-// src/routes/about.tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/about')({
-  component: AboutPage,
-})
-
-function AboutPage() {
-  return <div>About</div>
-}
-```
-
-## Server Functions
-
-```tsx
-import { createServerFn } from '@tanstack/react-start'
-
-const getData = createServerFn({ method: 'GET' })
-  .handler(async () => {
-    return { message: 'Hello from server' }
-  })
-```
+- Keep server functions thin: validate input at the boundary and delegate to a
+  focused server/domain helper.
+- Prefer inferred TanStack Router types; avoid casts that bypass route, search,
+  or parameter validation.
+- Reuse existing form-state, validation, image, storage, and error helpers before
+  adding another abstraction.
+- Preserve unrelated work in the shared worktree and keep changes scoped.
 
 <!-- intent-skills:start -->
-# Skill mappings - load `use` with `npx @tanstack/intent@latest load <use>`.
+## TanStack references
+
+Load the relevant reference with `npx @tanstack/intent@latest load <use>`.
+
+```yaml
 skills:
-  - when: "Install TanStack Devtools, pick framework adapter (React/Vue/Solid/Preact), register plugins via plugins prop, configure shell (position, hotkeys, theme, hideUntilHover, requireUrlFlag, eventBusConfig). TanStackDevtools component, defaultOpen, localStorage persistence."
-    use: "@tanstack/devtools#devtools-app-setup"
-  - when: "Publish plugin to npm and submit to TanStack Devtools Marketplace. PluginMetadata registry format, plugin-registry.ts, pluginImport (importName, type), requires (packageName, minVersion), framework tagging, multi-framework submissions, featured plugins."
-    use: "@tanstack/devtools#devtools-marketplace"
-  - when: "Build devtools panel components that display emitted event data. Listen via EventClient.on(), handle theme (light/dark), use @tanstack/devtools-ui components. Plugin registration (name, render, id, defaultOpen), lifecycle (mount, activate, destroy), max 3 active plugins. Two paths: Solid.js core with devtools-ui for multi-framework support, or framework-specific panels."
-    use: "@tanstack/devtools#devtools-plugin-panel"
-  - when: "Handle devtools in production vs development. removeDevtoolsOnBuild, devDependency vs regular dependency, conditional imports, NoOp plugin variants for tree-shaking, non-Vite production exclusion patterns."
-    use: "@tanstack/devtools#devtools-production"
-  - when: "Two-way event patterns between devtools panel and application. App-to-devtools observation, devtools-to-app commands, time-travel debugging with snapshots and revert. structuredClone for snapshot safety, distinct event suffixes for observation vs commands, serializable payloads only."
-    use: "@tanstack/devtools-event-client#devtools-bidirectional"
-  - when: "Create typed EventClient for a library. Define event maps with typed payloads, pluginId auto-prepend namespacing, emit()/on()/onAll()/onAllPluginEvents() API. Connection lifecycle (5 retries, 300ms), event queuing, enabled/disabled state, SSR fallbacks, singleton pattern. Unique pluginId requirement to avoid event collisions."
-    use: "@tanstack/devtools-event-client#devtools-event-client"
-  - when: "Analyze library codebase for critical architecture and debugging points, add strategic event emissions. Identify middleware boundaries, state transitions, lifecycle hooks. Consolidate events (1 not 15), debounce high-frequency updates, DRY shared payload fields, guard emit() for production. Transparent server/client event bridging."
-    use: "@tanstack/devtools-event-client#devtools-instrumentation"
-  - when: "Configure @tanstack/devtools-vite for source inspection (data-tsd-source, inspectHotkey, ignore patterns), console piping (client-to-server, server-to-client, levels), enhanced logging, server event bus (port, host, HTTPS), production stripping (removeDevtoolsOnBuild), editor integration (launch-editor, custom editor.open). Must be FIRST plugin in Vite config. Vite ^6 || ^7 only."
-    use: "@tanstack/devtools-vite#devtools-vite-plugin"
-  - when: "Step-by-step migration from Next.js App Router to TanStack Start: route definition conversion, API mapping, server function conversion from Server Actions, middleware conversion, data fetching pattern changes."
-    use: "@tanstack/react-start#lifecycle/migrate-from-nextjs"
-  - when: "React bindings for TanStack Start: createStart, StartClient, StartServer, React-specific imports, re-exports from @tanstack/react-router, full project setup with React, useServerFn hook."
-    use: "@tanstack/react-start#react-start"
-  - when: "Implement, review, debug, and refactor TanStack Start React Server Components in React 19 apps. Use when tasks mention @tanstack/react-start/rsc, renderServerComponent, createCompositeComponent, CompositeComponent, renderToReadableStream, createFromReadableStream, createFromFetch, Composite Components, React Flight streams, loader or query owned RSC caching, router.invalidate, structuralSharing: false, selective SSR, stale names like renderRsc or .validator, or migration from Next App Router RSC patterns. Do not use for generic SSR or non-TanStack RSC frameworks except brief comparison."
-    use: "@tanstack/react-start#react-start/server-components"
-  - when: "Framework-agnostic core concepts for TanStack Router: route trees, createRouter, createRoute, createRootRoute, createRootRouteWithContext, addChildren, Register type declaration, route matching, route sorting, file naming conventions. Entry point for all router skills."
-    use: "@tanstack/router-core#router-core"
-  - when: "Route protection with beforeLoad, redirect()/throw redirect(), isRedirect helper, authenticated layout routes (_authenticated), non-redirect auth (inline login), RBAC with roles and permissions, auth provider integration (Auth0, Clerk, Supabase), router context for auth state."
-    use: "@tanstack/router-core#router-core/auth-and-guards"
-  - when: "Automatic code splitting (autoCodeSplitting), .lazy.tsx convention, createLazyFileRoute, createLazyRoute, lazyRouteComponent, getRouteApi for typed hooks in split files, codeSplitGroupings per-route override, splitBehavior programmatic config, critical vs non-critical properties."
-    use: "@tanstack/router-core#router-core/code-splitting"
-  - when: "Route loader option, loaderDeps for cache keys, staleTime/gcTime/ defaultPreloadStaleTime SWR caching, pendingComponent/pendingMs/ pendingMinMs, errorComponent/onError/onCatch, beforeLoad, router context and createRootRouteWithContext DI pattern, router.invalidate, Await component, deferred data loading with unawaited promises."
-    use: "@tanstack/router-core#router-core/data-loading"
-  - when: "Link component, useNavigate, Navigate component, router.navigate, ToOptions/NavigateOptions/LinkOptions, from/to relative navigation, activeOptions/activeProps, preloading (intent/viewport/render), preloadDelay, navigation blocking (useBlocker, Block), createLink, linkOptions helper, scroll restoration, MatchRoute."
-    use: "@tanstack/router-core#router-core/navigation"
-  - when: "notFound() function, notFoundComponent, defaultNotFoundComponent, notFoundMode (fuzzy/root), errorComponent, CatchBoundary, CatchNotFound, isNotFound, NotFoundRoute (deprecated), route masking (mask option, createRouteMask, unmaskOnReload)."
-    use: "@tanstack/router-core#router-core/not-found-and-errors"
-  - when: "Dynamic path segments ($paramName), splat routes ($ / _splat), optional params ({-$paramName}), prefix/suffix patterns ({$param}.ext), useParams, params.parse/stringify, pathParamsAllowedCharacters, i18n locale patterns."
-    use: "@tanstack/router-core#router-core/path-params"
-  - when: "validateSearch, search param validation with Zod/Valibot/ArkType adapters, fallback(), search middlewares (retainSearchParams, stripSearchParams), custom serialization (parseSearch, stringifySearch), search param inheritance, loaderDeps for cache keys, reading and writing search params."
-    use: "@tanstack/router-core#router-core/search-params"
-  - when: "Non-streaming and streaming SSR, RouterClient/RouterServer, renderRouterToString/renderRouterToStream, createRequestHandler, defaultRenderHandler/defaultStreamHandler, HeadContent/Scripts components, head route option (meta/links/styles/scripts), ScriptOnce, automatic loader dehydration/hydration, memory history on server, data serialization, document head management."
-    use: "@tanstack/router-core#router-core/ssr"
-  - when: "Full type inference philosophy (never cast, never annotate inferred values), Register module declaration, from narrowing on hooks and Link, strict:false for shared components, getRouteApi for code-split typed access, addChildren with object syntax for TS perf, LinkProps and ValidateLinkOptions type utilities, as const satisfies pattern."
-    use: "@tanstack/router-core#router-core/type-safety"
-  - when: "TanStack Router bundler plugin for route generation and automatic code splitting. Supports Vite, Webpack, Rspack, and esbuild. Configures autoCodeSplitting, routesDirectory, target framework, and code split groupings."
-    use: "@tanstack/router-plugin#router-plugin"
-  - when: "Core overview for TanStack Start: tanstackStart() Vite plugin, getRouter() factory, root route document shell (HeadContent, Scripts, Outlet), client/server entry points, routeTree.gen.ts, tsconfig configuration. Entry point for all Start skills."
+  - when: >-
+      Set up or change TanStack Start, its root document, router factory,
+      client/server entry points, or route generation.
     use: "@tanstack/start-client-core#start-core"
-  - when: "Server-side authentication primitives for TanStack Start: session cookies (HttpOnly, Secure, SameSite, __Host- prefix), session read/issue/destroy via createServerFn and middleware, OAuth authorization-code flow with state and PKCE, password-reset enumeration defense, CSRF for non-GET RPCs, rate limiting auth endpoints, session rotation on privilege change. Pairs with router-core/auth-and-guards for the routing side."
-    use: "@tanstack/start-client-core#start-core/auth-server-primitives"
-  - when: "Deploy to Cloudflare Workers, Netlify, Vercel, Node.js/Docker, Bun, Railway. Selective SSR (ssr option per route), SPA mode, static prerendering, ISR with Cache-Control headers, SEO and head management."
-    use: "@tanstack/start-client-core#start-core/deployment"
-  - when: "Isomorphic-by-default principle, environment boundary functions (createServerFn, createServerOnlyFn, createClientOnlyFn, createIsomorphicFn), ClientOnly component, useHydrated hook, import protection, dead code elimination, environment variable safety (VITE_ prefix, process.env)."
-    use: "@tanstack/start-client-core#start-core/execution-model"
-  - when: "createMiddleware, request middleware (.server only), server function middleware (.client + .server), context passing via next({ context }), sendContext for client-server transfer, global middleware via createStart in src/start.ts, middleware factories, method order enforcement, fetch override precedence."
-    use: "@tanstack/start-client-core#start-core/middleware"
-  - when: "createServerFn (GET/POST), validator (Zod or function), useServerFn hook, server context utilities (getRequest, getRequestHeader, setResponseHeader, setResponseStatus), error handling (throw errors, redirect, notFound), streaming, FormData handling, file organization (.functions.ts, .server.ts)."
+  - when: >-
+      Implement or change createServerFn handlers, validation, redirects,
+      errors, streaming, or FormData.
     use: "@tanstack/start-client-core#start-core/server-functions"
-  - when: "Server-side API endpoints using the server property on createFileRoute, HTTP method handlers (GET, POST, PUT, DELETE), createHandlers for per-handler middleware, handler context (request, params, context), request body parsing, response helpers, file naming for API routes."
-    use: "@tanstack/start-client-core#start-core/server-routes"
-  - when: "Server-side runtime for TanStack Start: createStartHandler, request/response utilities (getRequest, setResponseHeader, setCookie, getCookie, useSession), three-phase request handling, AsyncLocalStorage context."
-    use: "@tanstack/start-server-core#start-server-core"
-  - when: "Programmatic route tree building as an alternative to filesystem conventions: rootRoute, index, route, layout, physical, defineVirtualSubtreeConfig. Use with TanStack Router plugin's virtualRouteConfig option."
-    use: "@tanstack/virtual-file-routes#virtual-file-routes"
+  - when: >-
+      Change server/client boundaries, environment variables, ClientOnly
+      behavior, or server-only modules.
+    use: "@tanstack/start-client-core#start-core/execution-model"
+  - when: "Change file routes, route trees, matching, or router registration."
+    use: "@tanstack/router-core#router-core"
+  - when: >-
+      Change route loaders, pending/error states, cache behavior, or router
+      invalidation.
+    use: "@tanstack/router-core#router-core/data-loading"
+  - when: "Change links, navigation, preloading, blockers, or scroll restoration."
+    use: "@tanstack/router-core#router-core/navigation"
+  - when: "Change validated search parameters or their serialization."
+    use: "@tanstack/router-core#router-core/search-params"
+  - when: "Change route typing, shared typed components, or route hook inference."
+    use: "@tanstack/router-core#router-core/type-safety"
+  - when: "Change Docker, Bun, Helm, or other TanStack Start deployment behavior."
+    use: "@tanstack/start-client-core#start-core/deployment"
+```
 <!-- intent-skills:end -->

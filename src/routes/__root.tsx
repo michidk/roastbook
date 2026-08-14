@@ -1,36 +1,38 @@
+import { TanStackDevtools } from '@tanstack/react-devtools'
 import {
+  createRootRoute,
   HeadContent,
   Outlet,
   Scripts,
-  createRootRoute,
   useRouter,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { TanStackDevtools } from '@tanstack/react-devtools'
 import { useEffect } from 'react'
 
 import '../styles.css'
+import { AlertTriangle, Home, RefreshCw } from 'lucide-react'
 import { AppNavbar } from '@/components/app-navbar'
-import { TooltipProvider } from '@/components/ui/tooltip'
-import { Toaster } from '@/components/ui/sonner'
+import { ErrorDetails } from '@/components/error-details'
+import { RouteNotFound } from '@/components/route-not-found'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
+import { Toaster } from '@/components/ui/sonner'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { getErrorDisplayState } from '@/lib/error-display'
-import { RouteNotFound } from '@/components/route-not-found'
-import { useSettingsStore } from '@/lib/settings-store'
-import { ErrorDetails } from '@/components/error-details'
+import { usePreferencesStore } from '@/lib/preferences-store'
+import { getAppSettings } from '@/lib/server/settings'
 
 export const Route = createRootRoute({
+  loader: () => getAppSettings(),
   head: () => ({
     meta: [
       {
         charSet: 'utf-8',
       },
-          {
-            name: 'viewport',
-            content: 'width=device-width, initial-scale=1, viewport-fit=cover',
-          },
+      {
+        name: 'viewport',
+        content: 'width=device-width, initial-scale=1, viewport-fit=cover',
+      },
       {
         title: 'Roastbook',
       },
@@ -38,8 +40,8 @@ export const Route = createRootRoute({
     links: [
       {
         rel: 'icon',
-        type: 'image/png',
-        href: '/roastbook-logo.png',
+        type: 'image/x-icon',
+        href: '/favicon.ico',
       },
       {
         rel: 'apple-touch-icon',
@@ -87,11 +89,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 }
 
 function SettingsHydrator() {
-  const theme = useSettingsStore((state) => state.theme)
-  const hasHydrated = useSettingsStore((state) => state.hasHydrated)
+  const theme = usePreferencesStore((state) => state.theme)
+  const hasHydrated = usePreferencesStore((state) => state.hasHydrated)
 
   useEffect(() => {
-    void useSettingsStore.persist.rehydrate()
+    void usePreferencesStore.persist.rehydrate()
   }, [])
 
   useEffect(() => {
@@ -99,7 +101,8 @@ function SettingsHydrator() {
 
     const browserTheme = window.matchMedia('(prefers-color-scheme: dark)')
     const applyTheme = () => {
-      const isDark = theme === 'dark' || (theme === 'system' && browserTheme.matches)
+      const isDark =
+        theme === 'dark' || (theme === 'system' && browserTheme.matches)
       document.documentElement.classList.toggle('dark', isDark)
       document.documentElement.style.colorScheme = isDark ? 'dark' : 'light'
     }
@@ -154,9 +157,7 @@ function RootErrorComponent({ error }: { error: Error }) {
                     Try again
                   </Button>
                 </div>
-                {process.env.NODE_ENV === 'development' && (
-                  <ErrorDetails error={error} />
-                )}
+                {import.meta.env.DEV && <ErrorDetails error={error} />}
               </CardContent>
             </Card>
           </div>

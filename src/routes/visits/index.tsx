@@ -1,29 +1,39 @@
-import { createFileRoute, Link } from "@tanstack/react-router"
-import {
-  Plus,
-  Star,
-  Store,
-  UtensilsCrossed,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { EmptyState } from "@/components/EmptyState"
-import { CoffeeShopCard } from "@/components/coffee-shops/coffee-shop-card"
-import { CoffeeShopMap } from "@/components/coffee-shops/coffee-shop-map"
-import { getFeaturedCoffeeShops } from "@/lib/coffee-shop-ranking"
-import { getCafeVisits } from "@/lib/server/cafe-visits"
-import { getCoffeeShops } from "@/lib/server/coffee-shops"
-import { RouteError } from "@/components/route-error"
-import { ListPending } from "@/components/route-pending"
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { Plus, Store, UtensilsCrossed } from 'lucide-react'
+import { z } from 'zod'
+import { CoffeeShopCard } from '@/components/coffee-shops/coffee-shop-card'
+import { CoffeeShopMap } from '@/components/coffee-shops/coffee-shop-map'
+import { CollectionToolbar } from '@/components/collection-toolbar'
+import { EmptyState } from '@/components/EmptyState'
+import { Page, PageHeader } from '@/components/page-layout'
+import { PaginationControls } from '@/components/pagination-controls'
+import { RouteError } from '@/components/route-error'
+import { ListPending } from '@/components/route-pending'
+import { Button } from '@/components/ui/button'
+import { interactiveCardLinkClassName } from '@/components/ui/card'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { StarRating } from '@/components/ui/star-rating'
+import { useDateFormatter } from '@/hooks/use-date-formatter'
+import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { getCafeVisitPage } from '@/lib/server/cafe-visits'
+import { getCoffeeShopMapOverview } from '@/lib/server/coffee-shops'
 
-export const Route = createFileRoute("/visits/")({
-  loader: async () => {
-    const [visits, coffeeShops] = await Promise.all([
-      getCafeVisits(),
-      getCoffeeShops(),
+const visitSearchSchema = z.object({
+  page: z.number().int().min(1).default(1).catch(1),
+  query: z.string().max(200).default('').catch(''),
+})
+
+export const Route = createFileRoute('/visits/')({
+  validateSearch: visitSearchSchema,
+  loaderDeps: ({ search }) => ({ page: search.page, query: search.query }),
+  loader: async ({ deps }) => {
+    const [visitPage, coffeeShops] = await Promise.all([
+      getCafeVisitPage({ data: deps }),
+      getCoffeeShopMapOverview(),
     ])
-    return { visits, coffeeShops }
+    return { visitPage, coffeeShops }
   },
+  staleTime: 15_000,
   component: VisitsPage,
   pendingComponent: ListPending,
   errorComponent: ({ error }) => (
@@ -31,14 +41,9 @@ export const Route = createFileRoute("/visits/")({
   ),
 })
 
-type Visit = Awaited<ReturnType<typeof getCafeVisits>>[number]
+type Visit = Awaited<ReturnType<typeof getCafeVisitPage>>['items'][number]
 
 const RECENT_PLACES_LIMIT = 6
-
-const dateFormatter = new Intl.DateTimeFormat(undefined, {
-  day: "numeric",
-  month: "short",
-})
 
 function SectionHeading({
   title,
@@ -60,31 +65,33 @@ function SectionHeading({
 }
 
 function VisitsPage() {
-  const { visits, coffeeShops } = Route.useLoaderData()
-  const featuredCoffeeShops = getFeaturedCoffeeShops(
-    coffeeShops,
-    visits,
-    RECENT_PLACES_LIMIT,
-  )
+  const { visitPage, coffeeShops } = Route.useLoaderData()
+  const search = Route.useSearch()
+  const navigate = useNavigate({ from: '/visits/' })
+  const visits = visitPage.items
+  const featuredCoffeeShops = [
+    ...coffeeShops.filter((shop) => shop.isFavorite),
+    ...coffeeShops
+      .filter((shop) => !shop.isFavorite && shop.latestVisitAt !== null)
+      .slice(0, RECENT_PLACES_LIMIT),
+  ]
+  const updateSearch = (values: Partial<typeof search>) =>
+    navigate({ search: (current) => ({ ...current, ...values }) })
 
   return (
-    <div className="space-y-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
-            Café visits
-          </h1>
-          <p className="mt-1 text-sm font-semibold text-muted-foreground">
-            Your coffee experiences out and about
-          </p>
-        </div>
-        <Button asChild>
-          <Link to="/visits/new" search={{ coffeeShopId: undefined }}>
-            <Plus className="h-4 w-4" />
-            Log a visit
-          </Link>
-        </Button>
-      </header>
+    <Page>
+      <PageHeader
+        title="Café visits"
+        description="Your coffee experiences out and about"
+        actions={
+          <Button asChild>
+            <Link to="/visits/new" search={{ coffeeShopId: undefined }}>
+              <Plus className="h-4 w-4" />
+              Log a visit
+            </Link>
+          </Button>
+        }
+      />
 
       <section className="space-y-3">
         <SectionHeading
@@ -94,14 +101,14 @@ function VisitsPage() {
             <Button asChild variant="outline" size="sm">
               <Link to="/places">
                 <Store aria-hidden className="h-4 w-4" />
-                Manage all places
+                Manage all cafés
               </Link>
             </Button>
           }
         />
         <div className="grid items-stretch gap-4 lg:grid-cols-4">
           <div className="min-w-0 lg:col-span-3">
-            <CoffeeShopMap coffeeShops={coffeeShops} visits={visits} />
+            <CoffeeShopMap coffeeShops={coffeeShops} />
           </div>
 
           {featuredCoffeeShops.length > 0 && (
@@ -126,47 +133,72 @@ function VisitsPage() {
       </section>
 
       <section className="space-y-3">
-        <SectionHeading title="Visits" count={visits.length} />
+        <SectionHeading title="Visits" count={visitPage.totalItems} />
 
-        {visits.length === 0 ? (
+        <CollectionToolbar
+          value={search.query}
+          onValueChange={(query) => updateSearch({ query, page: 1 })}
+          placeholder="Search visits…"
+          ariaLabel="Search visits"
+          resultLabel={`${visitPage.totalItems} ${visitPage.totalItems === 1 ? 'visit' : 'visits'}`}
+        />
+
+        {visitPage.totalItems === 0 && !search.query ? (
           <EmptyState
             icon={UtensilsCrossed}
             title="No visits logged yet"
-            description="Track your cafe visits and coffee experiences"
+            description="Track your café visits and coffee experiences"
             actionLabel="Log a visit"
             actionHref="/visits/new"
             actionSearch={{ coffeeShopId: undefined }}
           />
+        ) : visitPage.totalItems === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No visits match “{search.query}”.
+          </p>
         ) : (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {visits.map((visit) => (
-              <VisitCard key={visit.id} visit={visit} />
-            ))}
-          </div>
+          <>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {visits.map((visit) => (
+                <VisitCard key={visit.id} visit={visit} />
+              ))}
+            </div>
+            {visitPage.totalPages > 1 && (
+              <PaginationControls
+                page={visitPage.page}
+                totalPages={visitPage.totalPages}
+                onPageChange={(page) => updateSearch({ page })}
+              />
+            )}
+          </>
         )}
       </section>
-    </div>
+    </Page>
   )
 }
 
 function VisitCard({ visit }: { visit: Visit }) {
-  const date = dateFormatter.format(new Date(visit.visitedAt))
-  const positiveTags = visit.tasteTags?.filter((tt) => tt.tasteTag.category !== "negative") ?? []
-  const negativeTags = visit.tasteTags?.filter((tt) => tt.tasteTag.category === "negative") ?? []
+  const formatDate = useDateFormatter()
+  const formatNumber = useNumberFormatter()
+  const date = formatDate(visit.visitedAt)
+  const positiveTags =
+    visit.tasteTags?.filter((tt) => tt.tasteTag.category !== 'negative') ?? []
+  const negativeTags =
+    visit.tasteTags?.filter((tt) => tt.tasteTag.category === 'negative') ?? []
 
   return (
     <Link
       to="/visits/$visitId"
       params={{ visitId: String(visit.id) }}
-      className="block rounded-3xl bg-card p-5 shadow-coffee transition-transform hover:-translate-y-0.5"
+      className={`${interactiveCardLinkClassName} bg-card p-5 shadow-coffee`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="font-display text-lg font-bold text-foreground">
-            {visit.drinkName || "Coffee"}
+            {visit.drinkName || 'Coffee'}
           </p>
           <p className="mt-0.5 truncate text-sm text-muted-foreground">
-            {visit.coffeeShop?.name ?? "Unknown café"} · {date}
+            {visit.coffeeShop?.name ?? 'Unknown café'} · {date}
           </p>
         </div>
         {visit.drinkType && (
@@ -177,34 +209,30 @@ function VisitCard({ visit }: { visit: Visit }) {
       </div>
 
       {visit.rating != null && (
-        <div
-          className="mt-3 flex items-center gap-0.5 text-primary"
-          aria-label={`Rating ${visit.rating} out of 5`}
-          role="img"
-        >
-          {[1, 2, 3, 4, 5].map((n) => (
-            <Star
-              key={n}
-              aria-hidden
-              className="h-4 w-4"
-              fill={n <= (visit.rating ?? 0) ? "currentColor" : "transparent"}
-              strokeWidth={1.5}
-            />
-          ))}
-        </div>
+        <StarRating
+          value={visit.rating}
+          readOnly
+          variant="compact"
+          sizeClassName="size-4"
+          className="mt-3"
+          ariaLabel="Visit rating"
+        />
       )}
 
       {(visit.bean || visit.price) && (
         <p className="mt-3 text-sm text-muted-foreground">
           {visit.bean && (
             <>
-              Bean: <span className="font-bold text-foreground">{visit.bean.name}</span>
+              Bean:{' '}
+              <span className="font-bold text-foreground">
+                {visit.bean.name}
+              </span>
             </>
           )}
-          {visit.bean && visit.price && " · "}
+          {visit.bean && visit.price && ' · '}
           {visit.price && (
             <span className="font-bold text-foreground">
-              {(visit.currency || "EUR")} {visit.price}
+              {visit.currency || 'EUR'} {formatNumber(visit.price)}
             </span>
           )}
         </p>
@@ -215,7 +243,7 @@ function VisitCard({ visit }: { visit: Visit }) {
           {positiveTags.slice(0, 4).map((tt) => (
             <span
               key={tt.id}
-              className="rounded-xl bg-positive/15 px-2.5 py-1 text-xs font-semibold text-positive"
+              className="rounded-xl bg-positive/15 px-2.5 py-1 text-xs font-semibold text-positive-text"
             >
               {tt.tasteTag.name}
             </span>
@@ -223,7 +251,7 @@ function VisitCard({ visit }: { visit: Visit }) {
           {negativeTags.slice(0, 2).map((tt) => (
             <span
               key={tt.id}
-              className="rounded-xl bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive"
+              className="rounded-xl bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive-text"
             >
               {tt.tasteTag.name}
             </span>

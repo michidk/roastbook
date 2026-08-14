@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react"
+import { useMemo, useState } from 'react'
 
-export type SortDirection = "asc" | "desc"
+export type SortDirection = 'asc' | 'desc'
 
 type SortablePaginationOptions<T, K extends string> = {
   readonly items: readonly T[]
@@ -29,7 +29,10 @@ export function useSortablePagination<T, K extends string>({
   const [page, setPage] = useState(1)
 
   const sorted = useMemo(
-    () => [...items].sort((left, right) => compare(left, right, sortKey, sortDirection)),
+    () =>
+      [...items].sort((left, right) =>
+        compare(left, right, sortKey, sortDirection),
+      ),
     [compare, items, sortDirection, sortKey],
   )
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize))
@@ -42,7 +45,7 @@ export function useSortablePagination<T, K extends string>({
   const handleSort = (key: K) => {
     setPage(1)
     if (sortKey === key) {
-      setSortDirection((direction) => (direction === "asc" ? "desc" : "asc"))
+      setSortDirection((direction) => (direction === 'asc' ? 'desc' : 'asc'))
       return
     }
     setSortKey(key)

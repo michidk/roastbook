@@ -1,11 +1,12 @@
-import type { ReactNode } from "react"
+import type { ReactNode } from 'react'
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from '@/components/ui/dialog'
 
 interface EntityCreateDialogProps {
   open: boolean
@@ -24,14 +25,14 @@ export function EntityCreateDialog({
 }: EntityCreateDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[88vh] flex-col gap-4 bg-background sm:max-w-2xl">
+      <DialogContent className="bg-background sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description ? (
             <DialogDescription>{description}</DialogDescription>
           ) : null}
         </DialogHeader>
-        <div className="-mx-4 flex-1 overflow-y-auto px-4 pb-1">{children}</div>
+        <DialogBody>{children}</DialogBody>
       </DialogContent>
     </Dialog>
   )

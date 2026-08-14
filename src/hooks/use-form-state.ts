@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react"
+import { useCallback, useState } from 'react'
 
 /**
  * Controlled-form state whose writes always go through a functional update, so
@@ -6,7 +6,7 @@ import { useCallback, useState } from "react"
  * `setFormData({ ...formData, field })` spread over a stale render does.
  */
 export function useFormState<T extends Record<string, unknown>>(
-  initialValues: T | (() => T)
+  initialValues: T | (() => T),
 ) {
   const [values, setValues] = useState<T>(initialValues)
 
@@ -22,7 +22,7 @@ export function useFormState<T extends Record<string, unknown>>(
     <K extends keyof T>(key: K) =>
       (value: T[K]) =>
         set(key, value),
-    [set]
+    [set],
   )
 
   return { values, set, setField, patch, setValues }

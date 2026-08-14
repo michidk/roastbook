@@ -5,9 +5,9 @@ import { toast } from 'sonner'
 import { BeanCard } from '@/components/beans/bean-card'
 import { BeanPicker } from '@/components/beans/bean-picker'
 import { CreatableCombobox } from '@/components/form/creatable-combobox'
-import { SelectField, TextareaField } from '@/components/form/form-field'
+import { TextareaField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
-import { SuggestionChips } from '@/components/form/suggestion-chips'
+import { Page, PageHeader } from '@/components/page-layout'
 import {
   availableGearForShot,
   EMPTY_SHOT_FORM_VALUES,
@@ -20,38 +20,82 @@ import { TasteTagSelector } from '@/components/shots/taste-tag-selector'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { StarRating } from '@/components/ui/star-rating'
+import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { getLastBeanIdForBrewingMethod } from '@/lib/new-shot-defaults'
 import { newShotPayload } from '@/lib/new-shot-payload'
 import { getActiveBeans } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getGear } from '@/lib/server/gear'
 import { getRecipes } from '@/lib/server/recipes'
 import { createShot, getLastShotForBean } from '@/lib/server/shots'
-import { getBeanSuggestions } from '@/lib/server/suggestions'
+import {
+  getBeanSuggestions,
+  getBrewingMethodSuggestions,
+  getLastBeansByBrewingMethod,
+} from '@/lib/server/suggestions'
 import { getTasteTags } from '@/lib/server/taste-tags'
 
 export const Route = createFileRoute('/shots/new')({
   loader: async () => {
-    const [beans, methods, recipes, tasteTags, beanSuggestions, gear] =
-      await Promise.all([
-        getActiveBeans(),
-        getBrewingMethods(),
-        getRecipes(),
-        getTasteTags(),
-        getBeanSuggestions(),
-        getGear(),
-      ])
-    return { beans, methods, recipes, tasteTags, beanSuggestions, gear }
+    const [
+      beans,
+      methods,
+      recipes,
+      tasteTags,
+      beanSuggestions,
+      brewingMethodSuggestions,
+      lastBeansByBrewingMethod,
+      gear,
+    ] = await Promise.all([
+      getActiveBeans(),
+      getBrewingMethods(),
+      getRecipes(),
+      getTasteTags(),
+      getBeanSuggestions(),
+      getBrewingMethodSuggestions(),
+      getLastBeansByBrewingMethod(),
+      getGear(),
+    ])
+    return {
+      beans,
+      methods,
+      recipes,
+      tasteTags,
+      beanSuggestions,
+      brewingMethodSuggestions,
+      lastBeansByBrewingMethod,
+      gear,
+    }
   },
   component: NewShotPage,
 })
 
 function NewShotPage() {
-  const { beans, methods, recipes, tasteTags, beanSuggestions, gear } =
-    Route.useLoaderData()
+  const {
+    beans,
+    methods,
+    recipes,
+    tasteTags,
+    beanSuggestions,
+    brewingMethodSuggestions,
+    lastBeansByBrewingMethod,
+    gear,
+  } = Route.useLoaderData()
   const navigate = useNavigate()
-  const [values, setValues] = useState<ShotFormValues>(() => ({
-    ...EMPTY_SHOT_FORM_VALUES,
-  }))
+  const formatNumber = useNumberFormatter()
+  const [values, setValues] = useState<ShotFormValues>(() => {
+    const brewingMethodId = brewingMethodSuggestions[0]
+      ? String(brewingMethodSuggestions[0].id)
+      : ''
+    return {
+      ...EMPTY_SHOT_FORM_VALUES,
+      brewingMethodId,
+      beanId: getLastBeanIdForBrewingMethod(
+        lastBeansByBrewingMethod,
+        brewingMethodId,
+      ),
+    }
+  })
   const [recipeId, setRecipeId] = useState('')
   const [selectedTags, setSelectedTags] = useState<number[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -90,13 +134,26 @@ function NewShotPage() {
     value: ShotFormValues[Key],
   ) => setValues((current) => ({ ...current, [key]: value }))
 
+  const toggleTag = (tagId: number) => {
+    setSelectedTags((current) =>
+      current.includes(tagId)
+        ? current.filter((id) => id !== tagId)
+        : [...current, tagId],
+    )
+  }
+
   const selectMethod = (brewingMethodId: string) => {
+    if (brewingMethodId === values.brewingMethodId) return
     setTimerRunning(false)
     setTimerAnnouncement('Timer ready')
     setRecipeId('')
     setValues((current) => ({
       ...current,
       brewingMethodId,
+      beanId: getLastBeanIdForBrewingMethod(
+        lastBeansByBrewingMethod,
+        brewingMethodId,
+      ),
       shotTimeSeconds: '',
     }))
   }
@@ -165,10 +222,6 @@ function NewShotPage() {
     (bean) => String(bean.id) === values.beanId,
   )
   const gearOptions = availableGearForShot(values, gear)
-  const methodOptions = methods.map((method) => ({
-    value: String(method.id),
-    label: method.name,
-  }))
   const availableRecipes = recipes.filter(
     (recipe) => String(recipe.brewingMethodId) === values.brewingMethodId,
   )
@@ -176,17 +229,17 @@ function NewShotPage() {
   const negativeTags = tasteTags.filter((tag) => tag.category === 'negative')
 
   return (
-    <div className="space-y-6">
-      <header className="flex items-center gap-4">
-        <Button variant="outline" size="icon" asChild>
-          <Link to="/shots" aria-label="Back to shots">
-            <ArrowLeft />
-          </Link>
-        </Button>
-        <h1 className="font-display text-4xl font-extrabold tracking-tight md:text-5xl">
-          New shot
-        </h1>
-      </header>
+    <Page>
+      <PageHeader
+        title="New shot"
+        leading={
+          <Button variant="outline" size="icon" asChild>
+            <Link to="/shots" aria-label="Back to shots">
+              <ArrowLeft />
+            </Link>
+          </Button>
+        }
+      />
 
       <form
         onSubmit={handleSubmit}
@@ -196,14 +249,20 @@ function NewShotPage() {
           <FormSection
             title="Brewing method"
             description="The method controls which brewing parameters this shot uses."
+            contentClassName="grid gap-4 space-y-0 sm:grid-cols-2"
           >
-            <SelectField
+            <CreatableCombobox
               id="brewing-method"
               label="Method"
               placeholder="Choose a brewing method"
               value={values.brewingMethodId}
-              options={methodOptions}
+              items={methods}
+              suggestions={brewingMethodSuggestions}
+              getKey={({ id }) => id}
+              getLabel={({ name }) => name}
               onChange={selectMethod}
+              searchPlaceholder="Search brewing methods…"
+              emptyMessage="No brewing methods found."
               required
             />
             {selectedMethod ? (
@@ -212,6 +271,7 @@ function NewShotPage() {
                 label="Load from recipe"
                 value={recipeId}
                 items={availableRecipes}
+                suggestions={availableRecipes.slice(0, 5)}
                 getKey={({ id }) => id}
                 getLabel={({ name }) => name}
                 onChange={loadRecipe}
@@ -222,18 +282,13 @@ function NewShotPage() {
             ) : null}
           </FormSection>
           <FormSection title="Beans">
-            <SuggestionChips
-              label="Bean"
-              items={beanSuggestions}
-              value={values.beanId}
-              onChange={(beanId) => set('beanId', beanId ?? '')}
-            />
             <BeanPicker
               id="bean"
               label="Bean"
               value={values.beanId}
               onChange={(beanId) => set('beanId', beanId ?? '')}
               beans={beanOptions}
+              suggestions={beanSuggestions}
             />
             {selectedBean ? (
               <Button
@@ -300,7 +355,7 @@ function NewShotPage() {
                 if (timerRunning) {
                   setTimerRunning(false)
                   setTimerAnnouncement(
-                    `Timer paused at ${values.shotTimeSeconds || '0.0'} seconds`,
+                    `Timer paused at ${formatNumber(values.shotTimeSeconds || '0.0')} seconds`,
                   )
                 } else {
                   timerStartedAt.current =
@@ -323,6 +378,6 @@ function NewShotPage() {
           </Button>
         </aside>
       </form>
-    </div>
+    </Page>
   )
 }

@@ -34,6 +34,7 @@ import { Route as GearNewRouteImport } from './routes/gear/new'
 import { Route as GearGearIdRouteImport } from './routes/gear/$gearId'
 import { Route as BeansNewRouteImport } from './routes/beans/new'
 import { Route as BeansBeanIdRouteImport } from './routes/beans/$beanId'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
 
 const StatsRoute = StatsRouteImport.update({
   id: '/stats',
@@ -160,11 +161,17 @@ const BeansBeanIdRoute = BeansBeanIdRouteImport.update({
   path: '/beans/$beanId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
   '/stats': typeof StatsRoute
+  '/api/health': typeof ApiHealthRoute
   '/beans/$beanId': typeof BeansBeanIdRoute
   '/beans/new': typeof BeansNewRoute
   '/gear/$gearId': typeof GearGearIdRoute
@@ -192,6 +199,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
   '/stats': typeof StatsRoute
+  '/api/health': typeof ApiHealthRoute
   '/beans/$beanId': typeof BeansBeanIdRoute
   '/beans/new': typeof BeansNewRoute
   '/gear/$gearId': typeof GearGearIdRoute
@@ -220,6 +228,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
   '/stats': typeof StatsRoute
+  '/api/health': typeof ApiHealthRoute
   '/beans/$beanId': typeof BeansBeanIdRoute
   '/beans/new': typeof BeansNewRoute
   '/gear/$gearId': typeof GearGearIdRoute
@@ -249,6 +258,7 @@ export interface FileRouteTypes {
     | '/'
     | '/settings'
     | '/stats'
+    | '/api/health'
     | '/beans/$beanId'
     | '/beans/new'
     | '/gear/$gearId'
@@ -276,6 +286,7 @@ export interface FileRouteTypes {
     | '/'
     | '/settings'
     | '/stats'
+    | '/api/health'
     | '/beans/$beanId'
     | '/beans/new'
     | '/gear/$gearId'
@@ -303,6 +314,7 @@ export interface FileRouteTypes {
     | '/'
     | '/settings'
     | '/stats'
+    | '/api/health'
     | '/beans/$beanId'
     | '/beans/new'
     | '/gear/$gearId'
@@ -331,6 +343,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SettingsRoute: typeof SettingsRoute
   StatsRoute: typeof StatsRoute
+  ApiHealthRoute: typeof ApiHealthRoute
   BeansBeanIdRoute: typeof BeansBeanIdRoute
   BeansNewRoute: typeof BeansNewRoute
   GearGearIdRoute: typeof GearGearIdRoute
@@ -532,6 +545,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeansBeanIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -539,6 +559,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SettingsRoute: SettingsRoute,
   StatsRoute: StatsRoute,
+  ApiHealthRoute: ApiHealthRoute,
   BeansBeanIdRoute: BeansBeanIdRoute,
   BeansNewRoute: BeansNewRoute,
   GearGearIdRoute: GearGearIdRoute,

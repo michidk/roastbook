@@ -53,24 +53,44 @@ resources:
     memory: 128Mi
 
 livenessProbe:
-  httpGet:
-    path: /
+  tcpSocket:
     port: http
   initialDelaySeconds: 5
   periodSeconds: 10
 
 readinessProbe:
   httpGet:
-    path: /
+    path: /api/health
     port: http
   initialDelaySeconds: 5
   periodSeconds: 10
+
+startupProbe:
+  tcpSocket:
+    port: http
+  periodSeconds: 2
+  failureThreshold: 30
+
+terminationGracePeriodSeconds: 30
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 0
+    maxSurge: 1
 
 autoscaling:
   enabled: false
   minReplicas: 1
   maxReplicas: 10
   targetCPUUtilizationPercentage: 80
+
+podDisruptionBudget:
+  enabled: true
+  maxUnavailable: 1
+
+networkPolicy:
+  enabled: true
 
 migrations:
   enabled: true
@@ -126,6 +146,9 @@ storage:
     path: "/data/uploads"
     size: "10Gi"
     storageClass: ""
+    # Multi-replica deployments require ReadWriteMany storage. Prefer S3 unless
+    # the selected storage class provides a shared RWX filesystem.
+    accessMode: "ReadWriteOnce"
   s3:
     bucket: ""
     region: "us-east-1"
@@ -139,19 +162,25 @@ openai:
   existingSecretKey: "api-key"
   baseUrl: ""  # e.g., "https://openrouter.ai/api/v1" for OpenRouter
   visionModel: "gpt-4o"  # e.g., "openai/gpt-4o" for OpenRouter
+  researchModel: "gpt-4o"
 
 hodor:
   enabled: true
   existingSecret: ""
+  password: ""
+  # Leave empty to generate once; Helm reuses the existing value on upgrades.
+  secret: ""
   existingSecretPasswordKey: "password"
   existingSecretSecretKey: "secret"
   image:
     repository: ghcr.io/michidk/hodor
-    tag: latest
+    tag: ""
+    digest: "sha256:7cdb5de7ee2c776ee6c2ae049e1b2050caa60288d7b3148e26117a5d6bba18b2"
     pullPolicy: IfNotPresent
   title: "Roastbook Login"
   sessionTtl: "86400"
-  secureCookie: "false"
+  # Automatically enabled when ingress.tls is configured.
+  secureCookie: false
   logFormat: "compact"
   resources:
     limits:

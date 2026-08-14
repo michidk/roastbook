@@ -1,11 +1,11 @@
-import type { ComponentType } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { StarRating } from "@/components/ui/star-rating"
-import { Textarea } from "@/components/ui/textarea"
-import { TextareaField } from "@/components/form/form-field"
-import { cn } from "@/lib/utils"
+import type { ComponentType } from 'react'
+import { TextareaField } from '@/components/form/form-field'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { StarRating } from '@/components/ui/star-rating'
+import { Textarea } from '@/components/ui/textarea'
+import { cn } from '@/lib/utils'
 
 type TasteTagOption = {
   readonly id: number
@@ -17,7 +17,7 @@ type NotesFieldProps = {
   readonly onNotesChange: (notes: string) => void
 }
 
-type TastingKind = "shot" | "visit"
+type TastingKind = 'shot' | 'visit'
 
 type ValueControl<T> = {
   readonly value: T
@@ -40,14 +40,14 @@ type TastingFieldsProps = {
 
 const TASTING_CONFIG = {
   shot: {
-    heading: "Tasting Notes",
+    heading: 'Tasting Notes',
     headingId: undefined,
-    ratingLabel: "Shot rating",
+    ratingLabel: 'Shot rating',
   },
   visit: {
-    heading: "Tasting",
-    headingId: "visit-tasting-heading",
-    ratingLabel: "Visit rating",
+    heading: 'Tasting',
+    headingId: 'visit-tasting-heading',
+    ratingLabel: 'Visit rating',
   },
 } as const
 
@@ -64,11 +64,11 @@ export function TastingFields({
 }: TastingFieldsProps) {
   const config = TASTING_CONFIG[kind]
   const NotesField = NOTES_FIELDS[kind]
-  const idPrefix = kind === "shot" ? "shot" : "visit"
+  const idPrefix = kind === 'shot' ? 'shot' : 'visit'
 
   return (
     <Card
-      role={config.headingId ? "group" : undefined}
+      role={config.headingId ? 'group' : undefined}
       aria-labelledby={config.headingId}
     >
       <CardHeader>
@@ -117,7 +117,7 @@ function TasteTags({
         <TasteTagGroup
           id={`${idPrefix}-issues-label`}
           label="Issues"
-          labelClassName="text-destructive"
+          labelClassName="text-destructive-text"
           tags={negativeTags}
           selectedTagIds={selectedTagIds}
           selectedVariant="destructive"
@@ -129,7 +129,7 @@ function TasteTags({
         <TasteTagGroup
           id={`${idPrefix}-positives-label`}
           label="Positives"
-          labelClassName="text-primary"
+          labelClassName="text-link"
           tags={positiveTags}
           selectedTagIds={selectedTagIds}
           selectedVariant="default"
@@ -156,13 +156,13 @@ function TasteTagGroup({
   readonly labelClassName: string
   readonly tags: readonly TasteTagOption[]
   readonly selectedTagIds: readonly number[]
-  readonly selectedVariant: "default" | "destructive"
+  readonly selectedVariant: 'default' | 'destructive'
   readonly hoverClassName: string
   readonly onToggleTag: (tagId: number) => void
 }) {
   return (
     <fieldset className="min-w-0 space-y-2 border-0 p-0">
-      <legend id={id} className={cn("text-sm font-medium", labelClassName)}>
+      <legend id={id} className={cn('text-sm font-medium', labelClassName)}>
         {label}
       </legend>
       <div className="flex flex-wrap gap-2">
@@ -173,9 +173,9 @@ function TasteTagGroup({
               key={tag.id}
               render={<button type="button" />}
               aria-pressed={isSelected}
-              variant={isSelected ? selectedVariant : "outline"}
+              variant={isSelected ? selectedVariant : 'outline'}
               className={cn(
-                "h-8 px-3 transition-colors",
+                'h-8 px-3 transition-colors',
                 !isSelected && hoverClassName,
               )}
               onClick={() => onToggleTag(tag.id)}

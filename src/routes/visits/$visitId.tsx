@@ -1,21 +1,29 @@
-import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router"
-import { useRef, useState } from "react"
-import { ArrowLeft, ExternalLink, MapPin, Pencil } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { StarRating } from "@/components/ui/star-rating"
-import { getCafeVisit, deleteCafeVisit } from "@/lib/server/cafe-visits"
-import { getActiveBeans } from "@/lib/server/beans"
-import { getCoffeeShops } from "@/lib/server/coffee-shops"
-import { getTasteTags } from "@/lib/server/taste-tags"
-import { VisitEditForm } from "@/components/visits/visit-edit-form"
-import { DeleteConfirmation } from "@/components/DeleteConfirmation"
-import { RouteError } from "@/components/route-error"
-import { DetailPending } from "@/components/route-pending"
+import {
+  createFileRoute,
+  Link,
+  useNavigate,
+  useRouter,
+} from '@tanstack/react-router'
+import { ArrowLeft, ExternalLink, MapPin, Pencil } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { DeleteConfirmation } from '@/components/DeleteConfirmation'
+import { Page, PageHeader } from '@/components/page-layout'
+import { RouteError } from '@/components/route-error'
+import { DetailPending } from '@/components/route-pending'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
+import { StarRating } from '@/components/ui/star-rating'
+import { VisitEditForm } from '@/components/visits/visit-edit-form'
+import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
+import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { getActiveBeans } from '@/lib/server/beans'
+import { deleteCafeVisit, getCafeVisit } from '@/lib/server/cafe-visits'
+import { getCoffeeShops } from '@/lib/server/coffee-shops'
+import { getTasteTags } from '@/lib/server/taste-tags'
 
-export const Route = createFileRoute("/visits/$visitId")({
+export const Route = createFileRoute('/visits/$visitId')({
   loader: async ({ params }) => {
     const visitId = Number(params.visitId)
     const [visit, coffeeShops, tasteTags, beans] = await Promise.all([
@@ -35,6 +43,8 @@ export const Route = createFileRoute("/visits/$visitId")({
 })
 
 function VisitDetailPage() {
+  const formatDateTime = useDateTimeFormatter()
+  const formatNumber = useNumberFormatter()
   const { visit, coffeeShops, tasteTags, beans } = Route.useLoaderData()
   const navigate = useNavigate()
   const router = useRouter()
@@ -54,11 +64,11 @@ function VisitDetailPage() {
 
   const handleDelete = async () => {
     await deleteCafeVisit({ data: visit.id })
-    navigate({ to: "/visits" })
+    navigate({ to: '/visits' })
   }
 
   const handleSaved = async () => {
-    await router.invalidate()
+    await router.invalidate({ filter: (match) => match.routeId === Route.id })
     setIsEditing(false)
     requestAnimationFrame(() => editButtonRef.current?.focus())
   }
@@ -70,33 +80,40 @@ function VisitDetailPage() {
 
   const locationLabel = [visit.coffeeShop?.city, visit.coffeeShop?.country]
     .filter(Boolean)
-    .join(", ")
+    .join(', ')
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link to="/visits" aria-label="Back to visits">
-            <ArrowLeft aria-hidden className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold">{visit.drinkName || "Coffee"}</h1>
-          <p className="text-muted-foreground">
-            {new Date(visit.visitedAt).toLocaleString()}
-          </p>
-        </div>
-        {!isEditing ? (
-          <Button ref={editButtonRef} variant="outline" onClick={() => setIsEditing(true)}>
-            <Pencil className="h-4 w-4" />
-            Edit
+    <Page width="form">
+      <PageHeader
+        size="compact"
+        title={visit.drinkName || 'Coffee'}
+        description={formatDateTime(visit.visitedAt)}
+        leading={
+          <Button variant="outline" size="icon" asChild>
+            <Link to="/visits" aria-label="Back to visits">
+              <ArrowLeft aria-hidden className="h-4 w-4" />
+            </Link>
           </Button>
-        ) : null}
-        <DeleteConfirmation
-          title="Delete this visit?"
-          description="This action cannot be undone."
-          onConfirm={handleDelete}
-        />
-      </div>
+        }
+        actions={
+          <>
+            {!isEditing ? (
+              <Button
+                ref={editButtonRef}
+                variant="outline"
+                onClick={() => setIsEditing(true)}
+              >
+                <Pencil className="h-4 w-4" />
+                Edit
+              </Button>
+            ) : null}
+            <DeleteConfirmation
+              title="Delete this visit?"
+              description="This action cannot be undone."
+              onConfirm={handleDelete}
+            />
+          </>
+        }
+      />
 
       {isEditing ? (
         <VisitEditForm
@@ -122,21 +139,23 @@ function VisitDetailPage() {
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Drink</p>
-                  <p className="font-medium">{visit.drinkName || "-"}</p>
+                  <p className="font-medium">{visit.drinkName || '-'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Type</p>
-                  <p className="font-medium">{visit.drinkType || "-"}</p>
+                  <p className="font-medium">{visit.drinkType || '-'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Price</p>
                   <p className="font-medium">
-                    {visit.price ? `${visit.currency || "EUR"} ${visit.price}` : "-"}
+                    {visit.price
+                      ? `${visit.currency || 'EUR'} ${formatNumber(visit.price)}`
+                      : '-'}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Beans</p>
-                  <p className="font-medium">{visit.bean?.name || "-"}</p>
+                  <p className="font-medium">{visit.bean?.name || '-'}</p>
                 </div>
               </div>
 
@@ -147,7 +166,11 @@ function VisitDetailPage() {
                     {visit.tasteTags.map((tagLink) => (
                       <Badge
                         key={tagLink.id}
-                        variant={tagLink.tasteTag.category === "negative" ? "destructive" : "default"}
+                        variant={
+                          tagLink.tasteTag.category === 'negative'
+                            ? 'destructive'
+                            : 'default'
+                        }
                       >
                         {tagLink.tasteTag.name}
                       </Badge>
@@ -170,7 +193,7 @@ function VisitDetailPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Cafe</CardTitle>
+              <CardTitle>Café</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {visit.coffeeShop ? (
@@ -178,7 +201,12 @@ function VisitDetailPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="font-medium">{visit.coffeeShop.name}</p>
-                      <Button variant="ghost" size="icon" asChild className="h-8 w-8">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        asChild
+                        className="h-8 w-8"
+                      >
                         <Link
                           to="/shops/$coffeeShopId"
                           params={{ coffeeShopId: String(visit.coffeeShop.id) }}
@@ -189,7 +217,9 @@ function VisitDetailPage() {
                       </Button>
                     </div>
                     {locationLabel ? (
-                      <p className="text-sm text-muted-foreground">{locationLabel}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {locationLabel}
+                      </p>
                     ) : null}
                   </div>
 
@@ -201,12 +231,14 @@ function VisitDetailPage() {
                   ) : null}
                 </>
               ) : (
-                <p className="text-muted-foreground">No coffee shop linked to this visit.</p>
+                <p className="text-muted-foreground">
+                  No café linked to this visit.
+                </p>
               )}
             </CardContent>
           </Card>
         </>
       )}
-    </div>
+    </Page>
   )
 }

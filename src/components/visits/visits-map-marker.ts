@@ -1,5 +1,5 @@
-import type { Map as MapLibreMap } from "maplibre-gl"
-import { getMapMarkerVariant, type SavedMapPlace } from "./visits-map-utils"
+import type { Map as MapLibreMap } from 'maplibre-gl'
+import { getMapMarkerVariant, type SavedMapPlace } from './visits-map-utils'
 
 export function getVisibleVisitsMapPlaceIds(
   map: MapLibreMap,
@@ -16,25 +16,25 @@ export function createVisitsMapMarkerElement(
   onSelect: (placeId: string, focusInspector: boolean) => void,
 ): HTMLButtonElement {
   const variant = getMapMarkerVariant(place)
-  const marker = document.createElement("button")
-  marker.type = "button"
-  marker.className = "roastbook-visits-map-marker"
+  const marker = document.createElement('button')
+  marker.type = 'button'
+  marker.className = 'roastbook-visits-map-marker'
   marker.tabIndex = -1
   marker.dataset.variant = variant
-  marker.dataset.selected = "false"
-  marker.setAttribute("aria-pressed", "false")
+  marker.dataset.selected = 'false'
+  marker.setAttribute('aria-pressed', 'false')
   const location = place.address ?? place.city
   marker.setAttribute(
-    "aria-label",
-    `${variant === "favorite" ? "Favorite café" : "Saved café"}: ${place.name}${location ? `, ${location}` : ""}`,
+    'aria-label',
+    `${variant === 'favorite' ? 'Favorite café' : 'Saved café'}: ${place.name}${location ? `, ${location}` : ''}`,
   )
 
-  const pin = document.createElement("span")
-  pin.className = "roastbook-visits-map-marker-pin"
-  pin.setAttribute("aria-hidden", "true")
+  const pin = document.createElement('span')
+  pin.className = 'roastbook-visits-map-marker-pin'
+  pin.setAttribute('aria-hidden', 'true')
   marker.append(pin)
 
-  marker.addEventListener("click", (event) => {
+  marker.addEventListener('click', (event) => {
     event.stopPropagation()
     onSelect(place.id, event.detail === 0)
   })
@@ -47,11 +47,11 @@ export function configureVisitsMapMarkerNavigation(
   onRovingPlaceChange: (placeId: string) => void,
 ): void {
   for (const marker of markerElements.values()) {
-    marker.addEventListener("keydown", (event) => {
+    marker.addEventListener('keydown', (event) => {
       const direction =
-        event.key === "ArrowRight" || event.key === "ArrowDown"
+        event.key === 'ArrowRight' || event.key === 'ArrowDown'
           ? 1
-          : event.key === "ArrowLeft" || event.key === "ArrowUp"
+          : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
             ? -1
             : 0
       if (direction === 0) return
@@ -104,15 +104,17 @@ export function syncVisitsMapMarkerSelection(
     const isSelected = placeId === selectedPlaceId
     marker.hidden = !displayedPlaceIdSet.has(placeId)
     marker.dataset.selected = String(isSelected)
-    marker.setAttribute("aria-pressed", String(isSelected))
+    marker.setAttribute('aria-pressed', String(isSelected))
     marker.tabIndex = marker === tabbableMarker ? 0 : -1
     if (isSelected) {
-      marker.setAttribute("aria-controls", "visits-map-place-inspector")
+      marker.setAttribute('aria-controls', 'visits-map-place-inspector')
     } else {
-      marker.removeAttribute("aria-controls")
+      marker.removeAttribute('aria-controls')
     }
   }
-  return displayedPlaceIds.find(
-    (placeId) => markerElements.get(placeId) === tabbableMarker,
-  ) ?? null
+  return (
+    displayedPlaceIds.find(
+      (placeId) => markerElements.get(placeId) === tabbableMarker,
+    ) ?? null
+  )
 }

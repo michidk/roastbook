@@ -1,7 +1,7 @@
-import { getStorage } from "@/lib/storage"
-import { createThumbnail, getThumbnailPath } from "@/lib/thumbnail-image"
+import { getStorage } from '@/lib/storage'
+import { createThumbnail, getThumbnailPath } from '@/lib/thumbnail-image'
 
-export { getThumbnailPath } from "@/lib/thumbnail-image"
+export { getThumbnailPath } from '@/lib/thumbnail-image'
 
 export async function generateAndUploadThumbnail(
   buffer: Buffer,
@@ -12,7 +12,10 @@ export async function generateAndUploadThumbnail(
 
     const thumbPath = getThumbnailPath(storagePath)
     const storage = getStorage()
-    await storage.upload(new Blob([new Uint8Array(thumbBuffer)], { type: "image/webp" }), thumbPath)
+    await storage.upload(
+      new Blob([new Uint8Array(thumbBuffer)], { type: 'image/webp' }),
+      thumbPath,
+    )
     return thumbPath
   } catch (error) {
     console.warn(`Thumbnail generation failed for ${storagePath}:`, error)

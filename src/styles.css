@@ -41,6 +41,11 @@
   --color-ink-foreground: var(--ink-foreground);
   --color-positive: var(--positive);
   --color-positive-foreground: var(--positive-foreground);
+  --color-link: var(--link);
+  --color-positive-text: var(--positive-text);
+  --color-destructive-text: var(--destructive-text);
+  --color-favorite: var(--favorite);
+  --color-favorite-foreground: var(--favorite-foreground);
   --shadow-coffee: var(--coffee-shadow);
   --shadow-coffee-inline: var(--coffee-shadow-inline);
   --shadow-coffee-strong: var(--coffee-shadow-strong);
@@ -86,6 +91,11 @@
     --ink-foreground: #f6eddf;
     --positive: #6b8a3d;
     --positive-foreground: #eaf0dc;
+    --link: #8a5a30;
+    --positive-text: #4c681f;
+    --destructive-text: #9d3b26;
+    --favorite: #8b3f60;
+    --favorite-foreground: #ffffff;
     --coffee-shadow: 0 8px 24px -18px rgb(60 42 30 / 45%);
     --coffee-shadow-inline: -8px 0 16px -10px rgb(60 42 30 / 50%);
     --coffee-shadow-strong: 0 10px 30px -18px rgb(60 42 30 / 55%);
@@ -130,6 +140,11 @@
     --ink-foreground: #1f1a14;
     --positive: #8aa850;
     --positive-foreground: #1f1a14;
+    --link: #e0a565;
+    --positive-text: #b7d47a;
+    --destructive-text: #ef947c;
+    --favorite: #e3a0bd;
+    --favorite-foreground: #1f1a14;
     --coffee-shadow: 0 8px 24px -18px rgb(0 0 0 / 55%);
     --coffee-shadow-inline: -8px 0 16px -10px rgb(0 0 0 / 60%);
     --coffee-shadow-strong: 0 10px 30px -18px rgb(0 0 0 / 65%);
@@ -196,7 +211,9 @@
 .roastbook-visits-map .maplibregl-ctrl-group button {
   background-color: transparent;
   opacity: 0.72;
-  transition: background-color 150ms ease-out, opacity 150ms ease-out;
+  transition:
+    background-color 150ms ease-out,
+    opacity 150ms ease-out;
 }
 
 .roastbook-visits-map .maplibregl-ctrl-group button:hover,
@@ -244,25 +261,35 @@
   border-radius: 999px;
   background: var(--coffee);
   box-shadow: 0 1px 4px color-mix(in srgb, var(--ink) 22%, transparent);
-  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+  transition:
+    border-color 150ms ease-out,
+    box-shadow 150ms ease-out;
 }
 
-.roastbook-visits-map-marker[data-variant="favorite"] .roastbook-visits-map-marker-pin {
+.roastbook-visits-map-marker[data-variant="favorite"]
+  .roastbook-visits-map-marker-pin {
   width: 22px;
   height: 22px;
-  background: var(--ink);
-  box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--ink);
+  background: var(--favorite);
+  box-shadow:
+    0 0 0 2px var(--card),
+    0 0 0 3px var(--favorite);
 }
 
-.roastbook-visits-map-marker[data-selected="true"] .roastbook-visits-map-marker-pin {
+.roastbook-visits-map-marker[data-selected="true"]
+  .roastbook-visits-map-marker-pin {
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--primary);
+  box-shadow:
+    0 0 0 2px var(--card),
+    0 0 0 4px var(--primary);
 }
 
 .roastbook-visits-map-inspector {
   opacity: 1;
   transform: translateY(0);
-  transition: opacity 200ms ease-in-out, transform 200ms ease-in-out;
+  transition:
+    opacity 200ms ease-in-out,
+    transform 200ms ease-in-out;
 }
 
 @starting-style {
@@ -314,7 +341,11 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  h1, h2, h3, h4, .font-display {
+  h1,
+  h2,
+  h3,
+  h4,
+  .font-display {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
   }

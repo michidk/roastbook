@@ -1,16 +1,19 @@
-import type { ReactNode } from "react"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+import { X } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { NumberInput } from '@/components/number-input'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { cn, normalizeUrl } from "@/lib/utils"
-import { CURRENCIES } from "@/lib/constants"
+} from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import { CURRENCIES } from '@/lib/constants'
+import { cn, normalizeUrl } from '@/lib/utils'
 
 interface FormFieldBaseProps {
   label: string
@@ -30,16 +33,16 @@ function FieldShell({
   children,
 }: FormFieldBaseProps & { children: ReactNode }) {
   return (
-    <div className={cn("space-y-2", className)}>
+    <div className={cn('space-y-2', className)}>
       {label ? (
         <Label htmlFor={id}>
           {label}
-          {required && " *"}
+          {required && ' *'}
         </Label>
       ) : null}
       {children}
       {error ? (
-        <p id={`${id}-error`} className="text-sm text-destructive">
+        <p id={`${id}-error`} className="text-sm text-destructive-text">
           {error}
         </p>
       ) : null}
@@ -52,14 +55,15 @@ function describedBy(id: string, error?: string) {
 }
 
 interface InputFieldProps extends FormFieldBaseProps {
-  type?: "text" | "number" | "date" | "url" | "email"
-  inputMode?: "text" | "decimal" | "numeric"
+  type?: 'text' | 'number' | 'date' | 'url' | 'email'
+  inputMode?: 'text' | 'decimal' | 'numeric'
   placeholder?: string
   value: string
   onChange: (value: string) => void
   min?: string | number
   max?: string | number
   step?: string | number
+  showStepper?: boolean
   autoFocus?: boolean
 }
 
@@ -70,7 +74,7 @@ export function InputField({
   className,
   disabled,
   error,
-  type = "text",
+  type = 'text',
   inputMode,
   placeholder,
   value,
@@ -78,6 +82,7 @@ export function InputField({
   min,
   max,
   step,
+  showStepper,
   autoFocus,
 }: InputFieldProps) {
   return (
@@ -88,30 +93,45 @@ export function InputField({
       className={className}
       error={error}
     >
-      <Input
-        id={id}
-        type={type}
-        inputMode={inputMode}
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={
-          type === "url"
-            ? (e) => {
-                const normalized = normalizeUrl(e.target.value)
-                if (normalized !== e.target.value) onChange(normalized)
-              }
-            : undefined
-        }
-        required={required}
-        disabled={disabled}
-        min={min}
-        max={max}
-        step={step}
-        autoFocus={autoFocus}
-        aria-invalid={Boolean(error)}
-        aria-describedby={describedBy(id, error)}
-      />
+      {type === 'number' ? (
+        <NumberInput
+          id={id}
+          placeholder={placeholder}
+          value={value}
+          onChange={onChange}
+          required={required}
+          disabled={disabled}
+          min={min}
+          max={max}
+          step={step}
+          showStepper={showStepper}
+          autoFocus={autoFocus}
+          aria-invalid={Boolean(error)}
+          aria-describedby={describedBy(id, error)}
+        />
+      ) : (
+        <Input
+          id={id}
+          type={type}
+          inputMode={inputMode}
+          placeholder={placeholder}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={
+            type === 'url'
+              ? (e) => {
+                  const normalized = normalizeUrl(e.target.value)
+                  if (normalized !== e.target.value) onChange(normalized)
+                }
+              : undefined
+          }
+          required={required}
+          disabled={disabled}
+          autoFocus={autoFocus}
+          aria-invalid={Boolean(error)}
+          aria-describedby={describedBy(id, error)}
+        />
+      )}
     </FieldShell>
   )
 }
@@ -194,7 +214,7 @@ export function SelectField({
     >
       <Select
         value={value || null}
-        onValueChange={(v) => onChange(v ?? "")}
+        onValueChange={(v) => onChange(v ?? '')}
         disabled={disabled}
       >
         <SelectTrigger
@@ -207,6 +227,15 @@ export function SelectField({
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
+          {!required && value ? (
+            <>
+              <SelectItem value={null}>
+                <X />
+                Clear selection
+              </SelectItem>
+              <SelectSeparator />
+            </>
+          ) : null}
           {options.map((option) => (
             <SelectItem key={option.value} value={option.value}>
               {option.label}
@@ -218,12 +247,12 @@ export function SelectField({
   )
 }
 
-type CurrencyFieldProps = Omit<SelectFieldProps, "options" | "label"> & {
+type CurrencyFieldProps = Omit<SelectFieldProps, 'options' | 'label'> & {
   label?: string
 }
 
 export function CurrencyField({
-  label = "Currency",
+  label = 'Currency',
   ...props
 }: CurrencyFieldProps) {
   return <SelectField {...props} label={label} options={CURRENCIES} />

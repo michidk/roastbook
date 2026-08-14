@@ -1,16 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from "react"
-import type { Map as MapLibreMap, Marker as MapLibreMarker } from "maplibre-gl"
-import "maplibre-gl/dist/maplibre-gl.css"
+import type { Map as MapLibreMap, Marker as MapLibreMarker } from 'maplibre-gl'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import 'maplibre-gl/dist/maplibre-gl.css'
 import {
   configureVisitsMapMarkerNavigation,
   createVisitsMapMarkerElement,
   getVisibleVisitsMapPlaceIds,
   syncVisitsMapMarkerSelection,
-} from "./visits-map-marker"
-import { VisitsMapStatus } from "./visits-map-status"
-import { VISITS_BASEMAP_STYLE } from "./visits-map-style"
-import { positionSelectedMapPlace } from "./visits-map-viewport"
-import type { SavedMapPlace } from "./visits-map-utils"
+} from './visits-map-marker'
+import { VisitsMapStatus } from './visits-map-status'
+import { VISITS_BASEMAP_STYLE } from './visits-map-style'
+import type { SavedMapPlace } from './visits-map-utils'
+import { positionSelectedMapPlace } from './visits-map-viewport'
 
 const MAP_LOAD_TIMEOUT_MS = 8_000
 
@@ -49,20 +49,20 @@ export function VisitsMapCanvas({
   const lastSelectedMarkerIdRef = useRef<string | null>(null)
   const lastPositionedPlaceIdRef = useRef<string | null>(null)
   const [mapAttempt, setMapAttempt] = useState(0)
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading")
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   selectedPlaceIdRef.current = selectedPlaceId
   if (selectedPlaceId && selectedPlaceId !== lastSelectedMarkerIdRef.current) {
     rovingPlaceIdRef.current = selectedPlaceId
   }
   placesRef.current = places
   const handleMapError = useCallback((error: unknown) => {
-    console.error("Visits map failed", error)
+    console.error('Visits map failed', error)
     const mapHadFocus =
       containerRef.current?.contains(document.activeElement) ?? false
     shouldFocusRetryRef.current = mapHadFocus
     if (loadTimeoutRef.current) clearTimeout(loadTimeoutRef.current)
     loadTimeoutRef.current = null
-    setStatus("error")
+    setStatus('error')
   }, [])
   const synchronizeMarkerSelection = useCallback((map: MapLibreMap) => {
     let focusedPlaceId: string | null = null
@@ -78,13 +78,14 @@ export function VisitsMapCanvas({
     )
     rovingPlaceIdRef.current = tabbablePlaceId
     if (focusedPlaceId && !visiblePlaceIds.includes(focusedPlaceId)) {
-      if (tabbablePlaceId) markerElementsRef.current.get(tabbablePlaceId)?.focus()
+      if (tabbablePlaceId)
+        markerElementsRef.current.get(tabbablePlaceId)?.focus()
       else map.getCanvas().focus()
     }
   }, [])
 
   useEffect(() => {
-    if (status !== "error" || !shouldFocusRetryRef.current) return
+    if (status !== 'error' || !shouldFocusRetryRef.current) return
     shouldFocusRetryRef.current = false
     retryButtonRef.current?.focus()
   }, [status])
@@ -105,7 +106,7 @@ export function VisitsMapCanvas({
         handleMapError(error)
       }
       try {
-        const maplibregl = await import("maplibre-gl")
+        const maplibregl = await import('maplibre-gl')
         if (disposed) return
         const firstPlace = initialPlaceRef.current
         const center: [number, number] = initialLocation
@@ -122,29 +123,29 @@ export function VisitsMapCanvas({
         })
         mapRef.current = map
         loadTimeoutRef.current = setTimeout(
-          () => fail("Map loading timed out"),
+          () => fail('Map loading timed out'),
           MAP_LOAD_TIMEOUT_MS,
         )
         map.addControl(
           new maplibregl.NavigationControl({ showCompass: false }),
-          "top-right",
+          'top-right',
         )
-        map.on("load", () => {
+        map.on('load', () => {
           if (disposed || failed) return
           if (loadTimeoutRef.current) clearTimeout(loadTimeoutRef.current)
           loadTimeoutRef.current = null
-          setStatus("ready")
+          setStatus('ready')
           synchronizeMarkerSelection(map)
         })
-        map.on("moveend", () => {
+        map.on('moveend', () => {
           synchronizeMarkerSelection(map)
         })
-        map.on("error", (event) => fail(event.error))
-        map.on("click", () => onSelectPlace(null))
+        map.on('error', (event) => fail(event.error))
+        map.on('click', () => onSelectPlace(null))
 
         const resizeObserver = new ResizeObserver(() => map.resize())
         resizeObserver.observe(container)
-        map.once("remove", () => resizeObserver.disconnect())
+        map.once('remove', () => resizeObserver.disconnect())
       } catch (error) {
         fail(error)
       }
@@ -170,13 +171,13 @@ export function VisitsMapCanvas({
   ])
 
   useEffect(() => {
-    if (status !== "ready" || !mapRef.current) return
+    if (status !== 'ready' || !mapRef.current) return
     const map = mapRef.current
     let disposed = false
 
     void (async () => {
       try {
-        const maplibregl = await import("maplibre-gl")
+        const maplibregl = await import('maplibre-gl')
         if (disposed) return
         let focusedPlaceId: string | null = null
         for (const [placeId, element] of markerElementsRef.current) {
@@ -188,7 +189,7 @@ export function VisitsMapCanvas({
         markerElementsRef.current.clear()
         for (const place of places) {
           const element = createVisitsMapMarkerElement(place, onSelectPlace)
-          const marker = new maplibregl.Marker({ element, anchor: "center" })
+          const marker = new maplibregl.Marker({ element, anchor: 'center' })
             .setLngLat([place.longitude, place.latitude])
             .addTo(map)
           markersRef.current.set(place.id, marker)
@@ -223,12 +224,13 @@ export function VisitsMapCanvas({
   ])
 
   useEffect(() => {
-    if (status !== "ready" || !mapRef.current) return
+    if (status !== 'ready' || !mapRef.current) return
     const map = mapRef.current
     synchronizeMarkerSelection(map)
     if (!selectedPlaceId) {
       const previousMarkerId = lastSelectedMarkerIdRef.current
-      if (previousMarkerId) markerElementsRef.current.get(previousMarkerId)?.focus()
+      if (previousMarkerId)
+        markerElementsRef.current.get(previousMarkerId)?.focus()
       lastSelectedMarkerIdRef.current = null
       lastPositionedPlaceIdRef.current = null
       return
@@ -247,14 +249,14 @@ export function VisitsMapCanvas({
         ref={containerRef}
         className="roastbook-visits-map h-full w-full"
         aria-label="Map of your saved cafés"
-        aria-hidden={status !== "ready"}
-        inert={status !== "ready"}
+        aria-hidden={status !== 'ready'}
+        inert={status !== 'ready'}
       />
       <VisitsMapStatus
         status={status}
         retryButtonRef={retryButtonRef}
         onRetry={() => {
-          setStatus("loading")
+          setStatus('loading')
           setMapAttempt((attempt) => attempt + 1)
         }}
       />

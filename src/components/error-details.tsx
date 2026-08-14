@@ -1,6 +1,7 @@
-import { useState } from "react"
-import { Check, Copy } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Check, Copy } from 'lucide-react'
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 interface ErrorDetailsProps {
   error: Error
@@ -13,9 +14,27 @@ export function ErrorDetails({ error }: ErrorDetailsProps) {
   if (!details) return null
 
   const copyDetails = async () => {
-    await navigator.clipboard.writeText(details)
-    setCopied(true)
-    window.setTimeout(() => setCopied(false), 2000)
+    let didCopy = false
+
+    try {
+      await navigator.clipboard.writeText(details)
+      didCopy = true
+    } catch {
+      const textarea = document.createElement('textarea')
+      textarea.value = details
+      textarea.setAttribute('readonly', '')
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.append(textarea)
+      textarea.select()
+      didCopy = document.execCommand('copy')
+      textarea.remove()
+    }
+
+    if (didCopy) {
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 2000)
+    }
   }
 
   return (
@@ -24,17 +43,19 @@ export function ErrorDetails({ error }: ErrorDetailsProps) {
         Error details
       </summary>
       <div className="relative mt-2">
-        <pre className="max-h-64 overflow-auto rounded-lg border bg-muted p-3 pr-12 text-xs whitespace-pre-wrap break-words">
-          <code>{details}</code>
-        </pre>
+        <ScrollArea className="h-64 rounded-lg border bg-muted">
+          <pre className="min-w-0 p-3 pr-12 text-xs whitespace-pre-wrap break-words">
+            <code>{details}</code>
+          </pre>
+        </ScrollArea>
         <Button
           type="button"
           variant="secondary"
           size="icon-xs"
           className="absolute right-2 top-2"
-          aria-label={copied ? "Error details copied" : "Copy error details"}
-          title={copied ? "Copied" : "Copy error details"}
-          onClick={copyDetails}
+          aria-label={copied ? 'Error details copied' : 'Copy error details'}
+          title={copied ? 'Copied' : 'Copy error details'}
+          onClick={() => void copyDetails()}
         >
           {copied ? <Check /> : <Copy />}
         </Button>

@@ -1,12 +1,20 @@
-import { Skeleton } from "@/components/ui/skeleton"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Page } from '@/components/page-layout'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 
-const LIST_PLACEHOLDERS = ["first", "second", "third", "fourth", "fifth", "sixth"]
-const DETAIL_PLACEHOLDERS = ["first", "second", "third", "fourth"]
+const LIST_PLACEHOLDERS = [
+  'first',
+  'second',
+  'third',
+  'fourth',
+  'fifth',
+  'sixth',
+]
+const DETAIL_PLACEHOLDERS = ['first', 'second', 'third', 'fourth']
 
 export function RoutePending() {
   return (
-    <div className="space-y-6">
+    <Page>
       <div className="space-y-2">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-4 w-64" />
@@ -21,13 +29,13 @@ export function RoutePending() {
           <Skeleton className="h-4 w-1/2" />
         </CardContent>
       </Card>
-    </div>
+    </Page>
   )
 }
 
 export function ListPending() {
   return (
-    <div className="space-y-6">
+    <Page>
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <Skeleton className="h-8 w-48" />
@@ -48,13 +56,13 @@ export function ListPending() {
           </Card>
         ))}
       </div>
-    </div>
+    </Page>
   )
 }
 
 export function DetailPending() {
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <Page width="form">
       <div className="flex items-center gap-4">
         <Skeleton className="h-10 w-10" />
         <div className="flex-1 space-y-2">
@@ -85,6 +93,6 @@ export function DetailPending() {
           <Skeleton className="h-4 w-3/4" />
         </CardContent>
       </Card>
-    </div>
+    </Page>
   )
 }

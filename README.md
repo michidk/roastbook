@@ -1,199 +1,94 @@
 # Roastbook
 
-A self-hosted coffee logging application for tracking espresso shots, cafe visits, beans, and gear. Built with TanStack Start, shadcn/ui, PostgreSQL/Drizzle, deployed via Helm with hodor authentication.
+Roastbook is a self-hosted coffee journal for espresso shots, beans, recipes,
+café visits, roasters, brewing methods, and gear.
 
-## Stack
-
-| Layer | Technology |
-|-------|------------|
-| Runtime | [Bun](https://bun.sh) |
-| Framework | [TanStack Start](https://tanstack.com/start) (React 19, Vite 8) |
-| Routing | [TanStack Router](https://tanstack.com/router) (file-based) |
-| UI | [shadcn/ui](https://ui.shadcn.com) with Tailwind CSS v4 |
-| Database | PostgreSQL with [Drizzle ORM](https://orm.drizzle.team) |
-| Storage | Local filesystem or S3-compatible |
-| AI | OpenAI GPT-4o Vision (bean info extraction from images) |
-| Auth Gate | [hodor](https://github.com/michidk/hodor) (sidecar reverse proxy) |
-| Container | Docker (multi-stage, bun:1-slim) |
-| Orchestration | Kubernetes via Helm |
+It is built with Bun, TanStack Start and Router, React 19, shadcn/ui, Tailwind
+CSS, PostgreSQL/Drizzle, and local or S3-compatible media storage. Optional
+OpenAI-powered tools can extract information from images and research bean or
+machine details.
 
 ## Features
 
-- **Espresso Shot Logging** — Track dose, yield, time, grind setting, and tasting notes for every shot
-- **Bean Management** — Catalog your coffee beans with roaster, origin, process, and roast level
-- **AI-Powered Label Scanning** — Extract bean info from bag photos using GPT-4o Vision
-- **Cafe Visits** — Log visits to coffee shops with location and notes
-- **Gear Inventory** — Keep track of your grinders, machines, and accessories
-- **Statistics & Charts** — Visualize your coffee journey over time
+- Log shots with recipe, dose, yield, time, equipment, and tasting data.
+- Catalog beans, roasters, brewing methods, coffee shops, and gear.
+- Track café visits and explore saved places on a map.
+- Review activity, trends, and brewing statistics.
+- Store media locally or in S3-compatible object storage.
+- Gate self-hosted deployments with the Hodor reverse proxy.
 
-## Getting Started
+## Quick start with Docker Compose
+
+Docker Compose starts PostgreSQL, applies committed migrations, starts
+Roastbook, and exposes it through Hodor.
 
 ```bash
-# Install dependencies
-bun install
-
-# Set up environment
 cp .env.example .env
-# Edit .env with your database credentials
-
-# Initialize or upgrade the database schema
-bun run db:migrate
-
-# Start development server
-bun run dev
-```
-
-The app will be available at http://localhost:3000
-
-## Commands
-
-```bash
-bun run dev              # Development server (port 3000)
-bun run build            # Production build
-bun run lint:deadcode    # Check for unused code (knip)
-bun run db:generate      # Generate migrations
-bun run db:migrate       # Run versioned migrations (recommended everywhere)
-bun run db:migrate:cli   # Run migrations via drizzle-kit directly
-bun run db:push          # Push schema directly (local development only)
-bun run db:studio        # Open Drizzle Studio
-bun run db:seed          # Seed database with sample data
-```
-
-## Database Migrations
-
-`bun run db:migrate` is the canonical schema initialization and upgrade command for
-shared environments and containerized deployments. It runs the committed Drizzle
-migrations from `drizzle/` using an app-owned script, so the same command works
-locally, in Docker/Compose, and in Kubernetes.
-
-Use `bun run db:push` only for local throwaway development when you want fast
-schema iteration without creating a migration first.
-
-Use `bun run db:migrate:cli` to run migrations via `drizzle-kit migrate` directly,
-which prints the SQL statements it executes and is useful when you need drizzle-kit's
-CLI output or flags.
-
-## Docker
-
-```bash
-docker build -t roastbook .
-docker run --rm \
-  -e DATABASE_URL="postgresql://..." \
-  roastbook bun run db:migrate
-
-docker run -p 3000:3000 \
-  -e DATABASE_URL="postgresql://..." \
-  roastbook
-```
-
-## Docker Compose
-
-The repository's `docker-compose.yaml` includes a one-shot `migrate` service that
-runs `bun run db:migrate` after PostgreSQL becomes healthy. The `app` service waits
-for that migration container to complete successfully before it starts.
-
-```bash
+# Replace HODOR_PASSWORD and HODOR_SECRET in .env.
+# Generate a signing secret with: openssl rand -hex 32
 docker compose up --build
 ```
 
-The app will be available at http://localhost:3000 once the database is ready and
-the migrations have completed.
+Open <http://localhost:3000> after the database migration completes.
 
-## Helm Deployment
+## Local development
 
-### External PostgreSQL (default)
-
-The simplest path is to give the chart a full connection string and let it create
-the internal secret for you:
+Roastbook uses Bun 1.3.14. With PostgreSQL available at the `DATABASE_URL` from
+`.env`:
 
 ```bash
-helm install roastbook ./charts \
-  --set hodor.password="your-password" \
-  --set hodor.secret="$(openssl rand -hex 32)" \
-  --set image.tag="latest" \
-  --set postgresql.external.url="postgresql://roastbook:db-password@postgres.default.svc:5432/roastbook"
+bun install --frozen-lockfile
+cp .env.example .env
+bun run dev
 ```
 
-If you prefer to keep the connection parts separate, the chart can still assemble
-the URL from host and auth values:
+The unauthenticated development server listens on <http://localhost:3000>.
+It applies pending migrations before accepting requests, repeats the check on
+Vite configuration reloads, and watches for newly generated migrations while
+running.
 
-```bash
-helm install roastbook ./charts \
-  --set hodor.password="your-password" \
-  --set hodor.secret="$(openssl rand -hex 32)" \
-  --set image.tag="latest" \
-  --set postgresql.auth.username="roastbook" \
-  --set postgresql.auth.password="db-password" \
-  --set postgresql.auth.database="roastbook" \
-  --set postgresql.external.host="postgres.default.svc" \
-  --set postgresql.external.port="5432"
+## Common commands
+
+| Command | Purpose |
+| --- | --- |
+| `bun run dev` | Apply migrations and start the watched development server |
+| `bun run check` | Check source formatting, lint, and Markdown |
+| `bun run typecheck` | Run TypeScript without emitting files |
+| `bun run test` | Run tests; report unavailable integrations as skipped |
+| `bun run test:integration` | Require PostgreSQL and S3 integration tests |
+| `bun run lint:deadcode` | Find unused code and dependencies with Knip |
+| `bun run build` | Build production assets |
+| `bun run verify` | Run the complete local quality gate |
+| `bun run db:generate` | Generate a Drizzle migration after a schema change |
+| `bun run db:migrate` | Apply committed migrations |
+| `bun run db:studio` | Open Drizzle Studio |
+| `bun run db:seed` | Seed sample data |
+| `bun run storage:orphans` | Report media drift without changing data |
+
+## Documentation
+
+- [Development and testing](docs/development.md)
+- [Configuration reference](docs/configuration.md)
+- [Docker, Helm, and security boundary](docs/deployment.md)
+- [Design system and layout contract](DESIGN.md)
+- [Helm chart reference](charts/README.md)
+
+## Architecture at a glance
+
+```text
+src/routes/          TanStack Router file routes and server endpoints
+src/components/      Shared application and domain UI
+src/components/ui/   shadcn/ui primitives
+src/lib/server/      Server-side domain operations
+src/lib/storage/     Local and S3-compatible storage providers
+src/db/              Drizzle schema and database connection
+drizzle/             Committed migrations and metadata
+charts/              Helm chart
 ```
 
-Roastbook defaults to an external PostgreSQL connection so chart users are not tied
-to a specific bundled database image source. This avoids surprising install failures
-when public image availability or registry policy changes upstream.
-
-If you already store a full `DATABASE_URL` in a Kubernetes secret, point the chart at it instead:
-
-```bash
-helm install roastbook ./charts \
-  --set hodor.password="your-password" \
-  --set hodor.secret="$(openssl rand -hex 32)" \
-  --set image.tag="latest" \
-  --set postgresql.existingSecret="roastbook-db" \
-  --set postgresql.existingSecretKey="url"
-```
-
-### Bundled PostgreSQL (opt-in)
-
-If you want Roastbook to deploy PostgreSQL for you, enable the bundled database and
-set a database password explicitly:
-
-```bash
-helm install roastbook ./charts \
-  --set hodor.password="your-password" \
-  --set hodor.secret="$(openssl rand -hex 32)" \
-  --set image.tag="latest" \
-  --set postgresql.enabled=true \
-  --set postgresql.auth.password="db-password"
-```
-
-The bundled database path uses Roastbook's own PostgreSQL StatefulSet templates with
-the public multi-arch official `postgres` image by default. You can still override
-`postgresql.image.repository`, `postgresql.image.tag`, and the `postgresql.primary.*`
-settings if your environment needs a different image, storage class, or placement.
-
-See [charts/values.yaml](charts/values.yaml) for all configuration options.
-
-By default, the Helm chart also runs the same migration command as a Helm hook Job.
-For external databases it runs on `pre-install,pre-upgrade`, but when
-`postgresql.enabled=true` it switches to `post-install,pre-upgrade` so the bundled
-PostgreSQL Secret, Service, and StatefulSet exist before the first migration runs.
-The migration command also retries until PostgreSQL is accepting connections.
-Disable it with `--set migrations.enabled=false` if you prefer to manage schema
-changes outside Helm, or `--set migrations.hook.enabled=false` if you want the Job
-template without Helm hook annotations. In non-hook mode the Job name is suffixed
-with the Helm release revision so upgrades recreate it cleanly, and completed Jobs
-are cleaned up automatically after `migrations.ttlSecondsAfterFinished` seconds.
-
-For Kubernetes environments that already manage secrets externally, set `postgresql.existingSecret` to a secret containing a full `DATABASE_URL` under the `url` key, and set `hodor.existingSecret` to a secret containing Hodor's `password` and `secret` keys.
-
-## Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `DATABASE_URL` | PostgreSQL connection string | Yes |
-| `STORAGE_PROVIDER` | `local` or `s3` | No (default: local) |
-| `STORAGE_PATH` | Local storage path | No (default: ./uploads) |
-| `S3_BUCKET` | S3 bucket name | If using S3 |
-| `S3_REGION` | S3 region | If using S3 |
-| `S3_ENDPOINT` | Custom S3 endpoint (MinIO, etc.) | No |
-| `S3_ACCESS_KEY_ID` | S3 access key | If using S3 |
-| `S3_SECRET_ACCESS_KEY` | S3 secret key | If using S3 |
-| `OPENAI_API_KEY` | OpenAI API key for vision | No |
-| `OPENAI_BASE_URL` | Custom OpenAI-compatible endpoint | No |
-| `OPENAI_VISION_MODEL` | Model for image extraction | No (default: gpt-4o) |
+`src/routeTree.gen.ts` is generated. Run `bun run generate-routes` instead of
+editing it manually.
 
 ## License
 
-MIT
+[MIT](LICENSE)

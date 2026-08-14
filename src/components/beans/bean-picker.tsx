@@ -1,5 +1,5 @@
-import { EntityPicker } from "@/components/form/entity-picker"
-import { BeanForm } from "@/components/beans/bean-form"
+import { BeanForm } from '@/components/beans/bean-form'
+import { EntityPicker } from '@/components/form/entity-picker'
 
 interface BeanOption {
   id: number
@@ -14,6 +14,7 @@ interface BeanPickerProps {
   value: string
   onChange: (value: string) => void
   beans: readonly BeanOption[]
+  suggestions?: readonly BeanOption[]
   placeholder?: string
   required?: boolean
   disabled?: boolean
@@ -27,7 +28,8 @@ export function BeanPicker({
   value,
   onChange,
   beans,
-  placeholder = "Select beans",
+  suggestions,
+  placeholder = 'Select beans',
   required,
   disabled,
   className,
@@ -40,10 +42,11 @@ export function BeanPicker({
       value={value}
       onChange={onChange}
       items={beans}
+      suggestions={suggestions}
       getKey={(bean) => bean.id}
       getLabel={(bean) => bean.name}
       getDescription={(bean) =>
-        [bean.roaster, bean.origin].filter(Boolean).join(" · ") || null
+        [bean.roaster, bean.origin].filter(Boolean).join(' · ') || null
       }
       placeholder={placeholder}
       searchPlaceholder="Search beans…"

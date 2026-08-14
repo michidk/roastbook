@@ -1,5 +1,5 @@
-import { EntityPicker } from "@/components/form/entity-picker"
-import { CoffeeShopForm } from "@/components/coffee-shops/coffee-shop-form"
+import { CoffeeShopForm } from '@/components/coffee-shops/coffee-shop-form'
+import { EntityPicker } from '@/components/form/entity-picker'
 
 interface CoffeeShopOption {
   id: number
@@ -27,7 +27,7 @@ export function CoffeeShopPicker({
   value,
   onChange,
   coffeeShops,
-  placeholder = "Select a coffee shop",
+  placeholder = 'Select a café',
   required,
   disabled,
   className,
@@ -43,19 +43,19 @@ export function CoffeeShopPicker({
       getKey={(coffeeShop) => coffeeShop.id}
       getLabel={(coffeeShop) => coffeeShop.name}
       getDescription={(coffeeShop) =>
-        [coffeeShop.city, coffeeShop.country].filter(Boolean).join(", ") || null
+        [coffeeShop.city, coffeeShop.country].filter(Boolean).join(', ') || null
       }
       placeholder={placeholder}
-      searchPlaceholder="Search coffee shops…"
-      emptyMessage="No matching coffee shops."
-      createLabel={(query) => `Add “${query}” as a new coffee shop`}
-      noMatchHint={(query) => `No coffee shop named “${query}” yet`}
+      searchPlaceholder="Search cafés…"
+      emptyMessage="No matching cafés."
+      createLabel={(query) => `Add “${query}” as a new café`}
+      noMatchHint={(query) => `No café named “${query}” yet`}
       required={required}
       disabled={disabled}
       className={className}
       autoFocus={autoFocus}
-      dialogTitle="Add coffee shop"
-      dialogDescription="Create the coffee shop without leaving this form."
+      dialogTitle="Add café"
+      dialogDescription="Create the café without leaving this form."
       renderCreateForm={({ initialName, onCreated, onCancel }) => (
         <CoffeeShopForm
           initialName={initialName}

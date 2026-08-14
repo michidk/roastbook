@@ -1,6 +1,7 @@
-import { Link } from "@tanstack/react-router"
-import { ChevronRight, Heart, MapPin, MapPinOff } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Link } from '@tanstack/react-router'
+import { ChevronRight, Heart, MapPin, MapPinOff } from 'lucide-react'
+import { interactiveCardLinkClassName } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
 type CoffeeShopCardItem = {
   readonly id: number
@@ -32,46 +33,49 @@ export function CoffeeShopCard({
       : MapPinOff
   const location = [coffeeShop.address, coffeeShop.city, coffeeShop.country]
     .filter(Boolean)
-    .join(", ")
+    .join(', ')
 
   return (
     <Link
       to="/shops/$coffeeShopId"
       params={{ coffeeShopId: String(coffeeShop.id) }}
       className={cn(
-        "group flex min-w-0 items-center gap-3 rounded-3xl bg-card p-4 shadow-coffee transition-transform hover:-translate-y-0.5",
-        isProminentFavorite && "ring-2 ring-destructive/35 ring-inset",
+        interactiveCardLinkClassName,
+        'flex items-center gap-3 bg-card p-4 shadow-coffee',
+        isProminentFavorite && 'ring-2 ring-favorite/35 ring-inset',
       )}
     >
       <span
         className={
           isProminentFavorite
-            ? "flex size-10 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive"
+            ? 'flex size-10 shrink-0 items-center justify-center rounded-full bg-favorite/15 text-favorite'
             : hasCoordinates
-            ? "flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
-            : "flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
+              ? 'flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary'
+              : 'flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground'
         }
       >
         <LocationIcon
           aria-hidden
-          className={cn("size-4", isProminentFavorite && "fill-current")}
+          className={cn('size-4', isProminentFavorite && 'fill-current')}
         />
       </span>
       <span className="min-w-0 flex-1 space-y-0.5">
         <span className="flex items-center gap-1.5">
-          {isProminentFavorite && <span className="sr-only">Favorite café: </span>}
+          {isProminentFavorite && (
+            <span className="sr-only">Favorite café: </span>
+          )}
           <span className="truncate font-display text-base font-bold text-foreground">
             {coffeeShop.name}
           </span>
           {coffeeShop.isFavorite && !isProminentFavorite && (
             <Heart
               aria-label="Favorite"
-              className="size-3.5 shrink-0 fill-current text-destructive"
+              className="size-3.5 shrink-0 fill-current text-favorite"
             />
           )}
         </span>
         <span className="block truncate text-sm text-muted-foreground">
-          {location || (hasCoordinates ? "Location pinned" : "No location set")}
+          {location || (hasCoordinates ? 'Location pinned' : 'No location set')}
         </span>
       </span>
       <ChevronRight

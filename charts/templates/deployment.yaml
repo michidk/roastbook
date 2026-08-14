@@ -1,3 +1,10 @@
+{{- $multiReplica := or (gt (int .Values.replicaCount) 1) (and .Values.autoscaling.enabled (gt (int .Values.autoscaling.maxReplicas) 1)) -}}
+{{- if and (eq .Values.storage.provider "local") $multiReplica (ne .Values.storage.local.accessMode "ReadWriteMany") -}}
+{{- fail "multi-replica deployments cannot use local ReadWriteOnce storage; set storage.provider=s3 or select shared storage with storage.local.accessMode=ReadWriteMany" -}}
+{{- end -}}
+{{- if and .Values.autoscaling.enabled (gt (int .Values.autoscaling.minReplicas) (int .Values.autoscaling.maxReplicas)) -}}
+{{- fail "autoscaling.minReplicas cannot exceed autoscaling.maxReplicas" -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,6 +14,13 @@ metadata:
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  {{- if and (eq .Values.storage.provider "local") (ne .Values.storage.local.accessMode "ReadWriteMany") }}
+  strategy:
+    type: Recreate
+  {{- else }}
+  strategy:
+    {{- toYaml .Values.strategy | nindent 4 }}
   {{- end }}
   selector:
     matchLabels:
@@ -28,6 +42,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "roastbook.serviceAccountName" . }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -99,13 +114,21 @@ spec:
             - name: OPENAI_VISION_MODEL
               value: {{ .Values.openai.visionModel | quote }}
             {{- end }}
+            {{- if .Values.openai.researchModel }}
+            - name: OPENAI_RESEARCH_MODEL
+              value: {{ .Values.openai.researchModel | quote }}
             {{- end }}
-          {{- if not .Values.hodor.enabled }}
+            {{- end }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
-          {{- end }}
+          startupProbe:
+            {{- toYaml .Values.startupProbe | nindent 12 }}
+          lifecycle:
+            preStop:
+              exec:
+                command: ['sh', '-c', 'sleep 5']
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- if eq .Values.storage.provider "local" }}
@@ -115,7 +138,11 @@ spec:
           {{- end }}
         {{- if .Values.hodor.enabled }}
         - name: hodor
-          image: "{{ .Values.hodor.image.repository }}:{{ .Values.hodor.image.tag }}"
+          {{- if .Values.hodor.image.digest }}
+          image: "{{ .Values.hodor.image.repository }}@{{ .Values.hodor.image.digest }}"
+          {{- else }}
+          image: "{{ .Values.hodor.image.repository }}:{{ required "hodor.image.tag or hodor.image.digest is required" .Values.hodor.image.tag }}"
+          {{- end }}
           imagePullPolicy: {{ .Values.hodor.image.pullPolicy }}
           ports:
             - name: gate
@@ -149,7 +176,7 @@ spec:
             - name: SESSION_TTL
               value: {{ .Values.hodor.sessionTtl | quote }}
             - name: SECURE_COOKIE
-              value: {{ .Values.hodor.secureCookie | quote }}
+              value: {{ or .Values.hodor.secureCookie (not (empty .Values.ingress.tls)) | quote }}
             - name: LOG_FORMAT
               value: {{ .Values.hodor.logFormat | quote }}
           livenessProbe:
@@ -164,6 +191,12 @@ spec:
               port: gate
             initialDelaySeconds: 2
             periodSeconds: 5
+          startupProbe:
+            httpGet:
+              path: /_gate/health
+              port: gate
+            periodSeconds: 2
+            failureThreshold: 30
           resources:
             {{- toYaml .Values.hodor.resources | nindent 12 }}
         {{- end }}

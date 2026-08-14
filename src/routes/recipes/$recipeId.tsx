@@ -11,6 +11,7 @@ import { BeanPicker } from '@/components/beans/bean-picker'
 import { DeleteConfirmation } from '@/components/DeleteConfirmation'
 import { InputField, SelectField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
+import { Page, PageHeader } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import {
@@ -22,10 +23,11 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { shotParameterPayload } from '@/lib/new-shot-payload'
 import { getActiveBeans } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getGear } from '@/lib/server/gear'
-import { shotParameterPayload } from '@/lib/new-shot-payload'
 import { deleteRecipe, getRecipe, updateRecipe } from '@/lib/server/recipes'
 import { getShotUpdateErrors } from '@/lib/update-validation'
 
@@ -148,7 +150,7 @@ function RecipeDetailPage() {
     try {
       await updateRecipe({ data })
       setIsEditing(false)
-      await router.invalidate()
+      await router.invalidate({ filter: (match) => match.routeId === Route.id })
       toast.success('Recipe updated')
     } catch (error) {
       toast.error(
@@ -160,23 +162,22 @@ function RecipeDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <div className="flex min-w-0 items-center gap-3">
-          <Button variant="ghost" size="icon" asChild>
+    <Page width="form">
+      <PageHeader
+        size="compact"
+        title={recipe.name}
+        description={
+          <Badge variant="outline">{recipe.brewingMethod.name}</Badge>
+        }
+        leading={
+          <Button variant="outline" size="icon" asChild>
             <Link to="/recipes" aria-label="Back to recipes">
               <ArrowLeft />
             </Link>
           </Button>
-          <div className="min-w-0 flex-1">
-            <h1 className="min-w-0 break-words text-2xl font-bold">
-              {recipe.name}
-            </h1>
-            <Badge variant="outline">{recipe.brewingMethod.name}</Badge>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 sm:ml-auto sm:justify-end">
-          {isEditing ? (
+        }
+        actions={
+          isEditing ? (
             <>
               <Button
                 variant="outline"
@@ -218,7 +219,7 @@ function RecipeDetailPage() {
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    className="text-destructive-text hover:bg-destructive/10 hover:text-destructive-text"
                     aria-label="Delete recipe"
                   >
                     <Trash2 />
@@ -226,9 +227,9 @@ function RecipeDetailPage() {
                 }
               />
             </>
-          )}
-        </div>
-      </header>
+          )
+        }
+      />
 
       {isEditing ? (
         <form id="recipe-edit-form" onSubmit={handleSave} className="space-y-6">
@@ -281,7 +282,7 @@ function RecipeDetailPage() {
       ) : (
         <RecipeSummary recipe={recipe} gear={gear} />
       )}
-    </div>
+    </Page>
   )
 }
 
@@ -292,44 +293,48 @@ function RecipeSummary({
   recipe: Recipe
   gear: Awaited<ReturnType<typeof getGear>>
 }) {
+  const formatNumber = useNumberFormatter()
   const enabled = new Set(recipe.brewingMethod.enabledParameters)
   const rows = [
     enabled.has('doseGrams') && [
       'Dose',
-      recipe.doseGrams && `${recipe.doseGrams} g`,
+      recipe.doseGrams && `${formatNumber(recipe.doseGrams)} g`,
     ],
     enabled.has('brewWaterGrams') && [
       'Brew water',
-      recipe.brewWaterGrams && `${recipe.brewWaterGrams} g`,
+      recipe.brewWaterGrams && `${formatNumber(recipe.brewWaterGrams)} g`,
     ],
     enabled.has('yieldGrams') && [
       'Yield',
-      recipe.yieldGrams && `${recipe.yieldGrams} g`,
+      recipe.yieldGrams && `${formatNumber(recipe.yieldGrams)} g`,
     ],
     enabled.has('shotTimeSeconds') && [
       'Brew time',
-      recipe.shotTimeSeconds && `${recipe.shotTimeSeconds} s`,
+      recipe.shotTimeSeconds && `${formatNumber(recipe.shotTimeSeconds)} s`,
     ],
     enabled.has('grindSetting') && ['Grind setting', recipe.grindSetting],
     enabled.has('brewTemperatureCelsius') && [
       'Temperature',
-      recipe.brewTemperatureCelsius && `${recipe.brewTemperatureCelsius} °C`,
+      recipe.brewTemperatureCelsius &&
+        `${formatNumber(recipe.brewTemperatureCelsius)} °C`,
     ],
     enabled.has('brewPressureBar') && [
       'Brew pressure',
-      recipe.brewPressureBar && `${recipe.brewPressureBar} bar`,
+      recipe.brewPressureBar && `${formatNumber(recipe.brewPressureBar)} bar`,
     ],
     enabled.has('flowRateMlPerSecond') && [
       'Flow rate',
-      recipe.flowRateMlPerSecond && `${recipe.flowRateMlPerSecond} mL/s`,
+      recipe.flowRateMlPerSecond &&
+        `${formatNumber(recipe.flowRateMlPerSecond)} mL/s`,
     ],
     enabled.has('preinfusionTimeSeconds') && [
       'Pre-infusion',
-      recipe.preinfusionTimeSeconds && `${recipe.preinfusionTimeSeconds} s`,
+      recipe.preinfusionTimeSeconds &&
+        `${formatNumber(recipe.preinfusionTimeSeconds)} s`,
     ],
     enabled.has('bloomTimeSeconds') && [
       'Bloom',
-      recipe.bloomTimeSeconds && `${recipe.bloomTimeSeconds} s`,
+      recipe.bloomTimeSeconds && `${formatNumber(recipe.bloomTimeSeconds)} s`,
     ],
   ].filter(Boolean) as [string, string | null][]
   const accessories = gear.filter((item) =>
@@ -392,14 +397,16 @@ function RecipeSummary({
             {equipment.map((item) => (
               <div key={item.id}>
                 <p className="text-sm text-muted-foreground">
-                  {item.type === 'grinder'
-                    ? 'Grinder'
-                    : item.type === 'basket'
-                      ? 'Basket'
-                      : item.type === 'espresso_machine' ||
-                          item.type === 'brewer'
-                        ? 'Brewer / machine'
-                        : 'Accessory'}
+                  {item.type === 'espresso_machine_with_grinder'
+                    ? 'Machine / grinder'
+                    : item.type === 'grinder'
+                      ? 'Grinder'
+                      : item.type === 'basket'
+                        ? 'Basket'
+                        : item.type === 'espresso_machine' ||
+                            item.type === 'brewer'
+                          ? 'Brewer / machine'
+                          : 'Accessory'}
                 </p>
                 <p className="font-medium">{item.name}</p>
               </div>

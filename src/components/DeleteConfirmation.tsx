@@ -1,7 +1,7 @@
-import { useState } from "react"
-import { Trash2 } from "lucide-react"
-import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
+import { Trash2 } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -11,7 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/dialog"
+} from '@/components/ui/dialog'
 
 interface DeleteConfirmationProps {
   title: string
@@ -36,7 +36,7 @@ export function DeleteConfirmation({
       setOpen(false)
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Could not delete this item",
+        error instanceof Error ? error.message : 'Could not delete this item',
       )
     } finally {
       setIsDeleting(false)
@@ -50,7 +50,7 @@ export function DeleteConfirmation({
           <Button
             variant="ghost"
             size="icon"
-            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+            className="text-destructive-text hover:bg-destructive/10 hover:text-destructive-text"
             aria-label={title}
           >
             <Trash2 aria-hidden className="h-4 w-4" />
@@ -70,7 +70,7 @@ export function DeleteConfirmation({
             disabled={isDeleting}
             aria-busy={isDeleting}
           >
-            {isDeleting ? "Deleting…" : "Delete"}
+            {isDeleting ? 'Deleting…' : 'Delete'}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

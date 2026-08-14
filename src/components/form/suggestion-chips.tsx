@@ -1,13 +1,13 @@
-import { Button } from "@/components/ui/button"
+import { Button } from '@/components/ui/button'
 
-type Suggestion = {
-  readonly id: number
+export type PickerSuggestion = {
+  readonly id: number | string
   readonly name: string
 }
 
 type SuggestionChipsProps = {
   readonly label: string
-  readonly items: readonly Suggestion[]
+  readonly items: readonly PickerSuggestion[]
   readonly value: string
   readonly onChange: (value: string) => void
 }
@@ -22,9 +22,7 @@ export function SuggestionChips({
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-semibold text-muted-foreground">
-        Suggestions
-      </p>
+      <p className="text-xs font-semibold text-muted-foreground">Suggestions</p>
       <fieldset className="flex min-w-0 flex-wrap gap-2 border-0 p-0">
         <legend className="sr-only">{label} suggestions</legend>
         {items.map((item) => {
@@ -34,7 +32,7 @@ export function SuggestionChips({
               key={item.id}
               type="button"
               size="xs"
-              variant={isSelected ? "primary" : "secondary"}
+              variant={isSelected ? 'primary' : 'secondary'}
               aria-pressed={isSelected}
               onClick={() => onChange(String(item.id))}
               className="rounded-xl"

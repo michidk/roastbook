@@ -1,16 +1,16 @@
-import type { ComponentProps } from "react"
-import { ImageUploadField } from "@/components/image-upload-field"
-import { FormSection } from "@/components/form/form-shell"
-import type { useImageUpload } from "@/hooks/useImageUpload"
+import type { ComponentProps } from 'react'
+import { FormSection } from '@/components/form/form-shell'
+import { PictureUploadDialog } from '@/components/picture-upload-dialog'
+import type { useImageUpload } from '@/hooks/useImageUpload'
 
 type ImageUploadDisplayProps = Pick<
-  ComponentProps<typeof ImageUploadField>,
-  | "footer"
-  | "helperText"
-  | "isBusy"
-  | "previewAltPrefix"
-  | "prompt"
-  | "statusText"
+  ComponentProps<typeof PictureUploadDialog>,
+  | 'footer'
+  | 'helperText'
+  | 'isBusy'
+  | 'previewAltPrefix'
+  | 'prompt'
+  | 'statusText'
 >
 
 type EntityImageUploadSectionProps = ImageUploadDisplayProps & {
@@ -23,7 +23,7 @@ export function EntityImageUploadSection({
 }: EntityImageUploadSectionProps) {
   return (
     <FormSection title="Pictures">
-      <ImageUploadField
+      <PictureUploadDialog
         images={upload.images}
         fileInputRef={upload.fileInputRef}
         onFilesAdded={upload.addFiles}

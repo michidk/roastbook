@@ -1,17 +1,18 @@
-import { useState, useMemo } from "react"
-import { Check, ArrowRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { ArrowRight, Check } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { cn } from "@/lib/utils"
-import type { ExtractedBeanInfo } from "@/lib/ai"
-import type { BeanType, RoastLevel } from "@/lib/constants"
+} from '@/components/ui/dialog'
+import type { ExtractedBeanInfo } from '@/lib/ai'
+import type { BeanType, RoastLevel } from '@/lib/constants'
+import { cn } from '@/lib/utils'
 
 interface FieldDef {
   key: keyof ExtractedBeanInfo
@@ -21,31 +22,31 @@ interface FieldDef {
 }
 
 const FIELD_DEFINITIONS: FieldDef[] = [
-  { key: "name", label: "Name", formKey: "name" },
-  { key: "type", label: "Type", formKey: "type" },
-  { key: "origin", label: "Country", formKey: "origin" },
-  { key: "region", label: "Region", formKey: "region" },
-  { key: "farm", label: "Farm/Producer", formKey: "farm" },
-  { key: "variety", label: "Variety", formKey: "variety" },
+  { key: 'name', label: 'Name', formKey: 'name' },
+  { key: 'type', label: 'Type', formKey: 'type' },
+  { key: 'origin', label: 'Country', formKey: 'origin' },
+  { key: 'region', label: 'Region', formKey: 'region' },
+  { key: 'farm', label: 'Farm/Producer', formKey: 'farm' },
+  { key: 'variety', label: 'Variety', formKey: 'variety' },
   {
-    key: "process",
-    label: "Process",
-    formKey: "process",
-    transform: (v) => v.replace(/_/g, " "),
+    key: 'process',
+    label: 'Process',
+    formKey: 'process',
+    transform: (v) => v.replace(/_/g, ' '),
   },
   {
-    key: "roastLevel",
-    label: "Roast Level",
-    formKey: "roastLevel",
-    transform: (v) => v.replace(/_/g, " "),
+    key: 'roastLevel',
+    label: 'Roast Level',
+    formKey: 'roastLevel',
+    transform: (v) => v.replace(/_/g, ' '),
   },
-  { key: "roastDate", label: "Roast Date", formKey: "roastDate" },
-  { key: "notes", label: "Notes", formKey: "notes"   },
+  { key: 'roastDate', label: 'Roast Date', formKey: 'roastDate' },
+  { key: 'notes', label: 'Notes', formKey: 'notes' },
 ]
 
 export interface BeanFormData {
   name: string
-  type: BeanType | ""
+  type: BeanType | ''
   roasterId: string
   weight: string
   price: string
@@ -56,7 +57,7 @@ export interface BeanFormData {
   farm: string
   variety: string
   process: string
-  roastLevel: RoastLevel | ""
+  roastLevel: RoastLevel | ''
   roastDate: string
   notes: string
 }
@@ -74,7 +75,7 @@ interface BeanInfoDiffModalProps {
   currentData: BeanFormData
   suggestedData: ExtractedBeanInfo
   onApply: (updates: Partial<BeanFormData>) => void
-  source: "image" | "web"
+  source: 'image' | 'web'
 }
 
 export function BeanInfoDiffModal({
@@ -94,13 +95,15 @@ export function BeanInfoDiffModal({
       const suggestedValue = suggestedData[field.key]
       if (!suggestedValue) continue
 
-      const currentValue = currentData[field.formKey as keyof BeanFormData] as string
+      const currentValue = currentData[
+        field.formKey as keyof BeanFormData
+      ] as string
       const suggested = String(suggestedValue)
 
       if (currentValue !== suggested) {
         result.push({
           field,
-          currentValue: currentValue || "",
+          currentValue: currentValue || '',
           suggestedValue: suggested,
           hasConflict: !!currentValue && currentValue !== suggested,
         })
@@ -145,12 +148,13 @@ export function BeanInfoDiffModal({
 
     for (const diff of diffs) {
       if (selectedFields.has(diff.field.formKey)) {
-        if (diff.field.formKey === "roastLevel") {
+        if (diff.field.formKey === 'roastLevel') {
           updates.roastLevel = diff.suggestedValue as RoastLevel
-        } else if (diff.field.formKey === "type") {
+        } else if (diff.field.formKey === 'type') {
           updates.type = diff.suggestedValue as BeanType
         } else {
-          ;(updates as Record<string, string>)[diff.field.formKey] = diff.suggestedValue
+          ;(updates as Record<string, string>)[diff.field.formKey] =
+            diff.suggestedValue
         }
       }
     }
@@ -169,7 +173,7 @@ export function BeanInfoDiffModal({
           <DialogHeader>
             <DialogTitle>No Changes Found</DialogTitle>
             <DialogDescription>
-              {source === "image"
+              {source === 'image'
                 ? "The AI couldn't extract any new information from the image."
                 : "The AI couldn't find any new information about this bean online."}
             </DialogDescription>
@@ -184,27 +188,30 @@ export function BeanInfoDiffModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {source === "image" ? "Review Extracted Info" : "Review Research Results"}
+            {source === 'image'
+              ? 'Review extracted info'
+              : 'Review research results'}
           </DialogTitle>
           <DialogDescription>
             {newFieldCount > 0 && (
-              <span className="text-positive">
-                {newFieldCount} new field{newFieldCount !== 1 ? "s" : ""}
+              <span className="text-positive-text">
+                {newFieldCount} new field{newFieldCount !== 1 ? 's' : ''}
               </span>
             )}
-            {newFieldCount > 0 && conflictCount > 0 && " · "}
+            {newFieldCount > 0 && conflictCount > 0 && ' · '}
             {conflictCount > 0 && (
-              <span className="text-primary">
-                {conflictCount} field{conflictCount !== 1 ? "s" : ""} with existing values
+              <span className="text-link">
+                {conflictCount} field{conflictCount !== 1 ? 's' : ''} with
+                existing values
               </span>
             )}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto -mx-4 px-4">
+        <DialogBody>
           <div className="space-y-2">
             {diffs.map((diff) => (
               <DiffRow
@@ -215,9 +222,9 @@ export function BeanInfoDiffModal({
               />
             ))}
           </div>
-        </div>
+        </DialogBody>
 
-        <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-between">
+        <DialogFooter className="sm:justify-between">
           <div className="flex gap-2">
             <Button variant="ghost" size="sm" onClick={selectAll}>
               Select all
@@ -231,7 +238,8 @@ export function BeanInfoDiffModal({
               Cancel
             </Button>
             <Button onClick={handleApply} disabled={selectedFields.size === 0}>
-              Apply {selectedFields.size} change{selectedFields.size !== 1 ? "s" : ""}
+              Apply {selectedFields.size} change
+              {selectedFields.size !== 1 ? 's' : ''}
             </Button>
           </div>
         </DialogFooter>
@@ -259,19 +267,19 @@ function DiffRow({ diff, selected, onToggle }: DiffRowProps) {
       type="button"
       onClick={onToggle}
       className={cn(
-        "w-full text-left p-3 rounded-lg border transition-colors",
+        'w-full text-left p-3 rounded-lg border transition-colors',
         selected
-          ? "border-primary bg-primary/5"
-          : "border-border hover:border-muted-foreground/30"
+          ? 'border-primary bg-primary/5'
+          : 'border-border hover:border-muted-foreground/30',
       )}
     >
       <div className="flex items-start gap-3">
         <div
           className={cn(
-            "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors",
+            'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors',
             selected
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-muted-foreground/30"
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-muted-foreground/30',
           )}
         >
           {selected && <Check className="h-3 w-3" />}
@@ -281,7 +289,7 @@ function DiffRow({ diff, selected, onToggle }: DiffRowProps) {
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">{diff.field.label}</span>
             {diff.hasConflict && (
-              <span className="rounded bg-primary/15 px-1.5 py-0.5 text-xs text-primary">
+              <span className="rounded bg-primary/15 px-1.5 py-0.5 text-xs text-link">
                 has value
               </span>
             )}
@@ -291,13 +299,15 @@ function DiffRow({ diff, selected, onToggle }: DiffRowProps) {
             {diff.hasConflict ? (
               <>
                 <span className="text-muted-foreground line-through truncate max-w-[40%]">
-                  {displayCurrent || "(empty)"}
+                  {displayCurrent || '(empty)'}
                 </span>
                 <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
-                <span className="text-foreground truncate max-w-[40%]">{displaySuggested}</span>
+                <span className="text-foreground truncate max-w-[40%]">
+                  {displaySuggested}
+                </span>
               </>
             ) : (
-              <span className="truncate text-positive">
+              <span className="truncate text-positive-text">
                 {displaySuggested}
               </span>
             )}

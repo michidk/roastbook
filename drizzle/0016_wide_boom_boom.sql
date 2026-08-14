@@ -1,0 +1,1 @@
+ALTER TYPE "public"."gear_type" ADD VALUE 'espresso_machine_with_grinder' BEFORE 'brewer';

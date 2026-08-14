@@ -1,5 +1,6 @@
-import { createServerFn } from "@tanstack/react-start"
-import { prioritizeCoffeeShopCandidates } from "@/lib/geocoding-ranking"
+import { createServerFn } from '@tanstack/react-start'
+import { z } from 'zod'
+import { prioritizeCoffeeShopCandidates } from '@/lib/geocoding-ranking'
 
 const NOMINATIM_CANDIDATE_LIMIT = 40
 
@@ -8,7 +9,7 @@ type NominatimResult = {
   readonly display_name?: string
   readonly lat?: string
   readonly lon?: string
-  readonly osm_type?: "node" | "way" | "relation"
+  readonly osm_type?: 'node' | 'way' | 'relation'
   readonly osm_id?: number | string
   readonly category?: string
   readonly class?: string
@@ -30,12 +31,14 @@ type NominatimResult = {
   readonly extratags?: {
     readonly cuisine?: string
     readonly website?: string
-    readonly "contact:website"?: string
+    readonly 'contact:website'?: string
     readonly url?: string
   } | null
 }
 
-function toOpenStreetMapUrl(result: Pick<NominatimResult, "osm_type" | "osm_id" | "lat" | "lon">) {
+function toOpenStreetMapUrl(
+  result: Pick<NominatimResult, 'osm_type' | 'osm_id' | 'lat' | 'lon'>,
+) {
   if (!result.osm_type || !result.osm_id || !result.lat || !result.lon) {
     return undefined
   }
@@ -44,33 +47,46 @@ function toOpenStreetMapUrl(result: Pick<NominatimResult, "osm_type" | "osm_id" 
 }
 
 function normalizeQuery(query: string) {
-  const normalized = query.trim().replace(/\s+/g, " ")
+  const normalized = query.trim().replace(/\s+/g, ' ')
 
   if (normalized.length < 3) {
-    throw new Error("Search query must be at least 3 characters")
+    throw new Error('Search query must be at least 3 characters')
   }
 
   return normalized
 }
 
-function toAddressLine(address: NominatimResult["address"]) {
+const querySchema = z.string().trim().min(3).max(300)
+const candidateSearchSchema = z.object({
+  query: querySchema,
+  limit: z.number().int().min(1).max(5).optional(),
+})
+
+function toAddressLine(address: NominatimResult['address']) {
   if (!address) {
     return undefined
   }
 
   const street = [address.house_number, address.road ?? address.pedestrian]
     .filter(Boolean)
-    .join(" ")
+    .join(' ')
 
   return street || address.neighbourhood || address.suburb || undefined
 }
 
-function toCity(address: NominatimResult["address"]) {
-  return address?.city ?? address?.town ?? address?.village ?? address?.municipality ?? undefined
+function toCity(address: NominatimResult['address']) {
+  return (
+    address?.city ??
+    address?.town ??
+    address?.village ??
+    address?.municipality ??
+    undefined
+  )
 }
 
-function toWebsite(extratags: NominatimResult["extratags"]) {
-  const candidate = extratags?.website ?? extratags?.["contact:website"] ?? extratags?.url
+function toWebsite(extratags: NominatimResult['extratags']) {
+  const candidate =
+    extratags?.website ?? extratags?.['contact:website'] ?? extratags?.url
 
   if (!candidate) {
     return undefined
@@ -93,8 +109,8 @@ async function fetchNominatim(
     `https://nominatim.openstreetmap.org/search?${params.toString()}`,
     {
       headers: {
-        Accept: "application/json",
-        "User-Agent": "Roastbook/1.0 (self-hosted coffee journal geocoding)",
+        Accept: 'application/json',
+        'User-Agent': 'Roastbook/1.0 (self-hosted coffee journal geocoding)',
       },
       signal: AbortSignal.timeout(15_000),
     },
@@ -107,65 +123,72 @@ async function fetchNominatim(
   return response.json() as Promise<NominatimResult[]>
 }
 
-export const searchCoffeeShopCandidates = createServerFn({ method: "POST" })
-  .validator((data: { query: string; limit?: number }) => ({
-    query: normalizeQuery(data.query),
-    limit: Math.min(Math.max(data.limit ?? 5, 1), 5),
+export const searchCoffeeShopCandidates = createServerFn({ method: 'POST' })
+  .validator((input: unknown) => {
+    const data = candidateSearchSchema.parse(input)
+    return {
+      query: normalizeQuery(data.query),
+      limit: data.limit ?? 5,
+    }
+  })
+  .handler(async ({ data }) => {
+    const params = new URLSearchParams({
+      q: data.query,
+      format: 'jsonv2',
+      addressdetails: '1',
+      extratags: '1',
+      limit: String(NOMINATIM_CANDIDATE_LIMIT),
+    })
+
+    const payload = await fetchNominatim(params, 'Geocoding request failed')
+
+    return prioritizeCoffeeShopCandidates(payload, data.limit).flatMap(
+      (item) => {
+        if (!item.place_id || !item.display_name || !item.lat || !item.lon) {
+          return []
+        }
+
+        const latitude = Number(item.lat)
+        const longitude = Number(item.lon)
+
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+          return []
+        }
+
+        return [
+          {
+            id: item.place_id,
+            name: item.display_name.split(',')[0]?.trim() || item.display_name,
+            displayName: item.display_name,
+            latitude: String(latitude),
+            longitude: String(longitude),
+            osmType: item.osm_type,
+            osmId: item.osm_id ? String(item.osm_id) : undefined,
+            osmClass: item.category ?? item.class,
+            osmValueType: item.type,
+            openStreetMapUrl: toOpenStreetMapUrl(item),
+            address: toAddressLine(item.address),
+            city: toCity(item.address),
+            country: item.address?.country,
+            website: toWebsite(item.extratags),
+          },
+        ]
+      },
+    )
+  })
+
+export const geocodeDefaultMapLocation = createServerFn({ method: 'POST' })
+  .validator((input: unknown) => ({
+    query: normalizeQuery(z.object({ query: querySchema }).parse(input).query),
   }))
   .handler(async ({ data }) => {
     const params = new URLSearchParams({
       q: data.query,
-      format: "jsonv2",
-      addressdetails: "1",
-      extratags: "1",
-      limit: String(NOMINATIM_CANDIDATE_LIMIT),
+      format: 'jsonv2',
+      addressdetails: '1',
+      limit: '1',
     })
-
-    const payload = await fetchNominatim(params, "Geocoding request failed")
-
-    return prioritizeCoffeeShopCandidates(payload, data.limit).flatMap((item) => {
-      if (!item.place_id || !item.display_name || !item.lat || !item.lon) {
-        return []
-      }
-
-      const latitude = Number(item.lat)
-      const longitude = Number(item.lon)
-
-      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-        return []
-      }
-
-      return [
-        {
-          id: item.place_id,
-          name: item.display_name.split(",")[0]?.trim() || item.display_name,
-          displayName: item.display_name,
-          latitude: String(latitude),
-          longitude: String(longitude),
-          osmType: item.osm_type,
-          osmId: item.osm_id ? String(item.osm_id) : undefined,
-          osmClass: item.category ?? item.class,
-          osmValueType: item.type,
-          openStreetMapUrl: toOpenStreetMapUrl(item),
-          address: toAddressLine(item.address),
-          city: toCity(item.address),
-          country: item.address?.country,
-          website: toWebsite(item.extratags),
-        },
-      ]
-    })
-  })
-
-export const geocodeDefaultMapLocation = createServerFn({ method: "POST" })
-  .validator((data: { query: string }) => ({ query: normalizeQuery(data.query) }))
-  .handler(async ({ data }) => {
-    const params = new URLSearchParams({
-      q: data.query,
-      format: "jsonv2",
-      addressdetails: "1",
-      limit: "1",
-    })
-    const payload = await fetchNominatim(params, "Location lookup failed")
+    const payload = await fetchNominatim(params, 'Location lookup failed')
     const result = payload[0]
     if (!result?.display_name || !result.lat || !result.lon) return null
     const latitude = Number(result.lat)

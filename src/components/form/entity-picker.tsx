@@ -1,11 +1,11 @@
-import { useState, type ReactNode } from "react"
-import { useRouter } from "@tanstack/react-router"
+import { useRouter } from '@tanstack/react-router'
+import { type ReactNode, useState } from 'react'
 import {
   CreatableCombobox,
   type CreatableComboboxProps,
   type FallbackOption,
-} from "@/components/form/creatable-combobox"
-import { EntityCreateDialog } from "@/components/form/entity-create-dialog"
+} from '@/components/form/creatable-combobox'
+import { EntityCreateDialog } from '@/components/form/entity-create-dialog'
 
 export interface CreatedEntity {
   id: number | string
@@ -21,7 +21,7 @@ interface EntityCreateFormArgs {
 interface EntityPickerProps<T>
   extends Omit<
     CreatableComboboxProps<T>,
-    "onCreateRequest" | "fallbackOption"
+    'onCreateRequest' | 'fallbackOption'
   > {
   dialogTitle: string
   dialogDescription?: string

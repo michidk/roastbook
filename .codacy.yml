@@ -1,28 +1,8 @@
 ---
 engines:
-  agentlinter:
-    exclude_paths:
-      - "AGENTS.md"
   biome:
     exclude_paths:
       - "src/routeTree.gen.ts"
-  checkov:
-    exclude_paths:
-      - "charts/templates/postgresql-secret.yaml"
-      - "charts/values.yaml"
-      - "docker-compose.yaml"
   duplication:
     exclude_paths:
       - "src/routeTree.gen.ts"
-  lizard:
-    exclude_paths:
-      - "**/*.ts"
-      - "**/*.tsx"
-  stylelint:
-    exclude_paths:
-      - "src/styles.css"
-  tsqllint:
-    exclude_paths:
-      - "drizzle/**"
-      - "src/db/schema.ts"
-      - "scripts/seed-imported.ts"

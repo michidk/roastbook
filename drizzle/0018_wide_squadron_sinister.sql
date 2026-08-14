@@ -1,0 +1,1 @@
+CREATE INDEX "roasters_name_idx" ON "roasters" USING btree ("name");

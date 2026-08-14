@@ -1,15 +1,20 @@
-import { createFileRoute, Link } from "@tanstack/react-router"
-import { Bean, Cog, Coffee, MapPin, UtensilsCrossed } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { getDashboardStats, getRecentShots } from "@/lib/server/stats"
-import { RouteError } from "@/components/route-error"
-import { RoutePending } from "@/components/route-pending"
-import { thumbnailUrl } from "@/lib/image-url"
-import { ImageWithFallback } from "@/components/image-with-fallback"
-import { getDailyHeadline } from "@/lib/daily-headline"
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { Bean, Coffee, Cog, MapPin, UtensilsCrossed } from 'lucide-react'
+import { ImageWithFallback } from '@/components/image-with-fallback'
+import { MetricCard } from '@/components/metric-card'
+import { Page, PageHeader } from '@/components/page-layout'
+import { RouteError } from '@/components/route-error'
+import { RoutePending } from '@/components/route-pending'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { StarRating } from '@/components/ui/star-rating'
+import { useDateFormatter } from '@/hooks/use-date-formatter'
+import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { getDailyHeadline } from '@/lib/daily-headline'
+import { thumbnailUrl } from '@/lib/image-url'
+import { getDashboardStats, getRecentShots } from '@/lib/server/stats'
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute('/')({
   loader: async () => {
     const [stats, recentShots] = await Promise.all([
       getDashboardStats(),
@@ -22,50 +27,37 @@ export const Route = createFileRoute("/")({
   errorComponent: ({ error }) => <RouteError error={error} />,
 })
 
-const dateFormatter = new Intl.DateTimeFormat("en-GB", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-})
-
-const recentShotDateFormatter = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-})
-
 function Dashboard() {
   const { stats, recentShots } = Route.useLoaderData()
+  const formatDate = useDateFormatter()
+  const formatNumber = useNumberFormatter()
   const now = new Date()
-  const today = dateFormatter.format(now)
+  const today = formatDate(now)
   const headline = getDailyHeadline(now)
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-1">
-        <p className="text-sm font-semibold text-muted-foreground">{today}</p>
-        <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
-          {headline}
-        </h1>
-      </header>
+    <Page>
+      <PageHeader title={headline} eyebrow={today} />
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <HeroStatCard
-          value={stats.totalShots}
+        <MetricCard
+          value={formatNumber(stats.totalShots)}
           label="espresso shots logged"
           href="/shots"
+          variant="hero"
         />
-        <StatCard
-          value={stats.activeBeans}
+        <MetricCard
+          value={formatNumber(stats.activeBeans)}
           label="bags in rotation"
           href="/beans"
         />
-        <StatCard
-          value={stats.shotsThisMonth}
+        <MetricCard
+          value={formatNumber(stats.shotsThisMonth)}
           label="shots this month"
           href="/shots"
         />
-        <StatCard
-          value={stats.cafeVisits}
+        <MetricCard
+          value={formatNumber(stats.cafeVisits)}
           label="coffees out"
           href="/visits"
         />
@@ -77,7 +69,7 @@ function Dashboard() {
             <CardTitle>Recent shots</CardTitle>
             <Link
               to="/shots"
-              className="font-display text-sm font-bold text-primary hover:underline"
+              className="font-display text-sm font-bold text-link hover:underline"
             >
               View all
             </Link>
@@ -113,15 +105,15 @@ function Dashboard() {
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-display text-base font-bold text-foreground">
-                        {shot.bean?.name ?? "Unknown beans"}
+                        {shot.bean?.name ?? 'Unknown beans'}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {shot.doseGrams && shot.yieldGrams
-                          ? `${shot.doseGrams}g → ${shot.yieldGrams}g`
-                          : "No dose or yield recorded"}
+                          ? `${formatNumber(shot.doseGrams)} g → ${formatNumber(shot.yieldGrams)} g`
+                          : 'No dose or yield recorded'}
                         {shot.shotTimeSeconds
-                          ? ` · ${shot.shotTimeSeconds}s`
-                          : ""}
+                          ? ` · ${formatNumber(shot.shotTimeSeconds)} s`
+                          : ''}
                       </p>
                     </div>
                     <div className="flex shrink-0 self-stretch flex-col items-end justify-between">
@@ -129,11 +121,11 @@ function Dashboard() {
                         dateTime={new Date(shot.createdAt).toISOString()}
                         className="text-xs font-semibold text-muted-foreground"
                       >
-                        {recentShotDateFormatter.format(new Date(shot.createdAt))}
+                        {formatDate(shot.createdAt)}
                       </time>
                       {shot.rating && (
-                        <div className="rounded-xl bg-card px-3 py-1.5 font-display text-sm font-bold text-primary">
-                          {shot.rating.toFixed(1)}★
+                        <div className="rounded-xl bg-card px-3 py-1.5">
+                          <StarRating value={shot.rating} variant="compact" />
                         </div>
                       )}
                     </div>
@@ -157,59 +149,11 @@ function Dashboard() {
             />
             <QuickAddRow icon={Bean} label="Add beans" href="/beans/new" />
             <QuickAddRow icon={Cog} label="Add gear" href="/gear/new" />
-            <QuickAddRow icon={MapPin} label="Add a coffee shop" href="/shops/new" />
+            <QuickAddRow icon={MapPin} label="Add café" href="/shops/new" />
           </CardContent>
         </Card>
       </section>
-    </div>
-  )
-}
-
-function HeroStatCard({
-  value,
-  label,
-  href,
-}: {
-  value: number
-  label: string
-  href: string
-}) {
-  return (
-    <Link to={href} className="block">
-      <div className="rounded-3xl bg-coffee p-6 text-coffee-foreground shadow-coffee-strong transition-transform hover:-translate-y-0.5">
-        <div className="font-display text-5xl font-extrabold leading-none">
-          {value}
-        </div>
-        <div className="mt-2 text-sm font-semibold text-coffee-foreground/80">
-          {label}
-        </div>
-      </div>
-    </Link>
-  )
-}
-
-function StatCard({
-  value,
-  label,
-  href,
-}: {
-  value: number
-  label: string
-  href: string
-}) {
-  return (
-    <Link to={href} className="block">
-      <Card className="transition-transform hover:-translate-y-0.5">
-        <CardContent>
-          <div className="font-display text-5xl font-extrabold leading-none text-foreground">
-            {value}
-          </div>
-          <div className="mt-2 text-sm font-semibold text-muted-foreground">
-            {label}
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
+    </Page>
   )
 }
 
@@ -239,11 +183,11 @@ function QuickAddRow({
 
 function BeanSwatch({ seed }: { seed: number }) {
   const palettes = [
-    ["var(--chart-4)", "var(--coffee)"],
-    ["var(--coffee)", "var(--foreground)"],
-    ["var(--chart-1)", "var(--coffee)"],
-    ["var(--chart-3)", "var(--coffee)"],
-    ["var(--accent-foreground)", "var(--foreground)"],
+    ['var(--chart-4)', 'var(--coffee)'],
+    ['var(--coffee)', 'var(--foreground)'],
+    ['var(--chart-1)', 'var(--coffee)'],
+    ['var(--chart-3)', 'var(--coffee)'],
+    ['var(--accent-foreground)', 'var(--foreground)'],
   ] as const
   const [light, dark] = palettes[seed % palettes.length]
   return (

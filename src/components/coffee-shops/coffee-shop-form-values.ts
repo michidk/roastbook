@@ -32,17 +32,17 @@ type CoffeeShopSearchValue = {
 
 export function createCoffeeShopFormValues(
   source?: CoffeeShopFormValueSource | null,
-  initialName = "",
+  initialName = '',
 ): CoffeeShopFormValues {
   return {
     name: source?.name ?? initialName,
-    address: source?.address ?? "",
-    city: source?.city ?? "",
-    country: source?.country ?? "",
-    latitude: source?.latitude ?? "",
-    longitude: source?.longitude ?? "",
-    website: source?.website ?? "",
-    notes: source?.notes ?? "",
+    address: source?.address ?? '',
+    city: source?.city ?? '',
+    country: source?.country ?? '',
+    latitude: source?.latitude ?? '',
+    longitude: source?.longitude ?? '',
+    website: source?.website ?? '',
+    notes: source?.notes ?? '',
   }
 }
 

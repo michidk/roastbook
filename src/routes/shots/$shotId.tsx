@@ -9,6 +9,7 @@ import { type SyntheticEvent, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { DeleteConfirmation } from '@/components/DeleteConfirmation'
 import { InputField } from '@/components/form/form-field'
+import { Page, PageHeader } from '@/components/page-layout'
 import {
   type ShotEditData,
   ShotEditForm,
@@ -18,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
+  DialogBody,
   DialogClose,
   DialogContent,
   DialogDescription,
@@ -27,6 +29,9 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
+import { StarRating } from '@/components/ui/star-rating'
+import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
+import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { getActiveBeans } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getGear } from '@/lib/server/gear'
@@ -59,7 +64,9 @@ function ShotDataFields({
 }
 
 function ShotDetailPage() {
+  const formatDateTime = useDateTimeFormatter()
   const { shot } = Route.useLoaderData()
+  const formatNumber = useNumberFormatter()
   const navigate = useNavigate()
   const router = useRouter()
 
@@ -115,7 +122,7 @@ function ShotDetailPage() {
   }
 
   const handleSaved = async () => {
-    await router.invalidate()
+    await router.invalidate({ filter: (match) => match.routeId === Route.id })
     setIsEditing(false)
     requestAnimationFrame(() => editButtonRef.current?.focus())
   }
@@ -151,17 +158,17 @@ function ShotDetailPage() {
 
   const extractionMetrics = [
     methodParameters.includes('doseGrams') && shot.doseGrams
-      ? { label: 'Dose', value: `${shot.doseGrams}g` }
+      ? { label: 'Dose', value: `${formatNumber(shot.doseGrams)} g` }
       : null,
     methodParameters.includes('yieldGrams') && shot.yieldGrams
-      ? { label: 'Yield', value: `${shot.yieldGrams}g` }
+      ? { label: 'Yield', value: `${formatNumber(shot.yieldGrams)} g` }
       : null,
     methodParameters.includes('yieldGrams') && ratio
-      ? { label: 'Ratio', value: `1:${ratio}` }
+      ? { label: 'Ratio', value: `1:${formatNumber(ratio)}` }
       : null,
     methodParameters.includes('shotTimeSeconds') &&
     shot.shotTimeSeconds !== null
-      ? { label: 'Time', value: `${shot.shotTimeSeconds}s` }
+      ? { label: 'Time', value: `${formatNumber(shot.shotTimeSeconds)} s` }
       : null,
   ].filter((field) => field !== null)
   const extractionDetails = [
@@ -170,10 +177,16 @@ function ShotDetailPage() {
       : null,
     methodParameters.includes('brewTemperatureCelsius') &&
     shot.brewTemperatureCelsius
-      ? { label: 'Temperature', value: `${shot.brewTemperatureCelsius}°C` }
+      ? {
+          label: 'Temperature',
+          value: `${formatNumber(shot.brewTemperatureCelsius)}°C`,
+        }
       : null,
     methodParameters.includes('brewPressureBar') && shot.brewPressureBar
-      ? { label: 'Pressure', value: `${shot.brewPressureBar} bar` }
+      ? {
+          label: 'Pressure',
+          value: `${formatNumber(shot.brewPressureBar)} bar`,
+        }
       : null,
   ].filter((field) => field !== null)
   const hasTasteTags = shot.tasteTags.length > 0
@@ -181,102 +194,101 @@ function ShotDetailPage() {
   const hasTasting = Boolean(shot.rating || hasTasteTags || hasNotes)
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link to="/shots" aria-label="Back to shots">
-            <ArrowLeft aria-hidden className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-bold">
-            {shot.bean?.name || 'Unknown beans'}
-          </h1>
-          <time
-            dateTime={new Date(shot.createdAt).toISOString()}
-            className="text-sm text-muted-foreground"
-          >
-            {shot.brewingMethod.name} ·{' '}
-            {new Date(shot.createdAt).toLocaleDateString(undefined, {
-              dateStyle: 'medium',
-            })}{' '}
-            ·{' '}
-            {new Date(shot.createdAt).toLocaleTimeString(undefined, {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
+    <Page width="form">
+      <PageHeader
+        size="compact"
+        title={shot.bean?.name || 'Unknown beans'}
+        description={
+          <time dateTime={new Date(shot.createdAt).toISOString()}>
+            {shot.brewingMethod.name} · {formatDateTime(shot.createdAt)}
           </time>
-        </div>
-        <div className="ml-14 flex items-center gap-2 sm:ml-0">
-          {!isEditing && (
-            <>
-              <Dialog
-                open={isRecipeDialogOpen}
-                onOpenChange={setIsRecipeDialogOpen}
-              >
-                <DialogTrigger render={<Button variant="outline" size="sm" />}>
-                  <BookOpen />
-                  Save as recipe
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Save as recipe</DialogTitle>
-                    <DialogDescription>
-                      Save this shot’s brewing method, equipment, and recipe
-                      values for reuse.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={handleSaveRecipe} className="space-y-4">
-                    <InputField
-                      id="recipe-name"
-                      label="Recipe name"
-                      value={recipeName}
-                      onChange={setRecipeName}
-                      autoFocus
-                      required
-                    />
-                    <DialogFooter>
-                      <DialogClose
-                        render={
-                          <Button
-                            type="button"
-                            variant="outline"
-                            disabled={isSavingRecipe}
-                          />
-                        }
-                      >
-                        Cancel
-                      </DialogClose>
-                      <Button
-                        type="submit"
-                        disabled={!recipeName.trim() || isSavingRecipe}
-                        aria-busy={isSavingRecipe}
-                      >
-                        {isSavingRecipe ? 'Saving…' : 'Save recipe'}
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
-              <Button
-                ref={editButtonRef}
-                variant="outline"
-                size="sm"
-                onClick={handleStartEdit}
-                disabled={isLoadingEditData}
-              >
-                <Pencil />
-                Edit
-              </Button>
-            </>
-          )}
-          <DeleteConfirmation
-            title="Delete this shot?"
-            description="This action cannot be undone."
-            onConfirm={handleDelete}
-          />
-        </div>
-      </div>
+        }
+        leading={
+          <Button variant="outline" size="icon" asChild>
+            <Link to="/shots" aria-label="Back to shots">
+              <ArrowLeft aria-hidden className="h-4 w-4" />
+            </Link>
+          </Button>
+        }
+        actions={
+          <>
+            {!isEditing && (
+              <>
+                <Dialog
+                  open={isRecipeDialogOpen}
+                  onOpenChange={setIsRecipeDialogOpen}
+                >
+                  <DialogTrigger
+                    render={<Button variant="outline" size="sm" />}
+                  >
+                    <BookOpen />
+                    Save as recipe
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Save as recipe</DialogTitle>
+                      <DialogDescription>
+                        Save this shot’s brewing method, equipment, and recipe
+                        values for reuse.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form
+                      onSubmit={handleSaveRecipe}
+                      className="grid min-h-0 grid-rows-[1fr_auto]"
+                    >
+                      <DialogBody>
+                        <InputField
+                          id="recipe-name"
+                          label="Recipe name"
+                          value={recipeName}
+                          onChange={setRecipeName}
+                          autoFocus
+                          required
+                        />
+                      </DialogBody>
+                      <DialogFooter>
+                        <DialogClose
+                          render={
+                            <Button
+                              type="button"
+                              variant="outline"
+                              disabled={isSavingRecipe}
+                            />
+                          }
+                        >
+                          Cancel
+                        </DialogClose>
+                        <Button
+                          type="submit"
+                          disabled={!recipeName.trim() || isSavingRecipe}
+                          aria-busy={isSavingRecipe}
+                        >
+                          {isSavingRecipe ? 'Saving…' : 'Save recipe'}
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+                <Button
+                  ref={editButtonRef}
+                  variant="outline"
+                  size="sm"
+                  onClick={handleStartEdit}
+                  disabled={isLoadingEditData}
+                >
+                  <Pencil />
+                  Edit
+                </Button>
+              </>
+            )}
+            <DeleteConfirmation
+              title="Delete this shot?"
+              description="This action cannot be undone."
+              onConfirm={handleDelete}
+            />
+          </>
+        }
+      />
 
       {isEditing && editData ? (
         <ShotEditForm
@@ -325,9 +337,7 @@ function ShotDetailPage() {
                 <div className="flex items-center justify-between">
                   <CardTitle as="h2">Tasting</CardTitle>
                   {shot.rating && (
-                    <Badge variant="secondary" className="text-lg">
-                      {shot.rating}/5
-                    </Badge>
+                    <StarRating value={shot.rating} variant="compact" />
                   )}
                 </div>
               </CardHeader>
@@ -360,6 +370,6 @@ function ShotDetailPage() {
           )}
         </>
       )}
-    </div>
+    </Page>
   )
 }

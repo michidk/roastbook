@@ -1,1 +1,1 @@
-export const drizzleMigrationsDirName = "drizzle"
+export const drizzleMigrationsDirName = 'drizzle'

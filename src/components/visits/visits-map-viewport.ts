@@ -1,14 +1,14 @@
-import type { Map as MapLibreMap } from "maplibre-gl"
-import type { SavedMapPlace } from "./visits-map-utils"
+import type { Map as MapLibreMap } from 'maplibre-gl'
+import type { SavedMapPlace } from './visits-map-utils'
 
 export function positionSelectedMapPlace(
   map: MapLibreMap,
   place: SavedMapPlace,
 ): void {
   const reduceMotion = window.matchMedia(
-    "(prefers-reduced-motion: reduce)",
+    '(prefers-reduced-motion: reduce)',
   ).matches
-  const mobile = window.matchMedia("(max-width: 639px)").matches
+  const mobile = window.matchMedia('(max-width: 639px)').matches
   map.easeTo({
     center: [place.longitude, place.latitude],
     zoom: 14,

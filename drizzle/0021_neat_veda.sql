@@ -1,0 +1,4 @@
+ALTER TABLE "settings" DROP CONSTRAINT "settings_number_format_check";--> statement-breakpoint
+ALTER TABLE "settings" ADD COLUMN "date_format" text DEFAULT 'day-month-year-slash' NOT NULL;--> statement-breakpoint
+ALTER TABLE "settings" ADD CONSTRAINT "settings_date_format_check" CHECK ("settings"."date_format" in ('day-month-year-slash', 'month-day-year-slash', 'day-month-year-dot', 'year-month-day'));--> statement-breakpoint
+ALTER TABLE "settings" ADD CONSTRAINT "settings_number_format_check" CHECK ("settings"."number_format" in ('decimal-point', 'decimal-comma', 'space-decimal-point', 'space-decimal-comma', 'apostrophe-decimal-point', 'apostrophe-decimal-comma'));

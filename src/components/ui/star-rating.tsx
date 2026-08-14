@@ -1,6 +1,6 @@
-import { Star } from "lucide-react"
+import { Star } from 'lucide-react'
 
-import { cn } from "@/lib/utils"
+import { cn } from '@/lib/utils'
 
 type StarRatingProps = {
   readonly value: number
@@ -10,40 +10,69 @@ type StarRatingProps = {
   readonly className?: string
   readonly readOnly?: boolean
   readonly ariaLabel?: string
+  readonly variant?: 'stars' | 'compact'
 }
 
 function StarRating({
   value,
   onChange,
   max = 5,
-  sizeClassName = "size-6",
+  sizeClassName = 'size-6',
   className,
   readOnly = false,
-  ariaLabel = "Rating",
+  ariaLabel = 'Rating',
+  variant = 'stars',
 }: StarRatingProps) {
   if (readOnly || !onChange) {
+    if (variant === 'compact') {
+      return (
+        <span
+          role="img"
+          aria-label={`${ariaLabel}: ${value} out of ${max}`}
+          className={cn(
+            'inline-flex items-center gap-1 font-semibold tabular-nums text-link',
+            className,
+          )}
+        >
+          <Star aria-hidden className={cn('fill-current', sizeClassName)} />
+          <span>
+            {value}/{max}
+          </span>
+        </span>
+      )
+    }
+
     return (
       <div
         role="img"
         aria-label={`${ariaLabel}: ${value} out of ${max}`}
-        className={cn("flex items-center gap-1", className)}
+        className={cn('flex items-center gap-1', className)}
       >
-        {Array.from({ length: max }, (_, index) => index + 1).map((starValue) => (
-          <Star
-            aria-hidden
-            key={starValue}
-            className={cn(
-              sizeClassName,
-              starValue <= value ? "fill-primary text-primary" : "text-muted-foreground"
-            )}
-          />
-        ))}
+        {Array.from({ length: max }, (_, index) => index + 1).map(
+          (starValue) => (
+            <Star
+              aria-hidden
+              key={starValue}
+              className={cn(
+                sizeClassName,
+                starValue <= value
+                  ? 'fill-link text-link'
+                  : 'text-muted-foreground',
+              )}
+            />
+          ),
+        )}
       </div>
     )
   }
 
   return (
-    <fieldset className={cn("flex min-w-0 items-center gap-0 border-0 p-0 sm:gap-1", className)}>
+    <fieldset
+      className={cn(
+        'flex min-w-0 items-center gap-0 border-0 p-0 sm:gap-1',
+        className,
+      )}
+    >
       <legend className="sr-only">{ariaLabel}</legend>
       {Array.from({ length: max }, (_, index) => {
         const starValue = index + 1
@@ -62,7 +91,7 @@ function StarRating({
               aria-hidden
               className={cn(
                 sizeClassName,
-                filled ? "fill-primary text-primary" : "text-muted-foreground"
+                filled ? 'fill-link text-link' : 'text-muted-foreground',
               )}
             />
           </button>

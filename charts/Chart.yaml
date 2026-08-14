@@ -1,6 +1,17 @@
 apiVersion: v2
 name: roastbook
-description: A TanStack Start application with hodor authentication
+description: A self-hosted coffee journal with Hodor authentication
 type: application
 version: 0.1.0
 appVersion: "1.0.0"
+home: https://github.com/michidk/roastbook
+icon: https://raw.githubusercontent.com/michidk/roastbook/main/public/roastbook-logo.png
+sources:
+  - https://github.com/michidk/roastbook
+maintainers:
+  - name: michidk
+    url: https://github.com/michidk
+keywords:
+  - coffee
+  - espresso
+  - self-hosted

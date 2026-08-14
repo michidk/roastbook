@@ -1,0 +1,2 @@
+ALTER TABLE "settings" ADD COLUMN "number_format" text DEFAULT 'decimal-point' NOT NULL;--> statement-breakpoint
+ALTER TABLE "settings" ADD CONSTRAINT "settings_number_format_check" CHECK ("settings"."number_format" in ('decimal-point', 'decimal-comma'));

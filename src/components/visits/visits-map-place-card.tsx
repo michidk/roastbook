@@ -1,16 +1,10 @@
-import { useEffect, useRef } from "react"
-import { Link } from "@tanstack/react-router"
-import {
-  ExternalLink,
-  Heart,
-  MapPin,
-  Plus,
-  Star,
-  X,
-} from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import type { SavedMapPlace } from "./visits-map-utils"
+import { Link } from '@tanstack/react-router'
+import { ExternalLink, Heart, MapPin, Plus, X } from 'lucide-react'
+import { useEffect, useRef } from 'react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { StarRating } from '@/components/ui/star-rating'
+import type { SavedMapPlace } from './visits-map-utils'
 
 type VisitsMapPlaceCardProps = {
   readonly place: SavedMapPlace
@@ -24,14 +18,14 @@ export function VisitsMapPlaceCard({
   onClose,
 }: VisitsMapPlaceCardProps) {
   const cardRef = useRef<HTMLElement | null>(null)
-  const location = [place.city, place.country].filter(Boolean).join(", ")
+  const location = [place.city, place.country].filter(Boolean).join(', ')
   const openStreetMapUrl = `https://www.openstreetmap.org/?mlat=${place.latitude}&mlon=${place.longitude}#map=18/${place.latitude}/${place.longitude}`
 
   useEffect(() => {
     const card = cardRef.current
     if (!card) return
-    if (window.matchMedia("(max-width: 1023px)").matches) {
-      card.parentElement?.scrollIntoView({ block: "start" })
+    if (window.matchMedia('(max-width: 1023px)').matches) {
+      card.parentElement?.scrollIntoView({ block: 'start' })
     }
     if (focusRequest > 0) card.focus({ preventScroll: true })
   }, [focusRequest])
@@ -47,22 +41,27 @@ export function VisitsMapPlaceCard({
       <div className="flex items-start gap-3">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-secondary text-coffee">
           {place.isFavorite ? (
-            <Heart className="size-4 fill-current text-destructive" aria-hidden />
+            <Heart className="size-4 fill-current text-favorite" aria-hidden />
           ) : (
             <MapPin className="size-4" aria-hidden />
           )}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 id="visits-map-place-title" className="font-display text-lg leading-tight font-bold text-foreground">
+            <h3
+              id="visits-map-place-title"
+              className="font-display text-lg leading-tight font-bold text-foreground"
+            >
               {place.name}
             </h3>
-            <Badge variant={place.isFavorite ? "destructive" : "secondary"}>
-              {place.isFavorite ? "Favorite" : "Saved"}
+            <Badge variant={place.isFavorite ? 'favorite' : 'secondary'}>
+              {place.isFavorite ? 'Favorite' : 'Saved'}
             </Badge>
           </div>
           <p className="mt-1 text-sm leading-snug text-muted-foreground">
-            {place.address || location || "Location details available on the map"}
+            {place.address ||
+              location ||
+              'Location details available on the map'}
           </p>
         </div>
         <Button
@@ -70,7 +69,7 @@ export function VisitsMapPlaceCard({
           variant="ghost"
           size="icon-sm"
           onClick={onClose}
-          aria-label="Close place details"
+          aria-label="Close café details"
           className="-mt-1 -mr-1 min-h-11 min-w-11"
         >
           <X />
@@ -79,12 +78,17 @@ export function VisitsMapPlaceCard({
 
       <div className="mt-3 flex flex-wrap gap-2 text-sm text-muted-foreground">
         <span className="rounded-xl bg-secondary px-2.5 py-1 font-semibold">
-          {place.visitCount} {place.visitCount === 1 ? "visit" : "visits"}
+          {place.visitCount} {place.visitCount === 1 ? 'visit' : 'visits'}
         </span>
         {place.rating !== null && (
           <span className="flex items-center gap-1 rounded-xl bg-primary/10 px-2.5 py-1 font-semibold text-foreground">
-            <Star className="size-3.5 fill-primary text-primary" />
-            {place.rating}/5
+            <StarRating
+              value={place.rating}
+              readOnly
+              variant="compact"
+              sizeClassName="size-3.5"
+              ariaLabel="Café rating"
+            />
           </span>
         )}
       </div>
@@ -95,7 +99,7 @@ export function VisitsMapPlaceCard({
             to="/shops/$coffeeShopId"
             params={{ coffeeShopId: String(place.coffeeShopId) }}
           >
-            View place
+            View café
           </Link>
         </Button>
         <Button asChild variant="outline" size="sm" className="min-h-11">

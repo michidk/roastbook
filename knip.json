@@ -1,7 +1,23 @@
 {
-  "$schema": "https://unpkg.com/knip@latest/schema.json",
-  "entry": ["src/routes/**/*.tsx", "src/router.tsx", "src/lib/server/media-handler.ts"],
-  "project": ["src/**/*.{ts,tsx}"],
-  "ignore": ["src/components/ui/**"],
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/routes/**/*.tsx",
+    "src/router.tsx",
+    "src/lib/server/media-handler.ts",
+    "src/**/*.test.ts",
+    "scripts/**/*.ts"
+  ],
+  "project": ["src/**/*.{ts,tsx}", "scripts/**/*.ts", "*.config.ts"],
+  "ignoreFiles": ["src/components/ui/sheet.tsx"],
+  "ignoreIssues": {
+    "src/components/ui/card.tsx": ["exports"],
+    "src/components/ui/combobox.tsx": ["exports"],
+    "src/components/ui/dropdown-menu.tsx": ["exports"],
+    "src/components/ui/input-group.tsx": ["exports"],
+    "src/components/ui/select.tsx": ["exports"],
+    "src/components/ui/table.tsx": ["exports"],
+    "src/components/ui/tooltip.tsx": ["exports"]
+  },
+  "ignoreExportsUsedInFile": true,
   "ignoreDependencies": ["tailwindcss"]
 }

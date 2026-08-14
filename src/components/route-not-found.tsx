@@ -1,12 +1,16 @@
-import { Link } from "@tanstack/react-router"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Compass, Home } from "lucide-react"
+import { Link } from '@tanstack/react-router'
+import { Compass, Home } from 'lucide-react'
+import { Page } from '@/components/page-layout'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export function RouteNotFound() {
   return (
-    <div className="flex items-center justify-center min-h-[50vh]">
-      <Card className="max-w-md w-full">
+    <Page
+      width="form"
+      className="flex min-h-[50vh] items-center justify-center"
+    >
+      <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-accent">
             <Compass className="h-6 w-6 text-accent-foreground" />
@@ -15,7 +19,8 @@ export function RouteNotFound() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground text-center">
-            We couldn't find the page you're looking for. It may have been moved, or the link might be off.
+            We couldn't find the page you're looking for. It may have been
+            moved, or the link might be off.
           </p>
           <div className="flex gap-2 justify-center">
             <Button asChild>
@@ -27,6 +32,6 @@ export function RouteNotFound() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </Page>
   )
 }

@@ -1,28 +1,33 @@
-import { useEffect, useState } from "react"
-import { Plus } from "lucide-react"
-import { Label } from "@/components/ui/label"
+import { Plus, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import {
+  type PickerSuggestion,
+  SuggestionChips,
+} from '@/components/form/suggestion-chips'
 import {
   Combobox,
+  ComboboxClear,
   ComboboxContent,
   ComboboxEmpty,
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
   ComboboxTrigger,
-} from "@/components/ui/combobox"
-import { cn, normalizeForComparison } from "@/lib/utils"
+} from '@/components/ui/combobox'
+import { Label } from '@/components/ui/label'
+import { cn, normalizeForComparison } from '@/lib/utils'
 
-const CREATE_ENTRY_KEY = "__create__"
+const CREATE_ENTRY_KEY = '__create__'
 
 type Entry =
   | {
-      readonly kind: "item"
+      readonly kind: 'item'
       readonly key: string
       readonly label: string
       readonly description?: string
     }
   | {
-      readonly kind: "create"
+      readonly kind: 'create'
       readonly key: typeof CREATE_ENTRY_KEY
       readonly label: string
       readonly hint?: string
@@ -44,6 +49,7 @@ export interface CreatableComboboxProps<T> {
   getKey: (item: T) => string | number
   getLabel: (item: T) => string
   getDescription?: (item: T) => string | null | undefined
+  suggestions?: readonly PickerSuggestion[]
   onCreateRequest?: (query: string) => void
   createLabel?: (query: string) => string
   noMatchHint?: (query: string) => string
@@ -72,12 +78,13 @@ export function CreatableCombobox<T>({
   getKey,
   getLabel,
   getDescription,
+  suggestions = [],
   onCreateRequest,
   createLabel = (query) => `Create “${query}”`,
   noMatchHint = (query) => `Nothing here matches “${query}” yet`,
-  placeholder = "Select an option",
-  searchPlaceholder = "Search…",
-  emptyMessage = "No matches.",
+  placeholder = 'Select an option',
+  searchPlaceholder = 'Search…',
+  emptyMessage = 'No matches.',
   autoSelectSingleItem = false,
   emptyStateMessage,
   required,
@@ -86,10 +93,11 @@ export function CreatableCombobox<T>({
   autoFocus,
   fallbackOption,
 }: CreatableComboboxProps<T>) {
-  const [query, setQuery] = useState("")
+  const [query, setQuery] = useState('')
+  const hasHandledAutoSelect = useRef(Boolean(value))
 
   const itemEntries: Entry[] = items.map((item) => ({
-    kind: "item",
+    kind: 'item',
     key: String(getKey(item)),
     label: getLabel(item),
     description: getDescription?.(item) ?? undefined,
@@ -99,7 +107,7 @@ export function CreatableCombobox<T>({
   const normalizedQuery = normalizeForComparison(trimmedQuery)
 
   const matchesQuery = (entry: Entry, rawQuery: string): boolean => {
-    if (entry.kind === "create") return true
+    if (entry.kind === 'create') return true
     const needle = normalizeForComparison(rawQuery)
     if (!needle) return true
     return (
@@ -111,11 +119,11 @@ export function CreatableCombobox<T>({
   }
 
   const visibleItemCount = itemEntries.filter((entry) =>
-    matchesQuery(entry, query)
+    matchesQuery(entry, query),
   ).length
 
   const hasExactMatch = itemEntries.some(
-    (entry) => normalizeForComparison(entry.label) === normalizedQuery
+    (entry) => normalizeForComparison(entry.label) === normalizedQuery,
   )
 
   const entries: Entry[] =
@@ -123,10 +131,11 @@ export function CreatableCombobox<T>({
       ? [
           ...itemEntries,
           {
-            kind: "create",
+            kind: 'create',
             key: CREATE_ENTRY_KEY,
             label: createLabel(trimmedQuery),
-            hint: visibleItemCount === 0 ? noMatchHint(trimmedQuery) : undefined,
+            hint:
+              visibleItemCount === 0 ? noMatchHint(trimmedQuery) : undefined,
             query: trimmedQuery,
           },
         ]
@@ -134,51 +143,64 @@ export function CreatableCombobox<T>({
 
   const fallbackEntry: Entry | null =
     fallbackOption && fallbackOption.key === value
-      ? { kind: "item", ...fallbackOption }
+      ? { kind: 'item', ...fallbackOption }
       : null
 
   const selected =
     itemEntries.find((entry) => entry.key === value) ?? fallbackEntry
-  const singleItemKey = itemEntries.length === 1 ? itemEntries[0]?.key : undefined
+  const singleItemKey =
+    itemEntries.length === 1 ? itemEntries[0]?.key : undefined
   const showEmptyState = itemEntries.length === 0 && Boolean(emptyStateMessage)
   const labelContent = (
     <>
       {label}
-      {required && " *"}
+      {required && ' *'}
     </>
   )
 
   useEffect(() => {
-    if (autoSelectSingleItem && !value && singleItemKey !== undefined) {
+    if (!autoSelectSingleItem) return
+
+    if (value) {
+      hasHandledAutoSelect.current = true
+      return
+    }
+
+    if (!hasHandledAutoSelect.current && singleItemKey !== undefined) {
+      hasHandledAutoSelect.current = true
       onChange(singleItemKey)
     }
   }, [autoSelectSingleItem, onChange, singleItemKey, value])
 
   return (
-    <div className={cn("space-y-2", className)}>
+    <div className={cn('space-y-3', className)}>
+      <SuggestionChips
+        label={label}
+        items={suggestions}
+        value={value}
+        onChange={onChange}
+      />
       {showEmptyState ? (
         <>
           <span className="flex items-center gap-2 text-sm leading-none font-medium">
             {labelContent}
           </span>
-          <p
-            className="flex min-h-11 items-center rounded-lg border border-dashed border-border bg-secondary/50 px-3 py-2 text-sm leading-5 text-muted-foreground lg:min-h-8 lg:py-1"
-          >
+          <p className="flex min-h-11 items-center rounded-lg border border-dashed border-border bg-secondary/50 px-3 py-2 text-sm leading-5 text-muted-foreground lg:min-h-8 lg:py-1">
             {emptyStateMessage}
           </p>
         </>
       ) : (
-        <>
+        <div className="space-y-2">
           <Label htmlFor={id}>{labelContent}</Label>
           <Combobox
             items={entries}
             value={selected}
             onValueChange={(next: Entry | null) => {
-              if (next?.kind === "create") {
+              if (next?.kind === 'create') {
                 onCreateRequest?.(next.query)
                 return
               }
-              onChange(next ? next.key : "")
+              onChange(next ? next.key : '')
             }}
             itemToStringLabel={(entry: Entry) => entry.label}
             isItemEqualToValue={(a: Entry, b: Entry) => a.key === b.key}
@@ -186,34 +208,48 @@ export function CreatableCombobox<T>({
             inputValue={query}
             onInputValueChange={setQuery}
             onOpenChange={(open) => {
-              if (!open) setQuery("")
+              if (!open) setQuery('')
             }}
             disabled={disabled}
           >
-            <ComboboxTrigger id={id} autoFocus={autoFocus}>
-              <span
-                className={cn(
-                  "flex flex-1 truncate text-left",
-                  !selected && "text-muted-foreground"
-                )}
-              >
-                {selected ? selected.label : placeholder}
-              </span>
-            </ComboboxTrigger>
+            <div className="relative">
+              <ComboboxTrigger id={id} autoFocus={autoFocus}>
+                <span
+                  className={cn(
+                    'flex flex-1 truncate text-left',
+                    !selected && 'text-muted-foreground',
+                    !required && selected && 'pr-8',
+                  )}
+                >
+                  {selected ? selected.label : placeholder}
+                </span>
+              </ComboboxTrigger>
+              {!required && selected ? (
+                <ComboboxClear
+                  type="button"
+                  aria-label={`Clear ${label.toLowerCase()}`}
+                  className="absolute top-1/2 right-7 size-8 -translate-y-1/2 lg:right-7 lg:size-6"
+                >
+                  <X />
+                </ComboboxClear>
+              ) : null}
+            </div>
             <ComboboxContent>
               <ComboboxInput placeholder={searchPlaceholder} />
               <ComboboxEmpty>{emptyMessage}</ComboboxEmpty>
               <ComboboxList>
                 {(entry: Entry) =>
-                  entry.kind === "create" ? (
+                  entry.kind === 'create' ? (
                     <ComboboxItem
                       key={entry.key}
                       value={entry}
-                      className="border-t border-border text-primary"
+                      className="border-t border-border text-link"
                     >
                       <Plus className="mt-0.5 self-start" />
                       <span className="flex min-w-0 flex-col gap-0.5">
-                        <span className="truncate font-medium">{entry.label}</span>
+                        <span className="truncate font-medium">
+                          {entry.label}
+                        </span>
                         {entry.hint ? (
                           <span className="truncate text-xs font-normal text-muted-foreground">
                             {entry.hint}
@@ -237,7 +273,7 @@ export function CreatableCombobox<T>({
               </ComboboxList>
             </ComboboxContent>
           </Combobox>
-        </>
+        </div>
       )}
     </div>
   )

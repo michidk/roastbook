@@ -1,29 +1,29 @@
-import * as React from "react"
-import * as RechartsPrimitive from "recharts"
-import { cn } from "@/lib/utils"
-import {
-  CHART_THEMES,
-  ChartProvider,
-  type ChartConfig,
-} from "@/components/ui/chart-context"
+import * as React from 'react'
+import * as RechartsPrimitive from 'recharts'
 import {
   ChartLegend,
   ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/chart-content"
+} from '@/components/ui/chart-content'
+import {
+  CHART_THEMES,
+  type ChartConfig,
+  ChartProvider,
+} from '@/components/ui/chart-context'
+import { cn } from '@/lib/utils'
 
 const ChartContainer = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<"div"> & {
+  React.ComponentProps<'div'> & {
     readonly config: ChartConfig
     readonly children: React.ComponentProps<
       typeof RechartsPrimitive.ResponsiveContainer
-    >["children"]
+    >['children']
   }
 >(({ id, className, children, config, ...props }, ref) => {
   const uniqueId = React.useId()
-  const chartId = `chart-${id || uniqueId.replace(/:/g, "")}`
+  const chartId = `chart-${id || uniqueId.replace(/:/g, '')}`
 
   return (
     <ChartProvider config={config}>
@@ -51,24 +51,32 @@ const ChartContainer = React.forwardRef<
     </ChartProvider>
   )
 })
-ChartContainer.displayName = "Chart"
+ChartContainer.displayName = 'Chart'
 
-function ChartStyle({ id, config }: { readonly id: string; readonly config: ChartConfig }) {
+function ChartStyle({
+  id,
+  config,
+}: {
+  readonly id: string
+  readonly config: ChartConfig
+}) {
   const colorConfig = Object.entries(config).filter(
     ([, item]) => item.theme || item.color,
   )
   if (colorConfig.length === 0) return null
 
-  const css = CHART_THEMES.map(([theme, prefix]) => `
+  const css = CHART_THEMES.map(
+    ([theme, prefix]) => `
 ${prefix} [data-chart=${id}] {
 ${colorConfig
   .map(([key, item]) => {
     const color = item.theme?.[theme] || item.color
     return color ? `  --color-${key}: ${color};` : null
   })
-  .join("\n")}
+  .join('\n')}
 }
-`).join("\n")
+`,
+  ).join('\n')
 
   return <style>{css}</style>
 }
@@ -76,9 +84,9 @@ ${colorConfig
 export type { ChartConfig }
 export {
   ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
   ChartLegend,
   ChartLegendContent,
   ChartStyle,
+  ChartTooltip,
+  ChartTooltipContent,
 }

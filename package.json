@@ -1,32 +1,47 @@
 {
   "name": "roastbook",
+  "private": true,
   "type": "module",
+  "packageManager": "bun@1.3.14",
+  "engines": {
+    "bun": "1.3.14"
+  },
   "imports": {
     "#/*": "./src/*"
   },
   "scripts": {
     "dev": "vite dev --port 3000",
-    "dev:log": "mkdir -p logs && vite dev --port 3000 2>&1 | tee logs/dev.log",
+    "dev:log": "mkdir -p logs && bun run dev 2>&1 | tee logs/dev.log",
     "generate-routes": "tsr generate",
     "build": "vite build",
     "start": "bun .output/server/index.mjs",
     "preview": "vite preview",
-    "check": "biome check .",
+    "typecheck": "tsc --noEmit",
+    "check": "bun run check:code && bun run check:docs",
+    "check:code": "biome check .",
+    "check:docs": "markdownlint-cli2 \"README.md\" \"AGENTS.md\" \"DESIGN.md\" \"docs/**/*.md\" \"charts/**/*.md\"",
+    "check:client-assets": "bun run scripts/check-client-assets.ts",
     "check:fix": "biome check --write .",
     "format": "biome format --write .",
     "lint": "biome lint .",
     "lint:deadcode": "knip",
+    "test": "bun test",
+    "test:unit": "bun test --path-ignore-patterns='**/*.integration.test.ts'",
+    "test:integration": "bun run scripts/test-integration.ts",
+    "verify": "bun run check && bun run typecheck && bun run test && bun run lint:deadcode && bun run build && bun run check:client-assets",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "bun run scripts/migrate.ts",
     "db:migrate:cli": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx scripts/seed.ts"
+    "db:seed": "bun run scripts/seed.ts",
+    "storage:orphans": "bun run scripts/report-media-orphans.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1068.0",
     "@aws-sdk/lib-storage": "^3.1068.0",
     "@base-ui/react": "^1.5.0",
+    "@t3-oss/env-core": "^0.13.11",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/ai": "^0.32.0",
     "@tanstack/ai-openai": "^0.15.2",
@@ -48,27 +63,23 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.1.18",
+    "zod": "^4.4.3",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.8",
     "@tanstack/devtools-vite": "^0.8.0",
     "@tanstack/router-cli": "^1.132.0",
+    "@types/bun": "^1.3.14",
     "@types/node": "^22.10.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.0.1",
     "drizzle-kit": "^0.31.10",
     "knip": "^6.16.1",
+    "markdownlint-cli2": "^0.23.2",
     "nitro": "^3.0.260610-beta",
-    "tsx": "^4.22.4",
     "typescript": "^6.0.2",
     "vite": "^8.0.0"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "lightningcss"
-    ]
   }
 }

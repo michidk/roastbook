@@ -1,7 +1,8 @@
-import { useId, type ReactNode, type SyntheticEvent } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
+import { type ReactNode, type SyntheticEvent, useId } from 'react'
+import { PageHeader } from '@/components/page-layout'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
 interface FormPageHeaderProps {
   title: string
@@ -14,39 +15,14 @@ export function FormPageHeader({
   description,
   leading,
 }: FormPageHeaderProps) {
-  const heading = (
-    <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
-      {title}
-    </h1>
-  )
-
-  if (leading) {
-    return (
-      <div className="flex items-center gap-4">
-        {leading}
-        <div>
-          {heading}
-          {description ? (
-            <p className="text-muted-foreground">{description}</p>
-          ) : null}
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div>
-      {heading}
-      {description ? (
-        <p className="text-muted-foreground">{description}</p>
-      ) : null}
-    </div>
+    <PageHeader title={title} description={description} leading={leading} />
   )
 }
 
 interface FormSectionProps {
   title?: string
-  titleAs?: "h2" | "h3"
+  titleAs?: 'h2' | 'h3'
   description?: string
   action?: ReactNode
   children: ReactNode
@@ -56,7 +32,7 @@ interface FormSectionProps {
 
 export function FormSection({
   title,
-  titleAs = "h2",
+  titleAs = 'h2',
   description,
   action,
   children,
@@ -68,12 +44,12 @@ export function FormSection({
   return (
     <Card
       className={className}
-      role={title ? "group" : undefined}
+      role={title ? 'group' : undefined}
       aria-labelledby={title ? headingId : undefined}
     >
       {title ? (
         <CardHeader
-          className={cn(action && "flex flex-row items-center justify-between")}
+          className={cn(action && 'flex flex-row items-center justify-between')}
         >
           <div className="space-y-1">
             <CardTitle as={titleAs} id={headingId}>
@@ -86,7 +62,7 @@ export function FormSection({
           {action}
         </CardHeader>
       ) : null}
-      <CardContent className={cn("space-y-4", contentClassName)}>
+      <CardContent className={cn('space-y-4', contentClassName)}>
         {children}
       </CardContent>
     </Card>
@@ -107,13 +83,18 @@ export function FormActions({
   onCancel,
   isSubmitting = false,
   disabled = false,
-  submitLabel = "Save",
-  submittingLabel = "Saving...",
-  cancelLabel = "Cancel",
+  submitLabel = 'Save',
+  submittingLabel = 'Saving…',
+  cancelLabel = 'Cancel',
   className,
 }: FormActionsProps) {
   return (
-    <div className={cn("flex gap-4", className)}>
+    <div
+      className={cn(
+        'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end',
+        className,
+      )}
+    >
       <Button
         type="button"
         variant="outline"
@@ -125,7 +106,7 @@ export function FormActions({
       <Button
         type="submit"
         disabled={isSubmitting || disabled}
-        className="flex-1"
+        className="sm:min-w-36"
       >
         {isSubmitting ? submittingLabel : submitLabel}
       </Button>
@@ -159,7 +140,7 @@ export function EntityForm({
         event.stopPropagation()
         onSubmit(event)
       }}
-      className={cn("space-y-6", className)}
+      className={cn('space-y-6', className)}
     >
       {children}
       {actions ? <FormActions {...actions} /> : null}

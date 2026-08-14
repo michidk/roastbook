@@ -1,17 +1,18 @@
 import {
-  S3Client,
-  GetObjectCommand,
   DeleteObjectCommand,
+  GetObjectCommand,
   HeadObjectCommand,
-} from "@aws-sdk/client-s3"
-import { Upload } from "@aws-sdk/lib-storage"
-import type { StorageProvider, StorageConfig } from "./types"
+  ListObjectsV2Command,
+  S3Client,
+} from '@aws-sdk/client-s3'
+import { Upload } from '@aws-sdk/lib-storage'
+import type { StorageConfig, StorageProvider } from './types'
 
 export class S3StorageProvider implements StorageProvider {
   private client: S3Client
   private bucket: string
 
-  constructor(config: NonNullable<StorageConfig["s3"]>) {
+  constructor(config: NonNullable<StorageConfig['s3']>) {
     this.bucket = config.bucket
     this.client = new S3Client({
       region: config.region,
@@ -31,7 +32,7 @@ export class S3StorageProvider implements StorageProvider {
         Bucket: this.bucket,
         Key: path,
         Body: file.stream(),
-        ContentType: file.type || "application/octet-stream",
+        ContentType: file.type || 'application/octet-stream',
       },
     })
 
@@ -76,5 +77,28 @@ export class S3StorageProvider implements StorageProvider {
     } catch {
       return false
     }
+  }
+
+  async list(prefix?: string): Promise<string[]> {
+    const paths: string[] = []
+    let continuationToken: string | undefined
+
+    do {
+      const response = await this.client.send(
+        new ListObjectsV2Command({
+          Bucket: this.bucket,
+          Prefix: prefix,
+          ContinuationToken: continuationToken,
+        }),
+      )
+      for (const object of response.Contents ?? []) {
+        if (object.Key) paths.push(object.Key)
+      }
+      continuationToken = response.IsTruncated
+        ? response.NextContinuationToken
+        : undefined
+    } while (continuationToken)
+
+    return paths
   }
 }

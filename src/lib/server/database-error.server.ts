@@ -1,17 +1,23 @@
-import postgres from "postgres"
-import { toDisplayableError } from "@/lib/error-display"
+import postgres from 'postgres'
+import { getServerEnv } from '@/lib/env.server'
+import { toDisplayableError } from '@/lib/error-display'
 
-export async function toDisplayableDatabaseError(error: unknown): Promise<Error> {
+export async function toDisplayableDatabaseError(
+  error: unknown,
+): Promise<Error> {
   const normalizedError = toDisplayableError(error)
 
-  if (normalizedError.message !== (error instanceof Error ? error.message : "")) {
+  if (
+    normalizedError.message !== (error instanceof Error ? error.message : '')
+  ) {
     return normalizedError
   }
 
-  const connectionString = process.env.DATABASE_URL
-
-  if (!connectionString) {
-    return toDisplayableError(new Error("DATABASE_URL environment variable is required"))
+  let connectionString: string
+  try {
+    connectionString = getServerEnv().DATABASE_URL
+  } catch (configurationError) {
+    return toDisplayableError(configurationError)
   }
 
   const sql = postgres(connectionString, {
@@ -21,7 +27,7 @@ export async function toDisplayableDatabaseError(error: unknown): Promise<Error>
   })
 
   try {
-    await sql.unsafe("select 1")
+    await sql.unsafe('select 1')
   } catch (connectionError) {
     await sql.end({ timeout: 1 }).catch(() => {})
     return toDisplayableError(connectionError)

@@ -1,22 +1,29 @@
-import { createFileRoute, Link } from "@tanstack/react-router"
-import { Plus, Cog, ChevronDown } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { ChevronDown, Cog, Plus } from 'lucide-react'
+import { EmptyState } from '@/components/EmptyState'
+import { ImageWithFallback } from '@/components/image-with-fallback'
+import { Page, PageHeader } from '@/components/page-layout'
+import { RouteError } from '@/components/route-error'
+import { ListPending } from '@/components/route-pending'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  interactiveCardLinkClassName,
+} from '@/components/ui/card'
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
-import { getGear } from "@/lib/server/gear"
-import { RouteError } from "@/components/route-error"
-import { ListPending } from "@/components/route-pending"
-import { EmptyState } from "@/components/EmptyState"
-import { imageUrl } from "@/lib/image-url"
-import { ImageWithFallback } from "@/components/image-with-fallback"
-import { cn } from "@/lib/utils"
+} from '@/components/ui/collapsible'
+import { imageUrl } from '@/lib/image-url'
+import { getGear } from '@/lib/server/gear'
+import { cn } from '@/lib/utils'
 
-export const Route = createFileRoute("/gear/")({
+export const Route = createFileRoute('/gear/')({
   loader: () => getGear(),
   component: GearPage,
   pendingComponent: ListPending,
@@ -26,15 +33,16 @@ export const Route = createFileRoute("/gear/")({
 })
 
 const typeLabels: Record<string, string> = {
-  espresso_machine: "Espresso Machine",
-  brewer: "Brewer",
-  grinder: "Grinder",
-  kettle: "Kettle",
-  scale: "Scale",
-  tamper: "Tamper",
-  wdt: "WDT Tool",
-  basket: "Basket",
-  other: "Other",
+  espresso_machine: 'Espresso Machine',
+  espresso_machine_with_grinder: 'Espresso Machine with Built-in Grinder',
+  brewer: 'Brewer',
+  grinder: 'Grinder',
+  kettle: 'Kettle',
+  scale: 'Scale',
+  tamper: 'Tamper',
+  wdt: 'WDT Tool',
+  basket: 'Basket',
+  other: 'Other',
 }
 
 function GearPage() {
@@ -44,23 +52,19 @@ function GearPage() {
   const archivedGear = gear.filter((g) => g.isArchived)
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
-            Gear
-          </h1>
-          <p className="mt-1 text-sm font-semibold text-muted-foreground">
-            Your coffee equipment
-          </p>
-        </div>
-        <Button asChild>
-          <Link to="/gear/new">
-            <Plus className="h-4 w-4" />
-            Add gear
-          </Link>
-        </Button>
-      </header>
+    <Page>
+      <PageHeader
+        title="Gear"
+        description="Your coffee equipment"
+        actions={
+          <Button asChild>
+            <Link to="/gear/new">
+              <Plus className="h-4 w-4" />
+              Add gear
+            </Link>
+          </Button>
+        }
+      />
 
       {gear.length === 0 ? (
         <EmptyState
@@ -76,8 +80,8 @@ function GearPage() {
             <div className="@container">
               <div
                 className={cn(
-                  "grid gap-4 sm:grid-cols-2",
-                  activeGear.length > 2 && "lg:grid-cols-3",
+                  'grid gap-4 sm:grid-cols-2',
+                  activeGear.length > 2 && 'lg:grid-cols-3',
                 )}
               >
                 {activeGear.map((item) => (
@@ -88,7 +92,9 @@ function GearPage() {
           )}
 
           {activeGear.length === 0 && archivedGear.length > 0 && (
-            <p className="text-muted-foreground">No active gear. Check the archived section below.</p>
+            <p className="text-muted-foreground">
+              No active gear. Check the archived section below.
+            </p>
           )}
 
           {archivedGear.length > 0 && (
@@ -103,8 +109,8 @@ function GearPage() {
                 <div className="@container">
                   <div
                     className={cn(
-                      "grid gap-4 sm:grid-cols-2",
-                      archivedGear.length > 2 && "lg:grid-cols-3",
+                      'grid gap-4 sm:grid-cols-2',
+                      archivedGear.length > 2 && 'lg:grid-cols-3',
                     )}
                   >
                     {archivedGear.map((item) => (
@@ -117,16 +123,24 @@ function GearPage() {
           )}
         </>
       )}
-    </div>
+    </Page>
   )
 }
 
-function GearCard({ item }: { item: Awaited<ReturnType<typeof getGear>>[number] }) {
+function GearCard({
+  item,
+}: {
+  item: Awaited<ReturnType<typeof getGear>>[number]
+}) {
   const thumbnail = item.images.find((img) => img.isThumbnail) ?? item.images[0]
 
   return (
-    <Link to="/gear/$gearId" params={{ gearId: String(item.id) }}>
-      <Card className="hover:bg-muted/50 transition-colors cursor-pointer h-full overflow-hidden">
+    <Link
+      to="/gear/$gearId"
+      params={{ gearId: String(item.id) }}
+      className={interactiveCardLinkClassName}
+    >
+      <Card className="h-full overflow-hidden transition-colors group-hover:bg-muted/50">
         {thumbnail && (
           <div className="aspect-[4/3] overflow-hidden">
             <ImageWithFallback
@@ -145,7 +159,7 @@ function GearCard({ item }: { item: Awaited<ReturnType<typeof getGear>>[number] 
           </div>
           {(item.brand || item.model) && (
             <p className="text-sm text-muted-foreground">
-              {[item.brand, item.model].filter(Boolean).join(" ")}
+              {[item.brand, item.model].filter(Boolean).join(' ')}
             </p>
           )}
         </CardHeader>

@@ -1,43 +1,55 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { Bean, Coffee, Scale, TrendingUp } from "lucide-react"
-import { StatsSections } from "@/components/stats/stats-sections"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { getDetailedStats } from "@/lib/server/stats"
-import { formatMeasurement, formatRatio } from "@/lib/stats-format"
+import { createFileRoute } from '@tanstack/react-router'
+import { Bean, Coffee, Scale, TrendingUp } from 'lucide-react'
+import { MetricCard } from '@/components/metric-card'
+import { Page, PageHeader } from '@/components/page-layout'
+import { StatsSections } from '@/components/stats/stats-sections'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { getDetailedStats } from '@/lib/server/stats'
+import { formatMeasurement, formatRatio } from '@/lib/stats-format'
 
-export const Route = createFileRoute("/stats")({
+export const Route = createFileRoute('/stats')({
   loader: () => getDetailedStats(),
   component: StatsPage,
 })
 
 function StatsPage() {
   const stats = Route.useLoaderData()
-  const hasBrewingAverages = Object.values(stats.brewing).some((value) => value !== null)
+  const formatNumber = useNumberFormatter()
+  const hasBrewingAverages = Object.values(stats.brewing).some(
+    (value) => value !== null,
+  )
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
-          Statistics
-        </h1>
-        <p className="mt-1 text-sm font-semibold text-muted-foreground">
-          Your coffee journey at a glance
-        </p>
-      </header>
+    <Page>
+      <PageHeader
+        title="Statistics"
+        description="Your coffee journey at a glance"
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Shots"
-          value={stats.shots.total}
-          subtitle={`${stats.shots.avgPerDay}/day avg`}
+        <MetricCard
+          label="Total shots"
+          value={formatNumber(stats.shots.total)}
+          detail={`${formatNumber(stats.shots.avgPerDay)}/day average`}
           icon={Coffee}
         />
-        <StatCard title="This Week" value={stats.shots.thisWeek} subtitle="shots pulled" icon={TrendingUp} />
-        <StatCard title="This Month" value={stats.shots.thisMonth} subtitle="shots pulled" icon={TrendingUp} />
-        <StatCard
-          title="Beans Used"
-          value={`${(stats.beans.totalGramsUsed / 1000).toFixed(1)} kg`}
-          subtitle={`${stats.beans.uniqueBeansUsed} different beans`}
+        <MetricCard
+          label="This week"
+          value={formatNumber(stats.shots.thisWeek)}
+          detail="shots pulled"
+          icon={TrendingUp}
+        />
+        <MetricCard
+          label="This month"
+          value={formatNumber(stats.shots.thisMonth)}
+          detail="shots pulled"
+          icon={TrendingUp}
+        />
+        <MetricCard
+          label="Beans used"
+          value={`${formatNumber((stats.beans.totalGramsUsed / 1000).toFixed(1))} kg`}
+          detail={`${formatNumber(stats.beans.uniqueBeansUsed)} different beans`}
           icon={Bean}
         />
       </div>
@@ -47,55 +59,56 @@ function StatsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Scale className="h-5 w-5" />
-              Brewing Averages
+              Brewing averages
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              <Average label="Avg Dose" value={formatMeasurement(stats.brewing.avgDose, "g")} />
-              <Average label="Avg Yield" value={formatMeasurement(stats.brewing.avgYield, "g")} />
-              <Average label="Avg Ratio" value={formatRatio(stats.brewing.avgRatio)} />
-              <Average label="Avg Time" value={formatMeasurement(stats.brewing.avgTime, "s")} />
+              <Average
+                label="Average dose"
+                value={formatMeasurement(
+                  stats.brewing.avgDose,
+                  'g',
+                  formatNumber,
+                )}
+              />
+              <Average
+                label="Average yield"
+                value={formatMeasurement(
+                  stats.brewing.avgYield,
+                  'g',
+                  formatNumber,
+                )}
+              />
+              <Average
+                label="Average ratio"
+                value={formatRatio(stats.brewing.avgRatio, formatNumber)}
+              />
+              <Average
+                label="Average time"
+                value={formatMeasurement(
+                  stats.brewing.avgTime,
+                  's',
+                  formatNumber,
+                )}
+              />
             </div>
           </CardContent>
         </Card>
       )}
 
       <StatsSections stats={stats} />
-    </div>
+    </Page>
   )
 }
 
-function StatCard({
-  title,
+function Average({
+  label,
   value,
-  subtitle,
-  icon: Icon,
 }: {
-  readonly title: string
-  readonly value: string | number
-  readonly subtitle: string
-  readonly icon: React.ComponentType<{ className?: string }>
+  readonly label: string
+  readonly value: string
 }) {
-  return (
-    <Card>
-      <CardContent>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="font-display text-2xl font-bold tabular-nums">{value}</p>
-            <p className="text-xs text-muted-foreground">{subtitle}</p>
-          </div>
-          <div className="rounded-full bg-primary/10 p-3">
-            <Icon className="h-5 w-5 text-primary" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-function Average({ label, value }: { readonly label: string; readonly value: string }) {
   return (
     <div>
       <p className="text-sm text-muted-foreground">{label}</p>

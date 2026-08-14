@@ -1,18 +1,24 @@
-import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router"
-import { useState } from "react"
-import { ArrowLeft, Trash2, Pencil, ExternalLink } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { InputField, TextareaField } from "@/components/form/form-field"
-import { getRoaster, deleteRoaster, updateRoaster } from "@/lib/server/roasters"
-import { DeleteConfirmation } from "@/components/DeleteConfirmation"
-import { toast } from "sonner"
-import { RouteError } from "@/components/route-error"
-import { DetailPending } from "@/components/route-pending"
-import { FormSection } from "@/components/form/form-shell"
+import {
+  createFileRoute,
+  Link,
+  useNavigate,
+  useRouter,
+} from '@tanstack/react-router'
+import { ArrowLeft, ExternalLink, Pencil, Trash2 } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
+import { DeleteConfirmation } from '@/components/DeleteConfirmation'
+import { InputField, TextareaField } from '@/components/form/form-field'
+import { FormSection } from '@/components/form/form-shell'
+import { Page, PageHeader } from '@/components/page-layout'
+import { RouteError } from '@/components/route-error'
+import { DetailPending } from '@/components/route-pending'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { deleteRoaster, getRoaster, updateRoaster } from '@/lib/server/roasters'
 
-export const Route = createFileRoute("/roasters/$roasterId")({
+export const Route = createFileRoute('/roasters/$roasterId')({
   loader: ({ params }) => getRoaster({ data: Number(params.roasterId) }),
   component: RoasterDetailPage,
   pendingComponent: DetailPending,
@@ -28,12 +34,12 @@ function RoasterDetailPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [formData, setFormData] = useState(() => ({
-    name: roaster?.name ?? "",
-    location: roaster?.location ?? "",
-    country: roaster?.country ?? "",
-    website: roaster?.website ?? "",
-    instagramHandle: roaster?.instagramHandle ?? "",
-    notes: roaster?.notes ?? "",
+    name: roaster?.name ?? '',
+    location: roaster?.location ?? '',
+    country: roaster?.country ?? '',
+    website: roaster?.website ?? '',
+    instagramHandle: roaster?.instagramHandle ?? '',
+    notes: roaster?.notes ?? '',
   }))
 
   if (!roaster) {
@@ -49,17 +55,17 @@ function RoasterDetailPage() {
 
   const handleDelete = async () => {
     await deleteRoaster({ data: roaster.id })
-    navigate({ to: "/roasters" })
+    navigate({ to: '/roasters' })
   }
 
   const handleCancelEdit = () => {
     setFormData({
-      name: roaster.name ?? "",
-      location: roaster.location ?? "",
-      country: roaster.country ?? "",
-      website: roaster.website ?? "",
-      instagramHandle: roaster.instagramHandle ?? "",
-      notes: roaster.notes ?? "",
+      name: roaster.name ?? '',
+      location: roaster.location ?? '',
+      country: roaster.country ?? '',
+      website: roaster.website ?? '',
+      instagramHandle: roaster.instagramHandle ?? '',
+      notes: roaster.notes ?? '',
     })
     setIsEditing(false)
   }
@@ -81,9 +87,9 @@ function RoasterDetailPage() {
         },
       })
       setIsEditing(false)
-      await router.invalidate()
+      await router.invalidate({ filter: (match) => match.routeId === Route.id })
     } catch {
-      toast.error("Failed to update roaster")
+      toast.error('Failed to update roaster')
     } finally {
       setIsSaving(false)
     }
@@ -92,56 +98,71 @@ function RoasterDetailPage() {
   const beanCount = roaster.beans?.length ?? 0
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link to="/roasters">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold">
-            {isEditing ? formData.name || roaster.name : roaster.name}
-          </h1>
-          {(isEditing ? formData.location : roaster.location) && (
-            <p className="text-muted-foreground">
-              {isEditing ? formData.location : roaster.location}
-              {(isEditing ? formData.country : roaster.country) && `, ${isEditing ? formData.country : roaster.country}`}
-            </p>
-          )}
-        </div>
-        {isEditing ? (
-          <>
-            <Button variant="outline" size="sm" onClick={handleCancelEdit}>
-              Cancel
-            </Button>
-            <Button size="sm" onClick={handleSave} disabled={isSaving || !formData.name.trim()}>
-              {isSaving ? "Saving..." : "Save"}
-            </Button>
-          </>
-        ) : (
-          <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-            <Pencil className="h-4 w-4 mr-2" />
-            Edit
+    <Page width="form">
+      <PageHeader
+        size="compact"
+        title={isEditing ? formData.name || roaster.name : roaster.name}
+        description={
+          (isEditing ? formData.location : roaster.location)
+            ? [
+                isEditing ? formData.location : roaster.location,
+                isEditing ? formData.country : roaster.country,
+              ]
+                .filter(Boolean)
+                .join(', ')
+            : undefined
+        }
+        leading={
+          <Button variant="outline" size="icon" asChild>
+            <Link to="/roasters" aria-label="Back to roasters">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
           </Button>
-        )}
-        <DeleteConfirmation
-          title="Delete this roaster?"
-          description="This will remove the roaster from your collection. Beans linked to this roaster will keep their text roaster field."
-          onConfirm={handleDelete}
-          trigger={
-            <Button variant="ghost" size="icon">
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          }
-        />
-      </div>
+        }
+        actions={
+          <>
+            {isEditing ? (
+              <>
+                <Button variant="outline" size="sm" onClick={handleCancelEdit}>
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={isSaving || !formData.name.trim()}
+                >
+                  {isSaving ? 'Saving…' : 'Save'}
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditing(true)}
+              >
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+            )}
+            <DeleteConfirmation
+              title="Delete this roaster?"
+              description="This will remove the roaster from your collection. Beans linked to this roaster will keep their text roaster field."
+              onConfirm={handleDelete}
+              trigger={
+                <Button variant="ghost" size="icon">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              }
+            />
+          </>
+        }
+      />
 
       {isEditing ? (
         <>
           <Card>
             <CardHeader>
-              <CardTitle>Roaster Info</CardTitle>
+              <CardTitle>Roaster info</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <InputField
@@ -158,35 +179,41 @@ function RoasterDetailPage() {
                   label="Location"
                   placeholder="e.g., Rogers, Arkansas"
                   value={formData.location}
-                  onChange={(value) => setFormData({ ...formData, location: value })}
+                  onChange={(value) =>
+                    setFormData({ ...formData, location: value })
+                  }
                 />
                 <InputField
                   id="country"
                   label="Country"
                   placeholder="e.g., United States"
                   value={formData.country}
-                  onChange={(value) => setFormData({ ...formData, country: value })}
+                  onChange={(value) =>
+                    setFormData({ ...formData, country: value })
+                  }
                 />
               </div>
             </CardContent>
           </Card>
 
           <FormSection title="Links">
-              <InputField
-                id="website"
-                label="Website"
-                type="url"
-                placeholder="https://..."
-                value={formData.website}
-                onChange={(value) => setFormData({ ...formData, website: value })}
-              />
-              <InputField
-                id="instagramHandle"
-                label="Instagram"
-                placeholder="@handle"
-                value={formData.instagramHandle}
-                onChange={(value) => setFormData({ ...formData, instagramHandle: value })}
-              />
+            <InputField
+              id="website"
+              label="Website"
+              type="url"
+              placeholder="https://…"
+              value={formData.website}
+              onChange={(value) => setFormData({ ...formData, website: value })}
+            />
+            <InputField
+              id="instagramHandle"
+              label="Instagram"
+              placeholder="@handle"
+              value={formData.instagramHandle}
+              onChange={(value) =>
+                setFormData({ ...formData, instagramHandle: value })
+              }
+            />
           </FormSection>
 
           <Card>
@@ -197,7 +224,7 @@ function RoasterDetailPage() {
               <TextareaField
                 id="notes"
                 label=""
-                placeholder="Any notes about this roaster..."
+                placeholder="Any notes about this roaster…"
                 value={formData.notes}
                 onChange={(value) => setFormData({ ...formData, notes: value })}
                 rows={3}
@@ -218,7 +245,7 @@ function RoasterDetailPage() {
                     href={roaster.website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm text-primary hover:underline"
+                    className="flex items-center gap-2 text-sm text-link hover:underline"
                   >
                     <ExternalLink className="h-4 w-4" />
                     Website
@@ -226,13 +253,13 @@ function RoasterDetailPage() {
                 )}
                 {roaster.instagramHandle && (
                   <a
-                    href={`https://instagram.com/${roaster.instagramHandle.replace("@", "")}`}
+                    href={`https://instagram.com/${roaster.instagramHandle.replace('@', '')}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm text-primary hover:underline"
+                    className="flex items-center gap-2 text-sm text-link hover:underline"
                   >
-                    <ExternalLink className="h-4 w-4" />
-                    @{roaster.instagramHandle.replace("@", "")}
+                    <ExternalLink className="h-4 w-4" />@
+                    {roaster.instagramHandle.replace('@', '')}
                   </a>
                 )}
               </CardContent>
@@ -263,7 +290,9 @@ function RoasterDetailPage() {
             </CardHeader>
             <CardContent>
               {beanCount === 0 ? (
-                <p className="text-sm text-muted-foreground">No beans from this roaster yet.</p>
+                <p className="text-sm text-muted-foreground">
+                  No beans from this roaster yet.
+                </p>
               ) : (
                 <div className="space-y-2">
                   {roaster.beans?.map((bean) => (
@@ -276,7 +305,7 @@ function RoasterDetailPage() {
                       <span className="font-medium">{bean.name}</span>
                       {bean.roastLevel && (
                         <Badge variant="outline" className="capitalize text-xs">
-                          {bean.roastLevel.replace("_", " ")}
+                          {bean.roastLevel.replace('_', ' ')}
                         </Badge>
                       )}
                     </Link>
@@ -287,6 +316,6 @@ function RoasterDetailPage() {
           </Card>
         </>
       )}
-    </div>
+    </Page>
   )
 }

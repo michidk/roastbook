@@ -1,5 +1,6 @@
-import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { type ClassValue, clsx } from 'clsx'
+import { twMerge } from 'tailwind-merge'
+import type { DateFormat } from '@/lib/app-settings'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -27,7 +28,7 @@ export function normalizeUrl(value: string): string {
  * internal whitespace to a single space.
  */
 export function normalizeForComparison(value: string): string {
-  return value.trim().toLowerCase().replace(/\s+/g, " ")
+  return value.trim().toLowerCase().replace(/\s+/g, ' ')
 }
 
 /**
@@ -36,10 +37,38 @@ export function normalizeForComparison(value: string): string {
  * with no arguments (which can render as MM/DD/YYYY or DD/MM/YYYY depending
  * on the runtime locale, e.g. "8/9/2026").
  */
-export function formatDate(value: Date | string | number): string {
-  return new Date(value).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
+export function formatDate(
+  value: Date | string | number,
+  format: DateFormat = 'day-month-year-slash',
+): string {
+  const dateOnlyMatch =
+    typeof value === 'string' ? value.match(/^(\d{4})-(\d{2})-(\d{2})$/) : null
+  const date = dateOnlyMatch ? null : new Date(value)
+  const year = dateOnlyMatch?.[1] ?? String(date?.getFullYear())
+  const month = dateOnlyMatch?.[2] ?? String((date?.getMonth() ?? 0) + 1)
+  const day = dateOnlyMatch?.[3] ?? String(date?.getDate())
+  const paddedMonth = month.padStart(2, '0')
+  const paddedDay = day.padStart(2, '0')
+
+  switch (format) {
+    case 'month-day-year-slash':
+      return `${paddedMonth}/${paddedDay}/${year}`
+    case 'day-month-year-dot':
+      return `${paddedDay}.${paddedMonth}.${year}`
+    case 'year-month-day':
+      return `${year}-${paddedMonth}-${paddedDay}`
+    case 'day-month-year-slash':
+      return `${paddedDay}/${paddedMonth}/${year}`
+  }
+}
+
+export function formatDateTime(
+  value: Date | string | number,
+  format: DateFormat = 'day-month-year-slash',
+): string {
+  const time = new Date(value).toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
   })
+  return `${formatDate(value, format)}, ${time}`
 }

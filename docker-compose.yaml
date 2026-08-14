@@ -32,8 +32,8 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     environment:
       DATABASE_URL: postgresql://roastbook:roastbook@postgres:5432/roastbook
       STORAGE_PROVIDER: local
@@ -42,8 +42,25 @@ services:
       # OPENAI_API_KEY: sk-...
       # OPENAI_BASE_URL: https://api.openai.com/v1
       # OPENAI_VISION_MODEL: gpt-4o
+      # OPENAI_RESEARCH_MODEL: gpt-4o
     volumes:
       - uploads:/uploads
+
+  hodor:
+    image: ${HODOR_IMAGE:-ghcr.io/michidk/hodor@sha256:7cdb5de7ee2c776ee6c2ae049e1b2050caa60288d7b3148e26117a5d6bba18b2}
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "${HODOR_PORT:-3000}:8080"
+    environment:
+      PASSWORD: ${HODOR_PASSWORD:?Set HODOR_PASSWORD in .env}
+      SECRET: ${HODOR_SECRET:?Set HODOR_SECRET in .env}
+      UPSTREAM: http://app:3000
+      TITLE: ${HODOR_TITLE:-Roastbook Login}
+      SESSION_TTL: ${HODOR_SESSION_TTL:-86400}
+      SECURE_COOKIE: ${HODOR_SECURE_COOKIE:-false}
+      LOG_FORMAT: ${HODOR_LOG_FORMAT:-compact}
 
 volumes:
   postgres_data:

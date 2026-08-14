@@ -1,39 +1,43 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/chart"
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
-import { activityChartConfig } from "./stats-chart-config"
+} from '@/components/ui/chart'
+import { useDateFormatter } from '@/hooks/use-date-formatter'
+import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { activityChartConfig } from './stats-chart-config'
 
 type ActivityDay = {
   readonly date: string
   readonly count: number
 }
 
-function formatActivityDate(value: string): string {
-  return new Date(`${value}T00:00:00Z`).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  })
-}
-
-export function StatsActivityCard({ activity }: { readonly activity: readonly ActivityDay[] }) {
+export function StatsActivityCard({
+  activity,
+}: {
+  readonly activity: readonly ActivityDay[]
+}) {
+  const formatDate = useDateFormatter()
+  const formatNumber = useNumberFormatter()
   const recentShotCount = activity.reduce((total, day) => total + day.count, 0)
 
   return (
     <Card className="min-w-0">
       <CardHeader>
-        <CardTitle>Last 30 Days Activity</CardTitle>
+        <CardTitle>Last 30 days activity</CardTitle>
         <p className="text-sm text-muted-foreground">
-          {recentShotCount} {recentShotCount === 1 ? "shot" : "shots"} logged in this window.
+          {formatNumber(recentShotCount)}{' '}
+          {recentShotCount === 1 ? 'shot' : 'shots'} logged in this window.
         </p>
       </CardHeader>
       <CardContent>
         {recentShotCount > 0 ? (
-          <ChartContainer config={activityChartConfig} className="h-[200px] min-w-0 w-full">
+          <ChartContainer
+            config={activityChartConfig}
+            className="h-[200px] min-w-0 w-full"
+          >
             <LineChart data={activity}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
@@ -42,11 +46,13 @@ export function StatsActivityCard({ activity }: { readonly activity: readonly Ac
                 minTickGap={24}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={formatActivityDate}
+                tickFormatter={(value) =>
+                  formatDate(`${String(value)}T00:00:00Z`)
+                }
               />
               <YAxis
                 allowDecimals={false}
-                domain={[0, "dataMax + 1"]}
+                domain={[0, 'dataMax + 1']}
                 fontSize={14}
                 tickLine={false}
                 axisLine={false}

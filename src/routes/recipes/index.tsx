@@ -1,8 +1,16 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { BookOpen } from 'lucide-react'
 import { EmptyState } from '@/components/EmptyState'
+import { Page, PageHeader } from '@/components/page-layout'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  interactiveCardLinkClassName,
+} from '@/components/ui/card'
+import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { getRecipes } from '@/lib/server/recipes'
 
 export const Route = createFileRoute('/recipes/')({
@@ -12,17 +20,14 @@ export const Route = createFileRoute('/recipes/')({
 
 function RecipesPage() {
   const recipes = Route.useLoaderData()
+  const formatNumber = useNumberFormatter()
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="font-display text-4xl font-extrabold tracking-tight md:text-5xl">
-          Recipes
-        </h1>
-        <p className="mt-1 text-sm font-semibold text-muted-foreground">
-          Reusable shot values, organized by brewing method.
-        </p>
-      </header>
+    <Page>
+      <PageHeader
+        title="Recipes"
+        description="Reusable shot values, organized by brewing method."
+      />
 
       {recipes.length === 0 ? (
         <EmptyState
@@ -39,8 +44,9 @@ function RecipesPage() {
               key={recipe.id}
               to="/recipes/$recipeId"
               params={{ recipeId: String(recipe.id) }}
+              className={interactiveCardLinkClassName}
             >
-              <Card className="h-full cursor-pointer transition-colors hover:bg-muted/50">
+              <Card className="h-full transition-colors group-hover:bg-muted/50">
                 <CardHeader>
                   <div className="flex items-start justify-between gap-3">
                     <CardTitle as="h2" className="min-w-0 text-base">
@@ -58,17 +64,17 @@ function RecipesPage() {
                   {recipe.brewingMethod.enabledParameters.includes(
                     'doseGrams',
                   ) && recipe.doseGrams ? (
-                    <p>{recipe.doseGrams} g dose</p>
+                    <p>{formatNumber(recipe.doseGrams)} g dose</p>
                   ) : null}
                   {recipe.brewingMethod.enabledParameters.includes(
                     'yieldGrams',
                   ) && recipe.yieldGrams ? (
-                    <p>{recipe.yieldGrams} g yield</p>
+                    <p>{formatNumber(recipe.yieldGrams)} g yield</p>
                   ) : null}
                   {recipe.brewingMethod.enabledParameters.includes(
                     'shotTimeSeconds',
                   ) && recipe.shotTimeSeconds ? (
-                    <p>{recipe.shotTimeSeconds} s</p>
+                    <p>{formatNumber(recipe.shotTimeSeconds)} s</p>
                   ) : null}
                   {recipe.brewingMethod.enabledParameters.includes(
                     'grindSetting',
@@ -81,6 +87,6 @@ function RecipesPage() {
           ))}
         </div>
       )}
-    </div>
+    </Page>
   )
 }

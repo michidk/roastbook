@@ -1,8 +1,8 @@
-import * as React from "react"
+import * as React from 'react'
 
 export const CHART_THEMES = [
-  ["light", ""],
-  ["dark", ".dark"],
+  ['light', ''],
+  ['dark', '.dark'],
 ] as const
 
 type ChartTheme = (typeof CHART_THEMES)[number][0]
@@ -30,13 +30,15 @@ export function ChartProvider({
   readonly children: React.ReactNode
   readonly config: ChartConfig
 }) {
-  return <ChartContext.Provider value={{ config }}>{children}</ChartContext.Provider>
+  return (
+    <ChartContext.Provider value={{ config }}>{children}</ChartContext.Provider>
+  )
 }
 
 export function useChart(): ChartContextValue {
   const context = React.useContext(ChartContext)
   if (!context) {
-    throw new Error("useChart must be used within a <ChartContainer />")
+    throw new Error('useChart must be used within a <ChartContainer />')
   }
   return context
 }

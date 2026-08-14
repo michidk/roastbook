@@ -1,16 +1,16 @@
-import { useState } from "react"
-import { ExternalLink, Search, Sparkles } from "lucide-react"
-import { toast } from "sonner"
-import { Badge } from "@/components/ui/badge"
-import { Card } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
+import { ExternalLink, Search, Sparkles } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
+import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
-} from "@/components/ui/input-group"
-import { searchCoffeeShopCandidates } from "@/lib/server/geocoding"
+} from '@/components/ui/input-group'
+import { Label } from '@/components/ui/label'
+import { searchCoffeeShopCandidates } from '@/lib/server/geocoding'
 
 export type CoffeeShopSearchResult = Awaited<
   ReturnType<typeof searchCoffeeShopCandidates>
@@ -23,13 +23,13 @@ interface CoffeeShopOsmSearchProps {
 
 export function CoffeeShopOsmSearch({
   onApply,
-  initialQuery = "",
+  initialQuery = '',
 }: CoffeeShopOsmSearchProps) {
   const [searchQuery, setSearchQuery] = useState(initialQuery)
   const [isSearching, setIsSearching] = useState(false)
-  const [searchStatus, setSearchStatus] = useState("")
+  const [searchStatus, setSearchStatus] = useState('')
   const [searchResults, setSearchResults] = useState<CoffeeShopSearchResult[]>(
-    []
+    [],
   )
   const [selectedSearchResultId, setSelectedSearchResultId] = useState<
     number | null
@@ -38,16 +38,16 @@ export function CoffeeShopOsmSearch({
   const handleSearch = async () => {
     if (isSearching) return
 
-    const normalizedQuery = searchQuery.trim().replace(/\s+/g, " ")
+    const normalizedQuery = searchQuery.trim().replace(/\s+/g, ' ')
 
     if (normalizedQuery.length < 3) {
-      setSearchStatus("Enter at least three characters to search OpenStreetMap")
-      toast.error("Add a coffee shop name or address before searching")
+      setSearchStatus('Enter at least three characters to search OpenStreetMap')
+      toast.error('Add a café name or address before searching')
       return
     }
 
     setIsSearching(true)
-    setSearchStatus("Searching OpenStreetMap")
+    setSearchStatus('Searching OpenStreetMap')
 
     try {
       const results = await searchCoffeeShopCandidates({
@@ -57,16 +57,16 @@ export function CoffeeShopOsmSearch({
       setSelectedSearchResultId(null)
       setSearchStatus(
         results.length === 1
-          ? "1 coffee shop match found"
-          : `${results.length} coffee shop matches found`
+          ? '1 café match found'
+          : `${results.length} café matches found`,
       )
 
       if (results.length === 0) {
-        toast.info("No matching coffee shops found")
+        toast.info('No matching cafés found')
       }
     } catch {
-      setSearchStatus("OpenStreetMap search failed")
-      toast.error("Could not search OpenStreetMap right now")
+      setSearchStatus('OpenStreetMap search failed')
+      toast.error('Could not search OpenStreetMap right now')
     } finally {
       setIsSearching(false)
     }
@@ -76,7 +76,7 @@ export function CoffeeShopOsmSearch({
     setSelectedSearchResultId(result.id)
     setSearchQuery(result.displayName)
     onApply(result)
-    toast.success("Coffee shop details applied")
+    toast.success('Café details applied')
   }
 
   return (
@@ -93,7 +93,7 @@ export function CoffeeShopOsmSearch({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={(event) => {
-            if (event.key !== "Enter") return
+            if (event.key !== 'Enter') return
             event.preventDefault()
             void handleSearch()
           }}
@@ -108,7 +108,7 @@ export function CoffeeShopOsmSearch({
             variant="secondary"
             size="sm"
             aria-label={
-              isSearching ? "Searching OpenStreetMap" : "Search OpenStreetMap"
+              isSearching ? 'Searching OpenStreetMap' : 'Search OpenStreetMap'
             }
             onClick={handleSearch}
             disabled={isSearching || searchQuery.trim().length < 3}
@@ -116,7 +116,7 @@ export function CoffeeShopOsmSearch({
           >
             <Search className="h-4 w-4" />
             <span className="hidden sm:inline">
-              {isSearching ? "Searching..." : "Search coffee shop"}
+              {isSearching ? 'Searching…' : 'Search café'}
             </span>
           </InputGroupButton>
         </InputGroupAddon>
@@ -127,14 +127,19 @@ export function CoffeeShopOsmSearch({
       >
         Choose a match to fill in the address, coordinates, and website.
       </p>
-      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+      <div
+        className="sr-only"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
         {searchStatus}
       </div>
       {searchResults.length > 0 && (
         <div className="space-y-2 pt-2">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 font-medium">
-              <Sparkles className="h-4 w-4 text-primary" />
+              <Sparkles className="h-4 w-4 text-link" />
               Suggested matches
             </div>
             <Badge variant="secondary">{searchResults.length} found</Badge>

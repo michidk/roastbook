@@ -1,9 +1,10 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { BeanForm } from "@/components/beans/bean-form"
-import { FormPageHeader } from "@/components/form/form-shell"
-import { getRoasters } from "@/lib/server/roasters"
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { BeanForm } from '@/components/beans/bean-form'
+import { FormPageHeader } from '@/components/form/form-shell'
+import { Page } from '@/components/page-layout'
+import { getRoasters } from '@/lib/server/roasters'
 
-export const Route = createFileRoute("/beans/new")({
+export const Route = createFileRoute('/beans/new')({
   loader: () => getRoasters(),
   component: NewBeanPage,
 })
@@ -13,18 +14,21 @@ function NewBeanPage() {
   const navigate = useNavigate()
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <Page width="form">
       <FormPageHeader
-        title="Add Beans"
+        title="Add beans"
         description="Add a new bag of coffee to your collection"
       />
       <BeanForm
         roasters={roasters}
         onCreated={(bean) =>
-          navigate({ to: "/beans/$beanId", params: { beanId: String(bean.id) } })
+          navigate({
+            to: '/beans/$beanId',
+            params: { beanId: String(bean.id) },
+          })
         }
-        onCancel={() => navigate({ to: "/beans" })}
+        onCancel={() => navigate({ to: '/beans' })}
       />
-    </div>
+    </Page>
   )
 }

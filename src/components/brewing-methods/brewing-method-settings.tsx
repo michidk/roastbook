@@ -1,35 +1,35 @@
-import { useState, type SyntheticEvent } from "react"
-import { useRouter } from "@tanstack/react-router"
-import { ChevronDown, Plus, Save, Timer } from "lucide-react"
-import { toast } from "sonner"
-import { DeleteConfirmation } from "@/components/DeleteConfirmation"
-import { InputField, TextareaField } from "@/components/form/form-field"
-import { Button } from "@/components/ui/button"
+import { useRouter } from '@tanstack/react-router'
+import { ChevronDown, Plus, Save, Timer } from 'lucide-react'
+import { type SyntheticEvent, useState } from 'react'
+import { toast } from 'sonner'
+import { DeleteConfirmation } from '@/components/DeleteConfirmation'
+import { InputField, TextareaField } from '@/components/form/form-field'
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardAction,
   CardContent,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Toggle } from "@/components/ui/toggle"
+} from '@/components/ui/card'
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+} from '@/components/ui/collapsible'
+import { Toggle } from '@/components/ui/toggle'
 import {
   createBrewingMethod,
   deleteBrewingMethod,
   type getBrewingMethods,
   updateBrewingMethod,
-} from "@/lib/server/brewing-methods"
+} from '@/lib/server/brewing-methods'
 import {
   SHOT_PARAMETER_KEYS,
   SHOT_PARAMETER_META,
   type ShotParameterKey,
-} from "@/lib/shot-parameters"
-import { cn } from "@/lib/utils"
+} from '@/lib/shot-parameters'
+import { cn } from '@/lib/utils'
 
 type BrewingMethod = Awaited<ReturnType<typeof getBrewingMethods>>[number]
 
@@ -39,8 +39,8 @@ export function BrewingMethodSettings({
   readonly methods: readonly BrewingMethod[]
 }) {
   const router = useRouter()
-  const [name, setName] = useState("")
-  const [description, setDescription] = useState("")
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
   const [isCreating, setIsCreating] = useState(false)
 
   const handleCreate = async (event: SyntheticEvent<HTMLFormElement>) => {
@@ -51,13 +51,15 @@ export function BrewingMethodSettings({
       await createBrewingMethod({
         data: { name, description, enabledParameters: [], timerEnabled: false },
       })
-      setName("")
-      setDescription("")
+      setName('')
+      setDescription('')
       await router.invalidate()
-      toast.success("Brewing method created")
+      toast.success('Brewing method created')
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Could not create brewing method",
+        error instanceof Error
+          ? error.message
+          : 'Could not create brewing method',
       )
     } finally {
       setIsCreating(false)
@@ -88,7 +90,7 @@ export function BrewingMethodSettings({
         />
         <Button type="submit" disabled={!name.trim() || isCreating}>
           <Plus />
-          {isCreating ? "Creating…" : "Create method"}
+          {isCreating ? 'Creating…' : 'Create method'}
         </Button>
       </form>
 
@@ -102,7 +104,7 @@ export function BrewingMethodSettings({
 function BrewingMethodEditor({ method }: { readonly method: BrewingMethod }) {
   const router = useRouter()
   const [name, setName] = useState(method.name)
-  const [description, setDescription] = useState(method.description ?? "")
+  const [description, setDescription] = useState(method.description ?? '')
   const [enabledParameters, setEnabledParameters] = useState<
     readonly ShotParameterKey[]
   >(() =>
@@ -112,7 +114,7 @@ function BrewingMethodEditor({ method }: { readonly method: BrewingMethod }) {
   const [isSaving, setIsSaving] = useState(false)
 
   const toggle = (key: ShotParameterKey, pressed: boolean) => {
-    if (key === "shotTimeSeconds" && !pressed) setTimerEnabled(false)
+    if (key === 'shotTimeSeconds' && !pressed) setTimerEnabled(false)
     setEnabledParameters((current) =>
       pressed ? [...current, key] : current.filter((item) => item !== key),
     )
@@ -135,7 +137,9 @@ function BrewingMethodEditor({ method }: { readonly method: BrewingMethod }) {
       toast.success(`${name.trim()} saved`)
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Could not save brewing method",
+        error instanceof Error
+          ? error.message
+          : 'Could not save brewing method',
       )
     } finally {
       setIsSaving(false)
@@ -150,10 +154,11 @@ function BrewingMethodEditor({ method }: { readonly method: BrewingMethod }) {
             <div>
               <CardTitle as="h2">{method.name}</CardTitle>
               <p className="mt-1 text-sm text-muted-foreground">
-                {method.description ?? "No description"}
+                {method.description ?? 'No description'}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {enabledParameters.length} logging field{enabledParameters.length === 1 ? "" : "s"}
+                {enabledParameters.length} logging field
+                {enabledParameters.length === 1 ? '' : 's'}
               </p>
             </div>
             <ChevronDown className="transition-transform group-data-[open]:rotate-180 motion-reduce:transition-none" />
@@ -165,7 +170,7 @@ function BrewingMethodEditor({ method }: { readonly method: BrewingMethod }) {
               onConfirm={async () => {
                 await deleteBrewingMethod({ data: method.id })
                 await router.invalidate()
-                toast.success("Brewing method deleted")
+                toast.success('Brewing method deleted')
               }}
             />
           </CardAction>
@@ -193,7 +198,7 @@ function BrewingMethodEditor({ method }: { readonly method: BrewingMethod }) {
                   variant="outline"
                   size="lg"
                   pressed={timerEnabled}
-                  disabled={!enabledParameters.includes("shotTimeSeconds")}
+                  disabled={!enabledParameters.includes('shotTimeSeconds')}
                   onPressedChange={setTimerEnabled}
                   className="h-auto min-h-11 justify-start gap-2 px-3 py-2"
                 >
@@ -207,7 +212,9 @@ function BrewingMethodEditor({ method }: { readonly method: BrewingMethod }) {
               </div>
               <div className="space-y-2">
                 <div>
-                  <p className="text-sm font-medium">Fields shown when logging</p>
+                  <p className="text-sm font-medium">
+                    Fields shown when logging
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     Choose which details can be recorded for shots and recipes
                     using this method.
@@ -219,26 +226,26 @@ function BrewingMethodEditor({ method }: { readonly method: BrewingMethod }) {
                     const isEnabled = enabledParameters.includes(key)
                     return (
                       <Toggle
-                      key={key}
-                      variant="outline"
-                      size="lg"
-                      pressed={isEnabled}
-                      onPressedChange={(pressed) => toggle(key, pressed)}
-                      className={cn(
-                        "h-auto min-h-11 justify-between px-3 py-2",
-                        isEnabled &&
-                          "aria-pressed:border-foreground aria-pressed:bg-primary aria-pressed:text-primary-foreground hover:aria-pressed:bg-primary/90 hover:aria-pressed:text-primary-foreground",
-                      )}
-                    >
-                      <span>{meta.label}</span>
-                      <span
+                        key={key}
+                        variant="outline"
+                        size="lg"
+                        pressed={isEnabled}
+                        onPressedChange={(pressed) => toggle(key, pressed)}
                         className={cn(
-                          "text-xs text-muted-foreground",
-                          isEnabled && "text-primary-foreground",
+                          'h-auto min-h-11 justify-between px-3 py-2',
+                          isEnabled &&
+                            'aria-pressed:border-foreground aria-pressed:bg-primary aria-pressed:text-primary-foreground hover:aria-pressed:bg-primary/90 hover:aria-pressed:text-primary-foreground',
                         )}
                       >
-                        {meta.group}
-                      </span>
+                        <span>{meta.label}</span>
+                        <span
+                          className={cn(
+                            'text-xs text-muted-foreground',
+                            isEnabled && 'text-primary-foreground',
+                          )}
+                        >
+                          {meta.group}
+                        </span>
                       </Toggle>
                     )
                   })}
@@ -246,7 +253,7 @@ function BrewingMethodEditor({ method }: { readonly method: BrewingMethod }) {
               </div>
               <Button type="submit" disabled={!name.trim() || isSaving}>
                 <Save />
-                {isSaving ? "Saving…" : "Save method"}
+                {isSaving ? 'Saving…' : 'Save method'}
               </Button>
             </form>
           </CardContent>

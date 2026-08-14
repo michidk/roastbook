@@ -1,7 +1,7 @@
-import { Link } from "@tanstack/react-router"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import type { LucideIcon } from "lucide-react"
+import { Link } from '@tanstack/react-router'
+import type { LucideIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 
 interface EmptyStateProps {
   icon: LucideIcon
@@ -24,10 +24,12 @@ export function EmptyState({
     <Card>
       <CardContent className="flex flex-col items-center justify-center py-12">
         <Icon className="h-12 w-12 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-semibold">{title}</h3>
+        <h2 className="font-display text-lg font-bold">{title}</h2>
         <p className="text-sm text-muted-foreground mb-4">{description}</p>
         <Button asChild>
-          <Link to={actionHref} search={actionSearch}>{actionLabel}</Link>
+          <Link to={actionHref} search={actionSearch}>
+            {actionLabel}
+          </Link>
         </Button>
       </CardContent>
     </Card>

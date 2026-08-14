@@ -1,10 +1,11 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { FormPageHeader } from "@/components/form/form-shell"
-import { RoasterForm } from "@/components/roasters/roaster-form"
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { ArrowLeft } from 'lucide-react'
+import { FormPageHeader } from '@/components/form/form-shell'
+import { Page } from '@/components/page-layout'
+import { RoasterForm } from '@/components/roasters/roaster-form'
+import { Button } from '@/components/ui/button'
 
-export const Route = createFileRoute("/roasters/new")({
+export const Route = createFileRoute('/roasters/new')({
   component: NewRoasterPage,
 })
 
@@ -12,9 +13,9 @@ function NewRoasterPage() {
   const navigate = useNavigate()
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <Page width="form">
       <FormPageHeader
-        title="Add Roaster"
+        title="Add roaster"
         leading={
           <Button variant="ghost" size="icon" asChild>
             <Link to="/roasters">
@@ -26,12 +27,12 @@ function NewRoasterPage() {
       <RoasterForm
         onCreated={(roaster) =>
           navigate({
-            to: "/roasters/$roasterId",
+            to: '/roasters/$roasterId',
             params: { roasterId: String(roaster.id) },
           })
         }
-        onCancel={() => navigate({ to: "/roasters" })}
+        onCancel={() => navigate({ to: '/roasters' })}
       />
-    </div>
+    </Page>
   )
 }

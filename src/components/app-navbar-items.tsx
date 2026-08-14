@@ -1,5 +1,4 @@
-import { Link } from "@tanstack/react-router"
-import type { ComponentType } from "react"
+import { Link } from '@tanstack/react-router'
 import {
   BarChart3,
   Bean,
@@ -10,14 +9,15 @@ import {
   SlidersHorizontal,
   Store,
   UtensilsCrossed,
-} from "lucide-react"
-import { cn } from "@/lib/utils"
+} from 'lucide-react'
+import type { ComponentType } from 'react'
 import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu"
+} from '@/components/ui/dropdown-menu'
+import { cn } from '@/lib/utils'
 
 export type NavItem = {
   readonly title: string
@@ -26,34 +26,41 @@ export type NavItem = {
 }
 
 export const primaryNavItems: readonly NavItem[] = [
-  { title: "Shots", url: "/shots", icon: Coffee },
-  { title: "Beans", url: "/beans", icon: Bean },
-  { title: "Visits", url: "/visits", icon: UtensilsCrossed },
+  { title: 'Shots', url: '/shots', icon: Coffee },
+  { title: 'Beans', url: '/beans', icon: Bean },
+  { title: 'Visits', url: '/visits', icon: UtensilsCrossed },
 ]
 
 export const moreNavItems: readonly NavItem[] = [
-  { title: "Roasters", url: "/roasters", icon: Store },
-  { title: "Gear", url: "/gear", icon: Cog },
-  { title: "Brewing methods", url: "/brewing-methods", icon: SlidersHorizontal },
-  { title: "Recipes", url: "/recipes", icon: BookOpen },
-  { title: "Stats", url: "/stats", icon: BarChart3 },
-  { title: "Settings", url: "/settings", icon: Settings },
+  { title: 'Roasters', url: '/roasters', icon: Store },
+  { title: 'Gear', url: '/gear', icon: Cog },
+  {
+    title: 'Brewing methods',
+    url: '/brewing-methods',
+    icon: SlidersHorizontal,
+  },
+  { title: 'Recipes', url: '/recipes', icon: BookOpen },
+  { title: 'Stats', url: '/stats', icon: BarChart3 },
+  { title: 'Settings', url: '/settings', icon: Settings },
 ]
 
 export const primaryCreateAction: NavItem = {
-  title: "New shot",
-  url: "/shots/new",
+  title: 'New shot',
+  url: '/shots/new',
   icon: Coffee,
 }
 
 const createActions: readonly NavItem[] = [
   primaryCreateAction,
-  { title: "New bean", url: "/beans/new", icon: Bean },
-  { title: "New visit", url: "/visits/new", icon: UtensilsCrossed },
+  { title: 'New bean', url: '/beans/new', icon: Bean },
+  { title: 'New visit', url: '/visits/new', icon: UtensilsCrossed },
+  { title: 'New café', url: '/shops/new', icon: Store },
+  { title: 'New roaster', url: '/roasters/new', icon: Store },
+  { title: 'New gear', url: '/gear/new', icon: Cog },
 ]
 
 export function isNavItemActive(pathname: string, item: NavItem) {
-  return item.url === "/" ? pathname === "/" : pathname.startsWith(item.url)
+  return item.url === '/' ? pathname === '/' : pathname.startsWith(item.url)
 }
 
 export function BrandLink({ className }: { readonly className?: string }) {
@@ -61,7 +68,7 @@ export function BrandLink({ className }: { readonly className?: string }) {
     <Link
       to="/"
       aria-label="Roastbook home"
-      className={cn("flex shrink-0 items-center gap-2", className)}
+      className={cn('flex shrink-0 items-center gap-2', className)}
     >
       <div className="flex size-9 items-center justify-center overflow-hidden rounded-xl">
         <img
@@ -96,7 +103,11 @@ export function CreateMenuItems() {
   )
 }
 
-export function MoreMenuItems({ items }: { readonly items: readonly NavItem[] }) {
+export function MoreMenuItems({
+  items,
+}: {
+  readonly items: readonly NavItem[]
+}) {
   return (
     <DropdownMenuGroup>
       {items.map((item) => (

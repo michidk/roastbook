@@ -1,5 +1,5 @@
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface PaginationControlsProps {
   page: number
@@ -7,7 +7,11 @@ interface PaginationControlsProps {
   onPageChange: (page: number) => void
 }
 
-export function PaginationControls({ page, totalPages, onPageChange }: PaginationControlsProps) {
+export function PaginationControls({
+  page,
+  totalPages,
+  onPageChange,
+}: PaginationControlsProps) {
   return (
     <nav
       className="flex items-center justify-between gap-4 pt-2"

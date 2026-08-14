@@ -1,9 +1,9 @@
-import { toast } from "sonner"
-import { EntityForm, FormSection } from "@/components/form/form-shell"
-import { InputField, TextareaField } from "@/components/form/form-field"
-import { useFormState } from "@/hooks/use-form-state"
-import { useFormSubmission } from "@/hooks/use-form-submission"
-import { createRoaster } from "@/lib/server/roasters"
+import { toast } from 'sonner'
+import { InputField, TextareaField } from '@/components/form/form-field'
+import { EntityForm, FormSection } from '@/components/form/form-shell'
+import { useFormState } from '@/hooks/use-form-state'
+import { useFormSubmission } from '@/hooks/use-form-submission'
+import { createRoaster } from '@/lib/server/roasters'
 
 type CreatedRoaster = Awaited<ReturnType<typeof createRoaster>>
 
@@ -17,16 +17,16 @@ interface RoasterFormProps {
 export function RoasterForm({
   onCreated,
   onCancel,
-  initialName = "",
-  submitLabel = "Create Roaster",
+  initialName = '',
+  submitLabel = 'Create roaster',
 }: RoasterFormProps) {
   const form = useFormState({
     name: initialName,
-    location: "",
-    country: "",
-    website: "",
-    instagramHandle: "",
-    notes: "",
+    location: '',
+    country: '',
+    website: '',
+    instagramHandle: '',
+    notes: '',
   })
 
   const { isSubmitting, handleSubmit } = useFormSubmission({
@@ -44,7 +44,7 @@ export function RoasterForm({
       })
       await onCreated(roaster)
     },
-    onError: () => toast.error("Failed to create roaster"),
+    onError: () => toast.error('Failed to create roaster'),
   })
 
   return (
@@ -55,16 +55,16 @@ export function RoasterForm({
         isSubmitting,
         disabled: !form.values.name.trim(),
         submitLabel,
-        submittingLabel: "Creating...",
+        submittingLabel: 'Creating…',
       }}
     >
-      <FormSection title="Roaster Info">
+      <FormSection title="Roaster info">
         <InputField
           id="roaster-name"
           label="Name"
           placeholder="e.g., Onyx Coffee Lab"
           value={form.values.name}
-          onChange={form.setField("name")}
+          onChange={form.setField('name')}
           required
         />
         <div className="grid gap-4 sm:grid-cols-2">
@@ -73,14 +73,14 @@ export function RoasterForm({
             label="Location"
             placeholder="e.g., Rogers, Arkansas"
             value={form.values.location}
-            onChange={form.setField("location")}
+            onChange={form.setField('location')}
           />
           <InputField
             id="roaster-country"
             label="Country"
             placeholder="e.g., United States"
             value={form.values.country}
-            onChange={form.setField("country")}
+            onChange={form.setField('country')}
           />
         </div>
       </FormSection>
@@ -90,16 +90,16 @@ export function RoasterForm({
           id="roaster-website"
           label="Website"
           type="url"
-          placeholder="https://..."
+          placeholder="https://…"
           value={form.values.website}
-          onChange={form.setField("website")}
+          onChange={form.setField('website')}
         />
         <InputField
           id="roaster-instagram"
           label="Instagram"
           placeholder="@handle"
           value={form.values.instagramHandle}
-          onChange={form.setField("instagramHandle")}
+          onChange={form.setField('instagramHandle')}
         />
       </FormSection>
 
@@ -107,13 +107,12 @@ export function RoasterForm({
         <TextareaField
           id="roaster-notes"
           label=""
-          placeholder="Any notes about this roaster..."
+          placeholder="Any notes about this roaster…"
           value={form.values.notes}
-          onChange={form.setField("notes")}
+          onChange={form.setField('notes')}
           rows={3}
         />
       </FormSection>
-
     </EntityForm>
   )
 }

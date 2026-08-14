@@ -1,7 +1,14 @@
-export function formatMeasurement(value: number | null, unit: string): string {
-  return value === null ? "Not enough data" : `${value}${unit}`
+export function formatMeasurement(
+  value: number | string | null,
+  unit: string,
+  formatNumber: (value: number | string) => string = String,
+): string {
+  return value === null ? 'Not enough data' : `${formatNumber(value)} ${unit}`
 }
 
-export function formatRatio(value: number | null): string {
-  return value === null ? "Not enough data" : `1:${value}`
+export function formatRatio(
+  value: number | null,
+  formatNumber: (value: number | string) => string = String,
+): string {
+  return value === null ? 'Not enough data' : `1:${formatNumber(value)}`
 }

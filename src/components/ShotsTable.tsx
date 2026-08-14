@@ -1,24 +1,25 @@
-import { useMemo, useState } from "react"
-import { Link, useNavigate } from "@tanstack/react-router"
-import { Search } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
+import { Link } from '@tanstack/react-router'
+import { useMemo, useState } from 'react'
+import { CollectionToolbar } from '@/components/collection-toolbar'
+import { ImageWithFallback } from '@/components/image-with-fallback'
+import { PaginationControls } from '@/components/pagination-controls'
+import { SortableTableHead } from '@/components/sortable-table-head'
+import { interactiveCardLinkClassName } from '@/components/ui/card'
+import { StarRating } from '@/components/ui/star-rating'
 import {
   Table,
   TableBody,
   TableCell,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { thumbnailUrl } from "@/lib/image-url"
-import { ImageWithFallback } from "@/components/image-with-fallback"
-import { SortableTableHead } from "@/components/sortable-table-head"
-import { PaginationControls } from "@/components/pagination-controls"
-import { formatDate } from "@/lib/utils"
+} from '@/components/ui/table'
+import { useDateFormatter } from '@/hooks/use-date-formatter'
+import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import {
-  useSortablePagination,
   type SortDirection,
-} from "@/hooks/use-sortable-pagination"
+  useSortablePagination,
+} from '@/hooks/use-sortable-pagination'
+import { thumbnailUrl } from '@/lib/image-url'
 
 type Shot = {
   id: number
@@ -40,32 +41,49 @@ type Shot = {
 interface ShotsTableProps {
   shots: Shot[]
   hideBean?: boolean
+  serverPagination?: {
+    readonly page: number
+    readonly totalPages: number
+    readonly totalItems: number
+    readonly query: string
+    readonly sortKey: SortKey
+    readonly sortDirection: SortDirection
+    readonly onPageChange: (page: number) => void
+    readonly onQueryChange: (query: string) => void
+    readonly onSort: (key: SortKey) => void
+  }
 }
 
 const PAGE_SIZE = 25
 
-type SortKey = "date" | "bean" | "dose" | "yield" | "time" | "rating"
+type SortKey = 'date' | 'bean' | 'dose' | 'yield' | 'time' | 'rating'
 
-function getBeanThumbnail(bean: Shot["bean"]): string | null {
+function getBeanThumbnail(bean: Shot['bean']): string | null {
   if (!bean?.images?.length) return null
   const thumbnail = bean.images.find((img) => img.isThumbnail) || bean.images[0]
   if (!thumbnail?.storagePath) return null
   return thumbnailUrl(thumbnail.storagePath)
 }
 
-function formatShotSummary(shot: Shot): string {
+function formatShotSummary(
+  shot: Shot,
+  formatNumber: (value: number | string) => string,
+): string {
   const parts: string[] = []
   if (shot.doseGrams && shot.yieldGrams) {
-    parts.push(`${shot.doseGrams}g → ${shot.yieldGrams}g`)
+    parts.push(
+      `${formatNumber(shot.doseGrams)} g → ${formatNumber(shot.yieldGrams)} g`,
+    )
   } else if (shot.doseGrams) {
-    parts.push(`${shot.doseGrams}g dose`)
+    parts.push(`${formatNumber(shot.doseGrams)} g dose`)
   } else if (shot.yieldGrams) {
-    parts.push(`${shot.yieldGrams}g yield`)
+    parts.push(`${formatNumber(shot.yieldGrams)} g yield`)
   } else {
-    parts.push("No dose/yield recorded")
+    parts.push('No dose/yield recorded')
   }
-  if (shot.shotTimeSeconds) parts.push(`${shot.shotTimeSeconds}s`)
-  return parts.join(" · ")
+  if (shot.shotTimeSeconds)
+    parts.push(`${formatNumber(shot.shotTimeSeconds)} s`)
+  return parts.join(' · ')
 }
 
 function parseNullableFloat(value: string | null): number | null {
@@ -84,7 +102,7 @@ function compareNullable<Value>(
   if (a === null) return 1
   if (b === null) return -1
   const result = compare(a, b)
-  return direction === "asc" ? result : -result
+  return direction === 'asc' ? result : -result
 }
 
 function compareShots(
@@ -94,115 +112,127 @@ function compareShots(
   direction: SortDirection,
 ): number {
   switch (key) {
-    case "date": {
+    case 'date': {
       const difference =
         new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime()
-      return direction === "asc" ? difference : -difference
+      return direction === 'asc' ? difference : -difference
     }
-    case "bean":
+    case 'bean':
       return compareNullable(
         left.bean?.name ?? null,
         right.bean?.name ?? null,
         direction,
         (a, b) => a.localeCompare(b),
       )
-    case "dose":
+    case 'dose':
       return compareNullable(
         parseNullableFloat(left.doseGrams),
         parseNullableFloat(right.doseGrams),
         direction,
         (a, b) => a - b,
       )
-    case "yield":
+    case 'yield':
       return compareNullable(
         parseNullableFloat(left.yieldGrams),
         parseNullableFloat(right.yieldGrams),
         direction,
         (a, b) => a - b,
       )
-    case "time":
+    case 'time':
       return compareNullable(
         parseNullableFloat(left.shotTimeSeconds),
         parseNullableFloat(right.shotTimeSeconds),
         direction,
         (a, b) => a - b,
       )
-    case "rating":
-      return compareNullable(left.rating, right.rating, direction, (a, b) => a - b)
+    case 'rating':
+      return compareNullable(
+        left.rating,
+        right.rating,
+        direction,
+        (a, b) => a - b,
+      )
   }
 }
 
 function getShotSortDirection(key: SortKey): SortDirection {
-  return key === "date" || key === "rating" ? "desc" : "asc"
+  return key === 'date' || key === 'rating' ? 'desc' : 'asc'
 }
 
-export function ShotsTable({ shots, hideBean }: ShotsTableProps) {
-  const [search, setSearch] = useState("")
+export function ShotsTable({
+  shots,
+  hideBean,
+  serverPagination,
+}: ShotsTableProps) {
+  const [search, setSearch] = useState('')
 
   // Computed once from the complete, unfiltered list so columns never
   // flicker in/out while searching or paginating.
-  const hasRating = useMemo(() => shots.some((shot) => Boolean(shot.rating)), [shots])
+  const hasRating = useMemo(
+    () =>
+      serverPagination !== undefined ||
+      shots.some((shot) => Boolean(shot.rating)),
+    [serverPagination, shots],
+  )
 
-  const showSearch = !hideBean && shots.length > PAGE_SIZE
+  const activeSearch = serverPagination?.query ?? search
+  const showSearch =
+    !hideBean && (serverPagination !== undefined || shots.length > PAGE_SIZE)
 
   const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase()
+    if (serverPagination) return shots
+    const query = activeSearch.trim().toLowerCase()
     if (!query) return shots
     return shots.filter((shot) => shot.bean?.name.toLowerCase().includes(query))
-  }, [shots, search])
+  }, [activeSearch, serverPagination, shots])
 
-  const {
-    currentPage,
-    handleSort,
-    paginated,
-    setPage,
-    showPagination,
-    sortDirection,
-    sorted,
-    sortKey,
-    totalPages,
-  } = useSortablePagination<Shot, SortKey>({
+  const localPagination = useSortablePagination<Shot, SortKey>({
     items: filtered,
-    initialSortKey: "date",
-    initialSortDirection: "desc",
+    initialSortKey: 'date',
+    initialSortDirection: 'desc',
     pageSize: PAGE_SIZE,
     compare: compareShots,
     directionForKey: getShotSortDirection,
   })
-
-  if (shots.length === 0) {
-    return <p className="text-sm text-muted-foreground py-4">No shots recorded yet.</p>
-  }
+  const currentPage = serverPagination?.page ?? localPagination.currentPage
+  const handleSort = serverPagination?.onSort ?? localPagination.handleSort
+  const paginated = serverPagination ? shots : localPagination.paginated
+  const setPage = serverPagination?.onPageChange ?? localPagination.setPage
+  const showPagination = serverPagination
+    ? serverPagination.totalPages > 1
+    : localPagination.showPagination
+  const sortDirection =
+    serverPagination?.sortDirection ?? localPagination.sortDirection
+  const sorted = serverPagination ? shots : localPagination.sorted
+  const sortKey = serverPagination?.sortKey ?? localPagination.sortKey
+  const totalPages = serverPagination?.totalPages ?? localPagination.totalPages
+  const displayedTotal = serverPagination?.totalItems ?? sorted.length
 
   return (
     <div className="space-y-4">
       {showSearch && (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative w-full sm:max-w-xs">
-            <Search
-              className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <Input
-              type="search"
-              value={search}
-              onChange={(event) => {
-                setSearch(event.target.value)
-                setPage(1)
-              }}
-              placeholder="Search by bean name…"
-              aria-label="Search shots by bean name"
-              className="pl-8"
-            />
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {sorted.length} shot{sorted.length === 1 ? "" : "s"}
-          </p>
-        </div>
+        <CollectionToolbar
+          value={activeSearch}
+          onValueChange={(query) => {
+            if (serverPagination) {
+              serverPagination.onQueryChange(query)
+            } else {
+              setSearch(query)
+              setPage(1)
+            }
+          }}
+          placeholder="Search shots…"
+          ariaLabel="Search shots by bean name"
+          resultLabel={`${displayedTotal} ${displayedTotal === 1 ? 'shot' : 'shots'}`}
+        />
       )}
 
       {sorted.length === 0 ? (
-        <p className="py-4 text-sm text-muted-foreground">No shots match “{search}”.</p>
+        <p className="py-4 text-sm text-muted-foreground">
+          {activeSearch
+            ? `No shots match “${activeSearch}”.`
+            : 'No shots recorded yet.'}
+        </p>
       ) : (
         <>
           <ul className="space-y-3 md:hidden" aria-label="Recorded shots">
@@ -222,46 +252,46 @@ export function ShotsTable({ shots, hideBean }: ShotsTableProps) {
                 <TableRow>
                   <SortableTableHead
                     label="Date"
-                    active={sortKey === "date"}
+                    active={sortKey === 'date'}
                     direction={sortDirection}
-                    onSort={() => handleSort("date")}
+                    onSort={() => handleSort('date')}
                   />
                   {!hideBean && (
                     <SortableTableHead
                       label="Bean"
-                      active={sortKey === "bean"}
+                      active={sortKey === 'bean'}
                       direction={sortDirection}
-                      onSort={() => handleSort("bean")}
+                      onSort={() => handleSort('bean')}
                     />
                   )}
                   <SortableTableHead
                     label="Dose"
                     align="right"
-                    active={sortKey === "dose"}
+                    active={sortKey === 'dose'}
                     direction={sortDirection}
-                    onSort={() => handleSort("dose")}
+                    onSort={() => handleSort('dose')}
                   />
                   <SortableTableHead
                     label="Yield"
                     align="right"
-                    active={sortKey === "yield"}
+                    active={sortKey === 'yield'}
                     direction={sortDirection}
-                    onSort={() => handleSort("yield")}
+                    onSort={() => handleSort('yield')}
                   />
                   <SortableTableHead
                     label="Time"
                     align="right"
-                    active={sortKey === "time"}
+                    active={sortKey === 'time'}
                     direction={sortDirection}
-                    onSort={() => handleSort("time")}
+                    onSort={() => handleSort('time')}
                   />
                   {hasRating && (
                     <SortableTableHead
                       label="Rating"
                       align="right"
-                      active={sortKey === "rating"}
+                      active={sortKey === 'rating'}
                       direction={sortDirection}
-                      onSort={() => handleSort("rating")}
+                      onSort={() => handleSort('rating')}
                     />
                   )}
                 </TableRow>
@@ -282,7 +312,11 @@ export function ShotsTable({ shots, hideBean }: ShotsTableProps) {
       )}
 
       {showPagination && (
-        <PaginationControls page={currentPage} totalPages={totalPages} onPageChange={setPage} />
+        <PaginationControls
+          page={currentPage}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
       )}
     </div>
   )
@@ -297,6 +331,8 @@ function MobileShotCard({
   hideBean?: boolean
   hasRating: boolean
 }) {
+  const formatDate = useDateFormatter()
+  const formatNumber = useNumberFormatter()
   const beanThumb = getBeanThumbnail(shot.bean)
   const shotDate = formatDate(shot.createdAt)
 
@@ -306,7 +342,7 @@ function MobileShotCard({
         to="/shots/$shotId"
         params={{ shotId: String(shot.id) }}
         aria-label={`View shot from ${shotDate}`}
-        className="flex items-center gap-3 rounded-xl border bg-card p-4 shadow-coffee transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className={`${interactiveCardLinkClassName} flex items-center gap-3 rounded-xl border bg-card p-4 shadow-coffee hover:bg-accent/40`}
       >
         {!hideBean && beanThumb && (
           <ImageWithFallback
@@ -317,19 +353,28 @@ function MobileShotCard({
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <p className="font-display text-base font-bold text-foreground">{shotDate}</p>
+            <p className="font-display text-base font-bold text-foreground">
+              {shotDate}
+            </p>
             {hasRating && shot.rating ? (
-              <Badge variant="secondary" className="shrink-0">
-                {shot.rating}/5
-              </Badge>
+              <StarRating
+                value={shot.rating}
+                readOnly
+                variant="compact"
+                sizeClassName="size-3.5"
+                className="shrink-0"
+                ariaLabel="Shot rating"
+              />
             ) : null}
           </div>
           {!hideBean && (
             <p className="truncate text-sm text-muted-foreground">
-              {shot.bean?.name ?? "No bean recorded"}
+              {shot.bean?.name ?? 'No bean recorded'}
             </p>
           )}
-          <p className="text-sm text-muted-foreground">{formatShotSummary(shot)}</p>
+          <p className="text-sm text-muted-foreground">
+            {formatShotSummary(shot, formatNumber)}
+          </p>
         </div>
       </Link>
     </li>
@@ -345,39 +390,29 @@ function ShotRow({
   hideBean?: boolean
   hasRating: boolean
 }) {
-  const navigate = useNavigate()
+  const formatDate = useDateFormatter()
+  const formatNumber = useNumberFormatter()
   const beanThumb = getBeanThumbnail(shot.bean)
   const shotDate = formatDate(shot.createdAt)
 
-  const goToShot = () => {
-    navigate({ to: "/shots/$shotId", params: { shotId: String(shot.id) } })
-  }
-
   return (
-    <TableRow
-      tabIndex={0}
-      role="link"
-      aria-label={`View shot from ${shotDate}`}
-      onClick={goToShot}
-      onKeyDown={(event) => {
-        // Ignore keydowns that bubbled up from the nested bean Link so its
-        // own Enter-to-navigate isn't hijacked into navigating to the shot.
-        if (event.target !== event.currentTarget) return
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault()
-          goToShot()
-        }
-      }}
-      className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-    >
-      <TableCell className="font-medium">{shotDate}</TableCell>
+    <TableRow>
+      <TableCell className="font-medium">
+        <Link
+          to="/shots/$shotId"
+          params={{ shotId: String(shot.id) }}
+          className="inline-flex min-h-11 items-center rounded-sm text-link underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:min-h-0"
+          aria-label={`View shot from ${shotDate}`}
+        >
+          {shotDate}
+        </Link>
+      </TableCell>
       {!hideBean && (
         <TableCell>
           {shot.bean ? (
             <Link
               to="/beans/$beanId"
               params={{ beanId: String(shot.bean.id) }}
-              onClick={(event) => event.stopPropagation()}
               className="flex w-fit items-center gap-2 rounded-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {beanThumb && (
@@ -390,22 +425,32 @@ function ShotRow({
               <span>{shot.bean.name}</span>
             </Link>
           ) : (
-            "-"
+            '-'
           )}
         </TableCell>
       )}
       <TableCell className="text-right">
-        {shot.doseGrams ? `${shot.doseGrams}g` : "-"}
+        {shot.doseGrams ? `${formatNumber(shot.doseGrams)} g` : '-'}
       </TableCell>
       <TableCell className="text-right">
-        {shot.yieldGrams ? `${shot.yieldGrams}g` : "-"}
+        {shot.yieldGrams ? `${formatNumber(shot.yieldGrams)} g` : '-'}
       </TableCell>
       <TableCell className="text-right">
-        {shot.shotTimeSeconds ? `${shot.shotTimeSeconds}s` : "-"}
+        {shot.shotTimeSeconds ? `${formatNumber(shot.shotTimeSeconds)} s` : '-'}
       </TableCell>
       {hasRating && (
         <TableCell className="text-right">
-          {shot.rating ? <Badge variant="secondary">{shot.rating}/5</Badge> : "-"}
+          {shot.rating ? (
+            <StarRating
+              value={shot.rating}
+              readOnly
+              variant="compact"
+              sizeClassName="size-3.5"
+              ariaLabel="Shot rating"
+            />
+          ) : (
+            '-'
+          )}
         </TableCell>
       )}
     </TableRow>

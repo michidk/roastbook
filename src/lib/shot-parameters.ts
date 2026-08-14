@@ -1,69 +1,72 @@
 export const SHOT_PARAMETER_KEYS = [
-  "machineId",
-  "doseGrams",
-  "brewWaterGrams",
-  "ratioBasis",
-  "grinderId",
-  "grindSetting",
-  "yieldGrams",
-  "shotTimeSeconds",
-  "brewTemperatureCelsius",
-  "preinfusionTimeSeconds",
-  "preinfusionPressureBar",
-  "bloomTimeSeconds",
-  "brewPressureBar",
-  "flowRateMlPerSecond",
-  "basketId",
-  "usesPuckScreen",
-  "paperFilterPosition",
-  "distributionMethod",
-  "tampForceKg",
-  "accessoryGearIds",
+  'machineId',
+  'doseGrams',
+  'brewWaterGrams',
+  'ratioBasis',
+  'grinderId',
+  'grindSetting',
+  'yieldGrams',
+  'shotTimeSeconds',
+  'brewTemperatureCelsius',
+  'preinfusionTimeSeconds',
+  'preinfusionPressureBar',
+  'bloomTimeSeconds',
+  'brewPressureBar',
+  'flowRateMlPerSecond',
+  'basketId',
+  'usesPuckScreen',
+  'paperFilterPosition',
+  'distributionMethod',
+  'tampForceKg',
+  'accessoryGearIds',
 ] as const
 
 export type ShotParameterKey = (typeof SHOT_PARAMETER_KEYS)[number]
 
 export const SHOT_PARAMETER_META = {
-  machineId: { label: "Brewer / machine", group: "Equipment" },
-  doseGrams: { label: "Dose", group: "Extraction" },
-  brewWaterGrams: { label: "Brew water", group: "Extraction" },
-  ratioBasis: { label: "Ratio basis", group: "Extraction" },
-  grinderId: { label: "Grinder", group: "Equipment" },
-  grindSetting: { label: "Grind setting", group: "Extraction" },
-  yieldGrams: { label: "Yield", group: "Extraction" },
-  shotTimeSeconds: { label: "Brew time", group: "Extraction" },
-  brewTemperatureCelsius: { label: "Brew temperature", group: "Extraction" },
-  preinfusionTimeSeconds: { label: "Pre-infusion time", group: "Preparation" },
-  preinfusionPressureBar: { label: "Pre-infusion pressure", group: "Preparation" },
-  bloomTimeSeconds: { label: "Bloom time", group: "Preparation" },
-  brewPressureBar: { label: "Brew pressure", group: "Extraction" },
-  flowRateMlPerSecond: { label: "Flow rate", group: "Extraction" },
-  basketId: { label: "Basket", group: "Equipment" },
-  usesPuckScreen: { label: "Puck screen", group: "Preparation" },
-  paperFilterPosition: { label: "Paper filter", group: "Preparation" },
-  distributionMethod: { label: "Distribution method", group: "Preparation" },
-  tampForceKg: { label: "Tamp force", group: "Preparation" },
-  accessoryGearIds: { label: "Other equipment", group: "Equipment" },
+  machineId: { label: 'Brewer / machine', group: 'Equipment' },
+  doseGrams: { label: 'Dose', group: 'Extraction' },
+  brewWaterGrams: { label: 'Brew water', group: 'Extraction' },
+  ratioBasis: { label: 'Ratio basis', group: 'Extraction' },
+  grinderId: { label: 'Grinder', group: 'Equipment' },
+  grindSetting: { label: 'Grind setting', group: 'Extraction' },
+  yieldGrams: { label: 'Yield', group: 'Extraction' },
+  shotTimeSeconds: { label: 'Brew time', group: 'Extraction' },
+  brewTemperatureCelsius: { label: 'Brew temperature', group: 'Extraction' },
+  preinfusionTimeSeconds: { label: 'Pre-infusion time', group: 'Preparation' },
+  preinfusionPressureBar: {
+    label: 'Pre-infusion pressure',
+    group: 'Preparation',
+  },
+  bloomTimeSeconds: { label: 'Bloom time', group: 'Preparation' },
+  brewPressureBar: { label: 'Brew pressure', group: 'Extraction' },
+  flowRateMlPerSecond: { label: 'Flow rate', group: 'Extraction' },
+  basketId: { label: 'Basket', group: 'Equipment' },
+  usesPuckScreen: { label: 'Puck screen', group: 'Preparation' },
+  paperFilterPosition: { label: 'Paper filter', group: 'Preparation' },
+  distributionMethod: { label: 'Distribution method', group: 'Preparation' },
+  tampForceKg: { label: 'Tamp force', group: 'Preparation' },
+  accessoryGearIds: { label: 'Other equipment', group: 'Equipment' },
 } as const satisfies Record<
   ShotParameterKey,
   { readonly label: string; readonly group: string }
 >
 
 export const RATIO_BASIS_OPTIONS = [
-  { value: "target_yield", label: "Yield" },
-  { value: "brew_water", label: "Brew water" },
+  { value: 'target_yield', label: 'Yield' },
+  { value: 'brew_water', label: 'Brew water' },
 ] as const
 
-export type RatioBasis = (typeof RATIO_BASIS_OPTIONS)[number]["value"]
+export type RatioBasis = (typeof RATIO_BASIS_OPTIONS)[number]['value']
 
 export const PAPER_FILTER_OPTIONS = [
-  { value: "none", label: "None" },
-  { value: "top", label: "Top" },
-  { value: "bottom", label: "Bottom" },
-  { value: "both", label: "Top and bottom" },
+  { value: 'none', label: 'None' },
+  { value: 'top', label: 'Top' },
+  { value: 'bottom', label: 'Bottom' },
+  { value: 'both', label: 'Top and bottom' },
 ] as const
 
-export type PaperFilterPosition = (typeof PAPER_FILTER_OPTIONS)[number]["value"]
+export type PaperFilterPosition = (typeof PAPER_FILTER_OPTIONS)[number]['value']
 
 export type ShotParameterValues = {
   readonly brewingMethodId: number
@@ -93,12 +96,15 @@ export type ShotParameterValues = {
 type SelectParameterValues = Pick<ShotParameterValues, ShotParameterKey>
 
 export type ShotParameterInput = Partial<
-  Omit<SelectParameterValues, "ratioBasis" | "paperFilterPosition">
+  Omit<SelectParameterValues, 'ratioBasis' | 'paperFilterPosition'>
 > & {
   readonly ratioBasis?: string | null
   readonly paperFilterPosition?: string | null
 }
 
 export function isShotParameterKey(value: unknown): value is ShotParameterKey {
-  return typeof value === "string" && SHOT_PARAMETER_KEYS.some((key) => key === value)
+  return (
+    typeof value === 'string' &&
+    SHOT_PARAMETER_KEYS.some((key) => key === value)
+  )
 }

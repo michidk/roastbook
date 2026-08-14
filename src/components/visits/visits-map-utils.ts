@@ -1,4 +1,4 @@
-import { parseCoordinate } from "@/components/coffee-shops/coffee-shop-map-utils"
+import { parseCoordinate } from '@/components/coffee-shops/coffee-shop-map-utils'
 
 export type SavedPlaceInput = {
   readonly id: number
@@ -11,6 +11,7 @@ export type SavedPlaceInput = {
   readonly website: string | null
   readonly rating: number | null
   readonly isFavorite: boolean
+  readonly visitCount?: number
 }
 
 export type PlaceVisitInput = {
@@ -35,7 +36,7 @@ export type SavedMapPlace = MapPlaceBase & {
   readonly visitCount: number
 }
 
-export type MapMarkerVariant = "favorite" | "saved"
+export type MapMarkerVariant = 'favorite' | 'saved'
 
 export function toSavedMapPlaces(
   coffeeShops: readonly SavedPlaceInput[],
@@ -51,8 +52,8 @@ export function toSavedMapPlaces(
   }
 
   return coffeeShops.flatMap((coffeeShop) => {
-    const latitude = parseCoordinate(coffeeShop.latitude, "latitude")
-    const longitude = parseCoordinate(coffeeShop.longitude, "longitude")
+    const latitude = parseCoordinate(coffeeShop.latitude, 'latitude')
+    const longitude = parseCoordinate(coffeeShop.longitude, 'longitude')
     if (latitude === null || longitude === null) return []
 
     return [
@@ -68,12 +69,13 @@ export function toSavedMapPlaces(
         website: coffeeShop.website,
         rating: coffeeShop.rating,
         isFavorite: coffeeShop.isFavorite,
-        visitCount: visitsByCoffeeShop.get(coffeeShop.id) ?? 0,
+        visitCount:
+          coffeeShop.visitCount ?? visitsByCoffeeShop.get(coffeeShop.id) ?? 0,
       },
     ]
   })
 }
 
 export function getMapMarkerVariant(place: SavedMapPlace): MapMarkerVariant {
-  return place.isFavorite ? "favorite" : "saved"
+  return place.isFavorite ? 'favorite' : 'saved'
 }

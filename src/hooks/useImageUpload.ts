@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react"
-import { downloadRemoteImage } from "@/lib/server/remote-image"
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { downloadRemoteImage } from '@/lib/server/remote-image'
+
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024
 
 export interface ImageFile {
   readonly file: File
@@ -10,20 +12,21 @@ export interface ImageFile {
 class ImageUploadError extends Error {
   constructor(message: string) {
     super(message)
-    this.name = "ImageUploadError"
+    this.name = 'ImageUploadError'
   }
 }
 
 function readFileAsBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.onerror = () => reject(new ImageUploadError(`Could not read ${file.name}`))
+    reader.onerror = () =>
+      reject(new ImageUploadError(`Could not read ${file.name}`))
     reader.onload = () => {
-      if (typeof reader.result !== "string") {
+      if (typeof reader.result !== 'string') {
         reject(new ImageUploadError(`Could not read ${file.name}`))
         return
       }
-      const separator = reader.result.indexOf(",")
+      const separator = reader.result.indexOf(',')
       if (separator === -1) {
         reject(new ImageUploadError(`Could not read ${file.name}`))
         return
@@ -34,7 +37,11 @@ function readFileAsBase64(file: File): Promise<string> {
   })
 }
 
-function decodeBase64File(base64: string, filename: string, mimeType: string): File {
+function decodeBase64File(
+  base64: string,
+  filename: string,
+  mimeType: string,
+): File {
   const binary = atob(base64)
   const bytes = new Uint8Array(binary.length)
   for (let index = 0; index < binary.length; index += 1) {
@@ -60,20 +67,32 @@ export function useImageUpload() {
   )
 
   const addFiles = useCallback(async (files: readonly File[]) => {
-    const imageFiles = files.filter((file) => file.type.startsWith("image/"))
+    const imageFiles = files.filter((file) => file.type.startsWith('image/'))
     if (imageFiles.length === 0) {
-      throw new ImageUploadError("Choose or paste a supported image file")
+      throw new ImageUploadError('Choose or paste a supported image file')
+    }
+
+    const oversizedImage = imageFiles.find(
+      (file) => file.size > MAX_IMAGE_BYTES,
+    )
+    if (oversizedImage) {
+      throw new ImageUploadError(
+        `${oversizedImage.name} must be smaller than 10 MB`,
+      )
     }
 
     const newImages = await Promise.all(
-      imageFiles.map(async (file) => ({
-        file,
-        preview: URL.createObjectURL(file),
-        base64: await readFileAsBase64(file),
-      })),
+      imageFiles.map(async (file) => {
+        const base64 = await readFileAsBase64(file)
+        return {
+          file,
+          preview: URL.createObjectURL(file),
+          base64,
+        }
+      }),
     )
     setImages((current) => [...current, ...newImages])
-    if (fileInputRef.current) fileInputRef.current.value = ""
+    if (fileInputRef.current) fileInputRef.current.value = ''
     return newImages
   }, [])
 
@@ -92,18 +111,22 @@ export function useImageUpload() {
 
   const pasteFromClipboard = useCallback(async () => {
     if (!navigator.clipboard?.read) {
-      throw new ImageUploadError("Clipboard pictures are not supported by this browser")
+      throw new ImageUploadError(
+        'Clipboard pictures are not supported by this browser',
+      )
     }
 
     const clipboardItems = await navigator.clipboard.read()
     const files: File[] = []
     for (const item of clipboardItems) {
-      const imageType = item.types.find((type) => type.startsWith("image/"))
+      const imageType = item.types.find((type) => type.startsWith('image/'))
       if (!imageType) continue
       const blob = await item.getType(imageType)
-      files.push(new File([blob], `clipboard-${Date.now()}.${imageType.split("/")[1]}`, {
-        type: imageType,
-      }))
+      files.push(
+        new File([blob], `clipboard-${Date.now()}.${imageType.split('/')[1]}`, {
+          type: imageType,
+        }),
+      )
     }
     return addFiles(files)
   }, [addFiles])

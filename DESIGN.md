@@ -1,186 +1,377 @@
-# Roastbook Design System
+# Roastbook design system
 
-## 1. Atmosphere & Identity
+## Atmosphere and identity
 
-Roastbook should feel like a calm, tactile coffee journal: warm paper beneath crisp white cards, dark roasted-coffee ink, and amber actions. Its signature is the contrast between quiet cream surfaces and compact, confident brewing data. Reliability is part of the visual identity: media, charts, and maps must always resolve to useful content or an intentional state, never a browser-broken placeholder.
+Roastbook is a calm, tactile coffee journal. It combines warm paper, crisp
+white cards, dark coffee ink, and amber actions. Brewing data should feel
+compact and confident.
 
-## 2. Color
+Reliability is part of the visual identity. Media, charts, and maps must show
+useful content or an intentional state, never a browser-broken placeholder.
 
-### Palette
+## Color
 
-| Role | Token | Light | Dark | Usage |
-|---|---|---|---|---|
-| Page | `--background` | `#f6eddf` | `#1f1a14` | App background |
-| Ink | `--foreground` | `#3a2a1e` | `#f6eddf` | Primary text |
-| Card | `--card` | `#ffffff` | `#2a2219` | Elevated surfaces |
-| Secondary | `--secondary` | `#fbf5eb` | `#36281c` | Rows and quiet controls |
-| Muted text | `--muted-foreground` | `#7a6a58` | `#b8a78f` | Metadata and hints |
-| Primary action | `--primary` | `#d2873e` | `#d2873e` | Calls to action and focus |
-| Coffee surface | `--coffee` | `#6f4e37` | `#b07a45` | Hero metrics and coffee identity |
-| Border | `--border` | `#ead9bf` | `#3c2e20` | Input and structural boundaries |
-| Control boundary | `--input` | `#9f7548` | `#9f7548` | Form-control outlines with at least 3:1 adjacent contrast |
-| Destructive | `--destructive` | `#c0573a` | `#c0573a` | Irreversible actions and errors |
-| Positive | `--positive` | `#6b8a3d` | `#8aa850` | Success and healthy status |
+Use these semantic tokens:
 
-### Typography rules
+- Page: `--background`, light `#f6eddf`, dark `#1f1a14`.
+- Ink: `--foreground`, light `#3a2a1e`, dark `#f6eddf`.
+- Card: `--card`, light `#ffffff`, dark `#2a2219`.
+- Secondary: `--secondary`, light `#fbf5eb`, dark `#36281c`.
+- Muted text: `--muted-foreground`, light `#7a6a58`, dark `#b8a78f`.
+- Primary action: `--primary`, `#d2873e` in both themes.
+- Link and emphasized text: `--link`, light `#8a5a30`, dark `#e0a565`.
+- Coffee surface: `--coffee`, light `#6f4e37`, dark `#b07a45`.
+- Border: `--border`, light `#ead9bf`, dark `#3c2e20`.
+- Control boundary: `--input`, `#9f7548` in both themes.
+- Destructive: `--destructive`, `#c0573a` in both themes.
+- Destructive text: `--destructive-text`, light `#9d3b26`, dark `#ef947c`.
+- Positive: `--positive`, light `#6b8a3d`, dark `#8aa850`.
+- Positive text: `--positive-text`, light `#4c681f`, dark `#b7d47a`.
+- Favorite: `--favorite`, light `#8b3f60`, dark `#e3a0bd`.
 
-- Use semantic CSS variables from `src/styles.css`; add new roles there before use.
-- Amber identifies interaction and current state, not decoration.
-- Media/error placeholders use existing muted, border, and destructive tokens.
-- Roast gradients, badges, taste states, and chart marks derive from semantic coffee, accent, positive, destructive, and chart tokens.
-- Body text must meet WCAG 2.2 AA contrast on its actual surface.
+Add new semantic roles to `src/styles.css` before using them. Amber identifies
+interaction and current state, not decoration. Roast gradients, badges, taste
+states, and charts derive from semantic tokens.
 
-## 3. Typography
+Body text must meet WCAG 2.2 AA contrast on its actual surface. Form-control
+outlines must have at least 3:1 contrast with adjacent colors.
 
-### Font stack
+Use fill tokens for filled controls and surfaces, and the corresponding text
+token for text or icons on cream, white, or muted surfaces. Favorites are a
+preference state, never a destructive state.
+
+## Typography
 
 - Display: `Bricolage Grotesque`, sans-serif.
 - Body: `Hanken Grotesk`, sans-serif.
-- Data: body or display face with tabular numerals enabled where values align.
+- Data: either face with tabular numerals when values align.
 
-### Scale
+Use this scale:
 
-| Level | Size | Weight | Usage |
-|---|---:|---:|---|
-| Page title | `2.25rem` mobile / `3rem` desktop | 800 | Route headings |
-| Section title | `1.125rem` | 700 | Cards and major groups |
-| Body | `1rem` | 400–600 | Controls and content |
-| Small | `0.875rem` | 400–600 | Metadata and descriptions |
-| Navigation caption | `0.625rem` | 600 | Mobile bottom navigation only |
+- Page title: `2.25rem` on mobile and `3rem` on desktop, weight 800.
+- Section title: `1.125rem`, weight 700.
+- Body: `1rem`, weight 400 to 600.
+- Small text: `0.875rem`, weight 400 to 600.
+- Mobile navigation caption: `0.625rem`, weight 600.
 
-### Rules
+Display text uses `font-display` and tight tracking. Body content never drops
+below 14px. Nonessential metadata, attribution, helper text, and control labels
+may use 12px to 13px when they remain legible.
 
-- Display text uses `font-display` and tight tracking.
-- Data columns use tabular numerals.
-- Body content never drops below 14px. Compact tertiary metadata, map attribution, helper/status copy, and labels inside controls may use 12–13px when they remain legible and nonessential; mobile navigation captions and the uppercase status inside the oversized timer may use 10px because each is reinforced by a larger visual affordance.
+Use sentence case for page titles, section titles, field labels, actions, and
+status copy. Use the single-character ellipsis (`…`) for truncated or ongoing
+copy.
 
-## 4. Spacing & Layout
+Mobile navigation captions and the timer status may use 10px because a larger
+visual affordance reinforces each one.
+
+## Spacing and layout
 
 - Base unit: 4px.
-- Content maximum: `80rem` (`max-w-7xl`).
-- Page gutter: 16px mobile, 32px from the `md` breakpoint.
-- Route rhythm: 24px mobile, 32px desktop.
-- Cards: 20px default internal spacing and `1rem` base radius with larger route-card radii.
-- Breakpoints follow Tailwind defaults: `sm` 640, `md` 768, `lg` 1024, `xl` 1280.
-- Fixed mobile navigation requires enough bottom clearance for the full navigation height plus safe-area inset.
-- Dense tables may scroll horizontally but must have a mobile-specific readable representation when they are a primary route.
+- Content maximum: `80rem` or `max-w-7xl`.
+- Page gutter: 16px on mobile and 32px from `md`.
+- Route rhythm: 24px on mobile and 32px on desktop.
+- Cards: 20px default internal spacing and a `1rem` base radius.
+- Breakpoints: `sm` 640, `md` 768, `lg` 1024, and `xl` 1280.
+- Mobile pages account for navigation height and the safe-area inset.
 
-## 5. Components
+Dense tables may scroll horizontally, but primary routes also need a readable
+mobile representation.
 
-### Card
-- **Structure**: semantic content grouped in the shared shadcn Card primitives.
-- **States**: default, interactive hover/focus, loading, empty, and error.
-- **Accessibility**: cards are not interactive by themselves; navigable cards use a real Link.
-- **Depth**: coffee-tinted soft shadow with tonal background separation.
+## Components
+
+### Cards
+
+Group semantic content with shared shadcn Card primitives. Cards support
+default, hover or focus, loading, empty, and error states. A card is not
+interactive by itself; a navigable card uses a real link.
+
+Use tonal separation and the coffee-tinted soft shadow for depth.
+
+Navigable cards use `interactiveCardLinkClassName`, which owns hover motion,
+reduced-motion behavior, and the shared offset focus ring. Do not simulate a
+link with `role="link"` and click handlers. Card titles render as `h2` by
+default; override the heading level only when the surrounding hierarchy needs
+it.
+
+### Actions and semantic states
+
+The default button is the amber primary action. Each page, form, or dialog has
+one visually dominant action; supporting actions use outline, secondary, or
+ghost variants. Destructive styling is reserved for deletion or irreversible
+work. Favorite controls and badges use the favorite token.
+
+### Collection toolbar
+
+Searchable collections use `CollectionToolbar`: a labeled search control,
+result count, and optional adjacent view/filter actions. It stacks at narrow
+widths and becomes a single aligned row from `sm`. Keep the toolbar visible
+while a search has no results so the query can be cleared.
+
+### Metrics and ratings
+
+Summary metrics use `MetricCard`. Use the hero variant for at most one focal
+metric, default for peers, and quiet for metrics nested inside another card.
+Avoid route-local stat-card variants.
+
+Use `StarRating` for every rating. Editable ratings and prominent record
+details show the full star treatment; dense read-only contexts show the compact
+star plus `value/max`. Do not invent route-local `4/5`, `4★`, or badge-only
+variants.
 
 ### Editorial bean card
-- **Reference**: the supplied bean-grid screenshot is the visual contract: three full-bleed photographic cards with dark image grading, a compact roast badge at upper left, a circular northeast arrow at upper right, and all copy anchored near the lower edge.
-- **Structure**: one shared Card contains a full-surface image, a restrained dark scrim, a top control row, then bottom-aligned roaster, two-line bean name, origin/process line, divider, and two-column roast-date/weight footer.
-- **Material**: cinematic bag photography carries the surface. White typography and translucent white rules sit directly over the darkened image; there is no inset frame, parchment panel, paper grain, inner card, or visible drop shadow.
-- **States**: rich data, sparse data, image fallback, hover, focus, and reduced motion. Missing roaster, roast, origin/process, date, and weight are omitted; the card never invents “not set” or “not added” values.
-- **Accessibility**: the whole card remains a named Link, the image stays decorative, the scrim maintains readable contrast independent of photo brightness, and the arrow remains decorative instead of becoming a nested control.
-- **Layout**: active cards retain the tall reference geometry. Archived cards use a visibly denser 320px mobile/tablet and 304px desktop height while keeping the same one/two/three-column anatomy; long names clamp to two lines.
+
+The supplied bean-grid screenshot is the visual contract. Use three full-bleed
+photo cards with dark grading, a compact roast badge at the upper left, a
+circular northeast arrow at the upper right, and bottom-aligned copy.
+
+One shared Card contains the image, a restrained scrim, a top control row,
+roaster, a two-line bean name, origin and process, a divider, and a two-column
+roast-date and weight footer.
+
+White type and translucent rules sit over the darkened photo. Do not add an
+inset frame, parchment panel, paper grain, inner card, or visible drop shadow.
+
+Omit missing values instead of inventing placeholder copy. The whole card is a
+named link, its image is decorative, and its scrim preserves contrast. The
+arrow remains decorative rather than becoming a nested control.
+
+Active cards retain the tall reference geometry. Archived cards use a 320px
+height on mobile and tablet and 304px on desktop. Long names clamp to two lines.
 
 ### Image with fallback
-- **Structure**: fixed-aspect media wrapper, image, and token-driven fallback.
-- **Variants**: thumbnail and gallery/detail.
-- **States**: loading, loaded, unavailable; no native broken-image glyph.
-- **Accessibility**: meaningful media has useful alt text; decorative thumbnails use empty alt text.
-- **Layout**: preserves dimensions through every state to prevent layout shift.
+
+Use a fixed-aspect wrapper, image, and token-driven fallback. Support thumbnail
+and gallery variants plus loading, loaded, and unavailable states. Never show
+the native broken-image glyph.
+
+Meaningful media has useful alternative text. Decorative thumbnails have empty
+alternative text. Preserve dimensions in every state to prevent layout shift.
 
 ### Data visualization
-- **Structure**: title, optional description/legend, fixed responsive plot area.
-- **States**: loading, rendered data, no data, and unavailable/error.
-- **Accessibility**: visible summary or text equivalent accompanies charts and maps.
-- **Layout**: plot containers always have an explicit height and width.
+
+Provide a title, optional description or legend, and fixed responsive plot
+area. Support loading, rendered, no-data, and unavailable states. A visible
+summary or text equivalent accompanies every chart and map.
 
 ### Saved café map
-- **Structure**: quiet MapLibre surface on `/visits` using a label-free light basemap, 44px targets for coffee shops already saved in Roastbook, restrained zoom controls, a React-rendered place inspector, and concise OpenStreetMap/CARTO attribution. `/places` remains the focused list for managing saved places.
-- **Variants**: saved places use a compact filled dot; favorites use a slightly larger double-ring dot. Marker meaning is carried by shape, size, state, and accessible naming without decorative cup or heart glyphs.
-- **States**: loading, ready, selected place, no saved places with usable coordinates, unavailable, and prominent favorite treatment in Quick Picks.
-- **Accessibility**: every visible marker is a named button, arrow-key navigation follows markers inside the current viewport, selection is mirrored in the focus-managed inspector, and every primary action retains a 44px target.
-- **Interaction**: marker selection uses the standard 200ms state transition and a short camera ease; reduced motion makes camera changes immediate. The inspector appears through opacity and transform only.
-- **Layout**: the map owns a fixed responsive height; the inspector follows the map in normal flow below `lg` and becomes a compact lower-left map overlay at `lg` and above. On `/visits`, the map and Quick Picks stack below `lg`, where Quick Picks remain full-width and use normal page scrolling; from `lg`, they share a four-column grid with the map spanning three columns and Quick Picks occupying a scrollable right rail. Favorite Quick Picks use a stronger heart-led treatment and inset ring so the state does not depend on a small inline glyph. The intentional empty state replaces the map when no saved place has usable coordinates. Basemap labels, POI icons, and unrelated visual noise stay absent so saved cafés remain the only emphasized locations.
+
+The `/visits` route uses a quiet MapLibre surface with a label-free light
+basemap. It shows only saved cafés, restrained zoom controls, a React-rendered
+café inspector, and concise OpenStreetMap/CARTO attribution. The `/places`
+route remains the focused café-management list.
+
+Saved cafés use a compact filled dot. Favorites use a larger double-ring dot.
+Shape, size, state, and accessible naming carry meaning without decorative cup
+or heart glyphs.
+
+Support loading, ready, selected, empty, and unavailable states. Every visible
+marker is a named button. Arrow keys move through markers in the viewport, and
+selection moves focus to the inspector. Primary actions retain 44px targets.
+
+Marker selection uses the standard 200ms transition and a short camera ease.
+Reduced motion makes camera changes immediate. Animate the inspector with only
+opacity and transform.
+
+The map has a fixed responsive height. Below `lg`, the inspector and Quick
+Picks follow it in normal flow. From `lg`, the map spans three columns and
+Quick Picks occupies a scrollable rail. When no saved café has coordinates,
+replace the map with an intentional empty state.
 
 ### Form field
-- **Structure**: persistent label, native/shadcn control, optional helper or error.
-- **States**: default, focus, disabled, invalid, loading where relevant, a non-interactive setup hint when no options exist, and an automatically selected sole option when the form opts into setup defaults.
-- **Accessibility**: deterministic server/client markup, label association, visible focus, and no hidden caret.
+
+Use a persistent label, native or shadcn control, and optional helper or error.
+Support default, focus, disabled, invalid, and relevant loading states.
+
+When a picker has no options, show a noninteractive setup hint. A form may
+automatically select its sole option when setup defaults are enabled.
+
+Markup must be deterministic across server and client renders. Associate every
+label, keep focus visible, and never hide the caret.
+
+### Number input
+
+Place localized decimal text between explicit decrement and increment buttons;
+do not use native browser spinner controls. The application number-format
+setting controls decimal and thousands separators in inputs and displayed
+measurements, while form state and server payloads remain canonical dot-decimal
+strings.
+
+Buttons and Arrow Up/Down use a practical field-specific increment without
+restricting the precision of manually entered values. Accept pasted
+decimal-point and decimal-comma values. Expose spinbutton value semantics and
+bounds on the text control, give the attached buttons accessible increment
+descriptions, and retain coarse-pointer targets.
+
+Coordinates use the same localized parsing but remain plain decimal text fields
+without stepper controls. Regional settings also define a consistent numeric
+calendar-date layout for every displayed date; native date-control values remain
+ISO-formatted for browser compatibility.
 
 ### Form suggestions
-- **Structure**: a persistent Suggestions label followed by wrapping compact buttons above the related picker.
-- **States**: unselected, hover/focus, and selected using the primary action tokens.
-- **Accessibility**: suggestion buttons retain a 44px mobile target and update the same labeled picker as manual selection.
-- **Layout**: suggestions wrap naturally without horizontal overflow; selected entity previews reuse their route card and responsive grid geometry.
+
+Place a persistent Suggestions label and wrapping compact buttons above the
+related picker. Use primary tokens for the selected state. Buttons retain 44px
+mobile targets and update the same labeled picker as manual selection.
 
 ### Brewing methods and recipes
-- **Structure**: The More navigation opens a dedicated Brewing methods page. Each method has a name, description, and grouped toggle matrix defining its shot fields. Recipes are reusable value snapshots that belong to exactly one method.
-- **States**: seeded method, custom method, editing, saving, referenced deletion blocked, empty parameter set, recipe loaded, and last bean shot loaded.
-- **Accessibility**: every parameter toggle exposes pressed state, method and recipe selectors remain persistently labeled, status feedback is announced, and actions retain a 44px mobile target.
-- **Layout**: method editors stack vertically; parameter controls use one column at 375px and two columns from `sm`; shot parameter grids never require horizontal scrolling.
+
+The More menu links to a Brewing methods page. Each method has a name,
+description, and grouped toggle matrix for its shot fields. A recipe is a
+reusable value snapshot belonging to exactly one method.
+
+Cover seeded, custom, editing, saving, blocked deletion, empty parameters,
+loaded recipe, and loaded history states. Toggles expose pressed state,
+selectors stay labeled, feedback is announced, and actions retain 44px targets.
+
+Method editors stack vertically. Parameter controls use one column at 375px
+and two from `sm`. Shot fields never require horizontal scrolling.
 
 ### Conditional equipment details
-- **Structure**: generic equipment identity followed by a machine-settings section for espresso machines or basket-details section for baskets.
-- **States**: subtype absent, partially populated, fully populated, invalid value, and pending type-change confirmation when populated subtype values would be discarded.
-- **Accessibility**: capability/default labels remain explicit, nullable booleans offer an Unknown option, and units are part of visible labels.
+
+Show generic identity before machine settings for espresso machines or basket
+details for baskets. Support absent, partial, complete, and invalid subtype
+data. Confirm a type change before discarding populated subtype values.
+
+Capability and default labels remain explicit. Nullable booleans provide an
+Unknown option, and visible labels include units.
 
 ### Configurable shot measurements
-- **Structure**: every brew setup value belongs to the shot. The selected brewing method decides which inputs render and which values persist; recipes and bean history only copy values into that same shot state.
-- **States**: blank shot, method changed, recipe loaded, last bean shot loaded, timer available, timer omitted, invalid measurement, and saving.
-- **Accessibility**: conditional fields remain in document order, timer changes are announced through its existing timer role when enabled, and equipment selectors are separately labeled.
-- **Timer**: when shot time is enabled, the timer uses the established circular 30-second progress ring with an inner status disc; disabling shot time removes the complete timer surface.
+
+Every brew setup value belongs to the shot. The brewing method determines which
+fields render and persist. Recipes and bean history copy values into that same
+shot state.
+
+Conditional fields remain in document order. Equipment selectors have separate
+labels. When enabled, the timer announces changes through its timer role and
+uses the circular 30-second progress ring. Disabling shot time removes it.
 
 ### Picture uploader
-- **Structure**: preview grid, mobile-safe file picker, dashed drop target, explicit clipboard action, URL input, and contextual helper/status copy.
-- **States**: empty, drag-active, queued previews, URL downloading, clipboard unavailable, invalid file, and ready.
-- **Accessibility**: every action is keyboard reachable, the drop target opens the native picker, status changes are announced, and coarse-pointer controls retain a 44px minimum target.
-- **Interaction**: dropping, selecting, pasting, and URL import all feed the same preview queue; color and border transitions use the standard motion token without decorative animation.
+
+Provide a preview grid, mobile-safe file picker, dashed drop target, clipboard
+action, URL input, and contextual status. Support empty, drag-active, queued,
+downloading, unavailable, invalid, and ready states.
+
+Every action is keyboard reachable. The drop target opens the native picker,
+status changes are announced, and coarse-pointer controls are at least 44px.
+All input methods feed the same preview queue.
 
 ### Mobile bottom navigation
-- **Structure**: three primary destinations, a centered create action, and a More menu for secondary destinations.
-- **States**: default, active, focus, menu open.
-- **Accessibility**: full-width touch zones, visible labels, 44px minimum actionable region.
-- **Layout**: fixed to the viewport; development tooling must never overlap or intercept it.
+
+Show three primary destinations, a centered create action, and a More menu.
+Use full-width touch zones, visible labels, and at least 44px action regions.
+Development tooling must never overlap or intercept the fixed navigation.
 
 ### Navigation overflow menu
-- **Structure**: a labeled More trigger and a compact list of icon-led links to Roasters, Gear, Brewing methods, Recipes, Stats, and Settings on desktop and mobile.
-- **States**: default, hover, focus, open, and active when the current route is inside the menu.
-- **Accessibility**: uses the shared dropdown primitive, exposes the active destination through the trigger, and preserves 44px mobile menu targets.
+
+The named More trigger opens icon-led links to Roasters, Gear, Brewing methods,
+Recipes, Stats, and Settings. Use the shared dropdown primitive, expose whether
+the current route is inside the menu, and retain 44px mobile targets.
 
 ### Responsive record list
-- **Structure**: compact cards on mobile and a shared data table from the `md` breakpoint upward.
-- **States**: populated and empty, with the same values and navigation available in both representations.
-- **Accessibility**: primary row actions and important related links remain explicit 44px touch targets.
-- **Layout**: primary data never requires two-dimensional scrolling below the `md` breakpoint.
 
-## 6. Motion & Interaction
+Use compact cards on mobile and a shared data table from `md`. Both versions
+show the same values and navigation. Primary actions and related links remain
+explicit 44px targets. Primary mobile data never needs two-axis scrolling.
 
-- Micro interaction: 100–150ms ease-out for press/focus feedback.
-- Standard transition: 200ms ease-in-out for dropdowns and state changes.
-- Motion geometry uses only transform and opacity. Brief color, background, border, and shadow transitions are allowed for real hover, focus, selection, and open-state feedback; layout and size do not animate.
-- Hover and focus communicate real interactivity; decorative motion is excluded.
-- Respect `prefers-reduced-motion` for non-essential motion.
+### Content vocabulary and formatting
 
-## 7. Depth & Surface
+- The user-facing entity name is “café” (plural “cafés”). Internal route,
+  database, and API identifiers may retain `place`, `shop`, or `coffeeShop`.
+- Display measurements with a space between value and unit: `18 g`, `28 s`,
+  `2 ml/s`. Keep compact unit symbols lowercase unless the unit requires case.
+- Display dates with `useDateFormatter` or `useDateTimeFormatter` so the saved
+  application date format is used consistently; include time for event details.
+- Use the configured number formatter for visible numeric values.
 
-Roastbook uses a mixed strategy: cream/card tonal shifts for hierarchy, coffee-tinted soft shadows for elevation, and borders for controls or structural separation. Errors and empty states remain integrated within the same card geometry instead of introducing unrelated alert styling.
+## Motion and interaction
+
+- Press and focus feedback uses a 100ms to 150ms ease-out.
+- Dropdowns and state changes use a 200ms ease-in-out.
+- Motion geometry uses only transform and opacity.
+- Color, border, background, and shadow may transition for real state feedback.
+- Layout and size do not animate.
+- Hover and focus indicate real interaction, not decoration.
+- Respect `prefers-reduced-motion` for nonessential motion.
+
+## Depth and surface
+
+Use cream and card tones for hierarchy, coffee-tinted shadows for elevation,
+and borders for controls or structural separation. Errors and empty states stay
+inside the same card geometry.
 
 - `--coffee-shadow` is the standard card elevation.
-- `--coffee-shadow-inline` gives attached trailing actions a coffee-tinted shadow toward their input content.
-- `--coffee-shadow-strong` is reserved for coffee-colored focal surfaces.
+- `--coffee-shadow-inline` shades trailing actions toward their input.
+- `--coffee-shadow-strong` is for coffee-colored focal surfaces.
 
-## 8. Accessibility Constraints & Accepted Debt
+## Accessibility constraints
 
-### Constraints
+- Target WCAG 2.2 AA: 4.5:1 body text and 3:1 large text and controls.
+- Make every interactive element keyboard reachable with visible focus.
+- Preserve navigation at widths of 375px, 768px, and 1280px.
+- Give controls at least a 44px target on coarse-pointer layouts.
+- Degrade broken external resources to intentional, labeled states.
 
-- Target WCAG 2.2 AA: 4.5:1 body text, 3:1 large text and graphical controls.
-- Full keyboard reachability and visible focus on every interactive element.
-- All fixed overlays must preserve access to product navigation at 375px, 768px, and 1280px widths.
-- Interactive controls provide at least a 44px target on coarse-pointer/mobile layouts.
-- Broken external/media resources must degrade to intentional, labeled states.
+## Shared layout primitives
 
-### Accepted debt
+### Page frame
 
-| Item | Location | Why accepted | Owner / Exit |
-|---|---|---|---|
-| The current muted foreground is borderline on the cream page surface. | `src/styles.css` | Existing visual identity; recorded by the audit but outside the P0 reliability batch. | Address in P2 contrast pass. |
+The shell owns viewport padding and the global `max-w-7xl` boundary. Routes
+start with `Page` from `src/components/page-layout.tsx` and do not add another
+set of horizontal page padding.
+
+`Page` provides route rhythm and four content widths:
+
+- `full`: dashboards, lists, maps, tables, and multi-column forms.
+- `wide`: rich records and settings, bounded by `max-w-5xl`.
+- `content`: reading or medium-density content, bounded by `max-w-3xl`.
+- `form`: forms and compact details, bounded by `max-w-2xl`.
+
+Choose a width for the content rather than the viewport. Constrained widths are
+centered.
+
+### Page headings and sections
+
+- Use `PageHeader` for headings, descriptions, back controls, and actions.
+- Use the default variant for collection and create pages.
+- Use the compact variant for record details and subordinate screens.
+- A page has one `h1`; section cards begin with `h2`.
+- `FormPageHeader` is the form-oriented wrapper around `PageHeader`.
+- Use `FormSection` for grouped form content and heading association.
+- Keep cancel before save in the DOM.
+- Stacked actions may reverse visually so the primary action appears first.
+- Use `gap-4` for standard grids and `gap-5` for prominent card grids.
+- Keep tables and maps wide; constrain long forms.
+
+### Dialogs
+
+Dialogs use the shared three-region structure:
+
+```tsx
+<DialogContent>
+  <DialogHeader>...</DialogHeader>
+  <DialogBody>...</DialogBody>
+  <DialogFooter>...</DialogFooter>
+</DialogContent>
+```
+
+`DialogContent` owns the viewport boundary, surface, shadow, and layout. The
+header and footer stay visible while the body scrolls. Use `sm:max-w-lg` unless
+the workflow genuinely needs more room.
+
+- Put concise context in `DialogHeader`.
+- Put scrollable content in `DialogBody`.
+- Put selection helpers first and decisions last in `DialogFooter`.
+- Stack footer controls on mobile and align them in a row from `sm`.
+- A short confirmation dialog may omit `DialogBody`.
+- Keep close reachable unless it would interrupt an unrecoverable operation.
+- Change shared spacing in the primitive.
+- Reserve one-off padding for intentionally immersive workflows.
+
+### Responsive behavior
+
+- Use `100dvh`-aware dialog limits and preserve safe-area padding.
+- Wrap interactive groups instead of allowing narrow-screen overflow.
+- Give icon-only controls accessible labels and hide decorative icons.
+- Give every dialog a title and explain its task or consequences.
+- Route styles must preserve the shared visible focus treatment.
