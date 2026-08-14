@@ -1,4 +1,4 @@
-import { chat } from '@tanstack/ai'
+import { chat, type ModelMessage } from '@tanstack/ai'
 import {
   createOpenaiChat,
   OPENAI_CHAT_MODELS,
@@ -14,6 +14,10 @@ import {
   ROAST_LEVEL_VALUES,
 } from '@/lib/domain-contracts'
 import { getServerEnv } from '@/lib/env.server'
+import {
+  createAiRequestLogMiddleware,
+  startAiRequestLog,
+} from '@/lib/server/ai-request-logs.server'
 import {
   buildStructuredResearchPrompt,
   defineStructuredResearchFields,
@@ -263,6 +267,36 @@ async function extractBeanInfoFromImageImpl(
     'Extract coffee bean information from product images (bags, labels, packaging).',
     'Only include fields where you can clearly read the information. Do not guess.',
   )
+  const systemPrompts = [systemPrompt]
+  const messages: Array<ModelMessage> = [
+    {
+      role: 'user',
+      content: [
+        {
+          type: 'image',
+          source: {
+            type: 'data',
+            value: imageBase64,
+            mimeType,
+          },
+        },
+        {
+          type: 'text',
+          content: 'Extract the coffee bean information from this image.',
+        },
+      ],
+    },
+  ]
+  const requestLogId = await startAiRequestLog({
+    requestType: 'bean-image-extraction',
+    model: config.visionModel,
+    requestPayload: {
+      model: config.visionModel,
+      systemPrompts,
+      messages,
+      stream: false,
+    },
+  })
 
   const abortController = new AbortController()
   const timeout = setTimeout(() => abortController.abort(), 45_000)
@@ -270,26 +304,9 @@ async function extractBeanInfoFromImageImpl(
   try {
     const content = await chat({
       adapter: createAdapter(config.visionModel, config),
-      systemPrompts: [systemPrompt],
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'data',
-                value: imageBase64,
-                mimeType,
-              },
-            },
-            {
-              type: 'text',
-              content: 'Extract the coffee bean information from this image.',
-            },
-          ],
-        },
-      ],
+      systemPrompts,
+      messages,
+      middleware: [createAiRequestLogMiddleware(requestLogId)],
       abortController,
       stream: false,
     })
@@ -348,6 +365,24 @@ async function researchStructuredDataFromWebImpl<
     fields,
     evidenceRules,
   })
+  const systemPrompts = [systemPrompt]
+  const messages: Array<ModelMessage> = [
+    {
+      role: 'user',
+      content: `Research this ${subject}: "${searchQuery}"`,
+    },
+  ]
+  const requestLogId = await startAiRequestLog({
+    requestType: `${logLabel}-web-research`,
+    model: config.researchModel,
+    requestPayload: {
+      model: config.researchModel,
+      systemPrompts,
+      messages,
+      tools: [{ type: 'web_search' }],
+      stream: false,
+    },
+  })
 
   const abortController = new AbortController()
   const timeout = setTimeout(() => abortController.abort(), 60_000)
@@ -355,14 +390,10 @@ async function researchStructuredDataFromWebImpl<
   try {
     const content = await chat({
       adapter: createAdapter(config.researchModel, config),
-      systemPrompts: [systemPrompt],
-      messages: [
-        {
-          role: 'user',
-          content: `Research this ${subject}: "${searchQuery}"`,
-        },
-      ],
+      systemPrompts,
+      messages,
       tools: [webSearchTool({ type: 'web_search' })],
+      middleware: [createAiRequestLogMiddleware(requestLogId)],
       abortController,
       stream: false,
     })

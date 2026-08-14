@@ -42,12 +42,14 @@ databaseDescribe('PostgreSQL schema', () => {
           'shot_accessory_gear_shot_gear_idx',
           'recipe_accessory_gear_recipe_gear_idx',
           'bean_images_one_thumbnail_idx',
+          'ai_request_logs_created_at_idx',
           'roasters_name_idx'
         )
     `
 
     expect(migrations[0]?.count).toBeGreaterThanOrEqual(19)
     expect(indexes.map(({ indexname }) => indexname).sort()).toEqual([
+      'ai_request_logs_created_at_idx',
       'bean_images_one_thumbnail_idx',
       'recipe_accessory_gear_recipe_gear_idx',
       'roasters_name_idx',
@@ -140,6 +142,19 @@ databaseDescribe('PostgreSQL schema', () => {
         database()`
           insert into coffee_shops (name, rating)
           values (${`invalid-rating-${crypto.randomUUID()}`}, 6)
+        `,
+      '23514',
+    )
+
+    await expectPostgresError(
+      () =>
+        database()`
+          insert into ai_request_logs (
+            request_type,
+            model,
+            status,
+            request_payload
+          ) values ('test', 'test-model', 'unknown', '{}')
         `,
       '23514',
     )

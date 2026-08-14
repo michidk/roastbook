@@ -19,6 +19,7 @@ import {
 } from '@/components/form/form-field'
 import { FormPageHeader, FormSection } from '@/components/form/form-shell'
 import { Page } from '@/components/page-layout'
+import { AiSettings } from '@/components/settings/ai-settings'
 import { MapLocationSettings } from '@/components/settings/map-location-settings'
 import { Button } from '@/components/ui/button'
 import { useAppSettings } from '@/hooks/use-app-settings'
@@ -36,6 +37,7 @@ import {
   THEME_OPTIONS,
   usePreferencesStore,
 } from '@/lib/preferences-store'
+import { getAiRequestStats } from '@/lib/server/ai-request-logs'
 import {
   updateDateFormat,
   updateDefaultCurrency,
@@ -45,6 +47,7 @@ import {
 } from '@/lib/server/settings'
 
 export const Route = createFileRoute('/settings')({
+  loader: () => getAiRequestStats(),
   component: SettingsPage,
 })
 
@@ -88,6 +91,7 @@ function useSettingMutation<Value>({
 }
 
 function SettingsPage() {
+  const aiStats = Route.useLoaderData()
   const savedSettings = useAppSettings()
   const router = useRouter()
   const [settings, setSettings] = useState<AppSettings>(savedSettings)
@@ -379,6 +383,8 @@ function SettingsPage() {
           />
         </FormSection>
       </section>
+
+      <AiSettings stats={aiStats} />
     </Page>
   )
 }

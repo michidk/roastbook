@@ -61,8 +61,12 @@ Set `OPENAI_API_KEY` and these turn on — everything else works without it:
 - **Machine research.** Pull documented factory espresso settings for your
   specific model, with strict rules against inferring values from similar
   machines.
+- **Request debugging.** Review lifetime token usage and inspect every raw AI
+  input, response event, error, and unparsed output from Settings.
 
-Every AI call is optional, server-side only, rate-limited, and schema-validated.
+Every AI call is optional, server-side only, rate-limited, schema-validated,
+and recorded in PostgreSQL for local debugging. Raw logs include full image
+payloads and remain inside the deployment's authentication boundary.
 
 **On the roadmap: an MCP server**, so your own agents can read and write your
 coffee log directly — ask what your last ten Gesha brews had in common, or have
