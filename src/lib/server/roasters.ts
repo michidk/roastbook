@@ -3,6 +3,7 @@ import { asc, count, desc, eq, ilike, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
 import { beans, roasters } from '@/db/schema'
+import { expectReturnedRow } from '@/lib/domain-errors'
 import {
   nameSchema,
   notesSchema,
@@ -57,10 +58,11 @@ export const getRoasterPage = createServerFn({ method: 'GET' })
     const where = data.query
       ? ilike(roasters.name, `%${data.query}%`)
       : undefined
-    const [{ value: totalItems }] = await db
+    const countRows = await db
       .select({ value: count() })
       .from(roasters)
       .where(where)
+    const totalItems = countRows[0]?.value ?? 0
     const totalPages = Math.max(1, Math.ceil(totalItems / ROASTERS_PAGE_SIZE))
     const page = Math.min(data.page, totalPages)
     const beanCount = sql<number>`count(${beans.id})::int`
@@ -107,7 +109,7 @@ export const createRoaster = createServerFn({ method: 'POST' })
   .validator(roasterCreateSchema)
   .handler(async ({ data }) => {
     const [roaster] = await db.insert(roasters).values(data).returning()
-    return roaster
+    return expectReturnedRow(roaster, 'Roaster')
   })
 
 export const updateRoaster = createServerFn({ method: 'POST' })
@@ -119,11 +121,15 @@ export const updateRoaster = createServerFn({ method: 'POST' })
       .set({ ...values, updatedAt: new Date() })
       .where(eq(roasters.id, id))
       .returning()
-    return roaster
+    return expectReturnedRow(roaster, 'Roaster')
   })
 
 export const deleteRoaster = createServerFn({ method: 'POST' })
   .validator(positiveIdSchema)
   .handler(async ({ data: id }) => {
-    await db.delete(roasters).where(eq(roasters.id, id))
+    const [roaster] = await db
+      .delete(roasters)
+      .where(eq(roasters.id, id))
+      .returning({ id: roasters.id })
+    expectReturnedRow(roaster, 'Roaster')
   })

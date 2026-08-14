@@ -147,6 +147,17 @@ export function useImageUpload() {
     })
   }, [])
 
+  const removeImages = useCallback((removedImages: readonly ImageFile[]) => {
+    const removedPreviews = new Set(removedImages.map((image) => image.preview))
+    setImages((current) => {
+      for (const image of current) {
+        if (removedPreviews.has(image.preview))
+          URL.revokeObjectURL(image.preview)
+      }
+      return current.filter((image) => !removedPreviews.has(image.preview))
+    })
+  }, [])
+
   const openFilePicker = useCallback(() => fileInputRef.current?.click(), [])
 
   return {
@@ -156,6 +167,7 @@ export function useImageUpload() {
     importFromUrl,
     pasteFromClipboard,
     removeImage,
+    removeImages,
     clearImages,
     openFilePicker,
   }

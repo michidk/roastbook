@@ -1,6 +1,16 @@
 import { z } from 'zod'
+import {
+  CURRENCY_VALUES,
+  ENTITY_TYPE_VALUES,
+  IMAGE_MIME_TYPE_VALUES,
+  MAX_IMAGE_BYTES,
+  PAPER_FILTER_POSITION_VALUES,
+  RATIO_BASIS_VALUES,
+  THUMBNAIL_ENTITY_TYPE_VALUES,
+} from '@/lib/domain-contracts'
 
-export const MAX_IMAGE_BYTES = 10 * 1024 * 1024
+export { MAX_IMAGE_BYTES }
+
 const MAX_BASE64_IMAGE_LENGTH = Math.ceil(MAX_IMAGE_BYTES / 3) * 4
 
 export const positiveIdSchema = z.number().int().positive()
@@ -15,7 +25,7 @@ export const optionalNullableRatingSchema = ratingSchema.nullable().optional()
 export const shortTextSchema = z.string().trim().max(500)
 export const nameSchema = z.string().trim().min(1).max(200)
 export const notesSchema = z.string().trim().max(10_000)
-const SUPPORTED_CURRENCIES = new Set(['EUR', 'USD', 'GBP', 'CHF'])
+const SUPPORTED_CURRENCIES = new Set<string>(CURRENCY_VALUES)
 export const currencySchema = z
   .string()
   .refine(
@@ -45,15 +55,7 @@ export const optionalUrlSchema = z
   .union([z.url().max(2_048), z.literal('')])
   .optional()
 
-const SUPPORTED_IMAGE_MIME_TYPES = new Set([
-  'image/avif',
-  'image/gif',
-  'image/heic',
-  'image/heif',
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-])
+const SUPPORTED_IMAGE_MIME_TYPES = new Set<string>(IMAGE_MIME_TYPE_VALUES)
 
 export const imageMimeTypeSchema = z
   .string()
@@ -80,15 +82,9 @@ export const imageFilenameSchema = z
     'Filename cannot contain path separators',
   )
 
-export const entityTypeSchema = z.enum([
-  'beans',
-  'gear',
-  'coffee-shops',
-  'shots',
-  'visits',
-])
+export const entityTypeSchema = z.enum(ENTITY_TYPE_VALUES)
 
-export const thumbnailEntityTypeSchema = z.enum(['beans', 'gear'])
+export const thumbnailEntityTypeSchema = z.enum(THUMBNAIL_ENTITY_TYPE_VALUES)
 
 const nullableShotDecimal = boundedDecimalStringSchema(99_999.99, 2)
   .nullable()
@@ -102,7 +98,7 @@ export const shotCreateSchema = z.object({
   brewWaterGrams: boundedDecimalStringSchema(99_999.99, 2)
     .nullable()
     .optional(),
-  ratioBasis: z.enum(['target_yield', 'brew_water']).nullable().optional(),
+  ratioBasis: z.enum(RATIO_BASIS_VALUES).nullable().optional(),
   grinderId: optionalNullablePositiveIdSchema,
   grindSetting: shortTextSchema.nullable().optional(),
   yieldGrams: boundedDecimalStringSchema(999.99, 2).nullable().optional(),
@@ -124,7 +120,7 @@ export const shotCreateSchema = z.object({
   basketId: optionalNullablePositiveIdSchema,
   usesPuckScreen: z.boolean().nullable().optional(),
   paperFilterPosition: z
-    .enum(['none', 'top', 'bottom', 'both'])
+    .enum(PAPER_FILTER_POSITION_VALUES)
     .nullable()
     .optional(),
   distributionMethod: shortTextSchema.nullable().optional(),

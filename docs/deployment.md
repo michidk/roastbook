@@ -89,11 +89,15 @@ replicas or the HorizontalPodAutoscaler.
 Local `ReadWriteOnce` upgrades use a `Recreate` deployment strategy to avoid
 overlapping writers. S3 and shared-RWX deployments use rolling updates.
 
+AI extraction, research, and remote-image request limits are maintained per
+application process. Multi-replica deployments should enforce an additional
+shared limit at the ingress or API gateway.
+
 ## Media reconciliation
 
 Image deletion is recorded in a PostgreSQL cleanup queue before parent records
-are deleted. Failed storage deletes remain queued for a later retry. Inspect
-database/storage drift without changing it with:
+are deleted. Failed storage deletes remain queued and use exponential backoff
+before a later retry. Inspect database/storage drift without changing it with:
 
 ```bash
 bun run storage:orphans

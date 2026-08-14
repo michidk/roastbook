@@ -1,3 +1,4 @@
+import { isCurrency } from '@/lib/app-settings'
 import type { BeanType, RoastLevel } from '@/lib/constants'
 
 export type BeanFormValues = {
@@ -73,6 +74,55 @@ export function toBeanFormValues(bean: BeanFormValueSource): BeanFormValues {
     roastLevel: bean.roastLevel ?? '',
     roastDate: formatRoastDate(bean.roastDate),
     notes: bean.notes ?? '',
+  }
+}
+
+function optionalDate(value: string): Date | undefined {
+  return value ? new Date(value) : undefined
+}
+
+export function beanCreatePayload(values: BeanFormValues) {
+  return {
+    name: values.name,
+    type: values.type || undefined,
+    roasterId: values.roasterId ? Number(values.roasterId) : undefined,
+    weight: values.weight || undefined,
+    price: values.price || undefined,
+    priceCurrency: isCurrency(values.priceCurrency)
+      ? values.priceCurrency
+      : undefined,
+    shopUrl: values.shopUrl || undefined,
+    origin: values.origin || undefined,
+    region: values.region || undefined,
+    farm: values.farm || undefined,
+    variety: values.variety || undefined,
+    process: values.process || undefined,
+    roastLevel: values.roastLevel || undefined,
+    roastDate: optionalDate(values.roastDate),
+    notes: values.notes || undefined,
+  }
+}
+
+export function beanUpdatePayload(id: number, values: BeanFormValues) {
+  return {
+    id,
+    name: values.name,
+    type: values.type || null,
+    roasterId: values.roasterId ? Number(values.roasterId) : null,
+    weight: values.weight || null,
+    price: values.price || null,
+    priceCurrency: isCurrency(values.priceCurrency)
+      ? values.priceCurrency
+      : null,
+    shopUrl: values.shopUrl || null,
+    origin: values.origin,
+    region: values.region,
+    farm: values.farm,
+    variety: values.variety,
+    process: values.process,
+    roastLevel: values.roastLevel || null,
+    roastDate: optionalDate(values.roastDate) ?? null,
+    notes: values.notes,
   }
 }
 

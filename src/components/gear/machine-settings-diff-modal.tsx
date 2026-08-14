@@ -1,6 +1,6 @@
 import { ArrowRight, Check } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import type { GearSubtypeFormValues } from '@/components/gear/gear-subtype-fields'
+import type { GearSubtypeFormValues } from '@/components/gear/gear-form-values'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,

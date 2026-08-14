@@ -3,6 +3,7 @@ import { count, desc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
 import { beans, cafeVisits, cafeVisitTasteTags, coffeeShops } from '@/db/schema'
+import { expectReturnedRow } from '@/lib/domain-errors'
 import { toDisplayableDatabaseError } from '@/lib/server/database-error.server'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
 import {
@@ -62,10 +63,11 @@ export const getCafeVisitPage = createServerFn({ method: 'GET' })
           or exists (select 1 from ${coffeeShops} where ${coffeeShops.id} = ${cafeVisits.coffeeShopId} and ${coffeeShops.name} ilike ${pattern} escape '\\')
           or exists (select 1 from ${beans} where ${beans.id} = ${cafeVisits.beanId} and ${beans.name} ilike ${pattern} escape '\\')`
       : undefined
-    const [{ value: totalItems }] = await db
+    const countRows = await db
       .select({ value: count() })
       .from(cafeVisits)
       .where(where)
+    const totalItems = countRows[0]?.value ?? 0
     const totalPages = Math.max(1, Math.ceil(totalItems / VISITS_PAGE_SIZE))
     const page = Math.min(data.page, totalPages)
     const items = await db.query.cafeVisits.findMany({
@@ -101,17 +103,18 @@ export const createCafeVisit = createServerFn({ method: 'POST' })
     db.transaction(async (tx) => {
       const { tasteTagIds, ...visitData } = data
       const [visit] = await tx.insert(cafeVisits).values(visitData).returning()
+      const persistedVisit = expectReturnedRow(visit, 'Visit')
 
       if (tasteTagIds && tasteTagIds.length > 0) {
         await tx.insert(cafeVisitTasteTags).values(
           [...new Set(tasteTagIds)].map((tasteTagId) => ({
-            cafeVisitId: visit.id,
+            cafeVisitId: persistedVisit.id,
             tasteTagId,
           })),
         )
       }
 
-      return visit
+      return persistedVisit
     }),
   )
 
@@ -129,6 +132,7 @@ export const updateCafeVisit = createServerFn({ method: 'POST' })
         .set({ ...values, updatedAt: new Date() })
         .where(eq(cafeVisits.id, id))
         .returning()
+      const persistedVisit = expectReturnedRow(visit, 'Visit')
 
       if (tasteTagIds !== undefined) {
         await tx
@@ -144,7 +148,7 @@ export const updateCafeVisit = createServerFn({ method: 'POST' })
         }
       }
 
-      return visit
+      return persistedVisit
     }),
   )
 

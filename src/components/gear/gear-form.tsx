@@ -9,20 +9,18 @@ import {
 } from '@/components/form/form-field'
 import { EntityForm, FormSection } from '@/components/form/form-shell'
 import {
-  EMPTY_GEAR_SUBTYPE_VALUES,
-  GearSubtypeFields,
-} from '@/components/gear/gear-subtype-fields'
+  createEmptyGearFormValues,
+  gearCreatePayload,
+} from '@/components/gear/gear-form-values'
+import { GearSubtypeFields } from '@/components/gear/gear-subtype-fields'
 import { MachineSettingsDiffModal } from '@/components/gear/machine-settings-diff-modal'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
 import { useImageUpload } from '@/hooks/useImageUpload'
 import type { ExtractedMachineSettings } from '@/lib/ai'
-import {
-  GEAR_TYPES,
-  type GearType,
-  isEspressoMachineGearType,
-} from '@/lib/constants'
+import { GEAR_TYPES, type GearType } from '@/lib/constants'
+import { getErrorMessage } from '@/lib/error-message'
 import {
   checkGearResearchEnabled,
   createGear,
@@ -46,7 +44,6 @@ export function GearForm({
   submitLabel = 'Add gear',
 }: GearFormProps) {
   const { defaultCurrency } = useAppSettings()
-  const [subtype, setSubtype] = useState(EMPTY_GEAR_SUBTYPE_VALUES)
   const [researchEnabled, setResearchEnabled] = useState(false)
   const [isResearching, setIsResearching] = useState(false)
   const [researchModalOpen, setResearchModalOpen] = useState(false)
@@ -55,18 +52,7 @@ export function GearForm({
   const imageUpload = useImageUpload()
   const { images } = imageUpload
 
-  const form = useFormState({
-    name: initialName,
-    brand: '',
-    model: '',
-    type: '' as GearType | '',
-    purchaseDate: '',
-    purchasePrice: '',
-    priceCurrency: 'EUR',
-    manualUrl: '',
-    productUrl: '',
-    notes: '',
-  })
+  const form = useFormState(createEmptyGearFormValues(initialName))
 
   useEffect(() => {
     form.set('priceCurrency', defaultCurrency)
@@ -111,7 +97,7 @@ export function GearForm({
       setResearchedSettings(result)
       setResearchModalOpen(true)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Research failed')
+      toast.error(getErrorMessage(error, 'Research failed'))
     } finally {
       setIsResearching(false)
     }
@@ -120,66 +106,20 @@ export function GearForm({
   const { isSubmitting, handleSubmit } = useFormSubmission({
     canSubmit: () => Boolean(form.values.name.trim() && form.values.type),
     submit: async () => {
-      const type = form.values.type
-      if (!type) throw new Error('Gear type is required')
-
       const item = await createGear({
-        data: {
-          name: form.values.name,
-          brand: form.values.brand || undefined,
-          model: form.values.model || undefined,
-          type,
-          purchaseDate: form.values.purchaseDate
-            ? new Date(form.values.purchaseDate)
-            : undefined,
-          purchasePrice: form.values.purchasePrice || undefined,
-          priceCurrency: form.values.priceCurrency || undefined,
-          manualUrl: form.values.manualUrl || undefined,
-          productUrl: form.values.productUrl || undefined,
-          notes: form.values.notes || undefined,
-          machineSettings: isEspressoMachineGearType(type)
-            ? {
-                brewPressureOpvBar: subtype.brewPressureOpvBar || null,
-                supportsPreinfusion:
-                  subtype.supportsPreinfusion === ''
-                    ? null
-                    : subtype.supportsPreinfusion === 'true',
-                defaultPreinfusionEnabled:
-                  subtype.defaultPreinfusionEnabled === ''
-                    ? null
-                    : subtype.defaultPreinfusionEnabled === 'true',
-                defaultPreinfusionTimeSeconds:
-                  subtype.defaultPreinfusionTimeSeconds || null,
-                defaultPreinfusionPressureBar:
-                  subtype.defaultPreinfusionPressureBar || null,
-                defaultFlowLimitMlPerSecond:
-                  subtype.defaultFlowLimitMlPerSecond || null,
-                temperatureOffsetCelsius:
-                  subtype.temperatureOffsetCelsius || null,
-                volumetricShotVolumeMl: subtype.volumetricShotVolumeMl || null,
-                autoStopMode:
-                  subtype.autoStopMode === 'manual' ||
-                  subtype.autoStopMode === 'weight' ||
-                  subtype.autoStopMode === 'time' ||
-                  subtype.autoStopMode === 'volume'
-                    ? subtype.autoStopMode
-                    : null,
-                steamTemperatureCelsius:
-                  subtype.steamTemperatureCelsius || null,
-                steamPressureBar: subtype.steamPressureBar || null,
-              }
-            : null,
-          basketDetails:
-            type === 'basket'
-              ? { nominalDoseGrams: subtype.nominalDoseGrams || null }
-              : null,
-        },
+        data: gearCreatePayload(form.values),
       })
 
-      await uploadEntityImages('gear', item.id, images)
+      const uploadResult = await uploadEntityImages('gear', item.id, images)
+      if (uploadResult.failures.length > 0) {
+        toast.warning(
+          `Gear saved, but ${uploadResult.failures.length} ${uploadResult.failures.length === 1 ? 'picture' : 'pictures'} could not be uploaded`,
+        )
+      }
       await onCreated(item)
     },
-    onError: () => toast.error('Could not save this gear'),
+    onError: (error) =>
+      toast.error(getErrorMessage(error, 'Could not save this gear')),
   })
 
   return (
@@ -246,10 +186,8 @@ export function GearForm({
 
       <GearSubtypeFields
         type={form.values.type}
-        values={subtype}
-        onChange={(key, value) =>
-          setSubtype((current) => ({ ...current, [key]: value }))
-        }
+        values={form.values}
+        onChange={form.set}
         research={{
           enabled: researchEnabled,
           isResearching,
@@ -311,10 +249,10 @@ export function GearForm({
         <MachineSettingsDiffModal
           open={researchModalOpen}
           onOpenChange={setResearchModalOpen}
-          currentData={subtype}
+          currentData={form.values}
           suggestedData={researchedSettings}
           onApply={(updates) => {
-            setSubtype((current) => ({ ...current, ...updates }))
+            form.patch(updates)
             toast.success(`Applied ${Object.keys(updates).length} changes`)
           }}
         />

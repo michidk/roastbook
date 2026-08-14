@@ -1,5 +1,6 @@
 import { ArrowRight, Check } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import type { BeanFormValues } from '@/components/beans/bean-form-values'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -44,23 +45,8 @@ const FIELD_DEFINITIONS: FieldDef[] = [
   { key: 'notes', label: 'Notes', formKey: 'notes' },
 ]
 
-export interface BeanFormData {
-  name: string
-  type: BeanType | ''
-  roasterId: string
-  weight: string
-  price: string
-  priceCurrency: string
-  shopUrl: string
-  origin: string
-  region: string
-  farm: string
-  variety: string
-  process: string
-  roastLevel: RoastLevel | ''
-  roastDate: string
-  notes: string
-}
+export type BeanFormData = BeanFormValues
+type Mutable<T> = { -readonly [Key in keyof T]: T[Key] }
 
 interface FieldDiff {
   field: FieldDef
@@ -113,7 +99,8 @@ export function BeanInfoDiffModal({
     return result
   }, [currentData, suggestedData])
 
-  useMemo(() => {
+  useEffect(() => {
+    if (!open) return
     const initial = new Set<string>()
     for (const diff of diffs) {
       if (!diff.hasConflict) {
@@ -121,7 +108,7 @@ export function BeanInfoDiffModal({
       }
     }
     setSelectedFields(initial)
-  }, [diffs])
+  }, [diffs, open])
 
   const toggleField = (formKey: string) => {
     setSelectedFields((prev) => {
@@ -144,7 +131,7 @@ export function BeanInfoDiffModal({
   }
 
   const handleApply = () => {
-    const updates: Partial<BeanFormData> = {}
+    const updates: Partial<Mutable<BeanFormData>> = {}
 
     for (const diff of diffs) {
       if (selectedFields.has(diff.field.formKey)) {

@@ -3,6 +3,7 @@ import { count, desc, eq, ilike, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
 import { cafeVisits, coffeeShops } from '@/db/schema'
+import { expectReturnedRow } from '@/lib/domain-errors'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
 import {
   nameSchema,
@@ -128,10 +129,11 @@ export const getCoffeeShopPage = createServerFn({ method: 'GET' })
           or ${ilike(coffeeShops.city, `%${data.query}%`)}
           or ${ilike(coffeeShops.country, `%${data.query}%`)}`
       : undefined
-    const [{ value: totalItems }] = await db
+    const countRows = await db
       .select({ value: count() })
       .from(coffeeShops)
       .where(where)
+    const totalItems = countRows[0]?.value ?? 0
     const totalPages = Math.max(1, Math.ceil(totalItems / PLACES_PAGE_SIZE))
     const page = Math.min(data.page, totalPages)
     const items = await coffeeShopOverviewQuery()
@@ -164,7 +166,7 @@ export const createCoffeeShop = createServerFn({ method: 'POST' })
   )
   .handler(async ({ data }) => {
     const [coffeeShop] = await db.insert(coffeeShops).values(data).returning()
-    return coffeeShop
+    return expectReturnedRow(coffeeShop, 'Café')
   })
 
 export const updateCoffeeShop = createServerFn({ method: 'POST' })
@@ -178,7 +180,7 @@ export const updateCoffeeShop = createServerFn({ method: 'POST' })
       .set({ ...values, updatedAt: new Date() })
       .where(eq(coffeeShops.id, id))
       .returning()
-    return coffeeShop
+    return expectReturnedRow(coffeeShop, 'Café')
   })
 
 export const deleteCoffeeShop = createServerFn({ method: 'POST' })

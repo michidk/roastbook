@@ -55,6 +55,7 @@ migration command when its CLI output or flags are needed.
 bun run check
 bun run typecheck
 bun run test
+bun run test:coverage
 bun run lint:deadcode
 bun run build
 bun run check:client-assets
@@ -66,7 +67,8 @@ budgets while checking that server-only SDK markers are absent from browser
 assets.
 
 The standard `test` command allows environment-dependent integration suites to
-report as skipped. `test:integration` is strict and requires all of:
+report as skipped. `test:coverage` reports unit-test coverage without imposing
+a hard threshold. `test:integration` is strict and requires all of:
 
 - `TEST_DATABASE_URL`
 - `TEST_S3_ENDPOINT`

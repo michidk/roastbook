@@ -9,6 +9,7 @@ import {
   gearImages,
   shotImages,
 } from '@/db/schema'
+import { expectReturnedRow } from '@/lib/domain-errors'
 import {
   cleanupUncommittedUpload,
   type DatabaseTransaction,
@@ -161,7 +162,7 @@ export const uploadEntityImage = createServerFn({ method: 'POST' })
             .insert(beanImages)
             .values({ ...baseValues, beanId: data.entityId })
             .returning()
-          image = result
+          image = expectReturnedRow(result, 'Image')
           break
         }
         case 'gear': {
@@ -169,7 +170,7 @@ export const uploadEntityImage = createServerFn({ method: 'POST' })
             .insert(gearImages)
             .values({ ...baseValues, gearId: data.entityId })
             .returning()
-          image = result
+          image = expectReturnedRow(result, 'Image')
           break
         }
         case 'coffee-shops': {
@@ -177,7 +178,7 @@ export const uploadEntityImage = createServerFn({ method: 'POST' })
             .insert(coffeeShopImages)
             .values({ ...baseValues, coffeeShopId: data.entityId })
             .returning()
-          image = result
+          image = expectReturnedRow(result, 'Image')
           break
         }
         case 'shots': {
@@ -185,7 +186,7 @@ export const uploadEntityImage = createServerFn({ method: 'POST' })
             .insert(shotImages)
             .values({ ...baseValues, shotId: data.entityId })
             .returning()
-          image = result
+          image = expectReturnedRow(result, 'Image')
           break
         }
         case 'visits': {
@@ -193,7 +194,7 @@ export const uploadEntityImage = createServerFn({ method: 'POST' })
             .insert(cafeVisitImages)
             .values({ ...baseValues, cafeVisitId: data.entityId })
             .returning()
-          image = result
+          image = expectReturnedRow(result, 'Image')
           break
         }
       }
@@ -226,7 +227,7 @@ export const setImageAsThumbnail = createServerFn({ method: 'POST' })
         .set({ isThumbnail: true })
         .where(and(eq(table.id, data.imageId), eq(foreignKey, data.entityId)))
         .returning({ id: table.id })
-      if (!image) throw new Error('Image not found for this entity')
+      expectReturnedRow(image, 'Image')
     })
   })
 
@@ -295,8 +296,8 @@ export const deleteEntityImage = createServerFn({ method: 'POST' })
         data.entityId,
         data.imageId,
       )
-      if (!image) throw new Error('Image not found for this entity')
-      await queueMediaCleanup(tx, [image.storagePath])
+      const persistedImage = expectReturnedRow(image, 'Image')
+      await queueMediaCleanup(tx, [persistedImage.storagePath])
     })
 
     await drainMediaCleanupQueue()

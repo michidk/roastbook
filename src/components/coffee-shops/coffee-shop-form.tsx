@@ -11,6 +11,7 @@ import { InputField, TextareaField } from '@/components/form/form-field'
 import { EntityForm, FormSection } from '@/components/form/form-shell'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
+import { getErrorMessage } from '@/lib/error-message'
 import { createCoffeeShop } from '@/lib/server/coffee-shops'
 
 type CreatedCoffeeShop = Awaited<ReturnType<typeof createCoffeeShop>>
@@ -52,7 +53,8 @@ export function CoffeeShopForm({
       toast.success('Café created')
       await onCreated(coffeeShop)
     },
-    onError: () => toast.error('Could not save this café'),
+    onError: (error) =>
+      toast.error(getErrorMessage(error, 'Could not save this café')),
   })
 
   return (

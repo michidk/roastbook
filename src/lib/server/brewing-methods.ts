@@ -7,6 +7,7 @@ import {
   hasOnlyShotParameterKeys,
   normalizeShotParameterKeys,
 } from '@/lib/brewing-methods'
+import { expectReturnedRow } from '@/lib/domain-errors'
 import {
   nameSchema,
   notesSchema,
@@ -74,7 +75,7 @@ export const createBrewingMethod = createServerFn({ method: 'POST' })
       )
     }
     const [method] = await db.insert(brewingMethods).values(data).returning()
-    return method ?? null
+    return expectReturnedRow(method, 'Brewing method')
   })
 
 export const updateBrewingMethod = createServerFn({ method: 'POST' })
@@ -105,8 +106,7 @@ export const updateBrewingMethod = createServerFn({ method: 'POST' })
       })
       .where(eq(brewingMethods.id, data.id))
       .returning()
-    if (!method) throw new BrewingMethodInputError('Brewing method not found')
-    return method
+    return expectReturnedRow(method, 'Brewing method')
   })
 
 export const deleteBrewingMethod = createServerFn({ method: 'POST' })
@@ -139,6 +139,6 @@ export const deleteBrewingMethod = createServerFn({ method: 'POST' })
         .delete(brewingMethods)
         .where(eq(brewingMethods.id, id))
         .returning({ id: brewingMethods.id })
-      if (!method) throw new BrewingMethodInputError('Brewing method not found')
+      expectReturnedRow(method, 'Brewing method')
     }),
   )

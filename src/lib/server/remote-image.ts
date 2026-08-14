@@ -1,88 +1,20 @@
-import { lookup } from 'node:dns/promises'
-import { isIP } from 'node:net'
 import { basename } from 'node:path'
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
+import { IMAGE_MIME_TYPE_VALUES } from '@/lib/domain-contracts'
+import { assertPublicHttpUrl } from '@/lib/server/remote-url-policy.server'
 import { withResourceLimits } from '@/lib/server/resource-limits.server'
 import { MAX_IMAGE_BYTES } from '@/lib/server-validation'
 
 const MAX_REDIRECTS = 4
 const REQUEST_TIMEOUT_MS = 15_000
-const IMAGE_MIME_TYPES = new Set([
-  'image/avif',
-  'image/gif',
-  'image/heic',
-  'image/heif',
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-])
+const IMAGE_MIME_TYPES = new Set<string>(IMAGE_MIME_TYPE_VALUES)
 
 class RemoteImageError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'RemoteImageError'
   }
-}
-
-function isPrivateIpv4(address: string): boolean {
-  const octets = address.split('.').map(Number)
-  const first = octets[0]
-  const second = octets[1]
-  if (first === undefined || second === undefined) return true
-
-  return (
-    first === 0 ||
-    first === 10 ||
-    first === 127 ||
-    (first === 169 && second === 254) ||
-    (first === 172 && second >= 16 && second <= 31) ||
-    (first === 192 && second === 168) ||
-    first >= 224
-  )
-}
-
-function isPrivateAddress(address: string): boolean {
-  const normalized = address.toLowerCase()
-  if (isIP(normalized) === 4) return isPrivateIpv4(normalized)
-  if (normalized.startsWith('::ffff:')) {
-    return isPrivateIpv4(normalized.slice('::ffff:'.length))
-  }
-  return (
-    normalized === '::' ||
-    normalized === '::1' ||
-    normalized.startsWith('fc') ||
-    normalized.startsWith('fd') ||
-    normalized.startsWith('fe8') ||
-    normalized.startsWith('fe9') ||
-    normalized.startsWith('fea') ||
-    normalized.startsWith('feb')
-  )
-}
-
-async function assertPublicImageUrl(value: string): Promise<URL> {
-  let url: URL
-  try {
-    url = new URL(value)
-  } catch {
-    throw new RemoteImageError('Enter a valid image URL')
-  }
-
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new RemoteImageError('Image URLs must use HTTP or HTTPS')
-  }
-  if (url.username || url.password) {
-    throw new RemoteImageError('Image URLs cannot contain credentials')
-  }
-
-  const addresses = await lookup(url.hostname, { all: true })
-  if (
-    addresses.length === 0 ||
-    addresses.some(({ address }) => isPrivateAddress(address))
-  ) {
-    throw new RemoteImageError('That image host is not allowed')
-  }
-  return url
 }
 
 async function readLimitedBody(response: Response): Promise<Buffer> {
@@ -109,27 +41,35 @@ async function readLimitedBody(response: Response): Promise<Buffer> {
 }
 
 async function downloadImage(value: string) {
-  let url = await assertPublicImageUrl(value)
+  let url = await assertPublicHttpUrl(value)
 
   for (
     let redirectCount = 0;
     redirectCount <= MAX_REDIRECTS;
     redirectCount += 1
   ) {
-    const response = await fetch(url, {
-      redirect: 'manual',
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      headers: {
-        Accept: 'image/avif,image/webp,image/png,image/jpeg,image/gif',
-      },
-    })
+    let response: Response
+    try {
+      response = await fetch(url, {
+        redirect: 'manual',
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        headers: {
+          Accept: 'image/avif,image/webp,image/png,image/jpeg,image/gif',
+        },
+      })
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'TimeoutError') {
+        throw new RemoteImageError('The image request timed out')
+      }
+      throw new RemoteImageError('Could not download the image')
+    }
 
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get('location')
       if (!location || redirectCount === MAX_REDIRECTS) {
         throw new RemoteImageError('The image URL redirected too many times')
       }
-      url = await assertPublicImageUrl(new URL(location, url).toString())
+      url = await assertPublicHttpUrl(new URL(location, url).toString())
       continue
     }
     if (!response.ok) {
@@ -140,6 +80,7 @@ async function downloadImage(value: string) {
       .get('content-type')
       ?.split(';', 1)[0]
       ?.trim()
+      .toLowerCase()
     if (!mimeType || !IMAGE_MIME_TYPES.has(mimeType)) {
       throw new RemoteImageError(
         'The URL must point directly to a supported image',
@@ -147,10 +88,17 @@ async function downloadImage(value: string) {
     }
 
     const content = await readLimitedBody(response)
-    const pathName = basename(decodeURIComponent(url.pathname))
-    const filename = pathName?.includes('.')
-      ? pathName
-      : `picture.${mimeType.split('/')[1]}`
+    let decodedPath = url.pathname
+    try {
+      decodedPath = decodeURIComponent(url.pathname)
+    } catch {
+      // Keep the URL-encoded path when a remote server uses malformed escapes.
+    }
+    const pathName = basename(decodedPath)
+    const filename =
+      pathName.includes('.') && pathName.length <= 255
+        ? pathName
+        : `picture.${mimeType.split('/')[1]}`
     return {
       base64: content.toString('base64'),
       filename,

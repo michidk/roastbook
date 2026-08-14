@@ -1,7 +1,10 @@
 import { Loader2, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { createEmptyBeanFormValues } from '@/components/beans/bean-form-values'
+import {
+  beanCreatePayload,
+  createEmptyBeanFormValues,
+} from '@/components/beans/bean-form-values'
 import { EntityImageUploadSection } from '@/components/form/entity-image-upload-section'
 import {
   CurrencyField,
@@ -26,6 +29,7 @@ import {
   ROAST_LEVELS,
   type RoastLevel,
 } from '@/lib/constants'
+import { getErrorMessage } from '@/lib/error-message'
 import {
   checkVisionEnabled,
   createBean,
@@ -67,12 +71,34 @@ export function BeanForm({
   }, [defaultCurrency, form.set])
 
   useEffect(() => {
-    checkVisionEnabled().then((result) => setVisionEnabled(result.enabled))
+    let active = true
+    void checkVisionEnabled()
+      .then((result) => {
+        if (active) setVisionEnabled(result.enabled)
+      })
+      .catch(() => {
+        if (active) setVisionEnabled(false)
+      })
+    return () => {
+      active = false
+    }
   }, [])
 
   useEffect(() => {
     if (roasters) return
-    getRoasters().then(setLoadedRoasters)
+    let active = true
+    void getRoasters()
+      .then((result) => {
+        if (active) setLoadedRoasters(result)
+      })
+      .catch((error) => {
+        if (active) {
+          toast.error(getErrorMessage(error, 'Could not load roasters'))
+        }
+      })
+    return () => {
+      active = false
+    }
   }, [roasters])
 
   const roasterOptions = roasters ?? loadedRoasters
@@ -83,6 +109,7 @@ export function BeanForm({
     setIsExtracting(true)
     try {
       const firstImage = images[0]
+      if (!firstImage) return
       const extracted = await extractBeanInfo({
         data: {
           imageBase64: firstImage.base64,
@@ -114,9 +141,7 @@ export function BeanForm({
         notes: extracted.notes || current.notes,
       }))
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to extract bean info'
-      toast.error(message)
+      toast.error(getErrorMessage(error, 'Failed to extract bean info'))
     } finally {
       setIsExtracting(false)
     }
@@ -126,33 +151,19 @@ export function BeanForm({
     canSubmit: () => Boolean(form.values.name.trim()),
     submit: async () => {
       const bean = await createBean({
-        data: {
-          name: form.values.name,
-          type: form.values.type || undefined,
-          roasterId: form.values.roasterId
-            ? Number(form.values.roasterId)
-            : undefined,
-          weight: form.values.weight || undefined,
-          price: form.values.price || undefined,
-          priceCurrency: form.values.priceCurrency || undefined,
-          shopUrl: form.values.shopUrl || undefined,
-          origin: form.values.origin || undefined,
-          region: form.values.region || undefined,
-          farm: form.values.farm || undefined,
-          variety: form.values.variety || undefined,
-          process: form.values.process || undefined,
-          roastLevel: form.values.roastLevel || undefined,
-          roastDate: form.values.roastDate
-            ? new Date(form.values.roastDate)
-            : undefined,
-          notes: form.values.notes || undefined,
-        },
+        data: beanCreatePayload(form.values),
       })
 
-      await uploadEntityImages('beans', bean.id, images)
+      const uploadResult = await uploadEntityImages('beans', bean.id, images)
+      if (uploadResult.failures.length > 0) {
+        toast.warning(
+          `Beans saved, but ${uploadResult.failures.length} ${uploadResult.failures.length === 1 ? 'picture' : 'pictures'} could not be uploaded`,
+        )
+      }
       await onCreated(bean)
     },
-    onError: () => toast.error('Could not save these beans'),
+    onError: (error) =>
+      toast.error(getErrorMessage(error, 'Could not save these beans')),
   })
 
   return (

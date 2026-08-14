@@ -1,39 +1,10 @@
 import { Loader2, Search } from 'lucide-react'
 import { InputField, SelectField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
+import type { GearSubtypeFormValues } from '@/components/gear/gear-form-values'
 import { Button } from '@/components/ui/button'
 import { type GearType, isEspressoMachineGearType } from '@/lib/constants'
 import { AUTO_STOP_OPTIONS } from '@/lib/gear-parameters'
-
-export type GearSubtypeFormValues = {
-  readonly brewPressureOpvBar: string
-  readonly supportsPreinfusion: string
-  readonly defaultPreinfusionEnabled: string
-  readonly defaultPreinfusionTimeSeconds: string
-  readonly defaultPreinfusionPressureBar: string
-  readonly defaultFlowLimitMlPerSecond: string
-  readonly temperatureOffsetCelsius: string
-  readonly volumetricShotVolumeMl: string
-  readonly autoStopMode: string
-  readonly steamTemperatureCelsius: string
-  readonly steamPressureBar: string
-  readonly nominalDoseGrams: string
-}
-
-export const EMPTY_GEAR_SUBTYPE_VALUES: GearSubtypeFormValues = {
-  brewPressureOpvBar: '',
-  supportsPreinfusion: '',
-  defaultPreinfusionEnabled: '',
-  defaultPreinfusionTimeSeconds: '',
-  defaultPreinfusionPressureBar: '',
-  defaultFlowLimitMlPerSecond: '',
-  temperatureOffsetCelsius: '',
-  volumetricShotVolumeMl: '',
-  autoStopMode: '',
-  steamTemperatureCelsius: '',
-  steamPressureBar: '',
-  nominalDoseGrams: '',
-}
 
 type GearSubtypeFieldsProps = {
   readonly type: GearType | ''

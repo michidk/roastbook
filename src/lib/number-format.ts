@@ -27,7 +27,10 @@ export function formatNumber(
   const match = canonical.match(/^(-?)(\d+)(?:\.(\d*))?$/)
   if (!match) return canonical
 
-  const [, sign, rawInteger, fraction] = match
+  const sign = match[1] ?? ''
+  const rawInteger = match[2]
+  const fraction = match[3]
+  if (!rawInteger) return canonical
   const { decimal, thousands } = separators(format)
   const integer = options.grouping
     ? rawInteger.replace(/\B(?=(\d{3})+(?!\d))/g, thousands)

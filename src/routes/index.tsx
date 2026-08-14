@@ -189,7 +189,9 @@ function BeanSwatch({ seed }: { seed: number }) {
     ['var(--chart-3)', 'var(--coffee)'],
     ['var(--accent-foreground)', 'var(--foreground)'],
   ] as const
-  const [light, dark] = palettes[seed % palettes.length]
+  const palette = palettes[seed % palettes.length]
+  if (!palette) return null
+  const [light, dark] = palette
   return (
     <div
       aria-hidden

@@ -27,6 +27,7 @@
     "lint:deadcode": "knip",
     "test": "bun test",
     "test:unit": "bun test --path-ignore-patterns='**/*.integration.test.ts'",
+    "test:coverage": "bun test --coverage --path-ignore-patterns='**/*.integration.test.ts'",
     "test:integration": "bun run scripts/test-integration.ts",
     "verify": "bun run check && bun run typecheck && bun run test && bun run lint:deadcode && bun run build && bun run check:client-assets",
     "db:generate": "drizzle-kit generate",
@@ -69,7 +70,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.5.8",
     "@tanstack/devtools-vite": "^0.8.0",
-    "@tanstack/router-cli": "^1.132.0",
+    "@tanstack/router-cli": "^1.167.17",
     "@types/bun": "^1.3.14",
     "@types/node": "^22.10.2",
     "@types/react": "^19.2.0",

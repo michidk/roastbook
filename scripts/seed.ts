@@ -238,7 +238,11 @@ function randomInt(min: number, max: number): number {
 }
 
 function randomElement<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)]
+  const element = arr[Math.floor(Math.random() * arr.length)]
+  if (element === undefined) {
+    throw new Error('Cannot select a random element from an empty array')
+  }
+  return element
 }
 
 function randomSubset<T>(items: readonly T[], min: number, max: number): T[] {

@@ -3,6 +3,7 @@ import { InputField, TextareaField } from '@/components/form/form-field'
 import { EntityForm, FormSection } from '@/components/form/form-shell'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
+import { getErrorMessage } from '@/lib/error-message'
 import { createRoaster } from '@/lib/server/roasters'
 
 type CreatedRoaster = Awaited<ReturnType<typeof createRoaster>>
@@ -44,7 +45,8 @@ export function RoasterForm({
       })
       await onCreated(roaster)
     },
-    onError: () => toast.error('Failed to create roaster'),
+    onError: (error) =>
+      toast.error(getErrorMessage(error, 'Failed to create roaster')),
   })
 
   return (

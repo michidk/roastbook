@@ -9,6 +9,8 @@ import {
   researchMachineSettingsFromWeb,
 } from '@/lib/ai'
 import { isEspressoMachineGearType } from '@/lib/constants'
+import { AUTO_STOP_MODE_VALUES, GEAR_TYPE_VALUES } from '@/lib/domain-contracts'
+import { expectReturnedRow } from '@/lib/domain-errors'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
 import { withResourceLimits } from '@/lib/server/resource-limits.server'
 import {
@@ -32,7 +34,7 @@ const machineSettingsSchema = z.object({
   defaultFlowLimitMlPerSecond: nullableDecimal,
   temperatureOffsetCelsius: boundedDecimalStringSchema(999.9, 1).nullable(),
   volumetricShotVolumeMl: nullableDecimal,
-  autoStopMode: z.enum(['manual', 'weight', 'time', 'volume']).nullable(),
+  autoStopMode: z.enum(AUTO_STOP_MODE_VALUES).nullable(),
   steamTemperatureCelsius: boundedDecimalStringSchema(999.9, 1).nullable(),
   steamPressureBar: nullableDecimal,
 })
@@ -45,18 +47,7 @@ const gearCreateSchema = z.object({
   name: nameSchema,
   brand: shortTextSchema.nullable().optional(),
   model: shortTextSchema.nullable().optional(),
-  type: z.enum([
-    'espresso_machine',
-    'espresso_machine_with_grinder',
-    'brewer',
-    'grinder',
-    'kettle',
-    'scale',
-    'tamper',
-    'wdt',
-    'basket',
-    'other',
-  ]),
+  type: z.enum(GEAR_TYPE_VALUES),
   purchaseDate: z.date().nullable().optional(),
   purchasePrice: boundedDecimalStringSchema(999_999.99, 2)
     .nullable()
@@ -81,13 +72,6 @@ const researchMachineSettingsSchema = z.object({
 })
 
 type GearValues = z.infer<typeof gearCreateSchema>
-
-class GearPersistenceError extends Error {
-  constructor() {
-    super('Gear could not be persisted')
-    this.name = 'GearPersistenceError'
-  }
-}
 
 const gearRelations = {
   images: true,
@@ -146,9 +130,9 @@ export const createGear = createServerFn({ method: 'POST' })
         ...gearValues
       } = data
       const [item] = await tx.insert(gear).values(gearValues).returning()
-      if (!item) throw new GearPersistenceError()
-      await replaceSubtype(tx, item.id, data)
-      return item
+      const persistedItem = expectReturnedRow(item, 'Gear')
+      await replaceSubtype(tx, persistedItem.id, data)
+      return persistedItem
     }),
   )
 
@@ -162,7 +146,7 @@ export const updateGear = createServerFn({ method: 'POST' })
         .set({ ...toGearUpdateRow(values), updatedAt: new Date() })
         .where(eq(gear.id, id))
         .returning()
-      if (!item) throw new GearPersistenceError()
+      const persistedItem = expectReturnedRow(item, 'Gear')
       if (
         values.type !== undefined ||
         values.machineSettings !== undefined ||
@@ -170,11 +154,11 @@ export const updateGear = createServerFn({ method: 'POST' })
       ) {
         await replaceSubtype(tx, id, {
           ...values,
-          name: values.name ?? item.name,
-          type: values.type ?? item.type,
+          name: values.name ?? persistedItem.name,
+          type: values.type ?? persistedItem.type,
         })
       }
-      return item
+      return persistedItem
     }),
   )
 

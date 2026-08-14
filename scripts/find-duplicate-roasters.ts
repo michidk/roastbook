@@ -46,10 +46,12 @@ function groupByNormalizedName(
 
 // Canonical = most beans referencing it; ties broken by lowest id (oldest row).
 function pickCanonical(group: RoasterWithBeanCount[]): RoasterWithBeanCount {
-  return [...group].sort((a, b) => {
+  const canonical = [...group].sort((a, b) => {
     if (b.beanCount !== a.beanCount) return b.beanCount - a.beanCount
     return a.id - b.id
   })[0]
+  if (!canonical) throw new Error('Cannot select from an empty roaster group')
+  return canonical
 }
 
 function printReport(duplicateGroups: RoasterWithBeanCount[][]) {
@@ -57,7 +59,7 @@ function printReport(duplicateGroups: RoasterWithBeanCount[][]) {
 
   for (const group of duplicateGroups) {
     const canonical = pickCanonical(group)
-    console.log(`Group: "${normalizeForComparison(group[0].name)}"`)
+    console.log(`Group: "${normalizeForComparison(canonical.name)}"`)
     for (const roaster of group) {
       const marker = roaster.id === canonical.id ? '  <- canonical (kept)' : ''
       console.log(

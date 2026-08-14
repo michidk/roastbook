@@ -10,9 +10,12 @@ import {
   isVisionEnabled,
   researchBeanFromWeb,
 } from '@/lib/ai'
+import { BEAN_TYPE_VALUES, ROAST_LEVEL_VALUES } from '@/lib/domain-contracts'
+import { expectReturnedRow } from '@/lib/domain-errors'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
 import { withResourceLimits } from '@/lib/server/resource-limits.server'
 import {
+  currencySchema,
   decimalStringSchema,
   imageBase64Schema,
   imageMimeTypeSchema,
@@ -25,14 +28,8 @@ import {
 } from '@/lib/server-validation'
 import { validateImageBuffer } from '@/lib/thumbnail-image'
 
-const beanTypeSchema = z.enum(['espresso', 'filter', 'decaf'])
-const roastLevelSchema = z.enum([
-  'light',
-  'medium_light',
-  'medium',
-  'medium_dark',
-  'dark',
-])
+const beanTypeSchema = z.enum(BEAN_TYPE_VALUES)
+const roastLevelSchema = z.enum(ROAST_LEVEL_VALUES)
 
 const beanCreateSchema = z.object({
   name: nameSchema,
@@ -48,7 +45,7 @@ const beanCreateSchema = z.object({
   roastDate: z.date().optional(),
   weight: decimalStringSchema.optional(),
   price: decimalStringSchema.optional(),
-  priceCurrency: z.string().trim().length(3).optional(),
+  priceCurrency: currencySchema.optional(),
   shopUrl: optionalUrlSchema,
   notes: notesSchema.optional(),
 })
@@ -61,7 +58,7 @@ const beanUpdateSchema = beanCreateSchema.partial().extend({
   roastDate: z.date().nullable().optional(),
   weight: decimalStringSchema.nullable().optional(),
   price: decimalStringSchema.nullable().optional(),
-  priceCurrency: z.string().trim().length(3).nullable().optional(),
+  priceCurrency: currencySchema.nullable().optional(),
   shopUrl: z
     .union([z.url().max(2_048), z.literal('')])
     .nullable()
@@ -114,10 +111,11 @@ export const getBeanCollection = createServerFn({ method: 'GET' })
       const where = search
         ? and(eq(beans.isArchived, isArchived), search)
         : eq(beans.isArchived, isArchived)
-      const [{ value: totalItems }] = await db
+      const countRows = await db
         .select({ value: count() })
         .from(beans)
         .where(where)
+      const totalItems = countRows[0]?.value ?? 0
       const totalPages = Math.max(1, Math.ceil(totalItems / BEANS_PAGE_SIZE))
       const page = Math.min(requestedPage, totalPages)
       const items = await db.query.beans.findMany({
@@ -170,7 +168,7 @@ export const createBean = createServerFn({ method: 'POST' })
   .validator(beanCreateSchema)
   .handler(async ({ data }) => {
     const [bean] = await db.insert(beans).values(data).returning()
-    return bean
+    return expectReturnedRow(bean, 'Bean')
   })
 
 export const updateBean = createServerFn({ method: 'POST' })
@@ -182,7 +180,7 @@ export const updateBean = createServerFn({ method: 'POST' })
       .set({ ...values, updatedAt: new Date() })
       .where(eq(beans.id, id))
       .returning()
-    return bean
+    return expectReturnedRow(bean, 'Bean')
   })
 
 export const deleteBean = createServerFn({ method: 'POST' })

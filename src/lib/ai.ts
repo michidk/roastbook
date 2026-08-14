@@ -7,6 +7,12 @@ import {
 import { webSearchTool } from '@tanstack/ai-openai/tools'
 import { createServerOnlyFn } from '@tanstack/react-start'
 import { z } from 'zod'
+import {
+  AUTO_STOP_MODE_VALUES,
+  BEAN_TYPE_VALUES,
+  PROCESS_METHOD_VALUES,
+  ROAST_LEVEL_VALUES,
+} from '@/lib/domain-contracts'
 import { getServerEnv } from '@/lib/env.server'
 import {
   buildStructuredResearchPrompt,
@@ -55,8 +61,8 @@ const BEAN_INFO_FIELDS = defineStructuredResearchFields({
   type: {
     description: 'The intended brewing category for the coffee.',
     jsonType: 'string',
-    schema: z.enum(['espresso', 'filter', 'decaf']),
-    options: ['espresso', 'filter', 'decaf'],
+    schema: z.enum(BEAN_TYPE_VALUES),
+    options: BEAN_TYPE_VALUES,
     examples: ['espresso', 'filter'],
   },
   origin: {
@@ -86,31 +92,15 @@ const BEAN_INFO_FIELDS = defineStructuredResearchFields({
   process: {
     description: 'The coffee processing method.',
     jsonType: 'string',
-    schema: z.enum([
-      'washed',
-      'natural',
-      'honey',
-      'anaerobic',
-      'wet_hulled',
-      'carbonic_maceration',
-      'other',
-    ]),
-    options: [
-      'washed',
-      'natural',
-      'honey',
-      'anaerobic',
-      'wet_hulled',
-      'carbonic_maceration',
-      'other',
-    ],
+    schema: z.enum(PROCESS_METHOD_VALUES),
+    options: PROCESS_METHOD_VALUES,
     examples: ['washed', 'carbonic_maceration'],
   },
   roastLevel: {
     description: 'The described roast level.',
     jsonType: 'string',
-    schema: z.enum(['light', 'medium_light', 'medium', 'medium_dark', 'dark']),
-    options: ['light', 'medium_light', 'medium', 'medium_dark', 'dark'],
+    schema: z.enum(ROAST_LEVEL_VALUES),
+    options: ROAST_LEVEL_VALUES,
     examples: ['light', 'medium_dark'],
   },
   roastDate: {
@@ -236,8 +226,8 @@ const MACHINE_SETTINGS_FIELDS = defineStructuredResearchFields({
     description:
       'The mechanism used to stop a shot. Map programmable volumetric dosing to "volume", an integrated scale target to "weight", a timer target to "time", and a required user stop to "manual".',
     jsonType: 'string',
-    schema: z.enum(['manual', 'weight', 'time', 'volume']),
-    options: ['manual', 'weight', 'time', 'volume'],
+    schema: z.enum(AUTO_STOP_MODE_VALUES),
+    options: AUTO_STOP_MODE_VALUES,
     examples: ['volume', 'weight'],
   },
   steamTemperatureCelsius: {

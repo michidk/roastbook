@@ -155,6 +155,13 @@
       "when": 1786705186872,
       "tag": "0021_neat_veda",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1786723514860,
+      "tag": "0022_stiff_vermin",
+      "breakpoints": true
     }
   ]
 }

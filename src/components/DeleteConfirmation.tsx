@@ -12,6 +12,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/dialog'
+import { getErrorMessage } from '@/lib/error-message'
 
 interface DeleteConfirmationProps {
   title: string
@@ -35,9 +36,7 @@ export function DeleteConfirmation({
       await onConfirm()
       setOpen(false)
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Could not delete this item',
-      )
+      toast.error(getErrorMessage(error, 'Could not delete this item'))
     } finally {
       setIsDeleting(false)
     }

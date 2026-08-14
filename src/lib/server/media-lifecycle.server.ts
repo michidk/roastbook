@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm'
+import { eq, lte, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import {
   beanImages,
@@ -13,6 +13,7 @@ import {
   shotImages,
   shots,
 } from '@/db/schema'
+import { expectReturnedRow } from '@/lib/domain-errors'
 import { getStoredImagePaths } from '@/lib/image-path'
 import { getStorage } from '@/lib/storage'
 
@@ -40,9 +41,22 @@ export async function queueMediaCleanup(
     .onConflictDoNothing({ target: mediaCleanupJobs.storagePath })
 }
 
+const MEDIA_CLEANUP_BASE_RETRY_MS = 60_000
+const MEDIA_CLEANUP_MAX_RETRY_MS = 24 * 60 * 60 * 1_000
+
+export function mediaCleanupRetryDelay(attempts: number): number {
+  const exponent = Math.max(0, Math.min(attempts - 1, 30))
+  return Math.min(
+    MEDIA_CLEANUP_BASE_RETRY_MS * 2 ** exponent,
+    MEDIA_CLEANUP_MAX_RETRY_MS,
+  )
+}
+
 export async function drainMediaCleanupQueue(limit = 50): Promise<void> {
+  const now = new Date()
   const jobs = await db.query.mediaCleanupJobs.findMany({
-    orderBy: (jobs, { asc }) => [asc(jobs.createdAt)],
+    where: lte(mediaCleanupJobs.nextAttemptAt, now),
+    orderBy: (jobs, { asc }) => [asc(jobs.nextAttemptAt), asc(jobs.createdAt)],
     limit,
   })
   const storage = getStorage()
@@ -60,7 +74,10 @@ export async function drainMediaCleanupQueue(limit = 50): Promise<void> {
         .set({
           attempts: sql`${mediaCleanupJobs.attempts} + 1`,
           lastError: message.slice(0, 2_000),
-          updatedAt: new Date(),
+          nextAttemptAt: new Date(
+            now.getTime() + mediaCleanupRetryDelay(job.attempts + 1),
+          ),
+          updatedAt: now,
         })
         .where(eq(mediaCleanupJobs.id, job.id))
     }
@@ -140,19 +157,59 @@ async function deleteEntityRow(
 ): Promise<void> {
   switch (entityType) {
     case 'beans':
-      await tx.delete(beans).where(eq(beans.id, entityId))
+      expectReturnedRow(
+        (
+          await tx
+            .delete(beans)
+            .where(eq(beans.id, entityId))
+            .returning({ id: beans.id })
+        )[0],
+        'Bean',
+      )
       return
     case 'gear':
-      await tx.delete(gear).where(eq(gear.id, entityId))
+      expectReturnedRow(
+        (
+          await tx
+            .delete(gear)
+            .where(eq(gear.id, entityId))
+            .returning({ id: gear.id })
+        )[0],
+        'Gear',
+      )
       return
     case 'coffee-shops':
-      await tx.delete(coffeeShops).where(eq(coffeeShops.id, entityId))
+      expectReturnedRow(
+        (
+          await tx
+            .delete(coffeeShops)
+            .where(eq(coffeeShops.id, entityId))
+            .returning({ id: coffeeShops.id })
+        )[0],
+        'Café',
+      )
       return
     case 'shots':
-      await tx.delete(shots).where(eq(shots.id, entityId))
+      expectReturnedRow(
+        (
+          await tx
+            .delete(shots)
+            .where(eq(shots.id, entityId))
+            .returning({ id: shots.id })
+        )[0],
+        'Shot',
+      )
       return
     case 'visits':
-      await tx.delete(cafeVisits).where(eq(cafeVisits.id, entityId))
+      expectReturnedRow(
+        (
+          await tx
+            .delete(cafeVisits)
+            .where(eq(cafeVisits.id, entityId))
+            .returning({ id: cafeVisits.id })
+        )[0],
+        'Visit',
+      )
   }
 }
 

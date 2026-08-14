@@ -1,18 +1,36 @@
-export const ROAST_LEVELS = [
-  { value: 'light', label: 'Light' },
-  { value: 'medium_light', label: 'Medium Light' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'medium_dark', label: 'Medium Dark' },
-  { value: 'dark', label: 'Dark' },
-] as const
+import {
+  BEAN_TYPE_VALUES,
+  CURRENCY_VALUES,
+  GEAR_TYPE_VALUES,
+  PROCESS_METHOD_VALUES,
+  ROAST_LEVEL_VALUES,
+} from '@/lib/domain-contracts'
+
+const ROAST_LEVEL_LABELS = {
+  light: 'Light',
+  medium_light: 'Medium Light',
+  medium: 'Medium',
+  medium_dark: 'Medium Dark',
+  dark: 'Dark',
+} as const
+
+export const ROAST_LEVELS = ROAST_LEVEL_VALUES.map((value) => ({
+  value,
+  label: ROAST_LEVEL_LABELS[value],
+}))
 
 export type RoastLevel = (typeof ROAST_LEVELS)[number]['value']
 
-export const BEAN_TYPES = [
-  { value: 'espresso', label: 'Espresso' },
-  { value: 'filter', label: 'Filter' },
-  { value: 'decaf', label: 'Decaf' },
-] as const
+const BEAN_TYPE_LABELS_BY_VALUE = {
+  espresso: 'Espresso',
+  filter: 'Filter',
+  decaf: 'Decaf',
+} as const
+
+export const BEAN_TYPES = BEAN_TYPE_VALUES.map((value) => ({
+  value,
+  label: BEAN_TYPE_LABELS_BY_VALUE[value],
+}))
 
 export type BeanType = (typeof BEAN_TYPES)[number]['value']
 
@@ -20,31 +38,38 @@ export const BEAN_TYPE_LABELS: Record<BeanType, string> = Object.fromEntries(
   BEAN_TYPES.map((type) => [type.value, type.label]),
 ) as Record<BeanType, string>
 
-export const PROCESS_METHODS = [
-  { value: 'washed', label: 'Washed' },
-  { value: 'natural', label: 'Natural' },
-  { value: 'honey', label: 'Honey' },
-  { value: 'anaerobic', label: 'Anaerobic' },
-  { value: 'wet_hulled', label: 'Wet Hulled' },
-  { value: 'carbonic_maceration', label: 'Carbonic Maceration' },
-  { value: 'other', label: 'Other' },
-] as const
+const PROCESS_METHOD_LABELS = {
+  washed: 'Washed',
+  natural: 'Natural',
+  honey: 'Honey',
+  anaerobic: 'Anaerobic',
+  wet_hulled: 'Wet Hulled',
+  carbonic_maceration: 'Carbonic Maceration',
+  other: 'Other',
+} as const
 
-export const GEAR_TYPES = [
-  { value: 'espresso_machine', label: 'Espresso Machine' },
-  {
-    value: 'espresso_machine_with_grinder',
-    label: 'Espresso Machine with Built-in Grinder',
-  },
-  { value: 'brewer', label: 'Brewer' },
-  { value: 'grinder', label: 'Grinder' },
-  { value: 'kettle', label: 'Kettle' },
-  { value: 'scale', label: 'Scale' },
-  { value: 'tamper', label: 'Tamper' },
-  { value: 'wdt', label: 'WDT Tool' },
-  { value: 'basket', label: 'Basket' },
-  { value: 'other', label: 'Other' },
-] as const
+export const PROCESS_METHODS = PROCESS_METHOD_VALUES.map((value) => ({
+  value,
+  label: PROCESS_METHOD_LABELS[value],
+}))
+
+const GEAR_TYPE_LABELS_BY_VALUE = {
+  espresso_machine: 'Espresso Machine',
+  espresso_machine_with_grinder: 'Espresso Machine with Built-in Grinder',
+  brewer: 'Brewer',
+  grinder: 'Grinder',
+  kettle: 'Kettle',
+  scale: 'Scale',
+  tamper: 'Tamper',
+  wdt: 'WDT Tool',
+  basket: 'Basket',
+  other: 'Other',
+} as const
+
+export const GEAR_TYPES = GEAR_TYPE_VALUES.map((value) => ({
+  value,
+  label: GEAR_TYPE_LABELS_BY_VALUE[value],
+}))
 
 export type GearType = (typeof GEAR_TYPES)[number]['value']
 
@@ -60,12 +85,10 @@ export const GEAR_TYPE_LABELS: Record<GearType, string> = Object.fromEntries(
   GEAR_TYPES.map((t) => [t.value, t.label]),
 ) as Record<GearType, string>
 
-export const CURRENCIES = [
-  { value: 'EUR', label: 'EUR' },
-  { value: 'USD', label: 'USD' },
-  { value: 'GBP', label: 'GBP' },
-  { value: 'CHF', label: 'CHF' },
-] as const
+export const CURRENCIES = CURRENCY_VALUES.map((value) => ({
+  value,
+  label: value,
+}))
 
 const DRINK_TYPES = [
   'Espresso',

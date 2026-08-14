@@ -92,11 +92,11 @@ export const getDashboardStats = createServerFn({ method: 'GET' }).handler(
         .from(coffeeShops)
 
       return {
-        totalShots: shotsCount.count,
-        activeBeans: activeBeansCount.count,
-        shotsThisMonth: shotsThisMonthCount.count,
-        cafeVisits: visitsCount.count,
-        coffeeShops: coffeeShopsCount.count,
+        totalShots: shotsCount?.count ?? 0,
+        activeBeans: activeBeansCount?.count ?? 0,
+        shotsThisMonth: shotsThisMonthCount?.count ?? 0,
+        cafeVisits: visitsCount?.count ?? 0,
+        coffeeShops: coffeeShopsCount?.count ?? 0,
       }
     } catch (error) {
       throw await toDisplayableDatabaseError(error)

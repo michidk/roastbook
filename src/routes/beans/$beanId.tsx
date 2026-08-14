@@ -16,6 +16,7 @@ import {
   BeanReadOnlyContent,
 } from '@/components/beans/bean-detail-content'
 import {
+  beanUpdatePayload,
   createEmptyBeanFormValues,
   toBeanFormValues,
 } from '@/components/beans/bean-form-values'
@@ -28,6 +29,7 @@ import { ShotParameterCharts } from '@/components/shot-parameter-charts'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { ExtractedBeanInfo } from '@/lib/ai'
+import { getErrorMessage } from '@/lib/error-message'
 import { imageUrl } from '@/lib/image-url'
 import {
   checkResearchEnabled,
@@ -125,31 +127,12 @@ function BeanDetailPage() {
     setIsSaving(true)
     try {
       await updateBean({
-        data: {
-          id: bean.id,
-          name: formData.name,
-          type: formData.type || null,
-          roasterId: formData.roasterId ? Number(formData.roasterId) : null,
-          weight: formData.weight || null,
-          price: formData.price || null,
-          priceCurrency: formData.priceCurrency || null,
-          shopUrl: formData.shopUrl || null,
-          origin: formData.origin,
-          region: formData.region,
-          farm: formData.farm,
-          variety: formData.variety,
-          process: formData.process,
-          roastLevel: formData.roastLevel || null,
-          roastDate: formData.roastDate ? new Date(formData.roastDate) : null,
-          notes: formData.notes,
-        },
+        data: beanUpdatePayload(bean.id, formData),
       })
       setIsEditing(false)
       await router.invalidate({ filter: (match) => match.routeId === Route.id })
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to update bean',
-      )
+      toast.error(getErrorMessage(error, 'Failed to update bean'))
     } finally {
       setIsSaving(false)
     }
@@ -187,7 +170,7 @@ function BeanDetailPage() {
         'web',
       )
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Research failed')
+      toast.error(getErrorMessage(error, 'Research failed'))
     } finally {
       setIsResearching(false)
     }
@@ -196,25 +179,31 @@ function BeanDetailPage() {
   const handleExtractFromImage = async (image: EntityImage) => {
     setExtractingImageId(image.id)
     try {
-      const blob = await fetch(imageUrl(image.storagePath)).then((response) =>
-        response.blob(),
-      )
-      const dataUrl = await new Promise<string>((resolve) => {
+      const response = await fetch(imageUrl(image.storagePath))
+      if (!response.ok) throw new Error('Could not load that picture')
+      const blob = await response.blob()
+      const dataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result as string)
+        reader.onerror = () => reject(new Error('Could not read that picture'))
+        reader.onloadend = () => {
+          if (typeof reader.result === 'string') resolve(reader.result)
+          else reject(new Error('Could not read that picture'))
+        }
         reader.readAsDataURL(blob)
       })
+      const encodedImage = dataUrl.split(',', 2)[1]
+      if (!encodedImage) throw new Error('Could not read that picture')
       showSuggestion(
         await extractBeanInfo({
           data: {
-            imageBase64: dataUrl.split(',')[1],
+            imageBase64: encodedImage,
             mimeType: blob.type,
           },
         }),
         'image',
       )
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Extraction failed')
+      toast.error(getErrorMessage(error, 'Extraction failed'))
     } finally {
       setExtractingImageId(null)
     }
@@ -228,13 +217,18 @@ function BeanDetailPage() {
         roasters={roasters}
         isEditing={isEditing}
         isSaving={isSaving}
-        onToggleArchive={async () => {
-          await updateBean({
+        onToggleArchive={() => {
+          void updateBean({
             data: { id: bean.id, isArchived: !bean.isArchived },
           })
-          await router.invalidate({
-            filter: (match) => match.routeId === Route.id,
-          })
+            .then(() =>
+              router.invalidate({
+                filter: (match) => match.routeId === Route.id,
+              }),
+            )
+            .catch((error) => {
+              toast.error(getErrorMessage(error, 'Could not update this bean'))
+            })
         }}
         onStartEdit={() => setIsEditing(true)}
         onCancelEdit={() => {

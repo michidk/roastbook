@@ -17,12 +17,10 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/dialog'
 import { type ImageFile, useImageUpload } from '@/hooks/useImageUpload'
+import { getErrorMessage } from '@/lib/error-message'
 import { thumbnailUrl } from '@/lib/image-url'
-import {
-  deleteEntityImage,
-  setImageAsThumbnail,
-  uploadEntityImage,
-} from '@/lib/server/images'
+import { deleteEntityImage, setImageAsThumbnail } from '@/lib/server/images'
+import { uploadEntityImages } from '@/lib/upload-entity-images'
 import { cn } from '@/lib/utils'
 
 export interface EntityImage {
@@ -67,7 +65,7 @@ export function EntityImageGallery({
     importFromUrl,
     pasteFromClipboard,
     removeImage,
-    clearImages,
+    removeImages,
     openFilePicker,
   } = useImageUpload()
 
@@ -76,20 +74,27 @@ export function EntityImageGallery({
   const uploadPictures = async (pictures: readonly ImageFile[]) => {
     setIsUploading(true)
     try {
-      for (const picture of pictures) {
-        await uploadEntityImage({
-          data: {
-            entityType,
-            entityId,
-            fileBase64: picture.base64,
-            filename: picture.file.name,
-            mimeType: picture.file.type,
-            sizeBytes: picture.file.size,
-          },
-        })
+      const result = await uploadEntityImages(entityType, entityId, pictures)
+      removeImages(result.uploaded)
+      if (result.uploaded.length > 0) {
+        try {
+          await onImagesChange()
+        } catch (error) {
+          toast.error(
+            getErrorMessage(
+              error,
+              'Pictures were uploaded, but the gallery could not refresh',
+            ),
+          )
+        }
       }
-      clearImages()
-      await onImagesChange()
+      if (result.failures.length > 0) {
+        toast.error(
+          `${result.failures.length} ${result.failures.length === 1 ? 'picture remains' : 'pictures remain'} to retry`,
+        )
+      }
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Could not upload pictures'))
     } finally {
       setIsUploading(false)
     }
@@ -98,10 +103,19 @@ export function EntityImageGallery({
   const handleSetThumbnail = async (imageId: number) => {
     setIsSettingThumbnail(imageId)
     try {
-      await setImageAsThumbnail({ data: { entityType, entityId, imageId } })
-      onImagesChange()
-    } catch {
-      toast.error('Failed to set thumbnail')
+      try {
+        await setImageAsThumbnail({ data: { entityType, entityId, imageId } })
+      } catch (error) {
+        toast.error(getErrorMessage(error, 'Failed to set thumbnail'))
+        return
+      }
+      try {
+        await onImagesChange()
+      } catch (error) {
+        toast.error(
+          getErrorMessage(error, 'Thumbnail changed, but the gallery is stale'),
+        )
+      }
     } finally {
       setIsSettingThumbnail(null)
     }
@@ -110,12 +124,21 @@ export function EntityImageGallery({
   const handleDeleteImage = async (image: EntityImage) => {
     setIsDeletingImage(image.id)
     try {
-      await deleteEntityImage({
-        data: { entityType, entityId, imageId: image.id },
-      })
-      onImagesChange()
-    } catch {
-      toast.error('Failed to delete image')
+      try {
+        await deleteEntityImage({
+          data: { entityType, entityId, imageId: image.id },
+        })
+      } catch (error) {
+        toast.error(getErrorMessage(error, 'Failed to delete image'))
+        return
+      }
+      try {
+        await onImagesChange()
+      } catch (error) {
+        toast.error(
+          getErrorMessage(error, 'Picture deleted, but the gallery is stale'),
+        )
+      }
     } finally {
       setIsDeletingImage(null)
     }
@@ -152,7 +175,18 @@ export function EntityImageGallery({
                         size="sm"
                         variant="secondary"
                         className="absolute bottom-2 left-2 h-11 px-3 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary sm:h-11 [@media(hover:hover)]:h-8"
-                        onClick={() => imageAction.onSelect(image)}
+                        onClick={() => {
+                          void Promise.resolve(
+                            imageAction.onSelect(image),
+                          ).catch((error) => {
+                            toast.error(
+                              getErrorMessage(
+                                error,
+                                `Could not ${imageAction.label.toLowerCase()}`,
+                              ),
+                            )
+                          })
+                        }}
                         disabled={
                           imageAction.disabled ||
                           imageAction.pendingImageId !== null
@@ -277,6 +311,17 @@ export function EntityImageGallery({
               isUploading
                 ? 'Uploading pictures…'
                 : 'New pictures upload immediately'
+            }
+            footer={
+              queuedImages.length > 0 && !isUploading ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void uploadPictures(queuedImages)}
+                >
+                  Retry queued pictures
+                </Button>
+              ) : undefined
             }
           />
         )}

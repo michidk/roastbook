@@ -2678,8 +2678,10 @@ async function seed() {
   const beanIdMap = new Map<number, number>()
   const beanImageMap = new Map<number, string>()
   IMPORTED_BEANS.forEach((importedBean, index) => {
-    beanIdMap.set(importedBean.id, insertedBeans[index].id)
-    beanImageMap.set(insertedBeans[index].id, importedBean.image_filename)
+    const insertedBean = insertedBeans[index]
+    if (!insertedBean) throw new Error('Bean insert count did not match input')
+    beanIdMap.set(importedBean.id, insertedBean.id)
+    beanImageMap.set(insertedBean.id, importedBean.image_filename)
   })
 
   console.log('  → Copying images and creating bean_images records...')
@@ -2716,6 +2718,9 @@ async function seed() {
   for (let i = 0; i < GEAR.length; i++) {
     const gearItem = GEAR[i]
     const dbGear = insertedGear[i]
+    if (!gearItem || !dbGear) {
+      throw new Error('Gear insert count did not match input')
+    }
     if (gearItem.image_source && gearItem.image_filename) {
       try {
         const stats = await stat(gearItem.image_source)

@@ -3,6 +3,7 @@ import { desc, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
 import { recipes, shots } from '@/db/schema'
+import { expectReturnedRow, notFound } from '@/lib/domain-errors'
 import { projectShotParameters } from '@/lib/server/shot-parameter-projection'
 import {
   nameSchema,
@@ -77,20 +78,18 @@ export const updateRecipe = createServerFn({ method: 'POST' })
         })
         .where(eq(recipes.id, id))
         .returning()
-      if (!recipe) throw new RecipeInputError('Recipe not found')
-      return recipe
+      return expectReturnedRow(recipe, 'Recipe')
     }),
   )
 
 export const saveShotAsRecipe = createServerFn({ method: 'POST' })
   .validator(saveShotAsRecipeSchema)
   .handler(async ({ data }) => {
-    if (!data.name) return null
     const shot = await db.query.shots.findFirst({
       where: eq(shots.id, data.shotId),
       with: { brewingMethod: true },
     })
-    if (!shot) return null
+    if (!shot) throw notFound('Shot')
 
     const [recipe] = await db
       .insert(recipes)
@@ -101,11 +100,15 @@ export const saveShotAsRecipe = createServerFn({ method: 'POST' })
         ...projectShotParameters(shot, shot.brewingMethod.enabledParameters),
       })
       .returning()
-    return recipe ?? null
+    return expectReturnedRow(recipe, 'Recipe')
   })
 
 export const deleteRecipe = createServerFn({ method: 'POST' })
   .validator(positiveIdSchema)
   .handler(async ({ data: id }) => {
-    await db.delete(recipes).where(eq(recipes.id, id))
+    const [recipe] = await db
+      .delete(recipes)
+      .where(eq(recipes.id, id))
+      .returning({ id: recipes.id })
+    expectReturnedRow(recipe, 'Recipe')
   })

@@ -106,8 +106,8 @@ jobs:
           docker logs roastbook-minio
           exit 1
 
-      - name: Test units
-        run: bun run test:unit
+      - name: Test units with coverage
+        run: bun run test:coverage
 
       - name: Test integrations
         run: bun run test:integration

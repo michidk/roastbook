@@ -13,6 +13,11 @@ import {
   timestamp,
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
+import {
+  BEAN_TYPE_VALUES,
+  GEAR_TYPE_VALUES,
+  ROAST_LEVEL_VALUES,
+} from '@/lib/domain-contracts'
 
 const timestamps = () => ({
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -33,28 +38,11 @@ const imageFile = () => ({
 
 const createdAt = () => timestamp('created_at').defaultNow().notNull()
 
-export const gearTypeEnum = pgEnum('gear_type', [
-  'espresso_machine',
-  'espresso_machine_with_grinder',
-  'brewer',
-  'grinder',
-  'kettle',
-  'scale',
-  'tamper',
-  'wdt',
-  'basket',
-  'other',
-])
+export const gearTypeEnum = pgEnum('gear_type', GEAR_TYPE_VALUES)
 
-export const roastLevelEnum = pgEnum('roast_level', [
-  'light',
-  'medium_light',
-  'medium',
-  'medium_dark',
-  'dark',
-])
+export const roastLevelEnum = pgEnum('roast_level', ROAST_LEVEL_VALUES)
 
-export const beanTypeEnum = pgEnum('bean_type', ['espresso', 'filter', 'decaf'])
+export const beanTypeEnum = pgEnum('bean_type', BEAN_TYPE_VALUES)
 
 export const settings = pgTable(
   'settings',
@@ -797,7 +785,12 @@ export const mediaCleanupJobs = pgTable(
     storagePath: text('storage_path').notNull().unique(),
     attempts: integer('attempts').default(0).notNull(),
     lastError: text('last_error'),
+    nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
     ...timestamps(),
   },
-  (table) => [index('media_cleanup_jobs_created_at_idx').on(table.createdAt)],
+  (table) => [
+    index('media_cleanup_jobs_next_attempt_at_idx').on(table.nextAttemptAt),
+  ],
 )

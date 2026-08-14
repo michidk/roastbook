@@ -3,6 +3,7 @@ import { asc, count, desc, eq, isNull, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
 import { beans, brewingMethods, shots, shotTasteTags } from '@/db/schema'
+import { expectReturnedRow } from '@/lib/domain-errors'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
 import { projectShotParameters } from '@/lib/server/shot-parameter-projection'
 import {
@@ -101,10 +102,11 @@ export const getShotPage = createServerFn({ method: 'GET' })
   .validator(shotListSchema)
   .handler(async ({ data }) => {
     const where = shotSearchCondition(data.query)
-    const [{ value: totalItems }] = await db
+    const countRows = await db
       .select({ value: count() })
       .from(shots)
       .where(where)
+    const totalItems = countRows[0]?.value ?? 0
     const totalPages = Math.max(1, Math.ceil(totalItems / SHOTS_PAGE_SIZE))
     const page = Math.min(data.page, totalPages)
     const sortExpression = shotSortExpression(data.sort)
@@ -136,10 +138,11 @@ export const getShotGroups = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     const where = shotSearchCondition(data.query)
     const groupKey = sql<number>`coalesce(${shots.beanId}, 0)`
-    const [{ value: totalItems }] = await db
+    const countRows = await db
       .select({ value: sql<number>`count(distinct ${groupKey})::int` })
       .from(shots)
       .where(where)
+    const totalItems = countRows[0]?.value ?? 0
     const totalPages = Math.max(
       1,
       Math.ceil(totalItems / SHOT_GROUPS_PAGE_SIZE),
@@ -223,17 +226,17 @@ export const createShot = createServerFn({ method: 'POST' })
         .insert(shots)
         .values(getShotValues(data, method.enabledParameters))
         .returning()
-      if (!shot) return null
+      const persistedShot = expectReturnedRow(shot, 'Shot')
 
       if (data.tasteTagIds && data.tasteTagIds.length > 0) {
         await tx.insert(shotTasteTags).values(
           [...new Set(data.tasteTagIds)].map((tasteTagId) => ({
-            shotId: shot.id,
+            shotId: persistedShot.id,
             tasteTagId,
           })),
         )
       }
-      return shot
+      return persistedShot
     }),
   )
 
@@ -255,6 +258,7 @@ export const updateShot = createServerFn({ method: 'POST' })
         })
         .where(eq(shots.id, id))
         .returning()
+      const persistedShot = expectReturnedRow(shot, 'Shot')
 
       if (tasteTagIds !== undefined) {
         await tx.delete(shotTasteTags).where(eq(shotTasteTags.shotId, id))
@@ -267,7 +271,7 @@ export const updateShot = createServerFn({ method: 'POST' })
           )
         }
       }
-      return shot
+      return persistedShot
     }),
   )
 
