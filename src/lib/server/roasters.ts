@@ -4,6 +4,16 @@ import { z } from 'zod'
 import { db } from '@/db'
 import { beans, roasters } from '@/db/schema'
 import {
+  type ExtractedRoasterInfo,
+  isResearchEnabled,
+  researchRoasterFromWeb,
+} from '@/lib/ai'
+import {
+  deleteWebsiteFaviconBestEffort,
+  refreshWebsiteFaviconBestEffort,
+} from '@/lib/server/favicon-cache.server'
+import { withResourceLimits } from '@/lib/server/resource-limits.server'
+import {
   nameSchema,
   notesSchema,
   optionalUrlSchema,
@@ -31,6 +41,8 @@ const roasterUpdateSchema = roasterCreateSchema.partial().extend({
   instagramHandle: z.string().trim().max(100).nullable().optional(),
   notes: notesSchema.nullable().optional(),
 })
+
+const researchRoasterInfoSchema = z.object({ name: nameSchema })
 
 const ROASTERS_PAGE_SIZE = 25
 const roasterListSchema = z.object({
@@ -78,6 +90,8 @@ export const getRoasterPage = createServerFn({ method: 'GET' })
         name: roasters.name,
         location: roasters.location,
         country: roasters.country,
+        website: roasters.website,
+        updatedAt: roasters.updatedAt,
         notes: roasters.notes,
         beanCount,
       })
@@ -94,19 +108,40 @@ export const getRoasterPage = createServerFn({ method: 'GET' })
 
 export const getRoaster = createServerFn({ method: 'GET' })
   .validator(positiveIdSchema)
-  .handler(async ({ data: id }) => {
-    return db.query.roasters.findFirst({
+  .handler(async ({ data: id }) =>
+    db.query.roasters.findFirst({
       where: eq(roasters.id, id),
       with: {
         beans: true,
       },
-    })
+    }),
+  )
+
+export const checkRoasterResearchEnabled = createServerFn({
+  method: 'GET',
+}).handler(async () => ({ enabled: isResearchEnabled() }))
+
+export const researchRoasterInfo = createServerFn({ method: 'POST' })
+  .validator(researchRoasterInfoSchema)
+  .handler(async ({ data }): Promise<ExtractedRoasterInfo> => {
+    if (!isResearchEnabled()) {
+      throw new Error('OpenAI research is not configured')
+    }
+
+    return withResourceLimits('roaster-web-research', () =>
+      researchRoasterFromWeb(data.name),
+    )
   })
 
 export const createRoaster = createServerFn({ method: 'POST' })
   .validator(roasterCreateSchema)
   .handler(async ({ data }) => {
     const [roaster] = await db.insert(roasters).values(data).returning()
+    await refreshWebsiteFaviconBestEffort({
+      entityType: 'roasters',
+      entityId: roaster.id,
+      website: roaster.website,
+    })
     return roaster
   })
 
@@ -119,6 +154,13 @@ export const updateRoaster = createServerFn({ method: 'POST' })
       .set({ ...values, updatedAt: new Date() })
       .where(eq(roasters.id, id))
       .returning()
+    if (roaster) {
+      await refreshWebsiteFaviconBestEffort({
+        entityType: 'roasters',
+        entityId: roaster.id,
+        website: roaster.website,
+      })
+    }
     return roaster
   })
 
@@ -126,4 +168,5 @@ export const deleteRoaster = createServerFn({ method: 'POST' })
   .validator(positiveIdSchema)
   .handler(async ({ data: id }) => {
     await db.delete(roasters).where(eq(roasters.id, id))
+    await deleteWebsiteFaviconBestEffort('roasters', id)
   })

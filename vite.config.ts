@@ -30,6 +30,10 @@ const config = defineConfig({
       '@base-ui/react/toggle',
       '@base-ui/react/tooltip',
       '@base-ui/react/use-render',
+      '@tanstack/router-core',
+      '@tanstack/router-core/isServer',
+      '@tanstack/router-core/ssr/client',
+      'seroval',
     ],
   },
   plugins: [

@@ -1,6 +1,8 @@
 import { toast } from 'sonner'
 import { InputField, TextareaField } from '@/components/form/form-field'
 import { EntityForm, FormSection } from '@/components/form/form-shell'
+import type { RoasterFormValues } from '@/components/roasters/roaster-form-values'
+import { RoasterResearchAction } from '@/components/roasters/roaster-research-action'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
 import { createRoaster } from '@/lib/server/roasters'
@@ -20,7 +22,7 @@ export function RoasterForm({
   initialName = '',
   submitLabel = 'Create roaster',
 }: RoasterFormProps) {
-  const form = useFormState({
+  const form = useFormState<RoasterFormValues>({
     name: initialName,
     location: '',
     country: '',
@@ -58,7 +60,19 @@ export function RoasterForm({
         submittingLabel: 'Creating…',
       }}
     >
-      <FormSection title="Roaster info">
+      <FormSection
+        title="Roaster info"
+        action={
+          <RoasterResearchAction
+            currentData={form.values}
+            disabled={isSubmitting}
+            onApply={(updates) => {
+              form.patch(updates)
+              toast.success(`Applied ${Object.keys(updates).length} changes`)
+            }}
+          />
+        }
+      >
         <InputField
           id="roaster-name"
           label="Name"

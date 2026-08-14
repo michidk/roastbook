@@ -1,3 +1,8 @@
+export interface StoredObject {
+  path: string
+  sizeBytes: number
+}
+
 export interface StorageProvider {
   upload(file: File | Blob, path: string): Promise<string>
   download(path: string): Promise<Blob>
@@ -5,6 +10,7 @@ export interface StorageProvider {
   getUrl(path: string): string
   exists(path: string): Promise<boolean>
   list(prefix?: string): Promise<string[]>
+  listObjects(prefix?: string): Promise<StoredObject[]>
 }
 
 export interface StorageConfig {

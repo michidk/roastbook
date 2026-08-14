@@ -8,13 +8,14 @@ import { ArrowLeft, BookOpen, Pencil } from 'lucide-react'
 import { type SyntheticEvent, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { DeleteConfirmation } from '@/components/DeleteConfirmation'
-import { InputField } from '@/components/form/form-field'
+import { InputField, SelectField } from '@/components/form/form-field'
 import { Page, PageHeader } from '@/components/page-layout'
 import {
   type ShotEditData,
   ShotEditForm,
 } from '@/components/shots/shot-edit-form'
 import { Badge } from '@/components/ui/badge'
+import { BeanRating } from '@/components/ui/bean-rating'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -35,15 +36,22 @@ import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { getActiveBeans } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getGear } from '@/lib/server/gear'
-import { saveShotAsRecipe } from '@/lib/server/recipes'
+import {
+  getRecipeOptions,
+  saveShotAsRecipe,
+  updateRecipeFromShot,
+} from '@/lib/server/recipes'
 import { deleteShot, getShot } from '@/lib/server/shots'
 import { getTasteTags } from '@/lib/server/taste-tags'
 
 export const Route = createFileRoute('/shots/$shotId')({
   loader: async ({ params }) => {
     const shotId = Number(params.shotId)
-    const shot = await getShot({ data: shotId })
-    return { shot }
+    const [shot, recipes] = await Promise.all([
+      getShot({ data: shotId }),
+      getRecipeOptions(),
+    ])
+    return { shot, recipes }
   },
   component: ShotDetailPage,
 })
@@ -65,7 +73,7 @@ function ShotDataFields({
 
 function ShotDetailPage() {
   const formatDateTime = useDateTimeFormatter()
-  const { shot } = Route.useLoaderData()
+  const { shot, recipes } = Route.useLoaderData()
   const formatNumber = useNumberFormatter()
   const navigate = useNavigate()
   const router = useRouter()
@@ -74,6 +82,9 @@ function ShotDetailPage() {
   const [isLoadingEditData, setIsLoadingEditData] = useState(false)
   const [editData, setEditData] = useState<ShotEditData | null>(null)
   const [isRecipeDialogOpen, setIsRecipeDialogOpen] = useState(false)
+  const [recipeTarget, setRecipeTarget] = useState(
+    shot?.recipe ? String(shot.recipe.id) : 'new',
+  )
   const [recipeName, setRecipeName] = useState('')
   const [isSavingRecipe, setIsSavingRecipe] = useState(false)
   const editButtonRef = useRef<HTMLButtonElement>(null)
@@ -129,18 +140,23 @@ function ShotDetailPage() {
 
   const handleSaveRecipe = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault()
+    const isNewRecipe = recipeTarget === 'new'
     const name = recipeName.trim()
-    if (!name) return
+    if (isNewRecipe && !name) return
     setIsSavingRecipe(true)
     try {
-      const recipe = await saveShotAsRecipe({ data: { shotId: shot.id, name } })
+      const recipe = isNewRecipe
+        ? await saveShotAsRecipe({ data: { shotId: shot.id, name } })
+        : await updateRecipeFromShot({
+            data: { shotId: shot.id, recipeId: Number(recipeTarget) },
+          })
       if (!recipe) {
         toast.error('Could not save this recipe')
         return
       }
       setRecipeName('')
       setIsRecipeDialogOpen(false)
-      toast.success('Recipe saved')
+      toast.success(isNewRecipe ? 'Recipe created' : 'Recipe updated')
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Could not save this recipe',
@@ -191,7 +207,21 @@ function ShotDetailPage() {
   ].filter((field) => field !== null)
   const hasTasteTags = shot.tasteTags.length > 0
   const hasNotes = Boolean(shot.notes?.trim())
-  const hasTasting = Boolean(shot.rating || hasTasteTags || hasNotes)
+  const sensoryFields = [
+    { label: 'Acidity', value: shot.acidity },
+    { label: 'Sweetness', value: shot.sweetness },
+    { label: 'Bitterness', value: shot.bitterness },
+    { label: 'Body', value: shot.body },
+    { label: 'Astringency / Dryness', value: shot.astringency },
+  ].filter(
+    (field): field is { label: string; value: number } => field.value !== null,
+  )
+  const hasTasting = Boolean(
+    shot.rating || sensoryFields.length > 0 || hasTasteTags || hasNotes,
+  )
+  const availableRecipes = recipes.filter(
+    (recipe) => recipe.brewingMethodId === shot.brewingMethodId,
+  )
 
   return (
     <Page width="form">
@@ -199,9 +229,23 @@ function ShotDetailPage() {
         size="compact"
         title={shot.bean?.name || 'Unknown beans'}
         description={
-          <time dateTime={new Date(shot.createdAt).toISOString()}>
-            {shot.brewingMethod.name} · {formatDateTime(shot.createdAt)}
-          </time>
+          <>
+            <time dateTime={new Date(shot.createdAt).toISOString()}>
+              {shot.brewingMethod.name} · {formatDateTime(shot.createdAt)}
+            </time>
+            {shot.recipe ? (
+              <>
+                {' · Recipe: '}
+                <Link
+                  to="/recipes/$recipeId"
+                  params={{ recipeId: String(shot.recipe.id) }}
+                  className="rounded-sm text-link underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {shot.recipe.name}
+                </Link>
+              </>
+            ) : null}
+          </>
         }
         leading={
           <Button variant="outline" size="icon" asChild>
@@ -222,14 +266,14 @@ function ShotDetailPage() {
                     render={<Button variant="outline" size="sm" />}
                   >
                     <BookOpen />
-                    Save as recipe
+                    Save to recipe
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Save as recipe</DialogTitle>
+                      <DialogTitle>Save shot values to a recipe</DialogTitle>
                       <DialogDescription>
-                        Save this shot’s brewing method, equipment, and recipe
-                        values for reuse.
+                        Create a recipe or replace an existing recipe’s bean,
+                        equipment, and brewing values with this shot.
                       </DialogDescription>
                     </DialogHeader>
                     <form
@@ -237,14 +281,37 @@ function ShotDetailPage() {
                       className="grid min-h-0 grid-rows-[1fr_auto]"
                     >
                       <DialogBody>
-                        <InputField
-                          id="recipe-name"
-                          label="Recipe name"
-                          value={recipeName}
-                          onChange={setRecipeName}
-                          autoFocus
-                          required
+                        <SelectField
+                          id="recipe-target"
+                          label="Save values to"
+                          value={recipeTarget}
+                          onChange={setRecipeTarget}
+                          options={[
+                            { value: 'new', label: 'A new recipe' },
+                            ...availableRecipes.map((recipe) => ({
+                              value: String(recipe.id),
+                              label:
+                                recipe.id === shot.recipe?.id
+                                  ? `${recipe.name} (used for this shot)`
+                                  : recipe.name,
+                            })),
+                          ]}
                         />
+                        {recipeTarget === 'new' ? (
+                          <InputField
+                            id="recipe-name"
+                            label="Recipe name"
+                            value={recipeName}
+                            onChange={setRecipeName}
+                            autoFocus
+                            required
+                          />
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            The selected recipe’s current values will be
+                            replaced. Its name will stay the same.
+                          </p>
+                        )}
                       </DialogBody>
                       <DialogFooter>
                         <DialogClose
@@ -260,10 +327,17 @@ function ShotDetailPage() {
                         </DialogClose>
                         <Button
                           type="submit"
-                          disabled={!recipeName.trim() || isSavingRecipe}
+                          disabled={
+                            (recipeTarget === 'new' && !recipeName.trim()) ||
+                            isSavingRecipe
+                          }
                           aria-busy={isSavingRecipe}
                         >
-                          {isSavingRecipe ? 'Saving…' : 'Save recipe'}
+                          {isSavingRecipe
+                            ? 'Saving…'
+                            : recipeTarget === 'new'
+                              ? 'Create recipe'
+                              : 'Update recipe'}
                         </Button>
                       </DialogFooter>
                     </form>
@@ -342,16 +416,34 @@ function ShotDetailPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
+                {sensoryFields.length > 0 && (
+                  <div className="grid gap-x-8 gap-y-2 sm:grid-cols-2">
+                    {sensoryFields.map((field) => (
+                      <div
+                        key={field.label}
+                        className="flex items-center justify-between gap-4"
+                      >
+                        <span className="text-sm text-muted-foreground">
+                          {field.label}
+                        </span>
+                        <BeanRating
+                          value={field.value}
+                          readOnly
+                          sizeClassName="size-4"
+                          ariaLabel={field.label}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 {hasTasteTags && (
                   <div className="flex flex-wrap gap-2">
                     {shot.tasteTags.map((tt) => (
                       <Badge
                         key={tt.id}
-                        variant={
-                          tt.tasteTag.category === 'negative'
-                            ? 'destructive'
-                            : 'default'
-                        }
+                        title={tt.tasteTag.hint ?? undefined}
+                        variant="secondary"
                       >
                         {tt.tasteTag.name}
                       </Badge>

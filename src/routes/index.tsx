@@ -124,9 +124,13 @@ function Dashboard() {
                         {formatDate(shot.createdAt)}
                       </time>
                       {shot.rating && (
-                        <div className="rounded-xl bg-card px-3 py-1.5">
-                          <StarRating value={shot.rating} variant="compact" />
-                        </div>
+                        <StarRating
+                          value={shot.rating}
+                          variant="compact"
+                          sizeClassName="size-4"
+                          className="text-sm"
+                          ariaLabel="Shot rating"
+                        />
                       )}
                     </div>
                   </Link>

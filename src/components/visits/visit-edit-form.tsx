@@ -56,9 +56,6 @@ export function VisitEditForm({
     notes: visit.notes ?? '',
   }))
 
-  const negativeTags = tasteTags.filter((tag) => tag.category === 'negative')
-  const positiveTags = tasteTags.filter((tag) => tag.category === 'positive')
-
   const toggleTag = (tagId: number) => {
     setSelectedTagIds((current) =>
       current.includes(tagId)
@@ -164,8 +161,7 @@ export function VisitEditForm({
         }}
         notes={{ value: form.values.notes, onChange: form.setField('notes') }}
         tags={{
-          negative: negativeTags,
-          positive: positiveTags,
+          options: tasteTags,
           selectedIds: selectedTagIds,
           onToggle: toggleTag,
         }}

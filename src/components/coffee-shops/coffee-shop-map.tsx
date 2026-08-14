@@ -13,11 +13,13 @@ import { useAppSettings } from '@/hooks/use-app-settings'
 type CoffeeShopMapProps = {
   readonly coffeeShops: readonly SavedPlaceInput[]
   readonly visits?: readonly PlaceVisitInput[]
+  readonly focusFirstCoffeeShop?: boolean
 }
 
 export function CoffeeShopMap({
   coffeeShops,
   visits = [],
+  focusFirstCoffeeShop = false,
 }: CoffeeShopMapProps) {
   const { defaultMapLocation } = useAppSettings()
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null)
@@ -55,7 +57,7 @@ export function CoffeeShopMap({
       <div className="relative scroll-mt-16">
         <VisitsMapCanvas
           places={savedPlaces}
-          initialLocation={defaultMapLocation}
+          initialLocation={focusFirstCoffeeShop ? null : defaultMapLocation}
           selectedPlaceId={selectedPlaceId}
           onSelectPlace={selectPlace}
         />

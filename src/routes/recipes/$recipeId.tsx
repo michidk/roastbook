@@ -16,6 +16,7 @@ import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import {
   availableGearForShot,
+  EMPTY_SHOT_FORM_VALUES,
   type ShotFormValues,
   ShotParameterFields,
   shotFormValuesFrom,
@@ -54,32 +55,7 @@ type Recipe = NonNullable<Awaited<ReturnType<typeof getRecipe>>>
 function createFormValues(recipe?: Recipe): ShotFormValues {
   return recipe
     ? { ...shotFormValuesFrom(recipe), rating: 0, notes: '' }
-    : {
-        brewingMethodId: '',
-        beanId: '',
-        machineId: '',
-        doseGrams: '',
-        brewWaterGrams: '',
-        ratioBasis: '',
-        grinderId: '',
-        grindSetting: '',
-        yieldGrams: '',
-        shotTimeSeconds: '',
-        brewTemperatureCelsius: '',
-        preinfusionTimeSeconds: '',
-        preinfusionPressureBar: '',
-        bloomTimeSeconds: '',
-        brewPressureBar: '',
-        flowRateMlPerSecond: '',
-        basketId: '',
-        usesPuckScreen: null,
-        paperFilterPosition: '',
-        distributionMethod: '',
-        tampForceKg: '',
-        accessoryGearIds: [],
-        rating: 0,
-        notes: '',
-      }
+    : { ...EMPTY_SHOT_FORM_VALUES, rating: 0 }
 }
 
 function RecipeDetailPage() {

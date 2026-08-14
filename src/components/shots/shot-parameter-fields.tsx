@@ -5,6 +5,7 @@ import { FormSection } from '@/components/form/form-shell'
 import { Toggle } from '@/components/ui/toggle'
 import { isEspressoMachineGearType, isGrinderGearType } from '@/lib/constants'
 import {
+  DISTRIBUTION_METHOD_OPTIONS,
   PAPER_FILTER_OPTIONS,
   type PaperFilterPosition,
   RATIO_BASIS_OPTIONS,
@@ -37,6 +38,11 @@ export type ShotFormValues = {
   tampForceKg: string
   accessoryGearIds: number[]
   rating: number
+  bitterness: number
+  acidity: number
+  sweetness: number
+  body: number
+  astringency: number
   notes: string
 }
 
@@ -64,6 +70,11 @@ export const EMPTY_SHOT_FORM_VALUES: ShotFormValues = {
   tampForceKg: '',
   accessoryGearIds: [],
   rating: 3,
+  bitterness: 0,
+  acidity: 0,
+  sweetness: 0,
+  body: 0,
+  astringency: 0,
   notes: '',
 }
 
@@ -162,6 +173,19 @@ export function ShotParameterFields({
   )
   const grinders = gear.filter((item) => isGrinderGearType(item.type))
   const baskets = gear.filter((item) => item.type === 'basket')
+  const distributionMethodOptions = DISTRIBUTION_METHOD_OPTIONS.some(
+    (option) => option.value === values.distributionMethod,
+  )
+    ? DISTRIBUTION_METHOD_OPTIONS
+    : values.distributionMethod
+      ? [
+          {
+            value: values.distributionMethod,
+            label: values.distributionMethod,
+          },
+          ...DISTRIBUTION_METHOD_OPTIONS,
+        ]
+      : DISTRIBUTION_METHOD_OPTIONS
   const accessories = gear.filter(
     (item) =>
       !isEspressoMachineGearType(item.type) &&
@@ -186,7 +210,7 @@ export function ShotParameterFields({
       show('grinderId') ||
       show('basketId') ||
       show('accessoryGearIds') ? (
-        <FormSection title="Setup">
+        <FormSection title="Equipment">
           <div className="grid gap-4 sm:grid-cols-2">
             {show('machineId') ? (
               <CreatableCombobox
@@ -396,7 +420,7 @@ export function ShotParameterFields({
       show('paperFilterPosition') ||
       show('distributionMethod') ||
       show('tampForceKg') ? (
-        <FormSection title="Preparation">
+        <FormSection title="Technique">
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
             {show('preinfusionTimeSeconds') ? (
               <InputField
@@ -451,10 +475,12 @@ export function ShotParameterFields({
               />
             ) : null}
             {show('distributionMethod') ? (
-              <InputField
+              <SelectField
                 id="distribution"
                 label="Distribution method"
+                placeholder="Choose a method"
                 value={values.distributionMethod}
+                options={distributionMethodOptions}
                 onChange={(value) => onChange('distributionMethod', value)}
               />
             ) : null}

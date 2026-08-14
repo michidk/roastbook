@@ -7,6 +7,11 @@ export type ShotUpdateCandidate = ShotParameterInput & {
   readonly ratioBasis?: 'target_yield' | 'brew_water' | null
   readonly paperFilterPosition?: 'none' | 'top' | 'bottom' | 'both' | null
   readonly rating?: number | null
+  readonly bitterness?: number | null
+  readonly acidity?: number | null
+  readonly sweetness?: number | null
+  readonly body?: number | null
+  readonly astringency?: number | null
   readonly notes?: string | null
   readonly tasteTagIds?: readonly number[]
 }
@@ -131,6 +136,11 @@ export function getShotUpdateErrors(
     }),
   )
   addError(errors, 'rating', getRatingError(data.rating))
+  addError(errors, 'bitterness', getRatingError(data.bitterness))
+  addError(errors, 'acidity', getRatingError(data.acidity))
+  addError(errors, 'sweetness', getRatingError(data.sweetness))
+  addError(errors, 'body', getRatingError(data.body))
+  addError(errors, 'astringency', getRatingError(data.astringency))
   return errors
 }
 

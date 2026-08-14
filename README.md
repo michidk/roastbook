@@ -60,6 +60,9 @@ Set `OPENAI_API_KEY` and these turn on — everything else works without it:
 - **Machine research.** Pull documented factory espresso settings for your
   specific model, with strict rules against inferring values from similar
   machines.
+- **Shot recommendations.** Compare the matching history for one bean, brewing
+  method, and exact gear setup, then suggest the next controlled adjustment
+  using recorded settings, sensory ratings, flavor tags, and tasting notes.
 
 Every AI call is optional, server-side only, rate-limited, and schema-validated.
 
@@ -69,12 +72,15 @@ an assistant log this morning's espresso for you.
 
 ## Features
 
-- Log shots with recipe, dose, yield, time, equipment, and tasting data.
+- Log shots with recipe, dose, yield, time, equipment, and tasting data; then
+  save the final shot values to a new or existing recipe.
 - Catalog beans, roasters, brewing methods, coffee shops, and gear.
 - Track café visits and explore saved places on a map.
 - Review activity, trends, and brewing statistics.
-- Scan labels and research beans, roasters, and machine settings with AI.
+- Scan labels, research beans, roasters, and machine settings, and dial in the
+  next shot with AI.
 - Store media locally or in S3-compatible object storage.
+- Inspect physical storage totals and tracked AI token usage and cost estimates.
 - Gate self-hosted deployments with the Hodor reverse proxy.
 
 ## Tech stack

@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 type TasteTag = {
   readonly id: number
   readonly name: string
+  readonly hint?: string | null
 }
 
 type TasteTagSelectorProps = {
@@ -23,7 +24,7 @@ export function TasteTagSelector({
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         {tags.map((tag) => {
           const isSelected = selected.includes(tag.id)
           return (
@@ -31,9 +32,10 @@ export function TasteTagSelector({
               key={tag.id}
               type="button"
               aria-pressed={isSelected}
+              title={tag.hint ?? undefined}
               onClick={() => onToggle(tag.id)}
               className={cn(
-                'min-h-11 rounded-xl border px-3 py-2 text-sm font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+                'min-h-8 rounded-lg border px-2.5 py-1 text-xs font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
                 isSelected
                   ? 'border-foreground bg-primary text-primary-foreground'
                   : 'border-border bg-secondary',

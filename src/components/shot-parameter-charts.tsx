@@ -1,6 +1,12 @@
 import { type ReactNode, useMemo } from 'react'
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import {
   type ChartConfig,
   ChartContainer,
@@ -20,6 +26,7 @@ type Shot = {
 
 type ShotParameterChartsProps = {
   shots: Shot[]
+  totalShots?: number
 }
 
 const chartConfig = {
@@ -99,7 +106,10 @@ function ShotLineChartSection({
   )
 }
 
-export function ShotParameterCharts({ shots }: ShotParameterChartsProps) {
+export function ShotParameterCharts({
+  shots,
+  totalShots = shots.length,
+}: ShotParameterChartsProps) {
   const formatDate = useDateFormatter()
   const chartData = useMemo(() => {
     const sortedShots = [...shots].sort(
@@ -143,6 +153,11 @@ export function ShotParameterCharts({ shots }: ShotParameterChartsProps) {
     <Card>
       <CardHeader>
         <CardTitle>Shot parameters over time</CardTitle>
+        <CardDescription>
+          {totalShots > shots.length
+            ? `Latest ${shots.length} of ${totalShots} shots`
+            : `${totalShots} ${totalShots === 1 ? 'shot' : 'shots'}`}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {(hasDoseData || hasYieldData) && (

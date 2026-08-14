@@ -108,8 +108,6 @@ function NewVisitPage() {
     }
   }
 
-  const negativeTags = tasteTags.filter((t) => t.category === 'negative')
-  const positiveTags = tasteTags.filter((t) => t.category === 'positive')
 
   return (
     <Page width="form">
@@ -179,8 +177,7 @@ function NewVisitPage() {
           }}
           notes={{ value: form.values.notes, onChange: form.setField('notes') }}
           tags={{
-            negative: negativeTags,
-            positive: positiveTags,
+            options: tasteTags,
             selectedIds: selectedTags,
             onToggle: toggleTag,
           }}

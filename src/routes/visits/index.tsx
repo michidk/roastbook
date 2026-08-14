@@ -71,8 +71,12 @@ function VisitsPage() {
   const visits = visitPage.items
   const featuredCoffeeShops = [
     ...coffeeShops.filter((shop) => shop.isFavorite),
+    ...coffeeShops.filter((shop) => !shop.isFavorite && shop.wantsToVisit),
     ...coffeeShops
-      .filter((shop) => !shop.isFavorite && shop.latestVisitAt !== null)
+      .filter(
+        (shop) =>
+          !shop.isFavorite && !shop.wantsToVisit && shop.latestVisitAt !== null,
+      )
       .slice(0, RECENT_PLACES_LIMIT),
   ]
   const updateSearch = (values: Partial<typeof search>) =>
@@ -181,10 +185,7 @@ function VisitCard({ visit }: { visit: Visit }) {
   const formatDate = useDateFormatter()
   const formatNumber = useNumberFormatter()
   const date = formatDate(visit.visitedAt)
-  const positiveTags =
-    visit.tasteTags?.filter((tt) => tt.tasteTag.category !== 'negative') ?? []
-  const negativeTags =
-    visit.tasteTags?.filter((tt) => tt.tasteTag.category === 'negative') ?? []
+  const tasteTags = visit.tasteTags ?? []
 
   return (
     <Link
@@ -238,20 +239,12 @@ function VisitCard({ visit }: { visit: Visit }) {
         </p>
       )}
 
-      {(positiveTags.length > 0 || negativeTags.length > 0) && (
+      {tasteTags.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {positiveTags.slice(0, 4).map((tt) => (
+          {tasteTags.slice(0, 6).map((tt) => (
             <span
               key={tt.id}
-              className="rounded-xl bg-positive/15 px-2.5 py-1 text-xs font-semibold text-positive-text"
-            >
-              {tt.tasteTag.name}
-            </span>
-          ))}
-          {negativeTags.slice(0, 2).map((tt) => (
-            <span
-              key={tt.id}
-              className="rounded-xl bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive-text"
+              className="rounded-xl bg-secondary px-2.5 py-1 text-xs font-semibold text-secondary-foreground"
             >
               {tt.tasteTag.name}
             </span>

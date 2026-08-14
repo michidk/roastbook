@@ -99,7 +99,9 @@ it.
 The default button is the amber primary action. Each page, form, or dialog has
 one visually dominant action; supporting actions use outline, secondary, or
 ghost variants. Destructive styling is reserved for deletion or irreversible
-work. Favorite controls and badges use the favorite token.
+work. Favorite controls and badges use the favorite token. “Want to visit” is
+a planning state; its active controls and indicators use the primary token and
+a bookmark icon.
 
 ### Collection toolbar
 
@@ -114,10 +116,15 @@ Summary metrics use `MetricCard`. Use the hero variant for at most one focal
 metric, default for peers, and quiet for metrics nested inside another card.
 Avoid route-local stat-card variants.
 
-Use `StarRating` for every rating. Editable ratings and prominent record
-details show the full star treatment; dense read-only contexts show the compact
-star plus `value/max`. Do not invent route-local `4/5`, `4★`, or badge-only
-variants.
+Use `StarRating` for every overall rating. Editable ratings and prominent
+record details show the full star treatment; dense read-only contexts show the
+compact star plus `value/max`. Do not invent route-local `4/5`, `4★`, or
+badge-only variants.
+
+Sensory taste attributes (acidity, sweetness, bitterness, body, astringency)
+use `BeanRating` — the same interaction as `StarRating`, with an icon suited to
+each attribute. Body uses coffee beans; the other attributes do not. Sensory
+ratings are optional; tapping the current value clears it.
 
 ### Editorial bean card
 
@@ -162,6 +169,8 @@ café inspector, and concise OpenStreetMap/CARTO attribution. The `/places`
 route remains the focused café-management list.
 
 Saved cafés use a compact filled dot. Favorites use a larger double-ring dot.
+Want-to-visit cafés keep the saved marker shape and identify the planning state
+in accessible marker names and the café inspector.
 Shape, size, state, and accessible naming carry meaning without decorative cup
 or heart glyphs.
 
@@ -273,6 +282,48 @@ the current route is inside the menu, and retain 44px mobile targets.
 Use compact cards on mobile and a shared data table from `md`. Both versions
 show the same values and navigation. Primary actions and related links remain
 explicit 44px targets. Primary mobile data never needs two-axis scrolling.
+
+The exception is a table the reader asked for. When a view control is on
+screen, honour the chosen view at every width: a control that quietly renders
+the other layout is worse than sideways scrolling. Such a table keeps all of
+its columns on a phone and scrolls horizontally inside its own container, so
+the page still scrolls vertically as one column. This applies only to an
+explicit, remembered choice — a layout that is merely too wide is still a
+layout to redesign, not to hand a scrollbar.
+
+### Browsable collections
+
+`CollectionList` is the default for any page whose job is to browse records of
+one entity. Reach for it before writing a route-local card grid or table: it
+already carries both layouts, the lead visual, the record link, the sortable
+header, and the remembered view, so a new collection inherits them instead of
+drifting. Hand-rolling one of these layouts is a deliberate design decision,
+not the path of least resistance.
+
+Cafés, roasters, recipes, and brewing methods render one server-paginated page
+through it. Every collection keeps search, pagination, and the record link
+identical across views; only the density changes.
+
+Each record leads with a photo, a meaningful icon on a tinted disc, an
+entity-owned visual such as the roaster logo, or nothing. Cards show the lead
+visual, the name with its status icons, one supporting line, and a chevron.
+Table rows repeat the same lead visual at a smaller size and add the columns
+that do not fit a card.
+
+Cards are the default. `CollectionViewToggle` sits in the collection toolbar
+and stays available at every width, including phones, where the table takes the
+two-axis exception above. The last view chosen for a collection is remembered
+in this browser; the application-wide default list view seeds the first visit
+and the server render.
+
+A page earns a custom view when the record itself carries the design, as in the
+editorial bean grid, or when browsing is not the page's main verb: shots pair a
+specialised record table with grouping, and café visits lead with the map.
+Gear is still a route-local card grid and is a migration candidate, not a
+sanctioned exception. When a collection needs one more affordance, extend
+`CollectionList` so every collection gains it, rather than forking a copy into
+a route. An entity that owns its own visual passes it through the `custom`
+media kind instead of reimplementing the layout around it.
 
 ### Content vocabulary and formatting
 

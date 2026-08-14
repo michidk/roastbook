@@ -26,7 +26,7 @@ export function createVisitsMapMarkerElement(
   const location = place.address ?? place.city
   marker.setAttribute(
     'aria-label',
-    `${variant === 'favorite' ? 'Favorite café' : 'Saved café'}: ${place.name}${location ? `, ${location}` : ''}`,
+    `${variant === 'favorite' ? 'Favorite café' : place.wantsToVisit ? 'Want-to-visit café' : 'Saved café'}: ${place.name}${location ? `, ${location}` : ''}`,
   )
 
   const pin = document.createElement('span')

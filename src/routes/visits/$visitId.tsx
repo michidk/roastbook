@@ -4,8 +4,10 @@ import {
   useNavigate,
   useRouter,
 } from '@tanstack/react-router'
-import { ArrowLeft, ExternalLink, MapPin, Pencil } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
+import { CoffeeShopCard } from '@/components/coffee-shops/coffee-shop-card'
+import { CoffeeShopMap } from '@/components/coffee-shops/coffee-shop-map'
 import { DeleteConfirmation } from '@/components/DeleteConfirmation'
 import { Page, PageHeader } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
@@ -15,25 +17,36 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { StarRating } from '@/components/ui/star-rating'
+import { CafeVisitList } from '@/components/visits/cafe-visit-list'
 import { VisitEditForm } from '@/components/visits/visit-edit-form'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { getActiveBeans } from '@/lib/server/beans'
 import { deleteCafeVisit, getCafeVisit } from '@/lib/server/cafe-visits'
-import { getCoffeeShops } from '@/lib/server/coffee-shops'
+import { getCoffeeShop, getCoffeeShops } from '@/lib/server/coffee-shops'
 import { getTasteTags } from '@/lib/server/taste-tags'
+import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/visits/$visitId')({
   loader: async ({ params }) => {
     const visitId = Number(params.visitId)
-    const [visit, coffeeShops, tasteTags, beans] = await Promise.all([
-      getCafeVisit({ data: visitId }),
+    const visit = await getCafeVisit({ data: visitId })
+    const [coffeeShops, tasteTags, beans, visitCoffeeShop] = await Promise.all([
       getCoffeeShops(),
       getTasteTags(),
       getActiveBeans(),
+      visit?.coffeeShopId
+        ? getCoffeeShop({ data: visit.coffeeShopId })
+        : Promise.resolve(null),
     ])
 
-    return { visit, coffeeShops, tasteTags, beans }
+    return {
+      visit,
+      coffeeShops,
+      tasteTags,
+      beans,
+      cafeVisitHistory: visitCoffeeShop?.cafeVisits ?? [],
+    }
   },
   component: VisitDetailPage,
   pendingComponent: DetailPending,
@@ -45,7 +58,8 @@ export const Route = createFileRoute('/visits/$visitId')({
 function VisitDetailPage() {
   const formatDateTime = useDateTimeFormatter()
   const formatNumber = useNumberFormatter()
-  const { visit, coffeeShops, tasteTags, beans } = Route.useLoaderData()
+  const { visit, coffeeShops, tasteTags, beans, cafeVisitHistory } =
+    Route.useLoaderData()
   const navigate = useNavigate()
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
@@ -78,31 +92,43 @@ function VisitDetailPage() {
     requestAnimationFrame(() => editButtonRef.current?.focus())
   }
 
-  const locationLabel = [visit.coffeeShop?.city, visit.coffeeShop?.country]
-    .filter(Boolean)
-    .join(', ')
+  const previousVisits = cafeVisitHistory.filter(
+    (cafeVisit) => cafeVisit.id !== visit.id,
+  )
+  const hasCoordinates =
+    visit.coffeeShop?.latitude != null && visit.coffeeShop?.longitude != null
+
   return (
-    <Page width="form">
+    <Page width={isEditing ? 'form' : 'wide'}>
       <PageHeader
         size="compact"
+        eyebrow="Café visit"
         title={visit.drinkName || 'Coffee'}
         description={formatDateTime(visit.visitedAt)}
         leading={
-          <Button variant="outline" size="icon" asChild>
+          <Button variant="outline" size="icon-sm" asChild>
             <Link to="/visits" aria-label="Back to visits">
-              <ArrowLeft aria-hidden className="h-4 w-4" />
+              <ArrowLeft />
             </Link>
           </Button>
         }
         actions={
           <>
+            {visit.rating ? (
+              <StarRating
+                value={visit.rating}
+                readOnly
+                sizeClassName="size-4"
+              />
+            ) : null}
             {!isEditing ? (
               <Button
                 ref={editButtonRef}
                 variant="outline"
+                size="sm"
                 onClick={() => setIsEditing(true)}
               >
-                <Pencil className="h-4 w-4" />
+                <Pencil />
                 Edit
               </Button>
             ) : null}
@@ -110,6 +136,16 @@ function VisitDetailPage() {
               title="Delete this visit?"
               description="This action cannot be undone."
               onConfirm={handleDelete}
+              trigger={
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  className="text-destructive-text hover:bg-destructive/10 hover:text-destructive-text"
+                  aria-label="Delete this visit?"
+                >
+                  <Trash2 aria-hidden />
+                </Button>
+              }
             />
           </>
         }
@@ -125,119 +161,126 @@ function VisitDetailPage() {
           onSaved={handleSaved}
         />
       ) : (
-        <>
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between gap-4">
-                <CardTitle>Visit</CardTitle>
-                {visit.rating ? (
-                  <StarRating value={visit.rating} readOnly />
-                ) : null}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Drink</p>
-                  <p className="font-medium">{visit.drinkName || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Type</p>
-                  <p className="font-medium">{visit.drinkType || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Price</p>
-                  <p className="font-medium">
-                    {visit.price
-                      ? `${visit.currency || 'EUR'} ${formatNumber(visit.price)}`
-                      : '-'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Beans</p>
-                  <p className="font-medium">{visit.bean?.name || '-'}</p>
-                </div>
-              </div>
-
-              {visit.tasteTags.length > 0 ? (
-                <>
-                  <Separator className="my-4" />
-                  <div className="flex flex-wrap gap-2">
-                    {visit.tasteTags.map((tagLink) => (
-                      <Badge
-                        key={tagLink.id}
-                        variant={
-                          tagLink.tasteTag.category === 'negative'
-                            ? 'destructive'
-                            : 'default'
-                        }
-                      >
-                        {tagLink.tasteTag.name}
-                      </Badge>
-                    ))}
-                  </div>
-                </>
-              ) : null}
-
-              {visit.notes ? (
-                <>
-                  <Separator className="my-4" />
+        <div
+          className={cn(
+            'grid gap-6',
+            hasCoordinates &&
+              'lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-start',
+          )}
+        >
+          <div className="min-w-0 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                   <div>
-                    <p className="mb-1 text-sm text-muted-foreground">Notes</p>
-                    <p className="whitespace-pre-wrap">{visit.notes}</p>
+                    <p className="text-sm text-muted-foreground">Type</p>
+                    <p className="font-medium">{visit.drinkType || '-'}</p>
                   </div>
-                </>
-              ) : null}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Café</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {visit.coffeeShop ? (
-                <>
                   <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium">{visit.coffeeShop.name}</p>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        asChild
-                        className="h-8 w-8"
+                    <p className="text-sm text-muted-foreground">Price</p>
+                    <p className="font-medium">
+                      {visit.price
+                        ? `${formatNumber(visit.price)} ${visit.currency || 'EUR'}`
+                        : '-'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Beans</p>
+                    {visit.bean ? (
+                      <Link
+                        to="/beans/$beanId"
+                        params={{ beanId: String(visit.bean.id) }}
+                        className="font-medium text-link hover:underline"
                       >
-                        <Link
-                          to="/shops/$coffeeShopId"
-                          params={{ coffeeShopId: String(visit.coffeeShop.id) }}
-                          aria-label={`View ${visit.coffeeShop.name} details`}
-                        >
-                          <ExternalLink aria-hidden className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                    </div>
-                    {locationLabel ? (
-                      <p className="text-sm text-muted-foreground">
-                        {locationLabel}
+                        {visit.bean.name}
+                      </Link>
+                    ) : (
+                      <p className="font-medium">-</p>
+                    )}
+                  </div>
+                </div>
+
+                {visit.tasteTags.length > 0 ? (
+                  <>
+                    <Separator className="my-4" />
+                    <div>
+                      <p className="mb-2 text-sm text-muted-foreground">
+                        Taste
                       </p>
-                    ) : null}
-                  </div>
-
-                  {visit.coffeeShop.address ? (
-                    <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
-                      <span>{visit.coffeeShop.address}</span>
+                      <div className="flex flex-wrap gap-2">
+                        {visit.tasteTags.map((tagLink) => (
+                          <Badge key={tagLink.id} variant="secondary">
+                            {tagLink.tasteTag.name}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
-                  ) : null}
-                </>
+                  </>
+                ) : null}
+              </CardContent>
+            </Card>
+
+            {visit.notes ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Notes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="whitespace-pre-wrap">{visit.notes}</p>
+                </CardContent>
+              </Card>
+            ) : null}
+
+            <section aria-labelledby="visit-cafe-heading" className="space-y-3">
+              <h2
+                id="visit-cafe-heading"
+                className="font-display text-lg font-bold tracking-tight"
+              >
+                Café
+              </h2>
+              {visit.coffeeShop ? (
+                <CoffeeShopCard coffeeShop={visit.coffeeShop} />
               ) : (
-                <p className="text-muted-foreground">
-                  No café linked to this visit.
-                </p>
+                <Card>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                      No café linked to this visit.
+                    </p>
+                  </CardContent>
+                </Card>
               )}
-            </CardContent>
-          </Card>
-        </>
+            </section>
+
+            {previousVisits.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    Previous visits
+                    <Badge variant="secondary" className="ml-2">
+                      {previousVisits.length}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CafeVisitList visits={previousVisits} />
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {hasCoordinates && visit.coffeeShop && (
+            <div className="lg:sticky lg:top-24">
+              <CoffeeShopMap
+                coffeeShops={[visit.coffeeShop]}
+                visits={cafeVisitHistory}
+                focusFirstCoffeeShop
+              />
+            </div>
+          )}
+        </div>
       )}
     </Page>
   )

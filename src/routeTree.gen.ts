@@ -32,6 +32,8 @@ import { Route as RoastersRoasterIdRouteImport } from './routes/roasters/$roaste
 import { Route as RecipesRecipeIdRouteImport } from './routes/recipes/$recipeId'
 import { Route as GearNewRouteImport } from './routes/gear/new'
 import { Route as GearGearIdRouteImport } from './routes/gear/$gearId'
+import { Route as BrewingMethodsNewRouteImport } from './routes/brewing-methods/new'
+import { Route as BrewingMethodsBrewingMethodIdRouteImport } from './routes/brewing-methods/$brewingMethodId'
 import { Route as BeansNewRouteImport } from './routes/beans/new'
 import { Route as BeansBeanIdRouteImport } from './routes/beans/$beanId'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
@@ -151,6 +153,17 @@ const GearGearIdRoute = GearGearIdRouteImport.update({
   path: '/gear/$gearId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BrewingMethodsNewRoute = BrewingMethodsNewRouteImport.update({
+  id: '/brewing-methods/new',
+  path: '/brewing-methods/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BrewingMethodsBrewingMethodIdRoute =
+  BrewingMethodsBrewingMethodIdRouteImport.update({
+    id: '/brewing-methods/$brewingMethodId',
+    path: '/brewing-methods/$brewingMethodId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const BeansNewRoute = BeansNewRouteImport.update({
   id: '/beans/new',
   path: '/beans/new',
@@ -174,6 +187,8 @@ export interface FileRoutesByFullPath {
   '/api/health': typeof ApiHealthRoute
   '/beans/$beanId': typeof BeansBeanIdRoute
   '/beans/new': typeof BeansNewRoute
+  '/brewing-methods/$brewingMethodId': typeof BrewingMethodsBrewingMethodIdRoute
+  '/brewing-methods/new': typeof BrewingMethodsNewRoute
   '/gear/$gearId': typeof GearGearIdRoute
   '/gear/new': typeof GearNewRoute
   '/recipes/$recipeId': typeof RecipesRecipeIdRoute
@@ -202,6 +217,8 @@ export interface FileRoutesByTo {
   '/api/health': typeof ApiHealthRoute
   '/beans/$beanId': typeof BeansBeanIdRoute
   '/beans/new': typeof BeansNewRoute
+  '/brewing-methods/$brewingMethodId': typeof BrewingMethodsBrewingMethodIdRoute
+  '/brewing-methods/new': typeof BrewingMethodsNewRoute
   '/gear/$gearId': typeof GearGearIdRoute
   '/gear/new': typeof GearNewRoute
   '/recipes/$recipeId': typeof RecipesRecipeIdRoute
@@ -231,6 +248,8 @@ export interface FileRoutesById {
   '/api/health': typeof ApiHealthRoute
   '/beans/$beanId': typeof BeansBeanIdRoute
   '/beans/new': typeof BeansNewRoute
+  '/brewing-methods/$brewingMethodId': typeof BrewingMethodsBrewingMethodIdRoute
+  '/brewing-methods/new': typeof BrewingMethodsNewRoute
   '/gear/$gearId': typeof GearGearIdRoute
   '/gear/new': typeof GearNewRoute
   '/recipes/$recipeId': typeof RecipesRecipeIdRoute
@@ -261,6 +280,8 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/beans/$beanId'
     | '/beans/new'
+    | '/brewing-methods/$brewingMethodId'
+    | '/brewing-methods/new'
     | '/gear/$gearId'
     | '/gear/new'
     | '/recipes/$recipeId'
@@ -289,6 +310,8 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/beans/$beanId'
     | '/beans/new'
+    | '/brewing-methods/$brewingMethodId'
+    | '/brewing-methods/new'
     | '/gear/$gearId'
     | '/gear/new'
     | '/recipes/$recipeId'
@@ -317,6 +340,8 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/beans/$beanId'
     | '/beans/new'
+    | '/brewing-methods/$brewingMethodId'
+    | '/brewing-methods/new'
     | '/gear/$gearId'
     | '/gear/new'
     | '/recipes/$recipeId'
@@ -346,6 +371,8 @@ export interface RootRouteChildren {
   ApiHealthRoute: typeof ApiHealthRoute
   BeansBeanIdRoute: typeof BeansBeanIdRoute
   BeansNewRoute: typeof BeansNewRoute
+  BrewingMethodsBrewingMethodIdRoute: typeof BrewingMethodsBrewingMethodIdRoute
+  BrewingMethodsNewRoute: typeof BrewingMethodsNewRoute
   GearGearIdRoute: typeof GearGearIdRoute
   GearNewRoute: typeof GearNewRoute
   RecipesRecipeIdRoute: typeof RecipesRecipeIdRoute
@@ -531,6 +558,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GearGearIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/brewing-methods/new': {
+      id: '/brewing-methods/new'
+      path: '/brewing-methods/new'
+      fullPath: '/brewing-methods/new'
+      preLoaderRoute: typeof BrewingMethodsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/brewing-methods/$brewingMethodId': {
+      id: '/brewing-methods/$brewingMethodId'
+      path: '/brewing-methods/$brewingMethodId'
+      fullPath: '/brewing-methods/$brewingMethodId'
+      preLoaderRoute: typeof BrewingMethodsBrewingMethodIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/beans/new': {
       id: '/beans/new'
       path: '/beans/new'
@@ -562,6 +603,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiHealthRoute: ApiHealthRoute,
   BeansBeanIdRoute: BeansBeanIdRoute,
   BeansNewRoute: BeansNewRoute,
+  BrewingMethodsBrewingMethodIdRoute: BrewingMethodsBrewingMethodIdRoute,
+  BrewingMethodsNewRoute: BrewingMethodsNewRoute,
   GearGearIdRoute: GearGearIdRoute,
   GearNewRoute: GearNewRoute,
   RecipesRecipeIdRoute: RecipesRecipeIdRoute,
@@ -586,3 +629,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

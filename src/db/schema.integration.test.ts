@@ -40,7 +40,8 @@ databaseDescribe('PostgreSQL schema', () => {
         and indexname in (
           'shot_taste_tags_shot_tag_idx',
           'bean_images_one_thumbnail_idx',
-          'roasters_name_idx'
+          'roasters_name_idx',
+          'shots_recipe_id_idx'
         )
     `
 
@@ -48,6 +49,7 @@ databaseDescribe('PostgreSQL schema', () => {
     expect(indexes.map(({ indexname }) => indexname).sort()).toEqual([
       'bean_images_one_thumbnail_idx',
       'roasters_name_idx',
+      'shots_recipe_id_idx',
       'shot_taste_tags_shot_tag_idx',
     ])
   })
@@ -66,6 +68,87 @@ databaseDescribe('PostgreSQL schema', () => {
       select count(*)::int as count from roasters where name = ${name}
     `
     expect(rows[0]?.count).toBe(0)
+  })
+
+  test('sets the initial map location to Paris', async () => {
+    const settings = await database()<
+      [
+        {
+          defaultMapLatitude: number
+          defaultMapLongitude: number
+          defaultMapLabel: string
+        },
+      ]
+    >`
+      select
+        default_map_latitude as "defaultMapLatitude",
+        default_map_longitude as "defaultMapLongitude",
+        default_map_label as "defaultMapLabel"
+      from settings
+      where id = 1
+    `
+
+    expect(settings[0]).toEqual({
+      defaultMapLatitude: 48.8566,
+      defaultMapLongitude: 2.3522,
+      defaultMapLabel: 'Paris, France',
+    })
+  })
+
+  test('defaults the list view to cards and rejects unknown views', async () => {
+    const settings = await database()<[{ defaultListView: string }]>`
+      select default_list_view as "defaultListView" from settings where id = 1
+    `
+    expect(settings[0]?.defaultListView).toBe('cards')
+
+    await expect(
+      database()`update settings set default_list_view = 'grid' where id = 1`,
+    ).rejects.toThrow(/settings_list_view_check/)
+  })
+
+  test('stores valid AI usage and rejects negative token counts', async () => {
+    const requestId = `ai-usage-${crypto.randomUUID()}`
+
+    try {
+      const [usage] = await database()<
+        [{ totalTokens: number; estimatedCostUsd: string }]
+      >`
+        insert into ai_usage (
+          request_id,
+          feature,
+          model,
+          prompt_tokens,
+          completion_tokens,
+          total_tokens,
+          estimated_cost_usd
+        ) values (${requestId}, 'test', 'gpt-4o', 100, 20, 120, 0.00045)
+        returning
+          total_tokens as "totalTokens",
+          estimated_cost_usd as "estimatedCostUsd"
+      `
+
+      expect(usage).toEqual({
+        totalTokens: 120,
+        estimatedCostUsd: '0.0004500000',
+      })
+    } finally {
+      await database()`delete from ai_usage where request_id = ${requestId}`
+    }
+
+    await expectPostgresError(
+      () =>
+        database()`
+          insert into ai_usage (
+            request_id,
+            feature,
+            model,
+            prompt_tokens,
+            completion_tokens,
+            total_tokens
+          ) values ('invalid-ai-usage', 'test', 'gpt-4o', -1, 0, 0)
+        `,
+      '23514',
+    )
   })
 
   test('cascades image metadata when a parent is deleted', async () => {
@@ -139,5 +222,52 @@ databaseDescribe('PostgreSQL schema', () => {
         `,
       '23514',
     )
+  })
+
+  test('keeps the recipe used by a shot and unlinks it on recipe deletion', async () => {
+    await database().begin(async (transaction) => {
+      const [method] = await transaction<[{ id: number }]>`
+        insert into brewing_methods (name)
+        values (${`recipe-link-${crypto.randomUUID()}`}) returning id
+      `
+      const [recipe] = await transaction<[{ id: number }]>`
+        insert into recipes (name, brewing_method_id)
+        values ('Linked recipe', ${method.id}) returning id
+      `
+      const [shot] = await transaction<[{ id: number; recipeId: number }]>`
+        insert into shots (brewing_method_id, recipe_id)
+        values (${method.id}, ${recipe.id})
+        returning id, recipe_id as "recipeId"
+      `
+
+      expect(shot.recipeId).toBe(recipe.id)
+      await transaction`delete from recipes where id = ${recipe.id}`
+      const [unlinkedShot] = await transaction<[{ recipeId: number | null }]>`
+        select recipe_id as "recipeId" from shots where id = ${shot.id}
+      `
+      expect(unlinkedShot.recipeId).toBeNull()
+
+      await transaction`delete from shots where id = ${shot.id}`
+      await transaction`delete from brewing_methods where id = ${method.id}`
+    })
+  })
+
+  test('defaults café lists to inactive', async () => {
+    await database().begin(async (transaction) => {
+      const [coffeeShop] = await transaction<
+        [{ isFavorite: boolean; wantsToVisit: boolean }]
+      >`
+        insert into coffee_shops (name)
+        values (${`lists-${crypto.randomUUID()}`})
+        returning
+          is_favorite as "isFavorite",
+          wants_to_visit as "wantsToVisit"
+      `
+
+      expect(coffeeShop).toEqual({
+        isFavorite: false,
+        wantsToVisit: false,
+      })
+    })
   })
 })

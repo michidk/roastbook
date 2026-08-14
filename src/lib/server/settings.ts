@@ -13,6 +13,7 @@ import {
   isNumberFormat,
   type NumberFormat,
 } from '@/lib/app-settings'
+import { type CollectionView, isCollectionView } from '@/lib/collection-view'
 
 const defaultMapLocationSchema = z
   .object({
@@ -38,6 +39,11 @@ function numberFormatSchema(value: unknown): NumberFormat {
   return value
 }
 
+function listViewSchema(value: unknown): CollectionView {
+  if (!isCollectionView(value)) throw new Error('Choose a supported list view')
+  return value
+}
+
 function toAppSettings(row: typeof settingsTable.$inferSelect): AppSettings {
   const latitude = row.defaultMapLatitude
   const longitude = row.defaultMapLongitude
@@ -50,6 +56,7 @@ function toAppSettings(row: typeof settingsTable.$inferSelect): AppSettings {
   return {
     defaultCurrency: currencySchema(row.defaultCurrency),
     dateFormat: dateFormatSchema(row.dateFormat),
+    defaultListView: listViewSchema(row.defaultListView),
     defaultMapLocation,
     numberFormat: numberFormatSchema(row.numberFormat),
   }
@@ -116,6 +123,21 @@ export const updateNumberFormat = createServerFn({ method: 'POST' })
       })
       .returning()
     if (!row) throw new Error('Could not save the number format')
+    return toAppSettings(row)
+  })
+
+export const updateDefaultListView = createServerFn({ method: 'POST' })
+  .validator(listViewSchema)
+  .handler(async ({ data: defaultListView }) => {
+    const [row] = await db
+      .insert(settingsTable)
+      .values({ id: 1, defaultListView })
+      .onConflictDoUpdate({
+        target: settingsTable.id,
+        set: { defaultListView, updatedAt: new Date() },
+      })
+      .returning()
+    if (!row) throw new Error('Could not save the default list view')
     return toAppSettings(row)
   })
 

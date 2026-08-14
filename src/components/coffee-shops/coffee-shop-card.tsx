@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
-import { ChevronRight, Heart, MapPin, MapPinOff } from 'lucide-react'
+import { Bookmark, ChevronRight, Heart, MapPin, MapPinOff } from 'lucide-react'
 import { interactiveCardLinkClassName } from '@/components/ui/card'
+import { WebsiteLogo } from '@/components/website-logo'
 import { cn } from '@/lib/utils'
 
 type CoffeeShopCardItem = {
@@ -9,9 +10,12 @@ type CoffeeShopCardItem = {
   readonly address: string | null
   readonly city: string | null
   readonly country: string | null
+  readonly website: string | null
+  readonly updatedAt: Date | string
   readonly latitude: string | null
   readonly longitude: string | null
   readonly isFavorite: boolean
+  readonly wantsToVisit: boolean
 }
 
 type CoffeeShopCardProps = {
@@ -45,20 +49,30 @@ export function CoffeeShopCard({
         isProminentFavorite && 'ring-2 ring-favorite/35 ring-inset',
       )}
     >
-      <span
-        className={
-          isProminentFavorite
-            ? 'flex size-10 shrink-0 items-center justify-center rounded-full bg-favorite/15 text-favorite'
-            : hasCoordinates
-              ? 'flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary'
-              : 'flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground'
-        }
-      >
-        <LocationIcon
-          aria-hidden
-          className={cn('size-4', isProminentFavorite && 'fill-current')}
+      {coffeeShop.website ? (
+        <WebsiteLogo
+          entityType="coffee-shops"
+          entityId={coffeeShop.id}
+          website={coffeeShop.website}
+          updatedAt={coffeeShop.updatedAt}
+          className="size-10 rounded-full p-1"
         />
-      </span>
+      ) : (
+        <span
+          className={
+            isProminentFavorite
+              ? 'flex size-10 shrink-0 items-center justify-center rounded-full bg-favorite/15 text-favorite'
+              : hasCoordinates
+                ? 'flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary'
+                : 'flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground'
+          }
+        >
+          <LocationIcon
+            aria-hidden
+            className={cn('size-4', isProminentFavorite && 'fill-current')}
+          />
+        </span>
+      )}
       <span className="min-w-0 flex-1 space-y-0.5">
         <span className="flex items-center gap-1.5">
           {isProminentFavorite && (
@@ -71,6 +85,12 @@ export function CoffeeShopCard({
             <Heart
               aria-label="Favorite"
               className="size-3.5 shrink-0 fill-current text-favorite"
+            />
+          )}
+          {coffeeShop.wantsToVisit && (
+            <Bookmark
+              aria-label="Want to visit"
+              className="size-3.5 shrink-0 fill-current text-primary"
             />
           )}
         </span>

@@ -19,6 +19,7 @@ import {
   useState,
 } from 'react'
 import { toast } from 'sonner'
+import { z } from 'zod'
 import { DeleteConfirmation } from '@/components/DeleteConfirmation'
 import { EntityImageGallery } from '@/components/entity-image-gallery'
 import {
@@ -35,7 +36,10 @@ import { MachineSettingsDiffModal } from '@/components/gear/machine-settings-dif
 import { Page, PageHeader } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
-import { ShotsTable } from '@/components/ShotsTable'
+import {
+  ShotsTable,
+  type ShotsTableServerPagination,
+} from '@/components/ShotsTable'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -55,17 +59,42 @@ import {
   researchMachineSettings,
   updateGear,
 } from '@/lib/server/gear'
-import { getShotsByGear } from '@/lib/server/shots'
+import { getGearShotPage } from '@/lib/server/shots'
+
+const gearDetailSearchSchema = z.object({
+  shotPage: z.number().int().min(1).max(100_000).default(1).catch(1),
+  shotQuery: z.string().max(200).default('').catch(''),
+  shotSort: z
+    .enum(['date', 'bean', 'dose', 'yield', 'time', 'rating'])
+    .default('date')
+    .catch('date'),
+  shotDirection: z.enum(['asc', 'desc']).default('desc').catch('desc'),
+})
 
 export const Route = createFileRoute('/gear/$gearId')({
-  loader: async ({ params }) => {
+  validateSearch: gearDetailSearchSchema,
+  loaderDeps: ({ search }) => ({
+    shotPage: search.shotPage,
+    shotQuery: search.shotQuery,
+    shotSort: search.shotSort,
+    shotDirection: search.shotDirection,
+  }),
+  loader: async ({ params, deps }) => {
     const gearId = Number(params.gearId)
-    const [gear, shots, research] = await Promise.all([
+    const [gear, shotPage, research] = await Promise.all([
       getGearById({ data: gearId }),
-      getShotsByGear({ data: gearId }),
+      getGearShotPage({
+        data: {
+          entityId: gearId,
+          page: deps.shotPage,
+          query: deps.shotQuery,
+          sort: deps.shotSort,
+          direction: deps.shotDirection,
+        },
+      }),
       checkGearResearchEnabled(),
     ])
-    return { gear, shots, researchEnabled: research.enabled }
+    return { gear, shotPage, researchEnabled: research.enabled }
   },
   component: GearDetailPage,
   pendingComponent: DetailPending,
@@ -126,8 +155,9 @@ function createGearFormData(gear?: Gear | null) {
 type GearFormData = ReturnType<typeof createGearFormData>
 
 function GearDetailPage() {
-  const { gear, shots, researchEnabled } = Route.useLoaderData()
-  const navigate = useNavigate()
+  const { gear, shotPage, researchEnabled } = Route.useLoaderData()
+  const search = Route.useSearch()
+  const navigate = useNavigate({ from: '/gear/$gearId' })
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -136,6 +166,33 @@ function GearDetailPage() {
   const [researchedSettings, setResearchedSettings] =
     useState<ExtractedMachineSettings | null>(null)
   const [formData, setFormData] = useState(() => createGearFormData(gear))
+
+  const updateShotSearch = (values: Partial<typeof search>) =>
+    navigate({ search: (current) => ({ ...current, ...values }) })
+
+  const shotPagination: ShotsTableServerPagination = {
+    page: shotPage.page,
+    totalPages: shotPage.totalPages,
+    totalItems: shotPage.totalItems,
+    query: search.shotQuery,
+    sortKey: search.shotSort,
+    sortDirection: search.shotDirection,
+    onPageChange: (shotPage) => updateShotSearch({ shotPage }),
+    onQueryChange: (shotQuery) => updateShotSearch({ shotQuery, shotPage: 1 }),
+    onSort: (shotSort) =>
+      updateShotSearch({
+        shotSort,
+        shotDirection:
+          search.shotSort === shotSort
+            ? search.shotDirection === 'asc'
+              ? 'desc'
+              : 'asc'
+            : shotSort === 'date' || shotSort === 'rating'
+              ? 'desc'
+              : 'asc',
+        shotPage: 1,
+      }),
+  }
 
   if (!gear) {
     return (
@@ -310,7 +367,11 @@ function GearDetailPage() {
               }
             />
           )}
-          <GearReadOnlyContent gear={gear} shots={shots} />
+          <GearReadOnlyContent
+            gear={gear}
+            shots={shotPage.items}
+            shotPagination={shotPagination}
+          />
         </>
       )}
       {researchedSettings ? (
@@ -695,9 +756,11 @@ function MachineSettingsCard({ gear }: { gear: Gear }) {
 function GearReadOnlyContent({
   gear,
   shots,
+  shotPagination,
 }: {
   gear: Gear
-  shots: Awaited<ReturnType<typeof getShotsByGear>>
+  shots: Awaited<ReturnType<typeof getGearShotPage>>['items']
+  shotPagination: ShotsTableServerPagination
 }) {
   const formatDate = useDateFormatter()
   const formatNumber = useNumberFormatter()
@@ -785,7 +848,7 @@ function GearReadOnlyContent({
           <CardTitle>Shot history</CardTitle>
         </CardHeader>
         <CardContent>
-          <ShotsTable shots={shots} />
+          <ShotsTable shots={shots} serverPagination={shotPagination} />
         </CardContent>
       </Card>
     </>

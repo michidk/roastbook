@@ -63,9 +63,14 @@ export const settings = pgTable(
     defaultCurrency: text('default_currency').default('EUR').notNull(),
     dateFormat: text('date_format').default('day-month-year-slash').notNull(),
     numberFormat: text('number_format').default('decimal-point').notNull(),
-    defaultMapLatitude: doublePrecision('default_map_latitude'),
-    defaultMapLongitude: doublePrecision('default_map_longitude'),
-    defaultMapLabel: text('default_map_label'),
+    defaultListView: text('default_list_view').default('cards').notNull(),
+    defaultMapLatitude: doublePrecision('default_map_latitude').default(
+      48.8566,
+    ),
+    defaultMapLongitude: doublePrecision('default_map_longitude').default(
+      2.3522,
+    ),
+    defaultMapLabel: text('default_map_label').default('Paris, France'),
     ...timestamps(),
   },
   (table) => [
@@ -83,6 +88,10 @@ export const settings = pgTable(
       sql`${table.numberFormat} in ('decimal-point', 'decimal-comma', 'space-decimal-point', 'space-decimal-comma', 'apostrophe-decimal-point', 'apostrophe-decimal-comma')`,
     ),
     check(
+      'settings_list_view_check',
+      sql`${table.defaultListView} in ('cards', 'table')`,
+    ),
+    check(
       'settings_map_location_check',
       sql`(
         (${table.defaultMapLatitude} is null
@@ -97,6 +106,41 @@ export const settings = pgTable(
           and length(trim(${table.defaultMapLabel})) > 0)
       )`,
     ),
+  ],
+)
+
+export const aiUsage = pgTable(
+  'ai_usage',
+  {
+    id: serial('id').primaryKey(),
+    requestId: text('request_id').notNull(),
+    feature: text('feature').notNull(),
+    model: text('model').notNull(),
+    promptTokens: integer('prompt_tokens').notNull(),
+    cachedPromptTokens: integer('cached_prompt_tokens').default(0).notNull(),
+    completionTokens: integer('completion_tokens').notNull(),
+    totalTokens: integer('total_tokens').notNull(),
+    estimatedCostUsd: decimal('estimated_cost_usd', {
+      precision: 18,
+      scale: 10,
+    }),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    check(
+      'ai_usage_tokens_nonnegative_check',
+      sql`${table.promptTokens} >= 0
+        and ${table.cachedPromptTokens} >= 0
+        and ${table.cachedPromptTokens} <= ${table.promptTokens}
+        and ${table.completionTokens} >= 0
+        and ${table.totalTokens} >= 0`,
+    ),
+    check(
+      'ai_usage_cost_nonnegative_check',
+      sql`${table.estimatedCostUsd} is null or ${table.estimatedCostUsd} >= 0`,
+    ),
+    index('ai_usage_request_id_idx').on(table.requestId),
+    index('ai_usage_created_at_idx').on(table.createdAt),
   ],
 )
 
@@ -488,6 +532,7 @@ export const coffeeShops = pgTable(
     notes: text('notes'),
     rating: integer('rating'),
     isFavorite: boolean('is_favorite').default(false).notNull(),
+    wantsToVisit: boolean('wants_to_visit').default(false).notNull(),
     ...timestamps(),
   },
   (table) => [
@@ -537,9 +582,17 @@ export const shots = pgTable(
   'shots',
   {
     id: serial('id').primaryKey(),
+    recipeId: integer('recipe_id').references(() => recipes.id, {
+      onDelete: 'set null',
+    }),
     ...shotContextColumns(),
     ...shotParameterColumns(),
     rating: integer('rating'),
+    bitterness: integer('bitterness'),
+    acidity: integer('acidity'),
+    sweetness: integer('sweetness'),
+    body: integer('body'),
+    astringency: integer('astringency'),
     notes: text('notes'),
     ...timestamps(),
   },
@@ -553,6 +606,14 @@ export const shots = pgTable(
       sql`${table.paperFilterPosition} in ('none', 'top', 'bottom', 'both')`,
     ),
     check('shots_rating_check', sql`${table.rating} between 1 and 5`),
+    check(
+      'shots_sensory_ratings_check',
+      sql`(${table.bitterness} is null or ${table.bitterness} between 1 and 5)
+        and (${table.acidity} is null or ${table.acidity} between 1 and 5)
+        and (${table.sweetness} is null or ${table.sweetness} between 1 and 5)
+        and (${table.body} is null or ${table.body} between 1 and 5)
+        and (${table.astringency} is null or ${table.astringency} between 1 and 5)`,
+    ),
     check(
       'shots_measurements_nonnegative',
       sql`(${table.doseGrams} is null or ${table.doseGrams} >= 0)
@@ -568,6 +629,7 @@ export const shots = pgTable(
         and (${table.tampForceKg} is null or ${table.tampForceKg} >= 0)`,
     ),
     index('shots_created_at_idx').on(table.createdAt),
+    index('shots_recipe_id_idx').on(table.recipeId),
     index('shots_bean_id_idx').on(table.beanId),
     index('shots_machine_id_idx').on(table.machineId),
     index('shots_grinder_id_idx').on(table.grinderId),
@@ -576,6 +638,10 @@ export const shots = pgTable(
 )
 
 export const shotsRelations = relations(shots, ({ one, many }) => ({
+  recipe: one(recipes, {
+    fields: [shots.recipeId],
+    references: [recipes.id],
+  }),
   brewingMethod: one(brewingMethods, {
     fields: [shots.brewingMethodId],
     references: [brewingMethods.id],
@@ -639,6 +705,7 @@ export const tasteTags = pgTable(
     category: text('category'),
     extractionAxis: decimal('extraction_axis', { precision: 3, scale: 2 }),
     strengthAxis: decimal('strength_axis', { precision: 3, scale: 2 }),
+    hint: text('hint'),
   },
   (table) => [
     check(

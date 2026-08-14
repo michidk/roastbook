@@ -10,7 +10,10 @@ import {
   ShotParameterFields,
   shotFormValuesFrom,
 } from '@/components/shots/shot-parameter-fields'
-import { shotParameterPayload } from '@/lib/new-shot-payload'
+import {
+  sensoryRatingPayload,
+  shotParameterPayload,
+} from '@/lib/new-shot-payload'
 import type { getActiveBeans } from '@/lib/server/beans'
 import type { getBrewingMethods } from '@/lib/server/brewing-methods'
 import type { getGear } from '@/lib/server/gear'
@@ -43,6 +46,11 @@ export function ShotEditForm({
   const [values, setValues] = useState<ShotFormValues>(() => ({
     ...shotFormValuesFrom(shot),
     rating: shot.rating ?? 0,
+    bitterness: shot.bitterness ?? 0,
+    acidity: shot.acidity ?? 0,
+    sweetness: shot.sweetness ?? 0,
+    body: shot.body ?? 0,
+    astringency: shot.astringency ?? 0,
     notes: shot.notes ?? '',
   }))
   const [tasteTagIds, setTasteTagIds] = useState(
@@ -63,6 +71,7 @@ export function ShotEditForm({
       id: shot.id,
       ...shotParameterPayload(values),
       rating: values.rating || null,
+      ...sensoryRatingPayload(values),
       notes: values.notes || null,
       tasteTagIds,
     }
@@ -83,12 +92,6 @@ export function ShotEditForm({
     }
   }
 
-  const positive = editData.tasteTags.filter(
-    (tag) => tag.category === 'positive',
-  )
-  const negative = editData.tasteTags.filter(
-    (tag) => tag.category === 'negative',
-  )
   const beans =
     shot.bean && !editData.beans.some((bean) => bean.id === shot.bean?.id)
       ? [shot.bean, ...editData.beans]
@@ -157,10 +160,13 @@ export function ShotEditForm({
           onChange: (value) => set('notes', value),
         }}
         tags={{
-          negative,
-          positive,
+          options: editData.tasteTags,
           selectedIds: tasteTagIds,
           onToggle: toggleTag,
+        }}
+        sensory={{
+          values,
+          onChange: (key, value) => set(key, value),
         }}
       />
     </EntityForm>

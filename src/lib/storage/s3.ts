@@ -2,11 +2,11 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
-  ListObjectsV2Command,
+  paginateListObjectsV2,
   S3Client,
 } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
-import type { StorageConfig, StorageProvider } from './types'
+import type { StorageConfig, StorageProvider, StoredObject } from './types'
 
 export class S3StorageProvider implements StorageProvider {
   private client: S3Client
@@ -80,25 +80,26 @@ export class S3StorageProvider implements StorageProvider {
   }
 
   async list(prefix?: string): Promise<string[]> {
-    const paths: string[] = []
-    let continuationToken: string | undefined
+    return (await this.listObjects(prefix)).map(({ path }) => path)
+  }
 
-    do {
-      const response = await this.client.send(
-        new ListObjectsV2Command({
-          Bucket: this.bucket,
-          Prefix: prefix,
-          ContinuationToken: continuationToken,
-        }),
-      )
-      for (const object of response.Contents ?? []) {
-        if (object.Key) paths.push(object.Key)
+  async listObjects(prefix?: string): Promise<StoredObject[]> {
+    const objects: StoredObject[] = []
+    const pages = paginateListObjectsV2(
+      { client: this.client },
+      { Bucket: this.bucket, Prefix: prefix },
+    )
+
+    for await (const page of pages) {
+      for (const object of page.Contents ?? []) {
+        if (!object.Key) continue
+        objects.push({
+          path: object.Key,
+          sizeBytes: object.Size ?? 0,
+        })
       }
-      continuationToken = response.IsTruncated
-        ? response.NextContinuationToken
-        : undefined
-    } while (continuationToken)
+    }
 
-    return paths
+    return objects
   }
 }

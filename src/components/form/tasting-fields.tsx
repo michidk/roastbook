@@ -1,5 +1,9 @@
 import type { ComponentType } from 'react'
 import { TextareaField } from '@/components/form/form-field'
+import {
+  SensoryRatingFields,
+  type SensoryValues,
+} from '@/components/shots/sensory-rating-fields'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -10,6 +14,7 @@ import { cn } from '@/lib/utils'
 type TasteTagOption = {
   readonly id: number
   readonly name: string
+  readonly hint?: string | null
 }
 
 type NotesFieldProps = {
@@ -25,10 +30,17 @@ type ValueControl<T> = {
 }
 
 type TasteTagControl = {
-  readonly negative: readonly TasteTagOption[]
-  readonly positive: readonly TasteTagOption[]
+  readonly options: readonly TasteTagOption[]
   readonly selectedIds: readonly number[]
   readonly onToggle: (tagId: number) => void
+}
+
+type SensoryControl = {
+  readonly values: SensoryValues
+  readonly onChange: <Key extends keyof SensoryValues>(
+    key: Key,
+    value: number,
+  ) => void
 }
 
 type TastingFieldsProps = {
@@ -36,11 +48,12 @@ type TastingFieldsProps = {
   readonly rating: ValueControl<number>
   readonly notes: ValueControl<string>
   readonly tags: TasteTagControl
+  readonly sensory?: SensoryControl
 }
 
 const TASTING_CONFIG = {
   shot: {
-    heading: 'Tasting Notes',
+    heading: 'Tasting',
     headingId: undefined,
     ratingLabel: 'Shot rating',
   },
@@ -61,6 +74,7 @@ export function TastingFields({
   rating,
   notes,
   tags,
+  sensory,
 }: TastingFieldsProps) {
   const config = TASTING_CONFIG[kind]
   const NotesField = NOTES_FIELDS[kind]
@@ -75,22 +89,33 @@ export function TastingFields({
         <CardTitle id={config.headingId}>{config.heading}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <p className="text-sm font-medium">Rating</p>
-          <StarRating
-            value={rating.value}
-            onChange={rating.onChange}
-            ariaLabel={config.ratingLabel}
-          />
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+            <span className="text-sm font-medium">Overall rating</span>
+            <StarRating
+              value={rating.value}
+              onChange={rating.onChange}
+              sizeClassName="size-5"
+              ariaLabel={config.ratingLabel}
+            />
+          </div>
+
+          {sensory ? (
+            <SensoryRatingFields
+              values={sensory.values}
+              onChange={sensory.onChange}
+            />
+          ) : null}
         </div>
 
-        <TasteTags
-          idPrefix={idPrefix}
-          negativeTags={tags.negative}
-          positiveTags={tags.positive}
-          selectedTagIds={tags.selectedIds}
-          onToggleTag={tags.onToggle}
-        />
+        {tags.options.length > 0 ? (
+          <TasteTags
+            id={`${idPrefix}-tags-label`}
+            tags={tags.options}
+            selectedTagIds={tags.selectedIds}
+            onToggleTag={tags.onToggle}
+          />
+        ) : null}
 
         <NotesField notes={notes.value} onNotesChange={notes.onChange} />
       </CardContent>
@@ -99,71 +124,20 @@ export function TastingFields({
 }
 
 function TasteTags({
-  idPrefix,
-  negativeTags,
-  positiveTags,
-  selectedTagIds,
-  onToggleTag,
-}: {
-  readonly idPrefix: TastingKind
-  readonly negativeTags: readonly TasteTagOption[]
-  readonly positiveTags: readonly TasteTagOption[]
-  readonly selectedTagIds: readonly number[]
-  readonly onToggleTag: (tagId: number) => void
-}) {
-  return (
-    <>
-      {negativeTags.length > 0 ? (
-        <TasteTagGroup
-          id={`${idPrefix}-issues-label`}
-          label="Issues"
-          labelClassName="text-destructive-text"
-          tags={negativeTags}
-          selectedTagIds={selectedTagIds}
-          selectedVariant="destructive"
-          hoverClassName="hover:bg-destructive/10"
-          onToggleTag={onToggleTag}
-        />
-      ) : null}
-      {positiveTags.length > 0 ? (
-        <TasteTagGroup
-          id={`${idPrefix}-positives-label`}
-          label="Positives"
-          labelClassName="text-link"
-          tags={positiveTags}
-          selectedTagIds={selectedTagIds}
-          selectedVariant="default"
-          hoverClassName="hover:bg-primary/10"
-          onToggleTag={onToggleTag}
-        />
-      ) : null}
-    </>
-  )
-}
-
-function TasteTagGroup({
   id,
-  label,
-  labelClassName,
   tags,
   selectedTagIds,
-  selectedVariant,
-  hoverClassName,
   onToggleTag,
 }: {
   readonly id: string
-  readonly label: string
-  readonly labelClassName: string
   readonly tags: readonly TasteTagOption[]
   readonly selectedTagIds: readonly number[]
-  readonly selectedVariant: 'default' | 'destructive'
-  readonly hoverClassName: string
   readonly onToggleTag: (tagId: number) => void
 }) {
   return (
     <fieldset className="min-w-0 space-y-2 border-0 p-0">
-      <legend id={id} className={cn('text-sm font-medium', labelClassName)}>
-        {label}
+      <legend id={id} className="text-sm font-medium">
+        Flavor tags
       </legend>
       <div className="flex flex-wrap gap-2">
         {tags.map((tag) => {
@@ -173,11 +147,12 @@ function TasteTagGroup({
               key={tag.id}
               render={<button type="button" />}
               aria-pressed={isSelected}
-              variant={isSelected ? selectedVariant : 'outline'}
+              variant={isSelected ? 'default' : 'outline'}
               className={cn(
                 'h-8 px-3 transition-colors',
-                !isSelected && hoverClassName,
+                !isSelected && 'hover:bg-primary/10',
               )}
+              title={tag.hint ?? undefined}
               onClick={() => onToggleTag(tag.id)}
             >
               {tag.name}
@@ -192,7 +167,7 @@ function TasteTagGroup({
 function ShotNotesField({ notes, onNotesChange }: NotesFieldProps) {
   return (
     <div className="space-y-2">
-      <Label htmlFor="notes">Notes</Label>
+      <Label htmlFor="notes">Tasting notes</Label>
       <Textarea
         id="notes"
         placeholder="How was it? Any observations?"

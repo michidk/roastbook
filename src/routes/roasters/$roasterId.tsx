@@ -11,11 +11,14 @@ import { DeleteConfirmation } from '@/components/DeleteConfirmation'
 import { InputField, TextareaField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
 import { Page, PageHeader } from '@/components/page-layout'
+import type { RoasterFormValues } from '@/components/roasters/roaster-form-values'
+import { RoasterResearchAction } from '@/components/roasters/roaster-research-action'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { WebsiteLogo } from '@/components/website-logo'
 import { deleteRoaster, getRoaster, updateRoaster } from '@/lib/server/roasters'
 
 export const Route = createFileRoute('/roasters/$roasterId')({
@@ -33,7 +36,7 @@ function RoasterDetailPage() {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [formData, setFormData] = useState(() => ({
+  const [formData, setFormData] = useState<RoasterFormValues>(() => ({
     name: roaster?.name ?? '',
     location: roaster?.location ?? '',
     country: roaster?.country ?? '',
@@ -101,7 +104,20 @@ function RoasterDetailPage() {
     <Page width="form">
       <PageHeader
         size="compact"
-        title={isEditing ? formData.name || roaster.name : roaster.name}
+        title={
+          <span className="inline-flex items-center gap-3">
+            <WebsiteLogo
+              entityType="roasters"
+              entityId={roaster.id}
+              website={roaster.website}
+              updatedAt={roaster.updatedAt}
+              className="size-12"
+            />
+            <span>
+              {isEditing ? formData.name || roaster.name : roaster.name}
+            </span>
+          </span>
+        }
         description={
           (isEditing ? formData.location : roaster.location)
             ? [
@@ -161,8 +177,18 @@ function RoasterDetailPage() {
       {isEditing ? (
         <>
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Roaster info</CardTitle>
+              <RoasterResearchAction
+                currentData={formData}
+                disabled={isSaving}
+                onApply={(updates) => {
+                  setFormData((current) => ({ ...current, ...updates }))
+                  toast.success(
+                    `Applied ${Object.keys(updates).length} changes`,
+                  )
+                }}
+              />
             </CardHeader>
             <CardContent className="space-y-4">
               <InputField

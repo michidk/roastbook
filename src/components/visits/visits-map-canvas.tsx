@@ -36,7 +36,9 @@ export function VisitsMapCanvas({
   const containerRef = useRef<HTMLElement | null>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
   const initialPlaceRef = useRef(
-    places.find((place) => place.isFavorite) ?? places[0],
+    places.find((place) => place.isFavorite) ??
+      places.find((place) => place.wantsToVisit) ??
+      places[0],
   )
   const markersRef = useRef<Map<string, MapLibreMarker>>(new Map())
   const markerElementsRef = useRef<Map<string, HTMLButtonElement>>(new Map())

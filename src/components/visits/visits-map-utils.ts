@@ -11,6 +11,7 @@ export type SavedPlaceInput = {
   readonly website: string | null
   readonly rating: number | null
   readonly isFavorite: boolean
+  readonly wantsToVisit: boolean
   readonly visitCount?: number
 }
 
@@ -33,6 +34,7 @@ export type SavedMapPlace = MapPlaceBase & {
   readonly coffeeShopId: number
   readonly rating: number | null
   readonly isFavorite: boolean
+  readonly wantsToVisit: boolean
   readonly visitCount: number
 }
 
@@ -69,6 +71,7 @@ export function toSavedMapPlaces(
         website: coffeeShop.website,
         rating: coffeeShop.rating,
         isFavorite: coffeeShop.isFavorite,
+        wantsToVisit: coffeeShop.wantsToVisit,
         visitCount:
           coffeeShop.visitCount ?? visitsByCoffeeShop.get(coffeeShop.id) ?? 0,
       },

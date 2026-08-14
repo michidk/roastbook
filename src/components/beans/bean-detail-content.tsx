@@ -26,6 +26,7 @@ import {
   type RoasterOption,
   RoasterPicker,
 } from '@/components/roasters/roaster-picker'
+import { AiRecommendationDialog } from '@/components/shots/ai-recommendation-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -71,6 +72,11 @@ type WeightStats = {
   remainingWeight: number
   percentRemaining: number
 }
+type TopTasteTag = {
+  id: number
+  name: string
+  usageCount: number
+}
 
 export function BeanDetailHeader({
   bean,
@@ -78,6 +84,8 @@ export function BeanDetailHeader({
   roasters,
   isEditing,
   isSaving,
+  recommendationEnabled,
+  shotCount,
   onToggleArchive,
   onStartEdit,
   onCancelEdit,
@@ -89,6 +97,8 @@ export function BeanDetailHeader({
   roasters: readonly RoasterOption[]
   isEditing: boolean
   isSaving: boolean
+  recommendationEnabled: boolean
+  shotCount: number
   onToggleArchive: () => void
   onStartEdit: () => void
   onCancelEdit: () => void
@@ -164,6 +174,13 @@ export function BeanDetailHeader({
             </>
           ) : (
             <>
+              <AiRecommendationDialog
+                request={
+                  shotCount > 0 ? { source: 'bean', beanId: bean.id } : null
+                }
+                enabled={recommendationEnabled}
+                size="sm"
+              />
               <Button variant="outline" size="sm" onClick={onStartEdit}>
                 <Pencil />
                 Edit
@@ -433,11 +450,13 @@ export function BeanEditContent({
 export function BeanReadOnlyContent({
   bean,
   shotCount,
+  topTasteTags,
   weightStats,
   onImagesChange,
 }: {
   bean: Bean
   shotCount: number
+  topTasteTags: readonly TopTasteTag[]
   weightStats: WeightStats | null
   onImagesChange: () => void
 }) {
@@ -467,6 +486,30 @@ export function BeanReadOnlyContent({
                 {formatNumber(weightStats.usedWeight.toFixed(1))} g used across{' '}
                 {formatNumber(shotCount)} shot{shotCount !== 1 ? 's' : ''}
               </p>
+            </CardContent>
+          </Card>
+        )}
+        {topTasteTags.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Taste profile</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Most used taste tags across all shots
+              </p>
+              <ul className="flex flex-wrap gap-2">
+                {topTasteTags.map((tag) => (
+                  <li key={tag.id}>
+                    <Badge variant="secondary" className="gap-1.5">
+                      {tag.name}
+                      <span className="font-normal text-muted-foreground">
+                        {formatNumber(tag.usageCount)}
+                      </span>
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
             </CardContent>
           </Card>
         )}

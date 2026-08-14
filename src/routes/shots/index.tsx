@@ -29,6 +29,7 @@ const shotsSearchSchema = z.object({
     .catch('date'),
   direction: z.enum(['asc', 'desc']).default('desc').catch('desc'),
   view: z.enum(['list', 'grouped']).default('list').catch('list'),
+  beanId: z.number().int().min(0).max(100_000).optional().catch(undefined),
 })
 
 export const Route = createFileRoute('/shots/')({
@@ -39,6 +40,7 @@ export const Route = createFileRoute('/shots/')({
     sort: search.sort,
     direction: search.direction,
     view: search.view,
+    beanId: search.beanId,
   }),
   loader: async ({ deps }) =>
     deps.view === 'grouped'
@@ -56,6 +58,7 @@ export const Route = createFileRoute('/shots/')({
               query: deps.query,
               sort: deps.sort,
               direction: deps.direction,
+              beanId: deps.beanId,
             },
           }),
         },
@@ -91,6 +94,7 @@ function ShotsPage() {
                   updateSearch({
                     view: nextGrouped ? 'grouped' : 'list',
                     page: 1,
+                    beanId: undefined,
                   })
                 }
               />
@@ -105,7 +109,7 @@ function ShotsPage() {
         }
       />
 
-      {totalItems === 0 && !search.query ? (
+      {totalItems === 0 && !search.query && search.beanId === undefined ? (
         <EmptyState
           icon={Coffee}
           title="No shots logged yet"
@@ -155,11 +159,31 @@ function ShotsPage() {
                         )}
                       </CardTitle>
                     </div>
-                    <CardAction className="self-center">
+                    <CardAction className="flex items-center gap-2 self-center">
                       <span className="text-sm font-semibold text-muted-foreground">
-                        {group.totalShots} shot
-                        {group.totalShots === 1 ? '' : 's'}
+                        {group.shots.length < group.totalShots
+                          ? `Latest ${group.shots.length} of ${group.totalShots} shots`
+                          : `${group.totalShots} shot${group.totalShots === 1 ? '' : 's'}`}
                       </span>
+                      {group.shots.length < group.totalShots && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            updateSearch({
+                              view: 'list',
+                              beanId: group.bean?.id ?? 0,
+                              page: 1,
+                              query: '',
+                              sort: 'date',
+                              direction: 'desc',
+                            })
+                          }
+                        >
+                          View all
+                        </Button>
+                      )}
                     </CardAction>
                   </CardHeader>
                   <CardContent>
@@ -187,10 +211,14 @@ function ShotsPage() {
                 totalPages: data.result.totalPages,
                 totalItems: data.result.totalItems,
                 query: search.query,
+                scopeLabel: data.result.scopeLabel,
                 sortKey: search.sort,
                 sortDirection: search.direction,
                 onPageChange: (page) => updateSearch({ page }),
                 onQueryChange: (query) => updateSearch({ query, page: 1 }),
+                onClearScope: data.result.scopeLabel
+                  ? () => updateSearch({ beanId: undefined, page: 1 })
+                  : undefined,
                 onSort: (sort) =>
                   updateSearch({
                     sort,

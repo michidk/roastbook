@@ -4,8 +4,9 @@ import {
   useNavigate,
   useRouter,
 } from '@tanstack/react-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { z } from 'zod'
 import {
   type BeanFormData,
   BeanInfoDiffModal,
@@ -39,22 +40,53 @@ import {
   updateBean,
 } from '@/lib/server/beans'
 import { getRoasters } from '@/lib/server/roasters'
-import { getShotsByBean } from '@/lib/server/shots'
+import { getBeanShotAnalytics, getBeanShotPage } from '@/lib/server/shots'
+
+const beanDetailSearchSchema = z.object({
+  shotPage: z.number().int().min(1).max(100_000).default(1).catch(1),
+  shotSort: z
+    .enum(['date', 'bean', 'dose', 'yield', 'time', 'rating'])
+    .default('date')
+    .catch('date'),
+  shotDirection: z.enum(['asc', 'desc']).default('desc').catch('desc'),
+})
 
 export const Route = createFileRoute('/beans/$beanId')({
-  loader: async ({ params }) => {
+  validateSearch: beanDetailSearchSchema,
+  loaderDeps: ({ search }) => ({
+    shotPage: search.shotPage,
+    shotSort: search.shotSort,
+    shotDirection: search.shotDirection,
+  }),
+  loader: async ({ params, deps }) => {
     const beanId = Number(params.beanId)
-    const [bean, shots, roasters, visionEnabled, researchEnabled] =
-      await Promise.all([
-        getBean({ data: beanId }),
-        getShotsByBean({ data: beanId }),
-        getRoasters(),
-        checkVisionEnabled(),
-        checkResearchEnabled(),
-      ])
+    const [
+      bean,
+      shotPage,
+      shotAnalytics,
+      roasters,
+      visionEnabled,
+      researchEnabled,
+    ] = await Promise.all([
+      getBean({ data: beanId }),
+      getBeanShotPage({
+        data: {
+          entityId: beanId,
+          page: deps.shotPage,
+          query: '',
+          sort: deps.shotSort,
+          direction: deps.shotDirection,
+        },
+      }),
+      getBeanShotAnalytics({ data: beanId }),
+      getRoasters(),
+      checkVisionEnabled(),
+      checkResearchEnabled(),
+    ])
     return {
       bean,
-      shots,
+      shotPage,
+      shotAnalytics,
       roasters,
       visionEnabled: visionEnabled.enabled,
       researchEnabled: researchEnabled.enabled,
@@ -68,9 +100,16 @@ export const Route = createFileRoute('/beans/$beanId')({
 })
 
 function BeanDetailPage() {
-  const { bean, shots, roasters, visionEnabled, researchEnabled } =
-    Route.useLoaderData()
-  const navigate = useNavigate()
+  const {
+    bean,
+    shotPage,
+    shotAnalytics,
+    roasters,
+    visionEnabled,
+    researchEnabled,
+  } = Route.useLoaderData()
+  const search = Route.useSearch()
+  const navigate = useNavigate({ from: '/beans/$beanId' })
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -91,15 +130,11 @@ function BeanDetailPage() {
     if (bean) setFormData(toBeanFormValues(bean))
   }, [bean])
 
-  const weightStats = useMemo(() => {
+  const weightStats = (() => {
     if (!bean?.weight) return null
     const initialWeight = Number.parseFloat(bean.weight)
     if (!Number.isFinite(initialWeight) || initialWeight <= 0) return null
-    const usedWeight = shots.reduce(
-      (sum, shot) =>
-        sum + (shot.doseGrams ? Number.parseFloat(shot.doseGrams) : 0),
-      0,
-    )
+    const usedWeight = Number.parseFloat(shotAnalytics.usedWeightGrams)
     const remainingWeight = Math.max(0, initialWeight - usedWeight)
     return {
       initialWeight,
@@ -107,7 +142,10 @@ function BeanDetailPage() {
       remainingWeight,
       percentRemaining: Math.round((remainingWeight / initialWeight) * 100),
     }
-  }, [bean?.weight, shots])
+  })()
+
+  const updateShotSearch = (values: Partial<typeof search>) =>
+    navigate({ search: (current) => ({ ...current, ...values }) })
 
   if (!bean) {
     return (
@@ -228,6 +266,8 @@ function BeanDetailPage() {
         roasters={roasters}
         isEditing={isEditing}
         isSaving={isSaving}
+        recommendationEnabled={researchEnabled}
+        shotCount={shotAnalytics.totalShots}
         onToggleArchive={async () => {
           await updateBean({
             data: { id: bean.id, isArchived: !bean.isArchived },
@@ -266,20 +306,50 @@ function BeanDetailPage() {
       ) : (
         <BeanReadOnlyContent
           bean={bean}
-          shotCount={shots.length}
+          shotCount={shotAnalytics.totalShots}
+          topTasteTags={shotAnalytics.topTasteTags}
           weightStats={weightStats}
           onImagesChange={() =>
             router.invalidate({ filter: (match) => match.routeId === Route.id })
           }
         />
       )}
-      <ShotParameterCharts shots={shots} />
+      <ShotParameterCharts
+        shots={shotAnalytics.chartShots}
+        totalShots={shotAnalytics.totalShots}
+      />
       <Card>
         <CardHeader>
           <CardTitle>Shot history</CardTitle>
         </CardHeader>
         <CardContent>
-          <ShotsTable shots={shots} hideBean />
+          <ShotsTable
+            shots={shotPage.items}
+            hideBean
+            serverPagination={{
+              page: shotPage.page,
+              totalPages: shotPage.totalPages,
+              totalItems: shotPage.totalItems,
+              query: '',
+              sortKey: search.shotSort,
+              sortDirection: search.shotDirection,
+              onPageChange: (shotPage) => updateShotSearch({ shotPage }),
+              onQueryChange: () => undefined,
+              onSort: (shotSort) =>
+                updateShotSearch({
+                  shotSort,
+                  shotDirection:
+                    search.shotSort === shotSort
+                      ? search.shotDirection === 'asc'
+                        ? 'desc'
+                        : 'asc'
+                      : shotSort === 'date' || shotSort === 'rating'
+                        ? 'desc'
+                        : 'asc',
+                  shotPage: 1,
+                }),
+            }}
+          />
         </CardContent>
       </Card>
       {suggestedData && (
