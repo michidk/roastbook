@@ -1,11 +1,29 @@
 import { createServerFn } from '@tanstack/react-start'
-import { asc, count, desc, eq, isNull, or, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, isNull, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
-import { beans, brewingMethods, shots, shotTasteTags } from '@/db/schema'
+import {
+  beans,
+  brewingMethods,
+  recipes,
+  shotAccessoryGear,
+  shots,
+  shotTasteTags,
+} from '@/db/schema'
+import {
+  escapedContainsPattern,
+  resolvePagination,
+} from '@/lib/collection-query'
 import { expectReturnedRow } from '@/lib/domain-errors'
+import {
+  replaceShotAccessoryGear,
+  withAccessoryGearIds,
+} from '@/lib/server/accessory-gear.server'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
-import { projectShotParameters } from '@/lib/server/shot-parameter-projection'
+import {
+  projectAccessoryGearIds,
+  projectShotParameters,
+} from '@/lib/server/shot-parameter-projection'
 import {
   positiveIdSchema,
   shotCreateSchema,
@@ -24,11 +42,15 @@ const shotListSchema = z.object({
     .enum(['date', 'bean', 'dose', 'yield', 'time', 'rating'])
     .default('date'),
   direction: z.enum(['asc', 'desc']).default('desc'),
+  methodId: positiveIdSchema.optional(),
+  rating: z.number().int().min(0).max(5).optional(),
 })
 
 const shotGroupListSchema = shotListSchema.pick({
   page: true,
   query: true,
+  methodId: true,
+  rating: true,
 })
 
 class ShotInputError extends Error {
@@ -48,12 +70,30 @@ async function getBrewingMethod(tx: ShotTransaction, brewingMethodId: number) {
   return method
 }
 
+async function assertRecipeMatchesMethod(
+  tx: ShotTransaction,
+  recipeId: number | null | undefined,
+  brewingMethodId: number,
+) {
+  if (!recipeId) return
+  const recipe = await tx.query.recipes.findFirst({
+    columns: { brewingMethodId: true },
+    where: eq(recipes.id, recipeId),
+  })
+  if (!recipe) throw new ShotInputError('Recipe not found')
+  if (recipe.brewingMethodId !== brewingMethodId) {
+    throw new ShotInputError('Recipe does not use the selected brewing method')
+  }
+}
+
 function getShotValues(
   data: ShotCreateCandidate,
   enabledParameters: readonly string[],
 ) {
   return {
     brewingMethodId: data.brewingMethodId,
+    brewedAt: data.brewedAt,
+    recipeId: data.recipeId ?? null,
     beanId: data.beanId ?? null,
     ...projectShotParameters(data, enabledParameters),
     rating: data.rating ?? null,
@@ -63,22 +103,45 @@ function getShotValues(
 
 const shotRelations = {
   bean: true,
+  recipe: true,
   machine: true,
   grinder: true,
   basket: true,
   brewingMethod: true,
+  accessoryGearLinks: { columns: { gearId: true } },
   tasteTags: { with: { tasteTag: true } },
   images: true,
 } as const
 
-function shotSearchCondition(query: string) {
-  if (!query) return undefined
-  const pattern = `%${query.replaceAll('%', '\\%').replaceAll('_', '\\_')}%`
-  return sql`exists (
-    select 1 from ${beans}
-    where ${beans.id} = ${shots.beanId}
-      and ${beans.name} ilike ${pattern} escape '\\'
-  )`
+function shotSearchCondition(
+  query: string,
+  methodId?: number,
+  rating?: number,
+) {
+  const pattern = query ? escapedContainsPattern(query) : null
+  const textCondition = pattern
+    ? or(
+        sql`exists (
+          select 1 from ${beans}
+          where ${beans.id} = ${shots.beanId}
+            and ${beans.name} ilike ${pattern} escape '\\'
+        )`,
+        sql`exists (
+          select 1 from ${brewingMethods}
+          where ${brewingMethods.id} = ${shots.brewingMethodId}
+            and ${brewingMethods.name} ilike ${pattern} escape '\\'
+        )`,
+      )
+    : undefined
+  return and(
+    textCondition,
+    methodId ? eq(shots.brewingMethodId, methodId) : undefined,
+    rating === undefined
+      ? undefined
+      : rating === 0
+        ? isNull(shots.rating)
+        : eq(shots.rating, rating),
+  )
 }
 
 function shotSortExpression(sort: z.infer<typeof shotListSchema>['sort']) {
@@ -94,21 +157,21 @@ function shotSortExpression(sort: z.infer<typeof shotListSchema>['sort']) {
     case 'rating':
       return shots.rating
     case 'date':
-      return shots.createdAt
+      return shots.brewedAt
   }
 }
 
 export const getShotPage = createServerFn({ method: 'GET' })
   .validator(shotListSchema)
   .handler(async ({ data }) => {
-    const where = shotSearchCondition(data.query)
+    const where = shotSearchCondition(data.query, data.methodId, data.rating)
     const countRows = await db
       .select({ value: count() })
       .from(shots)
       .where(where)
     const totalItems = countRows[0]?.value ?? 0
-    const totalPages = Math.max(1, Math.ceil(totalItems / SHOTS_PAGE_SIZE))
-    const page = Math.min(data.page, totalPages)
+    const pagination = resolvePagination(totalItems, data.page, SHOTS_PAGE_SIZE)
+    const { page } = pagination
     const sortExpression = shotSortExpression(data.sort)
     const order =
       data.direction === 'asc' ? asc(sortExpression) : desc(sortExpression)
@@ -119,7 +182,7 @@ export const getShotPage = createServerFn({ method: 'GET' })
       offset: (page - 1) * SHOTS_PAGE_SIZE,
       columns: {
         id: true,
-        createdAt: true,
+        brewedAt: true,
         doseGrams: true,
         yieldGrams: true,
         shotTimeSeconds: true,
@@ -127,39 +190,41 @@ export const getShotPage = createServerFn({ method: 'GET' })
       },
       with: {
         bean: { columns: { id: true, name: true }, with: { images: true } },
+        brewingMethod: { columns: { id: true, name: true } },
       },
     })
 
-    return { items, page, pageSize: SHOTS_PAGE_SIZE, totalItems, totalPages }
+    return { items, ...pagination }
   })
 
 export const getShotGroups = createServerFn({ method: 'GET' })
   .validator(shotGroupListSchema)
   .handler(async ({ data }) => {
-    const where = shotSearchCondition(data.query)
+    const where = shotSearchCondition(data.query, data.methodId, data.rating)
     const groupKey = sql<number>`coalesce(${shots.beanId}, 0)`
     const countRows = await db
       .select({ value: sql<number>`count(distinct ${groupKey})::int` })
       .from(shots)
       .where(where)
     const totalItems = countRows[0]?.value ?? 0
-    const totalPages = Math.max(
-      1,
-      Math.ceil(totalItems / SHOT_GROUPS_PAGE_SIZE),
+    const pagination = resolvePagination(
+      totalItems,
+      data.page,
+      SHOT_GROUPS_PAGE_SIZE,
     )
-    const page = Math.min(data.page, totalPages)
+    const { page } = pagination
     const summaries = await db
       .select({
         beanId: shots.beanId,
         beanName: beans.name,
-        latestShotAt: sql<Date>`max(${shots.createdAt})`,
+        latestShotAt: sql<Date>`max(${shots.brewedAt})`,
         totalShots: sql<number>`count(*)::int`,
       })
       .from(shots)
       .leftJoin(beans, eq(shots.beanId, beans.id))
       .where(where)
       .groupBy(shots.beanId, beans.name)
-      .orderBy(desc(sql`max(${shots.createdAt})`))
+      .orderBy(desc(sql`max(${shots.brewedAt})`))
       .limit(SHOT_GROUPS_PAGE_SIZE)
       .offset((page - 1) * SHOT_GROUPS_PAGE_SIZE)
 
@@ -172,14 +237,17 @@ export const getShotGroups = createServerFn({ method: 'GET' })
         label: summary.beanName ?? 'No bean recorded',
         totalShots: summary.totalShots,
         shots: await db.query.shots.findMany({
-          where: summary.beanId
-            ? eq(shots.beanId, summary.beanId)
-            : isNull(shots.beanId),
-          orderBy: [desc(shots.createdAt), desc(shots.id)],
+          where: and(
+            where,
+            summary.beanId
+              ? eq(shots.beanId, summary.beanId)
+              : isNull(shots.beanId),
+          ),
+          orderBy: [desc(shots.brewedAt), desc(shots.id)],
           limit: SHOTS_PAGE_SIZE,
           columns: {
             id: true,
-            createdAt: true,
+            brewedAt: true,
             doseGrams: true,
             yieldGrams: true,
             shotTimeSeconds: true,
@@ -190,6 +258,7 @@ export const getShotGroups = createServerFn({ method: 'GET' })
               columns: { id: true, name: true },
               with: { images: true },
             },
+            brewingMethod: { columns: { id: true, name: true } },
           },
         }),
       })),
@@ -197,21 +266,19 @@ export const getShotGroups = createServerFn({ method: 'GET' })
 
     return {
       groups,
-      page,
-      pageSize: SHOT_GROUPS_PAGE_SIZE,
-      totalItems,
-      totalPages,
+      ...pagination,
     }
   })
 
 export const getShot = createServerFn({ method: 'GET' })
   .validator(positiveIdSchema)
-  .handler(async ({ data: id }) =>
-    db.query.shots.findFirst({
+  .handler(async ({ data: id }) => {
+    const shot = await db.query.shots.findFirst({
       where: eq(shots.id, id),
       with: shotRelations,
-    }),
-  )
+    })
+    return shot ? withAccessoryGearIds(shot) : undefined
+  })
 
 export const createShot = createServerFn({ method: 'POST' })
   .validator((input: unknown) => {
@@ -222,11 +289,18 @@ export const createShot = createServerFn({ method: 'POST' })
   .handler(async ({ data }) =>
     db.transaction(async (tx) => {
       const method = await getBrewingMethod(tx, data.brewingMethodId)
+      await assertRecipeMatchesMethod(tx, data.recipeId, data.brewingMethodId)
       const [shot] = await tx
         .insert(shots)
         .values(getShotValues(data, method.enabledParameters))
         .returning()
       const persistedShot = expectReturnedRow(shot, 'Shot')
+
+      await replaceShotAccessoryGear(
+        tx,
+        persistedShot.id,
+        projectAccessoryGearIds(data, method.enabledParameters),
+      )
 
       if (data.tasteTagIds && data.tasteTagIds.length > 0) {
         await tx.insert(shotTasteTags).values(
@@ -249,6 +323,7 @@ export const updateShot = createServerFn({ method: 'POST' })
   .handler(async ({ data }) =>
     db.transaction(async (tx) => {
       const method = await getBrewingMethod(tx, data.brewingMethodId)
+      await assertRecipeMatchesMethod(tx, data.recipeId, data.brewingMethodId)
       const { id, tasteTagIds } = data
       const [shot] = await tx
         .update(shots)
@@ -259,6 +334,12 @@ export const updateShot = createServerFn({ method: 'POST' })
         .where(eq(shots.id, id))
         .returning()
       const persistedShot = expectReturnedRow(shot, 'Shot')
+
+      await replaceShotAccessoryGear(
+        tx,
+        id,
+        projectAccessoryGearIds(data, method.enabledParameters),
+      )
 
       if (tasteTagIds !== undefined) {
         await tx.delete(shotTasteTags).where(eq(shotTasteTags.shotId, id))
@@ -279,37 +360,55 @@ export const deleteShot = createServerFn({ method: 'POST' })
   .validator(positiveIdSchema)
   .handler(async ({ data: id }) => deleteEntityWithMedia('shots', id))
 
-export const getLastShotForBean = createServerFn({ method: 'GET' })
-  .validator(positiveIdSchema)
-  .handler(async ({ data: beanId }) =>
-    db.query.shots.findFirst({
-      where: eq(shots.beanId, beanId),
-      orderBy: [desc(shots.createdAt)],
-      with: { brewingMethod: true },
+export const getLastShotForBeanAndMethod = createServerFn({ method: 'GET' })
+  .validator(
+    z.object({
+      beanId: positiveIdSchema,
+      brewingMethodId: positiveIdSchema,
     }),
   )
+  .handler(async ({ data }) => {
+    const shot = await db.query.shots.findFirst({
+      where: and(
+        eq(shots.beanId, data.beanId),
+        eq(shots.brewingMethodId, data.brewingMethodId),
+      ),
+      orderBy: [desc(shots.brewedAt)],
+      with: {
+        brewingMethod: true,
+        accessoryGearLinks: { columns: { gearId: true } },
+      },
+    })
+    return shot ? withAccessoryGearIds(shot) : undefined
+  })
 
 export const getShotsByBean = createServerFn({ method: 'GET' })
   .validator(positiveIdSchema)
-  .handler(async ({ data: beanId }) =>
-    db.query.shots.findMany({
+  .handler(async ({ data: beanId }) => {
+    const results = await db.query.shots.findMany({
       where: eq(shots.beanId, beanId),
-      orderBy: [desc(shots.createdAt)],
+      orderBy: [desc(shots.brewedAt)],
       with: shotRelations,
-    }),
-  )
+    })
+    return results.map(withAccessoryGearIds)
+  })
 
 export const getShotsByGear = createServerFn({ method: 'GET' })
   .validator(positiveIdSchema)
-  .handler(async ({ data: gearId }) =>
-    db.query.shots.findMany({
+  .handler(async ({ data: gearId }) => {
+    const results = await db.query.shots.findMany({
       where: or(
         eq(shots.machineId, gearId),
         eq(shots.grinderId, gearId),
         eq(shots.basketId, gearId),
-        sql`${gearId} = any(${shots.accessoryGearIds})`,
+        sql`exists (
+          select 1 from ${shotAccessoryGear}
+          where ${shotAccessoryGear.shotId} = ${shots.id}
+            and ${shotAccessoryGear.gearId} = ${gearId}
+        )`,
       ),
-      orderBy: [desc(shots.createdAt)],
+      orderBy: [desc(shots.brewedAt)],
       with: shotRelations,
-    }),
-  )
+    })
+    return results.map(withAccessoryGearIds)
+  })

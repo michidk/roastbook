@@ -64,7 +64,7 @@ function DesktopNavLink({ item }: { item: NavItem }) {
     <NavItemLink
       item={item}
       isActive={isActive}
-      className="rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+      className="inline-flex min-h-11 items-center rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground [@media(hover:hover)_and_(pointer:fine)]:min-h-0"
       activeClassName="bg-primary text-primary-foreground"
     >
       {item.title}
@@ -81,7 +81,7 @@ function DesktopMoreMenu() {
         aria-label="More navigation"
         aria-current={isActive ? 'page' : undefined}
         className={cn(
-          'inline-flex items-center gap-1 rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground',
+          'inline-flex min-h-11 items-center gap-1 rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground [@media(hover:hover)_and_(pointer:fine)]:min-h-0',
           isActive && 'bg-primary text-primary-foreground',
         )}
       >

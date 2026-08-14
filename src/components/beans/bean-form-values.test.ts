@@ -22,6 +22,12 @@ describe('bean form payloads', () => {
       type: null,
       priceCurrency: null,
       roastDate: null,
+      origin: null,
+      region: null,
+      farm: null,
+      variety: null,
+      process: null,
+      notes: null,
     })
   })
 

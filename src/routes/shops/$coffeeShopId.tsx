@@ -14,18 +14,15 @@ import {
 } from 'lucide-react'
 import { type Dispatch, type SetStateAction, useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { CoffeeShopFields } from '@/components/coffee-shops/coffee-shop-fields'
 import {
   applyCoffeeShopSearchResult,
+  coffeeShopUpdatePayload,
   createCoffeeShopFormValues,
 } from '@/components/coffee-shops/coffee-shop-form-values'
 import { CoffeeShopMap } from '@/components/coffee-shops/coffee-shop-map'
-import {
-  CoffeeShopOsmSearch,
-  type CoffeeShopSearchResult,
-} from '@/components/coffee-shops/coffee-shop-osm-search'
+import type { CoffeeShopSearchResult } from '@/components/coffee-shops/coffee-shop-osm-search'
 import { DeleteConfirmation } from '@/components/DeleteConfirmation'
-import { InputField, TextareaField } from '@/components/form/form-field'
-import { FormSection } from '@/components/form/form-shell'
 import { Page, PageHeader } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
@@ -87,15 +84,7 @@ function CoffeeShopDetailPage() {
     try {
       await updateCoffeeShop({
         data: {
-          id: coffeeShop.id,
-          name: formData.name,
-          address: formData.address || undefined,
-          city: formData.city || undefined,
-          country: formData.country || undefined,
-          latitude: formData.latitude || undefined,
-          longitude: formData.longitude || undefined,
-          website: formData.website || undefined,
-          notes: formData.notes || undefined,
+          ...coffeeShopUpdatePayload(coffeeShop.id, formData),
           rating: toNullableRating(formData.rating),
         },
       })
@@ -256,106 +245,18 @@ function CoffeeShopEditContent({
     setFormData((current) => applyCoffeeShopSearchResult(current, result))
 
   return (
-    <>
-      <FormSection title="Basic info">
-        <CoffeeShopOsmSearch
-          onApply={applyResult}
-          initialQuery={formData.name}
-        />
-        <InputField
-          id="name"
-          label="Name"
-          placeholder="e.g., Blue Bottle Coffee"
-          value={formData.name}
-          onChange={(value) => set('name', value)}
-          required
-        />
-        <div className="space-y-2">
-          <span className="text-sm font-medium">Rating</span>
-          <StarRating
-            value={formData.rating}
-            onChange={(rating) =>
-              set('rating', formData.rating === rating ? 0 : rating)
-            }
-            ariaLabel="Café rating"
-          />
-        </div>
-        <InputField
-          id="address"
-          label="Address"
-          placeholder="Street address"
-          value={formData.address}
-          onChange={(value) => set('address', value)}
-        />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <InputField
-            id="city"
-            label="City"
-            placeholder="e.g., San Francisco"
-            value={formData.city}
-            onChange={(value) => set('city', value)}
-          />
-          <InputField
-            id="country"
-            label="Country"
-            placeholder="e.g., USA"
-            value={formData.country}
-            onChange={(value) => set('country', value)}
-          />
-        </div>
-      </FormSection>
-      <FormSection
-        title="Coordinates"
-        description="Add coordinates to pin this café on the map. You can leave these blank and add them later."
-      >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <InputField
-            id="latitude"
-            label="Latitude"
-            type="number"
-            min={-90}
-            max={90}
-            step="0.001"
-            showStepper={false}
-            placeholder="e.g., 37.7764"
-            value={formData.latitude}
-            onChange={(value) => set('latitude', value)}
-          />
-          <InputField
-            id="longitude"
-            label="Longitude"
-            type="number"
-            min={-180}
-            max={180}
-            step="0.001"
-            showStepper={false}
-            placeholder="e.g., -122.4231"
-            value={formData.longitude}
-            onChange={(value) => set('longitude', value)}
-          />
-        </div>
-      </FormSection>
-      <FormSection title="Online">
-        <InputField
-          id="website"
-          label="Website"
-          type="url"
-          placeholder="https://…"
-          value={formData.website}
-          onChange={(value) => set('website', value)}
-        />
-      </FormSection>
-      <FormSection title="Notes">
-        <TextareaField
-          id="notes"
-          label=""
-          placeholder="Any notes about this café"
-          value={formData.notes}
-          onChange={(value) => set('notes', value)}
-          rows={3}
-        />
-      </FormSection>
-    </>
+    <CoffeeShopFields
+      values={formData}
+      onChange={set}
+      onApplySearchResult={applyResult}
+      initialQuery={formData.name}
+      idPrefix="coffee-shop-edit"
+      rating={{
+        value: formData.rating,
+        onChange: (rating) =>
+          set('rating', formData.rating === rating ? 0 : rating),
+      }}
+    />
   )
 }
 

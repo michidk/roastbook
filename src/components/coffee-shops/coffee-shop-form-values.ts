@@ -61,3 +61,35 @@ export function applyCoffeeShopSearchResult<T extends CoffeeShopFormValues>(
     website: result.website ?? current.website,
   }
 }
+
+export function coffeeShopCreatePayload(values: CoffeeShopFormValues) {
+  return {
+    name: values.name,
+    address: blankToUndefined(values.address),
+    city: blankToUndefined(values.city),
+    country: blankToUndefined(values.country),
+    latitude: blankToUndefined(values.latitude),
+    longitude: blankToUndefined(values.longitude),
+    website: blankToUndefined(values.website),
+    notes: blankToUndefined(values.notes),
+  }
+}
+
+export function coffeeShopUpdatePayload(
+  id: number,
+  values: CoffeeShopFormValues,
+) {
+  return {
+    id,
+    name: values.name,
+    address: blankToNull(values.address),
+    city: blankToNull(values.city),
+    country: blankToNull(values.country),
+    latitude: blankToNull(values.latitude),
+    longitude: blankToNull(values.longitude),
+    website: blankToNull(values.website),
+    notes: blankToNull(values.notes),
+  }
+}
+
+import { blankToNull, blankToUndefined } from '@/lib/form-value-normalization'

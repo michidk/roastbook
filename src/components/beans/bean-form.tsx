@@ -1,34 +1,19 @@
 import { Loader2, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { BeanFields } from '@/components/beans/bean-fields'
 import {
   beanCreatePayload,
   createEmptyBeanFormValues,
 } from '@/components/beans/bean-form-values'
 import { EntityImageUploadSection } from '@/components/form/entity-image-upload-section'
-import {
-  CurrencyField,
-  InputField,
-  SelectField,
-  TextareaField,
-} from '@/components/form/form-field'
-import { EntityForm, FormSection } from '@/components/form/form-shell'
-import {
-  type RoasterOption,
-  RoasterPicker,
-} from '@/components/roasters/roaster-picker'
+import { EntityForm } from '@/components/form/form-shell'
+import type { RoasterOption } from '@/components/roasters/roaster-picker'
 import { Button } from '@/components/ui/button'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
 import { useImageUpload } from '@/hooks/useImageUpload'
-import {
-  BEAN_TYPES,
-  type BeanType,
-  PROCESS_METHODS,
-  ROAST_LEVELS,
-  type RoastLevel,
-} from '@/lib/constants'
 import { getErrorMessage } from '@/lib/error-message'
 import {
   checkVisionEnabled,
@@ -207,144 +192,11 @@ export function BeanForm({
         }
       />
 
-      <FormSection title="Basic info">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <InputField
-            id="bean-name"
-            label="Name"
-            placeholder="e.g., Ethiopia Yirgacheffe"
-            value={form.values.name}
-            onChange={form.setField('name')}
-            required
-          />
-          <RoasterPicker
-            id="bean-roasterId"
-            label="Roaster"
-            value={form.values.roasterId}
-            onChange={form.setField('roasterId')}
-            roasters={roasterOptions}
-          />
-          <SelectField
-            id="bean-type"
-            label="Type"
-            placeholder="Select type"
-            value={form.values.type}
-            onChange={(value) => form.set('type', value as BeanType | '')}
-            options={BEAN_TYPES}
-          />
-          <InputField
-            id="bean-weight"
-            label="Bag weight (g)"
-            type="number"
-            min="0"
-            step="50"
-            placeholder="e.g., 250"
-            value={form.values.weight}
-            onChange={form.setField('weight')}
-          />
-          <div className="flex gap-2">
-            <InputField
-              id="bean-price"
-              label="Price"
-              type="number"
-              min="0"
-              step="1"
-              placeholder="e.g., 15.00"
-              value={form.values.price}
-              onChange={form.setField('price')}
-              className="flex-1"
-            />
-            <CurrencyField
-              id="bean-priceCurrency"
-              value={form.values.priceCurrency}
-              onChange={form.setField('priceCurrency')}
-              className="w-28"
-            />
-          </div>
-          <InputField
-            id="bean-shopUrl"
-            label="Shop URL"
-            type="url"
-            placeholder="https://…"
-            value={form.values.shopUrl}
-            onChange={form.setField('shopUrl')}
-          />
-        </div>
-      </FormSection>
-
-      <FormSection title="Origin">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <InputField
-            id="bean-origin"
-            label="Country"
-            placeholder="e.g., Ethiopia"
-            value={form.values.origin}
-            onChange={form.setField('origin')}
-          />
-          <InputField
-            id="bean-region"
-            label="Region"
-            placeholder="e.g., Yirgacheffe"
-            value={form.values.region}
-            onChange={form.setField('region')}
-          />
-          <InputField
-            id="bean-farm"
-            label="Farm/Producer"
-            placeholder="e.g., Konga Cooperative"
-            value={form.values.farm}
-            onChange={form.setField('farm')}
-          />
-          <InputField
-            id="bean-variety"
-            label="Variety"
-            placeholder="e.g., Heirloom"
-            value={form.values.variety}
-            onChange={form.setField('variety')}
-          />
-        </div>
-      </FormSection>
-
-      <FormSection title="Processing">
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-          <SelectField
-            id="bean-process"
-            label="Process"
-            placeholder="Select process"
-            value={form.values.process}
-            onChange={form.setField('process')}
-            options={PROCESS_METHODS}
-          />
-          <SelectField
-            id="bean-roastLevel"
-            label="Roast level"
-            placeholder="Select level"
-            value={form.values.roastLevel}
-            onChange={(value) =>
-              form.set('roastLevel', value as RoastLevel | '')
-            }
-            options={ROAST_LEVELS}
-          />
-          <InputField
-            id="bean-roastDate"
-            label="Roast date"
-            type="date"
-            value={form.values.roastDate}
-            onChange={form.setField('roastDate')}
-          />
-        </div>
-      </FormSection>
-
-      <FormSection title="Notes">
-        <TextareaField
-          id="bean-notes"
-          label="Notes"
-          placeholder="Tasting notes, brewing tips, or other observations"
-          value={form.values.notes}
-          onChange={form.setField('notes')}
-          rows={4}
-        />
-      </FormSection>
+      <BeanFields
+        values={form.values}
+        onChange={form.set}
+        roasters={roasterOptions}
+      />
     </EntityForm>
   )
 }

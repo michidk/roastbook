@@ -51,6 +51,7 @@ export const settings = pgTable(
     defaultCurrency: text('default_currency').default('EUR').notNull(),
     dateFormat: text('date_format').default('day-month-year-slash').notNull(),
     numberFormat: text('number_format').default('decimal-point').notNull(),
+    timeZone: text('time_zone').default('UTC').notNull(),
     defaultMapLatitude: doublePrecision('default_map_latitude'),
     defaultMapLongitude: doublePrecision('default_map_longitude'),
     defaultMapLabel: text('default_map_label'),
@@ -288,6 +289,8 @@ export const gearRelations = relations(gear, ({ one, many }) => ({
   machineSettings: one(machineSettings),
   basketDetails: one(basketDetails),
   shots: many(shots, { relationName: 'shotMachine' }),
+  shotAccessoryLinks: many(shotAccessoryGear),
+  recipeAccessoryLinks: many(recipeAccessoryGear),
 }))
 
 export const machineSettingsRelations = relations(
@@ -392,10 +395,6 @@ const shotParameterColumns = (dosePrecision = 6) => ({
   paperFilterPosition: text('paper_filter_position'),
   distributionMethod: text('distribution_method'),
   tampForceKg: decimal('tamp_force_kg', { precision: 5, scale: 2 }),
-  accessoryGearIds: integer('accessory_gear_ids')
-    .array()
-    .default(sql`'{}'::integer[]`)
-    .notNull(),
 })
 
 export const recipes = pgTable(
@@ -435,7 +434,7 @@ export const recipes = pgTable(
   ],
 )
 
-export const recipesRelations = relations(recipes, ({ one }) => ({
+export const recipesRelations = relations(recipes, ({ one, many }) => ({
   brewingMethod: one(brewingMethods, {
     fields: [recipes.brewingMethodId],
     references: [brewingMethods.id],
@@ -459,6 +458,8 @@ export const recipesRelations = relations(recipes, ({ one }) => ({
     references: [gear.id],
     relationName: 'recipeBasket',
   }),
+  accessoryGearLinks: many(recipeAccessoryGear),
+  shots: many(shots),
 }))
 
 export const coffeeShops = pgTable(
@@ -525,7 +526,11 @@ export const shots = pgTable(
   'shots',
   {
     id: serial('id').primaryKey(),
+    brewedAt: timestamp('brewed_at').defaultNow().notNull(),
     ...shotContextColumns(),
+    recipeId: integer('recipe_id').references(() => recipes.id, {
+      onDelete: 'set null',
+    }),
     ...shotParameterColumns(),
     rating: integer('rating'),
     notes: text('notes'),
@@ -556,7 +561,10 @@ export const shots = pgTable(
         and (${table.tampForceKg} is null or ${table.tampForceKg} >= 0)`,
     ),
     index('shots_created_at_idx').on(table.createdAt),
+    index('shots_brewed_at_idx').on(table.brewedAt),
+    index('shots_brewing_method_id_idx').on(table.brewingMethodId),
     index('shots_bean_id_idx').on(table.beanId),
+    index('shots_recipe_id_idx').on(table.recipeId),
     index('shots_machine_id_idx').on(table.machineId),
     index('shots_grinder_id_idx').on(table.grinderId),
     index('shots_basket_id_idx').on(table.basketId),
@@ -571,6 +579,10 @@ export const shotsRelations = relations(shots, ({ one, many }) => ({
   bean: one(beans, {
     fields: [shots.beanId],
     references: [beans.id],
+  }),
+  recipe: one(recipes, {
+    fields: [shots.recipeId],
+    references: [recipes.id],
   }),
   machine: one(gear, {
     fields: [shots.machineId],
@@ -587,9 +599,78 @@ export const shotsRelations = relations(shots, ({ one, many }) => ({
     references: [gear.id],
     relationName: 'shotBasket',
   }),
+  accessoryGearLinks: many(shotAccessoryGear),
   tasteTags: many(shotTasteTags),
   images: many(shotImages),
 }))
+
+export const recipeAccessoryGear = pgTable(
+  'recipe_accessory_gear',
+  {
+    id: serial('id').primaryKey(),
+    recipeId: integer('recipe_id')
+      .references(() => recipes.id, { onDelete: 'cascade' })
+      .notNull(),
+    gearId: integer('gear_id')
+      .references(() => gear.id, { onDelete: 'cascade' })
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex('recipe_accessory_gear_recipe_gear_idx').on(
+      table.recipeId,
+      table.gearId,
+    ),
+    index('recipe_accessory_gear_gear_id_idx').on(table.gearId),
+  ],
+)
+
+export const recipeAccessoryGearRelations = relations(
+  recipeAccessoryGear,
+  ({ one }) => ({
+    recipe: one(recipes, {
+      fields: [recipeAccessoryGear.recipeId],
+      references: [recipes.id],
+    }),
+    gear: one(gear, {
+      fields: [recipeAccessoryGear.gearId],
+      references: [gear.id],
+    }),
+  }),
+)
+
+export const shotAccessoryGear = pgTable(
+  'shot_accessory_gear',
+  {
+    id: serial('id').primaryKey(),
+    shotId: integer('shot_id')
+      .references(() => shots.id, { onDelete: 'cascade' })
+      .notNull(),
+    gearId: integer('gear_id')
+      .references(() => gear.id, { onDelete: 'cascade' })
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex('shot_accessory_gear_shot_gear_idx').on(
+      table.shotId,
+      table.gearId,
+    ),
+    index('shot_accessory_gear_gear_id_idx').on(table.gearId),
+  ],
+)
+
+export const shotAccessoryGearRelations = relations(
+  shotAccessoryGear,
+  ({ one }) => ({
+    shot: one(shots, {
+      fields: [shotAccessoryGear.shotId],
+      references: [shots.id],
+    }),
+    gear: one(gear, {
+      fields: [shotAccessoryGear.gearId],
+      references: [gear.id],
+    }),
+  }),
+)
 
 export const brewingMethodsRelations = relations(
   brewingMethods,

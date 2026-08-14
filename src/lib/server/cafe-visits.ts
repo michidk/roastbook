@@ -3,13 +3,19 @@ import { count, desc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
 import { beans, cafeVisits, cafeVisitTasteTags, coffeeShops } from '@/db/schema'
+import {
+  escapedContainsPattern,
+  resolvePagination,
+} from '@/lib/collection-query'
 import { expectReturnedRow } from '@/lib/domain-errors'
+import { DECIMAL_CONSTRAINTS } from '@/lib/measurement-constraints'
 import { toDisplayableDatabaseError } from '@/lib/server/database-error.server'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
 import {
   boundedDecimalStringSchema,
   currencySchema,
   notesSchema,
+  notFutureDateSchema,
   optionalNullablePositiveIdSchema,
   optionalNullableRatingSchema,
   positiveIdSchema,
@@ -25,16 +31,29 @@ const cafeVisitSchema = z.object({
   beanId: optionalNullablePositiveIdSchema,
   drinkName: shortTextSchema.optional(),
   drinkType: shortTextSchema.optional(),
-  price: boundedDecimalStringSchema(9_999.99, 2).optional(),
+  price: boundedDecimalStringSchema(
+    DECIMAL_CONSTRAINTS.cafeVisitPrice.maximum,
+    DECIMAL_CONSTRAINTS.cafeVisitPrice.fractionDigits,
+  ).optional(),
   currency: currencySchema.optional(),
   rating: optionalNullableRatingSchema,
   notes: notesSchema.optional(),
-  visitedAt: z.date().optional(),
+  visitedAt: notFutureDateSchema.optional(),
   tasteTagIds: z.array(positiveIdSchema).max(100).optional(),
 })
 
 const cafeVisitUpdateSchema = cafeVisitSchema.partial().extend({
   id: positiveIdSchema,
+  drinkName: shortTextSchema.nullable().optional(),
+  drinkType: shortTextSchema.nullable().optional(),
+  price: boundedDecimalStringSchema(
+    DECIMAL_CONSTRAINTS.cafeVisitPrice.maximum,
+    DECIMAL_CONSTRAINTS.cafeVisitPrice.fractionDigits,
+  )
+    .nullable()
+    .optional(),
+  currency: currencySchema.nullable().optional(),
+  notes: notesSchema.nullable().optional(),
 })
 
 const VISITS_PAGE_SIZE = 18
@@ -57,7 +76,7 @@ const cafeVisitRelations = {
 export const getCafeVisitPage = createServerFn({ method: 'GET' })
   .validator(cafeVisitListSchema)
   .handler(async ({ data }) => {
-    const pattern = `%${data.query.replaceAll('%', '\\%').replaceAll('_', '\\_')}%`
+    const pattern = escapedContainsPattern(data.query)
     const where = data.query
       ? sql`lower(coalesce(${cafeVisits.drinkName}, '')) like lower(${pattern}) escape '\\'
           or exists (select 1 from ${coffeeShops} where ${coffeeShops.id} = ${cafeVisits.coffeeShopId} and ${coffeeShops.name} ilike ${pattern} escape '\\')
@@ -68,8 +87,12 @@ export const getCafeVisitPage = createServerFn({ method: 'GET' })
       .from(cafeVisits)
       .where(where)
     const totalItems = countRows[0]?.value ?? 0
-    const totalPages = Math.max(1, Math.ceil(totalItems / VISITS_PAGE_SIZE))
-    const page = Math.min(data.page, totalPages)
+    const pagination = resolvePagination(
+      totalItems,
+      data.page,
+      VISITS_PAGE_SIZE,
+    )
+    const { page } = pagination
     const items = await db.query.cafeVisits.findMany({
       where,
       orderBy: [desc(cafeVisits.visitedAt), desc(cafeVisits.id)],
@@ -81,7 +104,7 @@ export const getCafeVisitPage = createServerFn({ method: 'GET' })
         tasteTags: { with: { tasteTag: true } },
       },
     })
-    return { items, page, pageSize: VISITS_PAGE_SIZE, totalItems, totalPages }
+    return { items, ...pagination }
   })
 
 export const getCafeVisit = createServerFn({ method: 'GET' })

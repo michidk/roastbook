@@ -8,14 +8,18 @@ import { ArrowLeft, ExternalLink, Pencil, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { DeleteConfirmation } from '@/components/DeleteConfirmation'
-import { InputField, TextareaField } from '@/components/form/form-field'
-import { FormSection } from '@/components/form/form-shell'
 import { Page, PageHeader } from '@/components/page-layout'
+import { RoasterFields } from '@/components/roasters/roaster-fields'
+import {
+  createRoasterFormValues,
+  roasterUpdatePayload,
+} from '@/components/roasters/roaster-form-values'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { getRoastLevelLabel } from '@/lib/constants'
 import { deleteRoaster, getRoaster, updateRoaster } from '@/lib/server/roasters'
 
 export const Route = createFileRoute('/roasters/$roasterId')({
@@ -33,14 +37,9 @@ function RoasterDetailPage() {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [formData, setFormData] = useState(() => ({
-    name: roaster?.name ?? '',
-    location: roaster?.location ?? '',
-    country: roaster?.country ?? '',
-    website: roaster?.website ?? '',
-    instagramHandle: roaster?.instagramHandle ?? '',
-    notes: roaster?.notes ?? '',
-  }))
+  const [formData, setFormData] = useState(() =>
+    createRoasterFormValues(roaster),
+  )
 
   if (!roaster) {
     return (
@@ -59,14 +58,7 @@ function RoasterDetailPage() {
   }
 
   const handleCancelEdit = () => {
-    setFormData({
-      name: roaster.name ?? '',
-      location: roaster.location ?? '',
-      country: roaster.country ?? '',
-      website: roaster.website ?? '',
-      instagramHandle: roaster.instagramHandle ?? '',
-      notes: roaster.notes ?? '',
-    })
+    setFormData(createRoasterFormValues(roaster))
     setIsEditing(false)
   }
 
@@ -76,15 +68,7 @@ function RoasterDetailPage() {
     setIsSaving(true)
     try {
       await updateRoaster({
-        data: {
-          id: roaster.id,
-          name: formData.name.trim(),
-          location: formData.location.trim() || null,
-          country: formData.country.trim() || null,
-          website: formData.website.trim() || null,
-          instagramHandle: formData.instagramHandle.trim() || null,
-          notes: formData.notes.trim() || null,
-        },
+        data: roasterUpdatePayload(roaster.id, formData),
       })
       setIsEditing(false)
       await router.invalidate({ filter: (match) => match.routeId === Route.id })
@@ -149,7 +133,7 @@ function RoasterDetailPage() {
               description="This will remove the roaster from your collection. Beans linked to this roaster will keep their text roaster field."
               onConfirm={handleDelete}
               trigger={
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" aria-label="Delete roaster">
                   <Trash2 className="h-4 w-4" />
                 </Button>
               }
@@ -159,79 +143,13 @@ function RoasterDetailPage() {
       />
 
       {isEditing ? (
-        <>
-          <Card>
-            <CardHeader>
-              <CardTitle>Roaster info</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <InputField
-                id="name"
-                label="Name"
-                placeholder="e.g., Onyx Coffee Lab"
-                value={formData.name}
-                onChange={(value) => setFormData({ ...formData, name: value })}
-                required
-              />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <InputField
-                  id="location"
-                  label="Location"
-                  placeholder="e.g., Rogers, Arkansas"
-                  value={formData.location}
-                  onChange={(value) =>
-                    setFormData({ ...formData, location: value })
-                  }
-                />
-                <InputField
-                  id="country"
-                  label="Country"
-                  placeholder="e.g., United States"
-                  value={formData.country}
-                  onChange={(value) =>
-                    setFormData({ ...formData, country: value })
-                  }
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <FormSection title="Links">
-            <InputField
-              id="website"
-              label="Website"
-              type="url"
-              placeholder="https://…"
-              value={formData.website}
-              onChange={(value) => setFormData({ ...formData, website: value })}
-            />
-            <InputField
-              id="instagramHandle"
-              label="Instagram"
-              placeholder="@handle"
-              value={formData.instagramHandle}
-              onChange={(value) =>
-                setFormData({ ...formData, instagramHandle: value })
-              }
-            />
-          </FormSection>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Notes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <TextareaField
-                id="notes"
-                label=""
-                placeholder="Any notes about this roaster…"
-                value={formData.notes}
-                onChange={(value) => setFormData({ ...formData, notes: value })}
-                rows={3}
-              />
-            </CardContent>
-          </Card>
-        </>
+        <RoasterFields
+          values={formData}
+          onChange={(key, value) =>
+            setFormData((current) => ({ ...current, [key]: value }))
+          }
+          idPrefix="roaster-edit"
+        />
       ) : (
         <>
           {(roaster.website || roaster.instagramHandle) && (
@@ -305,7 +223,7 @@ function RoasterDetailPage() {
                       <span className="font-medium">{bean.name}</span>
                       {bean.roastLevel && (
                         <Badge variant="outline" className="capitalize text-xs">
-                          {bean.roastLevel.replace('_', ' ')}
+                          {getRoastLevelLabel(bean.roastLevel)}
                         </Badge>
                       )}
                     </Link>

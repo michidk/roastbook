@@ -157,60 +157,71 @@ async function deleteEntityRow(
 ): Promise<void> {
   switch (entityType) {
     case 'beans':
-      expectReturnedRow(
-        (
-          await tx
-            .delete(beans)
-            .where(eq(beans.id, entityId))
-            .returning({ id: beans.id })
-        )[0],
-        'Bean',
-      )
-      return
+      return deleteBeanRow(tx, entityId)
     case 'gear':
-      expectReturnedRow(
-        (
-          await tx
-            .delete(gear)
-            .where(eq(gear.id, entityId))
-            .returning({ id: gear.id })
-        )[0],
-        'Gear',
-      )
-      return
+      return deleteGearRow(tx, entityId)
     case 'coffee-shops':
-      expectReturnedRow(
-        (
-          await tx
-            .delete(coffeeShops)
-            .where(eq(coffeeShops.id, entityId))
-            .returning({ id: coffeeShops.id })
-        )[0],
-        'Café',
-      )
-      return
+      return deleteCoffeeShopRow(tx, entityId)
     case 'shots':
-      expectReturnedRow(
-        (
-          await tx
-            .delete(shots)
-            .where(eq(shots.id, entityId))
-            .returning({ id: shots.id })
-        )[0],
-        'Shot',
-      )
-      return
+      return deleteShotRow(tx, entityId)
     case 'visits':
-      expectReturnedRow(
-        (
-          await tx
-            .delete(cafeVisits)
-            .where(eq(cafeVisits.id, entityId))
-            .returning({ id: cafeVisits.id })
-        )[0],
-        'Visit',
-      )
+      return deleteVisitRow(tx, entityId)
   }
+}
+
+async function deleteBeanRow(
+  tx: DatabaseTransaction,
+  entityId: number,
+): Promise<void> {
+  const [deleted] = await tx
+    .delete(beans)
+    .where(eq(beans.id, entityId))
+    .returning({ id: beans.id })
+  expectReturnedRow(deleted, 'Bean')
+}
+
+async function deleteGearRow(
+  tx: DatabaseTransaction,
+  entityId: number,
+): Promise<void> {
+  const [deleted] = await tx
+    .delete(gear)
+    .where(eq(gear.id, entityId))
+    .returning({ id: gear.id })
+  expectReturnedRow(deleted, 'Gear')
+}
+
+async function deleteCoffeeShopRow(
+  tx: DatabaseTransaction,
+  entityId: number,
+): Promise<void> {
+  const [deleted] = await tx
+    .delete(coffeeShops)
+    .where(eq(coffeeShops.id, entityId))
+    .returning({ id: coffeeShops.id })
+  expectReturnedRow(deleted, 'Café')
+}
+
+async function deleteShotRow(
+  tx: DatabaseTransaction,
+  entityId: number,
+): Promise<void> {
+  const [deleted] = await tx
+    .delete(shots)
+    .where(eq(shots.id, entityId))
+    .returning({ id: shots.id })
+  expectReturnedRow(deleted, 'Shot')
+}
+
+async function deleteVisitRow(
+  tx: DatabaseTransaction,
+  entityId: number,
+): Promise<void> {
+  const [deleted] = await tx
+    .delete(cafeVisits)
+    .where(eq(cafeVisits.id, entityId))
+    .returning({ id: cafeVisits.id })
+  expectReturnedRow(deleted, 'Visit')
 }
 
 export async function deleteEntityWithMedia(

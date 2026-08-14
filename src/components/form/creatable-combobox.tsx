@@ -67,6 +67,7 @@ export interface CreatableComboboxProps<T> {
   disabled?: boolean
   className?: string
   autoFocus?: boolean
+  error?: string
 }
 
 export function CreatableCombobox<T>({
@@ -91,6 +92,7 @@ export function CreatableCombobox<T>({
   disabled,
   className,
   autoFocus,
+  error,
   fallbackOption,
 }: CreatableComboboxProps<T>) {
   const [query, setQuery] = useState('')
@@ -185,7 +187,7 @@ export function CreatableCombobox<T>({
           <span className="flex items-center gap-2 text-sm leading-none font-medium">
             {labelContent}
           </span>
-          <p className="flex min-h-11 items-center rounded-lg border border-dashed border-border bg-secondary/50 px-3 py-2 text-sm leading-5 text-muted-foreground lg:min-h-8 lg:py-1">
+          <p className="flex min-h-11 items-center rounded-lg border border-dashed border-border bg-secondary/50 px-3 py-2 text-sm leading-5 text-muted-foreground [@media(hover:hover)_and_(pointer:fine)]:min-h-8 [@media(hover:hover)_and_(pointer:fine)]:py-1">
             {emptyStateMessage}
           </p>
         </>
@@ -213,7 +215,12 @@ export function CreatableCombobox<T>({
             disabled={disabled}
           >
             <div className="relative">
-              <ComboboxTrigger id={id} autoFocus={autoFocus}>
+              <ComboboxTrigger
+                id={id}
+                autoFocus={autoFocus}
+                aria-invalid={Boolean(error)}
+                aria-describedby={error ? `${id}-error` : undefined}
+              >
                 <span
                   className={cn(
                     'flex flex-1 truncate text-left',
@@ -228,7 +235,7 @@ export function CreatableCombobox<T>({
                 <ComboboxClear
                   type="button"
                   aria-label={`Clear ${label.toLowerCase()}`}
-                  className="absolute top-1/2 right-7 size-8 -translate-y-1/2 lg:right-7 lg:size-6"
+                  className="absolute top-1/2 right-7 size-8 -translate-y-1/2 [@media(hover:hover)_and_(pointer:fine)]:size-6"
                 >
                   <X />
                 </ComboboxClear>
@@ -273,6 +280,11 @@ export function CreatableCombobox<T>({
               </ComboboxList>
             </ComboboxContent>
           </Combobox>
+          {error ? (
+            <p id={`${id}-error`} className="text-sm text-destructive-text">
+              {error}
+            </p>
+          ) : null}
         </div>
       )}
     </div>

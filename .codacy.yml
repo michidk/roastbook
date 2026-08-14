@@ -6,3 +6,8 @@ engines:
   duplication:
     exclude_paths:
       - "src/routeTree.gen.ts"
+exclude_paths:
+  - "node_modules/**"
+  - ".output/**"
+  - ".artifacts/**"
+  - "src/routeTree.gen.ts"

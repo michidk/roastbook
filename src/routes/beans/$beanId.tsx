@@ -270,7 +270,7 @@ function BeanDetailPage() {
       <ShotParameterCharts shots={shots} />
       <Card>
         <CardHeader>
-          <CardTitle>Shot history</CardTitle>
+          <CardTitle>Brew history</CardTitle>
         </CardHeader>
         <CardContent>
           <ShotsTable shots={shots} hideBean />

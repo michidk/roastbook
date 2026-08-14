@@ -5,8 +5,8 @@ import { toast } from 'sonner'
 import { BeanCard } from '@/components/beans/bean-card'
 import { BeanPicker } from '@/components/beans/bean-picker'
 import { CreatableCombobox } from '@/components/form/creatable-combobox'
-import { TextareaField } from '@/components/form/form-field'
-import { FormSection } from '@/components/form/form-shell'
+import { InputField, TextareaField } from '@/components/form/form-field'
+import { FormErrorSummary, FormSection } from '@/components/form/form-shell'
 import { Page, PageHeader } from '@/components/page-layout'
 import {
   availableGearForShot,
@@ -15,25 +15,32 @@ import {
   ShotParameterFields,
   shotFormValuesFrom,
 } from '@/components/shots/shot-parameter-fields'
-import { ShotTimer } from '@/components/shots/shot-timer'
+import { ShotTimer, type ShotTimerHandle } from '@/components/shots/shot-timer'
 import { TasteTagSelector } from '@/components/shots/taste-tag-selector'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { StarRating } from '@/components/ui/star-rating'
-import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import {
+  useCurrentLocalDateTimeLimit,
+  useLocalDateTimeInput,
+} from '@/hooks/use-local-date-time-input'
+import { useUnsavedChanges } from '@/hooks/use-unsaved-changes'
+import { focusFirstInvalidControl } from '@/lib/form-validation'
 import { getLastBeanIdForBrewingMethod } from '@/lib/new-shot-defaults'
 import { newShotPayload } from '@/lib/new-shot-payload'
 import { getActiveBeans } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getGear } from '@/lib/server/gear'
 import { getRecipes } from '@/lib/server/recipes'
-import { createShot, getLastShotForBean } from '@/lib/server/shots'
+import { createShot, getLastShotForBeanAndMethod } from '@/lib/server/shots'
 import {
   getBeanSuggestions,
   getBrewingMethodSuggestions,
   getLastBeansByBrewingMethod,
 } from '@/lib/server/suggestions'
 import { getTasteTags } from '@/lib/server/taste-tags'
+import { isNegativeTasteTag } from '@/lib/taste-tags'
+import { getShotUpdateErrors } from '@/lib/update-validation'
 
 export const Route = createFileRoute('/shots/new')({
   loader: async () => {
@@ -65,6 +72,7 @@ export const Route = createFileRoute('/shots/new')({
       brewingMethodSuggestions,
       lastBeansByBrewingMethod,
       gear,
+      defaultBrewedAt: new Date().toISOString(),
     }
   },
   component: NewShotPage,
@@ -80,9 +88,9 @@ function NewShotPage() {
     brewingMethodSuggestions,
     lastBeansByBrewingMethod,
     gear,
+    defaultBrewedAt,
   } = Route.useLoaderData()
   const navigate = useNavigate()
-  const formatNumber = useNumberFormatter()
   const [values, setValues] = useState<ShotFormValues>(() => {
     const brewingMethodId = brewingMethodSuggestions[0]
       ? String(brewingMethodSuggestions[0].id)
@@ -97,12 +105,24 @@ function NewShotPage() {
     }
   })
   const [recipeId, setRecipeId] = useState('')
+  const [brewedAt, setBrewedAt] = useLocalDateTimeInput(defaultBrewedAt)
+  const latestBrewedAt = useCurrentLocalDateTimeLimit()
   const [selectedTags, setSelectedTags] = useState<number[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoadingLastShot, setIsLoadingLastShot] = useState(false)
-  const [timerRunning, setTimerRunning] = useState(false)
-  const [timerAnnouncement, setTimerAnnouncement] = useState('Timer ready')
-  const timerStartedAt = useRef(0)
+  const [fieldErrors, setFieldErrors] = useState<
+    Readonly<Record<string, string>>
+  >({})
+  const [isDirty, setIsDirty] = useState(false)
+  const [timerKey, setTimerKey] = useState(0)
+  const isInitializing = useRef(true)
+  const timerRef = useRef<ShotTimerHandle>(null)
+
+  useEffect(() => {
+    isInitializing.current = false
+  }, [])
+
+  useUnsavedChanges(isDirty && !isSubmitting)
 
   const selectedMethod = methods.find(
     (method) => String(method.id) === values.brewingMethodId,
@@ -114,27 +134,22 @@ function NewShotPage() {
     selectedMethod?.timerEnabled === true &&
     selectedMethod.enabledParameters.includes('shotTimeSeconds')
 
-  useEffect(() => {
-    if (!timerRunning || !hasShotTimer) return
-    const update = () =>
-      setValues((current) => ({
-        ...current,
-        shotTimeSeconds: (
-          (performance.now() - timerStartedAt.current) /
-          1000
-        ).toFixed(1),
-      }))
-    const interval = window.setInterval(update, 100)
-    update()
-    return () => window.clearInterval(interval)
-  }, [hasShotTimer, timerRunning])
-
   const set = <Key extends keyof ShotFormValues>(
     key: Key,
     value: ShotFormValues[Key],
-  ) => setValues((current) => ({ ...current, [key]: value }))
+  ) => {
+    if (!isInitializing.current) setIsDirty(true)
+    setFieldErrors((current) => {
+      if (!current[key]) return current
+      const next = { ...current }
+      delete next[key]
+      return next
+    })
+    setValues((current) => ({ ...current, [key]: value }))
+  }
 
   const toggleTag = (tagId: number) => {
+    setIsDirty(true)
     setSelectedTags((current) =>
       current.includes(tagId)
         ? current.filter((id) => id !== tagId)
@@ -144,8 +159,8 @@ function NewShotPage() {
 
   const selectMethod = (brewingMethodId: string) => {
     if (brewingMethodId === values.brewingMethodId) return
-    setTimerRunning(false)
-    setTimerAnnouncement('Timer ready')
+    setIsDirty(true)
+    setTimerKey((current) => current + 1)
     setRecipeId('')
     setValues((current) => ({
       ...current,
@@ -162,7 +177,8 @@ function NewShotPage() {
     setRecipeId(id)
     const recipe = recipes.find((item) => String(item.id) === id)
     if (!recipe) return
-    setTimerRunning(false)
+    setIsDirty(true)
+    setTimerKey((current) => current + 1)
     setValues((current) => ({
       ...shotFormValuesFrom(recipe),
       rating: current.rating,
@@ -175,9 +191,14 @@ function NewShotPage() {
     if (!values.beanId) return
     setIsLoadingLastShot(true)
     try {
-      const shot = await getLastShotForBean({ data: Number(values.beanId) })
+      const shot = await getLastShotForBeanAndMethod({
+        data: {
+          beanId: Number(values.beanId),
+          brewingMethodId: Number(values.brewingMethodId),
+        },
+      })
       if (!shot) {
-        toast.info('No previous shot found for these beans')
+        toast.info('No previous brew found for these beans and method')
         return
       }
       setValues((current) => ({
@@ -187,11 +208,12 @@ function NewShotPage() {
         notes: current.notes,
       }))
       setRecipeId('')
-      setTimerRunning(false)
-      toast.success('Loaded the last shot for these beans')
+      setIsDirty(true)
+      setTimerKey((current) => current + 1)
+      toast.success('Loaded the last brew for these beans and method')
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Could not load the last shot',
+        error instanceof Error ? error.message : 'Could not load the last brew',
       )
     } finally {
       setIsLoadingLastShot(false)
@@ -200,13 +222,31 @@ function NewShotPage() {
 
   const handleSubmit = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault()
+    const formElement = event.currentTarget
+    const timerValue = hasShotTimer ? timerRef.current?.getValue() : undefined
+    const submittedValues =
+      timerValue === undefined
+        ? values
+        : { ...values, shotTimeSeconds: timerValue }
+    const data = newShotPayload(submittedValues, selectedTags, {
+      brewedAt,
+      recipeId,
+    })
+    const errors = getShotUpdateErrors({ id: 1, ...data })
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) {
+      focusFirstInvalidControl(formElement)
+      return
+    }
+
     setIsSubmitting(true)
     try {
-      await createShot({ data: newShotPayload(values, selectedTags) })
+      await createShot({ data })
+      setIsDirty(false)
       await navigate({ to: '/shots' })
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Could not save this shot',
+        error instanceof Error ? error.message : 'Could not save this brew',
       )
     } finally {
       setIsSubmitting(false)
@@ -225,16 +265,16 @@ function NewShotPage() {
   const availableRecipes = recipes.filter(
     (recipe) => String(recipe.brewingMethodId) === values.brewingMethodId,
   )
-  const positiveTags = tasteTags.filter((tag) => tag.category === 'positive')
-  const negativeTags = tasteTags.filter((tag) => tag.category === 'negative')
+  const positiveTags = tasteTags.filter((tag) => !isNegativeTasteTag(tag))
+  const negativeTags = tasteTags.filter(isNegativeTasteTag)
 
   return (
     <Page>
       <PageHeader
-        title="New shot"
+        title="New brew"
         leading={
           <Button variant="outline" size="icon" asChild>
-            <Link to="/shots" aria-label="Back to shots">
+            <Link to="/shots" aria-label="Back to brews">
               <ArrowLeft />
             </Link>
           </Button>
@@ -246,9 +286,10 @@ function NewShotPage() {
         className="grid gap-5 lg:grid-cols-[1fr_320px] lg:items-start"
       >
         <div className="space-y-5">
+          <FormErrorSummary errors={fieldErrors} />
           <FormSection
             title="Brewing method"
-            description="The method controls which brewing parameters this shot uses."
+            description="The method controls which brewing parameters this brew uses."
             contentClassName="grid gap-4 space-y-0 sm:grid-cols-2"
           >
             <CreatableCombobox
@@ -264,6 +305,7 @@ function NewShotPage() {
               searchPlaceholder="Search brewing methods…"
               emptyMessage="No brewing methods found."
               required
+              error={fieldErrors.brewingMethodId}
             />
             {selectedMethod ? (
               <CreatableCombobox
@@ -280,6 +322,25 @@ function NewShotPage() {
                 emptyMessage="No recipes saved for this method."
               />
             ) : null}
+            <InputField
+              id="brewed-at"
+              label="Brewed at"
+              type="datetime-local"
+              value={brewedAt}
+              onChange={(value) => {
+                setBrewedAt(value)
+                setIsDirty(true)
+                setFieldErrors((current) => {
+                  if (!current.brewedAt) return current
+                  const next = { ...current }
+                  delete next.brewedAt
+                  return next
+                })
+              }}
+              max={latestBrewedAt}
+              error={fieldErrors.brewedAt}
+              required
+            />
           </FormSection>
           <FormSection title="Beans">
             <BeanPicker
@@ -299,7 +360,7 @@ function NewShotPage() {
                 onClick={loadLastShot}
               >
                 <History />
-                {isLoadingLastShot ? 'Loading…' : 'Load last shot from bean'}
+                {isLoadingLastShot ? 'Loading…' : 'Load last brew'}
               </Button>
             ) : null}
           </FormSection>
@@ -308,6 +369,7 @@ function NewShotPage() {
             gear={gearOptions}
             enabledParameters={selectedMethod?.enabledParameters ?? []}
             useEquipmentSetupDefaults
+            errors={fieldErrors}
             onChange={set}
           />
           <FormSection title="Tasting notes">
@@ -343,28 +405,10 @@ function NewShotPage() {
           {selectedBean ? <BeanCard bean={selectedBean} /> : null}
           {hasShotTimer ? (
             <ShotTimer
+              key={timerKey}
+              ref={timerRef}
               value={values.shotTimeSeconds}
-              running={timerRunning}
-              announcement={timerAnnouncement}
-              onReset={() => {
-                setTimerRunning(false)
-                set('shotTimeSeconds', '')
-                setTimerAnnouncement('Timer reset')
-              }}
-              onToggle={() => {
-                if (timerRunning) {
-                  setTimerRunning(false)
-                  setTimerAnnouncement(
-                    `Timer paused at ${formatNumber(values.shotTimeSeconds || '0.0')} seconds`,
-                  )
-                } else {
-                  timerStartedAt.current =
-                    performance.now() -
-                    (Number(values.shotTimeSeconds) || 0) * 1000
-                  setTimerRunning(true)
-                  setTimerAnnouncement('Timer started')
-                }
-              }}
+              onCommit={(value) => set('shotTimeSeconds', value)}
             />
           ) : null}
           <Button
@@ -374,7 +418,7 @@ function NewShotPage() {
             aria-busy={isSubmitting}
             className="w-full"
           >
-            {isSubmitting ? 'Saving…' : 'Save shot'}
+            {isSubmitting ? 'Saving…' : 'Save brew'}
           </Button>
         </aside>
       </form>

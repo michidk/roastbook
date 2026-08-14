@@ -1,5 +1,6 @@
 import { isCurrency } from '@/lib/app-settings'
 import type { BeanType, RoastLevel } from '@/lib/constants'
+import { blankToNull, blankToUndefined } from '@/lib/form-value-normalization'
 
 export type BeanFormValues = {
   readonly name: string
@@ -86,20 +87,20 @@ export function beanCreatePayload(values: BeanFormValues) {
     name: values.name,
     type: values.type || undefined,
     roasterId: values.roasterId ? Number(values.roasterId) : undefined,
-    weight: values.weight || undefined,
-    price: values.price || undefined,
+    weight: blankToUndefined(values.weight),
+    price: blankToUndefined(values.price),
     priceCurrency: isCurrency(values.priceCurrency)
       ? values.priceCurrency
       : undefined,
-    shopUrl: values.shopUrl || undefined,
-    origin: values.origin || undefined,
-    region: values.region || undefined,
-    farm: values.farm || undefined,
-    variety: values.variety || undefined,
-    process: values.process || undefined,
+    shopUrl: blankToUndefined(values.shopUrl),
+    origin: blankToUndefined(values.origin),
+    region: blankToUndefined(values.region),
+    farm: blankToUndefined(values.farm),
+    variety: blankToUndefined(values.variety),
+    process: blankToUndefined(values.process),
     roastLevel: values.roastLevel || undefined,
     roastDate: optionalDate(values.roastDate),
-    notes: values.notes || undefined,
+    notes: blankToUndefined(values.notes),
   }
 }
 
@@ -109,20 +110,20 @@ export function beanUpdatePayload(id: number, values: BeanFormValues) {
     name: values.name,
     type: values.type || null,
     roasterId: values.roasterId ? Number(values.roasterId) : null,
-    weight: values.weight || null,
-    price: values.price || null,
+    weight: blankToNull(values.weight),
+    price: blankToNull(values.price),
     priceCurrency: isCurrency(values.priceCurrency)
       ? values.priceCurrency
       : null,
-    shopUrl: values.shopUrl || null,
-    origin: values.origin,
-    region: values.region,
-    farm: values.farm,
-    variety: values.variety,
-    process: values.process,
+    shopUrl: blankToNull(values.shopUrl),
+    origin: blankToNull(values.origin),
+    region: blankToNull(values.region),
+    farm: blankToNull(values.farm),
+    variety: blankToNull(values.variety),
+    process: blankToNull(values.process),
     roastLevel: values.roastLevel || null,
     roastDate: optionalDate(values.roastDate) ?? null,
-    notes: values.notes,
+    notes: blankToNull(values.notes),
   }
 }
 

@@ -1,5 +1,6 @@
 import { Star } from 'lucide-react'
 
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 type StarRatingProps = {
@@ -67,37 +68,46 @@ function StarRating({
   }
 
   return (
-    <fieldset
-      className={cn(
-        'flex min-w-0 items-center gap-0 border-0 p-0 sm:gap-1',
-        className,
-      )}
-    >
-      <legend className="sr-only">{ariaLabel}</legend>
-      {Array.from({ length: max }, (_, index) => {
-        const starValue = index + 1
-        const filled = starValue <= value
+    <div className={cn('flex flex-wrap items-center gap-2', className)}>
+      <fieldset className="flex min-w-0 items-center gap-0 border-0 p-0 sm:gap-1">
+        <legend className="sr-only">{ariaLabel}</legend>
+        {Array.from({ length: max }, (_, index) => {
+          const starValue = index + 1
+          const filled = starValue <= value
 
-        return (
-          <button
-            key={starValue}
-            type="button"
-            onClick={() => onChange(starValue)}
-            className="flex size-11 shrink-0 items-center justify-center transition-transform hover:scale-110 lg:size-8"
-            aria-label={`Rate ${starValue} out of ${max}`}
-            aria-pressed={starValue === value}
-          >
-            <Star
-              aria-hidden
-              className={cn(
-                sizeClassName,
-                filled ? 'fill-link text-link' : 'text-muted-foreground',
-              )}
-            />
-          </button>
-        )
-      })}
-    </fieldset>
+          return (
+            <button
+              key={starValue}
+              type="button"
+              onClick={() => onChange(starValue === value ? 0 : starValue)}
+              className="flex size-11 shrink-0 items-center justify-center transition-transform motion-reduce:transition-none [@media(hover:hover)_and_(pointer:fine)]:size-8 [@media(hover:hover)_and_(pointer:fine)]:hover:scale-110"
+              aria-label={`Rate ${starValue} out of ${max}`}
+              aria-pressed={starValue === value}
+            >
+              <Star
+                aria-hidden
+                className={cn(
+                  sizeClassName,
+                  filled ? 'fill-link text-link' : 'text-muted-foreground',
+                )}
+              />
+            </button>
+          )
+        })}
+      </fieldset>
+      {value === 0 ? (
+        <span className="text-sm text-muted-foreground">Not rated</span>
+      ) : (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => onChange(0)}
+        >
+          Clear rating
+        </Button>
+      )}
+    </div>
   )
 }
 

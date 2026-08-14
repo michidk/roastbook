@@ -1,3 +1,9 @@
+import { isDateTooFarInFuture } from '@/lib/date-input'
+import { CURRENCY_VALUES } from '@/lib/domain-contracts'
+import {
+  DECIMAL_CONSTRAINTS,
+  type DecimalConstraint,
+} from '@/lib/measurement-constraints'
 import type { ShotParameterInput } from '@/lib/shot-parameters'
 
 export type ShotUpdateCandidate = ShotParameterInput & {
@@ -9,29 +15,34 @@ export type ShotUpdateCandidate = ShotParameterInput & {
   readonly rating?: number | null
   readonly notes?: string | null
   readonly tasteTagIds?: readonly number[]
+  readonly brewedAt?: Date
 }
 
 export type CafeVisitUpdateCandidate = {
   readonly id: number
   readonly coffeeShopId?: number | null
   readonly beanId?: number | null
-  readonly drinkName?: string
-  readonly drinkType?: string
-  readonly price?: string
-  readonly currency?: string
+  readonly drinkName?: string | null
+  readonly drinkType?: string | null
+  readonly price?: string | null
+  readonly currency?: string | null
   readonly rating?: number | null
-  readonly notes?: string
+  readonly notes?: string | null
   readonly visitedAt?: Date
   readonly tasteTagIds?: readonly number[]
 }
 
-type DecimalRule = {
-  readonly label: string
-  readonly maximum: number
-  readonly fractionDigits: number
-}
-
-const SUPPORTED_CURRENCIES = new Set(['EUR', 'USD', 'GBP', 'CHF'])
+const SUPPORTED_CURRENCIES = new Set<string>(CURRENCY_VALUES)
+const SHOT_DECIMAL_RULES = [
+  ['doseGrams', DECIMAL_CONSTRAINTS.doseGrams],
+  ['yieldGrams', DECIMAL_CONSTRAINTS.yieldGrams],
+  ['brewTemperatureCelsius', DECIMAL_CONSTRAINTS.brewTemperatureCelsius],
+  ['brewPressureBar', DECIMAL_CONSTRAINTS.brewPressureBar],
+  ['shotTimeSeconds', DECIMAL_CONSTRAINTS.shotTimeSeconds],
+] as const satisfies readonly (readonly [
+  keyof ShotParameterInput,
+  DecimalConstraint,
+])[]
 
 class UpdateInputError extends Error {
   constructor(message: string) {
@@ -42,7 +53,7 @@ class UpdateInputError extends Error {
 
 function getDecimalError(
   value: string | null | undefined,
-  rule: DecimalRule,
+  rule: DecimalConstraint,
 ): string | undefined {
   if (value === null || value === undefined || value === '') return undefined
   if (!/^-?\d+(?:\.\d+)?$/.test(value)) return `${rule.label} must be a number`
@@ -61,6 +72,17 @@ function getRatingError(value: number | null | undefined): string | undefined {
   return Number.isInteger(value) && value >= 1 && value <= 5
     ? undefined
     : 'Rating must be between 1 and 5'
+}
+
+function getDateError(
+  value: Date | undefined,
+  label: string,
+): string | undefined {
+  if (!value) return undefined
+  if (Number.isNaN(value.getTime())) return `${label} must be a valid date`
+  return isDateTooFarInFuture(value)
+    ? `${label} cannot be in the future`
+    : undefined
 }
 
 function addError(
@@ -85,52 +107,11 @@ export function getShotUpdateErrors(
   if (!Number.isInteger(data.brewingMethodId) || data.brewingMethodId <= 0) {
     errors.brewingMethodId = 'Choose a brewing method'
   }
-  addError(
-    errors,
-    'doseGrams',
-    getDecimalError(data.doseGrams, {
-      label: 'Dose',
-      maximum: 999.99,
-      fractionDigits: 2,
-    }),
-  )
-  addError(
-    errors,
-    'yieldGrams',
-    getDecimalError(data.yieldGrams, {
-      label: 'Yield',
-      maximum: 999.99,
-      fractionDigits: 2,
-    }),
-  )
-  addError(
-    errors,
-    'brewTemperatureCelsius',
-    getDecimalError(data.brewTemperatureCelsius, {
-      label: 'Water temperature',
-      maximum: 999.9,
-      fractionDigits: 1,
-    }),
-  )
-  addError(
-    errors,
-    'brewPressureBar',
-    getDecimalError(data.brewPressureBar, {
-      label: 'Pressure',
-      maximum: 99.9,
-      fractionDigits: 2,
-    }),
-  )
-  addError(
-    errors,
-    'shotTimeSeconds',
-    getDecimalError(data.shotTimeSeconds, {
-      label: 'Brew time',
-      maximum: 9999.99,
-      fractionDigits: 2,
-    }),
-  )
+  for (const [field, rule] of SHOT_DECIMAL_RULES) {
+    addError(errors, field, getDecimalError(data[field], rule))
+  }
   addError(errors, 'rating', getRatingError(data.rating))
+  addError(errors, 'brewedAt', getDateError(data.brewedAt, 'Brewed at'))
   return errors
 }
 
@@ -141,15 +122,16 @@ export function getCafeVisitUpdateErrors(
   addError(
     errors,
     'price',
-    getDecimalError(data.price, {
-      label: 'Price',
-      maximum: 9999.99,
-      fractionDigits: 2,
-    }),
+    getDecimalError(data.price, DECIMAL_CONSTRAINTS.cafeVisitPrice),
   )
-  if (data.currency !== undefined && !SUPPORTED_CURRENCIES.has(data.currency)) {
+  if (
+    data.currency !== undefined &&
+    data.currency !== null &&
+    !SUPPORTED_CURRENCIES.has(data.currency)
+  ) {
     errors.currency = 'Choose a supported currency'
   }
   addError(errors, 'rating', getRatingError(data.rating))
+  addError(errors, 'visitedAt', getDateError(data.visitedAt, 'Visited at'))
   return errors
 }

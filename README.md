@@ -4,7 +4,7 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/dcbf6d1e94c244efaee4b19b86f2d771)](https://app.codacy.com/gh/michidk/roastbook/dashboard)
 
 **The AI-native coffee journal you actually own.** Roastbook is a self-hosted
-home for your espresso shots, beans, recipes, café visits, roasters, brewing
+home for your coffee brews, beans, recipes, café visits, roasters, brewing
 methods, and gear — and it fills itself in for you.
 
 Photograph a bag and Roastbook reads the label: origin, region, farm, variety,
@@ -12,15 +12,15 @@ process, roast level, roast date, tasting notes. Type a roaster's name and it
 researches the website, location, and background. Add an espresso machine and it
 looks up the documented factory defaults — brew pressure and OPV, pre-infusion
 time and pressure, flow limit, volumetric dose, steam pressure — from manuals and
-manufacturer documentation, so your shot log starts from real numbers instead of
+manufacturer documentation, so your brew log starts from real numbers instead of
 guesses.
 
 Logging coffee should take seconds, not minutes. Roastbook is built so the
 tedious part — transcribing labels, hunting down specs, remembering what changed
-between shots — happens for you, while every gram of your data stays on your own
+between brews — happens for you, while every gram of your data stays on your own
 infrastructure.
 
-And it stays out of your way. Log a shot with dose, yield, and time and you are
+And it stays out of your way. Log a brew with dose, yield, and time and you are
 done; the depth is there when you want it, not in your face when you don't.
 Roastbook runs equally well on the phone in your hand at the machine and on the
 desktop where you dig through the numbers afterwards.
@@ -32,10 +32,11 @@ desktop where you dig through the numbers afterwards.
   takes three numbers.
 - **Serious when you want to be.** Pre-infusion time and pressure, brew pressure,
   flow rate, brew temperature, grind setting, tamp force, basket, puck screen, and
-  paper filter position per shot — plus documented machine-level OPV, factory
+  paper filter position per brew — plus documented machine-level OPV, factory
   pre-infusion, flow limit, and volumetric defaults on your gear.
-- **Numbers that answer questions.** Parameter charts and statistics over your
-  history show what a change to grind, dose, or pressure actually did.
+- **Numbers that answer questions.** Filterable statistics connect brew quality
+  to beans, methods, recipes, taste, consistency, timing, gear, and cost, while
+  parameter charts show what a change to grind, dose, or pressure actually did.
 - **Mobile and desktop, both first-class.** Large touch targets and compact cards
   next to the machine; full data tables, charts, and maps at the desk.
 - **AI-native, not AI-bolted-on.** Research and extraction are wired into the
@@ -44,7 +45,7 @@ desktop where you dig through the numbers afterwards.
 - **Yours, end to end.** Self-hosted on your own PostgreSQL and your own storage,
   behind your own auth proxy. No accounts, no telemetry, no upsell.
 - **A journal, not just a log.** Beans, roasters, gear, recipes, brewing methods,
-  and café visits are linked, so every shot carries its whole story.
+  and café visits are linked, so every brew carries its whole story.
 - **Deploys in one command.** Docker Compose for a home server, a Helm chart for
   a cluster.
 
@@ -64,15 +65,16 @@ Set `OPENAI_API_KEY` and these turn on — everything else works without it:
 Every AI call is optional, server-side only, rate-limited, and schema-validated.
 
 **On the roadmap: an MCP server**, so your own agents can read and write your
-coffee log directly — ask what your last ten Gesha shots had in common, or have
+coffee log directly — ask what your last ten Gesha brews had in common, or have
 an assistant log this morning's espresso for you.
 
 ## Features
 
-- Log shots with recipe, dose, yield, time, equipment, and tasting data.
+- Log brews with recipe, dose, yield, time, equipment, and tasting data.
 - Catalog beans, roasters, brewing methods, coffee shops, and gear.
 - Track café visits and explore saved places on a map.
-- Review activity, trends, and brewing statistics.
+- Review filterable brew and café trends, quality, consistency, taste, rhythm,
+  exploration, recipe performance, gear usage, and costs.
 - Scan labels and research beans, roasters, and machine settings with AI.
 - Store media locally or in S3-compatible object storage.
 - Gate self-hosted deployments with the Hodor reverse proxy.

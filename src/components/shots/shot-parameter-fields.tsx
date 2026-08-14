@@ -1,4 +1,3 @@
-import { Check } from 'lucide-react'
 import { CreatableCombobox } from '@/components/form/creatable-combobox'
 import { InputField, SelectField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
@@ -63,7 +62,7 @@ export const EMPTY_SHOT_FORM_VALUES: ShotFormValues = {
   distributionMethod: '',
   tampForceKg: '',
   accessoryGearIds: [],
-  rating: 3,
+  rating: 0,
   notes: '',
 }
 
@@ -203,7 +202,7 @@ export function ShotParameterFields({
                 autoSelectSingleItem={useEquipmentSetupDefaults}
                 emptyStateMessage={
                   useEquipmentSetupDefaults
-                    ? 'Add a brewer or espresso machine in Gear before logging a shot.'
+                    ? 'Optional: add a brewer or espresso machine in Gear to record it here.'
                     : undefined
                 }
               />
@@ -223,7 +222,7 @@ export function ShotParameterFields({
                 autoSelectSingleItem={useEquipmentSetupDefaults}
                 emptyStateMessage={
                   useEquipmentSetupDefaults
-                    ? 'Create a grinder in Gear before logging a shot.'
+                    ? 'Optional: add a grinder in Gear to record it here.'
                     : undefined
                 }
               />
@@ -243,7 +242,7 @@ export function ShotParameterFields({
                 autoSelectSingleItem={useEquipmentSetupDefaults}
                 emptyStateMessage={
                   useEquipmentSetupDefaults
-                    ? 'Create a basket in Gear before logging a shot.'
+                    ? 'Optional: add a basket in Gear to record it here.'
                     : undefined
                 }
               />
@@ -471,15 +470,30 @@ export function ShotParameterFields({
             ) : null}
           </div>
           {show('usesPuckScreen') ? (
-            <Toggle
-              variant="outline"
-              className="min-h-11 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:shadow-sm hover:aria-pressed:bg-primary/90 hover:aria-pressed:text-primary-foreground"
-              pressed={values.usesPuckScreen === true}
-              onPressedChange={(pressed) => onChange('usesPuckScreen', pressed)}
-            >
-              {values.usesPuckScreen === true ? <Check /> : null}
-              Use puck screen
-            </Toggle>
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium">Puck screen</legend>
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    { label: 'Not recorded', value: null },
+                    { label: 'No', value: false },
+                    { label: 'Yes', value: true },
+                  ] as const
+                ).map((option) => (
+                  <Toggle
+                    key={option.label}
+                    variant="outline"
+                    className="min-h-11 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:shadow-sm hover:aria-pressed:bg-primary/90 hover:aria-pressed:text-primary-foreground"
+                    pressed={values.usesPuckScreen === option.value}
+                    onPressedChange={() =>
+                      onChange('usesPuckScreen', option.value)
+                    }
+                  >
+                    {option.label}
+                  </Toggle>
+                ))}
+              </div>
+            </fieldset>
           ) : null}
         </FormSection>
       ) : null}

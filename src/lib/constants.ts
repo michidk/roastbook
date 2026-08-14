@@ -6,7 +6,7 @@ import {
   ROAST_LEVEL_VALUES,
 } from '@/lib/domain-contracts'
 
-const ROAST_LEVEL_LABELS = {
+export const ROAST_LEVEL_LABELS = {
   light: 'Light',
   medium_light: 'Medium Light',
   medium: 'Medium',
@@ -38,7 +38,7 @@ export const BEAN_TYPE_LABELS: Record<BeanType, string> = Object.fromEntries(
   BEAN_TYPES.map((type) => [type.value, type.label]),
 ) as Record<BeanType, string>
 
-const PROCESS_METHOD_LABELS = {
+export const PROCESS_METHOD_LABELS = {
   washed: 'Washed',
   natural: 'Natural',
   honey: 'Honey',
@@ -52,6 +52,18 @@ export const PROCESS_METHODS = PROCESS_METHOD_VALUES.map((value) => ({
   value,
   label: PROCESS_METHOD_LABELS[value],
 }))
+
+export function getRoastLevelLabel(value: string): string {
+  return (
+    (ROAST_LEVEL_LABELS as Readonly<Record<string, string>>)[value] ?? value
+  )
+}
+
+export function getProcessMethodLabel(value: string): string {
+  return (
+    (PROCESS_METHOD_LABELS as Readonly<Record<string, string>>)[value] ?? value
+  )
+}
 
 const GEAR_TYPE_LABELS_BY_VALUE = {
   espresso_machine: 'Espresso Machine',

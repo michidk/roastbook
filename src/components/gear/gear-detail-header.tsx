@@ -101,7 +101,7 @@ export function GearDetailHeader({
               </Button>
               <DeleteConfirmation
                 title="Delete this gear?"
-                description="This will remove it from your shot records. This action cannot be undone."
+                description="This will remove it from your brew records. This action cannot be undone."
                 onConfirm={onDelete}
                 trigger={
                   <Button

@@ -1,4 +1,6 @@
 import type { ShotFormValues } from '@/components/shots/shot-parameter-fields'
+import { localDateTimeInputToDate } from '@/lib/date-input'
+import { toNullableRating } from '@/lib/rating'
 
 export function shotParameterPayload(values: ShotFormValues) {
   return {
@@ -30,10 +32,16 @@ export function shotParameterPayload(values: ShotFormValues) {
 export function newShotPayload(
   values: ShotFormValues,
   tasteTagIds: readonly number[],
+  options?: { readonly brewedAt?: string; readonly recipeId?: string },
 ) {
+  const brewedAt = options?.brewedAt
+    ? localDateTimeInputToDate(options.brewedAt)
+    : null
   return {
     ...shotParameterPayload(values),
-    rating: values.rating,
+    brewedAt: brewedAt ?? undefined,
+    recipeId: options?.recipeId ? Number(options.recipeId) : null,
+    rating: toNullableRating(values.rating),
     notes: values.notes || null,
     tasteTagIds,
   }

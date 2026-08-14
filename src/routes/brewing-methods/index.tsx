@@ -15,7 +15,7 @@ function BrewingMethodsPage() {
     <Page width="wide">
       <FormPageHeader
         title="Brewing methods"
-        description="Define each method and the shot parameters it uses. Recipes and shots always belong to one method."
+        description="Define each method and the brew parameters it uses. Recipes and brews always belong to one method."
       />
       <BrewingMethodSettings methods={methods} />
     </Page>

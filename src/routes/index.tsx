@@ -42,7 +42,7 @@ function Dashboard() {
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           value={formatNumber(stats.totalShots)}
-          label="espresso shots logged"
+          label="brews logged"
           href="/shots"
           variant="hero"
         />
@@ -53,7 +53,7 @@ function Dashboard() {
         />
         <MetricCard
           value={formatNumber(stats.shotsThisMonth)}
-          label="shots this month"
+          label="brews this month"
           href="/shots"
         />
         <MetricCard
@@ -66,7 +66,7 @@ function Dashboard() {
       <section className="grid gap-5 lg:grid-cols-[1fr_340px]">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Recent shots</CardTitle>
+            <CardTitle>Recent brews</CardTitle>
             <Link
               to="/shots"
               className="font-display text-sm font-bold text-link hover:underline"
@@ -78,10 +78,10 @@ function Dashboard() {
             {recentShots.length === 0 ? (
               <div className="rounded-2xl bg-secondary px-5 py-8 text-center">
                 <p className="text-sm text-muted-foreground">
-                  No shots logged yet. Start by logging your first espresso.
+                  No brews logged yet. Start by recording your first coffee.
                 </p>
                 <Button className="mt-4" asChild>
-                  <Link to="/shots/new">Log your first shot</Link>
+                  <Link to="/shots/new">Log your first brew</Link>
                 </Button>
               </div>
             ) : (
@@ -108,6 +108,7 @@ function Dashboard() {
                         {shot.bean?.name ?? 'Unknown beans'}
                       </p>
                       <p className="text-sm text-muted-foreground">
+                        {shot.brewingMethod.name} ·{' '}
                         {shot.doseGrams && shot.yieldGrams
                           ? `${formatNumber(shot.doseGrams)} g → ${formatNumber(shot.yieldGrams)} g`
                           : 'No dose or yield recorded'}
@@ -118,10 +119,10 @@ function Dashboard() {
                     </div>
                     <div className="flex shrink-0 self-stretch flex-col items-end justify-between">
                       <time
-                        dateTime={new Date(shot.createdAt).toISOString()}
+                        dateTime={new Date(shot.brewedAt).toISOString()}
                         className="text-xs font-semibold text-muted-foreground"
                       >
-                        {formatDate(shot.createdAt)}
+                        {formatDate(shot.brewedAt)}
                       </time>
                       {shot.rating && (
                         <div className="rounded-xl bg-card px-3 py-1.5">
@@ -141,7 +142,7 @@ function Dashboard() {
             <CardTitle>Quick add</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2.5">
-            <QuickAddRow icon={Coffee} label="Log a shot" href="/shots/new" />
+            <QuickAddRow icon={Coffee} label="Log a brew" href="/shots/new" />
             <QuickAddRow
               icon={UtensilsCrossed}
               label="Log a visit"

@@ -8,7 +8,11 @@ import {
 } from '@/components/ui/card'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
-import { BEAN_TYPE_LABELS } from '@/lib/constants'
+import {
+  BEAN_TYPE_LABELS,
+  getProcessMethodLabel,
+  getRoastLevelLabel,
+} from '@/lib/constants'
 import { thumbnailUrl } from '@/lib/image-url'
 import type { getBeans } from '@/lib/server/beans'
 
@@ -18,29 +22,19 @@ type BeanCardProps = {
   readonly bean: BeanRecord
 }
 
-const roastLabels = {
-  light: 'Light',
-  medium_light: 'Medium-light',
-  medium: 'Medium',
-  medium_dark: 'Medium-dark',
-  dark: 'Dark',
-} as const
-
 export function BeanCard({ bean }: BeanCardProps) {
   const formatDate = useDateFormatter()
   const formatNumber = useNumberFormatter()
   const thumbnail =
     bean.images.find((image) => image.isThumbnail) ?? bean.images[0]
-  const roastLabel = bean.roastLevel ? roastLabels[bean.roastLevel] : null
+  const roastLabel = bean.roastLevel
+    ? getRoastLevelLabel(bean.roastLevel)
+    : null
   const roastLabelColor =
     bean.roastLevel === 'medium_light' ? 'text-primary' : 'text-white'
   const roasterName = bean.roasterRef?.name ?? bean.roaster
   const origin = [bean.region, bean.origin].filter(Boolean).join(', ')
-  const process = bean.process
-    ? bean.process
-        .replaceAll('_', ' ')
-        .replace(/^./, (firstLetter) => firstLetter.toUpperCase())
-    : null
+  const process = bean.process ? getProcessMethodLabel(bean.process) : null
   const originAndProcess =
     origin && process ? `${origin} · ${process}` : origin || process || null
   const bagWeight = parseBagWeight(bean.weight)

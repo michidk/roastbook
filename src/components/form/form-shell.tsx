@@ -114,6 +114,29 @@ export function FormActions({
   )
 }
 
+export function FormErrorSummary({
+  errors,
+}: {
+  readonly errors: Readonly<Record<string, string>>
+}) {
+  const messages = [...new Set(Object.values(errors))]
+  if (messages.length === 0) return null
+
+  return (
+    <div
+      role="alert"
+      className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive-text"
+    >
+      <p className="font-bold">Check the highlighted fields.</p>
+      <ul className="mt-1 list-disc space-y-1 pl-5">
+        {messages.map((message) => (
+          <li key={message}>{message}</li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 interface EntityFormProps {
   onSubmit: (event: SyntheticEvent<HTMLFormElement>) => void
   children: ReactNode

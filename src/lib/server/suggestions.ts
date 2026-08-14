@@ -8,7 +8,7 @@ type Suggestion = {
   readonly name: string
 }
 
-const lastUsedAt = max(shots.createdAt).as('last_used_at')
+const lastUsedAt = max(shots.brewedAt).as('last_used_at')
 const lastUsedShotId = max(shots.id).as('last_used_shot_id')
 
 function mergeSuggestions(
@@ -81,5 +81,5 @@ export const getLastBeansByBrewingMethod = createServerFn({
     .from(shots)
     .innerJoin(beans, eq(shots.beanId, beans.id))
     .where(and(isNotNull(shots.beanId), eq(beans.isArchived, false)))
-    .orderBy(asc(shots.brewingMethodId), desc(shots.createdAt), desc(shots.id)),
+    .orderBy(asc(shots.brewingMethodId), desc(shots.brewedAt), desc(shots.id)),
 )

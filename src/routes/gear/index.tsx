@@ -19,6 +19,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
+import { GEAR_TYPE_LABELS } from '@/lib/constants'
 import { imageUrl } from '@/lib/image-url'
 import { getGear } from '@/lib/server/gear'
 import { cn } from '@/lib/utils'
@@ -31,19 +32,6 @@ export const Route = createFileRoute('/gear/')({
     <RouteError error={error} backTo="/" backLabel="Go to dashboard" />
   ),
 })
-
-const typeLabels: Record<string, string> = {
-  espresso_machine: 'Espresso Machine',
-  espresso_machine_with_grinder: 'Espresso Machine with Built-in Grinder',
-  brewer: 'Brewer',
-  grinder: 'Grinder',
-  kettle: 'Kettle',
-  scale: 'Scale',
-  tamper: 'Tamper',
-  wdt: 'WDT Tool',
-  basket: 'Basket',
-  other: 'Other',
-}
 
 function GearPage() {
   const gear = Route.useLoaderData()
@@ -154,7 +142,7 @@ function GearCard({
           <div className="flex items-start justify-between gap-3">
             <CardTitle className="min-w-0 text-base">{item.name}</CardTitle>
             <Badge variant="outline" className="shrink-0 text-xs">
-              {typeLabels[item.type]}
+              {GEAR_TYPE_LABELS[item.type]}
             </Badge>
           </div>
           {(item.brand || item.model) && (

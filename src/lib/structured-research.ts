@@ -92,38 +92,52 @@ Output rules:
 - Return only valid JSON, without markdown or commentary.`
 }
 
-export function parseStructuredResearchResult<
-  TFields extends StructuredResearchFields,
->(content: string, fields: TFields): StructuredResearchResult<TFields> {
-  let parsed: unknown
+function parseJsonCandidate(candidate: string | undefined): unknown {
+  if (!candidate) return undefined
+
+  try {
+    return JSON.parse(candidate)
+  } catch {
+    return undefined
+  }
+}
+
+function parseSupportedJsonResponse(content: string): unknown {
   const trimmedContent = content.trim()
   const fencedJson = trimmedContent.match(
     /```(?:json)?\s*([\s\S]*?)\s*```/i,
   )?.[1]
 
-  for (const candidate of [trimmedContent, fencedJson]) {
-    if (!candidate) continue
-    try {
-      parsed = JSON.parse(candidate)
-      break
-    } catch {
-      // Try the next supported response wrapper.
-    }
-  }
+  return parseJsonCandidate(trimmedContent) ?? parseJsonCandidate(fencedJson)
+}
 
-  if (parsed === undefined) {
-    return {}
-  }
+function isJsonObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
 
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
-
-  const source = parsed as Record<string, unknown>
+function selectValidResearchFields(
+  source: Record<string, unknown>,
+  fields: StructuredResearchFields,
+): Record<string, unknown> {
   const result: Record<string, unknown> = {}
+
   for (const [name, field] of Object.entries(fields)) {
     if (!(name in source)) continue
     const value = field.schema.safeParse(source[name])
     if (value.success) result[name] = value.data
   }
 
-  return result as StructuredResearchResult<TFields>
+  return result
+}
+
+export function parseStructuredResearchResult<
+  TFields extends StructuredResearchFields,
+>(content: string, fields: TFields): StructuredResearchResult<TFields> {
+  const parsed = parseSupportedJsonResponse(content)
+  if (!isJsonObject(parsed)) return {}
+
+  return selectValidResearchFields(
+    parsed,
+    fields,
+  ) as StructuredResearchResult<TFields>
 }

@@ -1,7 +1,7 @@
 const DAILY_HEADLINES = [
   'Dial in something delicious',
   'Make today worth savouring',
-  'Pull a shot worth remembering',
+  'Brew something worth remembering',
   'Find today’s sweet spot',
   'Good coffee starts here',
   'Make this cup count',

@@ -1,6 +1,16 @@
 import { normalizeShotParameterKeys } from '@/lib/brewing-methods'
 import type { ShotParameterInput } from '@/lib/shot-parameters'
 
+export function projectAccessoryGearIds(
+  data: Pick<ShotParameterInput, 'accessoryGearIds'>,
+  enabledParameters: readonly string[],
+): number[] {
+  const enabled = new Set(normalizeShotParameterKeys(enabledParameters))
+  return enabled.has('accessoryGearIds')
+    ? [...new Set(data.accessoryGearIds ?? [])]
+    : []
+}
+
 export function projectShotParameters(
   data: ShotParameterInput,
   enabledParameters: readonly string[],
@@ -50,8 +60,5 @@ export function projectShotParameters(
       ? (data.distributionMethod ?? null)
       : null,
     tampForceKg: enabled.has('tampForceKg') ? (data.tampForceKg ?? null) : null,
-    accessoryGearIds: enabled.has('accessoryGearIds')
-      ? [...new Set(data.accessoryGearIds ?? [])]
-      : [],
   }
 }

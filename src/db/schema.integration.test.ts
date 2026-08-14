@@ -39,6 +39,8 @@ databaseDescribe('PostgreSQL schema', () => {
       where schemaname = 'public'
         and indexname in (
           'shot_taste_tags_shot_tag_idx',
+          'shot_accessory_gear_shot_gear_idx',
+          'recipe_accessory_gear_recipe_gear_idx',
           'bean_images_one_thumbnail_idx',
           'roasters_name_idx'
         )
@@ -47,6 +49,8 @@ databaseDescribe('PostgreSQL schema', () => {
     expect(migrations[0]?.count).toBeGreaterThanOrEqual(19)
     expect(indexes.map(({ indexname }) => indexname).sort()).toEqual([
       'bean_images_one_thumbnail_idx',
+      'recipe_accessory_gear_recipe_gear_idx',
+      'shot_accessory_gear_shot_gear_idx',
       'roasters_name_idx',
       'shot_taste_tags_shot_tag_idx',
     ])
@@ -139,5 +143,66 @@ databaseDescribe('PostgreSQL schema', () => {
         `,
       '23514',
     )
+  })
+
+  test('records brew time and clears deleted recipe attribution', async () => {
+    await database().begin(async (transaction) => {
+      const [method] = await transaction<[{ id: number }]>`
+        insert into brewing_methods (name)
+        values (${`stats-method-${crypto.randomUUID()}`}) returning id
+      `
+      const [recipe] = await transaction<[{ id: number }]>`
+        insert into recipes (name, brewing_method_id)
+        values (${`stats-recipe-${crypto.randomUUID()}`}, ${method.id}) returning id
+      `
+      const [shot] = await transaction<
+        [{ id: number; brewed_at: Date; recipe_id: number | null }]
+      >`
+        insert into shots (brewing_method_id, recipe_id)
+        values (${method.id}, ${recipe.id})
+        returning id, brewed_at, recipe_id
+      `
+
+      expect(shot.brewed_at).toBeInstanceOf(Date)
+      expect(shot.recipe_id).toBe(recipe.id)
+
+      await transaction`delete from recipes where id = ${recipe.id}`
+      const [updated] = await transaction<[{ recipe_id: number | null }]>`
+        select recipe_id from shots where id = ${shot.id}
+      `
+      expect(updated.recipe_id).toBeNull()
+
+      await transaction`delete from shots where id = ${shot.id}`
+      await transaction`delete from brewing_methods where id = ${method.id}`
+    })
+  })
+
+  test('removes accessory gear links with deleted gear', async () => {
+    await database().begin(async (transaction) => {
+      const [method] = await transaction<[{ id: number }]>`
+        insert into brewing_methods (name)
+        values (${`accessory-method-${crypto.randomUUID()}`}) returning id
+      `
+      const [shot] = await transaction<[{ id: number }]>`
+        insert into shots (brewing_method_id)
+        values (${method.id}) returning id
+      `
+      const [item] = await transaction<[{ id: number }]>`
+        insert into gear (name, type)
+        values (${`accessory-${crypto.randomUUID()}`}, 'other') returning id
+      `
+
+      await transaction`
+        insert into shot_accessory_gear (shot_id, gear_id)
+        values (${shot.id}, ${item.id})
+      `
+      await transaction`delete from gear where id = ${item.id}`
+      const [remaining] = await transaction<[{ count: number }]>`
+        select count(*)::int as count
+        from shot_accessory_gear
+        where shot_id = ${shot.id}
+      `
+      expect(remaining.count).toBe(0)
+    })
   })
 })

@@ -162,6 +162,20 @@
       "when": 1786723514860,
       "tag": "0022_stiff_vermin",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1786725252970,
+      "tag": "0023_cuddly_shen",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1786732900218,
+      "tag": "0024_jittery_adam_warlock",
+      "breakpoints": true
     }
   ]
 }

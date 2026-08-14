@@ -55,7 +55,7 @@ function describedBy(id: string, error?: string) {
 }
 
 interface InputFieldProps extends FormFieldBaseProps {
-  type?: 'text' | 'number' | 'date' | 'url' | 'email'
+  type?: 'text' | 'number' | 'date' | 'datetime-local' | 'url' | 'email'
   inputMode?: 'text' | 'decimal' | 'numeric'
   placeholder?: string
   value: string

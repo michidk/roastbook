@@ -166,7 +166,7 @@ function BrewingMethodEditor({ method }: { readonly method: BrewingMethod }) {
           <CardAction>
             <DeleteConfirmation
               title={`Delete ${method.name}?`}
-              description="Methods used by shots or recipes cannot be deleted."
+              description="Methods used by brews or recipes cannot be deleted."
               onConfirm={async () => {
                 await deleteBrewingMethod({ data: method.id })
                 await router.invalidate()
@@ -216,7 +216,7 @@ function BrewingMethodEditor({ method }: { readonly method: BrewingMethod }) {
                     Fields shown when logging
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Choose which details can be recorded for shots and recipes
+                    Choose which details can be recorded for brews and recipes
                     using this method.
                   </p>
                 </div>

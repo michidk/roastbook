@@ -11,6 +11,7 @@ import {
   isCurrency,
   isDateFormat,
   isNumberFormat,
+  isTimeZone,
   type NumberFormat,
 } from '@/lib/app-settings'
 
@@ -38,6 +39,11 @@ function numberFormatSchema(value: unknown): NumberFormat {
   return value
 }
 
+function timeZoneSchema(value: unknown): string {
+  if (!isTimeZone(value)) throw new Error('Enter a valid IANA time zone')
+  return value
+}
+
 function toAppSettings(row: typeof settingsTable.$inferSelect): AppSettings {
   const latitude = row.defaultMapLatitude
   const longitude = row.defaultMapLongitude
@@ -52,6 +58,7 @@ function toAppSettings(row: typeof settingsTable.$inferSelect): AppSettings {
     dateFormat: dateFormatSchema(row.dateFormat),
     defaultMapLocation,
     numberFormat: numberFormatSchema(row.numberFormat),
+    timeZone: timeZoneSchema(row.timeZone),
   }
 }
 
@@ -70,78 +77,72 @@ async function ensureSettingsRow() {
   return existing
 }
 
+type EditableSettings = Pick<
+  typeof settingsTable.$inferInsert,
+  | 'defaultCurrency'
+  | 'dateFormat'
+  | 'numberFormat'
+  | 'timeZone'
+  | 'defaultMapLatitude'
+  | 'defaultMapLongitude'
+  | 'defaultMapLabel'
+>
+
+async function upsertSettings(
+  patch: Partial<EditableSettings>,
+  errorMessage: string,
+) {
+  const [row] = await db
+    .insert(settingsTable)
+    .values({ id: 1, ...patch })
+    .onConflictDoUpdate({
+      target: settingsTable.id,
+      set: { ...patch, updatedAt: new Date() },
+    })
+    .returning()
+  if (!row) throw new Error(errorMessage)
+  return toAppSettings(row)
+}
+
 export const getAppSettings = createServerFn({ method: 'GET' }).handler(
   async () => toAppSettings(await ensureSettingsRow()),
 )
 
 export const updateDefaultCurrency = createServerFn({ method: 'POST' })
   .validator(currencySchema)
-  .handler(async ({ data: defaultCurrency }) => {
-    const [row] = await db
-      .insert(settingsTable)
-      .values({ id: 1, defaultCurrency })
-      .onConflictDoUpdate({
-        target: settingsTable.id,
-        set: { defaultCurrency, updatedAt: new Date() },
-      })
-      .returning()
-    if (!row) throw new Error('Could not save the default currency')
-    return toAppSettings(row)
-  })
+  .handler(({ data: defaultCurrency }) =>
+    upsertSettings({ defaultCurrency }, 'Could not save the default currency'),
+  )
 
 export const updateDateFormat = createServerFn({ method: 'POST' })
   .validator(dateFormatSchema)
-  .handler(async ({ data: dateFormat }) => {
-    const [row] = await db
-      .insert(settingsTable)
-      .values({ id: 1, dateFormat })
-      .onConflictDoUpdate({
-        target: settingsTable.id,
-        set: { dateFormat, updatedAt: new Date() },
-      })
-      .returning()
-    if (!row) throw new Error('Could not save the date format')
-    return toAppSettings(row)
-  })
+  .handler(({ data: dateFormat }) =>
+    upsertSettings({ dateFormat }, 'Could not save the date format'),
+  )
 
 export const updateNumberFormat = createServerFn({ method: 'POST' })
   .validator(numberFormatSchema)
-  .handler(async ({ data: numberFormat }) => {
-    const [row] = await db
-      .insert(settingsTable)
-      .values({ id: 1, numberFormat })
-      .onConflictDoUpdate({
-        target: settingsTable.id,
-        set: { numberFormat, updatedAt: new Date() },
-      })
-      .returning()
-    if (!row) throw new Error('Could not save the number format')
-    return toAppSettings(row)
-  })
+  .handler(({ data: numberFormat }) =>
+    upsertSettings({ numberFormat }, 'Could not save the number format'),
+  )
+
+export const updateTimeZone = createServerFn({ method: 'POST' })
+  .validator(timeZoneSchema)
+  .handler(({ data: timeZone }) =>
+    upsertSettings({ timeZone }, 'Could not save the time zone'),
+  )
 
 export const updateDefaultMapLocation = createServerFn({ method: 'POST' })
   .validator((value: unknown): DefaultMapLocation | null =>
     defaultMapLocationSchema.parse(value),
   )
-  .handler(async ({ data: location }) => {
-    const [row] = await db
-      .insert(settingsTable)
-      .values({
-        id: 1,
+  .handler(({ data: location }) =>
+    upsertSettings(
+      {
         defaultMapLatitude: location?.latitude ?? null,
         defaultMapLongitude: location?.longitude ?? null,
         defaultMapLabel: location?.label ?? null,
-      })
-      .onConflictDoUpdate({
-        target: settingsTable.id,
-        set: {
-          defaultMapLatitude: location?.latitude ?? null,
-          defaultMapLongitude: location?.longitude ?? null,
-          defaultMapLabel: location?.label ?? null,
-          updatedAt: new Date(),
-        },
-      })
-      .returning()
-    if (!row) throw new Error('Could not save the default map location')
-    return toAppSettings(row)
-  })
+      },
+      'Could not save the default map location',
+    ),
+  )

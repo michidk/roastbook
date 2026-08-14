@@ -10,6 +10,10 @@ import {
   isVisionEnabled,
   researchBeanFromWeb,
 } from '@/lib/ai'
+import {
+  escapedContainsPattern,
+  resolvePagination,
+} from '@/lib/collection-query'
 import { BEAN_TYPE_VALUES, ROAST_LEVEL_VALUES } from '@/lib/domain-contracts'
 import { expectReturnedRow } from '@/lib/domain-errors'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
@@ -53,7 +57,13 @@ const beanCreateSchema = z.object({
 const beanUpdateSchema = beanCreateSchema.partial().extend({
   id: positiveIdSchema,
   type: beanTypeSchema.nullable().optional(),
+  roaster: shortTextSchema.nullable().optional(),
   roasterId: positiveIdSchema.nullable().optional(),
+  origin: shortTextSchema.nullable().optional(),
+  region: shortTextSchema.nullable().optional(),
+  farm: shortTextSchema.nullable().optional(),
+  variety: shortTextSchema.nullable().optional(),
+  process: shortTextSchema.nullable().optional(),
   roastLevel: roastLevelSchema.nullable().optional(),
   roastDate: z.date().nullable().optional(),
   weight: decimalStringSchema.nullable().optional(),
@@ -63,6 +73,7 @@ const beanUpdateSchema = beanCreateSchema.partial().extend({
     .union([z.url().max(2_048), z.literal('')])
     .nullable()
     .optional(),
+  notes: notesSchema.nullable().optional(),
   isArchived: z.boolean().optional(),
 })
 
@@ -96,11 +107,12 @@ export const getBeans = createServerFn({ method: 'GET' }).handler(async () => {
 export const getBeanCollection = createServerFn({ method: 'GET' })
   .validator(beanListSchema)
   .handler(async ({ data }) => {
+    const pattern = escapedContainsPattern(data.query)
     const search = data.query
       ? or(
-          ilike(beans.name, `%${data.query}%`),
-          ilike(beans.origin, `%${data.query}%`),
-          ilike(beans.roaster, `%${data.query}%`),
+          ilike(beans.name, pattern),
+          ilike(beans.origin, pattern),
+          ilike(beans.roaster, pattern),
         )
       : undefined
 
@@ -116,8 +128,12 @@ export const getBeanCollection = createServerFn({ method: 'GET' })
         .from(beans)
         .where(where)
       const totalItems = countRows[0]?.value ?? 0
-      const totalPages = Math.max(1, Math.ceil(totalItems / BEANS_PAGE_SIZE))
-      const page = Math.min(requestedPage, totalPages)
+      const pagination = resolvePagination(
+        totalItems,
+        requestedPage,
+        BEANS_PAGE_SIZE,
+      )
+      const { page } = pagination
       const items = await db.query.beans.findMany({
         where,
         orderBy: [desc(beans.createdAt), desc(beans.id)],
@@ -125,7 +141,7 @@ export const getBeanCollection = createServerFn({ method: 'GET' })
         offset: (page - 1) * BEANS_PAGE_SIZE,
         with: { images: true, roasterRef: true },
       })
-      return { items, page, pageSize: BEANS_PAGE_SIZE, totalItems, totalPages }
+      return { items, ...pagination }
     }
 
     const [active, archived] = await Promise.all([

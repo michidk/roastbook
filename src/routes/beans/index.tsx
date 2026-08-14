@@ -44,8 +44,14 @@ function BeansPage() {
   const navigate = useNavigate({ from: '/beans/' })
   const activeBeans = collection.active.items
   const archivedBeans = collection.archived.items
-  const updateSearch = (values: Partial<typeof search>) =>
-    navigate({ search: (current) => ({ ...current, ...values }) })
+  const updateSearch = (
+    values: Partial<typeof search>,
+    options?: { readonly replace?: boolean },
+  ) =>
+    navigate({
+      search: (current) => ({ ...current, ...values }),
+      replace: options?.replace,
+    })
 
   return (
     <Page>
@@ -65,7 +71,10 @@ function BeansPage() {
       <CollectionToolbar
         value={search.query}
         onValueChange={(query) =>
-          updateSearch({ query, activePage: 1, archivedPage: 1 })
+          updateSearch(
+            { query, activePage: 1, archivedPage: 1 },
+            { replace: true },
+          )
         }
         placeholder="Search beans…"
         ariaLabel="Search beans"

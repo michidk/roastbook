@@ -56,6 +56,13 @@ describe('structured research contracts', () => {
     expect(parseStructuredResearchResult('not JSON', fields)).toEqual({})
   })
 
+  test.each(['null', '[]', '"text"'])(
+    'returns an empty result for non-object JSON %s',
+    (content) => {
+      expect(parseStructuredResearchResult(content, fields)).toEqual({})
+    },
+  )
+
   test('parses JSON wrapped in a Markdown code fence', () => {
     const result = parseStructuredResearchResult(
       `Here are the researched values:

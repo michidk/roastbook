@@ -209,7 +209,7 @@ function RecipeDetailPage() {
               </Button>
               <DeleteConfirmation
                 title="Delete this recipe?"
-                description="This recipe will be removed permanently. Existing shots are not affected."
+                description="This recipe will be removed permanently. Existing brews are not affected."
                 onConfirm={async () => {
                   await deleteRecipe({ data: recipe.id })
                   toast.success('Recipe deleted')

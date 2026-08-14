@@ -4,6 +4,7 @@ import {
   currencySchema,
   imageBase64Schema,
   imageFilenameSchema,
+  notFutureDateSchema,
   positiveIdSchema,
   shotCreateSchema,
 } from '@/lib/server-validation'
@@ -53,6 +54,19 @@ describe('server validation schemas', () => {
       shotCreateSchema.parse({
         brewingMethodId: 1,
         ratioBasis: 'client-invented-value',
+      }),
+    ).toThrow()
+  })
+
+  test('rejects dates meaningfully in the future', () => {
+    expect(notFutureDateSchema.parse(new Date())).toBeInstanceOf(Date)
+    expect(() =>
+      notFutureDateSchema.parse(new Date(Date.now() + 10 * 60 * 1000)),
+    ).toThrow('Date cannot be more than five minutes in the future')
+    expect(() =>
+      shotCreateSchema.parse({
+        brewingMethodId: 1,
+        brewedAt: new Date(Date.now() + 10 * 60 * 1000),
       }),
     ).toThrow()
   })

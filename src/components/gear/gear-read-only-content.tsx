@@ -196,7 +196,7 @@ export function GearReadOnlyContent({
       )}
       <Card>
         <CardHeader>
-          <CardTitle>Shot history</CardTitle>
+          <CardTitle>Brew history</CardTitle>
         </CardHeader>
         <CardContent>
           <ShotsTable shots={shots} />

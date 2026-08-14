@@ -26,7 +26,7 @@ export type NavItem = {
 }
 
 export const primaryNavItems: readonly NavItem[] = [
-  { title: 'Shots', url: '/shots', icon: Coffee },
+  { title: 'Brews', url: '/shots', icon: Coffee },
   { title: 'Beans', url: '/beans', icon: Bean },
   { title: 'Visits', url: '/visits', icon: UtensilsCrossed },
 ]
@@ -45,7 +45,7 @@ export const moreNavItems: readonly NavItem[] = [
 ]
 
 export const primaryCreateAction: NavItem = {
-  title: 'New shot',
+  title: 'New brew',
   url: '/shots/new',
   icon: Coffee,
 }
@@ -68,7 +68,7 @@ export function BrandLink({ className }: { readonly className?: string }) {
     <Link
       to="/"
       aria-label="Roastbook home"
-      className={cn('flex shrink-0 items-center gap-2', className)}
+      className={cn('flex min-h-11 shrink-0 items-center gap-2', className)}
     >
       <div className="flex size-9 items-center justify-center overflow-hidden rounded-xl">
         <img

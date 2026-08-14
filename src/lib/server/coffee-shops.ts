@@ -3,6 +3,10 @@ import { count, desc, eq, ilike, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
 import { cafeVisits, coffeeShops } from '@/db/schema'
+import {
+  escapedContainsPattern,
+  resolvePagination,
+} from '@/lib/collection-query'
 import { expectReturnedRow } from '@/lib/domain-errors'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
 import {
@@ -14,7 +18,7 @@ import {
   shortTextSchema,
 } from '@/lib/server-validation'
 
-type CoordinateInput = string | number | undefined
+type CoordinateInput = string | number | null | undefined
 
 const coordinateInputSchema = z
   .union([z.number().finite(), z.string().trim().max(32)])
@@ -34,6 +38,14 @@ const coffeeShopCreateSchema = z.object({
 
 const coffeeShopUpdateSchema = coffeeShopCreateSchema.partial().extend({
   id: positiveIdSchema,
+  address: shortTextSchema.nullable().optional(),
+  city: shortTextSchema.nullable().optional(),
+  country: shortTextSchema.nullable().optional(),
+  latitude: coordinateInputSchema.nullable(),
+  longitude: coordinateInputSchema.nullable(),
+  website: z.url().max(2_048).nullable().optional(),
+  instagramHandle: z.string().trim().max(100).nullable().optional(),
+  notes: notesSchema.nullable().optional(),
   rating: optionalNullableRatingSchema,
   isFavorite: z.boolean().optional(),
 })
@@ -48,8 +60,8 @@ function normalizeCoordinate(
   value: CoordinateInput,
   field: 'latitude' | 'longitude',
 ) {
-  if (value === undefined || value === '') {
-    return undefined
+  if (value === undefined || value === null || value === '') {
+    return value === null ? null : undefined
   }
 
   const numericValue = typeof value === 'number' ? value : Number(value)
@@ -124,18 +136,23 @@ export const getCoffeeShopMapOverview = createServerFn({
 export const getCoffeeShopPage = createServerFn({ method: 'GET' })
   .validator(coffeeShopListSchema)
   .handler(async ({ data }) => {
+    const pattern = escapedContainsPattern(data.query)
     const where = data.query
-      ? sql`${ilike(coffeeShops.name, `%${data.query}%`)}
-          or ${ilike(coffeeShops.city, `%${data.query}%`)}
-          or ${ilike(coffeeShops.country, `%${data.query}%`)}`
+      ? sql`${ilike(coffeeShops.name, pattern)}
+          or ${ilike(coffeeShops.city, pattern)}
+          or ${ilike(coffeeShops.country, pattern)}`
       : undefined
     const countRows = await db
       .select({ value: count() })
       .from(coffeeShops)
       .where(where)
     const totalItems = countRows[0]?.value ?? 0
-    const totalPages = Math.max(1, Math.ceil(totalItems / PLACES_PAGE_SIZE))
-    const page = Math.min(data.page, totalPages)
+    const pagination = resolvePagination(
+      totalItems,
+      data.page,
+      PLACES_PAGE_SIZE,
+    )
+    const { page } = pagination
     const items = await coffeeShopOverviewQuery()
       .where(where)
       .orderBy(
@@ -145,7 +162,7 @@ export const getCoffeeShopPage = createServerFn({ method: 'GET' })
       )
       .limit(PLACES_PAGE_SIZE)
       .offset((page - 1) * PLACES_PAGE_SIZE)
-    return { items, page, pageSize: PLACES_PAGE_SIZE, totalItems, totalPages }
+    return { items, ...pagination }
   })
 
 export const getCoffeeShop = createServerFn({ method: 'GET' })

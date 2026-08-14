@@ -15,7 +15,7 @@ type Shot = {
   yieldGrams: string | null
   grindSetting: string | null
   shotTimeSeconds: string | null
-  createdAt: Date | string
+  brewedAt: Date | string
 }
 
 type ShotParameterChartsProps = {
@@ -103,8 +103,7 @@ export function ShotParameterCharts({ shots }: ShotParameterChartsProps) {
   const formatDate = useDateFormatter()
   const chartData = useMemo(() => {
     const sortedShots = [...shots].sort(
-      (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      (a, b) => new Date(a.brewedAt).getTime() - new Date(b.brewedAt).getTime(),
     )
 
     return sortedShots.map((shot, index) => {
@@ -116,7 +115,7 @@ export function ShotParameterCharts({ shots }: ShotParameterChartsProps) {
 
       return {
         index: index + 1,
-        date: formatDate(shot.createdAt),
+        date: formatDate(shot.brewedAt),
         dose,
         yield: yieldG,
         grind,
@@ -142,7 +141,7 @@ export function ShotParameterCharts({ shots }: ShotParameterChartsProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Shot parameters over time</CardTitle>
+        <CardTitle>Brew parameters over time</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {(hasDoseData || hasYieldData) && (

@@ -1,7 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import { prioritizeCoffeeShopCandidates } from '@/lib/geocoding-ranking'
 import { getStoredImagePaths } from '@/lib/image-path'
-import { projectShotParameters } from '@/lib/server/shot-parameter-projection'
+import {
+  projectAccessoryGearIds,
+  projectShotParameters,
+} from '@/lib/server/shot-parameter-projection'
 import { fillDailyActivity } from '@/lib/stats-activity'
 import { normalizeRatingAverages, toNullableNumber } from '@/lib/stats-number'
 import {
@@ -71,7 +74,11 @@ describe('shot parameter projection', () => {
     expect(result.machineId).toBeNull()
     expect(result.yieldGrams).toBeNull()
     expect(result.usesPuckScreen).toBe(false)
-    expect(result.accessoryGearIds).toEqual([7, 9])
+    expect(
+      projectAccessoryGearIds({ accessoryGearIds: [7, 7, 9] }, [
+        'accessoryGearIds',
+      ]),
+    ).toEqual([7, 9])
   })
 })
 

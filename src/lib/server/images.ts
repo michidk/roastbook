@@ -68,51 +68,56 @@ async function getEntityImageCount(
 ): Promise<number> {
   switch (entityType) {
     case 'beans':
-      return (
-        (
-          await db
-            .select({ value: count() })
-            .from(beanImages)
-            .where(eq(beanImages.beanId, entityId))
-        )[0]?.value ?? 0
-      )
+      return getBeanImageCount(entityId)
     case 'gear':
-      return (
-        (
-          await db
-            .select({ value: count() })
-            .from(gearImages)
-            .where(eq(gearImages.gearId, entityId))
-        )[0]?.value ?? 0
-      )
+      return getGearImageCount(entityId)
     case 'coffee-shops':
-      return (
-        (
-          await db
-            .select({ value: count() })
-            .from(coffeeShopImages)
-            .where(eq(coffeeShopImages.coffeeShopId, entityId))
-        )[0]?.value ?? 0
-      )
+      return getCoffeeShopImageCount(entityId)
     case 'shots':
-      return (
-        (
-          await db
-            .select({ value: count() })
-            .from(shotImages)
-            .where(eq(shotImages.shotId, entityId))
-        )[0]?.value ?? 0
-      )
+      return getShotImageCount(entityId)
     case 'visits':
-      return (
-        (
-          await db
-            .select({ value: count() })
-            .from(cafeVisitImages)
-            .where(eq(cafeVisitImages.cafeVisitId, entityId))
-        )[0]?.value ?? 0
-      )
+      return getVisitImageCount(entityId)
   }
+}
+
+async function getBeanImageCount(entityId: number): Promise<number> {
+  const [result] = await db
+    .select({ value: count() })
+    .from(beanImages)
+    .where(eq(beanImages.beanId, entityId))
+  return result?.value ?? 0
+}
+
+async function getGearImageCount(entityId: number): Promise<number> {
+  const [result] = await db
+    .select({ value: count() })
+    .from(gearImages)
+    .where(eq(gearImages.gearId, entityId))
+  return result?.value ?? 0
+}
+
+async function getCoffeeShopImageCount(entityId: number): Promise<number> {
+  const [result] = await db
+    .select({ value: count() })
+    .from(coffeeShopImages)
+    .where(eq(coffeeShopImages.coffeeShopId, entityId))
+  return result?.value ?? 0
+}
+
+async function getShotImageCount(entityId: number): Promise<number> {
+  const [result] = await db
+    .select({ value: count() })
+    .from(shotImages)
+    .where(eq(shotImages.shotId, entityId))
+  return result?.value ?? 0
+}
+
+async function getVisitImageCount(entityId: number): Promise<number> {
+  const [result] = await db
+    .select({ value: count() })
+    .from(cafeVisitImages)
+    .where(eq(cafeVisitImages.cafeVisitId, entityId))
+  return result?.value ?? 0
 }
 
 export const uploadEntityImage = createServerFn({ method: 'POST' })
@@ -238,52 +243,87 @@ async function deleteImageRecord(
   imageId: number,
 ): Promise<{ storagePath: string } | undefined> {
   switch (entityType) {
-    case 'beans': {
-      const [image] = await tx
-        .delete(beanImages)
-        .where(and(eq(beanImages.id, imageId), eq(beanImages.beanId, entityId)))
-        .returning({ storagePath: beanImages.storagePath })
-      return image
-    }
-    case 'gear': {
-      const [image] = await tx
-        .delete(gearImages)
-        .where(and(eq(gearImages.id, imageId), eq(gearImages.gearId, entityId)))
-        .returning({ storagePath: gearImages.storagePath })
-      return image
-    }
-    case 'coffee-shops': {
-      const [image] = await tx
-        .delete(coffeeShopImages)
-        .where(
-          and(
-            eq(coffeeShopImages.id, imageId),
-            eq(coffeeShopImages.coffeeShopId, entityId),
-          ),
-        )
-        .returning({ storagePath: coffeeShopImages.storagePath })
-      return image
-    }
-    case 'shots': {
-      const [image] = await tx
-        .delete(shotImages)
-        .where(and(eq(shotImages.id, imageId), eq(shotImages.shotId, entityId)))
-        .returning({ storagePath: shotImages.storagePath })
-      return image
-    }
-    case 'visits': {
-      const [image] = await tx
-        .delete(cafeVisitImages)
-        .where(
-          and(
-            eq(cafeVisitImages.id, imageId),
-            eq(cafeVisitImages.cafeVisitId, entityId),
-          ),
-        )
-        .returning({ storagePath: cafeVisitImages.storagePath })
-      return image
-    }
+    case 'beans':
+      return deleteBeanImageRecord(tx, entityId, imageId)
+    case 'gear':
+      return deleteGearImageRecord(tx, entityId, imageId)
+    case 'coffee-shops':
+      return deleteCoffeeShopImageRecord(tx, entityId, imageId)
+    case 'shots':
+      return deleteShotImageRecord(tx, entityId, imageId)
+    case 'visits':
+      return deleteVisitImageRecord(tx, entityId, imageId)
   }
+}
+
+async function deleteBeanImageRecord(
+  tx: DatabaseTransaction,
+  entityId: number,
+  imageId: number,
+) {
+  const [image] = await tx
+    .delete(beanImages)
+    .where(and(eq(beanImages.id, imageId), eq(beanImages.beanId, entityId)))
+    .returning({ storagePath: beanImages.storagePath })
+  return image
+}
+
+async function deleteGearImageRecord(
+  tx: DatabaseTransaction,
+  entityId: number,
+  imageId: number,
+) {
+  const [image] = await tx
+    .delete(gearImages)
+    .where(and(eq(gearImages.id, imageId), eq(gearImages.gearId, entityId)))
+    .returning({ storagePath: gearImages.storagePath })
+  return image
+}
+
+async function deleteCoffeeShopImageRecord(
+  tx: DatabaseTransaction,
+  entityId: number,
+  imageId: number,
+) {
+  const [image] = await tx
+    .delete(coffeeShopImages)
+    .where(
+      and(
+        eq(coffeeShopImages.id, imageId),
+        eq(coffeeShopImages.coffeeShopId, entityId),
+      ),
+    )
+    .returning({ storagePath: coffeeShopImages.storagePath })
+  return image
+}
+
+async function deleteShotImageRecord(
+  tx: DatabaseTransaction,
+  entityId: number,
+  imageId: number,
+) {
+  const [image] = await tx
+    .delete(shotImages)
+    .where(and(eq(shotImages.id, imageId), eq(shotImages.shotId, entityId)))
+    .returning({ storagePath: shotImages.storagePath })
+  return image
+}
+
+async function deleteVisitImageRecord(
+  tx: DatabaseTransaction,
+  entityId: number,
+  imageId: number,
+) {
+  const [image] = await tx
+    .delete(cafeVisitImages)
+    .where(
+      and(
+        eq(cafeVisitImages.id, imageId),
+        eq(cafeVisitImages.cafeVisitId, entityId),
+      ),
+    )
+    .returning({ storagePath: cafeVisitImages.storagePath })
+  return image
 }
 
 export const deleteEntityImage = createServerFn({ method: 'POST' })

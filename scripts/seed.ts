@@ -318,6 +318,7 @@ async function seed() {
     const bean = randomElement(activeBeans)
     const machine = machines[0]
     const grinder = grinders[0]
+    const brewedAt = daysAgo(randomInt(0, 30))
 
     shotData.push({
       beanId: bean?.id ?? null,
@@ -340,7 +341,8 @@ async function seed() {
         null,
         null,
       ]),
-      createdAt: daysAgo(randomInt(0, 30)),
+      brewedAt,
+      createdAt: brewedAt,
     })
   }
   const insertedShots = await db

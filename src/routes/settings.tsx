@@ -4,6 +4,7 @@ import {
   CalendarDays,
   CircleDollarSign,
   Database,
+  Globe2,
   Laptop,
   Loader2,
   MapPinned,
@@ -11,10 +12,15 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { CurrencyField, SelectField } from '@/components/form/form-field'
+import {
+  CurrencyField,
+  InputField,
+  SelectField,
+} from '@/components/form/form-field'
 import { FormPageHeader, FormSection } from '@/components/form/form-shell'
 import { Page } from '@/components/page-layout'
 import { MapLocationSettings } from '@/components/settings/map-location-settings'
+import { Button } from '@/components/ui/button'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import {
   type AppSettings,
@@ -22,6 +28,7 @@ import {
   isCurrency,
   isDateFormat,
   isNumberFormat,
+  isTimeZone,
   NUMBER_FORMAT_OPTIONS,
 } from '@/lib/app-settings'
 import {
@@ -34,26 +41,63 @@ import {
   updateDefaultCurrency,
   updateDefaultMapLocation,
   updateNumberFormat,
+  updateTimeZone,
 } from '@/lib/server/settings'
 
 export const Route = createFileRoute('/settings')({
   component: SettingsPage,
 })
 
+function useSettingMutation<Value>({
+  savedValue,
+  applyValue,
+  mutate,
+  selectValue,
+  onSaved,
+  errorMessage,
+  successMessage,
+}: {
+  readonly savedValue: Value
+  readonly applyValue: (value: Value) => void
+  readonly mutate: (value: Value) => Promise<AppSettings>
+  readonly selectValue: (settings: AppSettings) => Value
+  readonly onSaved: () => void
+  readonly errorMessage: string
+  readonly successMessage?: string
+}) {
+  const [isSaving, setIsSaving] = useState(false)
+
+  const save = async (nextValue: Value) => {
+    if (isSaving) return
+    applyValue(nextValue)
+    setIsSaving(true)
+    try {
+      const updated = await mutate(nextValue)
+      applyValue(selectValue(updated))
+      onSaved()
+      if (successMessage) toast.success(successMessage)
+    } catch {
+      applyValue(savedValue)
+      toast.error(errorMessage)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  return { isSaving, save }
+}
+
 function SettingsPage() {
   const savedSettings = useAppSettings()
   const router = useRouter()
   const [settings, setSettings] = useState<AppSettings>(savedSettings)
-  const [isSavingCurrency, setIsSavingCurrency] = useState(false)
-  const [isSavingDateFormat, setIsSavingDateFormat] = useState(false)
-  const [isSavingNumberFormat, setIsSavingNumberFormat] = useState(false)
-  const [isSavingMapLocation, setIsSavingMapLocation] = useState(false)
   const savedDefaultCurrency = savedSettings.defaultCurrency
   const savedDateFormat = savedSettings.dateFormat
   const savedNumberFormat = savedSettings.numberFormat
   const savedMapLatitude = savedSettings.defaultMapLocation?.latitude
   const savedMapLongitude = savedSettings.defaultMapLocation?.longitude
   const savedMapLabel = savedSettings.defaultMapLocation?.label
+  const savedTimeZone = savedSettings.timeZone
   const theme = usePreferencesStore((state) => state.theme)
   const hasHydratedPreferences = usePreferencesStore(
     (state) => state.hasHydrated,
@@ -66,6 +110,7 @@ function SettingsPage() {
         defaultCurrency: savedDefaultCurrency,
         dateFormat: savedDateFormat,
         numberFormat: savedNumberFormat,
+        timeZone: savedTimeZone,
         defaultMapLocation:
           savedMapLatitude !== undefined &&
           savedMapLongitude !== undefined &&
@@ -84,105 +129,59 @@ function SettingsPage() {
       savedMapLatitude,
       savedMapLongitude,
       savedMapLabel,
+      savedTimeZone,
     ],
   )
 
-  const saveCurrency = async (value: string) => {
-    if (!isCurrency(value) || isSavingCurrency) return
-    const previousCurrency = settings.defaultCurrency
-    setSettings((current) => ({ ...current, defaultCurrency: value }))
-    setIsSavingCurrency(true)
-    try {
-      const updated = await updateDefaultCurrency({ data: value })
-      setSettings((current) => ({
-        ...current,
-        defaultCurrency: updated.defaultCurrency,
-      }))
-      void router.invalidate()
-    } catch {
-      setSettings((current) => ({
-        ...current,
-        defaultCurrency: previousCurrency,
-      }))
-      toast.error('Could not save the default currency')
-    } finally {
-      setIsSavingCurrency(false)
-    }
-  }
-
-  const saveMapLocation = async (
-    location: AppSettings['defaultMapLocation'],
-  ) => {
-    if (isSavingMapLocation) return
-    const previousLocation = settings.defaultMapLocation
-    setSettings((current) => ({
-      ...current,
-      defaultMapLocation: location,
-    }))
-    setIsSavingMapLocation(true)
-    try {
-      const updated = await updateDefaultMapLocation({ data: location })
-      setSettings((current) => ({
-        ...current,
-        defaultMapLocation: updated.defaultMapLocation,
-      }))
-      void router.invalidate()
-    } catch {
-      setSettings((current) => ({
-        ...current,
-        defaultMapLocation: previousLocation,
-      }))
-      toast.error('Could not save the default map location')
-    } finally {
-      setIsSavingMapLocation(false)
-    }
-  }
-
-  const saveDateFormat = async (value: string) => {
-    if (!isDateFormat(value) || isSavingDateFormat) return
-    const previousFormat = settings.dateFormat
-    setSettings((current) => ({ ...current, dateFormat: value }))
-    setIsSavingDateFormat(true)
-    try {
-      const updated = await updateDateFormat({ data: value })
-      setSettings((current) => ({
-        ...current,
-        dateFormat: updated.dateFormat,
-      }))
-      void router.invalidate()
-    } catch {
-      setSettings((current) => ({
-        ...current,
-        dateFormat: previousFormat,
-      }))
-      toast.error('Could not save the date format')
-    } finally {
-      setIsSavingDateFormat(false)
-    }
-  }
-
-  const saveNumberFormat = async (value: string) => {
-    if (!isNumberFormat(value) || isSavingNumberFormat) return
-    const previousFormat = settings.numberFormat
-    setSettings((current) => ({ ...current, numberFormat: value }))
-    setIsSavingNumberFormat(true)
-    try {
-      const updated = await updateNumberFormat({ data: value })
-      setSettings((current) => ({
-        ...current,
-        numberFormat: updated.numberFormat,
-      }))
-      void router.invalidate()
-    } catch {
-      setSettings((current) => ({
-        ...current,
-        numberFormat: previousFormat,
-      }))
-      toast.error('Could not save the number format')
-    } finally {
-      setIsSavingNumberFormat(false)
-    }
-  }
+  const onSaved = () => void router.invalidate()
+  const currencyMutation = useSettingMutation({
+    savedValue: savedDefaultCurrency,
+    applyValue: (defaultCurrency) =>
+      setSettings((current) => ({ ...current, defaultCurrency })),
+    mutate: (defaultCurrency) =>
+      updateDefaultCurrency({ data: defaultCurrency }),
+    selectValue: (updated) => updated.defaultCurrency,
+    onSaved,
+    errorMessage: 'Could not save the default currency',
+  })
+  const numberFormatMutation = useSettingMutation({
+    savedValue: savedNumberFormat,
+    applyValue: (numberFormat) =>
+      setSettings((current) => ({ ...current, numberFormat })),
+    mutate: (numberFormat) => updateNumberFormat({ data: numberFormat }),
+    selectValue: (updated) => updated.numberFormat,
+    onSaved,
+    errorMessage: 'Could not save the number format',
+  })
+  const dateFormatMutation = useSettingMutation({
+    savedValue: savedDateFormat,
+    applyValue: (dateFormat) =>
+      setSettings((current) => ({ ...current, dateFormat })),
+    mutate: (dateFormat) => updateDateFormat({ data: dateFormat }),
+    selectValue: (updated) => updated.dateFormat,
+    onSaved,
+    errorMessage: 'Could not save the date format',
+  })
+  const timeZoneMutation = useSettingMutation({
+    savedValue: savedTimeZone,
+    applyValue: (timeZone) =>
+      setSettings((current) => ({ ...current, timeZone })),
+    mutate: (timeZone) => updateTimeZone({ data: timeZone }),
+    selectValue: (updated) => updated.timeZone,
+    onSaved,
+    errorMessage: 'Could not save the time zone',
+    successMessage: 'Time zone saved',
+  })
+  const mapLocationMutation = useSettingMutation({
+    savedValue: savedSettings.defaultMapLocation,
+    applyValue: (defaultMapLocation) =>
+      setSettings((current) => ({ ...current, defaultMapLocation })),
+    mutate: (defaultMapLocation) =>
+      updateDefaultMapLocation({ data: defaultMapLocation }),
+    selectValue: (updated) => updated.defaultMapLocation,
+    onSaved,
+    errorMessage: 'Could not save the default map location',
+  })
 
   return (
     <Page width="form">
@@ -252,7 +251,7 @@ function SettingsPage() {
           titleAs="h3"
           description="Used when adding beans, gear, and café visits."
           action={
-            isSavingCurrency ? (
+            currencyMutation.isSaving ? (
               <Loader2 className="h-5 w-5 animate-spin text-link" />
             ) : (
               <CircleDollarSign className="h-5 w-5 text-link" />
@@ -263,8 +262,10 @@ function SettingsPage() {
             id="default-currency"
             label="Currency"
             value={settings.defaultCurrency}
-            disabled={isSavingCurrency}
-            onChange={(value) => void saveCurrency(value)}
+            disabled={currencyMutation.isSaving}
+            onChange={(value) => {
+              if (isCurrency(value)) void currencyMutation.save(value)
+            }}
           />
         </FormSection>
 
@@ -273,7 +274,7 @@ function SettingsPage() {
           titleAs="h3"
           description="Choose the decimal and thousands separators used for measurements and prices. Both separators are accepted when entering a value."
           action={
-            isSavingNumberFormat ? (
+            numberFormatMutation.isSaving ? (
               <Loader2 className="h-5 w-5 animate-spin text-link" />
             ) : (
               <Calculator className="h-5 w-5 text-link" />
@@ -284,9 +285,11 @@ function SettingsPage() {
             id="number-format"
             label="Number format"
             value={settings.numberFormat}
-            disabled={isSavingNumberFormat}
+            disabled={numberFormatMutation.isSaving}
             options={NUMBER_FORMAT_OPTIONS}
-            onChange={(value) => void saveNumberFormat(value)}
+            onChange={(value) => {
+              if (isNumberFormat(value)) void numberFormatMutation.save(value)
+            }}
           />
         </FormSection>
 
@@ -295,7 +298,7 @@ function SettingsPage() {
           titleAs="h3"
           description="Choose how calendar dates are displayed throughout Roastbook."
           action={
-            isSavingDateFormat ? (
+            dateFormatMutation.isSaving ? (
               <Loader2 className="h-5 w-5 animate-spin text-primary" />
             ) : (
               <CalendarDays className="h-5 w-5 text-primary" />
@@ -306,10 +309,55 @@ function SettingsPage() {
             id="date-format"
             label="Date format"
             value={settings.dateFormat}
-            disabled={isSavingDateFormat}
+            disabled={dateFormatMutation.isSaving}
             options={DATE_FORMAT_OPTIONS}
-            onChange={(value) => void saveDateFormat(value)}
+            onChange={(value) => {
+              if (isDateFormat(value)) void dateFormatMutation.save(value)
+            }}
           />
+        </FormSection>
+
+        <FormSection
+          title="Time zone"
+          titleAs="h3"
+          description="Used for brew-day boundaries, streaks, and time-of-day statistics. Enter an IANA name such as Europe/Berlin."
+          action={
+            timeZoneMutation.isSaving ? (
+              <Loader2 className="h-5 w-5 animate-spin text-link" />
+            ) : (
+              <Globe2 className="h-5 w-5 text-link" />
+            )
+          }
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <InputField
+              id="time-zone"
+              label="IANA time zone"
+              value={settings.timeZone}
+              onChange={(timeZone) =>
+                setSettings((current) => ({ ...current, timeZone }))
+              }
+              error={
+                settings.timeZone && !isTimeZone(settings.timeZone)
+                  ? 'Enter a valid IANA time zone'
+                  : undefined
+              }
+              disabled={timeZoneMutation.isSaving}
+              className="flex-1"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={
+                timeZoneMutation.isSaving ||
+                !isTimeZone(settings.timeZone) ||
+                settings.timeZone === savedSettings.timeZone
+              }
+              onClick={() => void timeZoneMutation.save(settings.timeZone)}
+            >
+              Save time zone
+            </Button>
+          </div>
         </FormSection>
 
         <FormSection
@@ -317,7 +365,7 @@ function SettingsPage() {
           titleAs="h3"
           description="Choose where the café explorer opens. Look up a location or enter coordinates directly."
           action={
-            isSavingMapLocation ? (
+            mapLocationMutation.isSaving ? (
               <Loader2 className="h-5 w-5 animate-spin text-link" />
             ) : (
               <MapPinned className="h-5 w-5 text-link" />
@@ -326,8 +374,8 @@ function SettingsPage() {
         >
           <MapLocationSettings
             location={settings.defaultMapLocation}
-            disabled={isSavingMapLocation}
-            onChange={(location) => void saveMapLocation(location)}
+            disabled={mapLocationMutation.isSaving}
+            onChange={(location) => void mapLocationMutation.save(location)}
           />
         </FormSection>
       </section>

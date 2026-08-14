@@ -1,8 +1,12 @@
 import { type SyntheticEvent, useState } from 'react'
 import { toast } from 'sonner'
 import { BeanPicker } from '@/components/beans/bean-picker'
-import { SelectField } from '@/components/form/form-field'
-import { EntityForm, FormSection } from '@/components/form/form-shell'
+import { InputField, SelectField } from '@/components/form/form-field'
+import {
+  EntityForm,
+  FormErrorSummary,
+  FormSection,
+} from '@/components/form/form-shell'
 import { TastingFields } from '@/components/form/tasting-fields'
 import {
   availableGearForShot,
@@ -10,12 +14,19 @@ import {
   ShotParameterFields,
   shotFormValuesFrom,
 } from '@/components/shots/shot-parameter-fields'
+import {
+  useCurrentLocalDateTimeLimit,
+  useLocalDateTimeInput,
+} from '@/hooks/use-local-date-time-input'
+import { localDateTimeInputToDate } from '@/lib/date-input'
+import { focusFirstInvalidControl } from '@/lib/form-validation'
 import { shotParameterPayload } from '@/lib/new-shot-payload'
 import type { getActiveBeans } from '@/lib/server/beans'
 import type { getBrewingMethods } from '@/lib/server/brewing-methods'
 import type { getGear } from '@/lib/server/gear'
 import { type getShot, updateShot } from '@/lib/server/shots'
 import type { getTasteTags } from '@/lib/server/taste-tags'
+import { isNegativeTasteTag } from '@/lib/taste-tags'
 import { getShotUpdateErrors } from '@/lib/update-validation'
 
 type Shot = NonNullable<Awaited<ReturnType<typeof getShot>>>
@@ -48,6 +59,8 @@ export function ShotEditForm({
   const [tasteTagIds, setTasteTagIds] = useState(
     shot.tasteTags.map((tag) => tag.tasteTagId),
   )
+  const [brewedAt, setBrewedAt] = useLocalDateTimeInput(shot.brewedAt)
+  const latestBrewedAt = useCurrentLocalDateTimeLimit()
   const [fieldErrors, setFieldErrors] = useState<
     Readonly<Record<string, string>>
   >({})
@@ -59,16 +72,25 @@ export function ShotEditForm({
 
   const handleSave = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault()
+    const formElement = event.currentTarget
     const data = {
       id: shot.id,
       ...shotParameterPayload(values),
+      brewedAt: localDateTimeInputToDate(brewedAt) ?? shot.brewedAt,
+      recipeId:
+        shot.recipe?.brewingMethodId === Number(values.brewingMethodId)
+          ? shot.recipeId
+          : null,
       rating: values.rating || null,
       notes: values.notes || null,
       tasteTagIds,
     }
     const errors = getShotUpdateErrors(data)
     setFieldErrors(errors)
-    if (Object.keys(errors).length > 0) return
+    if (Object.keys(errors).length > 0) {
+      focusFirstInvalidControl(formElement)
+      return
+    }
 
     setIsSaving(true)
     try {
@@ -76,19 +98,15 @@ export function ShotEditForm({
       await onSaved()
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Failed to update shot',
+        error instanceof Error ? error.message : 'Failed to update brew',
       )
     } finally {
       setIsSaving(false)
     }
   }
 
-  const positive = editData.tasteTags.filter(
-    (tag) => tag.category === 'positive',
-  )
-  const negative = editData.tasteTags.filter(
-    (tag) => tag.category === 'negative',
-  )
+  const positive = editData.tasteTags.filter((tag) => !isNegativeTasteTag(tag))
+  const negative = editData.tasteTags.filter(isNegativeTasteTag)
   const beans =
     shot.bean && !editData.beans.some((bean) => bean.id === shot.bean?.id)
       ? [shot.bean, ...editData.beans]
@@ -118,6 +136,7 @@ export function ShotEditForm({
         submitLabel: 'Save changes',
       }}
     >
+      <FormErrorSummary errors={fieldErrors} />
       <FormSection title="Beans">
         <BeanPicker
           id="edit-bean"
@@ -136,6 +155,17 @@ export function ShotEditForm({
           options={methodOptions}
           onChange={(value) => set('brewingMethodId', value)}
           required
+          error={fieldErrors.brewingMethodId}
+        />
+        <InputField
+          id="edit-brewed-at"
+          label="Brewed at"
+          type="datetime-local"
+          value={brewedAt}
+          onChange={setBrewedAt}
+          max={latestBrewedAt}
+          error={fieldErrors.brewedAt}
+          required
         />
       </FormSection>
       <ShotParameterFields
@@ -149,8 +179,7 @@ export function ShotEditForm({
         kind="shot"
         rating={{
           value: values.rating,
-          onChange: (rating) =>
-            set('rating', values.rating === rating ? 0 : rating),
+          onChange: (rating) => set('rating', rating),
         }}
         notes={{
           value: values.notes,

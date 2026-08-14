@@ -1,118 +1,154 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { Bean, Coffee, Scale, TrendingUp } from 'lucide-react'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { Bean, Coffee, Star, Tags } from 'lucide-react'
+import { EmptyState } from '@/components/EmptyState'
 import { MetricCard } from '@/components/metric-card'
 import { Page, PageHeader } from '@/components/page-layout'
+import { RouteError } from '@/components/route-error'
+import { RoutePending } from '@/components/route-pending'
+import { StatsFilters } from '@/components/stats/stats-filters'
 import { StatsSections } from '@/components/stats/stats-sections'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { StarRating } from '@/components/ui/star-rating'
+import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { getDetailedStats } from '@/lib/server/stats'
-import { formatMeasurement, formatRatio } from '@/lib/stats-format'
+import {
+  percentChange,
+  type StatsFilter,
+  statsFilterSchema,
+} from '@/lib/stats-filters'
 
 export const Route = createFileRoute('/stats')({
-  loader: () => getDetailedStats(),
+  validateSearch: statsFilterSchema,
+  loaderDeps: ({ search }) => ({
+    period: search.period,
+    method: search.method,
+    bean: search.bean,
+    from: search.from,
+    to: search.to,
+  }),
+  loader: ({ deps }) => getDetailedStats({ data: deps }),
+  staleTime: 15_000,
+  pendingComponent: RoutePending,
+  errorComponent: ({ error }) => (
+    <RouteError error={error} backTo="/" backLabel="Go to dashboard" />
+  ),
   component: StatsPage,
 })
 
+function comparisonDetail(change: number | null): string {
+  if (change === null) return 'No comparable previous period'
+  if (change === 0) return 'Same as the previous period'
+  return `${change > 0 ? '+' : ''}${change}% vs previous period`
+}
+
 function StatsPage() {
   const stats = Route.useLoaderData()
+  const search = Route.useSearch()
+  const navigate = useNavigate({ from: '/stats' })
+  const formatDate = useDateFormatter()
   const formatNumber = useNumberFormatter()
-  const hasBrewingAverages = Object.values(stats.brewing).some(
-    (value) => value !== null,
+  const range = stats.filter.range
+  const ratedShare =
+    stats.shots.total > 0
+      ? Math.round((stats.ratings.totalRated / stats.shots.total) * 100)
+      : 0
+  const shotChange = percentChange(stats.shots.total, stats.shots.previousTotal)
+  const gramsChange = percentChange(
+    stats.beans.totalGramsUsed,
+    stats.beans.previousTotalGramsUsed,
   )
+  const rangeLabel = range.start
+    ? `${formatDate(range.start)}–${formatDate(range.end)}`
+    : `Through ${formatDate(range.end)}`
+
+  const updateSearch = (values: Partial<StatsFilter>) =>
+    navigate({ search: (current) => ({ ...current, ...values }) })
 
   return (
     <Page>
       <PageHeader
         title="Statistics"
-        description="Your coffee journey at a glance"
+        description={`${rangeLabel} · Calendar boundaries use ${stats.filter.timeZone}`}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <StatsFilters
+        value={search}
+        available={stats.available}
+        onChange={updateSearch}
+        onReset={() =>
+          navigate({
+            search: {
+              period: '30d',
+              method: undefined,
+              bean: undefined,
+              from: undefined,
+              to: undefined,
+            },
+          })
+        }
+      />
+
+      <section
+        aria-label="Brewing overview"
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+      >
         <MetricCard
-          label="Total shots"
+          label="Brews"
           value={formatNumber(stats.shots.total)}
-          detail={`${formatNumber(stats.shots.avgPerDay)}/day average`}
+          detail={`${formatNumber(stats.shots.avgPerDay)}/day · ${comparisonDetail(shotChange)}`}
           icon={Coffee}
-        />
-        <MetricCard
-          label="This week"
-          value={formatNumber(stats.shots.thisWeek)}
-          detail="shots pulled"
-          icon={TrendingUp}
-        />
-        <MetricCard
-          label="This month"
-          value={formatNumber(stats.shots.thisMonth)}
-          detail="shots pulled"
-          icon={TrendingUp}
         />
         <MetricCard
           label="Beans used"
           value={`${formatNumber((stats.beans.totalGramsUsed / 1000).toFixed(1))} kg`}
-          detail={`${formatNumber(stats.beans.uniqueBeansUsed)} different beans`}
+          detail={`${formatNumber(stats.beans.uniqueBeansUsed)} beans · ${comparisonDetail(gramsChange)}`}
           icon={Bean}
         />
-      </div>
+        <MetricCard
+          label="Average rating"
+          value={
+            stats.ratings.average === null ? (
+              '—'
+            ) : (
+              <StarRating value={stats.ratings.average} variant="compact" />
+            )
+          }
+          detail={
+            stats.ratings.previousAverage === null ||
+            stats.ratings.average === null
+              ? 'No comparable previous rating'
+              : `${stats.ratings.average - stats.ratings.previousAverage >= 0 ? '+' : ''}${formatNumber((stats.ratings.average - stats.ratings.previousAverage).toFixed(2))} vs previous period`
+          }
+          icon={Star}
+        />
+        <MetricCard
+          label="Rated brews"
+          value={`${formatNumber(ratedShare)}%`}
+          detail={`${formatNumber(stats.ratings.totalRated)} of ${formatNumber(stats.shots.total)} brews`}
+          icon={Tags}
+        />
+      </section>
 
-      {hasBrewingAverages && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Scale className="h-5 w-5" />
-              Brewing averages
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              <Average
-                label="Average dose"
-                value={formatMeasurement(
-                  stats.brewing.avgDose,
-                  'g',
-                  formatNumber,
-                )}
-              />
-              <Average
-                label="Average yield"
-                value={formatMeasurement(
-                  stats.brewing.avgYield,
-                  'g',
-                  formatNumber,
-                )}
-              />
-              <Average
-                label="Average ratio"
-                value={formatRatio(stats.brewing.avgRatio, formatNumber)}
-              />
-              <Average
-                label="Average time"
-                value={formatMeasurement(
-                  stats.brewing.avgTime,
-                  's',
-                  formatNumber,
-                )}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {stats.shots.total === 0 ? (
+        <EmptyState
+          icon={Coffee}
+          title="No brews in this scope"
+          description="Adjust the filters or log a brew to start building these insights."
+          actionLabel="Log a brew"
+          actionHref="/shots/new"
+        />
+      ) : null}
 
       <StatsSections stats={stats} />
-    </Page>
-  )
-}
 
-function Average({
-  label,
-  value,
-}: {
-  readonly label: string
-  readonly value: string
-}) {
-  return (
-    <div>
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="text-xl font-semibold tabular-nums">{value}</p>
-    </div>
+      {stats.shots.total === 0 ? (
+        <div className="flex justify-center">
+          <Button variant="outline" asChild>
+            <Link to="/shots">View all brews</Link>
+          </Button>
+        </div>
+      ) : null}
+    </Page>
   )
 }

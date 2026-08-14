@@ -57,6 +57,7 @@ export type AppSettings = {
   readonly dateFormat: DateFormat
   readonly defaultMapLocation: DefaultMapLocation | null
   readonly numberFormat: NumberFormat
+  readonly timeZone: string
 }
 
 export function isCurrency(value: unknown): value is Currency {
@@ -69,4 +70,16 @@ export function isDateFormat(value: unknown): value is DateFormat {
 
 export function isNumberFormat(value: unknown): value is NumberFormat {
   return NUMBER_FORMAT_OPTIONS.some((format) => format.value === value)
+}
+
+export function isTimeZone(value: unknown): value is string {
+  if (typeof value !== 'string' || value.length === 0 || value.length > 100) {
+    return false
+  }
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: value }).format()
+    return true
+  } catch {
+    return false
+  }
 }

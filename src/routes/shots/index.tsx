@@ -8,6 +8,7 @@ import { PaginationControls } from '@/components/pagination-controls'
 import { RouteError } from '@/components/route-error'
 import { ListPending } from '@/components/route-pending'
 import { ShotsTable } from '@/components/ShotsTable'
+import { BrewCollectionToolbar } from '@/components/shots/brew-collection-toolbar'
 import { ShotsViewToggle } from '@/components/shots-overview'
 import { Button } from '@/components/ui/button'
 import {
@@ -18,6 +19,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { thumbnailUrl } from '@/lib/image-url'
+import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getShotGroups, getShotPage } from '@/lib/server/shots'
 
 const shotsSearchSchema = z.object({
@@ -29,6 +31,8 @@ const shotsSearchSchema = z.object({
     .catch('date'),
   direction: z.enum(['asc', 'desc']).default('desc').catch('desc'),
   view: z.enum(['list', 'grouped']).default('list').catch('list'),
+  methodId: z.number().int().positive().optional().catch(undefined),
+  rating: z.number().int().min(0).max(5).optional().catch(undefined),
 })
 
 export const Route = createFileRoute('/shots/')({
@@ -39,26 +43,40 @@ export const Route = createFileRoute('/shots/')({
     sort: search.sort,
     direction: search.direction,
     view: search.view,
+    methodId: search.methodId,
+    rating: search.rating,
   }),
-  loader: async ({ deps }) =>
-    deps.view === 'grouped'
-      ? {
-          view: 'grouped' as const,
-          result: await getShotGroups({
-            data: { page: deps.page, query: deps.query },
-          }),
-        }
-      : {
-          view: 'list' as const,
-          result: await getShotPage({
-            data: {
-              page: deps.page,
-              query: deps.query,
-              sort: deps.sort,
-              direction: deps.direction,
-            },
-          }),
+  loader: async ({ deps }) => {
+    if (deps.view === 'grouped') {
+      const [methods, result] = await Promise.all([
+        getBrewingMethods(),
+        getShotGroups({
+          data: {
+            page: deps.page,
+            query: deps.query,
+            methodId: deps.methodId,
+            rating: deps.rating,
+          },
+        }),
+      ])
+      return { view: 'grouped' as const, result, methods }
+    }
+
+    const [methods, result] = await Promise.all([
+      getBrewingMethods(),
+      getShotPage({
+        data: {
+          page: deps.page,
+          query: deps.query,
+          sort: deps.sort,
+          direction: deps.direction,
+          methodId: deps.methodId,
+          rating: deps.rating,
         },
+      }),
+    ])
+    return { view: 'list' as const, result, methods }
+  },
   staleTime: 15_000,
   component: ShotsPage,
   pendingComponent: ListPending,
@@ -74,14 +92,22 @@ function ShotsPage() {
   const grouped = data.view === 'grouped'
   const totalItems = data.result.totalItems
 
-  const updateSearch = (values: Partial<typeof search>) =>
-    navigate({ search: (current) => ({ ...current, ...values }) })
+  const updateSearch = (
+    values: Partial<typeof search>,
+    options?: { readonly replace?: boolean },
+  ) =>
+    navigate({
+      search: (current) => ({ ...current, ...values }),
+      replace: options?.replace,
+    })
+  const hasActiveFilters =
+    Boolean(search.query || search.methodId) || search.rating !== undefined
 
   return (
     <Page>
       <PageHeader
-        title="Shots"
-        description="Your espresso shot history"
+        title="Brews"
+        description="Your brewing history across every method"
         actions={
           <>
             {totalItems > 0 && (
@@ -98,23 +124,57 @@ function ShotsPage() {
             <Button asChild>
               <Link to="/shots/new">
                 <Plus className="h-4 w-4" />
-                Log a shot
+                Log a brew
               </Link>
             </Button>
           </>
         }
       />
 
-      {totalItems === 0 && !search.query ? (
+      {totalItems > 0 || hasActiveFilters ? (
+        <BrewCollectionToolbar
+          query={search.query}
+          methodId={search.methodId ? String(search.methodId) : ''}
+          rating={search.rating !== undefined ? String(search.rating) : ''}
+          methods={data.methods}
+          resultLabel={
+            grouped
+              ? `${totalItems} ${totalItems === 1 ? 'bean group' : 'bean groups'}`
+              : `${totalItems} ${totalItems === 1 ? 'brew' : 'brews'}`
+          }
+          onQueryChange={(query) =>
+            updateSearch({ query, page: 1 }, { replace: true })
+          }
+          onMethodChange={(value) =>
+            updateSearch({
+              methodId: value ? Number(value) : undefined,
+              page: 1,
+            })
+          }
+          onRatingChange={(value) =>
+            updateSearch({
+              rating: value ? Number(value) : undefined,
+              page: 1,
+            })
+          }
+        />
+      ) : null}
+
+      {totalItems === 0 && !hasActiveFilters ? (
         <EmptyState
           icon={Coffee}
-          title="No shots logged yet"
-          description="Start tracking your espresso journey"
-          actionLabel="Log your first shot"
+          title="No brews logged yet"
+          description="Start tracking your coffee brewing"
+          actionLabel="Log your first brew"
           actionHref="/shots/new"
         />
       ) : data.view === 'grouped' ? (
         <div className="space-y-4">
+          {data.result.groups.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No brews match the current filters.
+            </p>
+          ) : null}
           {data.result.groups.map((group) => {
             const headingId = `shots-${group.key}`
             const thumbnail =
@@ -157,7 +217,7 @@ function ShotsPage() {
                     </div>
                     <CardAction className="self-center">
                       <span className="text-sm font-semibold text-muted-foreground">
-                        {group.totalShots} shot
+                        {group.totalShots} brew
                         {group.totalShots === 1 ? '' : 's'}
                       </span>
                     </CardAction>
@@ -182,6 +242,7 @@ function ShotsPage() {
           <CardContent className="pt-6">
             <ShotsTable
               shots={data.result.items}
+              hideToolbar
               serverPagination={{
                 page: data.result.page,
                 totalPages: data.result.totalPages,
@@ -190,7 +251,8 @@ function ShotsPage() {
                 sortKey: search.sort,
                 sortDirection: search.direction,
                 onPageChange: (page) => updateSearch({ page }),
-                onQueryChange: (query) => updateSearch({ query, page: 1 }),
+                onQueryChange: (query) =>
+                  updateSearch({ query, page: 1 }, { replace: true }),
                 onSort: (sort) =>
                   updateSearch({
                     sort,

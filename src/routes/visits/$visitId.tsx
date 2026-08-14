@@ -22,6 +22,7 @@ import { getActiveBeans } from '@/lib/server/beans'
 import { deleteCafeVisit, getCafeVisit } from '@/lib/server/cafe-visits'
 import { getCoffeeShops } from '@/lib/server/coffee-shops'
 import { getTasteTags } from '@/lib/server/taste-tags'
+import { isNegativeTasteTag } from '@/lib/taste-tags'
 
 export const Route = createFileRoute('/visits/$visitId')({
   loader: async ({ params }) => {
@@ -167,7 +168,7 @@ function VisitDetailPage() {
                       <Badge
                         key={tagLink.id}
                         variant={
-                          tagLink.tasteTag.category === 'negative'
+                          isNegativeTasteTag(tagLink.tasteTag)
                             ? 'destructive'
                             : 'default'
                         }

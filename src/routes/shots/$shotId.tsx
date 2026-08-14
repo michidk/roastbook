@@ -38,6 +38,7 @@ import { getGear } from '@/lib/server/gear'
 import { saveShotAsRecipe } from '@/lib/server/recipes'
 import { deleteShot, getShot } from '@/lib/server/shots'
 import { getTasteTags } from '@/lib/server/taste-tags'
+import { isNegativeTasteTag } from '@/lib/taste-tags'
 
 export const Route = createFileRoute('/shots/$shotId')({
   loader: async ({ params }) => {
@@ -99,9 +100,9 @@ function ShotDetailPage() {
   if (!shot) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-xl font-semibold">Shot not found</h2>
+        <h2 className="text-xl font-semibold">Brew not found</h2>
         <Button asChild className="mt-4">
-          <Link to="/shots">Back to shots</Link>
+          <Link to="/shots">Back to brews</Link>
         </Button>
       </div>
     )
@@ -112,7 +113,7 @@ function ShotDetailPage() {
       await deleteShot({ data: shot.id })
       navigate({ to: '/shots' })
     } catch {
-      toast.error('Failed to delete shot')
+      toast.error('Failed to delete brew')
     }
   }
 
@@ -150,9 +151,11 @@ function ShotDetailPage() {
     }
   }
 
+  const ratioNumerator =
+    shot.ratioBasis === 'brew_water' ? shot.brewWaterGrams : shot.yieldGrams
   const ratio =
-    shot.doseGrams && shot.yieldGrams
-      ? (Number(shot.yieldGrams) / Number(shot.doseGrams)).toFixed(1)
+    shot.doseGrams && ratioNumerator
+      ? (Number(ratioNumerator) / Number(shot.doseGrams)).toFixed(1)
       : null
   const methodParameters = shot.brewingMethod.enabledParameters
 
@@ -199,13 +202,13 @@ function ShotDetailPage() {
         size="compact"
         title={shot.bean?.name || 'Unknown beans'}
         description={
-          <time dateTime={new Date(shot.createdAt).toISOString()}>
-            {shot.brewingMethod.name} · {formatDateTime(shot.createdAt)}
+          <time dateTime={new Date(shot.brewedAt).toISOString()}>
+            {shot.brewingMethod.name} · {formatDateTime(shot.brewedAt)}
           </time>
         }
         leading={
           <Button variant="outline" size="icon" asChild>
-            <Link to="/shots" aria-label="Back to shots">
+            <Link to="/shots" aria-label="Back to brews">
               <ArrowLeft aria-hidden className="h-4 w-4" />
             </Link>
           </Button>
@@ -228,8 +231,8 @@ function ShotDetailPage() {
                     <DialogHeader>
                       <DialogTitle>Save as recipe</DialogTitle>
                       <DialogDescription>
-                        Save this shot’s brewing method, equipment, and recipe
-                        values for reuse.
+                        Save this brew’s method, equipment, and recipe values
+                        for reuse.
                       </DialogDescription>
                     </DialogHeader>
                     <form
@@ -282,13 +285,26 @@ function ShotDetailPage() {
               </>
             )}
             <DeleteConfirmation
-              title="Delete this shot?"
+              title="Delete this brew?"
               description="This action cannot be undone."
               onConfirm={handleDelete}
             />
           </>
         }
       />
+
+      {shot.recipe ? (
+        <p className="-mt-4 text-sm text-muted-foreground">
+          Brewed from{' '}
+          <Link
+            to="/recipes/$recipeId"
+            params={{ recipeId: String(shot.recipe.id) }}
+            className="font-semibold text-link hover:underline"
+          >
+            {shot.recipe.name}
+          </Link>
+        </p>
+      ) : null}
 
       {isEditing && editData ? (
         <ShotEditForm
@@ -348,7 +364,7 @@ function ShotDetailPage() {
                       <Badge
                         key={tt.id}
                         variant={
-                          tt.tasteTag.category === 'negative'
+                          isNegativeTasteTag(tt.tasteTag)
                             ? 'destructive'
                             : 'default'
                         }

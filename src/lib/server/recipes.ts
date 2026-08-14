@@ -4,7 +4,14 @@ import { z } from 'zod'
 import { db } from '@/db'
 import { recipes, shots } from '@/db/schema'
 import { expectReturnedRow, notFound } from '@/lib/domain-errors'
-import { projectShotParameters } from '@/lib/server/shot-parameter-projection'
+import {
+  replaceRecipeAccessoryGear,
+  withAccessoryGearIds,
+} from '@/lib/server/accessory-gear.server'
+import {
+  projectAccessoryGearIds,
+  projectShotParameters,
+} from '@/lib/server/shot-parameter-projection'
 import {
   nameSchema,
   positiveIdSchema,
@@ -13,7 +20,13 @@ import {
 import { assertValidUpdate, getShotUpdateErrors } from '@/lib/update-validation'
 
 const recipeUpdateSchema = shotUpdateSchema
-  .omit({ rating: true, notes: true, tasteTagIds: true })
+  .omit({
+    brewedAt: true,
+    recipeId: true,
+    rating: true,
+    notes: true,
+    tasteTagIds: true,
+  })
   .extend({ name: nameSchema })
 
 const saveShotAsRecipeSchema = z.object({
@@ -34,23 +47,34 @@ const recipeRelations = {
   grinder: true,
   basket: true,
   brewingMethod: true,
+  accessoryGearLinks: { columns: { gearId: true } },
 } as const
 
-export const getRecipes = createServerFn({ method: 'GET' }).handler(async () =>
-  db.query.recipes.findMany({
-    orderBy: [desc(recipes.updatedAt)],
-    with: recipeRelations,
-  }),
+export const getRecipes = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    const results = await db.query.recipes.findMany({
+      orderBy: [desc(recipes.updatedAt)],
+      with: recipeRelations,
+    })
+    return results.map(withAccessoryGearIds)
+  },
 )
 
 export const getRecipe = createServerFn({ method: 'GET' })
   .validator(positiveIdSchema)
-  .handler(async ({ data: id }) =>
-    db.query.recipes.findFirst({
+  .handler(async ({ data: id }) => {
+    const recipe = await db.query.recipes.findFirst({
       where: eq(recipes.id, id),
       with: recipeRelations,
-    }),
-  )
+    })
+    return recipe ? withAccessoryGearIds(recipe) : undefined
+  })
+
+/*
+ * Recipe and shot form contracts continue to expose accessoryGearIds. The
+ * persistence boundary above/below translates that stable API to normalized
+ * association rows, keeping storage details out of route components.
+ */
 
 export const updateRecipe = createServerFn({ method: 'POST' })
   .validator((input: unknown) => {
@@ -78,30 +102,54 @@ export const updateRecipe = createServerFn({ method: 'POST' })
         })
         .where(eq(recipes.id, id))
         .returning()
-      return expectReturnedRow(recipe, 'Recipe')
+      const persistedRecipe = expectReturnedRow(recipe, 'Recipe')
+      await replaceRecipeAccessoryGear(
+        tx,
+        id,
+        projectAccessoryGearIds(parameters, method.enabledParameters),
+      )
+      return persistedRecipe
     }),
   )
 
 export const saveShotAsRecipe = createServerFn({ method: 'POST' })
   .validator(saveShotAsRecipeSchema)
-  .handler(async ({ data }) => {
-    const shot = await db.query.shots.findFirst({
-      where: eq(shots.id, data.shotId),
-      with: { brewingMethod: true },
-    })
-    if (!shot) throw notFound('Shot')
-
-    const [recipe] = await db
-      .insert(recipes)
-      .values({
-        name: data.name,
-        brewingMethodId: shot.brewingMethodId,
-        beanId: shot.beanId,
-        ...projectShotParameters(shot, shot.brewingMethod.enabledParameters),
+  .handler(async ({ data }) =>
+    db.transaction(async (tx) => {
+      const shot = await tx.query.shots.findFirst({
+        where: eq(shots.id, data.shotId),
+        with: {
+          brewingMethod: true,
+          accessoryGearLinks: { columns: { gearId: true } },
+        },
       })
-      .returning()
-    return expectReturnedRow(recipe, 'Recipe')
-  })
+      if (!shot) throw notFound('Shot')
+
+      const shotValues = withAccessoryGearIds(shot)
+      const [recipe] = await tx
+        .insert(recipes)
+        .values({
+          name: data.name,
+          brewingMethodId: shot.brewingMethodId,
+          beanId: shot.beanId,
+          ...projectShotParameters(
+            shotValues,
+            shot.brewingMethod.enabledParameters,
+          ),
+        })
+        .returning()
+      const persistedRecipe = expectReturnedRow(recipe, 'Recipe')
+      await replaceRecipeAccessoryGear(
+        tx,
+        persistedRecipe.id,
+        projectAccessoryGearIds(
+          shotValues,
+          shot.brewingMethod.enabledParameters,
+        ),
+      )
+      return persistedRecipe
+    }),
+  )
 
 export const deleteRecipe = createServerFn({ method: 'POST' })
   .validator(positiveIdSchema)

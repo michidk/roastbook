@@ -1,25 +1,18 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { EntityImageUploadSection } from '@/components/form/entity-image-upload-section'
-import {
-  CurrencyField,
-  InputField,
-  SelectField,
-  TextareaField,
-} from '@/components/form/form-field'
-import { EntityForm, FormSection } from '@/components/form/form-shell'
+import { EntityForm } from '@/components/form/form-shell'
+import { GearFields } from '@/components/gear/gear-fields'
 import {
   createEmptyGearFormValues,
   gearCreatePayload,
 } from '@/components/gear/gear-form-values'
-import { GearSubtypeFields } from '@/components/gear/gear-subtype-fields'
 import { MachineSettingsDiffModal } from '@/components/gear/machine-settings-diff-modal'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
 import { useImageUpload } from '@/hooks/useImageUpload'
 import type { ExtractedMachineSettings } from '@/lib/ai'
-import { GEAR_TYPES, type GearType } from '@/lib/constants'
 import { getErrorMessage } from '@/lib/error-message'
 import {
   checkGearResearchEnabled,
@@ -140,110 +133,15 @@ export function GearForm({
         statusText={isSubmitting ? 'Saving equipment pictures' : undefined}
       />
 
-      <FormSection title="Equipment info">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <InputField
-            id="gear-name"
-            label="Name"
-            placeholder="e.g., My Grinder"
-            value={form.values.name}
-            onChange={form.setField('name')}
-            required
-          />
-          <SelectField
-            id="gear-type"
-            label="Type"
-            placeholder="Select type"
-            value={form.values.type}
-            onChange={(value) => form.set('type', value as GearType | '')}
-            options={GEAR_TYPES}
-            required
-          />
-          <InputField
-            id="gear-brand"
-            label="Brand"
-            placeholder="e.g., Niche"
-            value={form.values.brand}
-            onChange={form.setField('brand')}
-          />
-          <InputField
-            id="gear-model"
-            label="Model"
-            placeholder="e.g., Zero"
-            value={form.values.model}
-            onChange={form.setField('model')}
-          />
-        </div>
-        <TextareaField
-          id="gear-notes"
-          label="Notes"
-          placeholder="Any additional info about this equipment"
-          value={form.values.notes}
-          onChange={form.setField('notes')}
-          rows={3}
-        />
-      </FormSection>
-
-      <GearSubtypeFields
-        type={form.values.type}
+      <GearFields
         values={form.values}
         onChange={form.set}
         research={{
           enabled: researchEnabled,
           isResearching,
           onResearch: handleResearch,
-          disabled:
-            !form.values.name.trim() ||
-            !form.values.brand.trim() ||
-            !form.values.model.trim(),
         }}
       />
-
-      <FormSection title="Purchase info">
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-          <InputField
-            id="gear-purchaseDate"
-            label="Purchase date"
-            type="date"
-            value={form.values.purchaseDate}
-            onChange={form.setField('purchaseDate')}
-          />
-          <InputField
-            id="gear-purchasePrice"
-            label="Price"
-            type="number"
-            placeholder="e.g., 599.00"
-            value={form.values.purchasePrice}
-            onChange={form.setField('purchasePrice')}
-            step="1"
-            min="0"
-          />
-          <CurrencyField
-            id="gear-priceCurrency"
-            value={form.values.priceCurrency}
-            onChange={form.setField('priceCurrency')}
-          />
-        </div>
-      </FormSection>
-
-      <FormSection title="Links">
-        <InputField
-          id="gear-productUrl"
-          label="Product page"
-          type="url"
-          placeholder="https://…"
-          value={form.values.productUrl}
-          onChange={form.setField('productUrl')}
-        />
-        <InputField
-          id="gear-manualUrl"
-          label="Manual / Documentation"
-          type="url"
-          placeholder="https://…"
-          value={form.values.manualUrl}
-          onChange={form.setField('manualUrl')}
-        />
-      </FormSection>
 
       {researchedSettings ? (
         <MachineSettingsDiffModal

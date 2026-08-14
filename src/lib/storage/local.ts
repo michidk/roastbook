@@ -7,7 +7,7 @@ import {
   unlink,
   writeFile,
 } from 'node:fs/promises'
-import { dirname, isAbsolute, relative, resolve } from 'node:path'
+import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import type { StorageConfig, StorageProvider } from './types'
 
 export class InvalidStoragePathError extends Error {
@@ -43,6 +43,30 @@ function isPortableAbsolutePath(path: string): boolean {
   )
 }
 
+function assertSafeStoragePath(path: string): void {
+  const decodedPath = decodeStoragePath(path)
+  const candidates = [path, decodedPath]
+
+  if (
+    !path ||
+    path.includes('\0') ||
+    candidates.some(isPortableAbsolutePath) ||
+    candidates.some(hasTraversalSegment)
+  ) {
+    throw new InvalidStoragePathError()
+  }
+}
+
+function isOutsideStorageRoot(basePath: string, fullPath: string): boolean {
+  const relativePath = relative(basePath, fullPath)
+  return (
+    !relativePath ||
+    relativePath === '..' ||
+    relativePath.startsWith(`..${sep}`) ||
+    isAbsolute(relativePath)
+  )
+}
+
 export class LocalStorageProvider implements StorageProvider {
   private readonly basePath: string
   private readonly baseUrl: string
@@ -53,28 +77,10 @@ export class LocalStorageProvider implements StorageProvider {
   }
 
   private resolvePath(path: string): string {
-    const decodedPath = decodeStoragePath(path)
-    if (
-      !path ||
-      path.includes('\0') ||
-      isPortableAbsolutePath(path) ||
-      isPortableAbsolutePath(decodedPath) ||
-      hasTraversalSegment(path) ||
-      hasTraversalSegment(decodedPath)
-    ) {
-      throw new InvalidStoragePathError()
-    }
+    assertSafeStoragePath(path)
 
     const fullPath = resolve(this.basePath, path)
-    const relativePath = relative(this.basePath, fullPath)
-    if (
-      !relativePath ||
-      relativePath === '..' ||
-      relativePath.startsWith(
-        `..${process.platform === 'win32' ? '\\' : '/'}`,
-      ) ||
-      isAbsolute(relativePath)
-    ) {
+    if (isOutsideStorageRoot(this.basePath, fullPath)) {
       throw new InvalidStoragePathError()
     }
 

@@ -1,17 +1,15 @@
 import { type SyntheticEvent, useState } from 'react'
 import { toast } from 'sonner'
-import { BeanPicker } from '@/components/beans/bean-picker'
-import { CoffeeShopPicker } from '@/components/coffee-shops/coffee-shop-picker'
-import {
-  CurrencyField,
-  InputField,
-  SelectField,
-} from '@/components/form/form-field'
-import { EntityForm, FormSection } from '@/components/form/form-shell'
-import { TastingFields } from '@/components/form/tasting-fields'
+import { EntityForm, FormErrorSummary } from '@/components/form/form-shell'
+import { VisitFields } from '@/components/visits/visit-fields'
 import { useFormState } from '@/hooks/use-form-state'
-import { cafeVisitDetailsPayload } from '@/lib/cafe-visit-payload'
-import { DRINK_TYPE_OPTIONS } from '@/lib/constants'
+import {
+  useCurrentLocalDateTimeLimit,
+  useLocalDateTimeInput,
+} from '@/hooks/use-local-date-time-input'
+import { cafeVisitUpdatePayload } from '@/lib/cafe-visit-payload'
+import { localDateTimeInputToDate } from '@/lib/date-input'
+import { focusFirstInvalidControl } from '@/lib/form-validation'
 import { toNullableRating, toRatingInput } from '@/lib/rating'
 import type { getActiveBeans } from '@/lib/server/beans'
 import { type getCafeVisit, updateCafeVisit } from '@/lib/server/cafe-visits'
@@ -45,6 +43,8 @@ export function VisitEditForm({
   const [selectedTagIds, setSelectedTagIds] = useState(() =>
     visit.tasteTags.map((tagLink) => tagLink.tasteTagId),
   )
+  const [visitedAt, setVisitedAt] = useLocalDateTimeInput(visit.visitedAt)
+  const latestVisitedAt = useCurrentLocalDateTimeLimit()
   const form = useFormState(() => ({
     coffeeShopId: visit.coffeeShopId ? String(visit.coffeeShopId) : '',
     beanId: visit.beanId ? String(visit.beanId) : '',
@@ -56,9 +56,6 @@ export function VisitEditForm({
     notes: visit.notes ?? '',
   }))
 
-  const negativeTags = tasteTags.filter((tag) => tag.category === 'negative')
-  const positiveTags = tasteTags.filter((tag) => tag.category === 'positive')
-
   const toggleTag = (tagId: number) => {
     setSelectedTagIds((current) =>
       current.includes(tagId)
@@ -69,18 +66,23 @@ export function VisitEditForm({
 
   const handleSave = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault()
+    const formElement = event.currentTarget
     const updateData = {
       id: visit.id,
       coffeeShopId: form.values.coffeeShopId
         ? Number(form.values.coffeeShopId)
         : null,
-      ...cafeVisitDetailsPayload(form.values, null),
+      ...cafeVisitUpdatePayload(form.values),
+      visitedAt: localDateTimeInputToDate(visitedAt) ?? visit.visitedAt,
       rating: toNullableRating(form.values.rating),
       tasteTagIds: selectedTagIds,
     }
     const errors = getCafeVisitUpdateErrors(updateData)
     setFieldErrors(errors)
-    if (Object.keys(errors).length > 0) return
+    if (Object.keys(errors).length > 0) {
+      focusFirstInvalidControl(formElement)
+      return
+    }
 
     setIsSubmitting(true)
     try {
@@ -101,74 +103,23 @@ export function VisitEditForm({
       onSubmit={handleSave}
       actions={{ onCancel, isSubmitting, submitLabel: 'Save visit' }}
     >
-      <FormSection title="Location">
-        <CoffeeShopPicker
-          id="coffeeShop"
-          label="Café"
-          value={form.values.coffeeShopId}
-          onChange={form.setField('coffeeShopId')}
-          coffeeShops={coffeeShops}
-          autoFocus
-        />
-        <BeanPicker
-          id="bean"
-          label="Beans"
-          value={form.values.beanId}
-          onChange={form.setField('beanId')}
-          beans={beans}
-        />
-      </FormSection>
-
-      <FormSection title="Drink">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <InputField
-            id="drinkName"
-            label="Drink name"
-            placeholder="e.g., House Blend Latte"
-            value={form.values.drinkName}
-            onChange={form.setField('drinkName')}
-          />
-          <SelectField
-            id="drinkType"
-            label="Type"
-            placeholder="Select type"
-            value={form.values.drinkType}
-            onChange={form.setField('drinkType')}
-            options={DRINK_TYPE_OPTIONS}
-          />
-          <InputField
-            id="price"
-            label="Price"
-            type="number"
-            min="0"
-            step="0.5"
-            placeholder="4.50"
-            value={form.values.price}
-            onChange={form.setField('price')}
-            error={fieldErrors.price}
-          />
-          <CurrencyField
-            id="currency"
-            value={form.values.currency}
-            onChange={form.setField('currency')}
-          />
-        </div>
-      </FormSection>
-
-      <TastingFields
-        kind="visit"
-        rating={{
-          value: form.values.rating,
-          onChange: (rating) =>
-            form.set('rating', form.values.rating === rating ? 0 : rating),
+      <FormErrorSummary errors={fieldErrors} />
+      <VisitFields
+        values={form.values}
+        choices={{ coffeeShops, beans, tasteTags }}
+        visitedAt={{
+          value: visitedAt,
+          max: latestVisitedAt,
+          onChange: setVisitedAt,
         }}
-        notes={{ value: form.values.notes, onChange: form.setField('notes') }}
-        tags={{
-          negative: negativeTags,
-          positive: positiveTags,
-          selectedIds: selectedTagIds,
-          onToggle: toggleTag,
+        tasting={{
+          selectedTagIds,
+          onRatingChange: (rating) => form.set('rating', rating),
+          onToggleTag: toggleTag,
         }}
+        errors={fieldErrors}
+        autoFocusCoffeeShop
+        onFieldChange={form.set}
       />
     </EntityForm>
   )

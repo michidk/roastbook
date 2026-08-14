@@ -1,29 +1,30 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { type SyntheticEvent, useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { BeanPicker } from '@/components/beans/bean-picker'
-import { CoffeeShopPicker } from '@/components/coffee-shops/coffee-shop-picker'
-import {
-  CurrencyField,
-  InputField,
-  SelectField,
-} from '@/components/form/form-field'
 import {
   EntityForm,
   FormActions,
+  FormErrorSummary,
   FormPageHeader,
-  FormSection,
 } from '@/components/form/form-shell'
-import { TastingFields } from '@/components/form/tasting-fields'
 import { Page } from '@/components/page-layout'
+import { VisitFields } from '@/components/visits/visit-fields'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useFormState } from '@/hooks/use-form-state'
-import { cafeVisitDetailsPayload } from '@/lib/cafe-visit-payload'
-import { DRINK_TYPE_OPTIONS } from '@/lib/constants'
+import {
+  useCurrentLocalDateTimeLimit,
+  useLocalDateTimeInput,
+} from '@/hooks/use-local-date-time-input'
+import { useUnsavedChanges } from '@/hooks/use-unsaved-changes'
+import { cafeVisitCreatePayload } from '@/lib/cafe-visit-payload'
+import { localDateTimeInputToDate } from '@/lib/date-input'
+import { focusFirstInvalidControl } from '@/lib/form-validation'
+import { toNullableRating } from '@/lib/rating'
 import { getActiveBeans } from '@/lib/server/beans'
 import { createCafeVisit } from '@/lib/server/cafe-visits'
 import { getCoffeeShops } from '@/lib/server/coffee-shops'
 import { getTasteTags } from '@/lib/server/taste-tags'
+import { getCafeVisitUpdateErrors } from '@/lib/update-validation'
 
 export const Route = createFileRoute('/visits/new')({
   validateSearch: (search: Record<string, unknown>) => {
@@ -41,14 +42,20 @@ export const Route = createFileRoute('/visits/new')({
       getTasteTags(),
       getActiveBeans(),
     ])
-    return { coffeeShops, tasteTags, beans }
+    return {
+      coffeeShops,
+      tasteTags,
+      beans,
+      defaultVisitedAt: new Date().toISOString(),
+    }
   },
   component: NewVisitPage,
 })
 
 function NewVisitPage() {
   const { defaultCurrency } = useAppSettings()
-  const { coffeeShops, tasteTags, beans } = Route.useLoaderData()
+  const { coffeeShops, tasteTags, beans, defaultVisitedAt } =
+    Route.useLoaderData()
   const search = Route.useSearch()
   const navigate = useNavigate()
   const initialCoffeeShopId =
@@ -61,6 +68,12 @@ function NewVisitPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedTags, setSelectedTags] = useState<number[]>([])
+  const [visitedAt, setVisitedAt] = useLocalDateTimeInput(defaultVisitedAt)
+  const latestVisitedAt = useCurrentLocalDateTimeLimit()
+  const [fieldErrors, setFieldErrors] = useState<
+    Readonly<Record<string, string>>
+  >({})
+  const [isDirty, setIsDirty] = useState(false)
 
   const form = useFormState({
     coffeeShopId: initialCoffeeShopId,
@@ -69,7 +82,7 @@ function NewVisitPage() {
     drinkType: '',
     price: '',
     currency: 'EUR',
-    rating: 3,
+    rating: 0,
     notes: '',
   })
 
@@ -77,7 +90,10 @@ function NewVisitPage() {
     form.set('currency', defaultCurrency)
   }, [defaultCurrency, form.set])
 
+  useUnsavedChanges(isDirty && !isSubmitting)
+
   const toggleTag = (tagId: number) => {
+    setIsDirty(true)
     setSelectedTags((prev) =>
       prev.includes(tagId)
         ? prev.filter((id) => id !== tagId)
@@ -87,29 +103,36 @@ function NewVisitPage() {
 
   const handleSubmit = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setIsSubmitting(true)
+    const formElement = event.currentTarget
+    const data = {
+      coffeeShopId: form.values.coffeeShopId
+        ? Number(form.values.coffeeShopId)
+        : undefined,
+      ...cafeVisitCreatePayload(form.values),
+      visitedAt: localDateTimeInputToDate(visitedAt) ?? undefined,
+      rating: toNullableRating(form.values.rating),
+      tasteTagIds: selectedTags.length > 0 ? selectedTags : undefined,
+    }
+    const errors = getCafeVisitUpdateErrors({ id: 1, ...data })
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) {
+      focusFirstInvalidControl(formElement)
+      return
+    }
 
+    setIsSubmitting(true)
     try {
-      await createCafeVisit({
-        data: {
-          coffeeShopId: form.values.coffeeShopId
-            ? Number(form.values.coffeeShopId)
-            : undefined,
-          ...cafeVisitDetailsPayload(form.values, undefined),
-          rating: form.values.rating,
-          tasteTagIds: selectedTags.length > 0 ? selectedTags : undefined,
-        },
-      })
+      await createCafeVisit({ data })
+      setIsDirty(false)
       navigate({ to: '/visits' })
-    } catch {
-      toast.error('Could not save this visit')
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Could not save this visit',
+      )
     } finally {
       setIsSubmitting(false)
     }
   }
-
-  const negativeTags = tasteTags.filter((t) => t.category === 'negative')
-  const positiveTags = tasteTags.filter((t) => t.category === 'positive')
 
   return (
     <Page width="form">
@@ -119,70 +142,30 @@ function NewVisitPage() {
       />
 
       <EntityForm onSubmit={handleSubmit}>
-        <FormSection title="Location">
-          <CoffeeShopPicker
-            id="coffeeShop"
-            label="Café"
-            value={form.values.coffeeShopId}
-            onChange={form.setField('coffeeShopId')}
-            coffeeShops={coffeeShops}
-          />
-          <BeanPicker
-            id="bean"
-            label="Beans"
-            value={form.values.beanId}
-            onChange={form.setField('beanId')}
-            beans={beans}
-          />
-        </FormSection>
-
-        <FormSection title="Drink">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <InputField
-              id="drinkName"
-              label="Drink name"
-              placeholder="e.g., House Blend Latte"
-              value={form.values.drinkName}
-              onChange={form.setField('drinkName')}
-            />
-            <SelectField
-              id="drinkType"
-              label="Type"
-              placeholder="Select type"
-              value={form.values.drinkType}
-              onChange={form.setField('drinkType')}
-              options={DRINK_TYPE_OPTIONS}
-            />
-            <InputField
-              id="price"
-              label="Price"
-              type="number"
-              min="0"
-              step="0.5"
-              placeholder="4.50"
-              value={form.values.price}
-              onChange={form.setField('price')}
-            />
-            <CurrencyField
-              id="currency"
-              value={form.values.currency}
-              onChange={form.setField('currency')}
-            />
-          </div>
-        </FormSection>
-
-        <TastingFields
-          kind="visit"
-          rating={{
-            value: form.values.rating,
-            onChange: form.setField('rating'),
+        <FormErrorSummary errors={fieldErrors} />
+        <VisitFields
+          values={form.values}
+          choices={{ coffeeShops, beans, tasteTags }}
+          visitedAt={{
+            value: visitedAt,
+            max: latestVisitedAt,
+            onChange: (value) => {
+              setIsDirty(true)
+              setVisitedAt(value)
+            },
           }}
-          notes={{ value: form.values.notes, onChange: form.setField('notes') }}
-          tags={{
-            negative: negativeTags,
-            positive: positiveTags,
-            selectedIds: selectedTags,
-            onToggle: toggleTag,
+          tasting={{
+            selectedTagIds: selectedTags,
+            onRatingChange: (value) => {
+              setIsDirty(true)
+              form.set('rating', value)
+            },
+            onToggleTag: toggleTag,
+          }}
+          errors={fieldErrors}
+          onFieldChange={(field, value) => {
+            setIsDirty(true)
+            form.set(field, value)
           }}
         />
 

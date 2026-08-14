@@ -10,22 +10,15 @@ import {
   Trash2,
 } from 'lucide-react'
 import type { Dispatch, SetStateAction } from 'react'
+import { BeanFields } from '@/components/beans/bean-fields'
 import type { BeanFormValues } from '@/components/beans/bean-form-values'
 import { DeleteConfirmation } from '@/components/DeleteConfirmation'
 import {
   type EntityImage,
   EntityImageGallery,
 } from '@/components/entity-image-gallery'
-import {
-  InputField,
-  SelectField,
-  TextareaField,
-} from '@/components/form/form-field'
 import { PageHeader } from '@/components/page-layout'
-import {
-  type RoasterOption,
-  RoasterPicker,
-} from '@/components/roasters/roaster-picker'
+import type { RoasterOption } from '@/components/roasters/roaster-picker'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -38,11 +31,9 @@ import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import {
   BEAN_TYPE_LABELS,
-  BEAN_TYPES,
   type BeanType,
-  PROCESS_METHODS,
-  ROAST_LEVELS,
-  type RoastLevel,
+  getProcessMethodLabel,
+  getRoastLevelLabel,
 } from '@/lib/constants'
 
 type Bean = {
@@ -171,14 +162,14 @@ export function BeanDetailHeader({
               <Button size="sm" asChild>
                 <Link to="/shots/new" search={{ beanId: bean.id }}>
                   <Plus />
-                  Log a shot
+                  Log a brew
                 </Link>
               </Button>
             </>
           )}
           <DeleteConfirmation
             title="Delete this bean?"
-            description="This will also remove it from any shot records. This action cannot be undone."
+            description="This will also remove it from any brew records. This action cannot be undone."
             onConfirm={onDelete}
             trigger={
               <Button variant="ghost" size="icon-sm" aria-label="Delete bean">
@@ -225,10 +216,13 @@ export function BeanEditContent({
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
       <div className="space-y-6">
-        <Card>
-          <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-4">
-            <CardTitle>Basic info</CardTitle>
-            {researchEnabled && (
+        <BeanFields
+          values={formData}
+          onChange={set}
+          roasters={roasters}
+          idPrefix="bean-edit"
+          basicAction={
+            researchEnabled ? (
               <Button
                 variant="outline"
                 size="sm"
@@ -248,164 +242,9 @@ export function BeanEditContent({
                 )}
                 {isResearching ? 'Researching…' : 'Research online'}
               </Button>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <InputField
-                id="name"
-                label="Name"
-                placeholder="e.g., Ethiopia Yirgacheffe"
-                value={formData.name}
-                onChange={(value) => set('name', value)}
-                required
-              />
-              <RoasterPicker
-                id="roasterId"
-                label="Roaster"
-                placeholder="Select roaster"
-                value={formData.roasterId}
-                onChange={(value) => set('roasterId', value)}
-                roasters={roasters}
-              />
-              <SelectField
-                id="type"
-                label="Type"
-                placeholder="Select type"
-                value={formData.type}
-                onChange={(value) =>
-                  set('type', (value ?? '') as BeanType | '')
-                }
-                options={BEAN_TYPES}
-              />
-              <InputField
-                id="weight"
-                label="Bag Weight (g)"
-                type="number"
-                min="0"
-                step="50"
-                placeholder="e.g., 250"
-                value={formData.weight}
-                onChange={(value) => set('weight', value)}
-              />
-              <div className="flex gap-2">
-                <InputField
-                  id="price"
-                  label="Price"
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="e.g., 15.00"
-                  value={formData.price}
-                  onChange={(value) => set('price', value)}
-                  className="flex-1"
-                />
-                <InputField
-                  id="priceCurrency"
-                  label="Currency"
-                  placeholder="EUR"
-                  value={formData.priceCurrency}
-                  onChange={(value) => set('priceCurrency', value)}
-                  className="w-24"
-                />
-              </div>
-              <InputField
-                id="shopUrl"
-                label="Shop URL"
-                type="url"
-                placeholder="https://…"
-                value={formData.shopUrl}
-                onChange={(value) => set('shopUrl', value)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Origin</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <InputField
-                id="origin"
-                label="Country"
-                placeholder="e.g., Ethiopia"
-                value={formData.origin}
-                onChange={(value) => set('origin', value)}
-              />
-              <InputField
-                id="region"
-                label="Region"
-                placeholder="e.g., Yirgacheffe"
-                value={formData.region}
-                onChange={(value) => set('region', value)}
-              />
-              <InputField
-                id="farm"
-                label="Farm/Producer"
-                placeholder="e.g., Konga Cooperative"
-                value={formData.farm}
-                onChange={(value) => set('farm', value)}
-              />
-              <InputField
-                id="variety"
-                label="Variety"
-                placeholder="e.g., Heirloom"
-                value={formData.variety}
-                onChange={(value) => set('variety', value)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Processing</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-              <SelectField
-                id="process"
-                label="Process"
-                placeholder="Select process"
-                value={formData.process}
-                onChange={(value) => set('process', value ?? '')}
-                options={PROCESS_METHODS}
-              />
-              <SelectField
-                id="roastLevel"
-                label="Roast Level"
-                placeholder="Select level"
-                value={formData.roastLevel}
-                onChange={(value) =>
-                  set('roastLevel', (value ?? '') as RoastLevel | '')
-                }
-                options={ROAST_LEVELS}
-              />
-              <InputField
-                id="roastDate"
-                label="Roast Date"
-                type="date"
-                value={formData.roastDate}
-                onChange={(value) => set('roastDate', value)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Notes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TextareaField
-              id="notes"
-              label=""
-              placeholder="Tasting notes, brewing tips, or other observations"
-              value={formData.notes}
-              onChange={(value) => set('notes', value)}
-              rows={4}
-            />
-          </CardContent>
-        </Card>
+            ) : undefined
+          }
+        />
       </div>
       <div className="space-y-6">
         <EntityImageGallery
@@ -465,7 +304,7 @@ export function BeanReadOnlyContent({
               </Progress>
               <p className="text-sm text-muted-foreground">
                 {formatNumber(weightStats.usedWeight.toFixed(1))} g used across{' '}
-                {formatNumber(shotCount)} shot{shotCount !== 1 ? 's' : ''}
+                {formatNumber(shotCount)} brew{shotCount !== 1 ? 's' : ''}
               </p>
             </CardContent>
           </Card>
@@ -531,12 +370,14 @@ export function BeanReadOnlyContent({
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Process</p>
-              <p className="font-medium">{bean.process || '-'}</p>
+              <p className="font-medium">
+                {bean.process ? getProcessMethodLabel(bean.process) : '-'}
+              </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Roast Level</p>
               <p className="font-medium capitalize">
-                {bean.roastLevel?.replace('_', ' ') || '-'}
+                {bean.roastLevel ? getRoastLevelLabel(bean.roastLevel) : '-'}
               </p>
             </div>
             <div>

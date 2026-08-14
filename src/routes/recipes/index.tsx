@@ -26,15 +26,15 @@ function RecipesPage() {
     <Page>
       <PageHeader
         title="Recipes"
-        description="Reusable shot values, organized by brewing method."
+        description="Reusable brew values, organized by brewing method."
       />
 
       {recipes.length === 0 ? (
         <EmptyState
           icon={BookOpen}
           title="No recipes yet"
-          description="Open any saved shot and choose “Save as recipe”."
-          actionLabel="Browse shots"
+          description="Open any saved brew and choose “Save as recipe”."
+          actionLabel="Browse brews"
           actionHref="/shots"
         />
       ) : (

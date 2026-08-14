@@ -42,7 +42,7 @@ const TASTING_CONFIG = {
   shot: {
     heading: 'Tasting Notes',
     headingId: undefined,
-    ratingLabel: 'Shot rating',
+    ratingLabel: 'Brew rating',
   },
   visit: {
     heading: 'Tasting',
@@ -175,7 +175,7 @@ function TasteTagGroup({
               aria-pressed={isSelected}
               variant={isSelected ? selectedVariant : 'outline'}
               className={cn(
-                'h-8 px-3 transition-colors',
+                'min-h-11 px-3 py-2 transition-colors [@media(hover:hover)_and_(pointer:fine)]:min-h-8 [@media(hover:hover)_and_(pointer:fine)]:py-0',
                 !isSelected && hoverClassName,
               )}
               onClick={() => onToggleTag(tag.id)}

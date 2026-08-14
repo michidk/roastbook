@@ -11,26 +11,28 @@ import {
 import { Progress } from '@/components/ui/progress'
 import { StarRating } from '@/components/ui/star-rating'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
-import type { getDetailedStats } from '@/lib/server/stats'
 import { StatsActivityCard } from './stats-activity-card'
-import { gearChartConfig, ratingChartConfig } from './stats-chart-config'
+import {
+  BrewingAveragesCard,
+  BrewRhythmCard,
+  ConsistencyCard,
+  DialInCard,
+  TasteProfileCard,
+} from './stats-brewing-insights'
+import { ratingChartConfig } from './stats-chart-config'
+import {
+  CostCard,
+  ExplorationCard,
+  GearUsageCard,
+  MethodMixCard,
+  RecipePerformanceCard,
+} from './stats-exploration'
+import type { DetailedStats } from './stats-types'
 import { StatsVisitsCard } from './stats-visits-card'
 
-type DetailedStats = Awaited<ReturnType<typeof getDetailedStats>>
-
-type BeanRankingItem = {
-  readonly beanId: number | null
-  readonly beanName: string
-  readonly shotCount: number
+type BeanRankingItem = DetailedStats['beans']['topByShots'][number] & {
   readonly avgRating?: number | null
 }
-
-type GearUsageItem = {
-  readonly gearId: number
-  readonly gearName: string
-  readonly shotCount: number
-}
-
 type FormatNumber = (value: number | string) => string
 
 const BEAN_RANKING_CONFIG = {
@@ -39,15 +41,16 @@ const BEAN_RANKING_CONFIG = {
     renderDetail: (
       bean: BeanRankingItem,
       maxShots: number,
-      _formatNumber: FormatNumber,
+      formatNumber: FormatNumber,
     ) => (
       <Progress
         value={(bean.shotCount / maxShots) * 100}
         className="mt-1 h-2"
+        aria-label={`${bean.beanName}: ${formatNumber(bean.shotCount)} brews`}
       />
     ),
     renderValue: (bean: BeanRankingItem, formatNumber: FormatNumber) =>
-      `${formatNumber(bean.shotCount)} shots`,
+      `${formatNumber(bean.shotCount)} brews`,
   },
   rating: {
     title: 'Highest rated beans',
@@ -57,7 +60,7 @@ const BEAN_RANKING_CONFIG = {
       formatNumber: FormatNumber,
     ) => (
       <p className="text-sm text-muted-foreground">
-        {formatNumber(bean.shotCount)} shots
+        {formatNumber(bean.shotCount)} rated brews
       </p>
     ),
     renderValue: (bean: BeanRankingItem, _formatNumber: FormatNumber) =>
@@ -86,18 +89,15 @@ const BEAN_RANKING_CONFIG = {
 function BeanRankingCard({
   mode,
   items,
-  className,
 }: {
   readonly mode: keyof typeof BEAN_RANKING_CONFIG
   readonly items: readonly BeanRankingItem[]
-  readonly className?: string
 }) {
   const formatNumber = useNumberFormatter()
   const config = BEAN_RANKING_CONFIG[mode]
   const maxShots = items[0]?.shotCount ?? 1
-
   return (
-    <Card className={className}>
+    <Card>
       <CardHeader>
         <CardTitle>{config.title}</CardTitle>
       </CardHeader>
@@ -107,7 +107,7 @@ function BeanRankingCard({
             <span className="w-6 text-sm font-medium text-muted-foreground">
               #{index + 1}
             </span>
-            <div className="flex-1">
+            <div className="min-w-0 flex-1">
               <Link
                 to="/beans/$beanId"
                 params={{ beanId: String(bean.beanId) }}
@@ -117,7 +117,7 @@ function BeanRankingCard({
               </Link>
               {config.renderDetail(bean, maxShots, formatNumber)}
             </div>
-            <span className="text-sm text-muted-foreground">
+            <span className="shrink-0 text-sm text-muted-foreground">
               {config.renderValue(bean, formatNumber)}
             </span>
           </div>
@@ -127,40 +127,58 @@ function BeanRankingCard({
   )
 }
 
-function GearUsageCard({
-  title,
-  items,
-  className,
-}: {
-  readonly title: string
-  readonly items: readonly GearUsageItem[]
-  readonly className?: string
-}) {
+function RatingDistributionCard({ stats }: { readonly stats: DetailedStats }) {
+  const formatNumber = useNumberFormatter()
+  const ratingChartData = Object.entries(stats.ratings.distribution).map(
+    ([rating, count]) => ({ rating, count }),
+  )
   return (
-    <Card className={className}>
+    <Card>
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <Star className="h-5 w-5" />
+          Rating distribution
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={gearChartConfig} className="h-[200px] w-full">
-          <BarChart data={items} layout="vertical">
+        <div className="mb-4 text-center">
+          {stats.ratings.average === null ? (
+            <span className="text-3xl font-bold">—</span>
+          ) : (
+            <StarRating
+              value={stats.ratings.average}
+              variant="compact"
+              className="justify-center text-base"
+              sizeClassName="size-5"
+            />
+          )}
+          <p className="text-sm text-muted-foreground">
+            {formatNumber(stats.ratings.totalRated)} rated brews;{' '}
+            {formatNumber(stats.ratings.highRated)} are four or five stars.
+          </p>
+        </div>
+        <ChartContainer config={ratingChartConfig} className="h-[170px] w-full">
+          <BarChart data={ratingChartData} accessibilityLayer>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
-              type="number"
+              dataKey="rating"
               fontSize={12}
               tickLine={false}
               axisLine={false}
             />
             <YAxis
-              type="category"
-              dataKey="gearName"
               fontSize={12}
               tickLine={false}
               axisLine={false}
-              width={100}
+              allowDecimals={false}
             />
             <ChartTooltip content={<ChartTooltipContent />} />
-            <Bar dataKey="shotCount" fill="var(--color-shotCount)" radius={4} />
+            <Bar
+              dataKey="count"
+              fill="var(--color-count)"
+              radius={4}
+              isAnimationActive={false}
+            />
           </BarChart>
         </ChartContainer>
       </CardContent>
@@ -169,131 +187,95 @@ function GearUsageCard({
 }
 
 export function StatsSections({ stats }: { readonly stats: DetailedStats }) {
-  const formatNumber = useNumberFormatter()
-  const beansData = stats.beans
-  const gearData = stats.gear
-  const ratingsData = stats.ratings
-  const activityData = stats.activity
-
-  const ratingDistribution = ratingsData.distribution
-  const ratingChartData = Object.entries(ratingDistribution).map(
-    ([rating, count]) => ({
-      rating,
-      count,
-    }),
-  )
+  const hasBrews = stats.shots.total > 0
+  const hasComparableParameters =
+    Boolean(stats.filter.method) || stats.methods.length <= 1
+  const hasBeanRankings =
+    stats.beans.topByShots.length > 0 || stats.beans.topByRating.length > 0
 
   return (
-    <div className="space-y-6">
-      <div className="grid min-w-0 gap-6 lg:grid-cols-2">
-        <div
-          className={
-            ratingsData.totalRated === 0 ? 'min-w-0 lg:col-span-2' : 'min-w-0'
-          }
-        >
-          <StatsActivityCard activity={activityData} />
-        </div>
+    <div className="space-y-6 md:space-y-8">
+      {hasBrews ? (
+        <>
+          <div className="grid min-w-0 gap-6 lg:grid-cols-2">
+            <StatsActivityCard
+              trend={stats.trend}
+              bucket={stats.filter.range.bucket}
+            />
+            {stats.ratings.totalRated > 0 ? (
+              <RatingDistributionCard stats={stats} />
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Rating distribution</CardTitle>
+                </CardHeader>
+                <CardContent className="flex min-h-[240px] items-center justify-center rounded-2xl text-center text-sm text-muted-foreground">
+                  Add ratings to reveal quality trends and dial-in patterns.
+                </CardContent>
+              </Card>
+            )}
+          </div>
 
-        {ratingsData.totalRated > 0 && (
-          <Card
-            className={
-              beansData.topByRating.length === 0 ? 'lg:col-span-2' : undefined
-            }
-          >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Star className="h-5 w-5" />
-                Rating distribution
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-4 text-center">
-                {ratingsData.average === null ? (
-                  <span className="text-3xl font-bold">—</span>
-                ) : (
-                  <StarRating
-                    value={ratingsData.average}
-                    variant="compact"
-                    className="justify-center text-base"
-                    sizeClassName="size-5"
-                  />
-                )}
-                <p className="text-sm text-muted-foreground">
-                  {formatNumber(ratingsData.totalRated)} rated shots
-                </p>
-              </div>
-              <ChartContainer
-                config={ratingChartConfig}
-                className="h-[150px] w-full"
-              >
-                <BarChart data={ratingChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="rating"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar
-                    dataKey="count"
-                    fill="var(--color-count)"
-                    radius={4}
-                    isAnimationActive={false}
-                  />
-                </BarChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+          {hasComparableParameters ? (
+            <>
+              <BrewingAveragesCard brewing={stats.brewing} />
+              <ConsistencyCard consistency={stats.consistency} />
+            </>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Brewing parameters</CardTitle>
+              </CardHeader>
+              <CardContent className="rounded-2xl text-sm text-muted-foreground">
+                Choose one brewing method before comparing dose, ratio, yield,
+                time, or consistency. Combining methods would make these values
+                misleading.
+              </CardContent>
+            </Card>
+          )}
+          <DialInCard stats={stats} />
+          <TasteProfileCard items={stats.tasteProfile} />
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {beansData.topByShots.length > 0 && (
-          <BeanRankingCard
-            mode="usage"
-            items={beansData.topByShots}
-            className={
-              beansData.topByRating.length === 0 ? 'lg:col-span-2' : undefined
-            }
-          />
-        )}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <MethodMixCard methods={stats.methods} />
+            <BrewRhythmCard
+              rhythm={stats.rhythm}
+              timeZone={stats.filter.timeZone}
+            />
+          </div>
 
-        {beansData.topByRating.length > 0 && (
-          <BeanRankingCard
-            mode="rating"
-            items={beansData.topByRating}
-            className={
-              beansData.topByShots.length === 0 ? 'lg:col-span-2' : undefined
-            }
-          />
-        )}
-      </div>
+          {hasBeanRankings ? (
+            <div className="grid gap-6 lg:grid-cols-2">
+              {stats.beans.topByShots.length > 0 ? (
+                <BeanRankingCard mode="usage" items={stats.beans.topByShots} />
+              ) : null}
+              {stats.beans.topByRating.length > 0 ? (
+                <BeanRankingCard
+                  mode="rating"
+                  items={stats.beans.topByRating}
+                />
+              ) : null}
+            </div>
+          ) : null}
+
+          <ExplorationCard exploration={stats.exploration} />
+          <RecipePerformanceCard recipes={stats.exploration.recipes} />
+        </>
+      ) : null}
 
       <StatsVisitsCard visits={stats.visits} places={stats.places} />
+      <CostCard stats={stats} />
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {gearData.grinders.length > 0 && (
+      {hasBrews ? (
+        <div className="grid gap-6 lg:grid-cols-2">
+          <GearUsageCard title="Brewer usage" items={stats.gear.brewers} />
+          <GearUsageCard title="Grinder usage" items={stats.gear.grinders} />
           <GearUsageCard
-            title="Grinder usage"
-            items={gearData.grinders}
-            className={
-              gearData.machines.length === 0 ? 'lg:col-span-2' : undefined
-            }
+            title="Accessory usage"
+            items={stats.gear.accessories}
           />
-        )}
-
-        {gearData.machines.length > 0 && (
-          <GearUsageCard
-            title="Machine usage"
-            items={gearData.machines}
-            className={
-              gearData.grinders.length === 0 ? 'lg:col-span-2' : undefined
-            }
-          />
-        )}
-      </div>
+        </div>
+      ) : null}
     </div>
   )
 }

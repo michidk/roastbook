@@ -3,6 +3,10 @@ import { asc, count, desc, eq, ilike, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
 import { beans, roasters } from '@/db/schema'
+import {
+  escapedContainsPattern,
+  resolvePagination,
+} from '@/lib/collection-query'
 import { expectReturnedRow } from '@/lib/domain-errors'
 import {
   nameSchema,
@@ -56,15 +60,19 @@ export const getRoasterPage = createServerFn({ method: 'GET' })
   .validator(roasterListSchema)
   .handler(async ({ data }) => {
     const where = data.query
-      ? ilike(roasters.name, `%${data.query}%`)
+      ? ilike(roasters.name, escapedContainsPattern(data.query))
       : undefined
     const countRows = await db
       .select({ value: count() })
       .from(roasters)
       .where(where)
     const totalItems = countRows[0]?.value ?? 0
-    const totalPages = Math.max(1, Math.ceil(totalItems / ROASTERS_PAGE_SIZE))
-    const page = Math.min(data.page, totalPages)
+    const pagination = resolvePagination(
+      totalItems,
+      data.page,
+      ROASTERS_PAGE_SIZE,
+    )
+    const { page } = pagination
     const beanCount = sql<number>`count(${beans.id})::int`
     const sortExpression =
       data.sort === 'beans'
@@ -91,7 +99,7 @@ export const getRoasterPage = createServerFn({ method: 'GET' })
       .limit(ROASTERS_PAGE_SIZE)
       .offset((page - 1) * ROASTERS_PAGE_SIZE)
 
-    return { items, page, pageSize: ROASTERS_PAGE_SIZE, totalItems, totalPages }
+    return { items, ...pagination }
   })
 
 export const getRoaster = createServerFn({ method: 'GET' })

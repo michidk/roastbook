@@ -23,11 +23,15 @@ import { thumbnailUrl } from '@/lib/image-url'
 
 type Shot = {
   id: number
-  createdAt: Date
+  brewedAt: Date
   doseGrams: string | null
   yieldGrams: string | null
   shotTimeSeconds: string | null
   rating: number | null
+  brewingMethod: {
+    id: number
+    name: string
+  }
   bean: {
     id: number
     name: string
@@ -41,6 +45,7 @@ type Shot = {
 interface ShotsTableProps {
   shots: Shot[]
   hideBean?: boolean
+  hideToolbar?: boolean
   serverPagination?: {
     readonly page: number
     readonly totalPages: number
@@ -114,7 +119,7 @@ function compareShots(
   switch (key) {
     case 'date': {
       const difference =
-        new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime()
+        new Date(left.brewedAt).getTime() - new Date(right.brewedAt).getTime()
       return direction === 'asc' ? difference : -difference
     }
     case 'bean':
@@ -162,6 +167,7 @@ function getShotSortDirection(key: SortKey): SortDirection {
 export function ShotsTable({
   shots,
   hideBean,
+  hideToolbar = false,
   serverPagination,
 }: ShotsTableProps) {
   const [search, setSearch] = useState('')
@@ -177,13 +183,19 @@ export function ShotsTable({
 
   const activeSearch = serverPagination?.query ?? search
   const showSearch =
-    !hideBean && (serverPagination !== undefined || shots.length > PAGE_SIZE)
+    !hideToolbar &&
+    !hideBean &&
+    (serverPagination !== undefined || shots.length > PAGE_SIZE)
 
   const filtered = useMemo(() => {
     if (serverPagination) return shots
     const query = activeSearch.trim().toLowerCase()
     if (!query) return shots
-    return shots.filter((shot) => shot.bean?.name.toLowerCase().includes(query))
+    return shots.filter(
+      (shot) =>
+        shot.bean?.name.toLowerCase().includes(query) ||
+        shot.brewingMethod.name.toLowerCase().includes(query),
+    )
   }, [activeSearch, serverPagination, shots])
 
   const localPagination = useSortablePagination<Shot, SortKey>({
@@ -221,21 +233,21 @@ export function ShotsTable({
               setPage(1)
             }
           }}
-          placeholder="Search shots…"
-          ariaLabel="Search shots by bean name"
-          resultLabel={`${displayedTotal} ${displayedTotal === 1 ? 'shot' : 'shots'}`}
+          placeholder="Search brews…"
+          ariaLabel="Search brews by bean or method"
+          resultLabel={`${displayedTotal} ${displayedTotal === 1 ? 'brew' : 'brews'}`}
         />
       )}
 
       {sorted.length === 0 ? (
         <p className="py-4 text-sm text-muted-foreground">
           {activeSearch
-            ? `No shots match “${activeSearch}”.`
-            : 'No shots recorded yet.'}
+            ? `No brews match “${activeSearch}”.`
+            : 'No brews recorded yet.'}
         </p>
       ) : (
         <>
-          <ul className="space-y-3 md:hidden" aria-label="Recorded shots">
+          <ul className="space-y-3 md:hidden" aria-label="Recorded brews">
             {paginated.map((shot) => (
               <MobileShotCard
                 key={shot.id}
@@ -248,7 +260,7 @@ export function ShotsTable({
 
           <div className="hidden md:block">
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 z-10 bg-card">
                 <TableRow>
                   <SortableTableHead
                     label="Date"
@@ -264,6 +276,9 @@ export function ShotsTable({
                       onSort={() => handleSort('bean')}
                     />
                   )}
+                  <th className="h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground">
+                    Method
+                  </th>
                   <SortableTableHead
                     label="Dose"
                     align="right"
@@ -334,14 +349,14 @@ function MobileShotCard({
   const formatDate = useDateFormatter()
   const formatNumber = useNumberFormatter()
   const beanThumb = getBeanThumbnail(shot.bean)
-  const shotDate = formatDate(shot.createdAt)
+  const shotDate = formatDate(shot.brewedAt)
 
   return (
     <li className="list-none">
       <Link
         to="/shots/$shotId"
         params={{ shotId: String(shot.id) }}
-        aria-label={`View shot from ${shotDate}`}
+        aria-label={`View brew from ${shotDate}`}
         className={`${interactiveCardLinkClassName} flex items-center gap-3 rounded-xl border bg-card p-4 shadow-coffee hover:bg-accent/40`}
       >
         {!hideBean && beanThumb && (
@@ -363,13 +378,14 @@ function MobileShotCard({
                 variant="compact"
                 sizeClassName="size-3.5"
                 className="shrink-0"
-                ariaLabel="Shot rating"
+                ariaLabel="Brew rating"
               />
             ) : null}
           </div>
           {!hideBean && (
             <p className="truncate text-sm text-muted-foreground">
-              {shot.bean?.name ?? 'No bean recorded'}
+              {shot.bean?.name ?? 'No bean recorded'} ·{' '}
+              {shot.brewingMethod.name}
             </p>
           )}
           <p className="text-sm text-muted-foreground">
@@ -393,7 +409,7 @@ function ShotRow({
   const formatDate = useDateFormatter()
   const formatNumber = useNumberFormatter()
   const beanThumb = getBeanThumbnail(shot.bean)
-  const shotDate = formatDate(shot.createdAt)
+  const shotDate = formatDate(shot.brewedAt)
 
   return (
     <TableRow>
@@ -401,8 +417,8 @@ function ShotRow({
         <Link
           to="/shots/$shotId"
           params={{ shotId: String(shot.id) }}
-          className="inline-flex min-h-11 items-center rounded-sm text-link underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:min-h-0"
-          aria-label={`View shot from ${shotDate}`}
+          className="inline-flex min-h-11 items-center rounded-sm text-link underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [@media(hover:hover)_and_(pointer:fine)]:min-h-0"
+          aria-label={`View brew from ${shotDate}`}
         >
           {shotDate}
         </Link>
@@ -429,6 +445,7 @@ function ShotRow({
           )}
         </TableCell>
       )}
+      <TableCell>{shot.brewingMethod.name}</TableCell>
       <TableCell className="text-right">
         {shot.doseGrams ? `${formatNumber(shot.doseGrams)} g` : '-'}
       </TableCell>
@@ -446,7 +463,7 @@ function ShotRow({
               readOnly
               variant="compact"
               sizeClassName="size-3.5"
-              ariaLabel="Shot rating"
+              ariaLabel="Brew rating"
             />
           ) : (
             '-'

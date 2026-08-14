@@ -1,5 +1,6 @@
-import { Search } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { Search, X } from 'lucide-react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 interface CollectionToolbarProps {
@@ -9,6 +10,7 @@ interface CollectionToolbarProps {
   readonly ariaLabel: string
   readonly resultLabel?: ReactNode
   readonly actions?: ReactNode
+  readonly debounceMs?: number
 }
 
 export function CollectionToolbar({
@@ -18,7 +20,30 @@ export function CollectionToolbar({
   ariaLabel,
   resultLabel,
   actions,
+  debounceMs = 300,
 }: CollectionToolbarProps) {
+  const [draftValue, setDraftValue] = useState(value)
+  const onValueChangeRef = useRef(onValueChange)
+  const lastEmittedValue = useRef(value)
+
+  useEffect(() => {
+    onValueChangeRef.current = onValueChange
+  }, [onValueChange])
+
+  useEffect(() => {
+    setDraftValue(value)
+    lastEmittedValue.current = value
+  }, [value])
+
+  useEffect(() => {
+    if (draftValue === value || draftValue === lastEmittedValue.current) return
+    const timeout = window.setTimeout(() => {
+      lastEmittedValue.current = draftValue
+      onValueChangeRef.current(draftValue)
+    }, debounceMs)
+    return () => window.clearTimeout(timeout)
+  }, [debounceMs, draftValue, value])
+
   return (
     <div
       data-slot="collection-toolbar"
@@ -31,12 +56,28 @@ export function CollectionToolbar({
         />
         <Input
           type="search"
-          value={value}
-          onChange={(event) => onValueChange(event.target.value)}
+          value={draftValue}
+          onChange={(event) => setDraftValue(event.target.value)}
           placeholder={placeholder}
           aria-label={ariaLabel}
-          className="pl-9"
+          className="pr-11 pl-9"
         />
+        {draftValue ? (
+          <Button
+            type="button"
+            size="icon-sm"
+            variant="ghost"
+            aria-label={`Clear ${ariaLabel.toLowerCase()}`}
+            className="absolute top-1/2 right-0 -translate-y-1/2"
+            onClick={() => {
+              setDraftValue('')
+              lastEmittedValue.current = ''
+              onValueChangeRef.current('')
+            }}
+          >
+            <X aria-hidden="true" />
+          </Button>
+        ) : null}
       </div>
       {resultLabel || actions ? (
         <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
