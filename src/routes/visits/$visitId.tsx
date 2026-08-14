@@ -184,7 +184,7 @@ function VisitDetailPage() {
                       <Link
                         to="/beans/$beanId"
                         params={{ beanId: String(visit.bean.id) }}
-                        className="font-medium text-link hover:underline"
+                        className="inline-flex min-h-11 items-center rounded-md font-medium text-link hover:underline [@media(hover:hover)_and_(pointer:fine)]:min-h-0"
                       >
                         {visit.bean.name}
                       </Link>

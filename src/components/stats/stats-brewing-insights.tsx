@@ -447,7 +447,7 @@ export function BrewRhythmCard({
         </div>
         <Link
           to="/settings"
-          className="text-sm font-semibold text-link hover:underline"
+          className="-mx-2 inline-flex min-h-11 items-center rounded-md px-2 text-sm font-semibold text-link hover:underline [@media(hover:hover)_and_(pointer:fine)]:min-h-0"
         >
           Change statistics time zone
         </Link>

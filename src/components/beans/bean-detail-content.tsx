@@ -35,6 +35,7 @@ import {
   getProcessMethodLabel,
   getRoastLevelLabel,
 } from '@/lib/constants'
+import { cn } from '@/lib/utils'
 
 type Bean = {
   id: number
@@ -118,7 +119,7 @@ export function BeanDetailHeader({
             <Link
               to="/roasters/$roasterId"
               params={{ roasterId: String(bean.roasterRef.id) }}
-              className="font-bold text-link hover:underline"
+              className="inline-flex min-h-11 items-center rounded-md font-bold text-link hover:underline [@media(hover:hover)_and_(pointer:fine)]:min-h-0"
             >
               {bean.roasterRef.name}
             </Link>
@@ -290,7 +291,12 @@ export function BeanReadOnlyContent({
   const formatDate = useDateFormatter()
   const formatNumber = useNumberFormatter()
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+    <div
+      className={cn(
+        'grid gap-6',
+        bean.images.length > 0 && 'lg:grid-cols-[1fr_300px]',
+      )}
+    >
       <div className="space-y-6">
         {weightStats && (
           <Card>
@@ -361,7 +367,7 @@ export function BeanReadOnlyContent({
                     href={bean.shopUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-medium text-link hover:underline"
+                    className="inline-flex min-h-11 items-center rounded-md font-medium text-link hover:underline [@media(hover:hover)_and_(pointer:fine)]:min-h-0"
                   >
                     Visit shop →
                   </a>

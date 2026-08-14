@@ -11,7 +11,10 @@ import {
   type ChartConfig,
   ChartProvider,
 } from '@/components/ui/chart-context'
+import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+
+type ChartRenderStatus = 'loading' | 'ready' | 'unavailable'
 
 const ChartContainer = React.forwardRef<
   HTMLDivElement,
@@ -24,14 +27,48 @@ const ChartContainer = React.forwardRef<
 >(({ id, className, children, config, ...props }, ref) => {
   const uniqueId = React.useId()
   const chartId = `chart-${id || uniqueId.replace(/:/g, '')}`
+  const containerRef = React.useRef<HTMLDivElement>(null)
+  const [renderStatus, setRenderStatus] =
+    React.useState<ChartRenderStatus>('loading')
+
+  React.useImperativeHandle(ref, () => containerRef.current as HTMLDivElement)
+
+  React.useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const updateStatus = () => {
+      const surface = container.querySelector<SVGElement>('.recharts-surface')
+      if (!surface) return
+      const bounds = surface.getBoundingClientRect()
+      if (bounds.width > 0 && bounds.height > 0) setRenderStatus('ready')
+    }
+
+    updateStatus()
+    const observer = new MutationObserver(updateStatus)
+    observer.observe(container, { childList: true, subtree: true })
+    const unavailableTimer = window.setTimeout(
+      () =>
+        setRenderStatus((current) =>
+          current === 'ready' ? current : 'unavailable',
+        ),
+      8_000,
+    )
+
+    return () => {
+      observer.disconnect()
+      window.clearTimeout(unavailableTimer)
+    }
+  }, [])
 
   return (
     <ChartProvider config={config}>
       <div
         data-chart={chartId}
-        ref={ref}
+        ref={containerRef}
+        aria-busy={renderStatus === 'loading'}
         className={cn(
-          "flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-border/50 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-none [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-sector]:outline-none [&_.recharts-surface]:outline-none",
+          "relative flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-border/50 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-none [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-sector]:outline-none [&_.recharts-surface]:outline-none",
           className,
         )}
         {...props}
@@ -47,6 +84,23 @@ const ChartContainer = React.forwardRef<
         >
           {children}
         </RechartsPrimitive.ResponsiveContainer>
+        {renderStatus !== 'ready' ? (
+          <div
+            className="absolute inset-0 z-10 flex items-center justify-center overflow-hidden rounded-lg"
+            role="status"
+            aria-live="polite"
+          >
+            <Skeleton
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full bg-accent/70"
+            />
+            <span className="relative rounded-full bg-card px-4 py-2 font-semibold text-muted-foreground shadow-coffee">
+              {renderStatus === 'loading'
+                ? 'Loading chart…'
+                : 'Chart unavailable'}
+            </span>
+          </div>
+        ) : null}
       </div>
     </ChartProvider>
   )

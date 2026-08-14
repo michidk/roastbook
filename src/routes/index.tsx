@@ -69,7 +69,7 @@ function Dashboard() {
             <CardTitle>Recent brews</CardTitle>
             <Link
               to="/shots"
-              className="font-display text-sm font-bold text-link hover:underline"
+              className="-mx-2 inline-flex min-h-11 items-center rounded-md px-2 font-display text-sm font-bold text-link hover:underline [@media(hover:hover)_and_(pointer:fine)]:min-h-0"
             >
               View all
             </Link>

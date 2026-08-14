@@ -111,7 +111,7 @@ function BeanRankingCard({
               <Link
                 to="/beans/$beanId"
                 params={{ beanId: String(bean.beanId) }}
-                className="font-medium hover:underline"
+                className="inline-flex min-h-11 items-center rounded-md font-medium hover:underline [@media(hover:hover)_and_(pointer:fine)]:min-h-0"
               >
                 {bean.beanName}
               </Link>

@@ -198,7 +198,7 @@ function ShotDetailPage() {
     shot.brewTemperatureCelsius
       ? {
           label: 'Temperature',
-          value: `${formatNumber(shot.brewTemperatureCelsius)}°C`,
+          value: `${formatNumber(shot.brewTemperatureCelsius)} °C`,
         }
       : null,
     methodParameters.includes('brewPressureBar') && shot.brewPressureBar
@@ -352,7 +352,7 @@ function ShotDetailPage() {
           <Link
             to="/recipes/$recipeId"
             params={{ recipeId: String(shot.recipe.id) }}
-            className="font-semibold text-link hover:underline"
+            className="inline-flex min-h-11 items-center rounded-md font-semibold text-link hover:underline [@media(hover:hover)_and_(pointer:fine)]:min-h-0"
           >
             {shot.recipe.name}
           </Link>

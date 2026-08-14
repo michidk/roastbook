@@ -17,9 +17,9 @@ function NewRoasterPage() {
       <FormPageHeader
         title="Add roaster"
         leading={
-          <Button variant="ghost" size="icon" asChild>
-            <Link to="/roasters">
-              <ArrowLeft className="h-4 w-4" />
+          <Button variant="outline" size="icon" asChild>
+            <Link to="/roasters" aria-label="Back to roasters">
+              <ArrowLeft aria-hidden="true" />
             </Link>
           </Button>
         }

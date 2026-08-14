@@ -68,7 +68,7 @@ function SectionHeading({
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <h2 className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
+      <h2 className="font-display text-lg font-bold tracking-tight text-foreground">
         {title} · {count}
       </h2>
       {action}
@@ -204,7 +204,7 @@ function VisitsPage() {
 
             {featuredCoffeeShops.length > 0 && (
               <aside className="min-w-0 space-y-3 lg:col-span-1 lg:flex lg:min-h-0 lg:flex-col lg:space-y-0 lg:gap-3">
-                <h3 className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                <h3 className="font-display text-lg font-bold tracking-tight text-foreground">
                   Quick picks · {featuredCoffeeShops.length}
                 </h3>
                 <ScrollArea className="lg:h-[540px]">

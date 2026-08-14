@@ -507,7 +507,7 @@ function CoffeeShopReadOnlyContent({ coffeeShop }: { coffeeShop: CoffeeShop }) {
                       href={openStreetMapUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm font-medium text-link hover:underline"
+                      className="flex min-h-11 items-center gap-2 rounded-md text-sm font-medium text-link hover:underline [@media(hover:hover)_and_(pointer:fine)]:min-h-0"
                     >
                       <MapPinned aria-hidden className="size-4" />
                       Open in OpenStreetMap
@@ -518,7 +518,7 @@ function CoffeeShopReadOnlyContent({ coffeeShop }: { coffeeShop: CoffeeShop }) {
                       href={coffeeShop.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm font-medium text-link hover:underline"
+                      className="flex min-h-11 items-center gap-2 rounded-md text-sm font-medium text-link hover:underline [@media(hover:hover)_and_(pointer:fine)]:min-h-0"
                     >
                       <ExternalLink aria-hidden className="size-4" />
                       Website

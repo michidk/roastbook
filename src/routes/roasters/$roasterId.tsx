@@ -190,7 +190,7 @@ function RoasterDetailPage() {
                     href={roaster.website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm text-link hover:underline"
+                    className="flex min-h-11 items-center gap-2 rounded-md text-sm text-link hover:underline [@media(hover:hover)_and_(pointer:fine)]:min-h-0"
                   >
                     <ExternalLink className="h-4 w-4" />
                     Website
@@ -201,7 +201,7 @@ function RoasterDetailPage() {
                     href={`https://instagram.com/${roaster.instagramHandle.replace('@', '')}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm text-link hover:underline"
+                    className="flex min-h-11 items-center gap-2 rounded-md text-sm text-link hover:underline [@media(hover:hover)_and_(pointer:fine)]:min-h-0"
                   >
                     <ExternalLink className="h-4 w-4" />@
                     {roaster.instagramHandle.replace('@', '')}
@@ -245,7 +245,7 @@ function RoasterDetailPage() {
                       key={bean.id}
                       to="/beans/$beanId"
                       params={{ beanId: String(bean.id) }}
-                      className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 transition-colors"
+                      className="flex min-h-11 items-center justify-between rounded-md p-2 transition-colors hover:bg-muted/50"
                     >
                       <span className="font-medium">{bean.name}</span>
                       {bean.roastLevel && (

@@ -280,8 +280,8 @@ function ShotsPage() {
               </Button>
             </div>
           ) : null}
-          <Card>
-            <CardContent className="pt-6">
+          <Card className="max-md:overflow-visible max-md:bg-transparent max-md:py-0 max-md:shadow-none">
+            <CardContent className="pt-6 max-md:px-0 max-md:pt-0">
               <ShotsTable
                 shots={data.result.items}
                 hideToolbar

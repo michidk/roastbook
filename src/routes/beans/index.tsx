@@ -93,7 +93,7 @@ function BeansPage() {
         <>
           {collection.active.totalItems > 0 && (
             <section className="space-y-3">
-              <h2 className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
+              <h2 className="font-display text-lg font-bold tracking-tight text-foreground">
                 Active · {collection.active.totalItems}
               </h2>
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

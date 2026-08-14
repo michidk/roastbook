@@ -164,7 +164,7 @@ export function RecipePerformanceCard({
             <Link
               to="/recipes/$recipeId"
               params={{ recipeId: String(recipe.recipeId) }}
-              className="min-w-0 flex-1 truncate font-medium hover:underline"
+              className="inline-flex min-h-11 min-w-0 flex-1 items-center truncate rounded-md font-medium hover:underline [@media(hover:hover)_and_(pointer:fine)]:min-h-0"
             >
               {recipe.recipeName}
             </Link>

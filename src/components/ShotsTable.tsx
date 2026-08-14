@@ -5,7 +5,11 @@ import { ImageWithFallback } from '@/components/image-with-fallback'
 import { PaginationControls } from '@/components/pagination-controls'
 import { SortableTableHead } from '@/components/sortable-table-head'
 import { Button } from '@/components/ui/button'
-import { interactiveCardLinkClassName } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  interactiveCardLinkClassName,
+} from '@/components/ui/card'
 import { StarRating } from '@/components/ui/star-rating'
 import {
   Table,
@@ -380,46 +384,53 @@ function MobileShotCard({
         to="/shots/$shotId"
         params={{ shotId: String(shot.id) }}
         aria-label={`View brew from ${shotDate}`}
-        className={`${interactiveCardLinkClassName} flex items-center gap-3 rounded-xl border bg-card p-4 shadow-coffee hover:bg-accent/40`}
+        className={interactiveCardLinkClassName}
       >
-        {!hideBean && beanThumb && (
-          <ImageWithFallback
-            src={beanThumb}
-            alt=""
-            className="h-11 w-11 shrink-0 rounded-xl object-cover"
-          />
-        )}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <p className="font-display text-base font-bold text-foreground">
-              {shotDate}
-            </p>
-            {hasRating && shot.rating ? (
-              <StarRating
-                value={shot.rating}
-                readOnly
-                variant="compact"
-                sizeClassName="size-3.5"
-                className="shrink-0"
-                ariaLabel="Brew rating"
+        <Card
+          size="sm"
+          className="gap-0 border border-border py-0 transition-colors group-hover:bg-accent/40"
+        >
+          <CardContent className="flex items-center gap-3 p-4">
+            {!hideBean && beanThumb && (
+              <ImageWithFallback
+                src={beanThumb}
+                alt=""
+                className="h-11 w-11 shrink-0 rounded-xl object-cover"
               />
-            ) : null}
-          </div>
-          {!hideBean && (
-            <p className="truncate text-sm text-muted-foreground">
-              {shot.bean?.name ?? 'No bean recorded'} ·{' '}
-              {shot.brewingMethod.name}
-            </p>
-          )}
-          {shot.recipe ? (
-            <p className="truncate text-sm text-muted-foreground">
-              Recipe: {shot.recipe.name}
-            </p>
-          ) : null}
-          <p className="text-sm text-muted-foreground">
-            {formatShotSummary(shot, formatNumber)}
-          </p>
-        </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-display text-base font-bold text-foreground">
+                  {shotDate}
+                </p>
+                {hasRating && shot.rating ? (
+                  <StarRating
+                    value={shot.rating}
+                    readOnly
+                    variant="compact"
+                    sizeClassName="size-3.5"
+                    className="shrink-0"
+                    ariaLabel="Brew rating"
+                  />
+                ) : null}
+              </div>
+              {!hideBean && (
+                <p className="truncate text-sm text-muted-foreground">
+                  {shot.bean?.name ?? 'No bean recorded'} ·{' '}
+                  {shot.brewingMethod.name}
+                </p>
+              )}
+              {shot.recipe ? (
+                <p className="truncate text-sm text-muted-foreground">
+                  Recipe: {shot.recipe.name}
+                </p>
+              ) : null}
+              <p className="text-sm text-muted-foreground">
+                {formatShotSummary(shot, formatNumber)}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </Link>
     </li>
   )

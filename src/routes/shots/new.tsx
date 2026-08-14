@@ -341,7 +341,7 @@ function NewShotPage() {
         leading={
           <Button variant="outline" size="icon" asChild>
             <Link to="/shots" aria-label="Back to brews">
-              <ArrowLeft />
+              <ArrowLeft aria-hidden="true" />
             </Link>
           </Button>
         }

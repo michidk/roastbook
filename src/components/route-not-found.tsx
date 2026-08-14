@@ -15,7 +15,7 @@ export function RouteNotFound() {
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-accent">
             <Compass className="h-6 w-6 text-accent-foreground" />
           </div>
-          <CardTitle>Page not found</CardTitle>
+          <CardTitle as="h1">Page not found</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground text-center">

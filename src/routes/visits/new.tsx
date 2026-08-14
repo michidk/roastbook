@@ -1,4 +1,5 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { ArrowLeft } from 'lucide-react'
 import { type SyntheticEvent, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import {
@@ -8,6 +9,7 @@ import {
   FormPageHeader,
 } from '@/components/form/form-shell'
 import { Page } from '@/components/page-layout'
+import { Button } from '@/components/ui/button'
 import { VisitFields } from '@/components/visits/visit-fields'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useFormState } from '@/hooks/use-form-state'
@@ -139,6 +141,13 @@ function NewVisitPage() {
       <FormPageHeader
         title="Log visit"
         description="Record your café experience"
+        leading={
+          <Button variant="outline" size="icon" asChild>
+            <Link to="/visits" aria-label="Back to visits">
+              <ArrowLeft aria-hidden="true" />
+            </Link>
+          </Button>
+        }
       />
 
       <EntityForm onSubmit={handleSubmit}>

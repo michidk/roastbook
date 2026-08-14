@@ -87,7 +87,7 @@ function GearPage() {
 
           {archivedGear.length > 0 && (
             <Collapsible className="space-y-4">
-              <CollapsibleTrigger className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group">
+              <CollapsibleTrigger className="group -mx-2 flex min-h-11 items-center gap-2 rounded-md px-2 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 <ChevronDown className="h-4 w-4 transition-transform group-data-[open]:rotate-180" />
                 <span className="text-sm font-medium">
                   Archived ({archivedGear.length})
