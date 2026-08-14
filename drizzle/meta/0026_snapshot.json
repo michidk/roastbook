@@ -1,6 +1,6 @@
 {
-  "id": "a375eea9-1592-4f46-8524-b4433acfd043",
-  "prevId": "14cc58cf-4c17-4ce2-a156-8da78d8f7f77",
+  "id": "54c33d9f-2d7b-481f-9b80-dd4cbb0211b1",
+  "prevId": "a375eea9-1592-4f46-8524-b4433acfd043",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -117,6 +117,121 @@
         "ai_request_logs_status_check": {
           "name": "ai_request_logs_status_check",
           "value": "\"ai_request_logs\".\"status\" in ('in_progress', 'succeeded', 'failed', 'aborted')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.ai_usage": {
+      "name": "ai_usage",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "feature": {
+          "name": "feature",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "prompt_tokens": {
+          "name": "prompt_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cached_prompt_tokens": {
+          "name": "cached_prompt_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "completion_tokens": {
+          "name": "completion_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_tokens": {
+          "name": "total_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "estimated_cost_usd": {
+          "name": "estimated_cost_usd",
+          "type": "numeric(18, 10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "ai_usage_request_id_idx": {
+          "name": "ai_usage_request_id_idx",
+          "columns": [
+            {
+              "expression": "request_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "ai_usage_created_at_idx": {
+          "name": "ai_usage_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ai_usage_tokens_nonnegative_check": {
+          "name": "ai_usage_tokens_nonnegative_check",
+          "value": "\"ai_usage\".\"prompt_tokens\" >= 0\n        and \"ai_usage\".\"cached_prompt_tokens\" >= 0\n        and \"ai_usage\".\"cached_prompt_tokens\" <= \"ai_usage\".\"prompt_tokens\"\n        and \"ai_usage\".\"completion_tokens\" >= 0\n        and \"ai_usage\".\"total_tokens\" >= 0"
+        },
+        "ai_usage_cost_nonnegative_check": {
+          "name": "ai_usage_cost_nonnegative_check",
+          "value": "\"ai_usage\".\"estimated_cost_usd\" is null or \"ai_usage\".\"estimated_cost_usd\" >= 0"
         }
       },
       "isRLSEnabled": false
@@ -1052,6 +1167,13 @@
         },
         "is_favorite": {
           "name": "is_favorite",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "wants_to_visit": {
+          "name": "wants_to_visit",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
@@ -2045,23 +2167,33 @@
           "notNull": true,
           "default": "'UTC'"
         },
+        "default_list_view": {
+          "name": "default_list_view",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'cards'"
+        },
         "default_map_latitude": {
           "name": "default_map_latitude",
           "type": "double precision",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "default": 48.8566
         },
         "default_map_longitude": {
           "name": "default_map_longitude",
           "type": "double precision",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "default": 2.3522
         },
         "default_map_label": {
           "name": "default_map_label",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "default": "'Paris, France'"
         },
         "created_at": {
           "name": "created_at",
@@ -2099,6 +2231,10 @@
         "settings_number_format_check": {
           "name": "settings_number_format_check",
           "value": "\"settings\".\"number_format\" in ('decimal-point', 'decimal-comma', 'space-decimal-point', 'space-decimal-comma', 'apostrophe-decimal-point', 'apostrophe-decimal-comma')"
+        },
+        "settings_list_view_check": {
+          "name": "settings_list_view_check",
+          "value": "\"settings\".\"default_list_view\" in ('cards', 'table')"
         },
         "settings_map_location_check": {
           "name": "settings_map_location_check",
@@ -2538,6 +2674,36 @@
           "primaryKey": false,
           "notNull": false
         },
+        "bitterness": {
+          "name": "bitterness",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "acidity": {
+          "name": "acidity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sweetness": {
+          "name": "sweetness",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "body": {
+          "name": "body",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "astringency": {
+          "name": "astringency",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "notes": {
           "name": "notes",
           "type": "text",
@@ -2777,6 +2943,10 @@
           "name": "shots_rating_check",
           "value": "\"shots\".\"rating\" between 1 and 5"
         },
+        "shots_sensory_ratings_check": {
+          "name": "shots_sensory_ratings_check",
+          "value": "(\"shots\".\"bitterness\" is null or \"shots\".\"bitterness\" between 1 and 5)\n        and (\"shots\".\"acidity\" is null or \"shots\".\"acidity\" between 1 and 5)\n        and (\"shots\".\"sweetness\" is null or \"shots\".\"sweetness\" between 1 and 5)\n        and (\"shots\".\"body\" is null or \"shots\".\"body\" between 1 and 5)\n        and (\"shots\".\"astringency\" is null or \"shots\".\"astringency\" between 1 and 5)"
+        },
         "shots_measurements_nonnegative": {
           "name": "shots_measurements_nonnegative",
           "value": "(\"shots\".\"dose_grams\" is null or \"shots\".\"dose_grams\" >= 0)\n        and (\"shots\".\"brew_water_grams\" is null or \"shots\".\"brew_water_grams\" >= 0)\n        and (\"shots\".\"yield_grams\" is null or \"shots\".\"yield_grams\" >= 0)\n        and (\"shots\".\"shot_time_seconds\" is null or \"shots\".\"shot_time_seconds\" >= 0)\n        and (\"shots\".\"brew_temperature_celsius\" is null or \"shots\".\"brew_temperature_celsius\" >= 0)\n        and (\"shots\".\"preinfusion_time_seconds\" is null or \"shots\".\"preinfusion_time_seconds\" >= 0)\n        and (\"shots\".\"preinfusion_pressure_bar\" is null or \"shots\".\"preinfusion_pressure_bar\" >= 0)\n        and (\"shots\".\"bloom_time_seconds\" is null or \"shots\".\"bloom_time_seconds\" >= 0)\n        and (\"shots\".\"brew_pressure_bar\" is null or \"shots\".\"brew_pressure_bar\" >= 0)\n        and (\"shots\".\"flow_rate_ml_per_second\" is null or \"shots\".\"flow_rate_ml_per_second\" >= 0)\n        and (\"shots\".\"tamp_force_kg\" is null or \"shots\".\"tamp_force_kg\" >= 0)"
@@ -2815,6 +2985,12 @@
         "strength_axis": {
           "name": "strength_axis",
           "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hint": {
+          "name": "hint",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         }

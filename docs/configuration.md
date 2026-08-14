@@ -45,6 +45,12 @@ modules instead of reading the environment directly.
 Model values must be supported by the installed TanStack OpenAI adapter.
 Unsupported configured values fall back to the application defaults.
 
+Roastbook records raw AI inputs, normalized provider response events, errors,
+and token usage in PostgreSQL. These logs are available from the AI card at the
+bottom of Settings. Image-extraction logs include the complete base64 image
+payload, so the database and Settings page must remain behind the deployment's
+authentication boundary.
+
 ## Docker Compose authentication gate
 
 These variables configure the Hodor container rather than the Roastbook

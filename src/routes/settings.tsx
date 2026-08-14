@@ -26,6 +26,7 @@ import {
 } from '@/components/form/form-field'
 import { FormPageHeader, FormSection } from '@/components/form/form-shell'
 import { Page } from '@/components/page-layout'
+import { AiSettings } from '@/components/settings/ai-settings'
 import { MapLocationSettings } from '@/components/settings/map-location-settings'
 import { TasteTagSettings } from '@/components/settings/taste-tag-settings'
 import { Button } from '@/components/ui/button'
@@ -56,6 +57,7 @@ import {
   THEME_OPTIONS,
   usePreferencesStore,
 } from '@/lib/preferences-store'
+import { getAiRequestStats } from '@/lib/server/ai-request-logs'
 import { getInternalStats } from '@/lib/server/internal-stats'
 import {
   updateDateFormat,
@@ -69,11 +71,12 @@ import { getTasteTags } from '@/lib/server/taste-tags'
 
 export const Route = createFileRoute('/settings')({
   loader: async () => {
-    const [internalStats, tasteTags] = await Promise.all([
+    const [aiStats, internalStats, tasteTags] = await Promise.all([
+      getAiRequestStats(),
       getInternalStats(),
       getTasteTags(),
     ])
-    return { internalStats, tasteTags }
+    return { aiStats, internalStats, tasteTags }
   },
   component: SettingsPage,
 })
@@ -118,7 +121,7 @@ function useSettingMutation<Value>({
 }
 
 function SettingsPage() {
-  const { internalStats, tasteTags } = Route.useLoaderData()
+  const { aiStats, internalStats, tasteTags } = Route.useLoaderData()
   const savedSettings = useAppSettings()
   const formatNumber = useNumberFormatter()
   const router = useRouter()
@@ -450,6 +453,8 @@ function SettingsPage() {
           />
         </FormSection>
       </section>
+
+      <AiSettings stats={aiStats} />
 
       <Card size="sm" role="group" aria-labelledby="internal-stats">
         <CardHeader>

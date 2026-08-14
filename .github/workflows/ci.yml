@@ -60,11 +60,6 @@ jobs:
       - name: Type check
         run: bun run typecheck
 
-      - name: Check generated route tree
-        run: |
-          bun run generate-routes
-          git diff --exit-code -- src/routeTree.gen.ts
-
       - name: Validate Docker Compose
         env:
           HODOR_PASSWORD: ci-password
@@ -117,6 +112,9 @@ jobs:
 
       - name: Build production assets
         run: bun run build
+
+      - name: Check generated route tree
+        run: git diff --exit-code -- src/routeTree.gen.ts
 
       - name: Enforce client bundle budget
         run: bun run check:client-assets

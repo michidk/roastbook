@@ -6,6 +6,7 @@ import {
   doublePrecision,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   serial,
@@ -18,6 +19,7 @@ import {
   GEAR_TYPE_VALUES,
   ROAST_LEVEL_VALUES,
 } from '@/lib/domain-contracts'
+import type { JsonValue } from '@/lib/json-value'
 
 const timestamps = () => ({
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -130,6 +132,32 @@ export const aiUsage = pgTable(
     ),
     index('ai_usage_request_id_idx').on(table.requestId),
     index('ai_usage_created_at_idx').on(table.createdAt),
+  ],
+)
+
+export const aiRequestLogs = pgTable(
+  'ai_request_logs',
+  {
+    id: serial('id').primaryKey(),
+    requestType: text('request_type').notNull(),
+    model: text('model').notNull(),
+    status: text('status').default('in_progress').notNull(),
+    requestPayload: jsonb('request_payload').$type<JsonValue>().notNull(),
+    responsePayload: jsonb('response_payload').$type<JsonValue>(),
+    errorMessage: text('error_message'),
+    promptTokens: integer('prompt_tokens').default(0).notNull(),
+    completionTokens: integer('completion_tokens').default(0).notNull(),
+    totalTokens: integer('total_tokens').default(0).notNull(),
+    durationMs: integer('duration_ms'),
+    completedAt: timestamp('completed_at'),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    check(
+      'ai_request_logs_status_check',
+      sql`${table.status} in ('in_progress', 'succeeded', 'failed', 'aborted')`,
+    ),
+    index('ai_request_logs_created_at_idx').on(table.createdAt),
   ],
 )
 
