@@ -62,6 +62,11 @@ type WeightStats = {
   remainingWeight: number
   percentRemaining: number
 }
+type TopTasteTag = {
+  id: number
+  name: string
+  usageCount: number
+}
 
 export function BeanDetailHeader({
   bean,
@@ -272,11 +277,13 @@ export function BeanEditContent({
 export function BeanReadOnlyContent({
   bean,
   shotCount,
+  topTasteTags,
   weightStats,
   onImagesChange,
 }: {
   bean: Bean
   shotCount: number
+  topTasteTags: readonly TopTasteTag[]
   weightStats: WeightStats | null
   onImagesChange: () => void
 }) {
@@ -306,6 +313,30 @@ export function BeanReadOnlyContent({
                 {formatNumber(weightStats.usedWeight.toFixed(1))} g used across{' '}
                 {formatNumber(shotCount)} brew{shotCount !== 1 ? 's' : ''}
               </p>
+            </CardContent>
+          </Card>
+        )}
+        {topTasteTags.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Taste profile</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Most used taste tags across all shots
+              </p>
+              <ul className="flex flex-wrap gap-2">
+                {topTasteTags.map((tag) => (
+                  <li key={tag.id}>
+                    <Badge variant="secondary" className="gap-1.5">
+                      {tag.name}
+                      <span className="font-normal text-muted-foreground">
+                        {formatNumber(tag.usageCount)}
+                      </span>
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
             </CardContent>
           </Card>
         )}

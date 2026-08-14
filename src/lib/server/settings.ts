@@ -14,6 +14,7 @@ import {
   isTimeZone,
   type NumberFormat,
 } from '@/lib/app-settings'
+import { type CollectionView, isCollectionView } from '@/lib/collection-view'
 
 const defaultMapLocationSchema = z
   .object({
@@ -44,6 +45,11 @@ function timeZoneSchema(value: unknown): string {
   return value
 }
 
+function listViewSchema(value: unknown): CollectionView {
+  if (!isCollectionView(value)) throw new Error('Choose a supported list view')
+  return value
+}
+
 function toAppSettings(row: typeof settingsTable.$inferSelect): AppSettings {
   const latitude = row.defaultMapLatitude
   const longitude = row.defaultMapLongitude
@@ -56,6 +62,7 @@ function toAppSettings(row: typeof settingsTable.$inferSelect): AppSettings {
   return {
     defaultCurrency: currencySchema(row.defaultCurrency),
     dateFormat: dateFormatSchema(row.dateFormat),
+    defaultListView: listViewSchema(row.defaultListView),
     defaultMapLocation,
     numberFormat: numberFormatSchema(row.numberFormat),
     timeZone: timeZoneSchema(row.timeZone),
@@ -81,6 +88,7 @@ type EditableSettings = Pick<
   typeof settingsTable.$inferInsert,
   | 'defaultCurrency'
   | 'dateFormat'
+  | 'defaultListView'
   | 'numberFormat'
   | 'timeZone'
   | 'defaultMapLatitude'
@@ -130,6 +138,12 @@ export const updateTimeZone = createServerFn({ method: 'POST' })
   .validator(timeZoneSchema)
   .handler(({ data: timeZone }) =>
     upsertSettings({ timeZone }, 'Could not save the time zone'),
+  )
+
+export const updateDefaultListView = createServerFn({ method: 'POST' })
+  .validator(listViewSchema)
+  .handler(({ data: defaultListView }) =>
+    upsertSettings({ defaultListView }, 'Could not save the default list view'),
   )
 
 export const updateDefaultMapLocation = createServerFn({ method: 'POST' })

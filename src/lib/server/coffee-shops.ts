@@ -1,13 +1,17 @@
 import { createServerFn } from '@tanstack/react-start'
-import { count, desc, eq, ilike, sql } from 'drizzle-orm'
+import { and, count, desc, eq, ilike, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
-import { cafeVisits, coffeeShops } from '@/db/schema'
+import { cafeVisits, coffeeShopImages, coffeeShops } from '@/db/schema'
 import {
   escapedContainsPattern,
   resolvePagination,
 } from '@/lib/collection-query'
 import { expectReturnedRow } from '@/lib/domain-errors'
+import {
+  deleteWebsiteFaviconBestEffort,
+  refreshWebsiteFaviconBestEffort,
+} from '@/lib/server/favicon-cache.server'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
 import {
   nameSchema,
@@ -48,12 +52,14 @@ const coffeeShopUpdateSchema = coffeeShopCreateSchema.partial().extend({
   notes: notesSchema.nullable().optional(),
   rating: optionalNullableRatingSchema,
   isFavorite: z.boolean().optional(),
+  wantsToVisit: z.boolean().optional(),
 })
 
 const PLACES_PAGE_SIZE = 18
 const coffeeShopListSchema = z.object({
   page: z.number().int().min(1).max(100_000).default(1),
   query: z.string().trim().max(200).default(''),
+  list: z.enum(['all', 'favorites', 'want-to-visit']).default('all'),
 })
 
 function normalizeCoordinate(
@@ -90,14 +96,13 @@ function normalizeCoffeeShopInput<
 }
 
 export const getCoffeeShops = createServerFn({ method: 'GET' }).handler(
-  async () => {
-    return db.query.coffeeShops.findMany({
+  async () =>
+    db.query.coffeeShops.findMany({
       orderBy: [desc(coffeeShops.createdAt)],
       with: {
         images: true,
       },
-    })
-  },
+    }),
 )
 
 const coffeeShopOverviewSelection = {
@@ -109,10 +114,21 @@ const coffeeShopOverviewSelection = {
   latitude: coffeeShops.latitude,
   longitude: coffeeShops.longitude,
   website: coffeeShops.website,
+  updatedAt: coffeeShops.updatedAt,
   rating: coffeeShops.rating,
   isFavorite: coffeeShops.isFavorite,
+  wantsToVisit: coffeeShops.wantsToVisit,
   visitCount: sql<number>`count(${cafeVisits.id})::int`,
   latestVisitAt: sql<Date | null>`max(${cafeVisits.visitedAt})`,
+  // Correlated so the café photo can lead the list entry without dragging a
+  // second row per image through the visit aggregate.
+  imagePath: sql<string | null>`(
+    select ${coffeeShopImages.storagePath}
+    from ${coffeeShopImages}
+    where ${coffeeShopImages.coffeeShopId} = ${coffeeShops.id}
+    order by ${coffeeShopImages.id}
+    limit 1
+  )`,
 }
 
 function coffeeShopOverviewQuery() {
@@ -128,6 +144,7 @@ export const getCoffeeShopMapOverview = createServerFn({
 }).handler(async () =>
   coffeeShopOverviewQuery().orderBy(
     desc(coffeeShops.isFavorite),
+    desc(coffeeShops.wantsToVisit),
     desc(sql`max(${cafeVisits.visitedAt})`),
     coffeeShops.name,
   ),
@@ -137,15 +154,28 @@ export const getCoffeeShopPage = createServerFn({ method: 'GET' })
   .validator(coffeeShopListSchema)
   .handler(async ({ data }) => {
     const pattern = escapedContainsPattern(data.query)
-    const where = data.query
+    const queryWhere = data.query
       ? sql`${ilike(coffeeShops.name, pattern)}
           or ${ilike(coffeeShops.city, pattern)}
           or ${ilike(coffeeShops.country, pattern)}`
       : undefined
-    const countRows = await db
-      .select({ value: count() })
-      .from(coffeeShops)
-      .where(where)
+    const listWhere =
+      data.list === 'favorites'
+        ? eq(coffeeShops.isFavorite, true)
+        : data.list === 'want-to-visit'
+          ? eq(coffeeShops.wantsToVisit, true)
+          : undefined
+    const where = and(queryWhere, listWhere)
+    const [countRows, listCountRows] = await Promise.all([
+      db.select({ value: count() }).from(coffeeShops).where(where),
+      db
+        .select({
+          all: count(),
+          favorites: sql<number>`count(*) filter (where ${coffeeShops.isFavorite} = true)::int`,
+          wantToVisit: sql<number>`count(*) filter (where ${coffeeShops.wantsToVisit} = true)::int`,
+        })
+        .from(coffeeShops),
+    ])
     const totalItems = countRows[0]?.value ?? 0
     const pagination = resolvePagination(
       totalItems,
@@ -157,25 +187,31 @@ export const getCoffeeShopPage = createServerFn({ method: 'GET' })
       .where(where)
       .orderBy(
         desc(coffeeShops.isFavorite),
+        desc(coffeeShops.wantsToVisit),
         desc(sql`max(${cafeVisits.visitedAt})`),
         coffeeShops.name,
       )
       .limit(PLACES_PAGE_SIZE)
       .offset((page - 1) * PLACES_PAGE_SIZE)
-    return { items, ...pagination }
+    const listCounts = listCountRows[0] ?? {
+      all: 0,
+      favorites: 0,
+      wantToVisit: 0,
+    }
+    return { items, ...pagination, listCounts }
   })
 
 export const getCoffeeShop = createServerFn({ method: 'GET' })
   .validator(positiveIdSchema)
-  .handler(async ({ data: id }) => {
-    return db.query.coffeeShops.findFirst({
+  .handler(async ({ data: id }) =>
+    db.query.coffeeShops.findFirst({
       where: eq(coffeeShops.id, id),
       with: {
         images: true,
         cafeVisits: true,
       },
-    })
-  })
+    }),
+  )
 
 export const createCoffeeShop = createServerFn({ method: 'POST' })
   .validator((data: unknown) =>
@@ -183,7 +219,13 @@ export const createCoffeeShop = createServerFn({ method: 'POST' })
   )
   .handler(async ({ data }) => {
     const [coffeeShop] = await db.insert(coffeeShops).values(data).returning()
-    return expectReturnedRow(coffeeShop, 'Café')
+    const created = expectReturnedRow(coffeeShop, 'Café')
+    await refreshWebsiteFaviconBestEffort({
+      entityType: 'coffee-shops',
+      entityId: created.id,
+      website: created.website,
+    })
+    return created
   })
 
 export const updateCoffeeShop = createServerFn({ method: 'POST' })
@@ -197,9 +239,18 @@ export const updateCoffeeShop = createServerFn({ method: 'POST' })
       .set({ ...values, updatedAt: new Date() })
       .where(eq(coffeeShops.id, id))
       .returning()
-    return expectReturnedRow(coffeeShop, 'Café')
+    const updated = expectReturnedRow(coffeeShop, 'Café')
+    await refreshWebsiteFaviconBestEffort({
+      entityType: 'coffee-shops',
+      entityId: updated.id,
+      website: updated.website,
+    })
+    return updated
   })
 
 export const deleteCoffeeShop = createServerFn({ method: 'POST' })
   .validator(positiveIdSchema)
-  .handler(async ({ data: id }) => deleteEntityWithMedia('coffee-shops', id))
+  .handler(async ({ data: id }) => {
+    await deleteEntityWithMedia('coffee-shops', id)
+    await deleteWebsiteFaviconBestEffort('coffee-shops', id)
+  })

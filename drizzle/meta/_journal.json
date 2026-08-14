@@ -176,6 +176,13 @@
       "when": 1786732900218,
       "tag": "0024_jittery_adam_warlock",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1786739971636,
+      "tag": "0025_open_black_tom",
+      "breakpoints": true
     }
   ]
 }

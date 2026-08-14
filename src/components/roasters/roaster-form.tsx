@@ -5,6 +5,7 @@ import {
   createRoasterFormValues,
   roasterCreatePayload,
 } from '@/components/roasters/roaster-form-values'
+import { RoasterResearchAction } from '@/components/roasters/roaster-research-action'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
 import { getErrorMessage } from '@/lib/error-message'
@@ -50,6 +51,16 @@ export function RoasterForm({
         submittingLabel: 'Creating…',
       }}
     >
+      <div className="flex justify-end">
+        <RoasterResearchAction
+          currentData={form.values}
+          disabled={isSubmitting}
+          onApply={(updates) => {
+            form.patch(updates)
+            toast.success(`Applied ${Object.keys(updates).length} changes`)
+          }}
+        />
+      </div>
       <RoasterFields values={form.values} onChange={form.set} />
     </EntityForm>
   )

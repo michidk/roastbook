@@ -1,5 +1,15 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, asc, count, desc, eq, isNull, or, sql } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  isNull,
+  or,
+  type SQL,
+  sql,
+} from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
 import {
@@ -9,6 +19,7 @@ import {
   shotAccessoryGear,
   shots,
   shotTasteTags,
+  tasteTags,
 } from '@/db/schema'
 import {
   escapedContainsPattern,
@@ -34,6 +45,7 @@ import { assertValidUpdate, getShotUpdateErrors } from '@/lib/update-validation'
 type ShotCreateCandidate = ReturnType<typeof shotCreateSchema.parse>
 const SHOTS_PAGE_SIZE = 25
 const SHOT_GROUPS_PAGE_SIZE = 8
+const BEAN_SHOT_CHART_LIMIT = 100
 
 const shotListSchema = z.object({
   page: z.number().int().min(1).max(100_000).default(1),
@@ -44,6 +56,11 @@ const shotListSchema = z.object({
   direction: z.enum(['asc', 'desc']).default('desc'),
   methodId: positiveIdSchema.optional(),
   rating: z.number().int().min(0).max(5).optional(),
+  beanId: z.number().int().min(0).max(100_000).optional(),
+})
+
+const relatedShotListSchema = shotListSchema.omit({ beanId: true }).extend({
+  entityId: positiveIdSchema,
 })
 
 const shotGroupListSchema = shotListSchema.pick({
@@ -97,6 +114,11 @@ function getShotValues(
     beanId: data.beanId ?? null,
     ...projectShotParameters(data, enabledParameters),
     rating: data.rating ?? null,
+    bitterness: data.bitterness ?? null,
+    acidity: data.acidity ?? null,
+    sweetness: data.sweetness ?? null,
+    body: data.body ?? null,
+    astringency: data.astringency ?? null,
     notes: data.notes ?? null,
   }
 }
@@ -161,40 +183,137 @@ function shotSortExpression(sort: z.infer<typeof shotListSchema>['sort']) {
   }
 }
 
+function shotBeanCondition(beanId: number | undefined) {
+  if (beanId === undefined) return undefined
+  return beanId === 0 ? isNull(shots.beanId) : eq(shots.beanId, beanId)
+}
+
+async function loadShotPage(
+  data: Omit<z.infer<typeof shotListSchema>, 'beanId'>,
+  scope?: SQL,
+) {
+  const search = shotSearchCondition(data.query, data.methodId, data.rating)
+  const where = scope && search ? and(scope, search) : (scope ?? search)
+  const countRows = await db.select({ value: count() }).from(shots).where(where)
+  const totalItems = countRows[0]?.value ?? 0
+  const pagination = resolvePagination(totalItems, data.page, SHOTS_PAGE_SIZE)
+  const { page } = pagination
+  const sortExpression = shotSortExpression(data.sort)
+  const order =
+    data.direction === 'asc' ? asc(sortExpression) : desc(sortExpression)
+  const items = await db.query.shots.findMany({
+    where,
+    orderBy: [order, desc(shots.id)],
+    limit: SHOTS_PAGE_SIZE,
+    offset: (page - 1) * SHOTS_PAGE_SIZE,
+    columns: {
+      id: true,
+      brewedAt: true,
+      doseGrams: true,
+      yieldGrams: true,
+      shotTimeSeconds: true,
+      rating: true,
+    },
+    with: {
+      bean: { columns: { id: true, name: true }, with: { images: true } },
+      brewingMethod: { columns: { id: true, name: true } },
+      recipe: { columns: { id: true, name: true } },
+    },
+  })
+
+  return { items, ...pagination }
+}
+
 export const getShotPage = createServerFn({ method: 'GET' })
   .validator(shotListSchema)
   .handler(async ({ data }) => {
-    const where = shotSearchCondition(data.query, data.methodId, data.rating)
-    const countRows = await db
-      .select({ value: count() })
-      .from(shots)
-      .where(where)
-    const totalItems = countRows[0]?.value ?? 0
-    const pagination = resolvePagination(totalItems, data.page, SHOTS_PAGE_SIZE)
-    const { page } = pagination
-    const sortExpression = shotSortExpression(data.sort)
-    const order =
-      data.direction === 'asc' ? asc(sortExpression) : desc(sortExpression)
-    const items = await db.query.shots.findMany({
-      where,
-      orderBy: [order, desc(shots.id)],
-      limit: SHOTS_PAGE_SIZE,
-      offset: (page - 1) * SHOTS_PAGE_SIZE,
-      columns: {
-        id: true,
-        brewedAt: true,
-        doseGrams: true,
-        yieldGrams: true,
-        shotTimeSeconds: true,
-        rating: true,
-      },
-      with: {
-        bean: { columns: { id: true, name: true }, with: { images: true } },
-        brewingMethod: { columns: { id: true, name: true } },
-      },
-    })
+    const [page, scopeLabel] = await Promise.all([
+      loadShotPage(data, shotBeanCondition(data.beanId)),
+      data.beanId === undefined
+        ? null
+        : data.beanId === 0
+          ? 'No bean recorded'
+          : db.query.beans
+              .findFirst({
+                where: eq(beans.id, data.beanId),
+                columns: { name: true },
+              })
+              .then((bean) => bean?.name ?? 'Unknown beans'),
+    ])
 
-    return { items, ...pagination }
+    return { ...page, scopeLabel }
+  })
+
+export const getBeanShotPage = createServerFn({ method: 'GET' })
+  .validator(relatedShotListSchema)
+  .handler(async ({ data }) =>
+    loadShotPage(data, eq(shots.beanId, data.entityId)),
+  )
+
+export const getGearShotPage = createServerFn({ method: 'GET' })
+  .validator(relatedShotListSchema)
+  .handler(async ({ data }) =>
+    loadShotPage(
+      data,
+      or(
+        eq(shots.machineId, data.entityId),
+        eq(shots.grinderId, data.entityId),
+        eq(shots.basketId, data.entityId),
+        sql`exists (
+          select 1 from ${shotAccessoryGear}
+          where ${shotAccessoryGear.shotId} = ${shots.id}
+            and ${shotAccessoryGear.gearId} = ${data.entityId}
+        )`,
+      ),
+    ),
+  )
+
+export const getBeanShotAnalytics = createServerFn({ method: 'GET' })
+  .validator(positiveIdSchema)
+  .handler(async ({ data: beanId }) => {
+    const tagUsageCount = sql<number>`count(${shotTasteTags.id})::int`
+    const [totals, chartShots, topTasteTags] = await Promise.all([
+      db
+        .select({
+          totalShots: count(),
+          usedWeightGrams: sql<string>`coalesce(sum(${shots.doseGrams}), 0)::text`,
+        })
+        .from(shots)
+        .where(eq(shots.beanId, beanId)),
+      db.query.shots.findMany({
+        where: eq(shots.beanId, beanId),
+        orderBy: [desc(shots.brewedAt), desc(shots.id)],
+        limit: BEAN_SHOT_CHART_LIMIT,
+        columns: {
+          id: true,
+          brewedAt: true,
+          doseGrams: true,
+          yieldGrams: true,
+          grindSetting: true,
+          shotTimeSeconds: true,
+        },
+      }),
+      db
+        .select({
+          id: tasteTags.id,
+          name: tasteTags.name,
+          usageCount: tagUsageCount,
+        })
+        .from(shotTasteTags)
+        .innerJoin(shots, eq(shotTasteTags.shotId, shots.id))
+        .innerJoin(tasteTags, eq(shotTasteTags.tasteTagId, tasteTags.id))
+        .where(eq(shots.beanId, beanId))
+        .groupBy(tasteTags.id, tasteTags.name)
+        .orderBy(desc(tagUsageCount), asc(tasteTags.name))
+        .limit(5),
+    ])
+
+    return {
+      totalShots: totals[0]?.totalShots ?? 0,
+      usedWeightGrams: totals[0]?.usedWeightGrams ?? '0',
+      chartShots,
+      topTasteTags,
+    }
   })
 
 export const getShotGroups = createServerFn({ method: 'GET' })
@@ -254,6 +373,7 @@ export const getShotGroups = createServerFn({ method: 'GET' })
             rating: true,
           },
           with: {
+            recipe: { columns: { id: true, name: true } },
             bean: {
               columns: { id: true, name: true },
               with: { images: true },

@@ -12,6 +12,7 @@ import {
 import { GearReadOnlyContent } from '@/components/gear/gear-read-only-content'
 import { MachineSettingsDiffModal } from '@/components/gear/machine-settings-diff-modal'
 import { Page } from '@/components/page-layout'
+import type { ShotsTableServerPagination } from '@/components/ShotsTable'
 import { Button } from '@/components/ui/button'
 import type { ExtractedMachineSettings } from '@/lib/ai'
 import { getErrorMessage } from '@/lib/error-message'
@@ -21,19 +22,21 @@ import {
   researchMachineSettings,
   updateGear,
 } from '@/lib/server/gear'
-import type { getShotsByGear } from '@/lib/server/shots'
+import type { getGearShotPage } from '@/lib/server/shots'
 
 type Gear = Awaited<ReturnType<typeof getGearById>>
-type Shots = Awaited<ReturnType<typeof getShotsByGear>>
+type Shots = Awaited<ReturnType<typeof getGearShotPage>>['items']
 
 export function GearDetailPage({
   gear,
   shots,
+  shotsPagination,
   researchEnabled,
   detailRouteId,
 }: {
   gear: Gear
   shots: Shots
+  shotsPagination: ShotsTableServerPagination
   researchEnabled: boolean
   detailRouteId: string
 }) {
@@ -166,7 +169,11 @@ export function GearDetailPage({
               onImagesChange={invalidateDetail}
             />
           )}
-          <GearReadOnlyContent gear={gear} shots={shots} />
+          <GearReadOnlyContent
+            gear={gear}
+            shots={shots}
+            shotsPagination={shotsPagination}
+          />
         </>
       )}
       {researchedSettings ? (

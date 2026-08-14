@@ -20,13 +20,15 @@ import {
 } from '@/hooks/use-local-date-time-input'
 import { localDateTimeInputToDate } from '@/lib/date-input'
 import { focusFirstInvalidControl } from '@/lib/form-validation'
-import { shotParameterPayload } from '@/lib/new-shot-payload'
+import {
+  sensoryRatingPayload,
+  shotParameterPayload,
+} from '@/lib/new-shot-payload'
 import type { getActiveBeans } from '@/lib/server/beans'
 import type { getBrewingMethods } from '@/lib/server/brewing-methods'
 import type { getGear } from '@/lib/server/gear'
 import { type getShot, updateShot } from '@/lib/server/shots'
 import type { getTasteTags } from '@/lib/server/taste-tags'
-import { isNegativeTasteTag } from '@/lib/taste-tags'
 import { getShotUpdateErrors } from '@/lib/update-validation'
 
 type Shot = NonNullable<Awaited<ReturnType<typeof getShot>>>
@@ -54,6 +56,11 @@ export function ShotEditForm({
   const [values, setValues] = useState<ShotFormValues>(() => ({
     ...shotFormValuesFrom(shot),
     rating: shot.rating ?? 0,
+    bitterness: shot.bitterness ?? 0,
+    acidity: shot.acidity ?? 0,
+    sweetness: shot.sweetness ?? 0,
+    body: shot.body ?? 0,
+    astringency: shot.astringency ?? 0,
     notes: shot.notes ?? '',
   }))
   const [tasteTagIds, setTasteTagIds] = useState(
@@ -82,6 +89,7 @@ export function ShotEditForm({
           ? shot.recipeId
           : null,
       rating: values.rating || null,
+      ...sensoryRatingPayload(values),
       notes: values.notes || null,
       tasteTagIds,
     }
@@ -105,8 +113,6 @@ export function ShotEditForm({
     }
   }
 
-  const positive = editData.tasteTags.filter((tag) => !isNegativeTasteTag(tag))
-  const negative = editData.tasteTags.filter(isNegativeTasteTag)
   const beans =
     shot.bean && !editData.beans.some((bean) => bean.id === shot.bean?.id)
       ? [shot.bean, ...editData.beans]
@@ -186,10 +192,13 @@ export function ShotEditForm({
           onChange: (value) => set('notes', value),
         }}
         tags={{
-          negative,
-          positive,
+          options: editData.tasteTags,
           selectedIds: tasteTagIds,
           onToggle: toggleTag,
+        }}
+        sensory={{
+          values,
+          onChange: (key, value) => set(key, value),
         }}
       />
     </EntityForm>

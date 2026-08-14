@@ -40,6 +40,7 @@ describe('server validation schemas', () => {
 
   test('validates complete shot payloads at runtime', () => {
     const valid = shotCreateSchema.parse({
+      recipeId: 4,
       brewingMethodId: 1,
       doseGrams: '18.00',
       ratioBasis: 'target_yield',
@@ -47,6 +48,7 @@ describe('server validation schemas', () => {
       accessoryGearIds: [2, 3],
     })
     expect(valid.brewingMethodId).toBe(1)
+    expect(valid.recipeId).toBe(4)
     expect(() =>
       shotCreateSchema.parse({ brewingMethodId: -1, rating: 6 }),
     ).toThrow()

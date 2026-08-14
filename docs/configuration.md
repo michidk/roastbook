@@ -37,10 +37,10 @@ modules instead of reading the environment directly.
 
 | Variable | Default | Required | Description |
 | --- | --- | --- | --- |
-| `OPENAI_API_KEY` | — | No | Enables image extraction and research features |
+| `OPENAI_API_KEY` | — | No | Enables all optional AI features |
 | `OPENAI_BASE_URL` | OpenAI | No | Compatible API base URL |
 | `OPENAI_VISION_MODEL` | `gpt-4o` | No | Model used for image extraction |
-| `OPENAI_RESEARCH_MODEL` | `gpt-4o` | No | Web research model |
+| `OPENAI_RESEARCH_MODEL` | `gpt-4o` | No | Research/recommendation model |
 
 Model values must be supported by the installed TanStack OpenAI adapter.
 Unsupported configured values fall back to the application defaults.

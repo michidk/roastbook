@@ -29,6 +29,16 @@ export function shotParameterPayload(values: ShotFormValues) {
   }
 }
 
+export function sensoryRatingPayload(values: ShotFormValues) {
+  return {
+    bitterness: values.bitterness || null,
+    acidity: values.acidity || null,
+    sweetness: values.sweetness || null,
+    body: values.body || null,
+    astringency: values.astringency || null,
+  }
+}
+
 export function newShotPayload(
   values: ShotFormValues,
   tasteTagIds: readonly number[],
@@ -42,6 +52,7 @@ export function newShotPayload(
     brewedAt: brewedAt ?? undefined,
     recipeId: options?.recipeId ? Number(options.recipeId) : null,
     rating: toNullableRating(values.rating),
+    ...sensoryRatingPayload(values),
     notes: values.notes || null,
     tasteTagIds,
   }

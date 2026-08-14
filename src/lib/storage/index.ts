@@ -4,7 +4,7 @@ import { LocalStorageProvider } from './local'
 import { S3StorageProvider } from './s3'
 import type { StorageConfig, StorageProvider } from './types'
 
-export type { StorageProvider }
+export type { StorageProvider, StoredObject } from './types'
 
 let storageInstance: StorageProvider | null = null
 

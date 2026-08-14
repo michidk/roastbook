@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { ExternalLink, Heart, MapPin, Plus, X } from 'lucide-react'
+import { Bookmark, ExternalLink, Heart, MapPin, Plus, X } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -42,6 +42,11 @@ export function VisitsMapPlaceCard({
         <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-secondary text-coffee">
           {place.isFavorite ? (
             <Heart className="size-4 fill-current text-favorite" aria-hidden />
+          ) : place.wantsToVisit ? (
+            <Bookmark
+              className="size-4 fill-current text-primary"
+              aria-hidden
+            />
           ) : (
             <MapPin className="size-4" aria-hidden />
           )}
@@ -54,9 +59,15 @@ export function VisitsMapPlaceCard({
             >
               {place.name}
             </h3>
-            <Badge variant={place.isFavorite ? 'favorite' : 'secondary'}>
-              {place.isFavorite ? 'Favorite' : 'Saved'}
-            </Badge>
+            {place.isFavorite ? (
+              <Badge variant="favorite">Favorite</Badge>
+            ) : null}
+            {place.wantsToVisit ? (
+              <Badge variant="default">Want to visit</Badge>
+            ) : null}
+            {!place.isFavorite && !place.wantsToVisit ? (
+              <Badge variant="secondary">Saved</Badge>
+            ) : null}
           </div>
           <p className="mt-1 text-sm leading-snug text-muted-foreground">
             {place.address ||

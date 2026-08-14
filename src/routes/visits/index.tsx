@@ -83,8 +83,12 @@ function VisitsPage() {
   const visits = visitPage.items
   const featuredCoffeeShops = [
     ...coffeeShops.filter((shop) => shop.isFavorite),
+    ...coffeeShops.filter((shop) => !shop.isFavorite && shop.wantsToVisit),
     ...coffeeShops
-      .filter((shop) => !shop.isFavorite && shop.latestVisitAt !== null)
+      .filter(
+        (shop) =>
+          !shop.isFavorite && !shop.wantsToVisit && shop.latestVisitAt !== null,
+      )
       .slice(0, RECENT_PLACES_LIMIT),
   ].slice(0, RECENT_PLACES_LIMIT)
   const updateSearch = (

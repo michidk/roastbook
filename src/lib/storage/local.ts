@@ -8,7 +8,7 @@ import {
   writeFile,
 } from 'node:fs/promises'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
-import type { StorageConfig, StorageProvider } from './types'
+import type { StorageConfig, StorageProvider, StoredObject } from './types'
 
 export class InvalidStoragePathError extends Error {
   constructor() {
@@ -123,8 +123,13 @@ export class LocalStorageProvider implements StorageProvider {
   }
 
   async list(prefix?: string): Promise<string[]> {
+    return (await this.listObjects(prefix)).map(({ path }) => path)
+  }
+
+  async listObjects(prefix?: string): Promise<StoredObject[]> {
     const startPath = prefix ? this.resolvePath(prefix) : this.basePath
-    const paths: string[] = []
+    const storageRoot = this.basePath
+    const objects: StoredObject[] = []
 
     async function walk(directory: string): Promise<void> {
       let entries: Dirent[]
@@ -138,13 +143,17 @@ export class LocalStorageProvider implements StorageProvider {
       for (const entry of entries) {
         const fullPath = resolve(directory, entry.name)
         if (entry.isDirectory()) await walk(fullPath)
-        else if (entry.isFile()) paths.push(fullPath)
+        else if (entry.isFile()) {
+          const metadata = await stat(fullPath)
+          objects.push({
+            path: relative(storageRoot, fullPath).replaceAll('\\', '/'),
+            sizeBytes: metadata.size,
+          })
+        }
       }
     }
 
     await walk(startPath)
-    return paths.map((path) =>
-      relative(this.basePath, path).replaceAll('\\', '/'),
-    )
+    return objects
   }
 }

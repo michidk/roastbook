@@ -102,9 +102,9 @@ const nullableShotDecimal = boundedDecimalStringSchema(
   .optional()
 
 export const shotCreateSchema = z.object({
+  recipeId: optionalNullablePositiveIdSchema,
   brewingMethodId: positiveIdSchema,
   brewedAt: notFutureDateSchema.optional(),
-  recipeId: optionalNullablePositiveIdSchema,
   beanId: optionalNullablePositiveIdSchema,
   machineId: optionalNullablePositiveIdSchema,
   doseGrams: boundedDecimalStringSchema(
@@ -170,10 +170,19 @@ export const shotCreateSchema = z.object({
   tampForceKg: nullableShotDecimal,
   accessoryGearIds: z.array(positiveIdSchema).max(100).optional(),
   rating: optionalNullableRatingSchema,
+  bitterness: optionalNullableRatingSchema,
+  acidity: optionalNullableRatingSchema,
+  sweetness: optionalNullableRatingSchema,
+  body: optionalNullableRatingSchema,
+  astringency: optionalNullableRatingSchema,
   notes: notesSchema.nullable().optional(),
   tasteTagIds: z.array(positiveIdSchema).max(100).optional(),
 })
 
 export const shotUpdateSchema = shotCreateSchema.extend({
   id: positiveIdSchema,
+})
+
+export const tasteTagCreateSchema = z.object({
+  name: z.string().trim().min(1).max(50),
 })

@@ -12,7 +12,6 @@ import { DRINK_TYPE_OPTIONS } from '@/lib/constants'
 import type { getActiveBeans } from '@/lib/server/beans'
 import type { getCoffeeShops } from '@/lib/server/coffee-shops'
 import type { getTasteTags } from '@/lib/server/taste-tags'
-import { isNegativeTasteTag } from '@/lib/taste-tags'
 
 export type VisitFieldValues = CafeVisitFormValues & {
   readonly coffeeShopId: string
@@ -53,11 +52,6 @@ export function VisitFields({
   autoFocusCoffeeShop,
   onFieldChange,
 }: VisitFieldsProps) {
-  const negativeTags = choices.tasteTags.filter(isNegativeTasteTag)
-  const positiveTags = choices.tasteTags.filter(
-    (tag) => !isNegativeTasteTag(tag),
-  )
-
   return (
     <>
       <FormSection title="Location">
@@ -133,8 +127,7 @@ export function VisitFields({
           onChange: (value) => onFieldChange('notes', value),
         }}
         tags={{
-          negative: negativeTags,
-          positive: positiveTags,
+          options: choices.tasteTags,
           selectedIds: tasting.selectedTagIds,
           onToggle: tasting.onToggleTag,
         }}

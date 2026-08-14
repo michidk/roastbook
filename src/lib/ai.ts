@@ -45,6 +45,62 @@ function getOpenAIConfig() {
 
 const aiText = z.string().trim().min(1).max(500)
 
+const ROASTER_INFO_FIELDS = defineStructuredResearchFields({
+  name: {
+    description: 'The official trading name of the coffee roaster.',
+    jsonType: 'string',
+    schema: aiText,
+    examples: ['Square Mile Coffee Roasters', 'Onyx Coffee Lab'],
+  },
+  location: {
+    description:
+      'The roaster headquarters or primary roasting location as city and, when useful, state or region. Do not include the country.',
+    jsonType: 'string',
+    schema: aiText,
+    examples: ['London', 'Rogers, Arkansas'],
+  },
+  country: {
+    description: 'The country of the headquarters or primary roastery.',
+    jsonType: 'string',
+    schema: aiText,
+    examples: ['United Kingdom', 'United States'],
+  },
+  website: {
+    description: 'The canonical HTTPS URL of the roaster’s official website.',
+    jsonType: 'string',
+    format: 'absolute HTTPS URL',
+    schema: z.url().max(2_048),
+    examples: ['https://squaremilecoffee.com/'],
+  },
+  instagramHandle: {
+    description:
+      'The official Instagram username only, without an @ sign or URL.',
+    jsonType: 'string',
+    format: 'Instagram username without @',
+    schema: z
+      .string()
+      .trim()
+      .min(1)
+      .max(100)
+      .regex(/^@?[A-Za-z0-9._]+$/)
+      .transform((value) => value.replace(/^@/, '')),
+    examples: ['squaremilecoffee', 'onyxcoffeelab'],
+  },
+  notes: {
+    description:
+      'A concise factual overview of the roaster, such as founding context, sourcing approach, or coffee focus. Avoid marketing claims and contact details.',
+    jsonType: 'string',
+    schema: z.string().trim().min(1).max(10_000),
+    examples: [
+      'Independent specialty coffee roaster founded in London in 2008, focused on seasonal single-origin coffees and blends.',
+    ],
+  },
+})
+
+export type ExtractedRoasterInfo = StructuredResearchResult<
+  typeof ROASTER_INFO_FIELDS
+>
+
 const BEAN_INFO_FIELDS = defineStructuredResearchFields({
   name: {
     description: 'The coffee or blend name.',
@@ -402,6 +458,30 @@ async function researchBeanFromWebImpl(
 }
 
 export const researchBeanFromWeb = createServerOnlyFn(researchBeanFromWebImpl)
+
+async function researchRoasterFromWebImpl(
+  roasterName: string,
+): Promise<ExtractedRoasterInfo> {
+  return researchStructuredDataFromWebImpl({
+    subject: 'coffee roaster',
+    searchQuery: `"${roasterName}" coffee roaster official website Instagram location`,
+    role: 'You are a specialty coffee research assistant',
+    task: 'Identify the specified coffee roaster and research its official company details.',
+    fields: ROASTER_INFO_FIELDS,
+    evidenceRules: [
+      'Prefer the roaster’s official website, About page, and official Instagram profile.',
+      'Use reputable specialty coffee sources only to fill gaps left by official sources.',
+      'Verify that every result belongs to the exact roaster and not a similarly named café or coffee company.',
+      'Use the headquarters or primary roasting location, not a retailer, stockist, or temporary event location.',
+    ],
+    logLabel: 'roaster',
+    logContext: { roasterName },
+  })
+}
+
+export const researchRoasterFromWeb = createServerOnlyFn(
+  researchRoasterFromWebImpl,
+)
 
 async function researchMachineSettingsFromWebImpl(
   name: string,

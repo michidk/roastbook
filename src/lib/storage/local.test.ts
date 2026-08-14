@@ -33,6 +33,9 @@ describe('LocalStorageProvider', () => {
     expect(await provider.exists(storagePath)).toBe(true)
     expect(await provider.list()).toEqual([storagePath])
     expect(await provider.list('beans')).toEqual([storagePath])
+    expect(await provider.listObjects()).toEqual([
+      { path: storagePath, sizeBytes: 6 },
+    ])
     expect(await (await provider.download(storagePath)).text()).toBe('coffee')
 
     await provider.delete(storagePath)

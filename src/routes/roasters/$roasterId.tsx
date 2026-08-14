@@ -14,11 +14,13 @@ import {
   createRoasterFormValues,
   roasterUpdatePayload,
 } from '@/components/roasters/roaster-form-values'
+import { RoasterResearchAction } from '@/components/roasters/roaster-research-action'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { WebsiteLogo } from '@/components/website-logo'
 import { getRoastLevelLabel } from '@/lib/constants'
 import { deleteRoaster, getRoaster, updateRoaster } from '@/lib/server/roasters'
 
@@ -85,7 +87,20 @@ function RoasterDetailPage() {
     <Page width="form">
       <PageHeader
         size="compact"
-        title={isEditing ? formData.name || roaster.name : roaster.name}
+        title={
+          <span className="inline-flex items-center gap-3">
+            <WebsiteLogo
+              entityType="roasters"
+              entityId={roaster.id}
+              website={roaster.website}
+              updatedAt={roaster.updatedAt}
+              className="size-12"
+            />
+            <span>
+              {isEditing ? formData.name || roaster.name : roaster.name}
+            </span>
+          </span>
+        }
         description={
           (isEditing ? formData.location : roaster.location)
             ? [
@@ -143,13 +158,25 @@ function RoasterDetailPage() {
       />
 
       {isEditing ? (
-        <RoasterFields
-          values={formData}
-          onChange={(key, value) =>
-            setFormData((current) => ({ ...current, [key]: value }))
-          }
-          idPrefix="roaster-edit"
-        />
+        <>
+          <div className="flex justify-end">
+            <RoasterResearchAction
+              currentData={formData}
+              disabled={isSaving}
+              onApply={(updates) => {
+                setFormData((current) => ({ ...current, ...updates }))
+                toast.success(`Applied ${Object.keys(updates).length} changes`)
+              }}
+            />
+          </div>
+          <RoasterFields
+            values={formData}
+            onChange={(key, value) =>
+              setFormData((current) => ({ ...current, [key]: value }))
+            }
+            idPrefix="roaster-edit"
+          />
+        </>
       ) : (
         <>
           {(roaster.website || roaster.instagramHandle) && (

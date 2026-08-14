@@ -33,6 +33,7 @@ const shotsSearchSchema = z.object({
   view: z.enum(['list', 'grouped']).default('list').catch('list'),
   methodId: z.number().int().positive().optional().catch(undefined),
   rating: z.number().int().min(0).max(5).optional().catch(undefined),
+  beanId: z.number().int().min(0).max(100_000).optional().catch(undefined),
 })
 
 export const Route = createFileRoute('/shots/')({
@@ -45,6 +46,7 @@ export const Route = createFileRoute('/shots/')({
     view: search.view,
     methodId: search.methodId,
     rating: search.rating,
+    beanId: search.beanId,
   }),
   loader: async ({ deps }) => {
     if (deps.view === 'grouped') {
@@ -72,6 +74,7 @@ export const Route = createFileRoute('/shots/')({
           direction: deps.direction,
           methodId: deps.methodId,
           rating: deps.rating,
+          beanId: deps.beanId,
         },
       }),
     ])
@@ -101,7 +104,9 @@ function ShotsPage() {
       replace: options?.replace,
     })
   const hasActiveFilters =
-    Boolean(search.query || search.methodId) || search.rating !== undefined
+    Boolean(search.query || search.methodId) ||
+    search.rating !== undefined ||
+    search.beanId !== undefined
 
   return (
     <Page>
@@ -117,6 +122,7 @@ function ShotsPage() {
                   updateSearch({
                     view: nextGrouped ? 'grouped' : 'list',
                     page: 1,
+                    beanId: undefined,
                   })
                 }
               />
@@ -215,11 +221,31 @@ function ShotsPage() {
                         )}
                       </CardTitle>
                     </div>
-                    <CardAction className="self-center">
+                    <CardAction className="flex items-center gap-2 self-center">
                       <span className="text-sm font-semibold text-muted-foreground">
-                        {group.totalShots} brew
-                        {group.totalShots === 1 ? '' : 's'}
+                        {group.shots.length < group.totalShots
+                          ? `Latest ${group.shots.length} of ${group.totalShots} brews`
+                          : `${group.totalShots} brew${group.totalShots === 1 ? '' : 's'}`}
                       </span>
+                      {group.shots.length < group.totalShots && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            updateSearch({
+                              view: 'list',
+                              beanId: group.bean?.id ?? 0,
+                              page: 1,
+                              query: '',
+                              sort: 'date',
+                              direction: 'desc',
+                            })
+                          }
+                        >
+                          View all
+                        </Button>
+                      )}
                     </CardAction>
                   </CardHeader>
                   <CardContent>
@@ -238,38 +264,59 @@ function ShotsPage() {
           )}
         </div>
       ) : (
-        <Card>
-          <CardContent className="pt-6">
-            <ShotsTable
-              shots={data.result.items}
-              hideToolbar
-              serverPagination={{
-                page: data.result.page,
-                totalPages: data.result.totalPages,
-                totalItems: data.result.totalItems,
-                query: search.query,
-                sortKey: search.sort,
-                sortDirection: search.direction,
-                onPageChange: (page) => updateSearch({ page }),
-                onQueryChange: (query) =>
-                  updateSearch({ query, page: 1 }, { replace: true }),
-                onSort: (sort) =>
-                  updateSearch({
-                    sort,
-                    direction:
-                      search.sort === sort
-                        ? search.direction === 'asc'
-                          ? 'desc'
-                          : 'asc'
-                        : sort === 'date' || sort === 'rating'
-                          ? 'desc'
-                          : 'asc',
-                    page: 1,
-                  }),
-              }}
-            />
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          {data.result.scopeLabel ? (
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm text-muted-foreground">
+                Showing brews for {data.result.scopeLabel}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => updateSearch({ beanId: undefined, page: 1 })}
+              >
+                Clear filter
+              </Button>
+            </div>
+          ) : null}
+          <Card>
+            <CardContent className="pt-6">
+              <ShotsTable
+                shots={data.result.items}
+                hideToolbar
+                serverPagination={{
+                  page: data.result.page,
+                  totalPages: data.result.totalPages,
+                  totalItems: data.result.totalItems,
+                  query: search.query,
+                  scopeLabel: data.result.scopeLabel,
+                  sortKey: search.sort,
+                  sortDirection: search.direction,
+                  onPageChange: (page) => updateSearch({ page }),
+                  onQueryChange: (query) =>
+                    updateSearch({ query, page: 1 }, { replace: true }),
+                  onClearScope: data.result.scopeLabel
+                    ? () => updateSearch({ beanId: undefined, page: 1 })
+                    : undefined,
+                  onSort: (sort) =>
+                    updateSearch({
+                      sort,
+                      direction:
+                        search.sort === sort
+                          ? search.direction === 'asc'
+                            ? 'desc'
+                            : 'asc'
+                          : sort === 'date' || sort === 'rating'
+                            ? 'desc'
+                            : 'asc',
+                      page: 1,
+                    }),
+                }}
+              />
+            </CardContent>
+          </Card>
+        </div>
       )}
     </Page>
   )

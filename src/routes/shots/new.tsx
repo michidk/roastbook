@@ -1,13 +1,18 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, History } from 'lucide-react'
+import { ArrowLeft, BookOpen, History } from 'lucide-react'
 import { type SyntheticEvent, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { BeanCard } from '@/components/beans/bean-card'
 import { BeanPicker } from '@/components/beans/bean-picker'
 import { CreatableCombobox } from '@/components/form/creatable-combobox'
-import { InputField, TextareaField } from '@/components/form/form-field'
+import {
+  InputField,
+  SelectField,
+  TextareaField,
+} from '@/components/form/form-field'
 import { FormErrorSummary, FormSection } from '@/components/form/form-shell'
 import { Page, PageHeader } from '@/components/page-layout'
+import { SensoryRatingFields } from '@/components/shots/sensory-rating-fields'
 import {
   availableGearForShot,
   EMPTY_SHOT_FORM_VALUES,
@@ -18,7 +23,17 @@ import {
 import { ShotTimer, type ShotTimerHandle } from '@/components/shots/shot-timer'
 import { TasteTagSelector } from '@/components/shots/taste-tag-selector'
 import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
+import {
+  Dialog,
+  DialogBody,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { StarRating } from '@/components/ui/star-rating'
 import {
   useCurrentLocalDateTimeLimit,
@@ -31,7 +46,11 @@ import { newShotPayload } from '@/lib/new-shot-payload'
 import { getActiveBeans } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getGear } from '@/lib/server/gear'
-import { getRecipes } from '@/lib/server/recipes'
+import {
+  getRecipes,
+  saveShotAsRecipe,
+  updateRecipeFromShot,
+} from '@/lib/server/recipes'
 import { createShot, getLastShotForBeanAndMethod } from '@/lib/server/shots'
 import {
   getBeanSuggestions,
@@ -39,7 +58,6 @@ import {
   getLastBeansByBrewingMethod,
 } from '@/lib/server/suggestions'
 import { getTasteTags } from '@/lib/server/taste-tags'
-import { isNegativeTasteTag } from '@/lib/taste-tags'
 import { getShotUpdateErrors } from '@/lib/update-validation'
 
 export const Route = createFileRoute('/shots/new')({
@@ -78,6 +96,18 @@ export const Route = createFileRoute('/shots/new')({
   component: NewShotPage,
 })
 
+function currentTastingValues(current: ShotFormValues) {
+  return {
+    rating: current.rating,
+    bitterness: current.bitterness,
+    acidity: current.acidity,
+    sweetness: current.sweetness,
+    body: current.body,
+    astringency: current.astringency,
+    notes: current.notes,
+  }
+}
+
 function NewShotPage() {
   const {
     beans,
@@ -107,6 +137,9 @@ function NewShotPage() {
   const [recipeId, setRecipeId] = useState('')
   const [brewedAt, setBrewedAt] = useLocalDateTimeInput(defaultBrewedAt)
   const latestBrewedAt = useCurrentLocalDateTimeLimit()
+  const [recipeTarget, setRecipeTarget] = useState('new')
+  const [recipeName, setRecipeName] = useState('')
+  const [isRecipeDialogOpen, setIsRecipeDialogOpen] = useState(false)
   const [selectedTags, setSelectedTags] = useState<number[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoadingLastShot, setIsLoadingLastShot] = useState(false)
@@ -162,6 +195,8 @@ function NewShotPage() {
     setIsDirty(true)
     setTimerKey((current) => current + 1)
     setRecipeId('')
+    setRecipeTarget('new')
+    setRecipeName('')
     setValues((current) => ({
       ...current,
       brewingMethodId,
@@ -175,14 +210,15 @@ function NewShotPage() {
 
   const loadRecipe = (id: string) => {
     setRecipeId(id)
+    setRecipeTarget(id ? `update:${id}` : 'new')
+    setRecipeName('')
     const recipe = recipes.find((item) => String(item.id) === id)
     if (!recipe) return
     setIsDirty(true)
     setTimerKey((current) => current + 1)
     setValues((current) => ({
       ...shotFormValuesFrom(recipe),
-      rating: current.rating,
-      notes: current.notes,
+      ...currentTastingValues(current),
     }))
     toast.success(`Loaded ${recipe.name}`)
   }
@@ -204,10 +240,11 @@ function NewShotPage() {
       setValues((current) => ({
         ...shotFormValuesFrom(shot),
         beanId: current.beanId,
-        rating: current.rating,
-        notes: current.notes,
+        ...currentTastingValues(current),
       }))
       setRecipeId('')
+      setRecipeTarget('new')
+      setRecipeName('')
       setIsDirty(true)
       setTimerKey((current) => current + 1)
       toast.success('Loaded the last brew for these beans and method')
@@ -220,9 +257,10 @@ function NewShotPage() {
     }
   }
 
-  const handleSubmit = async (event: SyntheticEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const formElement = event.currentTarget
+  const saveShot = async (
+    targetRecipe: string | null,
+    formElement?: HTMLFormElement,
+  ) => {
     const timerValue = hasShotTimer ? timerRef.current?.getValue() : undefined
     const submittedValues =
       timerValue === undefined
@@ -235,14 +273,46 @@ function NewShotPage() {
     const errors = getShotUpdateErrors({ id: 1, ...data })
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) {
-      focusFirstInvalidControl(formElement)
+      if (formElement) focusFirstInvalidControl(formElement)
       return
     }
 
     setIsSubmitting(true)
     try {
-      await createShot({ data })
+      const shot = await createShot({ data })
       setIsDirty(false)
+
+      try {
+        if (targetRecipe === 'new') {
+          const recipe = await saveShotAsRecipe({
+            data: {
+              shotId: shot.id,
+              name: recipeName.trim(),
+              linkShot: !recipeId,
+            },
+          })
+          if (!recipe) throw new Error('Could not create the recipe')
+        } else if (targetRecipe?.startsWith('update:')) {
+          await updateRecipeFromShot({
+            data: {
+              shotId: shot.id,
+              recipeId: Number(targetRecipe.slice('update:'.length)),
+              linkShot: !recipeId,
+            },
+          })
+        }
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? `Brew saved, but the recipe was not: ${error.message}`
+            : 'Brew saved, but the recipe could not be updated',
+        )
+        await navigate({
+          to: '/shots/$shotId',
+          params: { shotId: String(shot.id) },
+        })
+        return
+      }
       await navigate({ to: '/shots' })
     } catch (error) {
       toast.error(
@@ -251,6 +321,18 @@ function NewShotPage() {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const handleSubmit = async (event: SyntheticEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    await saveShot(null, event.currentTarget)
+  }
+
+  const handleRecipeSubmit = async (event: SyntheticEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    if (recipeTarget === 'new' && !recipeName.trim()) return
+    await saveShot(recipeTarget)
   }
 
   const beanOptions =
@@ -265,8 +347,6 @@ function NewShotPage() {
   const availableRecipes = recipes.filter(
     (recipe) => String(recipe.brewingMethodId) === values.brewingMethodId,
   )
-  const positiveTags = tasteTags.filter((tag) => !isNegativeTasteTag(tag))
-  const negativeTags = tasteTags.filter(isNegativeTasteTag)
 
   return (
     <Page>
@@ -372,29 +452,31 @@ function NewShotPage() {
             errors={fieldErrors}
             onChange={set}
           />
-          <FormSection title="Tasting notes">
-            <div className="space-y-2">
-              <Label>Rating</Label>
-              <StarRating
-                value={values.rating}
-                onChange={(rating) => set('rating', rating)}
+          <FormSection title="Taste profile">
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                <span className="text-sm font-medium">Overall rating</span>
+                <StarRating
+                  value={values.rating}
+                  onChange={(rating) => set('rating', rating)}
+                  sizeClassName="size-5"
+                  ariaLabel="Shot rating"
+                />
+              </div>
+              <SensoryRatingFields
+                values={values}
+                onChange={(key, value) => set(key, value)}
               />
             </div>
             <TasteTagSelector
-              label="Positive"
-              tags={positiveTags}
-              selected={selectedTags}
-              onToggle={toggleTag}
-            />
-            <TasteTagSelector
-              label="Issues"
-              tags={negativeTags}
+              label="Flavor tags"
+              tags={tasteTags}
               selected={selectedTags}
               onToggle={toggleTag}
             />
             <TextareaField
               id="notes"
-              label="Notes"
+              label="Tasting notes"
               value={values.notes}
               onChange={(value) => set('notes', value)}
               placeholder="How was it?"
@@ -411,6 +493,95 @@ function NewShotPage() {
               onCommit={(value) => set('shotTimeSeconds', value)}
             />
           ) : null}
+          <Dialog
+            open={isRecipeDialogOpen}
+            onOpenChange={setIsRecipeDialogOpen}
+          >
+            <DialogTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  className="w-full"
+                  disabled={!values.brewingMethodId || isSubmitting}
+                />
+              }
+            >
+              <BookOpen />
+              Save into recipe
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Save brew into a recipe</DialogTitle>
+                <DialogDescription>
+                  Save the brew and store its final bean, equipment, and brewing
+                  values in a new or existing recipe.
+                </DialogDescription>
+              </DialogHeader>
+              <form
+                onSubmit={handleRecipeSubmit}
+                className="grid min-h-0 grid-rows-[1fr_auto]"
+              >
+                <DialogBody>
+                  <SelectField
+                    id="shot-recipe-target"
+                    label="Save values to"
+                    value={recipeTarget}
+                    onChange={setRecipeTarget}
+                    options={[
+                      { value: 'new', label: 'A new recipe' },
+                      ...availableRecipes.map((recipe) => ({
+                        value: `update:${recipe.id}`,
+                        label:
+                          recipe.id === selectedRecipe?.id
+                            ? `${recipe.name} (loaded)`
+                            : recipe.name,
+                      })),
+                    ]}
+                  />
+                  {recipeTarget === 'new' ? (
+                    <InputField
+                      id="new-shot-recipe-name"
+                      label="New recipe name"
+                      value={recipeName}
+                      onChange={setRecipeName}
+                      required
+                      autoFocus
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      The selected recipe’s current values will be replaced. Its
+                      name will stay the same.
+                    </p>
+                  )}
+                </DialogBody>
+                <DialogFooter>
+                  <DialogClose
+                    render={
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={isSubmitting}
+                      />
+                    }
+                  >
+                    Cancel
+                  </DialogClose>
+                  <Button
+                    type="submit"
+                    disabled={
+                      (recipeTarget === 'new' && !recipeName.trim()) ||
+                      isSubmitting
+                    }
+                    aria-busy={isSubmitting}
+                  >
+                    {isSubmitting ? 'Saving…' : 'Save brew and recipe'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
           <Button
             type="submit"
             size="lg"

@@ -68,6 +68,13 @@ export const PAPER_FILTER_OPTIONS = [
 
 export type PaperFilterPosition = (typeof PAPER_FILTER_OPTIONS)[number]['value']
 
+export const DISTRIBUTION_METHOD_OPTIONS = [
+  { value: 'WDT', label: 'WDT' },
+  { value: 'Blind shaker', label: 'Blind shaker' },
+  { value: 'Distribution tool', label: 'Distribution tool' },
+  { value: 'Stockfleth move', label: 'Stockfleth move' },
+] as const
+
 export type ShotParameterValues = {
   readonly brewingMethodId: number
   readonly beanId: number | null

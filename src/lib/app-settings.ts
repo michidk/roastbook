@@ -1,3 +1,4 @@
+import type { CollectionView } from '@/lib/collection-view'
 import { CURRENCIES } from '@/lib/constants'
 
 export type Currency = (typeof CURRENCIES)[number]['value']
@@ -55,6 +56,7 @@ export type DefaultMapLocation = {
 export type AppSettings = {
   readonly defaultCurrency: Currency
   readonly dateFormat: DateFormat
+  readonly defaultListView: CollectionView
   readonly defaultMapLocation: DefaultMapLocation | null
   readonly numberFormat: NumberFormat
   readonly timeZone: string

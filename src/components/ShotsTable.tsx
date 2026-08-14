@@ -4,12 +4,14 @@ import { CollectionToolbar } from '@/components/collection-toolbar'
 import { ImageWithFallback } from '@/components/image-with-fallback'
 import { PaginationControls } from '@/components/pagination-controls'
 import { SortableTableHead } from '@/components/sortable-table-head'
+import { Button } from '@/components/ui/button'
 import { interactiveCardLinkClassName } from '@/components/ui/card'
 import { StarRating } from '@/components/ui/star-rating'
 import {
   Table,
   TableBody,
   TableCell,
+  TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
@@ -32,6 +34,10 @@ type Shot = {
     id: number
     name: string
   }
+  recipe: {
+    id: number
+    name: string
+  } | null
   bean: {
     id: number
     name: string
@@ -42,21 +48,25 @@ type Shot = {
   } | null
 }
 
+export interface ShotsTableServerPagination {
+  readonly page: number
+  readonly totalPages: number
+  readonly totalItems: number
+  readonly query: string
+  readonly scopeLabel?: string | null
+  readonly sortKey: SortKey
+  readonly sortDirection: SortDirection
+  readonly onPageChange: (page: number) => void
+  readonly onQueryChange: (query: string) => void
+  readonly onClearScope?: () => void
+  readonly onSort: (key: SortKey) => void
+}
+
 interface ShotsTableProps {
   shots: Shot[]
   hideBean?: boolean
   hideToolbar?: boolean
-  serverPagination?: {
-    readonly page: number
-    readonly totalPages: number
-    readonly totalItems: number
-    readonly query: string
-    readonly sortKey: SortKey
-    readonly sortDirection: SortDirection
-    readonly onPageChange: (page: number) => void
-    readonly onQueryChange: (query: string) => void
-    readonly onSort: (key: SortKey) => void
-  }
+  serverPagination?: ShotsTableServerPagination
 }
 
 const PAGE_SIZE = 25
@@ -235,7 +245,19 @@ export function ShotsTable({
           }}
           placeholder="Search brews…"
           ariaLabel="Search brews by bean or method"
-          resultLabel={`${displayedTotal} ${displayedTotal === 1 ? 'brew' : 'brews'}`}
+          resultLabel={`${displayedTotal} ${displayedTotal === 1 ? 'brew' : 'brews'}${serverPagination?.scopeLabel ? ` · ${serverPagination.scopeLabel}` : ''}`}
+          actions={
+            serverPagination?.scopeLabel && serverPagination.onClearScope ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={serverPagination.onClearScope}
+              >
+                Clear filter
+              </Button>
+            ) : undefined
+          }
         />
       )}
 
@@ -279,6 +301,7 @@ export function ShotsTable({
                   <th className="h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground">
                     Method
                   </th>
+                  <TableHead>Recipe</TableHead>
                   <SortableTableHead
                     label="Dose"
                     align="right"
@@ -388,6 +411,11 @@ function MobileShotCard({
               {shot.brewingMethod.name}
             </p>
           )}
+          {shot.recipe ? (
+            <p className="truncate text-sm text-muted-foreground">
+              Recipe: {shot.recipe.name}
+            </p>
+          ) : null}
           <p className="text-sm text-muted-foreground">
             {formatShotSummary(shot, formatNumber)}
           </p>
@@ -412,16 +440,19 @@ function ShotRow({
   const shotDate = formatDate(shot.brewedAt)
 
   return (
-    <TableRow>
+    <TableRow className="group relative cursor-pointer">
       <TableCell className="font-medium">
         <Link
           to="/shots/$shotId"
           params={{ shotId: String(shot.id) }}
-          className="inline-flex min-h-11 items-center rounded-sm text-link underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [@media(hover:hover)_and_(pointer:fine)]:min-h-0"
+          className="absolute inset-0 z-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
           aria-label={`View brew from ${shotDate}`}
         >
-          {shotDate}
+          <span className="sr-only">View brew from {shotDate}</span>
         </Link>
+        <span className="relative text-link underline-offset-4 group-hover:underline">
+          {shotDate}
+        </span>
       </TableCell>
       {!hideBean && (
         <TableCell>
@@ -429,7 +460,7 @@ function ShotRow({
             <Link
               to="/beans/$beanId"
               params={{ beanId: String(shot.bean.id) }}
-              className="flex w-fit items-center gap-2 rounded-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="relative z-10 flex w-fit items-center gap-2 rounded-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {beanThumb && (
                 <ImageWithFallback
@@ -446,6 +477,19 @@ function ShotRow({
         </TableCell>
       )}
       <TableCell>{shot.brewingMethod.name}</TableCell>
+      <TableCell>
+        {shot.recipe ? (
+          <Link
+            to="/recipes/$recipeId"
+            params={{ recipeId: String(shot.recipe.id) }}
+            className="relative z-10 inline-flex rounded-sm text-link underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {shot.recipe.name}
+          </Link>
+        ) : (
+          '-'
+        )}
+      </TableCell>
       <TableCell className="text-right">
         {shot.doseGrams ? `${formatNumber(shot.doseGrams)} g` : '-'}
       </TableCell>

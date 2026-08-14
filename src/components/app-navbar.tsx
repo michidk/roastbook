@@ -101,7 +101,7 @@ function DesktopCreateButton() {
       <DropdownMenuTrigger>
         <Button className="gap-1.5">
           <Plus className="h-4 w-4" />
-          Create
+          New
           <ChevronDown className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>

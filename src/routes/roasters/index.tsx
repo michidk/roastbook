@@ -1,28 +1,22 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { Plus, Store } from 'lucide-react'
 import { z } from 'zod'
+import {
+  type CollectionColumn,
+  type CollectionEntry,
+  CollectionList,
+} from '@/components/collection/collection-list'
+import { CollectionViewToggle } from '@/components/collection/collection-view-toggle'
 import { CollectionToolbar } from '@/components/collection-toolbar'
 import { EmptyState } from '@/components/EmptyState'
 import { Page, PageHeader } from '@/components/page-layout'
 import { PaginationControls } from '@/components/pagination-controls'
 import { RouteError } from '@/components/route-error'
 import { ListPending } from '@/components/route-pending'
-import { SortableTableHead } from '@/components/sortable-table-head'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  interactiveCardLinkClassName,
-} from '@/components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { WebsiteLogo } from '@/components/website-logo'
+import { useCollectionView } from '@/hooks/use-collection-view'
 import { getRoasterPage } from '@/lib/server/roasters'
 
 const roasterSearchSchema = z.object({
@@ -57,23 +51,79 @@ function getRoasterLocation(roaster: Roaster): string {
   return [roaster.location, roaster.country].filter(Boolean).join(', ')
 }
 
+function toEntry(roaster: Roaster): CollectionEntry {
+  return {
+    id: roaster.id,
+    title: roaster.name,
+    subtitle: getRoasterLocation(roaster) || 'Location not set',
+    meta: roaster.notes,
+    media: {
+      kind: 'custom',
+      render: (sizeClassName) => (
+        <WebsiteLogo
+          entityType="roasters"
+          entityId={roaster.id}
+          website={roaster.website}
+          updatedAt={roaster.updatedAt}
+          className={sizeClassName}
+        />
+      ),
+    },
+    trailing: (
+      <Badge variant="secondary">
+        {roaster.beanCount} {roaster.beanCount === 1 ? 'bean' : 'beans'}
+      </Badge>
+    ),
+    to: '/roasters/$roasterId',
+    params: { roasterId: String(roaster.id) },
+  }
+}
+
 function RoastersPage() {
   const pageData = Route.useLoaderData()
   const search = Route.useSearch()
   const navigate = useNavigate({ from: '/roasters/' })
+  const { view, setView, isReady } = useCollectionView('roasters')
   const updateSearch = (values: Partial<typeof search>) =>
     navigate({ search: (current) => ({ ...current, ...values }) })
-  const handleSort = (sort: SortKey) =>
+  const handleSort = (key: string) =>
     updateSearch({
-      sort,
+      sort: key as SortKey,
       direction:
-        search.sort === sort
+        search.sort === key
           ? search.direction === 'asc'
             ? 'desc'
             : 'asc'
           : 'asc',
       page: 1,
     })
+
+  const columns: readonly CollectionColumn<Roaster>[] = [
+    {
+      key: 'location',
+      header: 'Location',
+      sortKey: 'location',
+      cell: (roaster) => getRoasterLocation(roaster) || '—',
+    },
+    {
+      key: 'beans',
+      header: 'Beans',
+      align: 'right',
+      sortKey: 'beans',
+      cell: (roaster) =>
+        roaster.beanCount > 0 ? (
+          <Badge variant="secondary">{roaster.beanCount}</Badge>
+        ) : (
+          '—'
+        ),
+    },
+    {
+      key: 'notes',
+      header: 'Notes',
+      cellClassName: 'max-w-[420px] truncate',
+      cell: (roaster) => roaster.notes || '—',
+    },
+  ]
 
   return (
     <Page>
@@ -106,6 +156,14 @@ function RoastersPage() {
             placeholder="Search roasters…"
             ariaLabel="Search roasters"
             resultLabel={`${pageData.totalItems} ${pageData.totalItems === 1 ? 'roaster' : 'roasters'}`}
+            actions={
+              <CollectionViewToggle
+                value={view}
+                onValueChange={setView}
+                disabled={!isReady}
+                label="Roaster list view"
+              />
+            }
           />
 
           {pageData.totalItems === 0 ? (
@@ -113,53 +171,18 @@ function RoastersPage() {
               No roasters match “{search.query}”.
             </p>
           ) : (
-            <>
-              <div className="grid gap-3 md:hidden">
-                {pageData.items.map((roaster) => (
-                  <RoasterMobileCard key={roaster.id} roaster={roaster} />
-                ))}
-              </div>
-              <Card className="hidden md:flex">
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <SortableTableHead
-                          label="Name"
-                          active={search.sort === 'name'}
-                          direction={search.direction}
-                          onSort={() => handleSort('name')}
-                        />
-                        <SortableTableHead
-                          label="Location"
-                          active={search.sort === 'location'}
-                          direction={search.direction}
-                          onSort={() => handleSort('location')}
-                        />
-                        <SortableTableHead
-                          label="Beans"
-                          align="right"
-                          active={search.sort === 'beans'}
-                          direction={search.direction}
-                          onSort={() => handleSort('beans')}
-                        />
-                        <TableHead>Notes</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {pageData.items.map((roaster) => (
-                        <RoasterRow
-                          key={roaster.id}
-                          roaster={roaster}
-                          hasLocation
-                          hasNotes
-                        />
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </>
+            <CollectionList
+              view={view}
+              items={pageData.items}
+              getEntry={toEntry}
+              columns={columns}
+              titleSortKey="name"
+              sort={{
+                key: search.sort,
+                direction: search.direction,
+                onSort: handleSort,
+              }}
+            />
           )}
 
           {pageData.totalPages > 1 && (
@@ -172,82 +195,5 @@ function RoastersPage() {
         </div>
       )}
     </Page>
-  )
-}
-
-function RoasterRow({
-  roaster,
-  hasLocation,
-  hasNotes,
-}: {
-  roaster: Roaster
-  hasLocation: boolean
-  hasNotes: boolean
-}) {
-  const beanCount = roaster.beanCount
-  const location = getRoasterLocation(roaster)
-
-  return (
-    <TableRow>
-      <TableCell className="font-display font-bold text-foreground">
-        <Link
-          to="/roasters/$roasterId"
-          params={{ roasterId: String(roaster.id) }}
-          className="inline-flex min-h-11 items-center rounded-sm text-link underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          {roaster.name}
-        </Link>
-      </TableCell>
-      {hasLocation && (
-        <TableCell className="text-muted-foreground">
-          {location || '—'}
-        </TableCell>
-      )}
-      <TableCell className="text-right">
-        {beanCount > 0 ? (
-          <Badge variant="secondary">{beanCount}</Badge>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        )}
-      </TableCell>
-      {hasNotes && (
-        <TableCell className="max-w-[420px] truncate text-muted-foreground">
-          {roaster.notes || '—'}
-        </TableCell>
-      )}
-    </TableRow>
-  )
-}
-
-function RoasterMobileCard({ roaster }: { readonly roaster: Roaster }) {
-  const location = getRoasterLocation(roaster)
-
-  return (
-    <Link
-      to="/roasters/$roasterId"
-      params={{ roasterId: String(roaster.id) }}
-      className={interactiveCardLinkClassName}
-    >
-      <Card size="sm" className="h-full">
-        <CardContent className="space-y-2">
-          <div className="flex items-start justify-between gap-3">
-            <h2 className="font-display text-base font-bold text-foreground">
-              {roaster.name}
-            </h2>
-            <Badge variant="secondary">
-              {roaster.beanCount} {roaster.beanCount === 1 ? 'bean' : 'beans'}
-            </Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {location || 'Location not set'}
-          </p>
-          {roaster.notes ? (
-            <p className="line-clamp-2 text-sm text-muted-foreground">
-              {roaster.notes}
-            </p>
-          ) : null}
-        </CardContent>
-      </Card>
-    </Link>
   )
 }

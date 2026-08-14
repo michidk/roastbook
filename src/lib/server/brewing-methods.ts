@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, asc, count, eq, ne, sql } from 'drizzle-orm'
+import { and, asc, count, eq, ilike, ne, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
 import { brewingMethods, recipes, shots } from '@/db/schema'
@@ -8,6 +8,7 @@ import {
   normalizeShotParameterKeys,
 } from '@/lib/brewing-methods'
 import { expectReturnedRow } from '@/lib/domain-errors'
+import { getPaginationWindow } from '@/lib/pagination'
 import {
   nameSchema,
   notesSchema,
@@ -54,12 +55,65 @@ function normalizeBrewingMethodWrite(
   }
 }
 
+const BREWING_METHODS_PAGE_SIZE = 24
+const brewingMethodListSchema = z.object({
+  page: z.number().int().min(1).max(100_000).default(1),
+  query: z.string().trim().max(200).default(''),
+})
+
 export const getBrewingMethods = createServerFn({ method: 'GET' }).handler(
   async () =>
     db.query.brewingMethods.findMany({
       orderBy: [asc(brewingMethods.id)],
     }),
 )
+
+export const getBrewingMethodPage = createServerFn({ method: 'GET' })
+  .validator(brewingMethodListSchema)
+  .handler(async ({ data }) => {
+    const pattern = `%${data.query}%`
+    const where = data.query
+      ? or(
+          ilike(brewingMethods.name, pattern),
+          ilike(brewingMethods.description, pattern),
+        )
+      : undefined
+    const countRows = await db
+      .select({ value: count() })
+      .from(brewingMethods)
+      .where(where)
+    const totalItems = countRows[0]?.value ?? 0
+    const { offset, ...pagination } = getPaginationWindow(
+      totalItems,
+      data.page,
+      BREWING_METHODS_PAGE_SIZE,
+    )
+    const items = await db
+      .select({
+        id: brewingMethods.id,
+        name: brewingMethods.name,
+        description: brewingMethods.description,
+        enabledParameters: brewingMethods.enabledParameters,
+        timerEnabled: brewingMethods.timerEnabled,
+        recipeCount: sql<number>`(select count(*) from ${recipes} where ${recipes.brewingMethodId} = ${brewingMethods.id})::int`,
+        shotCount: sql<number>`(select count(*) from ${shots} where ${shots.brewingMethodId} = ${brewingMethods.id})::int`,
+      })
+      .from(brewingMethods)
+      .where(where)
+      .orderBy(asc(brewingMethods.name), asc(brewingMethods.id))
+      .limit(pagination.pageSize)
+      .offset(offset)
+
+    return { items, ...pagination }
+  })
+
+export const getBrewingMethod = createServerFn({ method: 'GET' })
+  .validator(positiveIdSchema)
+  .handler(async ({ data: id }) =>
+    db.query.brewingMethods.findFirst({
+      where: eq(brewingMethods.id, id),
+    }),
+  )
 
 export const createBrewingMethod = createServerFn({ method: 'POST' })
   .validator((input: unknown) =>

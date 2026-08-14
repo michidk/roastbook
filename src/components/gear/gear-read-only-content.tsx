@@ -1,10 +1,13 @@
 import { ExternalLink } from 'lucide-react'
-import { ShotsTable } from '@/components/ShotsTable'
+import {
+  ShotsTable,
+  type ShotsTableServerPagination,
+} from '@/components/ShotsTable'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import type { getGearById } from '@/lib/server/gear'
-import type { getShotsByGear } from '@/lib/server/shots'
+import type { getGearShotPage } from '@/lib/server/shots'
 
 type Gear = NonNullable<Awaited<ReturnType<typeof getGearById>>>
 
@@ -108,9 +111,11 @@ function MachineSettingsCard({ gear }: { gear: Gear }) {
 export function GearReadOnlyContent({
   gear,
   shots,
+  shotsPagination,
 }: {
   gear: Gear
-  shots: Awaited<ReturnType<typeof getShotsByGear>>
+  shots: Awaited<ReturnType<typeof getGearShotPage>>['items']
+  shotsPagination: ShotsTableServerPagination
 }) {
   const formatDate = useDateFormatter()
   const formatNumber = useNumberFormatter()
@@ -199,7 +204,7 @@ export function GearReadOnlyContent({
           <CardTitle>Brew history</CardTitle>
         </CardHeader>
         <CardContent>
-          <ShotsTable shots={shots} />
+          <ShotsTable shots={shots} serverPagination={shotsPagination} />
         </CardContent>
       </Card>
     </>

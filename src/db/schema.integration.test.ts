@@ -42,7 +42,8 @@ databaseDescribe('PostgreSQL schema', () => {
           'shot_accessory_gear_shot_gear_idx',
           'recipe_accessory_gear_recipe_gear_idx',
           'bean_images_one_thumbnail_idx',
-          'roasters_name_idx'
+          'roasters_name_idx',
+          'shots_recipe_id_idx'
         )
     `
 
@@ -50,9 +51,10 @@ databaseDescribe('PostgreSQL schema', () => {
     expect(indexes.map(({ indexname }) => indexname).sort()).toEqual([
       'bean_images_one_thumbnail_idx',
       'recipe_accessory_gear_recipe_gear_idx',
-      'shot_accessory_gear_shot_gear_idx',
       'roasters_name_idx',
+      'shot_accessory_gear_shot_gear_idx',
       'shot_taste_tags_shot_tag_idx',
+      'shots_recipe_id_idx',
     ])
   })
 
@@ -70,6 +72,87 @@ databaseDescribe('PostgreSQL schema', () => {
       select count(*)::int as count from roasters where name = ${name}
     `
     expect(rows[0]?.count).toBe(0)
+  })
+
+  test('sets the initial map location to Paris', async () => {
+    const settings = await database()<
+      [
+        {
+          defaultMapLatitude: number
+          defaultMapLongitude: number
+          defaultMapLabel: string
+        },
+      ]
+    >`
+      select
+        default_map_latitude as "defaultMapLatitude",
+        default_map_longitude as "defaultMapLongitude",
+        default_map_label as "defaultMapLabel"
+      from settings
+      where id = 1
+    `
+
+    expect(settings[0]).toEqual({
+      defaultMapLatitude: 48.8566,
+      defaultMapLongitude: 2.3522,
+      defaultMapLabel: 'Paris, France',
+    })
+  })
+
+  test('defaults the list view to cards and rejects unknown views', async () => {
+    const settings = await database()<[{ defaultListView: string }]>`
+      select default_list_view as "defaultListView" from settings where id = 1
+    `
+    expect(settings[0]?.defaultListView).toBe('cards')
+
+    await expect(
+      database()`update settings set default_list_view = 'grid' where id = 1`,
+    ).rejects.toThrow(/settings_list_view_check/)
+  })
+
+  test('stores valid AI usage and rejects negative token counts', async () => {
+    const requestId = `ai-usage-${crypto.randomUUID()}`
+
+    try {
+      const [usage] = await database()<
+        [{ totalTokens: number; estimatedCostUsd: string }]
+      >`
+        insert into ai_usage (
+          request_id,
+          feature,
+          model,
+          prompt_tokens,
+          completion_tokens,
+          total_tokens,
+          estimated_cost_usd
+        ) values (${requestId}, 'test', 'gpt-4o', 100, 20, 120, 0.00045)
+        returning
+          total_tokens as "totalTokens",
+          estimated_cost_usd as "estimatedCostUsd"
+      `
+
+      expect(usage).toEqual({
+        totalTokens: 120,
+        estimatedCostUsd: '0.0004500000',
+      })
+    } finally {
+      await database()`delete from ai_usage where request_id = ${requestId}`
+    }
+
+    await expectPostgresError(
+      () =>
+        database()`
+          insert into ai_usage (
+            request_id,
+            feature,
+            model,
+            prompt_tokens,
+            completion_tokens,
+            total_tokens
+          ) values ('invalid-ai-usage', 'test', 'gpt-4o', -1, 0, 0)
+        `,
+      '23514',
+    )
   })
 
   test('cascades image metadata when a parent is deleted', async () => {
@@ -203,6 +286,25 @@ databaseDescribe('PostgreSQL schema', () => {
         where shot_id = ${shot.id}
       `
       expect(remaining.count).toBe(0)
+    })
+  })
+
+  test('defaults café lists to inactive', async () => {
+    await database().begin(async (transaction) => {
+      const [coffeeShop] = await transaction<
+        [{ isFavorite: boolean; wantsToVisit: boolean }]
+      >`
+        insert into coffee_shops (name)
+        values (${`lists-${crypto.randomUUID()}`})
+        returning
+          is_favorite as "isFavorite",
+          wants_to_visit as "wantsToVisit"
+      `
+
+      expect(coffeeShop).toEqual({
+        isFavorite: false,
+        wantsToVisit: false,
+      })
     })
   })
 })

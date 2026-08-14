@@ -1,9 +1,10 @@
 import { createServerFn } from '@tanstack/react-start'
-import { desc, eq } from 'drizzle-orm'
+import { and, asc, count, desc, eq, exists, ilike, or } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
-import { recipes, shots } from '@/db/schema'
+import { beans, brewingMethods, recipes, shots } from '@/db/schema'
 import { expectReturnedRow, notFound } from '@/lib/domain-errors'
+import { getPaginationWindow } from '@/lib/pagination'
 import {
   replaceRecipeAccessoryGear,
   withAccessoryGearIds,
@@ -32,6 +33,13 @@ const recipeUpdateSchema = shotUpdateSchema
 const saveShotAsRecipeSchema = z.object({
   shotId: positiveIdSchema,
   name: nameSchema,
+  linkShot: z.boolean().default(false),
+})
+
+const updateRecipeFromShotSchema = z.object({
+  shotId: positiveIdSchema,
+  recipeId: positiveIdSchema,
+  linkShot: z.boolean().default(false),
 })
 
 class RecipeInputError extends Error {
@@ -50,6 +58,14 @@ const recipeRelations = {
   accessoryGearLinks: { columns: { gearId: true } },
 } as const
 
+const RECIPES_PAGE_SIZE = 24
+const recipeListSchema = z.object({
+  page: z.number().int().min(1).max(100_000).default(1),
+  query: z.string().trim().max(200).default(''),
+  sort: z.enum(['name', 'updated']).default('updated'),
+  direction: z.enum(['asc', 'desc']).default('desc'),
+})
+
 export const getRecipes = createServerFn({ method: 'GET' }).handler(
   async () => {
     const results = await db.query.recipes.findMany({
@@ -59,6 +75,65 @@ export const getRecipes = createServerFn({ method: 'GET' }).handler(
     return results.map(withAccessoryGearIds)
   },
 )
+
+export const getRecipeOptions = createServerFn({ method: 'GET' }).handler(
+  async () =>
+    db.query.recipes.findMany({
+      columns: { id: true, name: true, brewingMethodId: true },
+      orderBy: [asc(recipes.name), asc(recipes.id)],
+    }),
+)
+
+export const getRecipePage = createServerFn({ method: 'GET' })
+  .validator(recipeListSchema)
+  .handler(async ({ data }) => {
+    const pattern = `%${data.query}%`
+    const where = data.query
+      ? or(
+          ilike(recipes.name, pattern),
+          exists(
+            db
+              .select({ id: beans.id })
+              .from(beans)
+              .where(
+                and(eq(beans.id, recipes.beanId), ilike(beans.name, pattern)),
+              ),
+          ),
+          exists(
+            db
+              .select({ id: brewingMethods.id })
+              .from(brewingMethods)
+              .where(
+                and(
+                  eq(brewingMethods.id, recipes.brewingMethodId),
+                  ilike(brewingMethods.name, pattern),
+                ),
+              ),
+          ),
+        )
+      : undefined
+    const countRows = await db
+      .select({ value: count() })
+      .from(recipes)
+      .where(where)
+    const totalItems = countRows[0]?.value ?? 0
+    const { offset, ...pagination } = getPaginationWindow(
+      totalItems,
+      data.page,
+      RECIPES_PAGE_SIZE,
+    )
+    const sortColumn = data.sort === 'name' ? recipes.name : recipes.updatedAt
+    const order = data.direction === 'asc' ? asc(sortColumn) : desc(sortColumn)
+    const items = await db.query.recipes.findMany({
+      where,
+      orderBy: [order, asc(recipes.id)],
+      limit: pagination.pageSize,
+      offset,
+      with: recipeRelations,
+    })
+
+    return { items, ...pagination }
+  })
 
 export const getRecipe = createServerFn({ method: 'GET' })
   .validator(positiveIdSchema)
@@ -147,6 +222,67 @@ export const saveShotAsRecipe = createServerFn({ method: 'POST' })
           shot.brewingMethod.enabledParameters,
         ),
       )
+      if (data.linkShot) {
+        await tx
+          .update(shots)
+          .set({ recipeId: persistedRecipe.id, updatedAt: new Date() })
+          .where(eq(shots.id, shot.id))
+      }
+      return persistedRecipe
+    }),
+  )
+
+export const updateRecipeFromShot = createServerFn({ method: 'POST' })
+  .validator(updateRecipeFromShotSchema)
+  .handler(async ({ data }) =>
+    db.transaction(async (tx) => {
+      const [shot, targetRecipe] = await Promise.all([
+        tx.query.shots.findFirst({
+          where: eq(shots.id, data.shotId),
+          with: {
+            brewingMethod: true,
+            accessoryGearLinks: { columns: { gearId: true } },
+          },
+        }),
+        tx.query.recipes.findFirst({
+          where: eq(recipes.id, data.recipeId),
+          columns: { id: true, brewingMethodId: true },
+        }),
+      ])
+      if (!shot) throw new RecipeInputError('Shot not found')
+      if (!targetRecipe) throw new RecipeInputError('Recipe not found')
+      if (targetRecipe.brewingMethodId !== shot.brewingMethodId) {
+        throw new RecipeInputError('Recipe does not use this brewing method')
+      }
+
+      const shotValues = withAccessoryGearIds(shot)
+      const [recipe] = await tx
+        .update(recipes)
+        .set({
+          beanId: shot.beanId,
+          ...projectShotParameters(
+            shotValues,
+            shot.brewingMethod.enabledParameters,
+          ),
+          updatedAt: new Date(),
+        })
+        .where(eq(recipes.id, data.recipeId))
+        .returning()
+      const persistedRecipe = expectReturnedRow(recipe, 'Recipe')
+      await replaceRecipeAccessoryGear(
+        tx,
+        persistedRecipe.id,
+        projectAccessoryGearIds(
+          shotValues,
+          shot.brewingMethod.enabledParameters,
+        ),
+      )
+      if (data.linkShot) {
+        await tx
+          .update(shots)
+          .set({ recipeId: persistedRecipe.id, updatedAt: new Date() })
+          .where(eq(shots.id, shot.id))
+      }
       return persistedRecipe
     }),
   )
