@@ -1,7 +1,7 @@
 # Roastbook
 
 [![Checks and Build](https://github.com/michidk/roastbook/actions/workflows/ci.yml/badge.svg)](https://github.com/michidk/roastbook/actions/workflows/ci.yml)
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/CODACY_PROJECT_ID)](https://app.codacy.com/gh/michidk/roastbook/dashboard)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/dcbf6d1e94c244efaee4b19b86f2d771)](https://app.codacy.com/gh/michidk/roastbook/dashboard)
 
 **The AI-native coffee journal you actually own.** Roastbook is a self-hosted
 home for your espresso shots, beans, recipes, café visits, roasters, brewing
