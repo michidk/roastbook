@@ -12,7 +12,6 @@ import {
 } from '@/components/form/form-field'
 import { FormErrorSummary, FormSection } from '@/components/form/form-shell'
 import { Page, PageHeader } from '@/components/page-layout'
-import { SensoryRatingFields } from '@/components/shots/sensory-rating-fields'
 import {
   availableGearForShot,
   EMPTY_SHOT_FORM_VALUES,
@@ -20,6 +19,7 @@ import {
   ShotParameterFields,
   shotFormValuesFrom,
 } from '@/components/shots/shot-parameter-fields'
+import { ShotSensoryRatingFields } from '@/components/shots/shot-sensory-ratings'
 import { ShotTimer, type ShotTimerHandle } from '@/components/shots/shot-timer'
 import { TasteTagSelector } from '@/components/shots/taste-tag-selector'
 import { Button } from '@/components/ui/button'
@@ -46,18 +46,19 @@ import { newShotPayload } from '@/lib/new-shot-payload'
 import { getActiveBeans } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getGear } from '@/lib/server/gear'
+import { getRecipes } from '@/lib/server/recipes'
 import {
-  getRecipes,
-  saveShotAsRecipe,
-  updateRecipeFromShot,
-} from '@/lib/server/recipes'
-import { createShot, getLastShotForBeanAndMethod } from '@/lib/server/shots'
+  createShot,
+  createShotWithRecipe,
+  getLastShotForBeanAndMethod,
+} from '@/lib/server/shots'
 import {
   getBeanSuggestions,
   getBrewingMethodSuggestions,
   getLastBeansByBrewingMethod,
 } from '@/lib/server/suggestions'
 import { getTasteTags } from '@/lib/server/taste-tags'
+import { isLegacySensoryTasteTag } from '@/lib/taste-tags'
 import { getShotUpdateErrors } from '@/lib/update-validation'
 
 export const Route = createFileRoute('/shots/new')({
@@ -279,40 +280,22 @@ function NewShotPage() {
 
     setIsSubmitting(true)
     try {
-      const shot = await createShot({ data })
-      setIsDirty(false)
-
-      try {
-        if (targetRecipe === 'new') {
-          const recipe = await saveShotAsRecipe({
-            data: {
-              shotId: shot.id,
-              name: recipeName.trim(),
-              linkShot: !recipeId,
-            },
-          })
-          if (!recipe) throw new Error('Could not create the recipe')
-        } else if (targetRecipe?.startsWith('update:')) {
-          await updateRecipeFromShot({
-            data: {
-              shotId: shot.id,
-              recipeId: Number(targetRecipe.slice('update:'.length)),
-              linkShot: !recipeId,
-            },
-          })
-        }
-      } catch (error) {
-        toast.error(
-          error instanceof Error
-            ? `Brew saved, but the recipe was not: ${error.message}`
-            : 'Brew saved, but the recipe could not be updated',
-        )
-        await navigate({
-          to: '/shots/$shotId',
-          params: { shotId: String(shot.id) },
+      if (targetRecipe) {
+        await createShotWithRecipe({
+          data: {
+            shot: data,
+            target:
+              targetRecipe === 'new'
+                ? { name: recipeName.trim() }
+                : {
+                    recipeId: Number(targetRecipe.slice('update:'.length)),
+                  },
+          },
         })
-        return
+      } else {
+        await createShot({ data })
       }
+      setIsDirty(false)
       await navigate({ to: '/shots' })
     } catch (error) {
       toast.error(
@@ -346,6 +329,9 @@ function NewShotPage() {
   const gearOptions = availableGearForShot(values, gear)
   const availableRecipes = recipes.filter(
     (recipe) => String(recipe.brewingMethodId) === values.brewingMethodId,
+  )
+  const flavorTags = tasteTags.filter(
+    (tag) => !isLegacySensoryTasteTag(tag) || selectedTags.includes(tag.id),
   )
 
   return (
@@ -463,14 +449,14 @@ function NewShotPage() {
                   ariaLabel="Shot rating"
                 />
               </div>
-              <SensoryRatingFields
+              <ShotSensoryRatingFields
                 values={values}
                 onChange={(key, value) => set(key, value)}
               />
             </div>
             <TasteTagSelector
               label="Flavor tags"
-              tags={tasteTags}
+              tags={flavorTags}
               selected={selectedTags}
               onToggle={toggleTag}
             />

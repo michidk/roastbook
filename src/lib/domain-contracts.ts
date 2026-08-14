@@ -49,6 +49,13 @@ export const PAPER_FILTER_POSITION_VALUES = [
   'both',
 ] as const
 
+export const DISTRIBUTION_METHOD_VALUES = [
+  'WDT',
+  'Blind shaker',
+  'Distribution tool',
+  'Stockfleth move',
+] as const
+
 export const IMAGE_MIME_TYPE_VALUES = [
   'image/avif',
   'image/gif',

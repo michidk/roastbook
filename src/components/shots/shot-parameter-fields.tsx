@@ -5,6 +5,8 @@ import { Toggle } from '@/components/ui/toggle'
 import { isEspressoMachineGearType, isGrinderGearType } from '@/lib/constants'
 import {
   DISTRIBUTION_METHOD_OPTIONS,
+  type DistributionMethod,
+  isDistributionMethod,
   PAPER_FILTER_OPTIONS,
   type PaperFilterPosition,
   RATIO_BASIS_OPTIONS,
@@ -12,6 +14,7 @@ import {
   type ShotParameterKey,
   type ShotParameterValues,
 } from '@/lib/shot-parameters'
+import { EMPTY_SHOT_SENSORY_RATINGS } from '@/lib/shot-sensory'
 
 export type ShotFormValues = {
   brewingMethodId: string
@@ -33,7 +36,7 @@ export type ShotFormValues = {
   basketId: string
   usesPuckScreen: boolean | null
   paperFilterPosition: PaperFilterPosition | ''
-  distributionMethod: string
+  distributionMethod: DistributionMethod | ''
   tampForceKg: string
   accessoryGearIds: number[]
   rating: number
@@ -46,6 +49,7 @@ export type ShotFormValues = {
 }
 
 export const EMPTY_SHOT_FORM_VALUES: ShotFormValues = {
+  ...EMPTY_SHOT_SENSORY_RATINGS,
   brewingMethodId: '',
   beanId: '',
   machineId: '',
@@ -69,20 +73,16 @@ export const EMPTY_SHOT_FORM_VALUES: ShotFormValues = {
   tampForceKg: '',
   accessoryGearIds: [],
   rating: 0,
-  bitterness: 0,
-  acidity: 0,
-  sweetness: 0,
-  body: 0,
-  astringency: 0,
   notes: '',
 }
 
 type ShotParameterSource = Omit<
   ShotParameterValues,
-  'ratioBasis' | 'paperFilterPosition'
+  'ratioBasis' | 'paperFilterPosition' | 'distributionMethod'
 > & {
   readonly ratioBasis: string | null
   readonly paperFilterPosition: string | null
+  readonly distributionMethod: string | null
 }
 
 export function shotFormValuesFrom(
@@ -118,7 +118,11 @@ export function shotFormValuesFrom(
       source.paperFilterPosition === 'both'
         ? source.paperFilterPosition
         : '',
-    distributionMethod: source.distributionMethod ?? '',
+    distributionMethod:
+      source.distributionMethod &&
+      isDistributionMethod(source.distributionMethod)
+        ? source.distributionMethod
+        : '',
     tampForceKg: source.tampForceKg ?? '',
     accessoryGearIds: [...source.accessoryGearIds],
   }
@@ -172,19 +176,6 @@ export function ShotParameterFields({
   )
   const grinders = gear.filter((item) => isGrinderGearType(item.type))
   const baskets = gear.filter((item) => item.type === 'basket')
-  const distributionMethodOptions = DISTRIBUTION_METHOD_OPTIONS.some(
-    (option) => option.value === values.distributionMethod,
-  )
-    ? DISTRIBUTION_METHOD_OPTIONS
-    : values.distributionMethod
-      ? [
-          {
-            value: values.distributionMethod,
-            label: values.distributionMethod,
-          },
-          ...DISTRIBUTION_METHOD_OPTIONS,
-        ]
-      : DISTRIBUTION_METHOD_OPTIONS
   const accessories = gear.filter(
     (item) =>
       !isEspressoMachineGearType(item.type) &&
@@ -479,8 +470,12 @@ export function ShotParameterFields({
                 label="Distribution method"
                 placeholder="Choose a method"
                 value={values.distributionMethod}
-                options={distributionMethodOptions}
-                onChange={(value) => onChange('distributionMethod', value)}
+                options={DISTRIBUTION_METHOD_OPTIONS}
+                onChange={(value) => {
+                  if (value === '' || isDistributionMethod(value)) {
+                    onChange('distributionMethod', value)
+                  }
+                }}
               />
             ) : null}
             {show('tampForceKg') ? (

@@ -1,5 +1,8 @@
 import { normalizeShotParameterKeys } from '@/lib/brewing-methods'
-import type { ShotParameterInput } from '@/lib/shot-parameters'
+import {
+  isDistributionMethod,
+  type ShotParameterInput,
+} from '@/lib/shot-parameters'
 
 export function projectAccessoryGearIds(
   data: Pick<ShotParameterInput, 'accessoryGearIds'>,
@@ -57,7 +60,9 @@ export function projectShotParameters(
       ? (data.paperFilterPosition ?? null)
       : null,
     distributionMethod: enabled.has('distributionMethod')
-      ? (data.distributionMethod ?? null)
+      ? data.distributionMethod && isDistributionMethod(data.distributionMethod)
+        ? data.distributionMethod
+        : null
       : null,
     tampForceKg: enabled.has('tampForceKg') ? (data.tampForceKg ?? null) : null,
   }

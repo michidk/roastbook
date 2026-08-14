@@ -1,14 +1,15 @@
 import type { ComponentType } from 'react'
 import { TextareaField } from '@/components/form/form-field'
-import {
-  SensoryRatingFields,
-  type SensoryValues,
-} from '@/components/shots/sensory-rating-fields'
+import { ShotSensoryRatingFields } from '@/components/shots/shot-sensory-ratings'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { StarRating } from '@/components/ui/star-rating'
 import { Textarea } from '@/components/ui/textarea'
+import type {
+  ShotSensoryRatingKey,
+  ShotSensoryRatings,
+} from '@/lib/shot-sensory'
 import { cn } from '@/lib/utils'
 
 type TasteTagOption = {
@@ -36,11 +37,8 @@ type TasteTagControl = {
 }
 
 type SensoryControl = {
-  readonly values: SensoryValues
-  readonly onChange: <Key extends keyof SensoryValues>(
-    key: Key,
-    value: number,
-  ) => void
+  readonly values: ShotSensoryRatings
+  readonly onChange: (key: ShotSensoryRatingKey, value: number) => void
 }
 
 type TastingFieldsProps = {
@@ -101,7 +99,7 @@ export function TastingFields({
           </div>
 
           {sensory ? (
-            <SensoryRatingFields
+            <ShotSensoryRatingFields
               values={sensory.values}
               onChange={sensory.onChange}
             />

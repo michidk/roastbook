@@ -362,7 +362,9 @@ async function extractBeanInfoFromImageImpl(
       adapter: createAdapter(config.visionModel, config),
       systemPrompts,
       messages,
-      middleware: [createAiRequestLogMiddleware(requestLogId)],
+      middleware: [
+        createAiRequestLogMiddleware(requestLogId, config.visionModel),
+      ],
       abortController,
       stream: false,
     })
@@ -449,7 +451,9 @@ async function researchStructuredDataFromWebImpl<
       systemPrompts,
       messages,
       tools: [webSearchTool({ type: 'web_search' })],
-      middleware: [createAiRequestLogMiddleware(requestLogId)],
+      middleware: [
+        createAiRequestLogMiddleware(requestLogId, config.researchModel),
+      ],
       abortController,
       stream: false,
     })

@@ -1,3 +1,5 @@
+import { DISTRIBUTION_METHOD_VALUES } from '@/lib/domain-contracts'
+
 export const SHOT_PARAMETER_KEYS = [
   'machineId',
   'doseGrams',
@@ -68,12 +70,17 @@ export const PAPER_FILTER_OPTIONS = [
 
 export type PaperFilterPosition = (typeof PAPER_FILTER_OPTIONS)[number]['value']
 
-export const DISTRIBUTION_METHOD_OPTIONS = [
-  { value: 'WDT', label: 'WDT' },
-  { value: 'Blind shaker', label: 'Blind shaker' },
-  { value: 'Distribution tool', label: 'Distribution tool' },
-  { value: 'Stockfleth move', label: 'Stockfleth move' },
-] as const
+export const DISTRIBUTION_METHOD_OPTIONS = DISTRIBUTION_METHOD_VALUES.map(
+  (value) => ({ value, label: value }),
+)
+
+export type DistributionMethod = (typeof DISTRIBUTION_METHOD_VALUES)[number]
+
+export function isDistributionMethod(
+  value: string,
+): value is DistributionMethod {
+  return DISTRIBUTION_METHOD_VALUES.some((method) => method === value)
+}
 
 export type ShotParameterValues = {
   readonly brewingMethodId: number
@@ -95,7 +102,7 @@ export type ShotParameterValues = {
   readonly basketId: number | null
   readonly usesPuckScreen: boolean | null
   readonly paperFilterPosition: PaperFilterPosition | null
-  readonly distributionMethod: string | null
+  readonly distributionMethod: DistributionMethod | null
   readonly tampForceKg: string | null
   readonly accessoryGearIds: readonly number[]
 }
@@ -103,10 +110,14 @@ export type ShotParameterValues = {
 type SelectParameterValues = Pick<ShotParameterValues, ShotParameterKey>
 
 export type ShotParameterInput = Partial<
-  Omit<SelectParameterValues, 'ratioBasis' | 'paperFilterPosition'>
+  Omit<
+    SelectParameterValues,
+    'ratioBasis' | 'paperFilterPosition' | 'distributionMethod'
+  >
 > & {
   readonly ratioBasis?: string | null
   readonly paperFilterPosition?: string | null
+  readonly distributionMethod?: string | null
 }
 
 export function isShotParameterKey(value: unknown): value is ShotParameterKey {

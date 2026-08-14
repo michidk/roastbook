@@ -26,6 +26,7 @@ import {
   resolvePagination,
 } from '@/lib/collection-query'
 import { expectReturnedRow } from '@/lib/domain-errors'
+import { recipeTargetSchema } from '@/lib/recipe-target'
 import {
   replaceShotAccessoryGear,
   withAccessoryGearIds,
@@ -35,6 +36,7 @@ import {
   projectAccessoryGearIds,
   projectShotParameters,
 } from '@/lib/server/shot-parameter-projection'
+import { saveShotToRecipeInTransaction } from '@/lib/server/shot-recipes.server'
 import {
   positiveIdSchema,
   shotCreateSchema,
@@ -61,6 +63,11 @@ const shotListSchema = z.object({
 
 const relatedShotListSchema = shotListSchema.omit({ beanId: true }).extend({
   entityId: positiveIdSchema,
+})
+
+const createShotWithRecipeSchema = z.object({
+  shot: shotCreateSchema,
+  target: recipeTargetSchema,
 })
 
 const shotGroupListSchema = shotListSchema.pick({
@@ -152,6 +159,11 @@ function shotSearchCondition(
           select 1 from ${brewingMethods}
           where ${brewingMethods.id} = ${shots.brewingMethodId}
             and ${brewingMethods.name} ilike ${pattern} escape '\\'
+        )`,
+        sql`exists (
+          select 1 from ${recipes}
+          where ${recipes.id} = ${shots.recipeId}
+            and ${recipes.name} ilike ${pattern} escape '\\'
         )`,
       )
     : undefined
@@ -400,37 +412,61 @@ export const getShot = createServerFn({ method: 'GET' })
     return shot ? withAccessoryGearIds(shot) : undefined
   })
 
+async function createShotInTransaction(
+  tx: ShotTransaction,
+  data: ShotCreateCandidate,
+) {
+  const method = await getBrewingMethod(tx, data.brewingMethodId)
+  await assertRecipeMatchesMethod(tx, data.recipeId, data.brewingMethodId)
+  const [shot] = await tx
+    .insert(shots)
+    .values(getShotValues(data, method.enabledParameters))
+    .returning()
+  const persistedShot = expectReturnedRow(shot, 'Shot')
+
+  await replaceShotAccessoryGear(
+    tx,
+    persistedShot.id,
+    projectAccessoryGearIds(data, method.enabledParameters),
+  )
+
+  if (data.tasteTagIds && data.tasteTagIds.length > 0) {
+    await tx.insert(shotTasteTags).values(
+      [...new Set(data.tasteTagIds)].map((tasteTagId) => ({
+        shotId: persistedShot.id,
+        tasteTagId,
+      })),
+    )
+  }
+  return persistedShot
+}
+
+function validateShotCreate(input: unknown) {
+  const data = shotCreateSchema.parse(input)
+  assertValidUpdate(getShotUpdateErrors({ id: 0, ...data }))
+  return data
+}
+
 export const createShot = createServerFn({ method: 'POST' })
+  .validator(validateShotCreate)
+  .handler(async ({ data }) =>
+    db.transaction((tx) => createShotInTransaction(tx, data)),
+  )
+
+export const createShotWithRecipe = createServerFn({ method: 'POST' })
   .validator((input: unknown) => {
-    const data = shotCreateSchema.parse(input)
-    assertValidUpdate(getShotUpdateErrors({ id: 0, ...data }))
-    return data
+    const data = createShotWithRecipeSchema.parse(input)
+    return { ...data, shot: validateShotCreate(data.shot) }
   })
   .handler(async ({ data }) =>
     db.transaction(async (tx) => {
-      const method = await getBrewingMethod(tx, data.brewingMethodId)
-      await assertRecipeMatchesMethod(tx, data.recipeId, data.brewingMethodId)
-      const [shot] = await tx
-        .insert(shots)
-        .values(getShotValues(data, method.enabledParameters))
-        .returning()
-      const persistedShot = expectReturnedRow(shot, 'Shot')
-
-      await replaceShotAccessoryGear(
+      const shot = await createShotInTransaction(tx, data.shot)
+      const recipe = await saveShotToRecipeInTransaction(
         tx,
-        persistedShot.id,
-        projectAccessoryGearIds(data, method.enabledParameters),
+        shot.id,
+        data.target,
       )
-
-      if (data.tasteTagIds && data.tasteTagIds.length > 0) {
-        await tx.insert(shotTasteTags).values(
-          [...new Set(data.tasteTagIds)].map((tasteTagId) => ({
-            shotId: persistedShot.id,
-            tasteTagId,
-          })),
-        )
-      }
-      return persistedShot
+      return { shot, recipe }
     }),
   )
 
@@ -500,35 +536,4 @@ export const getLastShotForBeanAndMethod = createServerFn({ method: 'GET' })
       },
     })
     return shot ? withAccessoryGearIds(shot) : undefined
-  })
-
-export const getShotsByBean = createServerFn({ method: 'GET' })
-  .validator(positiveIdSchema)
-  .handler(async ({ data: beanId }) => {
-    const results = await db.query.shots.findMany({
-      where: eq(shots.beanId, beanId),
-      orderBy: [desc(shots.brewedAt)],
-      with: shotRelations,
-    })
-    return results.map(withAccessoryGearIds)
-  })
-
-export const getShotsByGear = createServerFn({ method: 'GET' })
-  .validator(positiveIdSchema)
-  .handler(async ({ data: gearId }) => {
-    const results = await db.query.shots.findMany({
-      where: or(
-        eq(shots.machineId, gearId),
-        eq(shots.grinderId, gearId),
-        eq(shots.basketId, gearId),
-        sql`exists (
-          select 1 from ${shotAccessoryGear}
-          where ${shotAccessoryGear.shotId} = ${shots.id}
-            and ${shotAccessoryGear.gearId} = ${gearId}
-        )`,
-      ),
-      orderBy: [desc(shots.brewedAt)],
-      with: shotRelations,
-    })
-    return results.map(withAccessoryGearIds)
   })

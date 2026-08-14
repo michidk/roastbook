@@ -44,4 +44,27 @@ describe('update validation contracts', () => {
       getCafeVisitUpdateErrors({ id: 1, visitedAt: future }),
     ).toHaveProperty('visitedAt')
   })
+
+  test('validates each sensory intensity independently', () => {
+    expect(
+      getShotUpdateErrors({
+        id: 1,
+        brewingMethodId: 1,
+        bitterness: 1,
+        acidity: 5,
+        sweetness: null,
+      }),
+    ).toEqual({})
+    expect(
+      getShotUpdateErrors({
+        id: 1,
+        brewingMethodId: 1,
+        body: 6,
+        astringency: 0,
+      }),
+    ).toEqual({
+      body: 'Body must be between 1 and 5',
+      astringency: 'Astringency must be between 1 and 5',
+    })
+  })
 })

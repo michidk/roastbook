@@ -7,6 +7,7 @@ import {
   hasOnlyShotParameterKeys,
   normalizeShotParameterKeys,
 } from '@/lib/brewing-methods'
+import { escapedContainsPattern } from '@/lib/collection-query'
 import { expectReturnedRow } from '@/lib/domain-errors'
 import { getPaginationWindow } from '@/lib/pagination'
 import {
@@ -71,7 +72,7 @@ export const getBrewingMethods = createServerFn({ method: 'GET' }).handler(
 export const getBrewingMethodPage = createServerFn({ method: 'GET' })
   .validator(brewingMethodListSchema)
   .handler(async ({ data }) => {
-    const pattern = `%${data.query}%`
+    const pattern = escapedContainsPattern(data.query)
     const where = data.query
       ? or(
           ilike(brewingMethods.name, pattern),

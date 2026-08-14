@@ -125,11 +125,17 @@ function AiRequestEntry({ entry }: { entry: AiRequestLogSummary }) {
       <CollapsibleContent>
         {open ? (
           <div className="space-y-5 border-t border-border px-4 py-4">
-            <dl className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+            <dl className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-5">
               <div>
                 <dt className="text-muted-foreground">Input tokens</dt>
                 <dd className="mt-1 font-bold">
                   {formatNumber(entry.promptTokens)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Cached input</dt>
+                <dd className="mt-1 font-bold">
+                  {formatNumber(entry.cachedPromptTokens)}
                 </dd>
               </div>
               <div>
@@ -142,6 +148,14 @@ function AiRequestEntry({ entry }: { entry: AiRequestLogSummary }) {
                 <dt className="text-muted-foreground">Total tokens</dt>
                 <dd className="mt-1 font-bold">
                   {formatNumber(entry.totalTokens)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Estimated cost</dt>
+                <dd className="mt-1 font-bold">
+                  {entry.estimatedCostUsd === null
+                    ? '—'
+                    : `$${Number(entry.estimatedCostUsd).toFixed(4)}`}
                 </dd>
               </div>
               <div>

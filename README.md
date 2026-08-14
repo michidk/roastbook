@@ -61,8 +61,9 @@ Set `OPENAI_API_KEY` and these turn on — everything else works without it:
 - **Machine research.** Pull documented factory espresso settings for your
   specific model, with strict rules against inferring values from similar
   machines.
-- **Request debugging.** Review lifetime token usage and inspect every raw AI
-  input, response event, error, and unparsed output from Settings.
+- **Request debugging.** Review lifetime token usage and estimated token cost,
+  then inspect every raw AI input, response event, error, and unparsed output
+  from Settings.
 
 Every AI call is optional, server-side only, rate-limited, schema-validated,
 and recorded in PostgreSQL for local debugging. Raw logs include full image
@@ -74,12 +75,14 @@ an assistant log this morning's espresso for you.
 
 ## Features
 
-- Log brews with recipe, dose, yield, time, equipment, and tasting data.
+- Log brews with recipe, dose, yield, time, equipment, overall and sensory
+  ratings, and flavor notes; reuse a brew’s values in a new or existing recipe.
 - Catalog beans, roasters, brewing methods, coffee shops, and gear.
 - Track café visits and explore saved places on a map.
 - Review filterable brew and café trends, quality, consistency, taste, rhythm,
   exploration, recipe performance, gear usage, and costs.
-- Scan labels and research beans, roasters, and machine settings with AI.
+- Scan labels and research beans, roasters, and machine settings with AI, with
+  local request logs and token-cost estimates.
 - Store media locally or in S3-compatible object storage.
 - Gate self-hosted deployments with the Hodor reverse proxy.
 

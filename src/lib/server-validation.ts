@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { isDateTooFarInFuture } from '@/lib/date-input'
 import {
   CURRENCY_VALUES,
+  DISTRIBUTION_METHOD_VALUES,
   ENTITY_TYPE_VALUES,
   IMAGE_MIME_TYPE_VALUES,
   MAX_IMAGE_BYTES,
@@ -166,7 +167,7 @@ export const shotCreateSchema = z.object({
     .enum(PAPER_FILTER_POSITION_VALUES)
     .nullable()
     .optional(),
-  distributionMethod: shortTextSchema.nullable().optional(),
+  distributionMethod: z.enum(DISTRIBUTION_METHOD_VALUES).nullable().optional(),
   tampForceKg: nullableShotDecimal,
   accessoryGearIds: z.array(positiveIdSchema).max(100).optional(),
   rating: optionalNullableRatingSchema,

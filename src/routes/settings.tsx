@@ -3,7 +3,6 @@ import {
   Calculator,
   CalendarDays,
   CircleDollarSign,
-  Coins,
   Database,
   Globe2,
   HardDrive,
@@ -12,9 +11,7 @@ import {
   LayoutGrid,
   Loader2,
   MapPinned,
-  MessagesSquare,
   MonitorCog,
-  Sparkles,
   Tags,
 } from 'lucide-react'
 import { type ComponentType, useEffect, useState } from 'react'
@@ -459,10 +456,10 @@ function SettingsPage() {
       <Card size="sm" role="group" aria-labelledby="internal-stats">
         <CardHeader>
           <CardTitle as="h2" id="internal-stats">
-            Internal stats
+            Storage
           </CardTitle>
           <CardDescription>
-            Live storage and AI usage for this installation.
+            Live media usage for this installation.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -504,30 +501,7 @@ function SettingsPage() {
               )}
               icon={HardDrive}
             />
-            <InternalStat
-              label="AI requests"
-              value={formatNumber(internalStats.ai.requestCount)}
-              detail="since tracking began"
-              icon={MessagesSquare}
-            />
-            <InternalStat
-              label="AI tokens"
-              value={formatNumber(internalStats.ai.totalTokens)}
-              detail={`${formatNumber(internalStats.ai.promptTokens)} input · ${formatNumber(internalStats.ai.completionTokens)} output`}
-              icon={Sparkles}
-            />
-            <InternalStat
-              label="AI cost estimate"
-              value={formatUsd(internalStats.ai.estimatedCostUsd, formatNumber)}
-              detail="token usage only"
-              icon={Coins}
-            />
           </dl>
-          <p className="mt-4 border-t pt-3 text-xs text-muted-foreground">
-            {internalStats.ai.pricedTokens < internalStats.ai.totalTokens
-              ? 'Cost is partial because unknown model rates are excluded. Tool fees are not included.'
-              : 'Cost uses OpenAI standard token rates. Tool fees are not included.'}
-          </p>
         </CardContent>
       </Card>
     </Page>
@@ -587,11 +561,4 @@ function formatBytes(bytes: number, formatNumber: NumberFormatter) {
   const value = bytes / 1024 ** unitIndex
   const precision = unitIndex === 0 || value >= 10 ? 0 : 1
   return `${formatNumber(value.toFixed(precision))} ${units[unitIndex]}`
-}
-
-function formatUsd(value: string, formatNumber: NumberFormatter) {
-  const amount = Number(value)
-  if (!Number.isFinite(amount) || amount <= 0) return '$0.00'
-  const precision = amount < 0.01 ? 4 : 2
-  return `$${formatNumber(amount.toFixed(precision))}`
 }

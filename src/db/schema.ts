@@ -146,8 +146,13 @@ export const aiRequestLogs = pgTable(
     responsePayload: jsonb('response_payload').$type<JsonValue>(),
     errorMessage: text('error_message'),
     promptTokens: integer('prompt_tokens').default(0).notNull(),
+    cachedPromptTokens: integer('cached_prompt_tokens').default(0).notNull(),
     completionTokens: integer('completion_tokens').default(0).notNull(),
     totalTokens: integer('total_tokens').default(0).notNull(),
+    estimatedCostUsd: decimal('estimated_cost_usd', {
+      precision: 18,
+      scale: 10,
+    }),
     durationMs: integer('duration_ms'),
     completedAt: timestamp('completed_at'),
     createdAt: createdAt(),
@@ -156,6 +161,15 @@ export const aiRequestLogs = pgTable(
     check(
       'ai_request_logs_status_check',
       sql`${table.status} in ('in_progress', 'succeeded', 'failed', 'aborted')`,
+    ),
+    check(
+      'ai_request_logs_usage_check',
+      sql`${table.promptTokens} >= 0
+        and ${table.cachedPromptTokens} >= 0
+        and ${table.cachedPromptTokens} <= ${table.promptTokens}
+        and ${table.completionTokens} >= 0
+        and ${table.totalTokens} >= 0
+        and (${table.estimatedCostUsd} is null or ${table.estimatedCostUsd} >= 0)`,
     ),
     index('ai_request_logs_created_at_idx').on(table.createdAt),
   ],
@@ -794,7 +808,7 @@ export const tasteTags = pgTable(
     category: text('category'),
     extractionAxis: decimal('extraction_axis', { precision: 3, scale: 2 }),
     strengthAxis: decimal('strength_axis', { precision: 3, scale: 2 }),
-    hint: text('hint'),
+    hint: text('hint').default('').notNull(),
   },
   (table) => [
     check(

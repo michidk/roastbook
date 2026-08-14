@@ -20,15 +20,14 @@ import {
 } from '@/hooks/use-local-date-time-input'
 import { localDateTimeInputToDate } from '@/lib/date-input'
 import { focusFirstInvalidControl } from '@/lib/form-validation'
-import {
-  sensoryRatingPayload,
-  shotParameterPayload,
-} from '@/lib/new-shot-payload'
+import { shotParameterPayload } from '@/lib/new-shot-payload'
 import type { getActiveBeans } from '@/lib/server/beans'
 import type { getBrewingMethods } from '@/lib/server/brewing-methods'
 import type { getGear } from '@/lib/server/gear'
 import { type getShot, updateShot } from '@/lib/server/shots'
 import type { getTasteTags } from '@/lib/server/taste-tags'
+import { shotSensoryPayload } from '@/lib/shot-sensory'
+import { isLegacySensoryTasteTag } from '@/lib/taste-tags'
 import { getShotUpdateErrors } from '@/lib/update-validation'
 
 type Shot = NonNullable<Awaited<ReturnType<typeof getShot>>>
@@ -89,7 +88,7 @@ export function ShotEditForm({
           ? shot.recipeId
           : null,
       rating: values.rating || null,
-      ...sensoryRatingPayload(values),
+      ...shotSensoryPayload(values),
       notes: values.notes || null,
       tasteTagIds,
     }
@@ -192,7 +191,10 @@ export function ShotEditForm({
           onChange: (value) => set('notes', value),
         }}
         tags={{
-          options: editData.tasteTags,
+          options: editData.tasteTags.filter(
+            (tag) =>
+              !isLegacySensoryTasteTag(tag) || tasteTagIds.includes(tag.id),
+          ),
           selectedIds: tasteTagIds,
           onToggle: toggleTag,
         }}

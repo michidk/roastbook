@@ -2,6 +2,7 @@ import type { ChatMiddleware, StreamChunk, TokenUsage } from '@tanstack/ai'
 import { desc, eq, lt, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { aiRequestLogs } from '@/db/schema'
+import { estimateTokenCostUsd } from '@/lib/ai-pricing'
 import {
   type AiTokenTotals,
   addAiTokenUsage,
@@ -18,8 +19,10 @@ export type AiRequestLogSummary = {
   status: AiRequestStatus
   errorMessage: string | null
   promptTokens: number
+  cachedPromptTokens: number
   completionTokens: number
   totalTokens: number
+  estimatedCostUsd: string | null
   durationMs: number | null
   completedAt: Date | null
   createdAt: Date
@@ -38,8 +41,11 @@ export type AiRequestLogPage = {
 export type AiRequestStats = {
   requestCount: number
   promptTokens: number
+  cachedPromptTokens: number
   completionTokens: number
   totalTokens: number
+  estimatedCostUsd: string
+  pricedTokens: number
 }
 
 function errorMessage(error: unknown): string {
@@ -116,8 +122,20 @@ function usageForResponse(
   return addAiTokenUsage(EMPTY_AI_TOKEN_TOTALS, finalUsage)
 }
 
+function usageValues(model: string, usage: AiTokenTotals) {
+  const estimatedCost = estimateTokenCostUsd(model, usage)
+  return {
+    promptTokens: usage.promptTokens,
+    cachedPromptTokens: usage.promptTokensDetails?.cachedTokens ?? 0,
+    completionTokens: usage.completionTokens,
+    totalTokens: usage.totalTokens,
+    estimatedCostUsd: estimatedCost === null ? null : estimatedCost.toFixed(10),
+  }
+}
+
 export function createAiRequestLogMiddleware(
   logId: number | undefined,
+  model: string,
 ): ChatMiddleware {
   const events: Array<StreamChunk> = []
   let usage = EMPTY_AI_TOKEN_TOTALS
@@ -140,7 +158,7 @@ export function createAiRequestLogMiddleware(
           events,
           usage: totals,
         }),
-        ...totals,
+        ...usageValues(model, totals),
         durationMs: info.duration,
         completedAt: new Date(),
       })
@@ -153,7 +171,7 @@ export function createAiRequestLogMiddleware(
           reason: info.reason ?? null,
         }),
         errorMessage: info.reason ?? 'Request aborted',
-        ...usage,
+        ...usageValues(model, usage),
         durationMs: info.duration,
         completedAt: new Date(),
       })
@@ -166,7 +184,7 @@ export function createAiRequestLogMiddleware(
           error: errorPayload(info.error),
         }),
         errorMessage: errorMessage(info.error),
-        ...usage,
+        ...usageValues(model, usage),
         durationMs: info.duration,
         completedAt: new Date(),
       })
@@ -179,8 +197,11 @@ export async function loadAiRequestStats(): Promise<AiRequestStats> {
     .select({
       requestCount: sql<number>`count(*)::double precision`,
       promptTokens: sql<number>`coalesce(sum(${aiRequestLogs.promptTokens}), 0)::double precision`,
+      cachedPromptTokens: sql<number>`coalesce(sum(${aiRequestLogs.cachedPromptTokens}), 0)::double precision`,
       completionTokens: sql<number>`coalesce(sum(${aiRequestLogs.completionTokens}), 0)::double precision`,
       totalTokens: sql<number>`coalesce(sum(${aiRequestLogs.totalTokens}), 0)::double precision`,
+      estimatedCostUsd: sql<string>`coalesce(sum(${aiRequestLogs.estimatedCostUsd}), 0)::text`,
+      pricedTokens: sql<number>`coalesce(sum(${aiRequestLogs.totalTokens}) filter (where ${aiRequestLogs.estimatedCostUsd} is not null), 0)::double precision`,
     })
     .from(aiRequestLogs)
 
@@ -188,8 +209,11 @@ export async function loadAiRequestStats(): Promise<AiRequestStats> {
     stats ?? {
       requestCount: 0,
       promptTokens: 0,
+      cachedPromptTokens: 0,
       completionTokens: 0,
       totalTokens: 0,
+      estimatedCostUsd: '0',
+      pricedTokens: 0,
     }
   )
 }
@@ -209,8 +233,10 @@ export async function loadAiRequestLogs({
       status: aiRequestLogs.status,
       errorMessage: aiRequestLogs.errorMessage,
       promptTokens: aiRequestLogs.promptTokens,
+      cachedPromptTokens: aiRequestLogs.cachedPromptTokens,
       completionTokens: aiRequestLogs.completionTokens,
       totalTokens: aiRequestLogs.totalTokens,
+      estimatedCostUsd: aiRequestLogs.estimatedCostUsd,
       durationMs: aiRequestLogs.durationMs,
       completedAt: aiRequestLogs.completedAt,
       createdAt: aiRequestLogs.createdAt,

@@ -1,6 +1,7 @@
 import type { ShotFormValues } from '@/components/shots/shot-parameter-fields'
 import { localDateTimeInputToDate } from '@/lib/date-input'
 import { toNullableRating } from '@/lib/rating'
+import { shotSensoryPayload } from '@/lib/shot-sensory'
 
 export function shotParameterPayload(values: ShotFormValues) {
   return {
@@ -29,16 +30,6 @@ export function shotParameterPayload(values: ShotFormValues) {
   }
 }
 
-export function sensoryRatingPayload(values: ShotFormValues) {
-  return {
-    bitterness: values.bitterness || null,
-    acidity: values.acidity || null,
-    sweetness: values.sweetness || null,
-    body: values.body || null,
-    astringency: values.astringency || null,
-  }
-}
-
 export function newShotPayload(
   values: ShotFormValues,
   tasteTagIds: readonly number[],
@@ -52,7 +43,7 @@ export function newShotPayload(
     brewedAt: brewedAt ?? undefined,
     recipeId: options?.recipeId ? Number(options.recipeId) : null,
     rating: toNullableRating(values.rating),
-    ...sensoryRatingPayload(values),
+    ...shotSensoryPayload(values),
     notes: values.notes || null,
     tasteTagIds,
   }

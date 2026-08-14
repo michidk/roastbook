@@ -17,6 +17,12 @@ function UsageMetric({ label, value }: { label: string; value: string }) {
   )
 }
 
+function formatUsd(value: string, formatNumber: (value: string) => string) {
+  const amount = Number(value)
+  if (!Number.isFinite(amount) || amount <= 0) return '$0.00'
+  return `$${formatNumber(amount.toFixed(amount < 0.01 ? 4 : 2))}`
+}
+
 export function AiSettings({ stats }: { stats: AiRequestStats }) {
   const [requestLogOpen, setRequestLogOpen] = useState(false)
   const formatNumber = useNumberFormatter()
@@ -28,7 +34,7 @@ export function AiSettings({ stats }: { stats: AiRequestStats }) {
         description="Review lifetime token usage and inspect raw extraction and research traffic."
         action={<Bot className="h-5 w-5 text-link" aria-hidden="true" />}
       >
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           <UsageMetric
             label="Requests"
             value={formatNumber(stats.requestCount)}
@@ -45,11 +51,16 @@ export function AiSettings({ stats }: { stats: AiRequestStats }) {
             label="Total tokens"
             value={formatNumber(stats.totalTokens)}
           />
+          <UsageMetric
+            label="Estimated cost"
+            value={formatUsd(stats.estimatedCostUsd, formatNumber)}
+          />
         </div>
         <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
             Includes full prompts, images, provider events, and unparsed
-            responses recorded from now on.
+            responses. Cost uses provider totals or known standard token rates;
+            tool fees are excluded.
           </p>
           <Button
             type="button"

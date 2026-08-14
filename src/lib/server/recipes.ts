@@ -2,9 +2,11 @@ import { createServerFn } from '@tanstack/react-start'
 import { and, asc, count, desc, eq, exists, ilike, or } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
-import { beans, brewingMethods, recipes, shots } from '@/db/schema'
-import { expectReturnedRow, notFound } from '@/lib/domain-errors'
+import { beans, brewingMethods, recipes } from '@/db/schema'
+import { escapedContainsPattern } from '@/lib/collection-query'
+import { expectReturnedRow } from '@/lib/domain-errors'
 import { getPaginationWindow } from '@/lib/pagination'
+import { shotRecipeTargetSchema } from '@/lib/recipe-target'
 import {
   replaceRecipeAccessoryGear,
   withAccessoryGearIds,
@@ -13,6 +15,7 @@ import {
   projectAccessoryGearIds,
   projectShotParameters,
 } from '@/lib/server/shot-parameter-projection'
+import { saveShotToRecipeInTransaction } from '@/lib/server/shot-recipes.server'
 import {
   nameSchema,
   positiveIdSchema,
@@ -25,22 +28,15 @@ const recipeUpdateSchema = shotUpdateSchema
     brewedAt: true,
     recipeId: true,
     rating: true,
+    bitterness: true,
+    acidity: true,
+    sweetness: true,
+    body: true,
+    astringency: true,
     notes: true,
     tasteTagIds: true,
   })
   .extend({ name: nameSchema })
-
-const saveShotAsRecipeSchema = z.object({
-  shotId: positiveIdSchema,
-  name: nameSchema,
-  linkShot: z.boolean().default(false),
-})
-
-const updateRecipeFromShotSchema = z.object({
-  shotId: positiveIdSchema,
-  recipeId: positiveIdSchema,
-  linkShot: z.boolean().default(false),
-})
 
 class RecipeInputError extends Error {
   constructor(message: string) {
@@ -87,7 +83,7 @@ export const getRecipeOptions = createServerFn({ method: 'GET' }).handler(
 export const getRecipePage = createServerFn({ method: 'GET' })
   .validator(recipeListSchema)
   .handler(async ({ data }) => {
-    const pattern = `%${data.query}%`
+    const pattern = escapedContainsPattern(data.query)
     const where = data.query
       ? or(
           ilike(recipes.name, pattern),
@@ -188,103 +184,11 @@ export const updateRecipe = createServerFn({ method: 'POST' })
   )
 
 export const saveShotAsRecipe = createServerFn({ method: 'POST' })
-  .validator(saveShotAsRecipeSchema)
+  .validator(shotRecipeTargetSchema)
   .handler(async ({ data }) =>
-    db.transaction(async (tx) => {
-      const shot = await tx.query.shots.findFirst({
-        where: eq(shots.id, data.shotId),
-        with: {
-          brewingMethod: true,
-          accessoryGearLinks: { columns: { gearId: true } },
-        },
-      })
-      if (!shot) throw notFound('Shot')
-
-      const shotValues = withAccessoryGearIds(shot)
-      const [recipe] = await tx
-        .insert(recipes)
-        .values({
-          name: data.name,
-          brewingMethodId: shot.brewingMethodId,
-          beanId: shot.beanId,
-          ...projectShotParameters(
-            shotValues,
-            shot.brewingMethod.enabledParameters,
-          ),
-        })
-        .returning()
-      const persistedRecipe = expectReturnedRow(recipe, 'Recipe')
-      await replaceRecipeAccessoryGear(
-        tx,
-        persistedRecipe.id,
-        projectAccessoryGearIds(
-          shotValues,
-          shot.brewingMethod.enabledParameters,
-        ),
-      )
-      if (data.linkShot) {
-        await tx
-          .update(shots)
-          .set({ recipeId: persistedRecipe.id, updatedAt: new Date() })
-          .where(eq(shots.id, shot.id))
-      }
-      return persistedRecipe
-    }),
-  )
-
-export const updateRecipeFromShot = createServerFn({ method: 'POST' })
-  .validator(updateRecipeFromShotSchema)
-  .handler(async ({ data }) =>
-    db.transaction(async (tx) => {
-      const [shot, targetRecipe] = await Promise.all([
-        tx.query.shots.findFirst({
-          where: eq(shots.id, data.shotId),
-          with: {
-            brewingMethod: true,
-            accessoryGearLinks: { columns: { gearId: true } },
-          },
-        }),
-        tx.query.recipes.findFirst({
-          where: eq(recipes.id, data.recipeId),
-          columns: { id: true, brewingMethodId: true },
-        }),
-      ])
-      if (!shot) throw new RecipeInputError('Shot not found')
-      if (!targetRecipe) throw new RecipeInputError('Recipe not found')
-      if (targetRecipe.brewingMethodId !== shot.brewingMethodId) {
-        throw new RecipeInputError('Recipe does not use this brewing method')
-      }
-
-      const shotValues = withAccessoryGearIds(shot)
-      const [recipe] = await tx
-        .update(recipes)
-        .set({
-          beanId: shot.beanId,
-          ...projectShotParameters(
-            shotValues,
-            shot.brewingMethod.enabledParameters,
-          ),
-          updatedAt: new Date(),
-        })
-        .where(eq(recipes.id, data.recipeId))
-        .returning()
-      const persistedRecipe = expectReturnedRow(recipe, 'Recipe')
-      await replaceRecipeAccessoryGear(
-        tx,
-        persistedRecipe.id,
-        projectAccessoryGearIds(
-          shotValues,
-          shot.brewingMethod.enabledParameters,
-        ),
-      )
-      if (data.linkShot) {
-        await tx
-          .update(shots)
-          .set({ recipeId: persistedRecipe.id, updatedAt: new Date() })
-          .where(eq(shots.id, shot.id))
-      }
-      return persistedRecipe
-    }),
+    db.transaction((tx) =>
+      saveShotToRecipeInTransaction(tx, data.shotId, data),
+    ),
   )
 
 export const deleteRecipe = createServerFn({ method: 'POST' })

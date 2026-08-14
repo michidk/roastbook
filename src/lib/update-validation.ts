@@ -5,6 +5,7 @@ import {
   type DecimalConstraint,
 } from '@/lib/measurement-constraints'
 import type { ShotParameterInput } from '@/lib/shot-parameters'
+import type { ShotSensoryRatingKey } from '@/lib/shot-sensory'
 
 export type ShotUpdateCandidate = ShotParameterInput & {
   readonly id: number
@@ -49,6 +50,14 @@ const SHOT_DECIMAL_RULES = [
   DecimalConstraint,
 ])[]
 
+const SHOT_SENSORY_RATING_LABELS = {
+  bitterness: 'Bitterness',
+  acidity: 'Acidity',
+  sweetness: 'Sweetness',
+  body: 'Body',
+  astringency: 'Astringency',
+} as const satisfies Record<ShotSensoryRatingKey, string>
+
 class UpdateInputError extends Error {
   constructor(message: string) {
     super(message)
@@ -72,11 +81,14 @@ function getDecimalError(
   return undefined
 }
 
-function getRatingError(value: number | null | undefined): string | undefined {
+function getRatingError(
+  value: number | null | undefined,
+  label = 'Rating',
+): string | undefined {
   if (value === null || value === undefined) return undefined
   return Number.isInteger(value) && value >= 1 && value <= 5
     ? undefined
-    : 'Rating must be between 1 and 5'
+    : `${label} must be between 1 and 5`
 }
 
 function getDateError(
@@ -116,11 +128,13 @@ export function getShotUpdateErrors(
     addError(errors, field, getDecimalError(data[field], rule))
   }
   addError(errors, 'rating', getRatingError(data.rating))
-  addError(errors, 'bitterness', getRatingError(data.bitterness))
-  addError(errors, 'acidity', getRatingError(data.acidity))
-  addError(errors, 'sweetness', getRatingError(data.sweetness))
-  addError(errors, 'body', getRatingError(data.body))
-  addError(errors, 'astringency', getRatingError(data.astringency))
+  for (const [field, label] of Object.entries(SHOT_SENSORY_RATING_LABELS)) {
+    addError(
+      errors,
+      field,
+      getRatingError(data[field as ShotSensoryRatingKey], label),
+    )
+  }
   addError(errors, 'brewedAt', getDateError(data.brewedAt, 'Brewed at'))
   return errors
 }

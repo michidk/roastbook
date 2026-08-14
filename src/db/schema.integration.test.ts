@@ -157,6 +157,56 @@ databaseDescribe('PostgreSQL schema', () => {
     )
   })
 
+  test('stores priced AI request logs and validates cached tokens', async () => {
+    const requestType = `ai-request-${crypto.randomUUID()}`
+
+    try {
+      const [request] = await database()<
+        [
+          {
+            cachedPromptTokens: number
+            estimatedCostUsd: string
+          },
+        ]
+      >`
+        insert into ai_request_logs (
+          request_type,
+          model,
+          request_payload,
+          prompt_tokens,
+          cached_prompt_tokens,
+          completion_tokens,
+          total_tokens,
+          estimated_cost_usd
+        ) values (${requestType}, 'gpt-4o', '{}', 100, 25, 20, 120, 0.00045)
+        returning
+          cached_prompt_tokens as "cachedPromptTokens",
+          estimated_cost_usd as "estimatedCostUsd"
+      `
+
+      expect(request).toEqual({
+        cachedPromptTokens: 25,
+        estimatedCostUsd: '0.0004500000',
+      })
+    } finally {
+      await database()`delete from ai_request_logs where request_type = ${requestType}`
+    }
+
+    await expectPostgresError(
+      () =>
+        database()`
+          insert into ai_request_logs (
+            request_type,
+            model,
+            request_payload,
+            prompt_tokens,
+            cached_prompt_tokens
+          ) values ('invalid-cached-usage', 'gpt-4o', '{}', 1, 2)
+        `,
+      '23514',
+    )
+  })
+
   test('cascades image metadata when a parent is deleted', async () => {
     await database().begin(async (transaction) => {
       const [bean] = await transaction<[{ id: number }]>`

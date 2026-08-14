@@ -116,15 +116,17 @@ Summary metrics use `MetricCard`. Use the hero variant for at most one focal
 metric, default for peers, and quiet for metrics nested inside another card.
 Avoid route-local stat-card variants.
 
-Use `StarRating` for every overall rating. Editable ratings and prominent
+Use `StarRating` for overall quality ratings. Editable ratings and prominent
 record details show the full star treatment; dense read-only contexts show the
-compact star plus `value/max`. Do not invent route-local `4/5`, `4★`, or
-badge-only variants.
+compact star plus `value/max`. Brew sensory intensity is the deliberate
+exception: bitterness, acidity, sweetness, body, and astringency use the shared
+icon intensity control. Only body uses bean icons; the other traits use an icon
+that describes that sense. Each trait explains what to notice and makes clear
+that the scale measures intensity, not quality.
 
-Sensory taste attributes (acidity, sweetness, bitterness, body, astringency)
-use `BeanRating` — the same interaction as `StarRating`, with an icon suited to
-each attribute. Body uses coffee beans; the other attributes do not. Sensory
-ratings are optional; tapping the current value clears it.
+Flavor notes use a compact tag list. The stored tag hint may retain its
+flavor-wheel path for later AI use, but that hierarchy does not create UI
+groups. Do not seed tags that merely duplicate a dedicated sensory intensity.
 
 ### Editorial bean card
 

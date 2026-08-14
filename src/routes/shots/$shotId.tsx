@@ -14,6 +14,7 @@ import {
   type ShotEditData,
   ShotEditForm,
 } from '@/components/shots/shot-edit-form'
+import { ShotSensoryRatingFields } from '@/components/shots/shot-sensory-ratings'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -35,13 +36,13 @@ import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { getActiveBeans } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getGear } from '@/lib/server/gear'
-import {
-  getRecipeOptions,
-  saveShotAsRecipe,
-  updateRecipeFromShot,
-} from '@/lib/server/recipes'
+import { getRecipeOptions, saveShotAsRecipe } from '@/lib/server/recipes'
 import { deleteShot, getShot } from '@/lib/server/shots'
 import { getTasteTags } from '@/lib/server/taste-tags'
+import {
+  hasShotSensoryRatings,
+  shotSensoryRatingsFrom,
+} from '@/lib/shot-sensory'
 import { isNegativeTasteTag } from '@/lib/taste-tags'
 
 export const Route = createFileRoute('/shots/$shotId')({
@@ -145,11 +146,11 @@ function ShotDetailPage() {
     if (isNewRecipe && !name) return
     setIsSavingRecipe(true)
     try {
-      const recipe = isNewRecipe
-        ? await saveShotAsRecipe({ data: { shotId: shot.id, name } })
-        : await updateRecipeFromShot({
-            data: { shotId: shot.id, recipeId: Number(recipeTarget) },
-          })
+      const recipe = await saveShotAsRecipe({
+        data: isNewRecipe
+          ? { shotId: shot.id, name }
+          : { shotId: shot.id, recipeId: Number(recipeTarget) },
+      })
       if (!recipe) {
         toast.error('Could not save this recipe')
         return
@@ -209,17 +210,10 @@ function ShotDetailPage() {
   ].filter((field) => field !== null)
   const hasTasteTags = shot.tasteTags.length > 0
   const hasNotes = Boolean(shot.notes?.trim())
-  const sensoryFields = [
-    { label: 'Acidity', value: shot.acidity },
-    { label: 'Sweetness', value: shot.sweetness },
-    { label: 'Bitterness', value: shot.bitterness },
-    { label: 'Body', value: shot.body },
-    { label: 'Astringency / Dryness', value: shot.astringency },
-  ].filter(
-    (field): field is { label: string; value: number } => field.value !== null,
-  )
+  const sensoryRatings = shotSensoryRatingsFrom(shot)
+  const hasSensoryRatings = hasShotSensoryRatings(shot)
   const hasTasting = Boolean(
-    shot.rating || sensoryFields.length > 0 || hasTasteTags || hasNotes,
+    shot.rating || hasSensoryRatings || hasTasteTags || hasNotes,
   )
   const availableRecipes = recipes.filter(
     (recipe) => recipe.brewingMethodId === shot.brewingMethodId,
@@ -417,26 +411,9 @@ function ShotDetailPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {sensoryFields.length > 0 && (
-                  <div className="grid gap-x-8 gap-y-2 sm:grid-cols-2">
-                    {sensoryFields.map((field) => (
-                      <div
-                        key={field.label}
-                        className="flex items-center justify-between gap-4"
-                      >
-                        <span className="text-sm text-muted-foreground">
-                          {field.label}
-                        </span>
-                        <StarRating
-                          value={field.value}
-                          readOnly
-                          sizeClassName="size-4"
-                          ariaLabel={field.label}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {hasSensoryRatings ? (
+                  <ShotSensoryRatingFields values={sensoryRatings} readOnly />
+                ) : null}
 
                 {hasTasteTags && (
                   <div className="flex flex-wrap gap-2">
