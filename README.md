@@ -1,12 +1,58 @@
 # Roastbook
 
-Roastbook is a self-hosted coffee journal for espresso shots, beans, recipes,
-café visits, roasters, brewing methods, and gear.
+[![Checks and Build](https://github.com/michidk/roastbook/actions/workflows/ci.yml/badge.svg)](https://github.com/michidk/roastbook/actions/workflows/ci.yml)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/CODACY_PROJECT_ID)](https://app.codacy.com/gh/michidk/roastbook/dashboard)
 
-It is built with Bun, TanStack Start and Router, React 19, shadcn/ui, Tailwind
-CSS, PostgreSQL/Drizzle, and local or S3-compatible media storage. Optional
-OpenAI-powered tools can extract information from images and research bean or
-machine details.
+**The AI-native coffee journal you actually own.** Roastbook is a self-hosted
+home for your espresso shots, beans, recipes, café visits, roasters, brewing
+methods, and gear — and it fills itself in for you.
+
+Photograph a bag and Roastbook reads the label: origin, region, farm, variety,
+process, roast level, roast date, tasting notes. Type a roaster's name and it
+researches the website, location, and background. Add an espresso machine and it
+looks up the documented factory defaults — brew pressure and OPV, pre-infusion
+time and pressure, flow limit, volumetric dose, steam pressure — from manuals and
+manufacturer documentation, so your shot log starts from real numbers instead of
+guesses.
+
+Logging coffee should take seconds, not minutes. Roastbook is built so the
+tedious part — transcribing labels, hunting down specs, remembering what changed
+between shots — happens for you, while every gram of your data stays on your own
+infrastructure.
+
+## Why Roastbook
+
+- **AI-native, not AI-bolted-on.** Research and extraction are wired into the
+  forms you already use and return typed, validated fields you confirm before
+  anything is saved.
+- **Yours, end to end.** Self-hosted on your own PostgreSQL and your own storage,
+  behind your own auth proxy. No accounts, no telemetry, no upsell.
+- **Built for people who chase shots.** Dose, yield, time, grind, pressure, and
+  temperature per shot, with charts and statistics that show what your changes
+  actually did.
+- **A journal, not just a log.** Beans, roasters, gear, recipes, brewing methods,
+  and café visits are linked, so every shot carries its whole story.
+- **Deploys in one command.** Docker Compose for a home server, a Helm chart for
+  a cluster.
+
+### AI features
+
+Set `OPENAI_API_KEY` and these turn on — everything else works without it:
+
+- **Label scanning.** Extract full bean details from a photo of the bag.
+- **Bean research.** Fill in origin, process, roast level, and tasting notes from
+  the roaster's own sources.
+- **Roaster research.** Resolve official website, Instagram, location, and a
+  factual profile.
+- **Machine research.** Pull documented factory espresso settings for your
+  specific model, with strict rules against inferring values from similar
+  machines.
+
+Every AI call is optional, server-side only, rate-limited, and schema-validated.
+
+**On the roadmap: an MCP server**, so your own agents can read and write your
+coffee log directly — ask what your last ten Gesha shots had in common, or have
+an assistant log this morning's espresso for you.
 
 ## Features
 
@@ -14,8 +60,32 @@ machine details.
 - Catalog beans, roasters, brewing methods, coffee shops, and gear.
 - Track café visits and explore saved places on a map.
 - Review activity, trends, and brewing statistics.
+- Scan labels and research beans, roasters, and machine settings with AI.
 - Store media locally or in S3-compatible object storage.
 - Gate self-hosted deployments with the Hodor reverse proxy.
+
+## Tech stack
+
+A modern, boring-where-it-counts TypeScript stack with full-stack type safety
+from the database row to the rendered field:
+
+| Layer | Choice |
+| --- | --- |
+| Runtime and package manager | Bun 1.3.14 |
+| Full-stack framework | TanStack Start with server functions |
+| Routing | TanStack Router, file-based and fully typed |
+| UI | React 19, shadcn/ui, Radix and Base UI, Tailwind CSS v4 |
+| Icons and maps | Lucide, MapLibre GL |
+| Database | PostgreSQL with Drizzle ORM and committed migrations |
+| Media storage | Local filesystem or any S3-compatible bucket |
+| AI | TanStack AI with any OpenAI-compatible endpoint |
+| Validation | Zod at every boundary, including environment variables |
+| Tooling | Vite, Biome, Knip, `bun test` |
+| Deployment | Docker Compose or Helm, fronted by the Hodor auth proxy |
+
+Server-only concerns — database access, storage providers, AI calls, and secrets
+— never cross into browser code, and configuration is validated at startup
+instead of failing at request time.
 
 ## Quick start with Docker Compose
 

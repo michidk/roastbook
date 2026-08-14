@@ -18,6 +18,11 @@ Hodor authentication proxy in front of the application.
 Do not duplicate configuration tables or deployment examples here. Update the
 source-of-truth document alongside behavior changes.
 
+Update `README.md` when a change affects what it advertises or documents: new or
+removed features, changed setup or commands, new documentation entry points, or
+a changed technology stack. Keep its claims accurate — do not describe planned
+work as shipped.
+
 ## Architecture boundaries
 
 - Routes live in `src/routes/` and use TanStack Router file-based routing.
