@@ -2,6 +2,7 @@ import type { ChatMiddleware, StreamChunk, TokenUsage } from '@tanstack/ai'
 import { desc, eq, lt, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { aiRequestLogs } from '@/db/schema'
+import { aiErrorMessage, aiErrorPayload } from '@/lib/ai-error-details'
 import { estimateTokenCostUsd } from '@/lib/ai-pricing'
 import {
   type AiTokenTotals,
@@ -46,19 +47,6 @@ export type AiRequestStats = {
   totalTokens: number
   estimatedCostUsd: string
   pricedTokens: number
-}
-
-function errorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message
-  if (typeof error === 'string') return error
-  return 'Unknown error'
-}
-
-function errorPayload(error: unknown) {
-  if (error instanceof Error) {
-    return { name: error.name, message: error.message }
-  }
-  return { message: errorMessage(error) }
 }
 
 function isAiRequestStatus(value: string): value is AiRequestStatus {
@@ -181,9 +169,9 @@ export function createAiRequestLogMiddleware(
         status: 'failed',
         responsePayload: toJsonValue({
           events,
-          error: errorPayload(info.error),
+          error: aiErrorPayload(info.error),
         }),
-        errorMessage: errorMessage(info.error),
+        errorMessage: aiErrorMessage(info.error),
         ...usageValues(model, usage),
         durationMs: info.duration,
         completedAt: new Date(),

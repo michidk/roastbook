@@ -5,6 +5,7 @@ import { DeleteConfirmation } from '@/components/DeleteConfirmation'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { createTasteTag, deleteTasteTag } from '@/lib/server/taste-tags'
 import { isNegativeTasteTag } from '@/lib/taste-tags'
 
@@ -12,7 +13,7 @@ type TasteTag = {
   readonly id: number
   readonly name: string
   readonly category: string | null
-  readonly hint: string | null
+  readonly llmInstruction: string
 }
 
 export function TasteTagSettings({
@@ -23,15 +24,18 @@ export function TasteTagSettings({
   readonly onChanged: () => void
 }) {
   const [newTagName, setNewTagName] = useState('')
+  const [newTagInstruction, setNewTagInstruction] = useState('')
   const [isAdding, setIsAdding] = useState(false)
 
   const handleAdd = async () => {
     const name = newTagName.trim()
-    if (!name) return
+    const llmInstruction = newTagInstruction.trim()
+    if (!name || !llmInstruction) return
     setIsAdding(true)
     try {
-      await createTasteTag({ data: { name } })
+      await createTasteTag({ data: { name, llmInstruction } })
       setNewTagName('')
+      setNewTagInstruction('')
       onChanged()
       toast.success(`Added "${name}"`)
     } catch (error) {
@@ -57,9 +61,9 @@ export function TasteTagSettings({
               >
                 {tag.name}
               </Badge>
-              {tag.hint ? (
+              {tag.llmInstruction ? (
                 <span className="truncate text-xs text-muted-foreground">
-                  {tag.hint}
+                  {tag.llmInstruction}
                 </span>
               ) : null}
             </span>
@@ -80,26 +84,39 @@ export function TasteTagSettings({
         )}
       </ul>
       <form
-        className="flex items-center gap-2"
+        className="grid gap-2 sm:grid-cols-[minmax(10rem,0.65fr)_minmax(16rem,1.35fr)_auto] sm:items-start"
         onSubmit={(event) => {
           event.preventDefault()
           void handleAdd()
         }}
       >
-        <label htmlFor="new-taste-tag" className="sr-only">
-          New tag name
+        <label htmlFor="new-taste-tag-label" className="sr-only">
+          Tag label
         </label>
         <Input
-          id="new-taste-tag"
+          id="new-taste-tag-label"
           value={newTagName}
           onChange={(event) => setNewTagName(event.target.value)}
-          placeholder="e.g., Stone fruit"
+          placeholder="Label, e.g. Stone fruit"
           maxLength={50}
+        />
+        <label htmlFor="new-taste-tag-instruction" className="sr-only">
+          LLM instruction
+        </label>
+        <Textarea
+          id="new-taste-tag-instruction"
+          value={newTagInstruction}
+          onChange={(event) => setNewTagInstruction(event.target.value)}
+          placeholder="LLM instruction for interpreting this tag"
+          maxLength={1000}
+          rows={2}
+          className="min-h-11 resize-y"
         />
         <Button
           type="submit"
           size="sm"
-          disabled={isAdding || !newTagName.trim()}
+          className="min-h-11"
+          disabled={isAdding || !newTagName.trim() || !newTagInstruction.trim()}
         >
           <Plus />
           {isAdding ? 'Adding…' : 'Add tag'}

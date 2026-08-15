@@ -19,7 +19,10 @@ export const createTasteTag = createServerFn({ method: 'POST' })
     if (existing) throw new Error(`A tag named "${data.name}" already exists`)
     const [tag] = await db
       .insert(tasteTags)
-      .values({ name: data.name, category: 'flavor' })
+      .values({
+        name: data.name,
+        llmInstruction: data.llmInstruction,
+      })
       .returning()
     return tag
   })

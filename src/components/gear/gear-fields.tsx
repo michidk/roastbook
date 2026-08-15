@@ -113,6 +113,7 @@ export function GearFields({
             id={id('priceCurrency')}
             value={values.priceCurrency}
             onChange={(value) => onChange('priceCurrency', value)}
+            clearable
           />
         </div>
       </FormSection>

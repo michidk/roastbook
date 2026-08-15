@@ -420,7 +420,6 @@ function ShotDetailPage() {
                     {shot.tasteTags.map((tt) => (
                       <Badge
                         key={tt.id}
-                        title={tt.tasteTag.hint ?? undefined}
                         variant={
                           isNegativeTasteTag(tt.tasteTag)
                             ? 'destructive'

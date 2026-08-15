@@ -2,9 +2,15 @@ import { describe, expect, test } from 'bun:test'
 import { TASTE_TAGS } from './taste-tags'
 
 describe('default taste tags', () => {
-  test('stores flavor-wheel context as an AI hint', () => {
+  test('stores neutral dial-in guidance for the LLM', () => {
+    expect(TASTE_TAGS.every((tag) => tag.llmInstruction.length > 0)).toBe(true)
     expect(
-      TASTE_TAGS.every((tag) => tag.hint.startsWith('Flavor wheel:')),
+      TASTE_TAGS.every((tag) =>
+        tag.llmInstruction.includes('when suggesting dial-in changes'),
+      ),
+    ).toBe(true)
+    expect(
+      TASTE_TAGS.every((tag) => !/\bcompass\b/i.test(tag.llmInstruction)),
     ).toBe(true)
   })
 

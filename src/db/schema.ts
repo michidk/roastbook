@@ -808,7 +808,7 @@ export const tasteTags = pgTable(
     category: text('category'),
     extractionAxis: decimal('extraction_axis', { precision: 3, scale: 2 }),
     strengthAxis: decimal('strength_axis', { precision: 3, scale: 2 }),
-    hint: text('hint').default('').notNull(),
+    llmInstruction: text('llm_instruction').default('').notNull(),
   },
   (table) => [
     check(

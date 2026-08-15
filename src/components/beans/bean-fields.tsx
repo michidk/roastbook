@@ -66,6 +66,7 @@ export function BeanFields({
             value={values.type}
             onChange={(value) => onChange('type', value as BeanType | '')}
             options={BEAN_TYPES}
+            clearable
           />
           <InputField
             id={id('weight')}
@@ -94,6 +95,7 @@ export function BeanFields({
               value={values.priceCurrency}
               onChange={(value) => onChange('priceCurrency', value)}
               className="w-28"
+              clearable
             />
           </div>
           <InputField
@@ -149,6 +151,7 @@ export function BeanFields({
             value={values.process}
             onChange={(value) => onChange('process', value)}
             options={PROCESS_METHODS}
+            clearable
           />
           <SelectField
             id={id('roastLevel')}
@@ -159,6 +162,7 @@ export function BeanFields({
               onChange('roastLevel', value as RoastLevel | '')
             }
             options={ROAST_LEVELS}
+            clearable
           />
           <InputField
             id={id('roastDate')}

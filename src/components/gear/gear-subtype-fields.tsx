@@ -152,6 +152,7 @@ export function GearSubtypeFields({
           value={values.autoStopMode}
           onChange={(value) => onChange('autoStopMode', value)}
           options={AUTO_STOP_OPTIONS}
+          clearable
         />
         <InputField
           id="machine-steam-temperature"

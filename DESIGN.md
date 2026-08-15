@@ -124,9 +124,10 @@ icon intensity control. Only body uses bean icons; the other traits use an icon
 that describes that sense. Each trait explains what to notice and makes clear
 that the scale measures intensity, not quality.
 
-Flavor notes use a compact tag list. The stored tag hint may retain its
-flavor-wheel path for later AI use, but that hierarchy does not create UI
-groups. Do not seed tags that merely duplicate a dedicated sensory intensity.
+Flavor notes use a compact tag list. Each tag stores a label and an LLM
+instruction for interpreting the flavor during dial-in guidance. The
+extraction and strength mapping remains internal and does not create UI groups.
+Do not seed tags that merely duplicate a dedicated sensory intensity.
 
 ### Editorial bean card
 

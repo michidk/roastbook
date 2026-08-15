@@ -64,6 +64,7 @@ export function StatsFilters({
           onChange={(method) =>
             onChange({ method: method ? Number(method) : undefined })
           }
+          clearable
         />
         <SelectField
           id="stats-bean"
@@ -74,6 +75,7 @@ export function StatsFilters({
           onChange={(bean) =>
             onChange({ bean: bean ? Number(bean) : undefined })
           }
+          clearable
         />
         <Button
           type="button"

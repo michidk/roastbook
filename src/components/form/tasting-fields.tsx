@@ -15,7 +15,6 @@ import { cn } from '@/lib/utils'
 type TasteTagOption = {
   readonly id: number
   readonly name: string
-  readonly hint?: string | null
 }
 
 type NotesFieldProps = {
@@ -150,7 +149,6 @@ function TasteTags({
                 'min-h-11 px-3 py-2 transition-colors [@media(hover:hover)_and_(pointer:fine)]:min-h-8 [@media(hover:hover)_and_(pointer:fine)]:py-0',
                 !isSelected && 'hover:bg-primary/10',
               )}
-              title={tag.hint ?? undefined}
               onClick={() => onToggleTag(tag.id)}
             >
               {tag.name}

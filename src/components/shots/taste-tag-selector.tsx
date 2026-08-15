@@ -4,7 +4,6 @@ import { cn } from '@/lib/utils'
 type TasteTag = {
   readonly id: number
   readonly name: string
-  readonly hint?: string | null
 }
 
 type TasteTagSelectorProps = {
@@ -32,7 +31,6 @@ export function TasteTagSelector({
               key={tag.id}
               type="button"
               aria-pressed={isSelected}
-              title={tag.hint ?? undefined}
               onClick={() => onToggle(tag.id)}
               className={cn(
                 'min-h-8 rounded-lg border px-2.5 py-1 text-xs font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50',

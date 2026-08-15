@@ -55,6 +55,7 @@ export function BrewCollectionToolbar({
               label: method.name,
             }))}
             className="min-w-32"
+            clearable
           />
           <SelectField
             id="brew-rating-filter"
@@ -63,6 +64,7 @@ export function BrewCollectionToolbar({
             onChange={onRatingChange}
             options={RATING_OPTIONS}
             className="min-w-28"
+            clearable
           />
         </div>
       }

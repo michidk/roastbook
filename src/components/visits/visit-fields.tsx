@@ -98,6 +98,7 @@ export function VisitFields({
             value={values.drinkType}
             onChange={(value) => onFieldChange('drinkType', value)}
             options={DRINK_TYPE_OPTIONS}
+            clearable
           />
           <InputField
             id="price"
@@ -115,6 +116,7 @@ export function VisitFields({
             value={values.currency}
             onChange={(value) => onFieldChange('currency', value)}
             error={errors.currency}
+            clearable
           />
         </div>
       </FormSection>

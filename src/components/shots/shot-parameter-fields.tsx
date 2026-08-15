@@ -334,6 +334,7 @@ export function ShotParameterFields({
                 label="Ratio basis"
                 value={values.ratioBasis}
                 options={RATIO_BASIS_OPTIONS}
+                clearable
                 onChange={(value) =>
                   onChange(
                     'ratioBasis',
@@ -451,6 +452,7 @@ export function ShotParameterFields({
                 label="Paper filter"
                 value={values.paperFilterPosition}
                 options={PAPER_FILTER_OPTIONS}
+                clearable
                 onChange={(value) =>
                   onChange(
                     'paperFilterPosition',
@@ -471,6 +473,7 @@ export function ShotParameterFields({
                 placeholder="Choose a method"
                 value={values.distributionMethod}
                 options={DISTRIBUTION_METHOD_OPTIONS}
+                clearable
                 onChange={(value) => {
                   if (value === '' || isDistributionMethod(value)) {
                     onChange('distributionMethod', value)

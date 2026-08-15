@@ -185,6 +185,7 @@ interface SelectOption {
 
 interface SelectFieldProps extends FormFieldBaseProps {
   placeholder?: string
+  clearable?: boolean
   value: string
   onChange: (value: string) => void
   options: readonly SelectOption[] | SelectOption[]
@@ -198,6 +199,7 @@ export function SelectField({
   disabled,
   error,
   placeholder,
+  clearable = false,
   value,
   onChange,
   options,
@@ -227,7 +229,7 @@ export function SelectField({
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
-          {!required && value ? (
+          {clearable && !required && value ? (
             <>
               <SelectItem value={null}>
                 <X />

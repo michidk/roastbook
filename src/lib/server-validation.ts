@@ -186,4 +186,5 @@ export const shotUpdateSchema = shotCreateSchema.extend({
 
 export const tasteTagCreateSchema = z.object({
   name: z.string().trim().min(1).max(50),
+  llmInstruction: z.string().trim().min(1).max(1000),
 })

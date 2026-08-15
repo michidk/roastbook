@@ -7,6 +7,7 @@ import {
   notFutureDateSchema,
   positiveIdSchema,
   shotCreateSchema,
+  tasteTagCreateSchema,
 } from '@/lib/server-validation'
 
 describe('server validation schemas', () => {
@@ -70,6 +71,21 @@ describe('server validation schemas', () => {
         brewingMethodId: 1,
         brewedAt: new Date(Date.now() + 10 * 60 * 1000),
       }),
+    ).toThrow()
+  })
+
+  test('requires a label and LLM instruction for custom taste tags', () => {
+    expect(
+      tasteTagCreateSchema.parse({
+        name: '  Jammy  ',
+        llmInstruction: '  Treat this as a strong fruit note.  ',
+      }),
+    ).toEqual({
+      name: 'Jammy',
+      llmInstruction: 'Treat this as a strong fruit note.',
+    })
+    expect(() =>
+      tasteTagCreateSchema.parse({ name: 'Jammy', llmInstruction: '' }),
     ).toThrow()
   })
 })
