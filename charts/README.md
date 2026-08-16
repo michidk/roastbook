@@ -95,7 +95,8 @@ Set `migrations.enabled=false` when migrations are managed outside Helm, or
 - `autoscaling.enabled=true` creates a CPU-based HorizontalPodAutoscaler.
 - The PodDisruptionBudget renders only for a multi-replica deployment.
 - `networkPolicy.enabled=true` restricts ingress to the active public container
-  port.
+  port on application pods. The bundled PostgreSQL and migration pods are not
+  selected by this web-ingress policy.
 - Local `ReadWriteOnce` storage uses the `Recreate` deployment strategy.
 - S3 and shared `ReadWriteMany` storage use the configured rolling strategy.
 

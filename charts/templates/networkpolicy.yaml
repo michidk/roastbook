@@ -9,6 +9,7 @@ spec:
   podSelector:
     matchLabels:
       {{- include "roastbook.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: web
   policyTypes:
     - Ingress
   ingress:

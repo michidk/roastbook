@@ -9,7 +9,8 @@ bypassing that proxy.
 
 - Docker Compose publishes Hodor and keeps the application container private.
 - The Helm Service targets Hodor when enabled, and the default NetworkPolicy
-  restricts ingress to the selected public container port.
+  restricts ingress to the selected public container port on application pods
+  without selecting bundled PostgreSQL or migration pods.
 - If Hodor is disabled, provide an equivalent authenticated proxy or deploy
   only on a trusted network.
 - Configure TLS in production. Helm enables secure cookies when ingress TLS is
