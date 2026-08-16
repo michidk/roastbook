@@ -255,6 +255,8 @@ function BeanDetailPage() {
         roasters={roasters}
         isEditing={isEditing}
         isSaving={isSaving}
+        recommendationEnabled={researchEnabled}
+        shotCount={shotAnalytics.totalShots}
         onToggleArchive={() => {
           void updateBean({
             data: { id: bean.id, isArchived: !bean.isArchived },

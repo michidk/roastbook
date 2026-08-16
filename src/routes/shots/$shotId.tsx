@@ -155,8 +155,10 @@ function ShotDetailPage() {
         toast.error('Could not save this recipe')
         return
       }
+      setRecipeTarget(String(recipe.id))
       setRecipeName('')
       setIsRecipeDialogOpen(false)
+      await router.invalidate({ filter: (match) => match.routeId === Route.id })
       toast.success(isNewRecipe ? 'Recipe created' : 'Recipe updated')
     } catch (error) {
       toast.error(

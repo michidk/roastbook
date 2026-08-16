@@ -61,6 +61,9 @@ Set `OPENAI_API_KEY` and these turn on — everything else works without it:
 - **Machine research.** Pull documented factory espresso settings for your
   specific model, with strict rules against inferring values from similar
   machines.
+- **Brew recommendations.** Analyze up to 50 brews for the same bean, method,
+  and exact gear setup, then suggest a small evidence-grounded adjustment for
+  the next brew.
 - **Request debugging.** Review lifetime token usage and estimated token cost,
   then inspect every raw AI input, response event, error, and unparsed output
   from Settings.

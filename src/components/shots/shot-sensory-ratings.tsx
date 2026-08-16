@@ -121,7 +121,7 @@ export function ShotSensoryRatingFields({
                           aria-label={`Set ${meta.label.toLowerCase()} to ${level} out of 5`}
                           aria-pressed={level === value}
                           className={cn(
-                            'flex size-10 shrink-0 items-center justify-center rounded-full outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 [@media(hover:hover)_and_(pointer:fine)]:size-8',
+                            'flex size-11 shrink-0 items-center justify-center rounded-full outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 [@media(hover:hover)_and_(pointer:fine)]:size-8',
                             filled
                               ? 'bg-primary/20 text-link'
                               : 'text-muted-foreground hover:bg-secondary',

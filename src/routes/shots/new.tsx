@@ -12,6 +12,7 @@ import {
 } from '@/components/form/form-field'
 import { FormErrorSummary, FormSection } from '@/components/form/form-shell'
 import { Page, PageHeader } from '@/components/page-layout'
+import { AiRecommendationDialog } from '@/components/shots/ai-recommendation-dialog'
 import {
   availableGearForShot,
   EMPTY_SHOT_FORM_VALUES,
@@ -47,6 +48,7 @@ import { getActiveBeans } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getGear } from '@/lib/server/gear'
 import { getRecipes } from '@/lib/server/recipes'
+import { checkShotRecommendationEnabled } from '@/lib/server/shot-recommendations'
 import {
   createShot,
   createShotWithRecipe,
@@ -72,6 +74,7 @@ export const Route = createFileRoute('/shots/new')({
       brewingMethodSuggestions,
       lastBeansByBrewingMethod,
       gear,
+      recommendation,
     ] = await Promise.all([
       getActiveBeans(),
       getBrewingMethods(),
@@ -81,6 +84,7 @@ export const Route = createFileRoute('/shots/new')({
       getBrewingMethodSuggestions(),
       getLastBeansByBrewingMethod(),
       getGear(),
+      checkShotRecommendationEnabled(),
     ])
     return {
       beans,
@@ -91,6 +95,7 @@ export const Route = createFileRoute('/shots/new')({
       brewingMethodSuggestions,
       lastBeansByBrewingMethod,
       gear,
+      recommendationEnabled: recommendation.enabled,
       defaultBrewedAt: new Date().toISOString(),
     }
   },
@@ -119,6 +124,7 @@ function NewShotPage() {
     brewingMethodSuggestions,
     lastBeansByBrewingMethod,
     gear,
+    recommendationEnabled,
     defaultBrewedAt,
   } = Route.useLoaderData()
   const navigate = useNavigate()
@@ -471,6 +477,19 @@ function NewShotPage() {
         </div>
         <aside className="space-y-4 lg:sticky lg:top-24">
           {selectedBean ? <BeanCard bean={selectedBean} /> : null}
+          <AiRecommendationDialog
+            enabled={recommendationEnabled}
+            request={
+              values.beanId && values.brewingMethodId
+                ? {
+                    beanId: Number(values.beanId),
+                    brewingMethodId: Number(values.brewingMethodId),
+                  }
+                : null
+            }
+            size="lg"
+            className="w-full"
+          />
           {hasShotTimer ? (
             <ShotTimer
               key={timerKey}

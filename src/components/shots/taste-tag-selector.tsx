@@ -34,14 +34,18 @@ export function TasteTagSelector({
               aria-pressed={isSelected}
               title={tag.hint ?? undefined}
               onClick={() => onToggle(tag.id)}
-              className={cn(
-                'min-h-8 rounded-lg border px-2.5 py-1 text-xs font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
-                isSelected
-                  ? 'border-foreground bg-primary text-primary-foreground'
-                  : 'border-border bg-secondary',
-              )}
+              className="group/tag flex min-h-11 items-center rounded-lg text-xs font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50 [@media(hover:hover)_and_(pointer:fine)]:min-h-8"
             >
-              {tag.name}
+              <span
+                className={cn(
+                  'rounded-lg border px-2.5 py-1',
+                  isSelected
+                    ? 'border-foreground bg-primary text-primary-foreground'
+                    : 'border-border bg-secondary group-hover/tag:bg-primary/10',
+                )}
+              >
+                {tag.name}
+              </span>
             </button>
           )
         })}

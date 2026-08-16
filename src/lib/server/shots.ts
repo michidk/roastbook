@@ -6,6 +6,7 @@ import {
   desc,
   eq,
   isNull,
+  notInArray,
   or,
   type SQL,
   sql,
@@ -42,6 +43,7 @@ import {
   shotCreateSchema,
   shotUpdateSchema,
 } from '@/lib/server-validation'
+import { LEGACY_SENSORY_TASTE_TAG_NAMES } from '@/lib/taste-tags'
 import { assertValidUpdate, getShotUpdateErrors } from '@/lib/update-validation'
 
 type ShotCreateCandidate = ReturnType<typeof shotCreateSchema.parse>
@@ -314,7 +316,12 @@ export const getBeanShotAnalytics = createServerFn({ method: 'GET' })
         .from(shotTasteTags)
         .innerJoin(shots, eq(shotTasteTags.shotId, shots.id))
         .innerJoin(tasteTags, eq(shotTasteTags.tasteTagId, tasteTags.id))
-        .where(eq(shots.beanId, beanId))
+        .where(
+          and(
+            eq(shots.beanId, beanId),
+            notInArray(tasteTags.name, [...LEGACY_SENSORY_TASTE_TAG_NAMES]),
+          ),
+        )
         .groupBy(tasteTags.id, tasteTags.name)
         .orderBy(desc(tagUsageCount), asc(tasteTags.name))
         .limit(5),

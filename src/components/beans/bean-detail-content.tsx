@@ -19,6 +19,7 @@ import {
 } from '@/components/entity-image-gallery'
 import { PageHeader } from '@/components/page-layout'
 import type { RoasterOption } from '@/components/roasters/roaster-picker'
+import { AiRecommendationDialog } from '@/components/shots/ai-recommendation-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -75,6 +76,8 @@ export function BeanDetailHeader({
   roasters,
   isEditing,
   isSaving,
+  recommendationEnabled,
+  shotCount,
   onToggleArchive,
   onStartEdit,
   onCancelEdit,
@@ -86,6 +89,8 @@ export function BeanDetailHeader({
   roasters: readonly RoasterOption[]
   isEditing: boolean
   isSaving: boolean
+  recommendationEnabled: boolean
+  shotCount: number
   onToggleArchive: () => void
   onStartEdit: () => void
   onCancelEdit: () => void
@@ -161,6 +166,11 @@ export function BeanDetailHeader({
             </>
           ) : (
             <>
+              <AiRecommendationDialog
+                enabled={recommendationEnabled}
+                request={shotCount > 0 ? { beanId: bean.id } : null}
+                size="sm"
+              />
               <Button variant="outline" size="sm" onClick={onStartEdit}>
                 <Pencil />
                 Edit
