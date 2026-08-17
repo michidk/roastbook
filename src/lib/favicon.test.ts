@@ -37,4 +37,15 @@ describe('favicon helpers', () => {
       }),
     ).toBe('/media/favicons/roasters/12.png?v=1786708800000')
   })
+
+  test('uses a stored favicon even when an entity has no website', () => {
+    expect(
+      getStoredFaviconUrl({
+        entityType: 'roasters',
+        entityId: 3,
+        website: null,
+        updatedAt: '2026-08-14T12:00:00.000Z',
+      }),
+    ).toBe('/media/favicons/roasters/3.png?v=1786708800000')
+  })
 })

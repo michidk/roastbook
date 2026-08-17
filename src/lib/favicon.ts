@@ -26,7 +26,6 @@ export function getStoredFaviconUrl({
   entityType,
   entityId,
   updatedAt,
-  website,
 }: {
   readonly entityType: WebsiteEntityType
   readonly entityId: number
@@ -44,8 +43,6 @@ export function getStoredFaviconUrl({
     const filename = demoFavicons[(entityId - 1) % demoFavicons.length]
     return filename ? imageUrl(`demo-favicons/${filename}`) : undefined
   }
-
-  if (!getWebsiteOrigin(website)) return undefined
 
   const url = imageUrl(getFaviconStoragePath(entityType, entityId))
   const version = new Date(updatedAt).getTime()

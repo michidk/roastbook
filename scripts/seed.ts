@@ -1,6 +1,6 @@
 import * as schema from '../src/db/schema'
 import { DEFAULT_BREWING_METHODS } from '../src/lib/brewing-methods'
-import { refreshWebsiteFaviconBestEffort } from '../src/lib/server/favicon-cache.server'
+import { getFaviconStoragePath } from '../src/lib/favicon'
 import { generateAndUploadThumbnail } from '../src/lib/server/thumbnails'
 import { getStorage } from '../src/lib/storage'
 import { client, db } from './database'
@@ -8,111 +8,95 @@ import { TASTE_TAGS } from './taste-tags'
 
 const ROASTERS = [
   {
-    name: 'Onyx Coffee Lab',
-    location: 'Rogers, Arkansas',
-    country: 'United States',
-    website: 'https://onyxcoffeelab.com',
-    instagramHandle: 'onyxcoffeelab',
-    notes:
-      'Multiple-time Roaster of the Year. Known for exceptional single origins.',
+    name: 'Ember Atlas',
+    location: 'Alderwick',
+    country: 'Demo Republic',
+    notes: 'Small-lot coffees with warm, fruit-forward profiles.',
   },
   {
-    name: 'George Howell',
-    location: 'Boston, Massachusetts',
-    country: 'United States',
-    website: 'https://georgehowellcoffee.com',
-    instagramHandle: 'georgehowellcoffee',
-    notes: 'Pioneer of specialty coffee. Incredible sourcing and roasting.',
+    name: 'Quiet Current',
+    location: 'Lumen Bay',
+    country: 'Sample Isles',
+    notes: 'Gentle roasting focused on sweetness and clarity.',
   },
   {
-    name: 'Counter Culture',
-    location: 'Durham, North Carolina',
-    country: 'United States',
-    website: 'https://counterculturecoffee.com',
-    instagramHandle: 'counterculturecoffee',
-    notes: 'Sustainable sourcing focus. Great training programs.',
+    name: 'Juniper & Coil',
+    location: 'Northmere',
+    country: 'Demo Republic',
+    notes: 'Seasonal releases with botanical and chocolate notes.',
   },
   {
-    name: 'Square Mile',
-    location: 'London',
-    country: 'United Kingdom',
-    website: 'https://squaremilecoffee.com',
-    instagramHandle: 'squaremilecoffee',
-    notes: 'Founded by World Barista Champions. Nordic-style roasting.',
+    name: 'Northstar Roastworks',
+    location: 'Bellweather',
+    country: 'Sample Isles',
+    notes: 'Bright showcase roasts for filter and espresso.',
   },
   {
-    name: 'The Barn',
-    location: 'Berlin',
-    country: 'Germany',
-    website: 'https://thebarn.de',
-    instagramHandle: 'thebarnberlin',
-    notes: "Berlin's iconic specialty roaster. Light roasts.",
+    name: 'Paper Crane Coffee',
+    location: 'Alderwick',
+    country: 'Demo Republic',
+    notes: 'Comforting everyday coffees with a playful edge.',
   },
 ]
 
 const BEANS = [
   {
-    name: 'Ethiopia Yirgacheffe Kochere',
-    roaster: 'Onyx Coffee Lab',
-    origin: 'Ethiopia',
-    region: 'Yirgacheffe',
-    farm: 'Kochere Cooperative',
-    variety: 'Heirloom',
+    name: 'Moonrise Lot 17',
+    roaster: 'Ember Atlas',
+    origin: 'Luma Highlands',
+    region: 'Moonrise Valley',
+    farm: 'Lot Seventeen',
+    variety: 'Aurora',
     process: 'Washed',
     roastLevel: 'light' as const,
     roastDate: daysAgo(14),
-    notes:
-      'Bright and floral with notes of jasmine, bergamot, and lemon zest. Excellent as a pourover.',
+    notes: 'Bright and floral with citrus, jasmine, and a clean finish.',
   },
   {
-    name: 'Colombia Huila Pink Bourbon',
-    roaster: 'George Howell',
-    origin: 'Colombia',
-    region: 'Huila',
-    farm: 'Finca El Paraíso',
-    variety: 'Pink Bourbon',
-    process: 'Natural',
+    name: 'Coral Ridge Honey',
+    roaster: 'Quiet Current',
+    origin: 'San Aurelio',
+    region: 'Coral Ridge',
+    farm: 'Sunstep Garden',
+    variety: 'Rosella',
+    process: 'Honey',
     roastLevel: 'medium_light' as const,
     roastDate: daysAgo(10),
-    notes:
-      'Strawberry jam sweetness, wine-like acidity, and a long chocolatey finish.',
+    notes: 'Jammy berry sweetness with a soft cocoa finish.',
   },
   {
-    name: 'Guatemala Antigua',
-    roaster: 'Counter Culture',
-    origin: 'Guatemala',
-    region: 'Antigua',
-    farm: 'Finca La Soledad',
-    variety: 'Bourbon, Caturra',
+    name: 'Glasshouse Bloom',
+    roaster: 'Juniper & Coil',
+    origin: 'Verdant Reach',
+    region: 'Glasshouse District',
+    farm: 'Canopy Station',
+    variety: 'Canopy',
     process: 'Washed',
     roastLevel: 'medium' as const,
     roastDate: daysAgo(21),
-    notes:
-      'Classic Central American profile - milk chocolate, orange, and brown sugar.',
+    notes: 'Balanced milk chocolate, orange, and brown sugar notes.',
   },
   {
-    name: 'Kenya Nyeri AA',
-    roaster: 'Square Mile',
-    origin: 'Kenya',
-    region: 'Nyeri',
-    variety: 'SL28, SL34',
+    name: 'Northwind Peaberry',
+    roaster: 'Northstar Roastworks',
+    origin: 'Kisiwa Plateau',
+    region: 'Northwind Hills',
+    variety: 'Peaberry',
     process: 'Washed',
     roastLevel: 'light' as const,
     roastDate: daysAgo(7),
-    notes:
-      'Blackcurrant, tomato, and a sparkling acidity. Intense and complex.',
+    notes: 'Blackcurrant sweetness with sparkling acidity.',
   },
   {
-    name: 'Brazil Cerrado',
-    roaster: 'Local Roaster',
-    origin: 'Brazil',
-    region: 'Cerrado Mineiro',
-    variety: 'Yellow Bourbon',
+    name: 'Emberfield Reserve',
+    roaster: 'Paper Crane Coffee',
+    origin: 'Serra Dourada',
+    region: 'Emberfield',
+    variety: 'Golden Ember',
     process: 'Pulped Natural',
     roastLevel: 'medium_dark' as const,
     roastDate: daysAgo(30),
-    notes:
-      'Low acidity, heavy body. Peanut butter, dark chocolate, and molasses.',
+    notes: 'Low acidity and a heavy body with dark chocolate and molasses.',
     isArchived: true,
   },
 ]
@@ -125,68 +109,73 @@ const BEAN_PACKAGE_IMAGES = [
   'teal-contours.webp',
 ] as const
 
+const FAVICON_IMAGES = [
+  'terracotta-wave.png',
+  'cobalt-arches.png',
+  'forest-diamond.png',
+  'plum-crescent.png',
+  'coral-pinwheel.png',
+] as const
+
 const GEAR = [
   {
-    name: 'Decent DE1PRO',
-    brand: 'Decent Espresso',
-    model: 'DE1PRO',
+    name: 'Aurora One',
+    brand: 'Arc & Ember',
+    model: 'A1',
     type: 'espresso_machine' as const,
     purchaseDate: daysAgo(365),
     purchasePrice: '3299.00',
     priceCurrency: 'EUR',
-    productUrl: 'https://decentespresso.com/de1pro',
-    notes: 'Pressure profiling machine. Running firmware 1.42.',
+    notes: 'A fictional pressure-profiling espresso machine.',
   },
   {
-    name: 'Niche Zero',
-    brand: 'Niche',
-    model: 'Zero',
+    name: 'Orbit Mill',
+    brand: 'Quiet Mechanics',
+    model: 'OM-1',
     type: 'grinder' as const,
     purchaseDate: daysAgo(400),
     purchasePrice: '629.00',
     priceCurrency: 'EUR',
-    productUrl: 'https://www.nichecoffee.co.uk/products/niche-zero',
-    notes: '63mm conical burrs. Great single-dosing workflow.',
+    notes: 'A fictional single-dose grinder with conical burrs.',
   },
   {
-    name: 'Acaia Lunar',
-    brand: 'Acaia',
-    model: 'Lunar 2021',
+    name: 'Mica Scale',
+    brand: 'Northline Instruments',
+    model: 'Mica',
     type: 'scale' as const,
     purchaseDate: daysAgo(500),
     purchasePrice: '250.00',
     priceCurrency: 'EUR',
-    productUrl: 'https://acaia.co/products/lunar',
-    notes: '0.1g precision. Bluetooth connected.',
+    notes: 'Compact fictional scale with 0.1g precision.',
   },
   {
-    name: 'Normcore V4',
-    brand: 'Normcore',
-    model: 'V4',
+    name: 'Presswell 58.5',
+    brand: 'Foundry Tools',
+    model: 'PW-58',
     type: 'tamper' as const,
     purchaseDate: daysAgo(300),
     purchasePrice: '89.00',
     priceCurrency: 'EUR',
-    notes: 'Spring-loaded, 58.5mm. Very consistent.',
+    notes: 'Spring-loaded fictional tamper.',
   },
   {
-    name: 'Weiss Distribution Technique',
-    brand: 'Generic',
-    model: 'WDT Tool',
+    name: 'Needle Array',
+    brand: 'Field Notes',
+    model: 'NA-4',
     type: 'wdt' as const,
     purchasePrice: '15.00',
     priceCurrency: 'EUR',
-    notes: '0.4mm acupuncture needles. Essential for distribution.',
+    notes: 'A fictional fine-needle distribution tool.',
   },
   {
-    name: 'Old Baratza Encore',
-    brand: 'Baratza',
-    model: 'Encore',
+    name: 'Harbor Mill',
+    brand: 'Sample Workshop',
+    model: 'HM-2',
     type: 'grinder' as const,
     purchaseDate: daysAgo(1500),
     purchasePrice: '139.00',
     priceCurrency: 'EUR',
-    notes: 'Retired after upgrading to Niche. Great entry-level grinder.',
+    notes: 'Retired fictional entry-level grinder.',
     isArchived: true,
   },
 ]
@@ -195,7 +184,7 @@ const RECIPES = [
   {
     name: 'Daily Espresso',
     brewingMethod: 'Espresso',
-    bean: 'Ethiopia Yirgacheffe Kochere',
+    bean: 'Moonrise Lot 17',
     doseGrams: '18.0',
     yieldGrams: '40.0',
     shotTimeSeconds: '29',
@@ -205,9 +194,9 @@ const RECIPES = [
     preinfusionTimeSeconds: '6',
   },
   {
-    name: 'Sweet Pink Bourbon Espresso',
+    name: 'Coral Ridge Espresso',
     brewingMethod: 'Espresso',
-    bean: 'Colombia Huila Pink Bourbon',
+    bean: 'Coral Ridge Honey',
     doseGrams: '18.5',
     yieldGrams: '42.0',
     shotTimeSeconds: '31',
@@ -219,7 +208,7 @@ const RECIPES = [
   {
     name: 'Bright V60',
     brewingMethod: 'Pour over',
-    bean: 'Kenya Nyeri AA',
+    bean: 'Northwind Peaberry',
     doseGrams: '15.0',
     brewWaterGrams: '250.0',
     ratioBasis: 'brew_water' as const,
@@ -232,7 +221,7 @@ const RECIPES = [
   {
     name: 'AeroPress Everyday',
     brewingMethod: 'AeroPress',
-    bean: 'Guatemala Antigua',
+    bean: 'Glasshouse Bloom',
     doseGrams: '16.0',
     brewWaterGrams: '240.0',
     ratioBasis: 'brew_water' as const,
@@ -247,48 +236,40 @@ const RECIPES = [
 
 const COFFEE_SHOPS = [
   {
-    name: 'The Barn',
-    address: 'Auguststraße 58',
-    city: 'Berlin',
-    country: 'Germany',
-    latitude: '52.5267',
-    longitude: '13.3900',
-    website: 'https://thebarn.de',
-    instagramHandle: 'thebarnberlin',
-    notes: 'Excellent specialty coffee. Try the filter flights.',
+    name: 'Lantern Room',
+    address: '14 Copper Lane',
+    city: 'Alderwick',
+    country: 'Demo Republic',
+    latitude: '48.1372',
+    longitude: '11.5756',
+    notes: 'A cozy fictional café with rotating filter coffees.',
   },
   {
-    name: 'Bonanza Coffee',
-    address: 'Oderberger Str. 35',
-    city: 'Berlin',
-    country: 'Germany',
-    latitude: '52.5387',
-    longitude: '13.4099',
-    website: 'https://bonanzacoffee.de',
-    instagramHandle: 'bonanzacoffee',
-    notes: "One of Berlin's OG specialty roasters.",
+    name: 'Soft Current Café',
+    address: '8 Tideway Walk',
+    city: 'Lumen Bay',
+    country: 'Sample Isles',
+    latitude: '47.3769',
+    longitude: '8.5417',
+    notes: 'A bright fictional counter focused on gentle espresso.',
   },
   {
-    name: 'Tim Wendelboe',
-    address: 'Grünerløkka',
-    city: 'Oslo',
-    country: 'Norway',
-    latitude: '59.9225',
-    longitude: '10.7580',
-    website: 'https://timwendelboe.no',
-    instagramHandle: 'timaborsen',
-    notes: 'Legendary Nordic roaster. Worth the trip.',
+    name: 'Moss & Metric',
+    address: '22 Fern Arcade',
+    city: 'Northmere',
+    country: 'Demo Republic',
+    latitude: '50.8503',
+    longitude: '4.3517',
+    notes: 'A fictional plant-filled café with precise brews.',
   },
   {
-    name: 'Prufrock Coffee',
-    address: '23-25 Leather Lane',
-    city: 'London',
-    country: 'United Kingdom',
-    latitude: '51.5195',
-    longitude: '-0.1090',
-    website: 'https://prufrockcoffee.com',
-    instagramHandle: 'prufrockcoffee',
-    notes: 'Home of the London School of Coffee.',
+    name: 'Daybreak Counter',
+    address: '5 Sunrise Row',
+    city: 'Bellweather',
+    country: 'Sample Isles',
+    latitude: '45.4642',
+    longitude: '9.1900',
+    notes: 'A fictional morning bar for quick espresso and pastries.',
   },
 ]
 
@@ -315,8 +296,25 @@ function randomSubset<T>(items: readonly T[], min: number, max: number): T[] {
   return [...items].sort(() => Math.random() - 0.5).slice(0, count)
 }
 
+async function uploadSeedFavicons(
+  storage: ReturnType<typeof getStorage>,
+  entityType: 'coffee-shops' | 'roasters',
+  entities: ReadonlyArray<{ id: number }>,
+) {
+  for (const [index, entity] of entities.entries()) {
+    const filename = FAVICON_IMAGES[index % FAVICON_IMAGES.length]
+    if (!filename) throw new Error('Favicon seed image is missing')
+
+    const file = Bun.file(
+      new URL(`seed-assets/demo-favicons/${filename}`, import.meta.url),
+    )
+    await storage.upload(file, getFaviconStoragePath(entityType, entity.id))
+  }
+}
+
 async function seed() {
   console.log('🌱 Seeding database...')
+  const storage = getStorage()
 
   console.log('  → Inserting brewing methods...')
   await db
@@ -356,16 +354,8 @@ async function seed() {
     .returning()
   console.log(`    ✓ ${insertedRoasters.length} roasters`)
 
-  console.log('  → Fetching roaster favicons...')
-  await Promise.all(
-    insertedRoasters.map((roaster) =>
-      refreshWebsiteFaviconBestEffort({
-        entityType: 'roasters',
-        entityId: roaster.id,
-        website: roaster.website,
-      }),
-    ),
-  )
+  console.log('  → Uploading synthetic roaster favicons...')
+  await uploadSeedFavicons(storage, 'roasters', insertedRoasters)
   console.log(`    ✓ ${insertedRoasters.length} roaster favicons`)
 
   const roasterMap = new Map(insertedRoasters.map((r) => [r.name, r.id]))
@@ -382,7 +372,6 @@ async function seed() {
   console.log(`    ✓ ${insertedBeans.length} beans`)
 
   console.log('  → Uploading bean package images...')
-  const storage = getStorage()
   for (const [index, bean] of insertedBeans.entries()) {
     const filename = BEAN_PACKAGE_IMAGES[index % BEAN_PACKAGE_IMAGES.length]
     if (!filename) throw new Error('Bean package seed image is missing')
@@ -496,6 +485,10 @@ async function seed() {
     .values(COFFEE_SHOPS)
     .returning()
   console.log(`    ✓ ${insertedCoffeeShops.length} coffee shops`)
+
+  console.log('  → Uploading synthetic coffee shop favicons...')
+  await uploadSeedFavicons(storage, 'coffee-shops', insertedCoffeeShops)
+  console.log(`    ✓ ${insertedCoffeeShops.length} coffee shop favicons`)
 
   console.log('  → Inserting cafe visits...')
   const visitData = []
