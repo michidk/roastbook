@@ -1,5 +1,6 @@
 import * as schema from '../src/db/schema'
 import { DEFAULT_BREWING_METHODS } from '../src/lib/brewing-methods'
+import { refreshWebsiteFaviconBestEffort } from '../src/lib/server/favicon-cache.server'
 import { client, db } from './database'
 import { TASTE_TAGS } from './taste-tags'
 
@@ -180,6 +181,60 @@ const GEAR = [
   },
 ]
 
+const RECIPES = [
+  {
+    name: 'Daily Espresso',
+    brewingMethod: 'Espresso',
+    bean: 'Ethiopia Yirgacheffe Kochere',
+    doseGrams: '18.0',
+    yieldGrams: '40.0',
+    shotTimeSeconds: '29',
+    grindSetting: '15',
+    brewTemperatureCelsius: '93.0',
+    brewPressureBar: '9.0',
+    preinfusionTimeSeconds: '6',
+  },
+  {
+    name: 'Sweet Pink Bourbon Espresso',
+    brewingMethod: 'Espresso',
+    bean: 'Colombia Huila Pink Bourbon',
+    doseGrams: '18.5',
+    yieldGrams: '42.0',
+    shotTimeSeconds: '31',
+    grindSetting: '14',
+    brewTemperatureCelsius: '94.0',
+    brewPressureBar: '9.0',
+    preinfusionTimeSeconds: '7',
+  },
+  {
+    name: 'Bright V60',
+    brewingMethod: 'Pour over',
+    bean: 'Kenya Nyeri AA',
+    doseGrams: '15.0',
+    brewWaterGrams: '250.0',
+    ratioBasis: 'brew_water' as const,
+    yieldGrams: '215.0',
+    shotTimeSeconds: '180',
+    grindSetting: '28',
+    brewTemperatureCelsius: '96.0',
+    bloomTimeSeconds: '45',
+  },
+  {
+    name: 'AeroPress Everyday',
+    brewingMethod: 'AeroPress',
+    bean: 'Guatemala Antigua',
+    doseGrams: '16.0',
+    brewWaterGrams: '240.0',
+    ratioBasis: 'brew_water' as const,
+    yieldGrams: '210.0',
+    shotTimeSeconds: '120',
+    grindSetting: '22',
+    brewTemperatureCelsius: '90.0',
+    bloomTimeSeconds: '30',
+    paperFilterPosition: 'bottom' as const,
+  },
+] as const
+
 const COFFEE_SHOPS = [
   {
     name: 'The Barn',
@@ -265,9 +320,13 @@ async function seed() {
       })),
     )
     .onConflictDoNothing()
-  const espressoMethod = await db.query.brewingMethods.findFirst({
-    where: (methods, { eq }) => eq(methods.name, 'Espresso'),
-  })
+  const allBrewingMethods = await db.query.brewingMethods.findMany()
+  const brewingMethodMap = new Map(
+    allBrewingMethods.map((method) => [method.name, method.id]),
+  )
+  const espressoMethod = allBrewingMethods.find(
+    (method) => method.name === 'Espresso',
+  )
   if (!espressoMethod) throw new Error('Espresso brewing method is missing')
 
   console.log('  → Inserting taste tags...')
@@ -286,6 +345,18 @@ async function seed() {
     .values(ROASTERS)
     .returning()
   console.log(`    ✓ ${insertedRoasters.length} roasters`)
+
+  console.log('  → Fetching roaster favicons...')
+  await Promise.all(
+    insertedRoasters.map((roaster) =>
+      refreshWebsiteFaviconBestEffort({
+        entityType: 'roasters',
+        entityId: roaster.id,
+        website: roaster.website,
+      }),
+    ),
+  )
+  console.log(`    ✓ ${insertedRoasters.length} roaster favicons`)
 
   const roasterMap = new Map(insertedRoasters.map((r) => [r.name, r.id]))
 
@@ -311,6 +382,26 @@ async function seed() {
     (g) => g.type === 'grinder' && !g.isArchived,
   )
   const activeBeans = insertedBeans.filter((b) => !b.isArchived)
+
+  console.log('  → Inserting recipes...')
+  const beanMap = new Map(insertedBeans.map((bean) => [bean.name, bean.id]))
+  const recipeData = RECIPES.map(({ brewingMethod, bean, ...recipe }) => {
+    const brewingMethodId = brewingMethodMap.get(brewingMethod)
+    if (!brewingMethodId) {
+      throw new Error(`${brewingMethod} brewing method is missing`)
+    }
+
+    return {
+      ...recipe,
+      brewingMethodId,
+      beanId: beanMap.get(bean) ?? null,
+    }
+  })
+  const insertedRecipes = await db
+    .insert(schema.recipes)
+    .values(recipeData)
+    .returning()
+  console.log(`    ✓ ${insertedRecipes.length} recipes`)
 
   console.log('  → Inserting shots...')
   const shotData = []
@@ -430,6 +521,7 @@ Summary:
   - ${insertedRoasters.length} roasters
   - ${insertedBeans.length} beans (${insertedBeans.filter((b) => b.isArchived).length} archived)
   - ${insertedGear.length} gear items (${insertedGear.filter((g) => g.isArchived).length} archived)
+  - ${insertedRecipes.length} recipes
   - ${insertedShots.length} shots
   - ${insertedCoffeeShops.length} coffee shops
   - ${insertedVisits.length} cafe visits
