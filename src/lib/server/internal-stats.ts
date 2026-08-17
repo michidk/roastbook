@@ -1,4 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
+import { DEMO_MODE } from '@/lib/build-mode'
 import { getServerEnv } from '@/lib/env.server'
 import { getStorage } from '@/lib/storage'
 
@@ -13,6 +14,16 @@ type StorageStats = {
 }
 
 async function loadStorageStats(): Promise<StorageStats> {
+  if (DEMO_MODE) {
+    return {
+      available: true,
+      provider: 'local',
+      imageCount: 6,
+      faviconCount: 0,
+      totalBytes: 416_984,
+    }
+  }
+
   const provider =
     getServerEnv().STORAGE_PROVIDER === 's3'
       ? ('s3' as const)

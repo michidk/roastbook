@@ -7,6 +7,9 @@
 home for your coffee brews, beans, recipes, café visits, roasters, brewing
 methods, and gear — and it fills itself in for you.
 
+**[Try the read-only demo](https://roastbook.vercel.app)** — it runs entirely
+from bundled sample data and requires no account or database.
+
 Photograph a bag and Roastbook reads the label: origin, region, farm, variety,
 process, roast level, roast date, tasting notes. Type a roaster's name and it
 researches the website, location, and background. Add an espresso machine and it
@@ -88,6 +91,7 @@ an assistant log this morning's espresso for you.
   local request logs and token-cost estimates.
 - Store media locally or in S3-compatible object storage.
 - Gate self-hosted deployments with the Hodor reverse proxy.
+- Explore a database-free, read-only demo backed by ephemeral PGlite seed data.
 
 ## Tech stack
 
@@ -101,7 +105,7 @@ from the database row to the rendered field:
 | Routing | TanStack Router, file-based and fully typed |
 | UI | React 19, shadcn/ui, Radix and Base UI, Tailwind CSS v4 |
 | Icons and maps | Lucide, MapLibre GL |
-| Database | PostgreSQL with Drizzle ORM and committed migrations |
+| Database | PostgreSQL when self-hosted; ephemeral PGlite for the demo |
 | Media storage | Local filesystem or any S3-compatible bucket |
 | AI | TanStack AI with any OpenAI-compatible endpoint |
 | Validation | Zod at every boundary, including environment variables |
@@ -153,6 +157,7 @@ running.
 | `bun run test:integration` | Require PostgreSQL and S3 integration tests |
 | `bun run lint:deadcode` | Find unused code and dependencies with Knip |
 | `bun run build` | Build production assets |
+| `bun run build:demo` | Build the database-free Vercel demo |
 | `bun run verify` | Run the complete local quality gate |
 | `bun run db:generate` | Generate a Drizzle migration after a schema change |
 | `bun run db:migrate` | Apply committed migrations |
