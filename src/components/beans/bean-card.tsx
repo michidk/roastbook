@@ -30,8 +30,6 @@ export function BeanCard({ bean }: BeanCardProps) {
   const roastLabel = bean.roastLevel
     ? getRoastLevelLabel(bean.roastLevel)
     : null
-  const roastLabelColor =
-    bean.roastLevel === 'medium_light' ? 'text-primary' : 'text-white'
   const roasterName = bean.roasterRef?.name ?? bean.roaster
   const origin = [bean.region, bean.origin].filter(Boolean).join(', ')
   const process = bean.process ? getProcessMethodLabel(bean.process) : null
@@ -92,9 +90,7 @@ export function BeanCard({ bean }: BeanCardProps) {
                 </span>
               )}
               {roastLabel && (
-                <span
-                  className={`flex min-h-9 items-center rounded-full border border-white/60 bg-black/65 px-3 py-1.5 text-xs font-bold tracking-[0.04em] uppercase backdrop-blur-[2px] ${roastLabelColor}`}
-                >
+                <span className="flex min-h-9 items-center rounded-full border border-white/60 bg-black/65 px-3 py-1.5 text-xs font-bold tracking-[0.04em] text-white uppercase backdrop-blur-[2px]">
                   {roastLabel}
                 </span>
               )}
