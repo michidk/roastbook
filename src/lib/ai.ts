@@ -7,6 +7,7 @@ import {
 import { webSearchTool } from '@tanstack/ai-openai/tools'
 import { createServerOnlyFn } from '@tanstack/react-start'
 import { z } from 'zod'
+import { DEMO_MODE } from '@/lib/build-mode'
 import {
   AUTO_STOP_MODE_VALUES,
   BEAN_TYPE_VALUES,
@@ -213,10 +214,12 @@ function createAdapter(
 }
 
 export const isVisionEnabled = createServerOnlyFn((): boolean => {
+  if (DEMO_MODE) return false
   return Boolean(getServerEnv().OPENAI_API_KEY)
 })
 
 export const isResearchEnabled = createServerOnlyFn((): boolean => {
+  if (DEMO_MODE) return false
   return Boolean(getServerEnv().OPENAI_API_KEY)
 })
 
