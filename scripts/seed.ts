@@ -1,6 +1,8 @@
 import * as schema from '../src/db/schema'
 import { DEFAULT_BREWING_METHODS } from '../src/lib/brewing-methods'
 import { refreshWebsiteFaviconBestEffort } from '../src/lib/server/favicon-cache.server'
+import { generateAndUploadThumbnail } from '../src/lib/server/thumbnails'
+import { getStorage } from '../src/lib/storage'
 import { client, db } from './database'
 import { TASTE_TAGS } from './taste-tags'
 
@@ -114,6 +116,12 @@ const BEANS = [
     isArchived: true,
   },
 ]
+
+const BEAN_PACKAGE_IMAGES = [
+  'kraft-orange.webp',
+  'forest-botanical.webp',
+  'cobalt-sunburst.webp',
+] as const
 
 const GEAR = [
   {
@@ -370,6 +378,31 @@ async function seed() {
     .values(beansWithRoasterIds)
     .returning()
   console.log(`    ✓ ${insertedBeans.length} beans`)
+
+  console.log('  → Uploading bean package images...')
+  const storage = getStorage()
+  for (const [index, bean] of insertedBeans.entries()) {
+    const filename = BEAN_PACKAGE_IMAGES[index % BEAN_PACKAGE_IMAGES.length]
+    if (!filename) throw new Error('Bean package seed image is missing')
+
+    const file = Bun.file(
+      new URL(`seed-assets/bean-packaging/${filename}`, import.meta.url),
+    )
+    const storagePath = `beans/${bean.id}/seed-${filename}`
+    const bytes = Buffer.from(await file.arrayBuffer())
+
+    await storage.upload(file, storagePath)
+    await generateAndUploadThumbnail(bytes, storagePath)
+    await db.insert(schema.beanImages).values({
+      beanId: bean.id,
+      storagePath,
+      originalFilename: filename,
+      mimeType: 'image/webp',
+      sizeBytes: file.size,
+      isThumbnail: true,
+    })
+  }
+  console.log(`    ✓ ${insertedBeans.length} bean package images`)
 
   console.log('  → Inserting gear...')
   const insertedGear = await db.insert(schema.gear).values(GEAR).returning()
