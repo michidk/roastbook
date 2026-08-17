@@ -68,36 +68,15 @@ async function seedDemoDatabase(database: Database): Promise<void> {
     .insert(schema.roasters)
     .values(
       [
-        [
-          'Onyx Coffee Lab',
-          'Rogers, Arkansas',
-          'United States',
-          'https://onyxcoffeelab.com',
-        ],
-        [
-          'George Howell',
-          'Boston, Massachusetts',
-          'United States',
-          'https://georgehowellcoffee.com',
-        ],
-        [
-          'Counter Culture',
-          'Durham, North Carolina',
-          'United States',
-          'https://counterculturecoffee.com',
-        ],
-        [
-          'Square Mile',
-          'London',
-          'United Kingdom',
-          'https://squaremilecoffee.com',
-        ],
-        ['The Barn', 'Berlin', 'Germany', 'https://thebarn.de'],
-      ].map(([name, location, country, website]) => ({
+        ['Ember Atlas', 'Alderwick', 'Demo Republic'],
+        ['Quiet Current', 'Lumen Bay', 'Sample Isles'],
+        ['Juniper & Coil', 'Northmere', 'Demo Republic'],
+        ['Northstar Roastworks', 'Bellweather', 'Sample Isles'],
+        ['Paper Crane Coffee', 'Alderwick', 'Demo Republic'],
+      ].map(([name, location, country]) => ({
         name: required(name, 'Roaster name missing'),
         location,
         country,
-        website,
       })),
     )
     .returning()
@@ -107,35 +86,42 @@ async function seedDemoDatabase(database: Database): Promise<void> {
 
   const beanFixtures = [
     [
-      'Ethiopia Yirgacheffe Kochere',
-      'Onyx Coffee Lab',
-      'Ethiopia',
-      'Yirgacheffe',
+      'Moonrise Lot 17',
+      'Ember Atlas',
+      'Luma Highlands',
+      'Moonrise Valley',
       'Washed',
       'light',
     ],
     [
-      'Colombia Huila Pink Bourbon',
-      'George Howell',
-      'Colombia',
-      'Huila',
+      'Coral Ridge Honey',
+      'Quiet Current',
+      'San Aurelio',
+      'Coral Ridge',
       'Natural',
       'medium_light',
     ],
     [
-      'Guatemala Antigua',
-      'Counter Culture',
-      'Guatemala',
-      'Antigua',
+      'Glasshouse Bloom',
+      'Juniper & Coil',
+      'Verdant Reach',
+      'Glasshouse District',
       'Washed',
       'medium',
     ],
-    ['Kenya Nyeri AA', 'Square Mile', 'Kenya', 'Nyeri', 'Washed', 'light'],
     [
-      'Brazil Cerrado',
-      'The Barn',
-      'Brazil',
-      'Cerrado Mineiro',
+      'Northwind Peaberry',
+      'Northstar Roastworks',
+      'Kisiwa Plateau',
+      'Northwind Hills',
+      'Washed',
+      'light',
+    ],
+    [
+      'Emberfield Reserve',
+      'Paper Crane Coffee',
+      'Serra Dourada',
+      'Emberfield',
       'Pulped Natural',
       'medium_dark',
     ],
@@ -164,6 +150,8 @@ async function seedDemoDatabase(database: Database): Promise<void> {
     'kraft-orange.webp',
     'forest-botanical.webp',
     'cobalt-sunburst.webp',
+    'plum-orbit.webp',
+    'teal-contours.webp',
   ]
   await database.insert(schema.beanImages).values(
     beans.map((bean, index) => ({
@@ -183,29 +171,29 @@ async function seedDemoDatabase(database: Database): Promise<void> {
     .insert(schema.gear)
     .values([
       {
-        name: 'Decent DE1PRO',
-        brand: 'Decent Espresso',
+        name: 'Aurora One',
+        brand: 'Arc & Ember',
         type: 'espresso_machine',
         purchasePrice: '3299.00',
         priceCurrency: 'EUR',
       },
       {
-        name: 'Niche Zero',
-        brand: 'Niche',
+        name: 'Orbit Mill',
+        brand: 'Quiet Mechanics',
         type: 'grinder',
         purchasePrice: '629.00',
         priceCurrency: 'EUR',
       },
       {
-        name: 'Acaia Lunar',
-        brand: 'Acaia',
+        name: 'Mica Scale',
+        brand: 'Northline Instruments',
         type: 'scale',
         purchasePrice: '250.00',
         priceCurrency: 'EUR',
       },
       {
-        name: 'Normcore V4',
-        brand: 'Normcore',
+        name: 'Presswell 58.5',
+        brand: 'Foundry Tools',
         type: 'tamper',
         purchasePrice: '89.00',
         priceCurrency: 'EUR',
@@ -214,22 +202,10 @@ async function seedDemoDatabase(database: Database): Promise<void> {
     .returning()
   const beanId = new Map(beans.map((bean) => [bean.name, bean.id]))
   const recipes = [
-    [
-      'Daily Espresso',
-      'Espresso',
-      'Ethiopia Yirgacheffe Kochere',
-      '18.0',
-      '40.0',
-    ],
-    [
-      'Sweet Pink Bourbon Espresso',
-      'Espresso',
-      'Colombia Huila Pink Bourbon',
-      '18.5',
-      '42.0',
-    ],
-    ['Bright V60', 'Pour over', 'Kenya Nyeri AA', '15.0', '215.0'],
-    ['AeroPress Everyday', 'AeroPress', 'Guatemala Antigua', '16.0', '210.0'],
+    ['Daily Espresso', 'Espresso', 'Moonrise Lot 17', '18.0', '40.0'],
+    ['Coral Ridge Espresso', 'Espresso', 'Coral Ridge Honey', '18.5', '42.0'],
+    ['Bright V60', 'Pour over', 'Northwind Peaberry', '15.0', '215.0'],
+    ['AeroPress Everyday', 'AeroPress', 'Glasshouse Bloom', '16.0', '210.0'],
   ] as const
   await database.insert(schema.recipes).values(
     recipes.map(([name, method, bean, doseGrams, yieldGrams]) => ({
@@ -299,38 +275,34 @@ async function seedDemoDatabase(database: Database): Promise<void> {
     .insert(schema.coffeeShops)
     .values([
       {
-        name: 'The Barn',
-        address: 'Auguststraße 58',
-        city: 'Berlin',
-        country: 'Germany',
-        latitude: '52.5267',
-        longitude: '13.3900',
-        website: 'https://thebarn.de',
+        name: 'Lantern Room',
+        address: '14 Copper Lane',
+        city: 'Alderwick',
+        country: 'Demo Republic',
+        latitude: '48.1372',
+        longitude: '11.5756',
       },
       {
-        name: 'Bonanza Coffee',
-        address: 'Oderberger Str. 35',
-        city: 'Berlin',
-        country: 'Germany',
-        latitude: '52.5387',
-        longitude: '13.4099',
-        website: 'https://bonanzacoffee.de',
+        name: 'Soft Current Café',
+        address: '8 Tideway Walk',
+        city: 'Lumen Bay',
+        country: 'Sample Isles',
+        latitude: '47.3769',
+        longitude: '8.5417',
       },
       {
-        name: 'Tim Wendelboe',
-        city: 'Oslo',
-        country: 'Norway',
-        latitude: '59.9225',
-        longitude: '10.7580',
-        website: 'https://timwendelboe.no',
+        name: 'Moss & Metric',
+        city: 'Northmere',
+        country: 'Demo Republic',
+        latitude: '50.8503',
+        longitude: '4.3517',
       },
       {
-        name: 'Prufrock Coffee',
-        city: 'London',
-        country: 'United Kingdom',
-        latitude: '51.5195',
-        longitude: '-0.1090',
-        website: 'https://prufrockcoffee.com',
+        name: 'Daybreak Counter',
+        city: 'Bellweather',
+        country: 'Sample Isles',
+        latitude: '45.4642',
+        longitude: '9.19',
       },
     ])
     .returning()

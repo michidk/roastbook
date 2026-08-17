@@ -20,6 +20,8 @@ const demoAssets = () => ({
       'kraft-orange.webp',
       'forest-botanical.webp',
       'cobalt-sunburst.webp',
+      'plum-orbit.webp',
+      'teal-contours.webp',
     ]) {
       const source = readFileSync(
         resolve('scripts/seed-assets/bean-packaging', filename),
@@ -33,6 +35,21 @@ const demoAssets = () => ({
         type: 'asset',
         fileName: `media/demo/${filename.replace('.webp', '.thumb.webp')}`,
         source,
+      })
+    }
+    for (const filename of [
+      'terracotta-wave.webp',
+      'cobalt-arches.webp',
+      'forest-diamond.webp',
+      'plum-crescent.webp',
+      'coral-pinwheel.webp',
+    ]) {
+      this.emitFile({
+        type: 'asset',
+        fileName: `media/demo-favicons/${filename}`,
+        source: readFileSync(
+          resolve('scripts/seed-assets/demo-favicons', filename),
+        ),
       })
     }
   },

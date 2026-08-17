@@ -121,6 +121,8 @@ const BEAN_PACKAGE_IMAGES = [
   'kraft-orange.webp',
   'forest-botanical.webp',
   'cobalt-sunburst.webp',
+  'plum-orbit.webp',
+  'teal-contours.webp',
 ] as const
 
 const GEAR = [
