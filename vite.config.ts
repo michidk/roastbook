@@ -6,7 +6,15 @@ import { nitro } from 'nitro/vite'
 import { defineConfig } from 'vite'
 import { devMigrations } from './scripts/vite-dev-migrations'
 
+const roastbookEdition = process.env.ROASTBOOK_EDITION ?? 'standard'
+if (roastbookEdition !== 'standard' && roastbookEdition !== 'demo') {
+  throw new Error('ROASTBOOK_EDITION must be standard or demo')
+}
+
 const config = defineConfig({
+  define: {
+    __ROASTBOOK_DEMO_MODE__: JSON.stringify(roastbookEdition === 'demo'),
+  },
   resolve: {
     tsconfigPaths: true,
     dedupe: ['react', 'react-dom'],

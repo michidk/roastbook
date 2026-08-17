@@ -14,8 +14,8 @@ import {
   isTimeZone,
   type NumberFormat,
 } from '@/lib/app-settings'
+import { DEMO_MODE } from '@/lib/build-mode'
 import { type CollectionView, isCollectionView } from '@/lib/collection-view'
-import { getServerEnv } from '@/lib/env.server'
 
 const defaultMapLocationSchema = z
   .object({
@@ -61,7 +61,7 @@ function toAppSettings(row: typeof settingsTable.$inferSelect): AppSettings {
       : null
 
   return {
-    demoMode: getServerEnv().DEMO_MODE,
+    demoMode: DEMO_MODE,
     defaultCurrency: currencySchema(row.defaultCurrency),
     dateFormat: dateFormatSchema(row.dateFormat),
     defaultListView: listViewSchema(row.defaultListView),

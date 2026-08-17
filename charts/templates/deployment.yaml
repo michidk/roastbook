@@ -57,8 +57,6 @@ spec:
               containerPort: 3000
               protocol: TCP
           env:
-            - name: DEMO_MODE
-              value: {{ .Values.demoMode | quote }}
             - name: DATABASE_URL
               {{- if .Values.postgresql.existingSecret }}
               valueFrom:

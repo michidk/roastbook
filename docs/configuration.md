@@ -18,17 +18,14 @@ modules instead of reading the environment directly.
 | Variable | Default | Required | Description |
 | --- | --- | --- | --- |
 | `DATABASE_URL` | — | Yes | PostgreSQL connection URL |
-| `DEMO_MODE` | `false` | No | Enable database-backed read-only mode |
 | `STORAGE_PROVIDER` | `local` | No | `local` or `s3` |
 | `STORAGE_PATH` | `./uploads` | Local storage only | Filesystem upload root |
 | `STORAGE_URL` | `/media` | No | Server-side public media URL base |
 | `VITE_STORAGE_URL` | `/media` | No | Browser media URL base |
 
-When `DEMO_MODE=true`, Roastbook rejects every non-GET/HEAD application
-request on the server and shows a read-only banner in the interface. Seed the
-database before enabling it; demo mode does not populate data automatically.
-See [Demo mode](demo-mode.md) for deployment steps and the proposed
-database-free architecture.
+Demo mode is selected when the application is built rather than through runtime
+configuration. See [Demo mode](demo-mode.md) for build instructions and the
+proposed database-free architecture.
 
 ## S3-compatible storage
 

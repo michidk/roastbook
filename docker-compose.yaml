@@ -24,7 +24,6 @@ services:
     restart: "no"
     environment:
       DATABASE_URL: postgresql://roastbook:roastbook@postgres:5432/roastbook
-      DEMO_MODE: ${DEMO_MODE:-false}
 
   app:
     build:

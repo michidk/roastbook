@@ -1,21 +1,29 @@
 # Demo mode
 
-Roastbook supports a database-backed, read-only demo mode. It is intended for
-public product tours that should show realistic seed data without allowing
-visitors to change it.
+Roastbook supports a read-only demo edition. The edition is compiled into the
+client and server bundles, so a standard production artifact cannot be changed
+into a demo by altering its runtime environment.
 
 ## Database-backed demo
 
-Prepare the database once, then start the application with demo mode enabled:
+Build the demo edition, prepare its database, then start it:
 
 ```bash
+ROASTBOOK_EDITION=demo bun run build
 bun run db:migrate
 bun run db:seed
-DEMO_MODE=true bun run start
+bun run start
 ```
 
-Docker Compose accepts `DEMO_MODE=true` from the host environment. Helm uses
-`demoMode: true`.
+For Docker, build a distinct image:
+
+```bash
+docker build --build-arg ROASTBOOK_EDITION=demo -t roastbook:demo .
+```
+
+Standard builds omit the argument and compile demo mode to `false`. Helm should
+reference either the standard image or a separately published demo image; it
+cannot toggle the edition at deployment time.
 
 The enforcement boundary is server-side request middleware. With demo mode
 enabled, only GET and HEAD requests proceed; writes, uploads, settings changes,
@@ -29,31 +37,29 @@ required even when every visible write control is unavailable.
 
 ## Proposed database-free demo
 
-A database-free mode should use typed fixture repositories rather than trying
-to run Drizzle queries against JSON or duplicating route components.
+A database-free demo should preserve Drizzle and load JSON, CSV, or TypeScript
+fixtures into an ephemeral PGlite database. JSON and CSV remain interchange
+formats; PGlite supplies the PostgreSQL-compatible query engine.
 
 1. Move the deterministic records in `scripts/seed.ts` into shared fixture
    modules. Keep generated dates fixed so demo rendering and tests are stable.
-2. Define small read repository interfaces for each existing domain service,
-   such as paginated beans, recipes, roasters, shots, visits, settings, and
-   statistics. Route loaders continue calling the current service functions.
-3. Implement a PostgreSQL adapter with the existing Drizzle queries and a
-   fixture adapter that reads immutable arrays and applies the same filtering,
-   sorting, pagination, and relation expansion in memory.
-4. Select the adapter once on the server from a distinct mode such as
-   `DATA_SOURCE=postgres|fixtures`. Do not branch throughout components or
-   expose server configuration through `VITE_` variables.
+2. Add two build-time database entry points behind the same `db` import: the
+   existing `postgres-js` adapter for standard builds and a PGlite adapter for
+   demo builds.
+3. Resolve that entry point with a Vite alias based on `ROASTBOOK_EDITION`.
+   Standard builds must never import PGlite, allowing tree shaking and separate
+   Docker dependency layers to omit its JavaScript and WASM completely.
+4. Initialize PGlite once at demo server startup, apply the existing migrations,
+   and load the fixtures through shared seed functions. Existing Drizzle reads,
+   joins, pagination, and statistics can then remain in place where PGlite
+   supports their PostgreSQL SQL.
 5. Serve the three bean-package fixtures and other demo media from bundled
    public assets. Fixture records can then use stable root-relative URLs and
    need no writable storage provider.
-6. Compute statistics from fixture records through shared pure aggregation
-   functions. This avoids maintaining a second set of precomputed dashboard
-   numbers that can drift from list and detail pages.
-7. Keep the same read-only request middleware enabled for the fixture adapter.
+6. Keep the same read-only request middleware enabled for the PGlite edition.
    A fixture deployment can then be stateless and horizontally replicated.
 
-The key prerequisite is the repository boundary. Current domain reads contain
-direct Drizzle queries, including SQL-specific statistics and pagination. A
-database-free implementation should migrate one domain at a time and run the
-same contract tests against both adapters. Once all routes use those contracts,
-the fixture image can omit PostgreSQL, migrations, and persistent volumes.
+Contract tests should run the existing query surface against PostgreSQL and
+PGlite before the external database is removed from the demo image. Queries
+that rely on unsupported PostgreSQL features should be isolated and adapted,
+not reimplemented as a general JSON query layer.

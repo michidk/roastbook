@@ -1,5 +1,5 @@
 import { createMiddleware, createStart } from '@tanstack/react-start'
-import { getServerEnv } from '@/lib/env.server'
+import { DEMO_MODE } from '@/lib/build-mode'
 import {
   demoModeReadOnlyResponse,
   isDemoModeWriteRequest,
@@ -7,7 +7,7 @@ import {
 
 const demoReadOnlyRequestMiddleware = createMiddleware().server(
   async ({ next, request }) => {
-    if (isDemoModeWriteRequest(getServerEnv().DEMO_MODE, request.method))
+    if (isDemoModeWriteRequest(DEMO_MODE, request.method))
       return demoModeReadOnlyResponse()
     return next()
   },
