@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Bookmark, ChevronRight, Heart, MapPin, MapPinOff } from 'lucide-react'
+import { Bookmark, ChevronRight, Heart } from 'lucide-react'
 import { interactiveCardLinkClassName } from '@/components/ui/card'
 import { WebsiteLogo } from '@/components/website-logo'
 import { cn } from '@/lib/utils'
@@ -30,11 +30,6 @@ export function CoffeeShopCard({
   const hasCoordinates =
     coffeeShop.latitude !== null && coffeeShop.longitude !== null
   const isProminentFavorite = emphasizeFavorite && coffeeShop.isFavorite
-  const LocationIcon = isProminentFavorite
-    ? Heart
-    : hasCoordinates
-      ? MapPin
-      : MapPinOff
   const location = [coffeeShop.address, coffeeShop.city, coffeeShop.country]
     .filter(Boolean)
     .join(', ')
@@ -49,30 +44,13 @@ export function CoffeeShopCard({
         isProminentFavorite && 'ring-2 ring-favorite/35 ring-inset',
       )}
     >
-      {coffeeShop.website ? (
-        <WebsiteLogo
-          entityType="coffee-shops"
-          entityId={coffeeShop.id}
-          website={coffeeShop.website}
-          updatedAt={coffeeShop.updatedAt}
-          className="size-10 rounded-full p-1"
-        />
-      ) : (
-        <span
-          className={
-            isProminentFavorite
-              ? 'flex size-10 shrink-0 items-center justify-center rounded-full bg-favorite/15 text-favorite'
-              : hasCoordinates
-                ? 'flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary'
-                : 'flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground'
-          }
-        >
-          <LocationIcon
-            aria-hidden
-            className={cn('size-4', isProminentFavorite && 'fill-current')}
-          />
-        </span>
-      )}
+      <WebsiteLogo
+        entityType="coffee-shops"
+        entityId={coffeeShop.id}
+        website={coffeeShop.website}
+        updatedAt={coffeeShop.updatedAt}
+        className="size-10 rounded-full p-1"
+      />
       <span className="min-w-0 flex-1 space-y-0.5">
         <span className="flex items-center gap-1.5">
           {isProminentFavorite && (

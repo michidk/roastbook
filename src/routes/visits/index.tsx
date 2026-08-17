@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import { interactiveCardLinkClassName } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { StarRating } from '@/components/ui/star-rating'
+import { WebsiteLogo } from '@/components/website-logo'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { getCafeVisitPage } from '@/lib/server/cafe-visits'
@@ -243,13 +244,24 @@ function VisitCard({ visit }: { visit: Visit }) {
       className={`${interactiveCardLinkClassName} bg-card p-5 shadow-coffee`}
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="font-display text-lg font-bold text-foreground">
-            {visit.drinkName || 'Coffee'}
-          </p>
-          <p className="mt-0.5 truncate text-sm text-muted-foreground">
-            {visit.coffeeShop?.name ?? 'Unknown café'} · {date}
-          </p>
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          {visit.coffeeShop ? (
+            <WebsiteLogo
+              entityType="coffee-shops"
+              entityId={visit.coffeeShop.id}
+              website={visit.coffeeShop.website}
+              updatedAt={visit.coffeeShop.updatedAt}
+              className="size-10 rounded-full p-1"
+            />
+          ) : null}
+          <div className="min-w-0">
+            <p className="font-display text-lg font-bold text-foreground">
+              {visit.drinkName || 'Coffee'}
+            </p>
+            <p className="mt-0.5 truncate text-sm text-muted-foreground">
+              {visit.coffeeShop?.name ?? 'Unknown café'} · {date}
+            </p>
+          </div>
         </div>
         {visit.drinkType && (
           <span className="shrink-0 rounded-xl bg-coffee px-2.5 py-1 text-xs font-bold text-coffee-foreground">
