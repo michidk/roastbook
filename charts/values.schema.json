@@ -5,6 +5,7 @@
   "additionalProperties": false,
   "required": [
     "replicaCount",
+    "demoMode",
     "image",
     "serviceAccount",
     "service",
@@ -92,6 +93,7 @@
     }
   ],
   "properties": {
+    "demoMode": { "type": "boolean" },
     "replicaCount": {
       "type": "integer",
       "minimum": 1

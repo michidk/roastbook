@@ -161,7 +161,7 @@ function MobileMoreMenu() {
   )
 }
 
-export function AppNavbar() {
+export function AppNavbar({ demoMode = false }: { demoMode?: boolean }) {
   return (
     <>
       <a
@@ -186,7 +186,7 @@ export function AppNavbar() {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
-            <DesktopCreateButton />
+            {demoMode ? null : <DesktopCreateButton />}
           </div>
         </div>
       </header>
@@ -208,20 +208,27 @@ export function AppNavbar() {
             <MobileNavLink key={item.url} item={item} />
           ))}
 
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              aria-label="Create new item"
-              className="flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg py-2 text-foreground"
-            >
-              <div className="-mt-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary shadow-lg">
-                <Plus className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <span className="text-[10px] font-semibold">Create</span>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" side="top" sideOffset={12}>
-              <CreateMenuItems />
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {demoMode ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-1 py-2 text-muted-foreground">
+              <Plus className="h-5 w-5" />
+              <span className="text-[10px] font-semibold">Read only</span>
+            </div>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                aria-label="Create new item"
+                className="flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg py-2 text-foreground"
+              >
+                <div className="-mt-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary shadow-lg">
+                  <Plus className="h-6 w-6 text-primary-foreground" />
+                </div>
+                <span className="text-[10px] font-semibold">Create</span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" side="top" sideOffset={12}>
+                <CreateMenuItems />
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
           {primaryNavItems.slice(2).map((item) => (
             <MobileNavLink key={item.url} item={item} />

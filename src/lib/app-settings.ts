@@ -54,6 +54,7 @@ export type DefaultMapLocation = {
 }
 
 export type AppSettings = {
+  readonly demoMode: boolean
   readonly defaultCurrency: Currency
   readonly dateFormat: DateFormat
   readonly defaultListView: CollectionView

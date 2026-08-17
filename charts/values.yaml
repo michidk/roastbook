@@ -1,5 +1,7 @@
 replicaCount: 1
 
+demoMode: false
+
 image:
   repository: ghcr.io/michidk/roastbook
   pullPolicy: IfNotPresent

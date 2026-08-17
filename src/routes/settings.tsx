@@ -120,6 +120,7 @@ function useSettingMutation<Value>({
 function SettingsPage() {
   const { aiStats, internalStats, tasteTags } = Route.useLoaderData()
   const savedSettings = useAppSettings()
+  const demoMode = savedSettings.demoMode
   const formatNumber = useNumberFormatter()
   const router = useRouter()
   const [settings, setSettings] = useState<AppSettings>(savedSettings)
@@ -140,6 +141,7 @@ function SettingsPage() {
   useEffect(
     () =>
       setSettings({
+        demoMode,
         defaultCurrency: savedDefaultCurrency,
         dateFormat: savedDateFormat,
         defaultListView: savedListView,
@@ -157,6 +159,7 @@ function SettingsPage() {
             : null,
       }),
     [
+      demoMode,
       savedDefaultCurrency,
       savedDateFormat,
       savedListView,

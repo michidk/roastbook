@@ -8,6 +8,7 @@ const optionalString = z.string().trim().min(1).optional()
 
 const serverSchema = {
   DATABASE_URL: z.string().trim().min(1),
+  DEMO_MODE: z.stringbool().default(false),
   STORAGE_PROVIDER: z.enum(['local', 's3']).default('local'),
   STORAGE_PATH: z.string().trim().min(1).default('./uploads'),
   STORAGE_URL: z.string().trim().min(1).default('/media'),
@@ -61,6 +62,7 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
     server: serverSchema,
     runtimeEnvStrict: {
       DATABASE_URL: runtimeEnvironment.DATABASE_URL,
+      DEMO_MODE: runtimeEnvironment.DEMO_MODE,
       STORAGE_PROVIDER: runtimeEnvironment.STORAGE_PROVIDER,
       STORAGE_PATH: runtimeEnvironment.STORAGE_PATH,
       STORAGE_URL: runtimeEnvironment.STORAGE_URL,

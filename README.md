@@ -164,6 +164,7 @@ running.
 
 - [Development and testing](docs/development.md)
 - [Configuration reference](docs/configuration.md)
+- [Read-only demo mode](docs/demo-mode.md)
 - [Docker, Helm, and security boundary](docs/deployment.md)
 - [Design system and layout contract](DESIGN.md)
 - [Helm chart reference](charts/README.md)

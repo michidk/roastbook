@@ -9,6 +9,7 @@ describe('server environment', () => {
 
     expect(environment).toMatchObject({
       DATABASE_URL: databaseUrl,
+      DEMO_MODE: false,
       STORAGE_PROVIDER: 'local',
       STORAGE_PATH: './uploads',
       STORAGE_URL: '/media',
@@ -17,6 +18,13 @@ describe('server environment', () => {
       OPENAI_VISION_MODEL: 'gpt-4o',
       OPENAI_RESEARCH_MODEL: 'gpt-4o',
     })
+  })
+
+  test('parses demo mode as a boolean', () => {
+    expect(
+      parseServerEnv({ DATABASE_URL: databaseUrl, DEMO_MODE: 'true' })
+        .DEMO_MODE,
+    ).toBe(true)
   })
 
   test('treats empty optional values as unset', () => {

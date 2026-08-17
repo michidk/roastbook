@@ -7,10 +7,12 @@ import {
   useRouter,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+import type { FormEvent } from 'react'
 import { useEffect } from 'react'
+import { toast } from 'sonner'
 
 import '../styles.css'
-import { AlertTriangle, Home, RefreshCw } from 'lucide-react'
+import { AlertTriangle, Home, LockKeyhole, RefreshCw } from 'lucide-react'
 import { AppNavbar } from '@/components/app-navbar'
 import { ErrorDetails } from '@/components/error-details'
 import { RouteNotFound } from '@/components/route-not-found'
@@ -169,12 +171,27 @@ function RootErrorComponent({ error }: { error: Error }) {
 }
 
 function RootComponent() {
+  const settings = Route.useLoaderData()
+  const preventDemoSubmit = (event: FormEvent<HTMLElement>) => {
+    event.preventDefault()
+    toast.info('Demo mode is read-only. Changes are disabled.')
+  }
+
   return (
     <TooltipProvider>
       <div className="min-h-[100dvh] flex flex-col">
-        <AppNavbar />
+        <AppNavbar demoMode={settings.demoMode} />
+        {settings.demoMode ? (
+          <div className="border-b border-amber-300 bg-amber-50 px-4 py-2 text-amber-950 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
+            <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 text-sm font-medium">
+              <LockKeyhole className="h-4 w-4" aria-hidden="true" />
+              Demo mode: you can explore everything, but changes are disabled.
+            </div>
+          </div>
+        ) : null}
         <main
           id="main-content"
+          onSubmitCapture={settings.demoMode ? preventDemoSubmit : undefined}
           className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:px-8 md:py-8 md:pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8"
         >
           <Outlet />
