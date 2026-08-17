@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import { devtools } from '@tanstack/devtools-vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
@@ -11,11 +13,40 @@ if (roastbookEdition !== 'standard' && roastbookEdition !== 'demo') {
   throw new Error('ROASTBOOK_EDITION must be standard or demo')
 }
 
+const demoAssets = () => ({
+  name: 'roastbook-demo-assets',
+  generateBundle(this: { emitFile: (asset: object) => void }) {
+    for (const filename of [
+      'kraft-orange.webp',
+      'forest-botanical.webp',
+      'cobalt-sunburst.webp',
+    ]) {
+      const source = readFileSync(
+        resolve('scripts/seed-assets/bean-packaging', filename),
+      )
+      this.emitFile({
+        type: 'asset',
+        fileName: `media/demo/${filename}`,
+        source,
+      })
+      this.emitFile({
+        type: 'asset',
+        fileName: `media/demo/${filename.replace('.webp', '.thumb.webp')}`,
+        source,
+      })
+    }
+  },
+})
+
 const config = defineConfig({
   define: {
     __ROASTBOOK_DEMO_MODE__: JSON.stringify(roastbookEdition === 'demo'),
   },
   resolve: {
+    alias:
+      roastbookEdition === 'demo'
+        ? [{ find: /^@\/db$/, replacement: resolve('src/db/demo.ts') }]
+        : [],
     tsconfigPaths: true,
     dedupe: ['react', 'react-dom'],
   },
@@ -45,13 +76,17 @@ const config = defineConfig({
     ],
   },
   plugins: [
+    ...(roastbookEdition === 'demo' ? [demoAssets()] : []),
     devtools(),
     devMigrations(),
     tailwindcss(),
     tanstackStart(),
     nitro({
-      preset: 'bun',
-      routes: { '/media/**': './src/lib/server/media-handler.ts' },
+      preset: roastbookEdition === 'demo' ? 'vercel' : 'bun',
+      routes:
+        roastbookEdition === 'demo'
+          ? {}
+          : { '/media/**': './src/lib/server/media-handler.ts' },
     }),
     viteReact(),
   ],

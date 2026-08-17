@@ -28,3 +28,4 @@ logs/
 
 # Repository-local Codacy CLI installation
 .codacy/
+.vercel
