@@ -96,7 +96,7 @@
     --destructive-text: #9d3b26;
     --favorite: #8b3f60;
     --favorite-foreground: #ffffff;
-    --page-texture: url("data:image/svg+xml,%3Csvg viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.72' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 .227 0 0 0 0 .165 0 0 0 0 .118 .018 .018 .018 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)'/%3E%3C/svg%3E");
+    --page-texture: url("data:image/svg+xml,%3Csvg viewBox='0 0 96 96' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 .227 0 0 0 0 .165 0 0 0 0 .118 .034 .034 .034 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)'/%3E%3C/svg%3E");
     --coffee-shadow: 0 8px 24px -18px rgb(60 42 30 / 45%);
     --coffee-shadow-inline: -8px 0 16px -10px rgb(60 42 30 / 50%);
     --coffee-shadow-strong: 0 10px 30px -18px rgb(60 42 30 / 55%);
@@ -146,7 +146,7 @@
     --destructive-text: #ef947c;
     --favorite: #e3a0bd;
     --favorite-foreground: #1f1a14;
-    --page-texture: url("data:image/svg+xml,%3Csvg viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.72' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 .965 0 0 0 0 .929 0 0 0 0 .875 .012 .012 .012 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)'/%3E%3C/svg%3E");
+    --page-texture: url("data:image/svg+xml,%3Csvg viewBox='0 0 96 96' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 .965 0 0 0 0 .929 0 0 0 0 .875 .022 .022 .022 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)'/%3E%3C/svg%3E");
     --coffee-shadow: 0 8px 24px -18px rgb(0 0 0 / 55%);
     --coffee-shadow-inline: -8px 0 16px -10px rgb(0 0 0 / 60%);
     --coffee-shadow-strong: 0 10px 30px -18px rgb(0 0 0 / 65%);
@@ -341,7 +341,7 @@
     margin: 0;
     background-image: var(--page-texture);
     background-repeat: repeat;
-    background-size: 120px 120px;
+    background-size: 96px 96px;
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
