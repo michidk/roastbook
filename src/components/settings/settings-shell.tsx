@@ -59,8 +59,7 @@ export function SettingsShell<SectionId extends string>({
         </p>
         <TabsList
           aria-label="Settings sections"
-          variant="line"
-          className="h-auto w-full flex-row justify-start gap-1 overflow-x-auto rounded-none p-0 pb-1 lg:flex-col lg:overflow-visible lg:pb-0"
+          className="h-auto w-full flex-row justify-start gap-1 overflow-x-auto rounded-none bg-transparent p-0 pb-1 lg:flex-col lg:overflow-visible lg:pb-0"
         >
           {sections.map((section) => {
             const Icon = section.icon
@@ -70,7 +69,7 @@ export function SettingsShell<SectionId extends string>({
                 key={section.id}
                 value={section.id}
                 className={cn(
-                  'min-h-11 shrink-0 flex-none gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold text-muted-foreground after:hidden hover:bg-secondary hover:text-foreground data-active:bg-accent data-active:text-accent-foreground lg:w-full',
+                  'min-h-11 shrink-0 flex-none justify-start gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold text-muted-foreground shadow-none after:hidden hover:bg-secondary hover:text-foreground data-active:bg-accent data-active:text-accent-foreground data-active:!shadow-none lg:w-full',
                 )}
               >
                 <Icon className="size-4.5" aria-hidden={true} />

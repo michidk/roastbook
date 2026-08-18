@@ -14,7 +14,6 @@ import {
   MapPinned,
   MonitorCog,
   Palette,
-  Settings2,
   SlidersHorizontal,
   Tags,
   Wallpaper,
@@ -26,8 +25,7 @@ import {
   InputField,
   SelectField,
 } from '@/components/form/form-field'
-import { FormPageHeader } from '@/components/form/form-shell'
-import { Page } from '@/components/page-layout'
+import { Page, PageHeader } from '@/components/page-layout'
 import { AboutSettings } from '@/components/settings/about-settings'
 import { AiSettings } from '@/components/settings/ai-settings'
 import { MapLocationSettings } from '@/components/settings/map-location-settings'
@@ -267,14 +265,9 @@ function SettingsPage() {
 
   return (
     <Page>
-      <FormPageHeader
+      <PageHeader
         title="Settings"
-        description="Configure your Roastbook experience and installation."
-        leading={
-          <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-link sm:size-12">
-            <Settings2 className="size-5 sm:size-6" aria-hidden={true} />
-          </span>
-        }
+        description="Configure your Roastbook experience and installation"
       />
 
       <SettingsShell
