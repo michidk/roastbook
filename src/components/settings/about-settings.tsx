@@ -1,5 +1,5 @@
 import { Bug, ExternalLink, Github, Info, Scale } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { SettingsPanelSection } from '@/components/settings/settings-shell'
 
 const projectUrl = 'https://github.com/michidk/roastbook'
 
@@ -42,46 +42,41 @@ function AboutLink({
 
 export function AboutSettings() {
   return (
-    <Card role="group" aria-labelledby="about-roastbook">
-      <CardHeader className="border-b border-border">
-        <div className="flex items-center gap-2.5">
-          <Info className="size-5 text-link" aria-hidden={true} />
-          <CardTitle id="about-roastbook">About Roastbook</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        <div className="space-y-2">
-          <p className="leading-relaxed">
-            Roastbook is a self-hosted coffee journal for brews, beans, recipes,
-            café visits, roasters, brewing methods, and gear.
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Made for coffee people who want to own their data. Open source and
-            available under the MIT License.
-          </p>
-        </div>
+    <SettingsPanelSection
+      title="About Roastbook"
+      action={<Info className="size-5 text-link" aria-hidden={true} />}
+    >
+      <div className="space-y-2">
+        <p className="leading-relaxed">
+          Roastbook is a self-hosted coffee journal for brews, beans, recipes,
+          café visits, roasters, brewing methods, and gear.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Made for coffee people who want to own their data. Open source and
+          available under the MIT License.
+        </p>
+      </div>
 
-        <div className="grid gap-3">
-          <AboutLink
-            href={projectUrl}
-            icon={Github}
-            title="View on GitHub"
-            description="Explore the source, documentation, and releases"
-          />
-          <AboutLink
-            href={`${projectUrl}/issues/new`}
-            icon={Bug}
-            title="Report a bug"
-            description="Found something that is not working? Let us know"
-          />
-          <AboutLink
-            href={`${projectUrl}/blob/main/LICENSE`}
-            icon={Scale}
-            title="MIT License"
-            description="Read the license for using and contributing"
-          />
-        </div>
-      </CardContent>
-    </Card>
+      <div className="grid gap-3">
+        <AboutLink
+          href={projectUrl}
+          icon={Github}
+          title="View on GitHub"
+          description="Explore the source, documentation, and releases"
+        />
+        <AboutLink
+          href={`${projectUrl}/issues/new`}
+          icon={Bug}
+          title="Report a bug"
+          description="Found something that is not working? Let us know"
+        />
+        <AboutLink
+          href={`${projectUrl}/blob/main/LICENSE`}
+          icon={Scale}
+          title="MIT License"
+          description="Read the license for using and contributing"
+        />
+      </div>
+    </SettingsPanelSection>
   )
 }

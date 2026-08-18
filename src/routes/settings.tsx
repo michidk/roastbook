@@ -26,24 +26,18 @@ import {
   InputField,
   SelectField,
 } from '@/components/form/form-field'
-import { FormPageHeader, FormSection } from '@/components/form/form-shell'
+import { FormPageHeader } from '@/components/form/form-shell'
 import { Page } from '@/components/page-layout'
 import { AboutSettings } from '@/components/settings/about-settings'
 import { AiSettings } from '@/components/settings/ai-settings'
 import { MapLocationSettings } from '@/components/settings/map-location-settings'
 import {
+  SettingsPanelSection,
   type SettingsSection,
   SettingsShell,
 } from '@/components/settings/settings-shell'
 import { TasteTagSettings } from '@/components/settings/taste-tag-settings'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { useAppSettings } from '@/hooks/use-app-settings'
@@ -290,7 +284,7 @@ function SettingsPage() {
       >
         {activeSection === 'general' ? (
           <>
-            <FormSection
+            <SettingsPanelSection
               title="Default currency"
               description="Used when adding beans, gear, and café visits."
               action={
@@ -310,9 +304,9 @@ function SettingsPage() {
                   if (isCurrency(value)) void currencyMutation.save(value)
                 }}
               />
-            </FormSection>
+            </SettingsPanelSection>
 
-            <FormSection
+            <SettingsPanelSection
               title="Formatting"
               description="Choose how numbers and calendar dates are displayed. Both decimal separators are accepted when entering a value."
               action={
@@ -348,9 +342,9 @@ function SettingsPage() {
                   if (isDateFormat(value)) void dateFormatMutation.save(value)
                 }}
               />
-            </FormSection>
+            </SettingsPanelSection>
 
-            <FormSection
+            <SettingsPanelSection
               title="Time zone"
               description="Used for brew-day boundaries, streaks, and time-of-day statistics. Enter an IANA name such as Europe/Berlin."
               action={
@@ -390,9 +384,9 @@ function SettingsPage() {
                   Save time zone
                 </Button>
               </div>
-            </FormSection>
+            </SettingsPanelSection>
 
-            <FormSection
+            <SettingsPanelSection
               title="Default list view"
               description="How cafés, roasters, recipes, and brewing methods are shown before you choose a view for a list."
               action={
@@ -413,13 +407,13 @@ function SettingsPage() {
                   if (isCollectionView(value)) void listViewMutation.save(value)
                 }}
               />
-            </FormSection>
+            </SettingsPanelSection>
           </>
         ) : null}
 
         {activeSection === 'appearance' ? (
           <>
-            <FormSection
+            <SettingsPanelSection
               title="Theme"
               description="Use a fixed theme or follow your browser and operating system. This preference is stored only in this browser."
               action={<MonitorCog className="size-5 text-link" />}
@@ -434,9 +428,9 @@ function SettingsPage() {
                   if (isThemePreference(value)) setTheme(value)
                 }}
               />
-            </FormSection>
+            </SettingsPanelSection>
 
-            <FormSection
+            <SettingsPanelSection
               title="Page background"
               description="Control the shared page canvas for this Roastbook installation."
               action={
@@ -463,12 +457,12 @@ function SettingsPage() {
                   }
                 />
               </div>
-            </FormSection>
+            </SettingsPanelSection>
           </>
         ) : null}
 
         {activeSection === 'map' ? (
-          <FormSection
+          <SettingsPanelSection
             title="Default map location"
             description="Choose where the café explorer opens. Look up a location or enter coordinates directly."
             action={
@@ -484,11 +478,11 @@ function SettingsPage() {
               disabled={mapLocationMutation.isSaving}
               onChange={(location) => void mapLocationMutation.save(location)}
             />
-          </FormSection>
+          </SettingsPanelSection>
         ) : null}
 
         {activeSection === 'taste-tags' ? (
-          <FormSection
+          <SettingsPanelSection
             title="Taste tags"
             description="The tags offered when rating shots and café visits. Removing a tag also removes it from existing entries."
             action={<Tags className="size-5 text-link" aria-hidden="true" />}
@@ -497,64 +491,60 @@ function SettingsPage() {
               tags={tasteTags}
               onChanged={() => router.invalidate()}
             />
-          </FormSection>
+          </SettingsPanelSection>
         ) : null}
 
         {activeSection === 'ai' ? <AiSettings stats={aiStats} /> : null}
 
         {activeSection === 'storage' ? (
-          <Card role="group" aria-labelledby="internal-stats">
-            <CardHeader>
-              <CardTitle id="internal-stats">Storage</CardTitle>
-              <CardDescription>
-                Live media usage for this installation.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3">
-                <InternalStat
-                  label="Stored images"
-                  value={storageValue(
-                    internalStats.storage.imageCount,
-                    formatNumber,
-                  )}
-                  detail={storageDetail(
-                    internalStats.storage.available,
-                    'physical files',
-                  )}
-                  icon={Images}
-                />
-                <InternalStat
-                  label="Cached favicons"
-                  value={storageValue(
-                    internalStats.storage.faviconCount,
-                    formatNumber,
-                  )}
-                  detail={storageDetail(
-                    internalStats.storage.available,
-                    'website icons',
-                  )}
-                  icon={Globe2}
-                />
-                <InternalStat
-                  label="Storage used"
-                  value={
-                    internalStats.storage.totalBytes === null
-                      ? '—'
-                      : formatBytes(
-                          internalStats.storage.totalBytes,
-                          formatNumber,
-                        )
-                  }
-                  detail={storageDetail(
-                    internalStats.storage.available,
-                    `${internalStats.storage.provider.toUpperCase()} storage`,
-                  )}
-                  icon={HardDrive}
-                />
-              </dl>
-            </CardContent>
-          </Card>
+          <SettingsPanelSection
+            title="Storage"
+            description="Live media usage for this installation."
+            action={<HardDrive className="size-5 text-link" />}
+          >
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3">
+              <InternalStat
+                label="Stored images"
+                value={storageValue(
+                  internalStats.storage.imageCount,
+                  formatNumber,
+                )}
+                detail={storageDetail(
+                  internalStats.storage.available,
+                  'physical files',
+                )}
+                icon={Images}
+              />
+              <InternalStat
+                label="Cached favicons"
+                value={storageValue(
+                  internalStats.storage.faviconCount,
+                  formatNumber,
+                )}
+                detail={storageDetail(
+                  internalStats.storage.available,
+                  'website icons',
+                )}
+                icon={Globe2}
+              />
+              <InternalStat
+                label="Storage used"
+                value={
+                  internalStats.storage.totalBytes === null
+                    ? '—'
+                    : formatBytes(
+                        internalStats.storage.totalBytes,
+                        formatNumber,
+                      )
+                }
+                detail={storageDetail(
+                  internalStats.storage.available,
+                  `${internalStats.storage.provider.toUpperCase()} storage`,
+                )}
+                icon={HardDrive}
+              />
+            </dl>
+          </SettingsPanelSection>
         ) : null}
 
         {activeSection === 'about' ? <AboutSettings /> : null}

@@ -1,7 +1,7 @@
 import { Bot, Bug } from 'lucide-react'
 import { useState } from 'react'
-import { FormSection } from '@/components/form/form-shell'
 import { AiRequestLogDialog } from '@/components/settings/ai-request-log-dialog'
+import { SettingsPanelSection } from '@/components/settings/settings-shell'
 import { Button } from '@/components/ui/button'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import type { AiRequestStats } from '@/lib/server/ai-request-logs'
@@ -29,7 +29,7 @@ export function AiSettings({ stats }: { stats: AiRequestStats }) {
 
   return (
     <>
-      <FormSection
+      <SettingsPanelSection
         title="AI"
         description="Review lifetime token usage and inspect raw extraction and research traffic."
         action={<Bot className="h-5 w-5 text-link" aria-hidden="true" />}
@@ -71,7 +71,7 @@ export function AiSettings({ stats }: { stats: AiRequestStats }) {
             Open request log
           </Button>
         </div>
-      </FormSection>
+      </SettingsPanelSection>
       <AiRequestLogDialog
         open={requestLogOpen}
         onOpenChange={setRequestLogOpen}
