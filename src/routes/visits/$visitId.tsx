@@ -5,7 +5,8 @@ import {
   useRouter,
 } from '@tanstack/react-router'
 import { ArrowLeft, Pencil } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
+import { z } from 'zod'
 import { CoffeeShopCard } from '@/components/coffee-shops/coffee-shop-card'
 import { CoffeeShopMap } from '@/components/coffee-shops/coffee-shop-map'
 import { DeleteConfirmation } from '@/components/DeleteConfirmation'
@@ -21,6 +22,7 @@ import { CafeVisitList } from '@/components/visits/cafe-visit-list'
 import { VisitEditForm } from '@/components/visits/visit-edit-form'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { editModeSearchField } from '@/lib/edit-mode'
 import { getActiveBeans } from '@/lib/server/beans'
 import { deleteCafeVisit, getCafeVisit } from '@/lib/server/cafe-visits'
 import { getCoffeeShop, getCoffeeShops } from '@/lib/server/coffee-shops'
@@ -29,6 +31,7 @@ import { isNegativeTasteTag } from '@/lib/taste-tags'
 import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/visits/$visitId')({
+  validateSearch: z.object({ edit: editModeSearchField }),
   loader: async ({ params }) => {
     const visitId = Number(params.visitId)
     const visit = await getCafeVisit({ data: visitId })
@@ -61,10 +64,10 @@ function VisitDetailPage() {
   const formatNumber = useNumberFormatter()
   const { visit, coffeeShops, tasteTags, beans, cafeVisitHistory } =
     Route.useLoaderData()
-  const navigate = useNavigate()
+  const { edit: isEditing = false } = Route.useSearch()
+  const navigate = useNavigate({ from: '/visits/$visitId' })
   const router = useRouter()
-  const [isEditing, setIsEditing] = useState(false)
-  const editButtonRef = useRef<HTMLButtonElement>(null)
+  const editButtonRef = useRef<HTMLAnchorElement>(null)
 
   if (!visit) {
     return (
@@ -83,14 +86,19 @@ function VisitDetailPage() {
   }
 
   const handleSaved = async () => {
+    await navigate({
+      search: (current) => ({ ...current, edit: undefined }),
+      replace: true,
+    })
     await router.invalidate({ filter: (match) => match.routeId === Route.id })
-    setIsEditing(false)
     requestAnimationFrame(() => editButtonRef.current?.focus())
   }
 
   const handleCancel = () => {
-    setIsEditing(false)
-    requestAnimationFrame(() => editButtonRef.current?.focus())
+    void navigate({
+      search: (current) => ({ ...current, edit: undefined }),
+      replace: true,
+    }).then(() => editButtonRef.current?.focus())
   }
 
   const previousVisits = cafeVisitHistory.filter(
@@ -123,14 +131,16 @@ function VisitDetailPage() {
               />
             ) : null}
             {!isEditing ? (
-              <Button
-                ref={editButtonRef}
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditing(true)}
-              >
-                <Pencil />
-                Edit
+              <Button variant="outline" size="sm" asChild>
+                <Link
+                  ref={editButtonRef}
+                  to="/visits/$visitId"
+                  params={{ visitId: String(visit.id) }}
+                  search={{ edit: true }}
+                >
+                  <Pencil />
+                  Edit
+                </Link>
               </Button>
             ) : null}
             <DeleteConfirmation

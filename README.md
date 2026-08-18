@@ -82,7 +82,8 @@ an assistant log this morning's espresso for you.
 ## Features
 
 - Log brews with recipe, dose, yield, time, equipment, overall and sensory
-  ratings, and flavor notes; reuse a brew’s values in a new or existing recipe.
+  ratings, and flavor notes; create recipes from scratch, duplicate variants,
+  or reuse a brew’s values in a new or existing recipe.
 - Catalog beans, roasters, brewing methods, coffee shops, and gear.
 - Track café visits and explore saved places on a map.
 - Review filterable brew and café trends, quality, consistency, taste, rhythm,

@@ -7,6 +7,7 @@ import {
 import { ArrowLeft, ExternalLink, Pencil, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { z } from 'zod'
 import { DeleteConfirmation } from '@/components/DeleteConfirmation'
 import { Page, PageHeader } from '@/components/page-layout'
 import { RoasterFields } from '@/components/roasters/roaster-fields'
@@ -22,9 +23,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { WebsiteLogo } from '@/components/website-logo'
 import { getRoastLevelLabel } from '@/lib/constants'
+import { editModeSearchField } from '@/lib/edit-mode'
 import { deleteRoaster, getRoaster, updateRoaster } from '@/lib/server/roasters'
 
 export const Route = createFileRoute('/roasters/$roasterId')({
+  validateSearch: z.object({ edit: editModeSearchField }),
   loader: ({ params }) => getRoaster({ data: Number(params.roasterId) }),
   component: RoasterDetailPage,
   pendingComponent: DetailPending,
@@ -35,9 +38,9 @@ export const Route = createFileRoute('/roasters/$roasterId')({
 
 function RoasterDetailPage() {
   const roaster = Route.useLoaderData()
-  const navigate = useNavigate()
+  const { edit: isEditing = false } = Route.useSearch()
+  const navigate = useNavigate({ from: '/roasters/$roasterId' })
   const router = useRouter()
-  const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [formData, setFormData] = useState(() =>
     createRoasterFormValues(roaster),
@@ -61,7 +64,10 @@ function RoasterDetailPage() {
 
   const handleCancelEdit = () => {
     setFormData(createRoasterFormValues(roaster))
-    setIsEditing(false)
+    void navigate({
+      search: (current) => ({ ...current, edit: undefined }),
+      replace: true,
+    })
   }
 
   const handleSave = async () => {
@@ -72,7 +78,10 @@ function RoasterDetailPage() {
       await updateRoaster({
         data: roasterUpdatePayload(roaster.id, formData),
       })
-      setIsEditing(false)
+      await navigate({
+        search: (current) => ({ ...current, edit: undefined }),
+        replace: true,
+      })
       await router.invalidate({ filter: (match) => match.routeId === Route.id })
     } catch {
       toast.error('Failed to update roaster')
@@ -134,13 +143,15 @@ function RoasterDetailPage() {
                 </Button>
               </>
             ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditing(true)}
-              >
-                <Pencil className="h-4 w-4 mr-2" />
-                Edit
+              <Button variant="outline" size="sm" asChild>
+                <Link
+                  to="/roasters/$roasterId"
+                  params={{ roasterId: String(roaster.id) }}
+                  search={{ edit: true }}
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit
+                </Link>
               </Button>
             )}
             <DeleteConfirmation

@@ -7,18 +7,16 @@ import {
 import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
 import { type SyntheticEvent, useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { BeanPicker } from '@/components/beans/bean-picker'
+import { z } from 'zod'
 import { DeleteConfirmation } from '@/components/DeleteConfirmation'
-import { InputField, SelectField } from '@/components/form/form-field'
-import { FormSection } from '@/components/form/form-shell'
 import { Page, PageHeader } from '@/components/page-layout'
+import { RecipeDuplicateButton } from '@/components/recipes/recipe-duplicate-button'
+import { RecipeFields } from '@/components/recipes/recipe-fields'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import {
-  availableGearForShot,
   EMPTY_SHOT_FORM_VALUES,
   type ShotFormValues,
-  ShotParameterFields,
   shotFormValuesFrom,
 } from '@/components/shots/shot-parameter-fields'
 import { Badge } from '@/components/ui/badge'
@@ -33,6 +31,9 @@ import { deleteRecipe, getRecipe, updateRecipe } from '@/lib/server/recipes'
 import { getShotUpdateErrors } from '@/lib/update-validation'
 
 export const Route = createFileRoute('/recipes/$recipeId')({
+  validateSearch: z.object({
+    edit: z.boolean().optional().catch(undefined),
+  }),
   loader: async ({ params }) => {
     const recipeId = Number(params.recipeId)
     const [recipe, beans, methods, gear] = await Promise.all([
@@ -60,9 +61,9 @@ function createFormValues(recipe?: Recipe): ShotFormValues {
 
 function RecipeDetailPage() {
   const { recipe, beans, methods, gear } = Route.useLoaderData()
-  const navigate = useNavigate()
+  const { edit: isEditing = false } = Route.useSearch()
+  const navigate = useNavigate({ from: '/recipes/$recipeId' })
   const router = useRouter()
-  const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [name, setName] = useState(recipe?.name ?? '')
   const [values, setValues] = useState(() => createFormValues(recipe))
@@ -87,28 +88,23 @@ function RecipeDetailPage() {
     )
   }
 
-  const selectedMethod = methods.find(
-    (method) => String(method.id) === values.brewingMethodId,
-  )
-  const methodOptions = methods.map((method) => ({
-    value: String(method.id),
-    label: method.name,
-  }))
   const beanOptions =
     recipe.bean && !beans.some((bean) => bean.id === recipe.bean?.id)
       ? [recipe.bean, ...beans]
       : beans
-  const gearOptions = availableGearForShot(values, gear)
   const set = <Key extends keyof ShotFormValues>(
     key: Key,
     value: ShotFormValues[Key],
   ) => setValues((current) => ({ ...current, [key]: value }))
 
-  const cancelEdit = () => {
+  const cancelEdit = async () => {
     setName(recipe.name)
     setValues(createFormValues(recipe))
     setFieldErrors({})
-    setIsEditing(false)
+    await navigate({
+      search: (current) => ({ ...current, edit: undefined }),
+      replace: true,
+    })
   }
 
   const handleSave = async (event: SyntheticEvent<HTMLFormElement>) => {
@@ -125,7 +121,10 @@ function RecipeDetailPage() {
     setIsSaving(true)
     try {
       await updateRecipe({ data })
-      setIsEditing(false)
+      await navigate({
+        search: (current) => ({ ...current, edit: undefined }),
+        replace: true,
+      })
       await router.invalidate({ filter: (match) => match.routeId === Route.id })
       toast.success('Recipe updated')
     } catch (error) {
@@ -159,7 +158,7 @@ function RecipeDetailPage() {
                 variant="outline"
                 size="sm"
                 type="button"
-                onClick={cancelEdit}
+                onClick={() => void cancelEdit()}
                 disabled={isSaving}
               >
                 Cancel
@@ -175,13 +174,15 @@ function RecipeDetailPage() {
             </>
           ) : (
             <>
-              <Button
-                variant="outline"
-                size="sm"
-                type="button"
-                onClick={() => setIsEditing(true)}
-              >
-                <Pencil /> Edit
+              <RecipeDuplicateButton recipe={recipe} />
+              <Button variant="outline" size="sm" asChild>
+                <Link
+                  to="/recipes/$recipeId"
+                  params={{ recipeId: String(recipe.id) }}
+                  search={(current) => ({ ...current, edit: true })}
+                >
+                  <Pencil /> Edit
+                </Link>
               </Button>
               <DeleteConfirmation
                 title="Delete this recipe?"
@@ -209,51 +210,16 @@ function RecipeDetailPage() {
 
       {isEditing ? (
         <form id="recipe-edit-form" onSubmit={handleSave} className="space-y-6">
-          <FormSection
-            title="Brewing method"
-            description="Choose the method first. It controls which recipe fields are available."
-          >
-            <SelectField
-              id="recipe-method"
-              label="Method"
-              placeholder="Choose a brewing method"
-              value={values.brewingMethodId}
-              options={methodOptions}
-              onChange={(value) => set('brewingMethodId', value)}
-              required
-              error={fieldErrors.brewingMethodId}
-            />
-          </FormSection>
-          {selectedMethod ? (
-            <>
-              <FormSection title="Recipe">
-                <InputField
-                  id="recipe-name"
-                  label="Name"
-                  value={name}
-                  onChange={setName}
-                  required
-                  autoFocus
-                />
-              </FormSection>
-              <FormSection title="Beans">
-                <BeanPicker
-                  id="recipe-bean"
-                  label="Beans"
-                  value={values.beanId}
-                  onChange={(value) => set('beanId', value)}
-                  beans={beanOptions}
-                />
-              </FormSection>
-              <ShotParameterFields
-                values={values}
-                gear={gearOptions}
-                enabledParameters={selectedMethod.enabledParameters}
-                errors={fieldErrors}
-                onChange={set}
-              />
-            </>
-          ) : null}
+          <RecipeFields
+            name={name}
+            values={values}
+            beans={beanOptions}
+            methods={methods}
+            gear={gear}
+            errors={fieldErrors}
+            onNameChange={setName}
+            onChange={set}
+          />
         </form>
       ) : (
         <RecipeSummary recipe={recipe} gear={gear} />

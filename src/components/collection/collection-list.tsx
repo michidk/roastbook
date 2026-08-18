@@ -59,6 +59,8 @@ export type CollectionEntry = {
   readonly flags?: ReactNode
   /** Badge or value pinned to the trailing edge of the card. */
   readonly trailing?: ReactNode
+  /** Record action rendered separately from the navigation link. */
+  readonly action?: ReactNode
   readonly to: string
   readonly params?: Record<string, string>
   readonly highlight?: boolean
@@ -157,43 +159,55 @@ function CollectionCard({ entry }: { readonly entry: CollectionEntry }) {
   const media = entry.media ?? { kind: 'none' as const }
 
   return (
-    <Link
-      to={entry.to}
-      params={entry.params}
+    <Card
       className={cn(
-        interactiveCardLinkClassName,
-        'flex items-center gap-3 bg-card p-4 shadow-coffee',
+        'relative gap-0 overflow-visible p-0 transition-transform duration-200 hover:-translate-y-0.5 motion-reduce:hover:translate-y-0',
         entry.highlight && 'ring-2 ring-favorite/35 ring-inset',
       )}
     >
-      <CollectionMediaFigure media={media} size="md" />
-      <span className="min-w-0 flex-1 space-y-0.5">
-        <span className="flex items-center gap-1.5">
-          {entry.titlePrefix}
-          <span className="truncate font-display text-base font-bold text-foreground">
-            {entry.title}
+      <Link
+        to={entry.to}
+        params={entry.params}
+        className={cn(
+          interactiveCardLinkClassName,
+          'flex items-center gap-3 p-4 hover:translate-y-0 motion-reduce:hover:translate-y-0',
+          entry.action && 'pr-14',
+        )}
+      >
+        <CollectionMediaFigure media={media} size="md" />
+        <span className="min-w-0 flex-1 space-y-0.5">
+          <span className="flex items-center gap-1.5">
+            {entry.titlePrefix}
+            <span className="truncate font-display text-base font-bold text-foreground">
+              {entry.title}
+            </span>
+            {entry.flags}
           </span>
-          {entry.flags}
+          {entry.subtitle ? (
+            <span className="block truncate text-sm text-muted-foreground">
+              {entry.subtitle}
+            </span>
+          ) : null}
+          {entry.meta ? (
+            <span className="block truncate text-sm text-muted-foreground">
+              {entry.meta}
+            </span>
+          ) : null}
         </span>
-        {entry.subtitle ? (
-          <span className="block truncate text-sm text-muted-foreground">
-            {entry.subtitle}
-          </span>
+        {entry.trailing ? (
+          <span className="shrink-0">{entry.trailing}</span>
         ) : null}
-        {entry.meta ? (
-          <span className="block truncate text-sm text-muted-foreground">
-            {entry.meta}
-          </span>
-        ) : null}
-      </span>
-      {entry.trailing ? (
-        <span className="shrink-0">{entry.trailing}</span>
+        <ChevronRight
+          aria-hidden
+          className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-1"
+        />
+      </Link>
+      {entry.action ? (
+        <span className="absolute top-1/2 right-1 -translate-y-1/2">
+          {entry.action}
+        </span>
       ) : null}
-      <ChevronRight
-        aria-hidden
-        className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-1"
-      />
-    </Link>
+    </Card>
   )
 }
 
@@ -233,6 +247,7 @@ export function CollectionList<TItem>({
   sort,
 }: CollectionListProps<TItem>) {
   const entries = items.map((item) => ({ item, entry: getEntry(item) }))
+  const hasActions = entries.some(({ entry }) => entry.action)
 
   if (view === 'cards') {
     return (
@@ -283,6 +298,11 @@ export function CollectionList<TItem>({
                   </TableHead>
                 ),
               )}
+              {hasActions ? (
+                <TableHead>
+                  <span className="sr-only">Actions</span>
+                </TableHead>
+              ) : null}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -301,6 +321,11 @@ export function CollectionList<TItem>({
                     {column.cell(item)}
                   </TableCell>
                 ))}
+                {hasActions ? (
+                  <TableCell className="w-0 text-right">
+                    {entry.action}
+                  </TableCell>
+                ) : null}
               </TableRow>
             ))}
           </TableBody>

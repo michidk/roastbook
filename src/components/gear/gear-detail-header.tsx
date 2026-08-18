@@ -22,7 +22,6 @@ export function GearDetailHeader({
   isEditing,
   isSaving,
   onToggleArchive,
-  onStartEdit,
   onCancel,
   onDelete,
 }: {
@@ -31,7 +30,6 @@ export function GearDetailHeader({
   isEditing: boolean
   isSaving: boolean
   onToggleArchive: () => void
-  onStartEdit: () => void
   onCancel: () => void
   onDelete: () => void
 }) {
@@ -90,14 +88,15 @@ export function GearDetailHeader({
             </>
           ) : (
             <>
-              <Button
-                variant="outline"
-                size="sm"
-                type="button"
-                onClick={onStartEdit}
-              >
-                <Pencil />
-                Edit
+              <Button variant="outline" size="sm" asChild>
+                <Link
+                  to="/gear/$gearId"
+                  params={{ gearId: String(gear.id) }}
+                  search={(current) => ({ ...current, edit: true })}
+                >
+                  <Pencil />
+                  Edit
+                </Link>
               </Button>
               <DeleteConfirmation
                 title="Delete this gear?"

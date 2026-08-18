@@ -1,5 +1,5 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { BookOpen } from 'lucide-react'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { BookOpen, Plus } from 'lucide-react'
 import { z } from 'zod'
 import {
   type CollectionColumn,
@@ -11,9 +11,11 @@ import { CollectionToolbar } from '@/components/collection-toolbar'
 import { EmptyState } from '@/components/EmptyState'
 import { Page, PageHeader } from '@/components/page-layout'
 import { PaginationControls } from '@/components/pagination-controls'
+import { RecipeDuplicateButton } from '@/components/recipes/recipe-duplicate-button'
 import { RouteError } from '@/components/route-error'
 import { ListPending } from '@/components/route-pending'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { useCollectionView } from '@/hooks/use-collection-view'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
@@ -70,6 +72,7 @@ function toEntry(recipe: Recipe): CollectionEntry {
         {recipe.brewingMethod.name}
       </Badge>
     ),
+    action: <RecipeDuplicateButton recipe={recipe} compact />,
     to: '/recipes/$recipeId',
     params: { recipeId: String(recipe.id) },
   }
@@ -159,6 +162,13 @@ function RecipesPage() {
       <PageHeader
         title="Recipes"
         description="Reusable brew values, organized by brewing method."
+        actions={
+          <Button asChild>
+            <Link to="/recipes/new">
+              <Plus aria-hidden="true" /> New recipe
+            </Link>
+          </Button>
+        }
       />
 
       {pageData.totalItems === 0 && !search.query ? (

@@ -79,7 +79,6 @@ export function BeanDetailHeader({
   recommendationEnabled,
   shotCount,
   onToggleArchive,
-  onStartEdit,
   onCancelEdit,
   onSave,
   onDelete,
@@ -92,7 +91,6 @@ export function BeanDetailHeader({
   recommendationEnabled: boolean
   shotCount: number
   onToggleArchive: () => void
-  onStartEdit: () => void
   onCancelEdit: () => void
   onSave: () => void
   onDelete: () => void
@@ -171,9 +169,15 @@ export function BeanDetailHeader({
                 request={shotCount > 0 ? { beanId: bean.id } : null}
                 size="sm"
               />
-              <Button variant="outline" size="sm" onClick={onStartEdit}>
-                <Pencil />
-                Edit
+              <Button variant="outline" size="sm" asChild>
+                <Link
+                  to="/beans/$beanId"
+                  params={{ beanId: String(bean.id) }}
+                  search={(current) => ({ ...current, edit: true })}
+                >
+                  <Pencil />
+                  Edit
+                </Link>
               </Button>
               <Button size="sm" asChild>
                 <Link to="/shots/new" search={{ beanId: bean.id }}>

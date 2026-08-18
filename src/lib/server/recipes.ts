@@ -37,6 +37,7 @@ const recipeUpdateSchema = shotUpdateSchema
     tasteTagIds: true,
   })
   .extend({ name: nameSchema })
+const recipeCreateSchema = recipeUpdateSchema.omit({ id: true })
 
 class RecipeInputError extends Error {
   constructor(message: string) {
@@ -178,6 +179,76 @@ export const updateRecipe = createServerFn({ method: 'POST' })
         tx,
         id,
         projectAccessoryGearIds(parameters, method.enabledParameters),
+      )
+      return persistedRecipe
+    }),
+  )
+
+export const createRecipe = createServerFn({ method: 'POST' })
+  .validator((input: unknown) => {
+    const data = recipeCreateSchema.parse(input)
+    assertValidUpdate(getShotUpdateErrors(data))
+    return data
+  })
+  .handler(async ({ data }) =>
+    db.transaction(async (tx) => {
+      const method = await tx.query.brewingMethods.findFirst({
+        where: (brewingMethods, { eq }) =>
+          eq(brewingMethods.id, data.brewingMethodId),
+      })
+      if (!method) throw new RecipeInputError('Brewing method not found')
+
+      const { name, brewingMethodId, beanId, ...parameters } = data
+      const [recipe] = await tx
+        .insert(recipes)
+        .values({
+          name,
+          brewingMethodId,
+          beanId,
+          ...projectShotParameters(parameters, method.enabledParameters),
+          updatedAt: new Date(),
+        })
+        .returning()
+      const persistedRecipe = expectReturnedRow(recipe, 'Recipe')
+      await replaceRecipeAccessoryGear(
+        tx,
+        persistedRecipe.id,
+        projectAccessoryGearIds(parameters, method.enabledParameters),
+      )
+      return persistedRecipe
+    }),
+  )
+
+export const duplicateRecipe = createServerFn({ method: 'POST' })
+  .validator(positiveIdSchema)
+  .handler(async ({ data: id }) =>
+    db.transaction(async (tx) => {
+      const source = await tx.query.recipes.findFirst({
+        where: eq(recipes.id, id),
+        with: { accessoryGearLinks: { columns: { gearId: true } } },
+      })
+      if (!source) throw new RecipeInputError('Recipe not found')
+
+      const { accessoryGearLinks, ...sourceRecipe } = source
+      const {
+        id: _sourceId,
+        createdAt: _sourceCreatedAt,
+        updatedAt: _sourceUpdatedAt,
+        ...recipeValues
+      } = sourceRecipe
+      const [duplicate] = await tx
+        .insert(recipes)
+        .values({
+          ...recipeValues,
+          name: `${source.name} copy`,
+          updatedAt: new Date(),
+        })
+        .returning()
+      const persistedRecipe = expectReturnedRow(duplicate, 'Recipe')
+      await replaceRecipeAccessoryGear(
+        tx,
+        persistedRecipe.id,
+        accessoryGearLinks.map(({ gearId }) => gearId),
       )
       return persistedRecipe
     }),

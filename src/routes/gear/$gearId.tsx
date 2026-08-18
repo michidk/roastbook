@@ -4,6 +4,7 @@ import { GearDetailPage } from '@/components/gear/gear-detail-page'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import type { ShotsTableServerPagination } from '@/components/ShotsTable'
+import { editModeSearchField } from '@/lib/edit-mode'
 import { checkGearResearchEnabled, getGearById } from '@/lib/server/gear'
 import { getGearShotPage } from '@/lib/server/shots'
 
@@ -15,6 +16,7 @@ const gearDetailSearchSchema = z.object({
     .default('date')
     .catch('date'),
   shotDirection: z.enum(['asc', 'desc']).default('desc').catch('desc'),
+  edit: editModeSearchField,
 })
 
 export const Route = createFileRoute('/gear/$gearId')({
@@ -88,6 +90,10 @@ function GearDetailRoute() {
       shotsPagination={shotsPagination}
       researchEnabled={researchEnabled}
       detailRouteId={Route.id}
+      isEditing={search.edit ?? false}
+      onFinishEditing={() =>
+        navigate({ search: (current) => ({ ...current, edit: undefined }) })
+      }
     />
   )
 }

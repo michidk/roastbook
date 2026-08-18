@@ -33,16 +33,19 @@ export function GearDetailPage({
   shotsPagination,
   researchEnabled,
   detailRouteId,
+  isEditing,
+  onFinishEditing,
 }: {
   gear: Gear
   shots: Shots
   shotsPagination: ShotsTableServerPagination
   researchEnabled: boolean
   detailRouteId: string
+  isEditing: boolean
+  onFinishEditing: () => void | Promise<void>
 }) {
   const navigate = useNavigate()
   const router = useRouter()
-  const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isResearching, setIsResearching] = useState(false)
   const [researchModalOpen, setResearchModalOpen] = useState(false)
@@ -100,7 +103,7 @@ export function GearDetailPage({
     setIsSaving(true)
     try {
       await updateGear({ data: gearUpdatePayload(gear.id, formData) })
-      setIsEditing(false)
+      await onFinishEditing()
       await invalidateDetail()
     } catch (error) {
       toast.error(getErrorMessage(error, 'Could not save this gear'))
@@ -128,13 +131,9 @@ export function GearDetailPage({
         isEditing={isEditing}
         isSaving={isSaving}
         onToggleArchive={handleToggleArchive}
-        onStartEdit={() => {
-          resetForm()
-          setIsEditing(true)
-        }}
         onCancel={() => {
           resetForm()
-          setIsEditing(false)
+          void onFinishEditing()
         }}
         onDelete={async () => {
           await deleteGear({ data: gear.id })

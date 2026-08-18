@@ -128,6 +128,50 @@ export function shotFormValuesFrom(
   }
 }
 
+const RECIPE_FORM_KEYS = [
+  'brewingMethodId',
+  'beanId',
+  'machineId',
+  'doseGrams',
+  'brewWaterGrams',
+  'ratioBasis',
+  'grinderId',
+  'grindSetting',
+  'yieldGrams',
+  'shotTimeSeconds',
+  'brewTemperatureCelsius',
+  'preinfusionTimeSeconds',
+  'preinfusionPressureBar',
+  'bloomTimeSeconds',
+  'brewPressureBar',
+  'flowRateMlPerSecond',
+  'basketId',
+  'usesPuckScreen',
+  'paperFilterPosition',
+  'distributionMethod',
+  'tampForceKg',
+  'accessoryGearIds',
+] as const satisfies readonly (keyof ShotFormValues)[]
+
+export function shotFormValuesWithRecipe(
+  current: ShotFormValues,
+  recipe: ShotParameterSource,
+): ShotFormValues {
+  const recipeValues = shotFormValuesFrom(recipe)
+  const next = { ...current }
+
+  for (const key of RECIPE_FORM_KEYS) {
+    const value = recipeValues[key]
+    const isEmpty =
+      value === '' ||
+      value === null ||
+      (Array.isArray(value) && value.length === 0)
+    if (!isEmpty) Object.assign(next, { [key]: value })
+  }
+
+  return next
+}
+
 type GearOption = {
   readonly id: number
   readonly name: string

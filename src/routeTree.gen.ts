@@ -29,6 +29,7 @@ import { Route as ShopsNewRouteImport } from './routes/shops/new'
 import { Route as ShopsCoffeeShopIdRouteImport } from './routes/shops/$coffeeShopId'
 import { Route as RoastersNewRouteImport } from './routes/roasters/new'
 import { Route as RoastersRoasterIdRouteImport } from './routes/roasters/$roasterId'
+import { Route as RecipesNewRouteImport } from './routes/recipes/new'
 import { Route as RecipesRecipeIdRouteImport } from './routes/recipes/$recipeId'
 import { Route as GearNewRouteImport } from './routes/gear/new'
 import { Route as GearGearIdRouteImport } from './routes/gear/$gearId'
@@ -138,6 +139,11 @@ const RoastersRoasterIdRoute = RoastersRoasterIdRouteImport.update({
   path: '/roasters/$roasterId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RecipesNewRoute = RecipesNewRouteImport.update({
+  id: '/recipes/new',
+  path: '/recipes/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RecipesRecipeIdRoute = RecipesRecipeIdRouteImport.update({
   id: '/recipes/$recipeId',
   path: '/recipes/$recipeId',
@@ -192,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/gear/$gearId': typeof GearGearIdRoute
   '/gear/new': typeof GearNewRoute
   '/recipes/$recipeId': typeof RecipesRecipeIdRoute
+  '/recipes/new': typeof RecipesNewRoute
   '/roasters/$roasterId': typeof RoastersRoasterIdRoute
   '/roasters/new': typeof RoastersNewRoute
   '/shops/$coffeeShopId': typeof ShopsCoffeeShopIdRoute
@@ -222,6 +229,7 @@ export interface FileRoutesByTo {
   '/gear/$gearId': typeof GearGearIdRoute
   '/gear/new': typeof GearNewRoute
   '/recipes/$recipeId': typeof RecipesRecipeIdRoute
+  '/recipes/new': typeof RecipesNewRoute
   '/roasters/$roasterId': typeof RoastersRoasterIdRoute
   '/roasters/new': typeof RoastersNewRoute
   '/shops/$coffeeShopId': typeof ShopsCoffeeShopIdRoute
@@ -253,6 +261,7 @@ export interface FileRoutesById {
   '/gear/$gearId': typeof GearGearIdRoute
   '/gear/new': typeof GearNewRoute
   '/recipes/$recipeId': typeof RecipesRecipeIdRoute
+  '/recipes/new': typeof RecipesNewRoute
   '/roasters/$roasterId': typeof RoastersRoasterIdRoute
   '/roasters/new': typeof RoastersNewRoute
   '/shops/$coffeeShopId': typeof ShopsCoffeeShopIdRoute
@@ -285,6 +294,7 @@ export interface FileRouteTypes {
     | '/gear/$gearId'
     | '/gear/new'
     | '/recipes/$recipeId'
+    | '/recipes/new'
     | '/roasters/$roasterId'
     | '/roasters/new'
     | '/shops/$coffeeShopId'
@@ -315,6 +325,7 @@ export interface FileRouteTypes {
     | '/gear/$gearId'
     | '/gear/new'
     | '/recipes/$recipeId'
+    | '/recipes/new'
     | '/roasters/$roasterId'
     | '/roasters/new'
     | '/shops/$coffeeShopId'
@@ -345,6 +356,7 @@ export interface FileRouteTypes {
     | '/gear/$gearId'
     | '/gear/new'
     | '/recipes/$recipeId'
+    | '/recipes/new'
     | '/roasters/$roasterId'
     | '/roasters/new'
     | '/shops/$coffeeShopId'
@@ -376,6 +388,7 @@ export interface RootRouteChildren {
   GearGearIdRoute: typeof GearGearIdRoute
   GearNewRoute: typeof GearNewRoute
   RecipesRecipeIdRoute: typeof RecipesRecipeIdRoute
+  RecipesNewRoute: typeof RecipesNewRoute
   RoastersRoasterIdRoute: typeof RoastersRoasterIdRoute
   RoastersNewRoute: typeof RoastersNewRoute
   ShopsCoffeeShopIdRoute: typeof ShopsCoffeeShopIdRoute
@@ -537,6 +550,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RoastersRoasterIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/recipes/new': {
+      id: '/recipes/new'
+      path: '/recipes/new'
+      fullPath: '/recipes/new'
+      preLoaderRoute: typeof RecipesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/recipes/$recipeId': {
       id: '/recipes/$recipeId'
       path: '/recipes/$recipeId'
@@ -608,6 +628,7 @@ const rootRouteChildren: RootRouteChildren = {
   GearGearIdRoute: GearGearIdRoute,
   GearNewRoute: GearNewRoute,
   RecipesRecipeIdRoute: RecipesRecipeIdRoute,
+  RecipesNewRoute: RecipesNewRoute,
   RoastersRoasterIdRoute: RoastersRoasterIdRoute,
   RoastersNewRoute: RoastersNewRoute,
   ShopsCoffeeShopIdRoute: ShopsCoffeeShopIdRoute,
@@ -631,10 +652,11 @@ export const routeTree = rootRouteImport
   ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
+import type { startInstance } from './start.ts'
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }

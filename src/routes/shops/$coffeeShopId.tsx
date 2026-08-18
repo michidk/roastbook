@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { type Dispatch, type SetStateAction, useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { z } from 'zod'
 import { CoffeeShopFields } from '@/components/coffee-shops/coffee-shop-fields'
 import {
   applyCoffeeShopSearchResult,
@@ -46,6 +47,7 @@ import {
 import { WebsiteLogo } from '@/components/website-logo'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { editModeSearchField } from '@/lib/edit-mode'
 import { toNullableRating, toRatingInput } from '@/lib/rating'
 import {
   deleteCoffeeShop,
@@ -55,6 +57,7 @@ import {
 import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/shops/$coffeeShopId')({
+  validateSearch: z.object({ edit: editModeSearchField }),
   loader: ({ params }) => getCoffeeShop({ data: Number(params.coffeeShopId) }),
   component: CoffeeShopDetailPage,
   pendingComponent: DetailPending,
@@ -76,9 +79,9 @@ type EditValues = ReturnType<typeof createEditValues>
 
 function CoffeeShopDetailPage() {
   const coffeeShop = Route.useLoaderData()
-  const navigate = useNavigate()
+  const { edit: isEditing = false } = Route.useSearch()
+  const navigate = useNavigate({ from: '/shops/$coffeeShopId' })
   const router = useRouter()
-  const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [updatingList, setUpdatingList] = useState<
     'favorite' | 'want-to-visit' | null
@@ -108,8 +111,11 @@ function CoffeeShopDetailPage() {
           rating: toNullableRating(formData.rating),
         },
       })
+      await navigate({
+        search: (current) => ({ ...current, edit: undefined }),
+        replace: true,
+      })
       await router.invalidate({ filter: (match) => match.routeId === Route.id })
-      setIsEditing(false)
       toast.success('Café updated')
     } catch {
       toast.error('Could not save this café')
@@ -156,10 +162,12 @@ function CoffeeShopDetailPage() {
             setUpdatingList(null)
           }
         }}
-        onStartEdit={() => setIsEditing(true)}
         onCancel={() => {
           setFormData(createEditValues(coffeeShop))
-          setIsEditing(false)
+          void navigate({
+            search: (current) => ({ ...current, edit: undefined }),
+            replace: true,
+          })
         }}
         onSave={handleSave}
         onDelete={async () => {
@@ -191,7 +199,6 @@ function CoffeeShopDetailHeader({
   isUpdatingWantToVisit,
   onToggleFavorite,
   onToggleWantToVisit,
-  onStartEdit,
   onCancel,
   onSave,
   onDelete,
@@ -204,7 +211,6 @@ function CoffeeShopDetailHeader({
   isUpdatingWantToVisit: boolean
   onToggleFavorite: () => void
   onToggleWantToVisit: () => void
-  onStartEdit: () => void
   onCancel: () => void
   onSave: () => void
   onDelete: () => void
@@ -312,9 +318,15 @@ function CoffeeShopDetailHeader({
               </Button>
             </>
           ) : (
-            <Button variant="outline" size="sm" onClick={onStartEdit}>
-              <Pencil />
-              Edit
+            <Button variant="outline" size="sm" asChild>
+              <Link
+                to="/shops/$coffeeShopId"
+                params={{ coffeeShopId: String(coffeeShop.id) }}
+                search={{ edit: true }}
+              >
+                <Pencil />
+                Edit
+              </Link>
             </Button>
           )}
           <DeleteConfirmation

@@ -30,6 +30,7 @@ import { ShotParameterCharts } from '@/components/shot-parameter-charts'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { ExtractedBeanInfo } from '@/lib/ai'
+import { editModeSearchField } from '@/lib/edit-mode'
 import { getErrorMessage } from '@/lib/error-message'
 import { imageUrl } from '@/lib/image-url'
 import {
@@ -45,6 +46,7 @@ import { getRoasters } from '@/lib/server/roasters'
 import { getBeanShotAnalytics, getBeanShotPage } from '@/lib/server/shots'
 
 const beanDetailSearchSchema = z.object({
+  edit: editModeSearchField,
   shotPage: z.number().int().min(1).max(100_000).default(1).catch(1),
   shotSort: z
     .enum(['date', 'bean', 'dose', 'yield', 'time', 'rating'])
@@ -111,9 +113,9 @@ function BeanDetailPage() {
     researchEnabled,
   } = Route.useLoaderData()
   const search = Route.useSearch()
+  const isEditing = search.edit ?? false
   const navigate = useNavigate({ from: '/beans/$beanId' })
   const router = useRouter()
-  const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isResearching, setIsResearching] = useState(false)
   const [extractingImageId, setExtractingImageId] = useState<number | null>(
@@ -167,7 +169,10 @@ function BeanDetailPage() {
       await updateBean({
         data: beanUpdatePayload(bean.id, formData),
       })
-      setIsEditing(false)
+      await navigate({
+        search: (current) => ({ ...current, edit: undefined }),
+        replace: true,
+      })
       await router.invalidate({ filter: (match) => match.routeId === Route.id })
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to update bean'))
@@ -270,10 +275,12 @@ function BeanDetailPage() {
               toast.error(getErrorMessage(error, 'Could not update this bean'))
             })
         }}
-        onStartEdit={() => setIsEditing(true)}
         onCancelEdit={() => {
           setFormData(toBeanFormValues(bean))
-          setIsEditing(false)
+          void navigate({
+            search: (current) => ({ ...current, edit: undefined }),
+            replace: true,
+          })
         }}
         onSave={handleSave}
         onDelete={async () => {

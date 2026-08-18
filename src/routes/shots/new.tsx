@@ -19,6 +19,7 @@ import {
   type ShotFormValues,
   ShotParameterFields,
   shotFormValuesFrom,
+  shotFormValuesWithRecipe,
 } from '@/components/shots/shot-parameter-fields'
 import { ShotSensoryRatingFields } from '@/components/shots/shot-sensory-ratings'
 import { ShotTimer, type ShotTimerHandle } from '@/components/shots/shot-timer'
@@ -223,10 +224,7 @@ function NewShotPage() {
     if (!recipe) return
     setIsDirty(true)
     setTimerKey((current) => current + 1)
-    setValues((current) => ({
-      ...shotFormValuesFrom(recipe),
-      ...currentTastingValues(current),
-    }))
+    setValues((current) => shotFormValuesWithRecipe(current, recipe))
     toast.success(`Loaded ${recipe.name}`)
   }
 

@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'bun:test'
-import { shotFormValuesFrom } from '@/components/shots/shot-parameter-fields'
+import {
+  EMPTY_SHOT_FORM_VALUES,
+  shotFormValuesFrom,
+  shotFormValuesWithRecipe,
+} from '@/components/shots/shot-parameter-fields'
 import { DISTRIBUTION_METHOD_OPTIONS } from '@/lib/shot-parameters'
 
 function shotParameters(
@@ -52,5 +56,33 @@ describe('shot form values', () => {
       shotFormValuesFrom(shotParameters('Finger distribution'))
         .distributionMethod,
     ).toBe('')
+  })
+
+  test('applies only populated recipe values to an existing shot', () => {
+    const current = {
+      ...EMPTY_SHOT_FORM_VALUES,
+      brewingMethodId: '1',
+      beanId: '8',
+      grinderId: '3',
+      grindSetting: '22',
+      preinfusionPressureBar: '2',
+      usesPuckScreen: true,
+      accessoryGearIds: [11],
+      rating: 4,
+      notes: 'Keep this tasting note',
+    }
+    const recipe = {
+      ...shotParameters(null),
+      brewingMethodId: 2,
+      doseGrams: '18',
+      usesPuckScreen: false,
+    }
+
+    expect(shotFormValuesWithRecipe(current, recipe)).toEqual({
+      ...current,
+      brewingMethodId: '2',
+      doseGrams: '18',
+      usesPuckScreen: false,
+    })
   })
 })

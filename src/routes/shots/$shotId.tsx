@@ -7,13 +7,11 @@ import {
 import { ArrowLeft, BookOpen, Pencil } from 'lucide-react'
 import { type SyntheticEvent, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { z } from 'zod'
 import { DeleteConfirmation } from '@/components/DeleteConfirmation'
 import { InputField, SelectField } from '@/components/form/form-field'
 import { Page, PageHeader } from '@/components/page-layout'
-import {
-  type ShotEditData,
-  ShotEditForm,
-} from '@/components/shots/shot-edit-form'
+import { ShotEditForm } from '@/components/shots/shot-edit-form'
 import { ShotSensoryRatingFields } from '@/components/shots/shot-sensory-ratings'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -33,6 +31,7 @@ import { Separator } from '@/components/ui/separator'
 import { StarRating } from '@/components/ui/star-rating'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { editModeSearchField } from '@/lib/edit-mode'
 import { getActiveBeans } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getGear } from '@/lib/server/gear'
@@ -46,13 +45,28 @@ import {
 import { isNegativeTasteTag } from '@/lib/taste-tags'
 
 export const Route = createFileRoute('/shots/$shotId')({
-  loader: async ({ params }) => {
+  validateSearch: z.object({ edit: editModeSearchField }),
+  loaderDeps: ({ search }) => ({ edit: search.edit ?? false }),
+  loader: async ({ params, deps }) => {
     const shotId = Number(params.shotId)
-    const [shot, recipes] = await Promise.all([
+    const [shot, recipes, editData] = await Promise.all([
       getShot({ data: shotId }),
       getRecipeOptions(),
+      deps.edit
+        ? Promise.all([
+            getActiveBeans(),
+            getTasteTags(),
+            getGear(),
+            getBrewingMethods(),
+          ]).then(([beans, tasteTags, gear, methods]) => ({
+            beans,
+            tasteTags,
+            gear,
+            methods,
+          }))
+        : null,
     ])
-    return { shot, recipes }
+    return { shot, recipes, editData }
   },
   component: ShotDetailPage,
 })
@@ -74,39 +88,19 @@ function ShotDataFields({
 
 function ShotDetailPage() {
   const formatDateTime = useDateTimeFormatter()
-  const { shot, recipes } = Route.useLoaderData()
+  const { shot, recipes, editData } = Route.useLoaderData()
+  const { edit: isEditing = false } = Route.useSearch()
   const formatNumber = useNumberFormatter()
-  const navigate = useNavigate()
+  const navigate = useNavigate({ from: '/shots/$shotId' })
   const router = useRouter()
 
-  const [isEditing, setIsEditing] = useState(false)
-  const [isLoadingEditData, setIsLoadingEditData] = useState(false)
-  const [editData, setEditData] = useState<ShotEditData | null>(null)
   const [isRecipeDialogOpen, setIsRecipeDialogOpen] = useState(false)
   const [recipeTarget, setRecipeTarget] = useState(
     shot?.recipe ? String(shot.recipe.id) : 'new',
   )
   const [recipeName, setRecipeName] = useState('')
   const [isSavingRecipe, setIsSavingRecipe] = useState(false)
-  const editButtonRef = useRef<HTMLButtonElement>(null)
-
-  const handleStartEdit = async () => {
-    if (!editData) {
-      setIsLoadingEditData(true)
-      try {
-        const [beans, tasteTags, gear, methods] = await Promise.all([
-          getActiveBeans(),
-          getTasteTags(),
-          getGear(),
-          getBrewingMethods(),
-        ])
-        setEditData({ beans, tasteTags, gear, methods })
-      } finally {
-        setIsLoadingEditData(false)
-      }
-    }
-    setIsEditing(true)
-  }
+  const editButtonRef = useRef<HTMLAnchorElement>(null)
 
   if (!shot) {
     return (
@@ -129,13 +123,13 @@ function ShotDetailPage() {
   }
 
   const handleCancel = () => {
-    setIsEditing(false)
+    void navigate({ search: (current) => ({ ...current, edit: undefined }) })
     requestAnimationFrame(() => editButtonRef.current?.focus())
   }
 
   const handleSaved = async () => {
     await router.invalidate({ filter: (match) => match.routeId === Route.id })
-    setIsEditing(false)
+    await navigate({ search: (current) => ({ ...current, edit: undefined }) })
     requestAnimationFrame(() => editButtonRef.current?.focus())
   }
 
@@ -327,15 +321,16 @@ function ShotDetailPage() {
                     </form>
                   </DialogContent>
                 </Dialog>
-                <Button
-                  ref={editButtonRef}
-                  variant="outline"
-                  size="sm"
-                  onClick={handleStartEdit}
-                  disabled={isLoadingEditData}
-                >
-                  <Pencil />
-                  Edit
+                <Button variant="outline" size="sm" asChild>
+                  <Link
+                    ref={editButtonRef}
+                    to="/shots/$shotId"
+                    params={{ shotId: String(shot.id) }}
+                    search={(current) => ({ ...current, edit: true })}
+                  >
+                    <Pencil />
+                    Edit
+                  </Link>
                 </Button>
               </>
             )}

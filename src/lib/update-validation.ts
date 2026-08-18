@@ -117,9 +117,9 @@ export function assertValidUpdate(
   if (message) throw new UpdateInputError(message)
 }
 
-export function getShotUpdateErrors(
-  data: ShotUpdateCandidate,
-): Readonly<Record<string, string>> {
+export function getShotUpdateErrors<
+  Candidate extends Omit<ShotUpdateCandidate, 'id'>,
+>(data: Candidate): Readonly<Record<string, string>> {
   const errors: Record<string, string> = {}
   if (!Number.isInteger(data.brewingMethodId) || data.brewingMethodId <= 0) {
     errors.brewingMethodId = 'Choose a brewing method'
