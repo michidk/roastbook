@@ -62,6 +62,7 @@ function toAppSettings(row: typeof settingsTable.$inferSelect): AppSettings {
 
   return {
     demoMode: DEMO_MODE,
+    backgroundTextureEnabled: row.backgroundTextureEnabled,
     defaultCurrency: currencySchema(row.defaultCurrency),
     dateFormat: dateFormatSchema(row.dateFormat),
     defaultListView: listViewSchema(row.defaultListView),
@@ -88,6 +89,7 @@ async function ensureSettingsRow() {
 
 type EditableSettings = Pick<
   typeof settingsTable.$inferInsert,
+  | 'backgroundTextureEnabled'
   | 'defaultCurrency'
   | 'dateFormat'
   | 'defaultListView'
@@ -122,6 +124,17 @@ export const updateDefaultCurrency = createServerFn({ method: 'POST' })
   .validator(currencySchema)
   .handler(({ data: defaultCurrency }) =>
     upsertSettings({ defaultCurrency }, 'Could not save the default currency'),
+  )
+
+export const updateBackgroundTextureEnabled = createServerFn({
+  method: 'POST',
+})
+  .validator((value: unknown) => z.boolean().parse(value))
+  .handler(({ data: backgroundTextureEnabled }) =>
+    upsertSettings(
+      { backgroundTextureEnabled },
+      'Could not save the page background setting',
+    ),
   )
 
 export const updateDateFormat = createServerFn({ method: 'POST' })

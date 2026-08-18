@@ -101,10 +101,17 @@ databaseDescribe('PostgreSQL schema', () => {
     })
   })
 
-  test('defaults the list view to cards and rejects unknown views', async () => {
-    const settings = await database()<[{ defaultListView: string }]>`
-      select default_list_view as "defaultListView" from settings where id = 1
+  test('defaults the shared appearance and list view', async () => {
+    const settings = await database()<
+      [{ backgroundTextureEnabled: boolean; defaultListView: string }]
+    >`
+      select
+        background_texture_enabled as "backgroundTextureEnabled",
+        default_list_view as "defaultListView"
+      from settings
+      where id = 1
     `
+    expect(settings[0]?.backgroundTextureEnabled).toBe(true)
     expect(settings[0]?.defaultListView).toBe('cards')
 
     await expect(

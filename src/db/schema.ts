@@ -55,6 +55,9 @@ export const settings = pgTable(
     numberFormat: text('number_format').default('decimal-point').notNull(),
     timeZone: text('time_zone').default('UTC').notNull(),
     defaultListView: text('default_list_view').default('cards').notNull(),
+    backgroundTextureEnabled: boolean('background_texture_enabled')
+      .default(true)
+      .notNull(),
     defaultMapLatitude: doublePrecision('default_map_latitude').default(
       48.8566,
     ),

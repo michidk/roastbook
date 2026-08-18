@@ -13,6 +13,7 @@ import {
   MapPinned,
   MonitorCog,
   Tags,
+  Wallpaper,
 } from 'lucide-react'
 import { type ComponentType, useEffect, useState } from 'react'
 import { toast } from 'sonner'
@@ -34,6 +35,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import {
@@ -57,6 +60,7 @@ import {
 import { getAiRequestStats } from '@/lib/server/ai-request-logs'
 import { getInternalStats } from '@/lib/server/internal-stats'
 import {
+  updateBackgroundTextureEnabled,
   updateDateFormat,
   updateDefaultCurrency,
   updateDefaultListView,
@@ -125,6 +129,7 @@ function SettingsPage() {
   const router = useRouter()
   const [settings, setSettings] = useState<AppSettings>(savedSettings)
   const savedDefaultCurrency = savedSettings.defaultCurrency
+  const savedBackgroundTextureEnabled = savedSettings.backgroundTextureEnabled
   const savedDateFormat = savedSettings.dateFormat
   const savedListView = savedSettings.defaultListView
   const savedNumberFormat = savedSettings.numberFormat
@@ -142,6 +147,7 @@ function SettingsPage() {
     () =>
       setSettings({
         demoMode,
+        backgroundTextureEnabled: savedBackgroundTextureEnabled,
         defaultCurrency: savedDefaultCurrency,
         dateFormat: savedDateFormat,
         defaultListView: savedListView,
@@ -160,6 +166,7 @@ function SettingsPage() {
       }),
     [
       demoMode,
+      savedBackgroundTextureEnabled,
       savedDefaultCurrency,
       savedDateFormat,
       savedListView,
@@ -172,6 +179,16 @@ function SettingsPage() {
   )
 
   const onSaved = () => void router.invalidate()
+  const backgroundTextureMutation = useSettingMutation({
+    savedValue: savedBackgroundTextureEnabled,
+    applyValue: (backgroundTextureEnabled) =>
+      setSettings((current) => ({ ...current, backgroundTextureEnabled })),
+    mutate: (backgroundTextureEnabled) =>
+      updateBackgroundTextureEnabled({ data: backgroundTextureEnabled }),
+    selectValue: (updated) => updated.backgroundTextureEnabled,
+    onSaved,
+    errorMessage: 'Could not save the page background setting',
+  })
   const currencyMutation = useSettingMutation({
     savedValue: savedDefaultCurrency,
     applyValue: (defaultCurrency) =>
@@ -293,6 +310,36 @@ function SettingsPage() {
             </p>
           </div>
         </div>
+
+        <FormSection
+          title="Page background"
+          titleAs="h3"
+          description="Control the shared page canvas for this Roastbook installation."
+          action={
+            backgroundTextureMutation.isSaving ? (
+              <Loader2 className="h-5 w-5 animate-spin text-link" />
+            ) : (
+              <Wallpaper className="h-5 w-5 text-link" />
+            )
+          }
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-1">
+              <Label htmlFor="background-texture">Background texture</Label>
+              <p className="text-sm text-muted-foreground">
+                Show paper grain and faint coffee-ring marks for everyone.
+              </p>
+            </div>
+            <Switch
+              id="background-texture"
+              checked={settings.backgroundTextureEnabled}
+              disabled={demoMode || backgroundTextureMutation.isSaving}
+              onCheckedChange={(checked) =>
+                void backgroundTextureMutation.save(checked)
+              }
+            />
+          </div>
+        </FormSection>
 
         <FormSection
           title="Default currency"

@@ -62,12 +62,18 @@ export const Route = createRootRoute({
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const settings = Route.useLoaderData()
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body
+        className={
+          settings.backgroundTextureEnabled ? undefined : 'texture-disabled'
+        }
+      >
         <SettingsHydrator />
         {children}
         {import.meta.env.DEV ? (

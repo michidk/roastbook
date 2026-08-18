@@ -1,0 +1,1 @@
+ALTER TABLE "settings" ADD COLUMN "background_texture_enabled" boolean DEFAULT true NOT NULL;

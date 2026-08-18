@@ -96,6 +96,7 @@
     --destructive-text: #9d3b26;
     --favorite: #8b3f60;
     --favorite-foreground: #ffffff;
+    --page-stains: url("/coffee-stains-light.svg");
     --page-texture: url("/paper-grain-light.svg");
     --coffee-shadow: 0 8px 24px -18px rgb(60 42 30 / 45%);
     --coffee-shadow-inline: -8px 0 16px -10px rgb(60 42 30 / 50%);
@@ -146,6 +147,7 @@
     --destructive-text: #ef947c;
     --favorite: #e3a0bd;
     --favorite-foreground: #1f1a14;
+    --page-stains: url("/coffee-stains-dark.svg");
     --page-texture: url("/paper-grain-dark.svg");
     --coffee-shadow: 0 8px 24px -18px rgb(0 0 0 / 55%);
     --coffee-shadow-inline: -8px 0 16px -10px rgb(0 0 0 / 60%);
@@ -339,11 +341,20 @@
   body {
     @apply bg-background text-foreground;
     margin: 0;
-    background-image: var(--page-texture);
-    background-repeat: repeat;
-    background-size: 128px 128px;
+    background-image: var(--page-stains), var(--page-texture);
+    background-position:
+      center top,
+      0 0;
+    background-repeat: repeat, repeat;
+    background-size:
+      960px 720px,
+      512px 512px;
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+  }
+
+  body.texture-disabled {
+    background-image: none;
   }
 
   h1,
