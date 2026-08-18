@@ -18,7 +18,7 @@ Use these semantic tokens:
 - Card: `--card`, light `#ffffff`, dark `#2a2219`.
 - Secondary: `--secondary`, light `#fbf5eb`, dark `#36281c`.
 - Muted text: `--muted-foreground`, light `#7a6a58`, dark `#b8a78f`.
-- Primary action: `--primary`, `#d2873e` in both themes.
+- Primary action: `--primary`, light `#aa612f`, dark `#d2873e`.
 - Link and emphasized text: `--link`, light `#8a5a30`, dark `#e0a565`.
 - Coffee surface: `--coffee`, light `#6f4e37`, dark `#b07a45`.
 - Border: `--border`, light `#ead9bf`, dark `#3c2e20`.

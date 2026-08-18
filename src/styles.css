@@ -59,15 +59,15 @@
 
 @layer base {
   :root {
-    /* Latte palette — warm cream surface, amber accent, dark brown ink */
+    /* Latte palette — warm cream surface, roasted caramel accent, dark brown ink */
     --background: #f6eddf;
     --foreground: #3a2a1e;
     --card: #ffffff;
     --card-foreground: #3a2a1e;
     --popover: #ffffff;
     --popover-foreground: #3a2a1e;
-    --primary: #d2873e;
-    --primary-foreground: #3a2a1e;
+    --primary: #aa612f;
+    --primary-foreground: #fffaf3;
     --secondary: #fbf5eb;
     --secondary-foreground: #3a2a1e;
     --muted: #fbf5eb;
@@ -78,7 +78,7 @@
     --border: #ead9bf;
     --input: #9f7548;
     --ring: #9f7548;
-    --chart-1: #d2873e;
+    --chart-1: #aa612f;
     --chart-2: #6f4e37;
     --chart-3: #8a5a30;
     --chart-4: #b07a45;
@@ -102,8 +102,8 @@
     /* Sidebar (dark coffee for any future drawer) */
     --sidebar: #6f4e37;
     --sidebar-foreground: #f6eddf;
-    --sidebar-primary: #d2873e;
-    --sidebar-primary-foreground: #3a2a1e;
+    --sidebar-primary: #aa612f;
+    --sidebar-primary-foreground: #fffaf3;
     --sidebar-accent: #523823;
     --sidebar-accent-foreground: #f6eddf;
     --sidebar-border: #523823;
