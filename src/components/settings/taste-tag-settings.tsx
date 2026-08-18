@@ -4,6 +4,17 @@ import { toast } from 'sonner'
 import { DeleteConfirmation } from '@/components/DeleteConfirmation'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogBody,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { createTasteTag, deleteTasteTag } from '@/lib/server/taste-tags'
 import { isNegativeTasteTag } from '@/lib/taste-tags'
@@ -44,67 +55,97 @@ export function TasteTagSettings({
   }
 
   return (
-    <div className="space-y-4">
-      <ul className="space-y-1">
-        {tags.map((tag) => (
-          <li
-            key={tag.id}
-            className="flex min-h-11 items-center justify-between gap-3 rounded-md px-2 py-1"
-          >
-            <span className="flex min-w-0 items-center gap-2">
-              <Badge
-                variant={isNegativeTasteTag(tag) ? 'destructive' : 'default'}
+    <Dialog>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          {tags.length === 0
+            ? 'No taste tags configured.'
+            : `${tags.length} taste ${tags.length === 1 ? 'tag' : 'tags'} configured.`}
+        </p>
+        <DialogTrigger render={<Button type="button" variant="outline" />}>
+          Manage taste tags
+        </DialogTrigger>
+      </div>
+
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Manage taste tags</DialogTitle>
+          <DialogDescription>
+            Add tags offered when rating shots and café visits, or remove tags
+            you no longer use.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogBody>
+          <ul className="space-y-1">
+            {tags.map((tag) => (
+              <li
+                key={tag.id}
+                className="flex min-h-11 items-center justify-between gap-3 rounded-md px-2 py-1"
               >
-                {tag.name}
-              </Badge>
-              {tag.hint ? (
-                <span className="truncate text-xs text-muted-foreground">
-                  {tag.hint}
+                <span className="flex min-w-0 items-center gap-2">
+                  <Badge
+                    variant={
+                      isNegativeTasteTag(tag) ? 'destructive' : 'default'
+                    }
+                  >
+                    {tag.name}
+                  </Badge>
+                  {tag.hint ? (
+                    <span className="truncate text-xs text-muted-foreground">
+                      {tag.hint}
+                    </span>
+                  ) : null}
                 </span>
-              ) : null}
-            </span>
-            <DeleteConfirmation
-              title={`Delete the "${tag.name}" tag?`}
-              description="This removes the tag from every shot and café visit that uses it. This action cannot be undone."
-              onConfirm={async () => {
-                await deleteTasteTag({ data: tag.id })
-                onChanged()
-              }}
-            />
-          </li>
-        ))}
-        {tags.length === 0 && (
-          <li className="px-2 py-1 text-sm text-muted-foreground">
-            No taste tags yet.
-          </li>
-        )}
-      </ul>
-      <form
-        className="flex items-center gap-2"
-        onSubmit={(event) => {
-          event.preventDefault()
-          void handleAdd()
-        }}
-      >
-        <label htmlFor="new-taste-tag" className="sr-only">
-          New tag name
-        </label>
-        <Input
-          id="new-taste-tag"
-          value={newTagName}
-          onChange={(event) => setNewTagName(event.target.value)}
-          placeholder="e.g., Stone fruit"
-          maxLength={50}
-        />
-        <Button
-          type="submit"
-          size="sm"
-          disabled={isAdding || !newTagName.trim()}
-        >
-          <Plus />
-          {isAdding ? 'Adding…' : 'Add tag'}
-        </Button>
-      </form>
-    </div>
+                <DeleteConfirmation
+                  title={`Delete the "${tag.name}" tag?`}
+                  description="This removes the tag from every shot and café visit that uses it. This action cannot be undone."
+                  onConfirm={async () => {
+                    await deleteTasteTag({ data: tag.id })
+                    onChanged()
+                  }}
+                />
+              </li>
+            ))}
+            {tags.length === 0 ? (
+              <li className="px-2 py-1 text-sm text-muted-foreground">
+                No taste tags yet. Add your first tag below.
+              </li>
+            ) : null}
+          </ul>
+        </DialogBody>
+        <DialogFooter className="sm:items-end sm:justify-between">
+          <DialogClose render={<Button type="button" variant="outline" />}>
+            Close
+          </DialogClose>
+          <form
+            className="flex w-full flex-col gap-2 sm:max-w-sm sm:flex-row sm:items-end"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void handleAdd()
+            }}
+          >
+            <div className="min-w-0 flex-1">
+              <label
+                htmlFor="new-taste-tag"
+                className="mb-1.5 block text-sm font-medium"
+              >
+                New tag name
+              </label>
+              <Input
+                id="new-taste-tag"
+                value={newTagName}
+                onChange={(event) => setNewTagName(event.target.value)}
+                placeholder="e.g., Stone fruit"
+                maxLength={50}
+              />
+            </div>
+            <Button type="submit" disabled={isAdding || !newTagName.trim()}>
+              <Plus />
+              {isAdding ? 'Adding…' : 'Add tag'}
+            </Button>
+          </form>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
