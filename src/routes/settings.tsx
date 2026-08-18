@@ -1,17 +1,21 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import {
+  Bot,
   Calculator,
   CalendarDays,
   CircleDollarSign,
-  Database,
   Globe2,
   HardDrive,
   Images,
-  Laptop,
+  Info,
   LayoutGrid,
   Loader2,
+  Map as MapIcon,
   MapPinned,
   MonitorCog,
+  Palette,
+  Settings2,
+  SlidersHorizontal,
   Tags,
   Wallpaper,
 } from 'lucide-react'
@@ -24,8 +28,13 @@ import {
 } from '@/components/form/form-field'
 import { FormPageHeader, FormSection } from '@/components/form/form-shell'
 import { Page } from '@/components/page-layout'
+import { AboutSettings } from '@/components/settings/about-settings'
 import { AiSettings } from '@/components/settings/ai-settings'
 import { MapLocationSettings } from '@/components/settings/map-location-settings'
+import {
+  type SettingsSection,
+  SettingsShell,
+} from '@/components/settings/settings-shell'
 import { TasteTagSettings } from '@/components/settings/taste-tag-settings'
 import { Button } from '@/components/ui/button'
 import {
@@ -82,6 +91,18 @@ export const Route = createFileRoute('/settings')({
   component: SettingsPage,
 })
 
+const SETTINGS_SECTIONS = [
+  { id: 'general', label: 'General', icon: SlidersHorizontal },
+  { id: 'appearance', label: 'Appearance', icon: Palette },
+  { id: 'map', label: 'Map', icon: MapIcon },
+  { id: 'taste-tags', label: 'Taste tags', icon: Tags },
+  { id: 'ai', label: 'AI', icon: Bot },
+  { id: 'storage', label: 'Storage', icon: HardDrive },
+  { id: 'about', label: 'About', icon: Info },
+] as const satisfies readonly SettingsSection[]
+
+type SettingsSectionId = (typeof SETTINGS_SECTIONS)[number]['id']
+
 function useSettingMutation<Value>({
   savedValue,
   applyValue,
@@ -128,6 +149,8 @@ function SettingsPage() {
   const formatNumber = useNumberFormatter()
   const router = useRouter()
   const [settings, setSettings] = useState<AppSettings>(savedSettings)
+  const [activeSection, setActiveSection] =
+    useState<SettingsSectionId>('general')
   const savedDefaultCurrency = savedSettings.defaultCurrency
   const savedBackgroundTextureEnabled = savedSettings.backgroundTextureEnabled
   const savedDateFormat = savedSettings.dateFormat
@@ -249,311 +272,293 @@ function SettingsPage() {
   })
 
   return (
-    <Page width="form">
+    <Page>
       <FormPageHeader
         title="Settings"
-        description="Manage shared Roastbook defaults and preferences for this browser."
+        description="Configure your Roastbook experience and installation."
+        leading={
+          <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-link sm:size-12">
+            <Settings2 className="size-5 sm:size-6" aria-hidden={true} />
+          </span>
+        }
       />
 
-      <section className="space-y-4" aria-labelledby="browser-preferences">
-        <div className="flex gap-3">
-          <div className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-foreground">
-            <Laptop className="h-5 w-5" aria-hidden="true" />
-          </div>
-          <div>
-            <h2
-              id="browser-preferences"
-              className="font-display text-2xl font-bold tracking-tight"
-            >
-              Browser preferences
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Stored only in this browser and not shared with other devices.
-            </p>
-          </div>
-        </div>
-
-        <FormSection
-          title="Appearance"
-          titleAs="h3"
-          description="Use a fixed theme or follow your browser and operating system."
-          action={<MonitorCog className="h-5 w-5 text-link" />}
-        >
-          <SelectField
-            id="theme"
-            label="Theme"
-            value={theme}
-            disabled={!hasHydratedPreferences}
-            options={THEME_OPTIONS}
-            onChange={(value) => {
-              if (isThemePreference(value)) setTheme(value)
-            }}
-          />
-        </FormSection>
-      </section>
-
-      <section className="space-y-4" aria-labelledby="application-settings">
-        <div className="flex gap-3">
-          <div className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-link">
-            <Database className="h-5 w-5" aria-hidden="true" />
-          </div>
-          <div>
-            <h2
-              id="application-settings"
-              className="font-display text-2xl font-bold tracking-tight"
-            >
-              Application settings
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Stored in the database and used throughout this Roastbook
-              installation.
-            </p>
-          </div>
-        </div>
-
-        <FormSection
-          title="Page background"
-          titleAs="h3"
-          description="Control the shared page canvas for this Roastbook installation."
-          action={
-            backgroundTextureMutation.isSaving ? (
-              <Loader2 className="h-5 w-5 animate-spin text-link" />
-            ) : (
-              <Wallpaper className="h-5 w-5 text-link" />
-            )
-          }
-        >
-          <div className="flex items-center justify-between gap-4">
-            <div className="space-y-1">
-              <Label htmlFor="background-texture">Background texture</Label>
-              <p className="text-sm text-muted-foreground">
-                Show paper grain and faint coffee-ring marks for everyone.
-              </p>
-            </div>
-            <Switch
-              id="background-texture"
-              checked={settings.backgroundTextureEnabled}
-              disabled={demoMode || backgroundTextureMutation.isSaving}
-              onCheckedChange={(checked) =>
-                void backgroundTextureMutation.save(checked)
+      <SettingsShell
+        sections={SETTINGS_SECTIONS}
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
+      >
+        {activeSection === 'general' ? (
+          <>
+            <FormSection
+              title="Default currency"
+              description="Used when adding beans, gear, and café visits."
+              action={
+                currencyMutation.isSaving ? (
+                  <Loader2 className="size-5 animate-spin text-link" />
+                ) : (
+                  <CircleDollarSign className="size-5 text-link" />
+                )
               }
-            />
-          </div>
-        </FormSection>
+            >
+              <CurrencyField
+                id="default-currency"
+                label="Currency"
+                value={settings.defaultCurrency}
+                disabled={currencyMutation.isSaving}
+                onChange={(value) => {
+                  if (isCurrency(value)) void currencyMutation.save(value)
+                }}
+              />
+            </FormSection>
 
-        <FormSection
-          title="Default currency"
-          titleAs="h3"
-          description="Used when adding beans, gear, and café visits."
-          action={
-            currencyMutation.isSaving ? (
-              <Loader2 className="h-5 w-5 animate-spin text-link" />
-            ) : (
-              <CircleDollarSign className="h-5 w-5 text-link" />
-            )
-          }
-        >
-          <CurrencyField
-            id="default-currency"
-            label="Currency"
-            value={settings.defaultCurrency}
-            disabled={currencyMutation.isSaving}
-            onChange={(value) => {
-              if (isCurrency(value)) void currencyMutation.save(value)
-            }}
-          />
-        </FormSection>
+            <FormSection
+              title="Formatting"
+              description="Choose how numbers and calendar dates are displayed. Both decimal separators are accepted when entering a value."
+              action={
+                numberFormatMutation.isSaving || dateFormatMutation.isSaving ? (
+                  <Loader2 className="size-5 animate-spin text-link" />
+                ) : (
+                  <div className="flex items-center gap-2 text-link">
+                    <Calculator className="size-5" aria-hidden="true" />
+                    <CalendarDays className="size-5" aria-hidden="true" />
+                  </div>
+                )
+              }
+              contentClassName="grid gap-4 space-y-0 sm:grid-cols-2"
+            >
+              <SelectField
+                id="number-format"
+                label="Number format"
+                value={settings.numberFormat}
+                disabled={numberFormatMutation.isSaving}
+                options={NUMBER_FORMAT_OPTIONS}
+                onChange={(value) => {
+                  if (isNumberFormat(value))
+                    void numberFormatMutation.save(value)
+                }}
+              />
+              <SelectField
+                id="date-format"
+                label="Date format"
+                value={settings.dateFormat}
+                disabled={dateFormatMutation.isSaving}
+                options={DATE_FORMAT_OPTIONS}
+                onChange={(value) => {
+                  if (isDateFormat(value)) void dateFormatMutation.save(value)
+                }}
+              />
+            </FormSection>
 
-        <FormSection
-          title="Formatting"
-          titleAs="h3"
-          description="Choose how numbers and calendar dates are displayed. Both decimal separators are accepted when entering a value."
-          action={
-            numberFormatMutation.isSaving || dateFormatMutation.isSaving ? (
-              <Loader2 className="h-5 w-5 animate-spin text-link" />
-            ) : (
-              <div className="flex items-center gap-2 text-link">
-                <Calculator className="h-5 w-5" aria-hidden="true" />
-                <CalendarDays className="h-5 w-5" aria-hidden="true" />
+            <FormSection
+              title="Time zone"
+              description="Used for brew-day boundaries, streaks, and time-of-day statistics. Enter an IANA name such as Europe/Berlin."
+              action={
+                timeZoneMutation.isSaving ? (
+                  <Loader2 className="size-5 animate-spin text-link" />
+                ) : (
+                  <Globe2 className="size-5 text-link" />
+                )
+              }
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <InputField
+                  id="time-zone"
+                  label="IANA time zone"
+                  value={settings.timeZone}
+                  onChange={(timeZone) =>
+                    setSettings((current) => ({ ...current, timeZone }))
+                  }
+                  error={
+                    settings.timeZone && !isTimeZone(settings.timeZone)
+                      ? 'Enter a valid IANA time zone'
+                      : undefined
+                  }
+                  disabled={timeZoneMutation.isSaving}
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={
+                    timeZoneMutation.isSaving ||
+                    !isTimeZone(settings.timeZone) ||
+                    settings.timeZone === savedSettings.timeZone
+                  }
+                  onClick={() => void timeZoneMutation.save(settings.timeZone)}
+                >
+                  Save time zone
+                </Button>
               </div>
-            )
-          }
-          contentClassName="grid gap-4 space-y-0 sm:grid-cols-2"
-        >
-          <SelectField
-            id="number-format"
-            label="Number format"
-            value={settings.numberFormat}
-            disabled={numberFormatMutation.isSaving}
-            options={NUMBER_FORMAT_OPTIONS}
-            onChange={(value) => {
-              if (isNumberFormat(value)) void numberFormatMutation.save(value)
-            }}
-          />
-          <SelectField
-            id="date-format"
-            label="Date format"
-            value={settings.dateFormat}
-            disabled={dateFormatMutation.isSaving}
-            options={DATE_FORMAT_OPTIONS}
-            onChange={(value) => {
-              if (isDateFormat(value)) void dateFormatMutation.save(value)
-            }}
-          />
-        </FormSection>
+            </FormSection>
 
-        <FormSection
-          title="Time zone"
-          titleAs="h3"
-          description="Used for brew-day boundaries, streaks, and time-of-day statistics. Enter an IANA name such as Europe/Berlin."
-          action={
-            timeZoneMutation.isSaving ? (
-              <Loader2 className="h-5 w-5 animate-spin text-link" />
-            ) : (
-              <Globe2 className="h-5 w-5 text-link" />
-            )
-          }
-        >
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <InputField
-              id="time-zone"
-              label="IANA time zone"
-              value={settings.timeZone}
-              onChange={(timeZone) =>
-                setSettings((current) => ({ ...current, timeZone }))
+            <FormSection
+              title="Default list view"
+              description="How cafés, roasters, recipes, and brewing methods are shown before you choose a view for a list."
+              action={
+                listViewMutation.isSaving ? (
+                  <Loader2 className="size-5 animate-spin text-link" />
+                ) : (
+                  <LayoutGrid className="size-5 text-link" />
+                )
               }
-              error={
-                settings.timeZone && !isTimeZone(settings.timeZone)
-                  ? 'Enter a valid IANA time zone'
-                  : undefined
-              }
-              disabled={timeZoneMutation.isSaving}
-              className="flex-1"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              disabled={
-                timeZoneMutation.isSaving ||
-                !isTimeZone(settings.timeZone) ||
-                settings.timeZone === savedSettings.timeZone
-              }
-              onClick={() => void timeZoneMutation.save(settings.timeZone)}
             >
-              Save time zone
-            </Button>
-          </div>
-        </FormSection>
+              <SelectField
+                id="default-list-view"
+                label="List view"
+                value={settings.defaultListView}
+                disabled={listViewMutation.isSaving}
+                options={COLLECTION_VIEW_OPTIONS}
+                onChange={(value) => {
+                  if (isCollectionView(value)) void listViewMutation.save(value)
+                }}
+              />
+            </FormSection>
+          </>
+        ) : null}
 
-        <FormSection
-          title="Default list view"
-          titleAs="h3"
-          description="How cafés, roasters, recipes, and brewing methods are shown when you have not picked a view for that list yet. Tables keep every column on a phone and scroll sideways."
-          action={
-            listViewMutation.isSaving ? (
-              <Loader2 className="h-5 w-5 animate-spin text-link" />
-            ) : (
-              <LayoutGrid className="h-5 w-5 text-link" />
-            )
-          }
-        >
-          <SelectField
-            id="default-list-view"
-            label="List view"
-            value={settings.defaultListView}
-            disabled={listViewMutation.isSaving}
-            options={COLLECTION_VIEW_OPTIONS}
-            onChange={(value) => {
-              if (isCollectionView(value)) void listViewMutation.save(value)
-            }}
-          />
-        </FormSection>
+        {activeSection === 'appearance' ? (
+          <>
+            <FormSection
+              title="Theme"
+              description="Use a fixed theme or follow your browser and operating system. This preference is stored only in this browser."
+              action={<MonitorCog className="size-5 text-link" />}
+            >
+              <SelectField
+                id="theme"
+                label="Theme"
+                value={theme}
+                disabled={!hasHydratedPreferences}
+                options={THEME_OPTIONS}
+                onChange={(value) => {
+                  if (isThemePreference(value)) setTheme(value)
+                }}
+              />
+            </FormSection>
 
-        <FormSection
-          title="Default map location"
-          titleAs="h3"
-          description="Choose where the café explorer opens. Look up a location or enter coordinates directly."
-          action={
-            mapLocationMutation.isSaving ? (
-              <Loader2 className="h-5 w-5 animate-spin text-link" />
-            ) : (
-              <MapPinned className="h-5 w-5 text-link" />
-            )
-          }
-        >
-          <MapLocationSettings
-            location={settings.defaultMapLocation}
-            disabled={mapLocationMutation.isSaving}
-            onChange={(location) => void mapLocationMutation.save(location)}
-          />
-        </FormSection>
-
-        <FormSection
-          title="Taste tags"
-          titleAs="h3"
-          description="The tags offered when rating shots and café visits. Removing a tag also removes it from existing entries."
-          action={<Tags className="h-5 w-5 text-link" aria-hidden="true" />}
-        >
-          <TasteTagSettings
-            tags={tasteTags}
-            onChanged={() => router.invalidate()}
-          />
-        </FormSection>
-      </section>
-
-      <AiSettings stats={aiStats} />
-
-      <Card size="sm" role="group" aria-labelledby="internal-stats">
-        <CardHeader>
-          <CardTitle as="h2" id="internal-stats">
-            Storage
-          </CardTitle>
-          <CardDescription>
-            Live media usage for this installation.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3">
-            <InternalStat
-              label="Stored images"
-              value={storageValue(
-                internalStats.storage.imageCount,
-                formatNumber,
-              )}
-              detail={storageDetail(
-                internalStats.storage.available,
-                'physical files',
-              )}
-              icon={Images}
-            />
-            <InternalStat
-              label="Cached favicons"
-              value={storageValue(
-                internalStats.storage.faviconCount,
-                formatNumber,
-              )}
-              detail={storageDetail(
-                internalStats.storage.available,
-                'website icons',
-              )}
-              icon={Globe2}
-            />
-            <InternalStat
-              label="Storage used"
-              value={
-                internalStats.storage.totalBytes === null
-                  ? '—'
-                  : formatBytes(internalStats.storage.totalBytes, formatNumber)
+            <FormSection
+              title="Page background"
+              description="Control the shared page canvas for this Roastbook installation."
+              action={
+                backgroundTextureMutation.isSaving ? (
+                  <Loader2 className="size-5 animate-spin text-link" />
+                ) : (
+                  <Wallpaper className="size-5 text-link" />
+                )
               }
-              detail={storageDetail(
-                internalStats.storage.available,
-                `${internalStats.storage.provider.toUpperCase()} storage`,
-              )}
-              icon={HardDrive}
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="background-texture">Background texture</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Show paper grain and faint coffee-ring marks for everyone.
+                  </p>
+                </div>
+                <Switch
+                  id="background-texture"
+                  checked={settings.backgroundTextureEnabled}
+                  disabled={demoMode || backgroundTextureMutation.isSaving}
+                  onCheckedChange={(checked) =>
+                    void backgroundTextureMutation.save(checked)
+                  }
+                />
+              </div>
+            </FormSection>
+          </>
+        ) : null}
+
+        {activeSection === 'map' ? (
+          <FormSection
+            title="Default map location"
+            description="Choose where the café explorer opens. Look up a location or enter coordinates directly."
+            action={
+              mapLocationMutation.isSaving ? (
+                <Loader2 className="size-5 animate-spin text-link" />
+              ) : (
+                <MapPinned className="size-5 text-link" />
+              )
+            }
+          >
+            <MapLocationSettings
+              location={settings.defaultMapLocation}
+              disabled={mapLocationMutation.isSaving}
+              onChange={(location) => void mapLocationMutation.save(location)}
             />
-          </dl>
-        </CardContent>
-      </Card>
+          </FormSection>
+        ) : null}
+
+        {activeSection === 'taste-tags' ? (
+          <FormSection
+            title="Taste tags"
+            description="The tags offered when rating shots and café visits. Removing a tag also removes it from existing entries."
+            action={<Tags className="size-5 text-link" aria-hidden="true" />}
+          >
+            <TasteTagSettings
+              tags={tasteTags}
+              onChanged={() => router.invalidate()}
+            />
+          </FormSection>
+        ) : null}
+
+        {activeSection === 'ai' ? <AiSettings stats={aiStats} /> : null}
+
+        {activeSection === 'storage' ? (
+          <Card role="group" aria-labelledby="internal-stats">
+            <CardHeader>
+              <CardTitle id="internal-stats">Storage</CardTitle>
+              <CardDescription>
+                Live media usage for this installation.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3">
+                <InternalStat
+                  label="Stored images"
+                  value={storageValue(
+                    internalStats.storage.imageCount,
+                    formatNumber,
+                  )}
+                  detail={storageDetail(
+                    internalStats.storage.available,
+                    'physical files',
+                  )}
+                  icon={Images}
+                />
+                <InternalStat
+                  label="Cached favicons"
+                  value={storageValue(
+                    internalStats.storage.faviconCount,
+                    formatNumber,
+                  )}
+                  detail={storageDetail(
+                    internalStats.storage.available,
+                    'website icons',
+                  )}
+                  icon={Globe2}
+                />
+                <InternalStat
+                  label="Storage used"
+                  value={
+                    internalStats.storage.totalBytes === null
+                      ? '—'
+                      : formatBytes(
+                          internalStats.storage.totalBytes,
+                          formatNumber,
+                        )
+                  }
+                  detail={storageDetail(
+                    internalStats.storage.available,
+                    `${internalStats.storage.provider.toUpperCase()} storage`,
+                  )}
+                  icon={HardDrive}
+                />
+              </dl>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {activeSection === 'about' ? <AboutSettings /> : null}
+      </SettingsShell>
     </Page>
   )
 }
