@@ -353,6 +353,10 @@ Use cream and card tones for hierarchy, coffee-tinted shadows for elevation,
 and borders for controls or structural separation. Errors and empty states stay
 inside the same card geometry.
 
+The page canvas uses a very low-contrast, theme-aware paper grain. Keep the
+texture on `body`; cards, popovers, controls, and other raised surfaces remain
+solid and crisp.
+
 - `--coffee-shadow` is the standard card elevation.
 - `--coffee-shadow-inline` shades trailing actions toward their input.
 - `--coffee-shadow-strong` is for coffee-colored focal surfaces.
