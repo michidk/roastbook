@@ -32,6 +32,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import type { ImageFile } from '@/hooks/useImageUpload'
 import { cn } from '@/lib/utils'
 
@@ -405,28 +406,30 @@ export function PictureUploadDialog({
                       {readyLabel}
                     </span>
                   </div>
-                  <div className="flex gap-2 overflow-x-auto pb-1">
-                    {images.map((image, index) => (
-                      <div key={image.preview} className="relative shrink-0">
-                        <img
-                          src={image.preview}
-                          alt={`${previewAltPrefix} ${index + 1}`}
-                          width={80}
-                          height={80}
-                          className="size-16 rounded-lg object-cover ring-1 ring-border sm:size-20"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => onRemoveImage(index)}
-                          disabled={intakeBusy}
-                          className="absolute -right-1 -top-1 flex size-6 items-center justify-center rounded-full bg-foreground text-background shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-                          aria-label={`Remove ${previewAltPrefix.toLowerCase()} picture ${index + 1}`}
-                        >
-                          <X className="size-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                  <ScrollArea orientation="horizontal" className="w-full">
+                    <div className="flex gap-2 pb-3">
+                      {images.map((image, index) => (
+                        <div key={image.preview} className="relative shrink-0">
+                          <img
+                            src={image.preview}
+                            alt={`${previewAltPrefix} ${index + 1}`}
+                            width={80}
+                            height={80}
+                            className="size-16 rounded-lg object-cover ring-1 ring-border sm:size-20"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => onRemoveImage(index)}
+                            disabled={intakeBusy}
+                            className="absolute -right-1 -top-1 flex size-6 items-center justify-center rounded-full bg-foreground text-background shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                            aria-label={`Remove ${previewAltPrefix.toLowerCase()} picture ${index + 1}`}
+                          >
+                            <X className="size-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
                 </div>
               ) : null}
             </DialogBody>

@@ -4,6 +4,7 @@ import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { XIcon } from 'lucide-react'
 import * as React from 'react'
 import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
@@ -91,11 +92,15 @@ function DialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
   )
 }
 
-function DialogBody({ className, ...props }: React.ComponentProps<'div'>) {
+function DialogBody({
+  className,
+  ...props
+}: React.ComponentProps<typeof ScrollArea>) {
   return (
-    <div
+    <ScrollArea
       data-slot="dialog-body"
-      className={cn('min-h-0 overflow-y-auto px-5 py-5 sm:px-6', className)}
+      className="min-h-0"
+      viewportClassName={cn('px-5 py-5 sm:px-6', className)}
       {...props}
     />
   )

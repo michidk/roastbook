@@ -18,6 +18,7 @@ import { ErrorDetails } from '@/components/error-details'
 import { RouteNotFound } from '@/components/route-not-found'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { getErrorDisplayState } from '@/lib/error-display'
@@ -131,45 +132,50 @@ function RootErrorComponent({ error }: { error: Error }) {
 
   return (
     <TooltipProvider>
-      <div className="min-h-[100dvh] flex flex-col">
+      <div className="flex h-[100dvh] flex-col overflow-hidden">
         <AppNavbar />
-        <main
-          id="main-content"
-          className="flex-1 p-4 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-4"
+        <ScrollArea
+          className="min-h-0 flex-1"
+          viewportProps={{ id: 'app-scroll-area' }}
         >
-          <div className="flex items-center justify-center min-h-[50vh]">
-            <Card className="max-w-md w-full">
-              <CardHeader className="text-center">
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
-                  <AlertTriangle className="h-6 w-6 text-destructive" />
-                </div>
-                <CardTitle>{errorState.title}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground text-center">
-                  {errorState.message}
-                </p>
-                {errorState.hint && (
-                  <p className="text-sm text-center">{errorState.hint}</p>
-                )}
-                <div className="flex gap-2 justify-center">
-                  <Button
-                    variant="outline"
-                    onClick={() => router.navigate({ to: '/' })}
-                  >
-                    <Home className="mr-2 h-4 w-4" />
-                    Go home
-                  </Button>
-                  <Button onClick={() => router.invalidate()}>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Try again
-                  </Button>
-                </div>
-                {import.meta.env.DEV && <ErrorDetails error={error} />}
-              </CardContent>
-            </Card>
-          </div>
-        </main>
+          <main
+            id="main-content"
+            className="min-h-full p-4 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-4"
+          >
+            <div className="flex min-h-[50vh] items-center justify-center">
+              <Card className="w-full max-w-md">
+                <CardHeader className="text-center">
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+                    <AlertTriangle className="h-6 w-6 text-destructive" />
+                  </div>
+                  <CardTitle>{errorState.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground text-center">
+                    {errorState.message}
+                  </p>
+                  {errorState.hint && (
+                    <p className="text-sm text-center">{errorState.hint}</p>
+                  )}
+                  <div className="flex gap-2 justify-center">
+                    <Button
+                      variant="outline"
+                      onClick={() => router.navigate({ to: '/' })}
+                    >
+                      <Home className="mr-2 h-4 w-4" />
+                      Go home
+                    </Button>
+                    <Button onClick={() => router.invalidate()}>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Try again
+                    </Button>
+                  </div>
+                  {import.meta.env.DEV && <ErrorDetails error={error} />}
+                </CardContent>
+              </Card>
+            </div>
+          </main>
+        </ScrollArea>
       </div>
       <Toaster />
     </TooltipProvider>
@@ -185,23 +191,33 @@ function RootComponent() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-[100dvh] flex flex-col">
+      <div className="flex h-[100dvh] flex-col overflow-hidden">
         <AppNavbar demoMode={settings.demoMode} />
-        {settings.demoMode ? (
-          <div className="border-b border-amber-300 bg-amber-50 px-4 py-2 text-amber-950 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
-            <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 text-sm font-medium">
-              <LockKeyhole className="h-4 w-4" aria-hidden="true" />
-              Demo mode: you can explore everything, but changes are disabled.
-            </div>
-          </div>
-        ) : null}
-        <main
-          id="main-content"
-          onSubmitCapture={settings.demoMode ? preventDemoSubmit : undefined}
-          className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:px-8 md:py-8 md:pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8"
+        <ScrollArea
+          className="min-h-0 flex-1"
+          viewportProps={{ id: 'app-scroll-area' }}
         >
-          <Outlet />
-        </main>
+          <div className="flex min-h-full flex-col">
+            {settings.demoMode ? (
+              <div className="border-b border-amber-300 bg-amber-50 px-4 py-2 text-amber-950 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
+                <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 text-sm font-medium">
+                  <LockKeyhole className="h-4 w-4" aria-hidden="true" />
+                  Demo mode: you can explore everything, but changes are
+                  disabled.
+                </div>
+              </div>
+            ) : null}
+            <main
+              id="main-content"
+              onSubmitCapture={
+                settings.demoMode ? preventDemoSubmit : undefined
+              }
+              className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:px-8 md:py-8 md:pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8"
+            >
+              <Outlet />
+            </main>
+          </div>
+        </ScrollArea>
       </div>
       <Toaster />
     </TooltipProvider>

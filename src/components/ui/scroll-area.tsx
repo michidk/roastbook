@@ -6,8 +6,15 @@ import { cn } from '@/lib/utils'
 function ScrollArea({
   className,
   children,
+  viewportClassName,
+  viewportProps,
+  orientation = 'vertical',
   ...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
+}: React.ComponentProps<typeof ScrollAreaPrimitive.Root> & {
+  viewportClassName?: string
+  viewportProps?: React.ComponentProps<typeof ScrollAreaPrimitive.Viewport>
+  orientation?: 'vertical' | 'horizontal' | 'both'
+}) {
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
@@ -16,11 +23,13 @@ function ScrollArea({
     >
       <ScrollAreaPrimitive.Viewport
         data-slot="scroll-area-viewport"
-        className="size-full rounded-[inherit]"
+        className={cn('size-full rounded-[inherit]', viewportClassName)}
+        {...viewportProps}
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
-      <ScrollBar />
+      {orientation !== 'horizontal' && <ScrollBar />}
+      {orientation !== 'vertical' && <ScrollBar orientation="horizontal" />}
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
   )

@@ -8,6 +8,7 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart'
 import { Progress } from '@/components/ui/progress'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { StarRating } from '@/components/ui/star-rating'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { highRatingRange } from '@/lib/stats-analysis'
@@ -400,7 +401,7 @@ export function BrewRhythmCard({
             </p>
           </div>
         </div>
-        <div className="overflow-x-auto">
+        <ScrollArea orientation="horizontal" className="w-full">
           <table className="w-full min-w-[520px] border-separate border-spacing-1 text-center text-xs">
             <thead>
               <tr>
@@ -444,7 +445,7 @@ export function BrewRhythmCard({
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollArea>
         <Link
           to="/settings"
           className="-mx-2 inline-flex min-h-11 items-center rounded-md px-2 text-sm font-semibold text-link hover:underline [@media(hover:hover)_and_(pointer:fine)]:min-h-0"

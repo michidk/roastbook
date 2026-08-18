@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import {
@@ -60,9 +61,15 @@ function jsonText(value: unknown): string {
 
 function JsonPayload({ value }: { value: unknown }) {
   return (
-    <pre className="max-h-80 overflow-auto rounded-xl bg-muted p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap break-all text-foreground">
-      {jsonText(value)}
-    </pre>
+    <ScrollArea
+      orientation="both"
+      className="max-h-80 rounded-xl bg-muted"
+      viewportClassName="max-h-80"
+    >
+      <pre className="min-w-max p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap break-all text-foreground">
+        {jsonText(value)}
+      </pre>
+    </ScrollArea>
   )
 }
 
