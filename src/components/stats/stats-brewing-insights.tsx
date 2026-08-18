@@ -8,8 +8,15 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart'
 import { Progress } from '@/components/ui/progress'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { StarRating } from '@/components/ui/star-rating'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { highRatingRange } from '@/lib/stats-analysis'
 import { formatMeasurement, formatRatio } from '@/lib/stats-format'
@@ -401,51 +408,53 @@ export function BrewRhythmCard({
             </p>
           </div>
         </div>
-        <ScrollArea orientation="horizontal" className="w-full">
-          <table className="w-full min-w-[520px] border-separate border-spacing-1 text-center text-xs">
-            <thead>
-              <tr>
-                <th scope="col" className="p-2 text-left">
-                  Day
-                </th>
-                {DAYPARTS.map((part) => (
-                  <th key={part.label} scope="col" className="p-2 font-medium">
-                    {part.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {WEEKDAYS.map((weekday) => (
-                <tr key={weekday}>
-                  <th scope="row" className="p-2 text-left font-medium">
-                    {weekday}
-                  </th>
-                  {DAYPARTS.map((part) => {
-                    const cell = cells.find(
-                      (candidate) =>
-                        candidate.weekday === weekday &&
-                        candidate.part === part.label,
-                    )
-                    const intensity = cell ? cell.count / maxCount : 0
-                    return (
-                      <td
-                        key={part.label}
-                        className="h-10 rounded-lg border border-border tabular-nums"
-                        style={{
-                          backgroundColor: `color-mix(in srgb, var(--primary) ${Math.round(intensity * 75)}%, var(--secondary))`,
-                        }}
-                        aria-label={`${weekday} ${part.label.toLowerCase()}: ${cell?.count ?? 0} brews`}
-                      >
-                        {cell?.count ? formatNumber(cell.count) : '–'}
-                      </td>
-                    )
-                  })}
-                </tr>
+        <Table className="min-w-[520px] border-separate border-spacing-1 text-center text-xs">
+          <TableHeader className="[&_tr]:border-0">
+            <TableRow className="border-0 hover:bg-transparent">
+              <TableHead scope="col" className="p-2 text-left">
+                Day
+              </TableHead>
+              {DAYPARTS.map((part) => (
+                <TableHead
+                  key={part.label}
+                  scope="col"
+                  className="p-2 text-center font-medium"
+                >
+                  {part.label}
+                </TableHead>
               ))}
-            </tbody>
-          </table>
-        </ScrollArea>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {WEEKDAYS.map((weekday) => (
+              <TableRow key={weekday} className="border-0 hover:bg-transparent">
+                <TableHead scope="row" className="p-2 text-left font-medium">
+                  {weekday}
+                </TableHead>
+                {DAYPARTS.map((part) => {
+                  const cell = cells.find(
+                    (candidate) =>
+                      candidate.weekday === weekday &&
+                      candidate.part === part.label,
+                  )
+                  const intensity = cell ? cell.count / maxCount : 0
+                  return (
+                    <TableCell
+                      key={part.label}
+                      className="h-10 rounded-lg border border-border text-center tabular-nums"
+                      style={{
+                        backgroundColor: `color-mix(in srgb, var(--primary) ${Math.round(intensity * 75)}%, var(--secondary))`,
+                      }}
+                      aria-label={`${weekday} ${part.label.toLowerCase()}: ${cell?.count ?? 0} brews`}
+                    >
+                      {cell?.count ? formatNumber(cell.count) : '–'}
+                    </TableCell>
+                  )
+                })}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
         <Link
           to="/settings"
           className="-mx-2 inline-flex min-h-11 items-center rounded-md px-2 text-sm font-semibold text-link hover:underline [@media(hover:hover)_and_(pointer:fine)]:min-h-0"

@@ -53,7 +53,7 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          'fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden rounded-2xl bg-popover p-0 text-sm text-popover-foreground shadow-coffee-strong ring-1 ring-foreground/10 duration-100 outline-none [&>[data-slot=dialog-header]]:row-start-1 [&>[data-slot=dialog-body]]:row-start-2 [&>[data-slot=dialog-footer]]:row-start-3 sm:max-w-lg data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 motion-reduce:animate-none motion-reduce:duration-0',
+          'fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden rounded-2xl border border-border bg-popover p-0 text-sm text-popover-foreground shadow-coffee-strong duration-150 outline-none [&>[data-slot=dialog-header]]:row-start-1 [&>[data-slot=dialog-body]]:row-start-2 [&>[data-slot=dialog-footer]]:row-start-3 sm:max-w-lg data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 motion-reduce:animate-none motion-reduce:duration-0',
           className,
         )}
         {...props}
@@ -84,7 +84,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
     <div
       data-slot="dialog-header"
       className={cn(
-        'flex flex-col gap-2 border-b border-border/70 px-5 py-5 pr-14 sm:px-6 sm:py-6 sm:pr-16',
+        'flex flex-col gap-2 border-b border-border/70 bg-secondary/35 px-5 py-5 pr-14 sm:px-6 sm:py-6 sm:pr-16',
         className,
       )}
       {...props}

@@ -5,21 +5,23 @@ import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-full font-display text-sm font-bold whitespace-nowrap transition-all outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-transparent font-display text-sm font-bold whitespace-nowrap shadow-none transition-[color,background-color,border-color,box-shadow,transform] duration-150 outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/45 active:translate-y-px disabled:pointer-events-none disabled:translate-y-0 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 motion-reduce:transition-none dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-        primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
+        default:
+          'border-primary bg-primary text-primary-foreground shadow-control hover:border-coffee hover:bg-coffee',
+        primary:
+          'border-primary bg-primary text-primary-foreground shadow-control hover:border-coffee hover:bg-coffee',
         destructive:
-          'bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40',
+          'border-destructive bg-destructive text-white shadow-control hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40',
         outline:
-          'border border-border bg-card text-foreground hover:bg-secondary',
+          'border-border bg-card/90 text-foreground shadow-control hover:border-input hover:bg-secondary',
         secondary:
-          'bg-secondary text-secondary-foreground border border-border hover:bg-secondary/70',
+          'border-border bg-secondary text-secondary-foreground hover:border-input/70 hover:bg-accent',
         ghost:
           'text-muted-foreground hover:bg-secondary hover:text-foreground dark:hover:bg-secondary/60',
-        link: 'text-link underline-offset-4 hover:underline rounded-none',
+        link: 'rounded-none text-link underline-offset-4 hover:text-foreground hover:underline active:translate-y-0',
       },
       size: {
         default:

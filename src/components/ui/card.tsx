@@ -12,7 +12,7 @@ function Card({
       data-slot="card"
       data-size={size}
       className={cn(
-        'group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-2xl bg-card py-(--card-spacing) text-sm text-card-foreground shadow-coffee [--card-spacing:--spacing(5)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(4)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-2xl *:[img:last-child]:rounded-b-2xl',
+        'group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-2xl border border-border/70 bg-card py-(--card-spacing) text-sm text-card-foreground shadow-coffee [--card-spacing:--spacing(5)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(4)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-[calc(1rem-1px)] *:[img:last-child]:rounded-b-[calc(1rem-1px)]',
         className,
       )}
       {...props}
@@ -51,7 +51,7 @@ function CardTitle({
 }
 
 const interactiveCardLinkClassName =
-  'group block h-full min-w-0 rounded-2xl outline-none transition-transform duration-200 hover:-translate-y-0.5 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:hover:translate-y-0'
+  'group block h-full min-w-0 rounded-2xl outline-none transition-[transform,filter] duration-200 hover:-translate-y-0.5 hover:brightness-[1.015] focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-0 motion-reduce:hover:translate-y-0'
 
 function CardDescription({ className, ...props }: React.ComponentProps<'div'>) {
   return (

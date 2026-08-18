@@ -49,6 +49,7 @@
   --shadow-coffee: var(--coffee-shadow);
   --shadow-coffee-inline: var(--coffee-shadow-inline);
   --shadow-coffee-strong: var(--coffee-shadow-strong);
+  --shadow-control: var(--control-shadow);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -101,6 +102,14 @@
     --coffee-shadow: 0 8px 24px -18px rgb(60 42 30 / 45%);
     --coffee-shadow-inline: -8px 0 16px -10px rgb(60 42 30 / 50%);
     --coffee-shadow-strong: 0 10px 30px -18px rgb(60 42 30 / 55%);
+    --control-shadow:
+      0 1px 1px rgb(60 42 30 / 8%), 0 3px 10px -7px rgb(60 42 30 / 45%);
+    --scrollbar-thumb: color-mix(in srgb, var(--coffee) 52%, var(--background));
+    --scrollbar-thumb-hover: color-mix(
+      in srgb,
+      var(--coffee) 72%,
+      var(--background)
+    );
     /* Sidebar (dark coffee for any future drawer) */
     --sidebar: #6f4e37;
     --sidebar-foreground: #f6eddf;
@@ -152,6 +161,14 @@
     --coffee-shadow: 0 8px 24px -18px rgb(0 0 0 / 55%);
     --coffee-shadow-inline: -8px 0 16px -10px rgb(0 0 0 / 60%);
     --coffee-shadow-strong: 0 10px 30px -18px rgb(0 0 0 / 65%);
+    --control-shadow:
+      0 1px 1px rgb(0 0 0 / 22%), 0 3px 10px -7px rgb(0 0 0 / 75%);
+    --scrollbar-thumb: color-mix(in srgb, var(--coffee) 58%, var(--background));
+    --scrollbar-thumb-hover: color-mix(
+      in srgb,
+      var(--coffee) 78%,
+      var(--background)
+    );
     --sidebar: #2a2219;
     --sidebar-foreground: #f6eddf;
     --sidebar-primary: #d2873e;
@@ -325,7 +342,7 @@
   * {
     @apply border-border;
     box-sizing: border-box;
-    scrollbar-color: var(--border) transparent;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
     scrollbar-width: thin;
   }
 
@@ -339,10 +356,14 @@
   }
 
   *::-webkit-scrollbar-thumb {
-    border: 1px solid transparent;
+    border: 2px solid transparent;
     border-radius: 9999px;
-    background-color: var(--border);
+    background-color: var(--scrollbar-thumb);
     background-clip: padding-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
   }
 
   button,
