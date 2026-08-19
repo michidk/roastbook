@@ -53,8 +53,8 @@ export function PageHeader({
     <header
       data-slot="page-header"
       className={cn(
-        'flex flex-col gap-4 sm:flex-row sm:justify-between',
-        size === 'compact' ? 'sm:items-center' : 'sm:items-end',
+        'flex flex-col gap-4 lg:flex-row lg:justify-between',
+        size === 'compact' ? 'lg:items-center' : 'lg:items-end',
         className,
       )}
       {...props}
@@ -78,14 +78,14 @@ export function PageHeader({
             {title}
           </h1>
           {description ? (
-            <p className="mt-1 max-w-2xl text-sm font-semibold leading-relaxed text-muted-foreground">
+            <p className="mt-1 max-w-2xl min-w-0 break-words text-sm font-semibold leading-relaxed text-muted-foreground">
               {description}
             </p>
           ) : null}
         </div>
       </div>
       {actions ? (
-        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+        <div className="flex w-full min-w-0 flex-wrap items-center gap-2 lg:w-auto lg:shrink-0 lg:justify-end">
           {actions}
         </div>
       ) : null}

@@ -9,6 +9,7 @@ import { type SyntheticEvent, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { DeleteConfirmation } from '@/components/DeleteConfirmation'
+import { DetailSectionNav } from '@/components/detail-section-nav'
 import { Page, PageHeader } from '@/components/page-layout'
 import { RecipeDuplicateButton } from '@/components/recipes/recipe-duplicate-button'
 import { RecipeFields } from '@/components/recipes/recipe-fields'
@@ -195,7 +196,7 @@ function RecipeDetailPage() {
                 trigger={
                   <Button
                     variant="ghost"
-                    size="icon-sm"
+                    size="icon"
                     className="text-destructive-text hover:bg-destructive/10 hover:text-destructive-text"
                     aria-label="Delete recipe"
                   >
@@ -222,7 +223,18 @@ function RecipeDetailPage() {
           />
         </form>
       ) : (
-        <RecipeSummary recipe={recipe} gear={gear} />
+        <>
+          <DetailSectionNav
+            links={[
+              { id: 'recipe-details', label: 'Details' },
+              { id: 'recipe-values', label: 'Values' },
+              ...(gear.length > 0
+                ? [{ id: 'recipe-equipment', label: 'Equipment' }]
+                : []),
+            ]}
+          />
+          <RecipeSummary recipe={recipe} gear={gear} />
+        </>
       )}
     </Page>
   )
@@ -296,7 +308,7 @@ function RecipeSummary({
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card id="recipe-details" className="scroll-mt-4">
         <CardHeader>
           <CardTitle>Details</CardTitle>
         </CardHeader>
@@ -311,7 +323,7 @@ function RecipeSummary({
           </div>
         </CardContent>
       </Card>
-      <Card>
+      <Card id="recipe-values" className="scroll-mt-4">
         <CardHeader>
           <CardTitle>Recipe values</CardTitle>
         </CardHeader>
@@ -331,7 +343,7 @@ function RecipeSummary({
         </CardContent>
       </Card>
       {equipment.length > 0 ? (
-        <Card>
+        <Card id="recipe-equipment" className="scroll-mt-4">
           <CardHeader>
             <CardTitle>Equipment</CardTitle>
           </CardHeader>

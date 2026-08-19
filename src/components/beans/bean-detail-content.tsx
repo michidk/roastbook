@@ -192,7 +192,7 @@ export function BeanDetailHeader({
             description="This will also remove it from any brew records. This action cannot be undone."
             onConfirm={onDelete}
             trigger={
-              <Button variant="ghost" size="icon-sm" aria-label="Delete bean">
+              <Button variant="ghost" size="icon" aria-label="Delete bean">
                 <Trash2 />
               </Button>
             }

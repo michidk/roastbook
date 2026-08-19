@@ -175,21 +175,21 @@ function CollectionCard({ entry }: { readonly entry: CollectionEntry }) {
         )}
       >
         <CollectionMediaFigure media={media} size="md" />
-        <span className="min-w-0 flex-1 space-y-0.5">
-          <span className="flex items-center gap-1.5">
+        <span className="min-w-0 flex-1 space-y-0.5 overflow-hidden">
+          <span className="flex min-w-0 items-center gap-1.5">
             {entry.titlePrefix}
-            <span className="truncate font-display text-base font-bold text-foreground">
+            <span className="min-w-0 truncate font-display text-base font-bold text-foreground">
               {entry.title}
             </span>
             {entry.flags}
           </span>
           {entry.subtitle ? (
-            <span className="block truncate text-sm text-muted-foreground">
+            <span className="block min-w-0 truncate text-sm text-muted-foreground">
               {entry.subtitle}
             </span>
           ) : null}
           {entry.meta ? (
-            <span className="block truncate text-sm text-muted-foreground">
+            <span className="line-clamp-2 min-w-0 text-sm leading-snug text-muted-foreground">
               {entry.meta}
             </span>
           ) : null}

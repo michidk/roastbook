@@ -69,7 +69,18 @@ function StatsPage() {
     <Page>
       <PageHeader
         title="Statistics"
-        description={`${rangeLabel} · Calendar boundaries use ${stats.filter.timeZone}`}
+        description={
+          <>
+            <span>{rangeLabel}</span>
+            <span className="hidden sm:inline">
+              {' '}
+              · Calendar boundaries use {stats.filter.timeZone}
+            </span>
+            <span className="block sm:hidden">
+              Timezone: {stats.filter.timeZone}
+            </span>
+          </>
+        }
       />
 
       <StatsFilters

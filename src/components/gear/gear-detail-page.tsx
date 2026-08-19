@@ -2,6 +2,7 @@ import { Link, useNavigate, useRouter } from '@tanstack/react-router'
 import type { FormEvent } from 'react'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { DetailSectionNav } from '@/components/detail-section-nav'
 import { EntityImageGallery } from '@/components/entity-image-gallery'
 import { GearDetailHeader } from '@/components/gear/gear-detail-header'
 import { GearEditForm } from '@/components/gear/gear-edit-form'
@@ -160,6 +161,12 @@ export function GearDetailPage({
         </>
       ) : (
         <>
+          <DetailSectionNav
+            links={[
+              { id: 'gear-details', label: 'Details' },
+              { id: 'gear-history', label: 'Brew history' },
+            ]}
+          />
           {gear.images.length > 0 && (
             <EntityImageGallery
               entityType="gear"

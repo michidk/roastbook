@@ -122,7 +122,7 @@ export function GearReadOnlyContent({
 
   return (
     <>
-      <Card>
+      <Card id="gear-details" className="scroll-mt-4">
         <CardHeader>
           <CardTitle>Details</CardTitle>
         </CardHeader>
@@ -199,7 +199,7 @@ export function GearReadOnlyContent({
           </CardContent>
         </Card>
       )}
-      <Card>
+      <Card id="gear-history" className="scroll-mt-4">
         <CardHeader>
           <CardTitle>Brew history</CardTitle>
         </CardHeader>

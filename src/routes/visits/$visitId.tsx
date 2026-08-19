@@ -10,6 +10,7 @@ import { z } from 'zod'
 import { CoffeeShopCard } from '@/components/coffee-shops/coffee-shop-card'
 import { CoffeeShopMap } from '@/components/coffee-shops/coffee-shop-map'
 import { DeleteConfirmation } from '@/components/DeleteConfirmation'
+import { DetailSectionNav } from '@/components/detail-section-nav'
 import { Page, PageHeader } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
@@ -111,9 +112,8 @@ function VisitDetailPage() {
     <Page width={isEditing ? 'form' : 'wide'}>
       <PageHeader
         size="compact"
-        eyebrow="Café visit"
         title={visit.drinkName || 'Coffee'}
-        description={formatDateTime(visit.visitedAt)}
+        description={`Café visit · ${formatDateTime(visit.visitedAt)}`}
         leading={
           <Button variant="outline" size="icon" asChild>
             <Link to="/visits" aria-label="Back to visits">
@@ -162,132 +162,147 @@ function VisitDetailPage() {
           onSaved={handleSaved}
         />
       ) : (
-        <div
-          className={cn(
-            'grid gap-6',
-            hasCoordinates &&
-              'lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-start',
-          )}
-        >
-          <div className="min-w-0 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Details</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Type</p>
-                    <p className="font-medium">{visit.drinkType || '-'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Price</p>
-                    <p className="font-medium">
-                      {visit.price
-                        ? `${formatNumber(visit.price)} ${visit.currency || 'EUR'}`
-                        : '-'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Beans</p>
-                    {visit.bean ? (
-                      <Link
-                        to="/beans/$beanId"
-                        params={{ beanId: String(visit.bean.id) }}
-                        className="inline-flex min-h-11 items-center rounded-md font-medium text-link hover:underline [@media(hover:hover)_and_(pointer:fine)]:min-h-0"
-                      >
-                        {visit.bean.name}
-                      </Link>
-                    ) : (
-                      <p className="font-medium">-</p>
-                    )}
-                  </div>
-                </div>
-
-                {visit.tasteTags.length > 0 ? (
-                  <>
-                    <Separator className="my-4" />
-                    <div>
-                      <p className="mb-2 text-sm text-muted-foreground">
-                        Taste
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {visit.tasteTags.map((tagLink) => (
-                          <Badge
-                            key={tagLink.id}
-                            variant={
-                              isNegativeTasteTag(tagLink.tasteTag)
-                                ? 'destructive'
-                                : 'default'
-                            }
-                          >
-                            {tagLink.tasteTag.name}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                ) : null}
-              </CardContent>
-            </Card>
-
-            {visit.notes ? (
-              <Card>
+        <>
+          <DetailSectionNav
+            links={[
+              { id: 'visit-details', label: 'Details' },
+              { id: 'visit-cafe', label: 'Café' },
+              ...(previousVisits.length > 0
+                ? [{ id: 'visit-history', label: 'Previous visits' }]
+                : []),
+            ]}
+          />
+          <div
+            className={cn(
+              'grid gap-6',
+              hasCoordinates &&
+                'lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-start',
+            )}
+          >
+            <div className="min-w-0 space-y-6">
+              <Card id="visit-details" className="scroll-mt-4">
                 <CardHeader>
-                  <CardTitle>Notes</CardTitle>
+                  <CardTitle>Details</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="whitespace-pre-wrap">{visit.notes}</p>
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Type</p>
+                      <p className="font-medium">{visit.drinkType || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Price</p>
+                      <p className="font-medium">
+                        {visit.price
+                          ? `${formatNumber(visit.price)} ${visit.currency || 'EUR'}`
+                          : '-'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Beans</p>
+                      {visit.bean ? (
+                        <Link
+                          to="/beans/$beanId"
+                          params={{ beanId: String(visit.bean.id) }}
+                          className="inline-flex min-h-11 items-center rounded-md font-medium text-link hover:underline [@media(hover:hover)_and_(pointer:fine)]:min-h-0"
+                        >
+                          {visit.bean.name}
+                        </Link>
+                      ) : (
+                        <p className="font-medium">-</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {visit.tasteTags.length > 0 ? (
+                    <>
+                      <Separator className="my-4" />
+                      <div>
+                        <p className="mb-2 text-sm text-muted-foreground">
+                          Taste
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {visit.tasteTags.map((tagLink) => (
+                            <Badge
+                              key={tagLink.id}
+                              variant={
+                                isNegativeTasteTag(tagLink.tasteTag)
+                                  ? 'destructive'
+                                  : 'default'
+                              }
+                            >
+                              {tagLink.tasteTag.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  ) : null}
                 </CardContent>
               </Card>
-            ) : null}
 
-            <section aria-labelledby="visit-cafe-heading" className="space-y-3">
-              <h2
-                id="visit-cafe-heading"
-                className="font-display text-lg font-bold tracking-tight"
-              >
-                Café
-              </h2>
-              {visit.coffeeShop ? (
-                <CoffeeShopCard coffeeShop={visit.coffeeShop} />
-              ) : (
+              {visit.notes ? (
                 <Card>
+                  <CardHeader>
+                    <CardTitle>Notes</CardTitle>
+                  </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                      No café linked to this visit.
-                    </p>
+                    <p className="whitespace-pre-wrap">{visit.notes}</p>
+                  </CardContent>
+                </Card>
+              ) : null}
+
+              <section
+                id="visit-cafe"
+                aria-labelledby="visit-cafe-heading"
+                className="scroll-mt-4 space-y-3"
+              >
+                <h2
+                  id="visit-cafe-heading"
+                  className="font-display text-lg font-bold tracking-tight"
+                >
+                  Café
+                </h2>
+                {visit.coffeeShop ? (
+                  <CoffeeShopCard coffeeShop={visit.coffeeShop} />
+                ) : (
+                  <Card>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground">
+                        No café linked to this visit.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </section>
+
+              {previousVisits.length > 0 && (
+                <Card id="visit-history" className="scroll-mt-4">
+                  <CardHeader>
+                    <CardTitle>
+                      Previous visits
+                      <Badge variant="secondary" className="ml-2">
+                        {previousVisits.length}
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CafeVisitList visits={previousVisits} />
                   </CardContent>
                 </Card>
               )}
-            </section>
+            </div>
 
-            {previousVisits.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>
-                    Previous visits
-                    <Badge variant="secondary" className="ml-2">
-                      {previousVisits.length}
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CafeVisitList visits={previousVisits} />
-                </CardContent>
-              </Card>
+            {hasCoordinates && visit.coffeeShop && (
+              <div className="lg:sticky lg:top-24">
+                <CoffeeShopMap
+                  coffeeShops={[visit.coffeeShop]}
+                  visits={cafeVisitHistory}
+                />
+              </div>
             )}
           </div>
-
-          {hasCoordinates && visit.coffeeShop && (
-            <div className="lg:sticky lg:top-24">
-              <CoffeeShopMap
-                coffeeShops={[visit.coffeeShop]}
-                visits={cafeVisitHistory}
-              />
-            </div>
-          )}
-        </div>
+        </>
       )}
     </Page>
   )

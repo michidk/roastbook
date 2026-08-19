@@ -44,7 +44,7 @@ export function BrewCollectionToolbar({
       ariaLabel="Search brews by bean or method"
       resultLabel={resultLabel}
       actions={
-        <div className="grid min-w-0 grid-cols-2 gap-2">
+        <div className="grid w-full min-w-0 grid-cols-1 gap-3 min-[340px]:grid-cols-2 sm:w-auto sm:gap-2">
           <SelectField
             id="brew-method-filter"
             label="Method"
@@ -54,7 +54,7 @@ export function BrewCollectionToolbar({
               value: String(method.id),
               label: method.name,
             }))}
-            className="min-w-32"
+            className="w-full min-w-0 sm:min-w-32"
           />
           <SelectField
             id="brew-rating-filter"
@@ -62,7 +62,7 @@ export function BrewCollectionToolbar({
             value={rating}
             onChange={onRatingChange}
             options={RATING_OPTIONS}
-            className="min-w-28"
+            className="w-full min-w-0 sm:min-w-28"
           />
         </div>
       }

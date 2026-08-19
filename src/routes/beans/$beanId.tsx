@@ -21,6 +21,7 @@ import {
   createEmptyBeanFormValues,
   toBeanFormValues,
 } from '@/components/beans/bean-form-values'
+import { DetailSectionNav } from '@/components/detail-section-nav'
 import type { EntityImage } from '@/components/entity-image-gallery'
 import { Page } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
@@ -305,21 +306,38 @@ function BeanDetailPage() {
           }
         />
       ) : (
-        <BeanReadOnlyContent
-          bean={bean}
-          shotCount={shotAnalytics.totalShots}
-          topTasteTags={shotAnalytics.topTasteTags}
-          weightStats={weightStats}
-          onImagesChange={() =>
-            router.invalidate({ filter: (match) => match.routeId === Route.id })
-          }
-        />
+        <>
+          <DetailSectionNav
+            links={[
+              { id: 'bean-details', label: 'Details' },
+              ...(shotAnalytics.chartShots.length > 0
+                ? [{ id: 'bean-trends', label: 'Trends' }]
+                : []),
+              { id: 'bean-history', label: 'Brew history' },
+            ]}
+          />
+          <div id="bean-details" className="scroll-mt-4">
+            <BeanReadOnlyContent
+              bean={bean}
+              shotCount={shotAnalytics.totalShots}
+              topTasteTags={shotAnalytics.topTasteTags}
+              weightStats={weightStats}
+              onImagesChange={() =>
+                router.invalidate({
+                  filter: (match) => match.routeId === Route.id,
+                })
+              }
+            />
+          </div>
+        </>
       )}
-      <ShotParameterCharts
-        shots={shotAnalytics.chartShots}
-        totalShots={shotAnalytics.totalShots}
-      />
-      <Card>
+      <div id="bean-trends" className="scroll-mt-4">
+        <ShotParameterCharts
+          shots={shotAnalytics.chartShots}
+          totalShots={shotAnalytics.totalShots}
+        />
+      </div>
+      <Card id="bean-history" className="scroll-mt-4">
         <CardHeader>
           <CardTitle>Brew history</CardTitle>
         </CardHeader>

@@ -32,6 +32,7 @@ import {
 import { CoffeeShopMap } from '@/components/coffee-shops/coffee-shop-map'
 import type { CoffeeShopSearchResult } from '@/components/coffee-shops/coffee-shop-osm-search'
 import { DeleteConfirmation } from '@/components/DeleteConfirmation'
+import { DetailSectionNav } from '@/components/detail-section-nav'
 import { MetricCard } from '@/components/metric-card'
 import { Page, PageHeader } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
@@ -184,7 +185,18 @@ function CoffeeShopDetailPage() {
           <CoffeeShopVisits coffeeShop={coffeeShop} />
         </>
       ) : (
-        <CoffeeShopReadOnlyContent coffeeShop={coffeeShop} />
+        <>
+          <DetailSectionNav
+            links={[
+              ...(coffeeShop.cafeVisits.length > 0
+                ? [{ id: 'cafe-overview', label: 'Overview' }]
+                : []),
+              { id: 'cafe-location', label: 'Location' },
+              { id: 'cafe-visits', label: 'Visits' },
+            ]}
+          />
+          <CoffeeShopReadOnlyContent coffeeShop={coffeeShop} />
+        </>
       )}
     </Page>
   )
@@ -236,7 +248,7 @@ function CoffeeShopDetailHeader({
           : undefined
       }
       leading={
-        <Button variant="outline" size="icon-sm" asChild>
+        <Button variant="outline" size="icon" asChild>
           <Link to="/shops" aria-label="Back to cafés">
             <ArrowLeft />
           </Link>
@@ -336,7 +348,7 @@ function CoffeeShopDetailHeader({
             trigger={
               <Button
                 variant="outline"
-                size="icon-sm"
+                size="icon"
                 className="text-destructive-text hover:bg-destructive/10 hover:text-destructive-text"
                 aria-label="Delete this café?"
               >
@@ -417,7 +429,10 @@ function CoffeeShopReadOnlyContent({ coffeeShop }: { coffeeShop: CoffeeShop }) {
   return (
     <>
       {lastVisit && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div
+          id="cafe-overview"
+          className="grid scroll-mt-4 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+        >
           <MetricCard
             label="Coffees"
             value={sortedVisits.length}
@@ -472,7 +487,7 @@ function CoffeeShopReadOnlyContent({ coffeeShop }: { coffeeShop: CoffeeShop }) {
           </div>
         )}
         <div className="min-w-0 space-y-6 lg:order-1">
-          <Card>
+          <Card id="cafe-location" className="scroll-mt-4">
             <CardHeader>
               <CardTitle>Location</CardTitle>
             </CardHeader>
@@ -561,7 +576,7 @@ function CoffeeShopVisits({ coffeeShop }: { coffeeShop: CoffeeShop }) {
   const visitCount = coffeeShop.cafeVisits.length
 
   return (
-    <Card>
+    <Card id="cafe-visits" className="scroll-mt-4">
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-4">
         <CardTitle>
           Visits

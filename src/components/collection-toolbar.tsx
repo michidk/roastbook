@@ -80,7 +80,7 @@ export function CollectionToolbar({
         ) : null}
       </div>
       {resultLabel || actions ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
+        <div className="flex w-full min-w-0 flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
           {resultLabel ? (
             <p className="text-sm text-muted-foreground">{resultLabel}</p>
           ) : null}
