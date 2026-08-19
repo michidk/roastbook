@@ -14,7 +14,7 @@
     "dev:log": "mkdir -p logs && bun run dev 2>&1 | tee logs/dev.log",
     "generate-routes": "tsr generate",
     "build": "vite build",
-    "build:demo": "ROASTBOOK_EDITION=demo vite build && bun run scripts/copy-pglite-assets.ts",
+    "build:demo": "bun run scripts/generate-demo-snapshot.ts && ROASTBOOK_EDITION=demo vite build && bun run scripts/copy-pglite-assets.ts",
     "start": "bun .output/server/index.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",

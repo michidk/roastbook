@@ -8,25 +8,19 @@ type Database = PgliteDatabase<typeof schema>
 let instance: Database | undefined
 
 if (import.meta.env.SSR) {
-  const [{ PGlite }, { drizzle }] = await Promise.all([
+  const [{ readFile }, { PGlite }, { drizzle }] = await Promise.all([
+    import('node:fs/promises'),
     import('@electric-sql/pglite'),
     import('drizzle-orm/pglite'),
   ])
-  const client = new PGlite('memory://')
-
-  const migrations = import.meta.glob('../../drizzle/*.sql', {
-    eager: true,
-    import: 'default',
-    query: '?raw',
-  }) as Record<string, string>
-
-  for (const path of Object.keys(migrations).sort()) {
-    const sql = migrations[path]
-    if (sql) await client.exec(sql.replaceAll('--> statement-breakpoint', ''))
-  }
-
+  const snapshot = await readFile(
+    new URL(/* @vite-ignore */ '../_libs/demo-db.tar.gz', import.meta.url),
+  )
+  const client = await PGlite.create({
+    dataDir: 'memory://',
+    loadDataDir: new Blob([snapshot]),
+  })
   instance = drizzle(client, { schema })
-  await seedDemoDatabase(instance)
 }
 
 export const getDb = createServerOnlyFn((): Database => {
@@ -54,7 +48,7 @@ function required<T>(value: T | undefined, message: string): T {
   return value
 }
 
-async function seedDemoDatabase(database: Database): Promise<void> {
+export async function seedDemoDatabase(database: Database): Promise<void> {
   await database
     .insert(schema.brewingMethods)
     .values(

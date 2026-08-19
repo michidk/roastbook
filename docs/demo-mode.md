@@ -6,16 +6,19 @@ into a demo by altering its runtime environment.
 
 ## Database-free demo
 
-The demo uses an ephemeral PGlite database initialized from bundled migrations
-and deterministic seed fixtures. It needs neither `DATABASE_URL` nor writable
-media storage. Build its Vercel output with:
+The demo uses an ephemeral PGlite database loaded from a build-generated
+snapshot. The snapshot is derived from the bundled migrations and deterministic
+seed fixtures, so cold starts do not need to migrate and seed a new database.
+It needs neither `DATABASE_URL` nor writable media storage. Build its Vercel
+output with:
 
 ```bash
 bun run build:demo
 ```
 
-The build emits `.vercel/output` and copies PGlite's runtime data and WASM into
-the server function. Deploy that prebuilt output with:
+The build emits `.vercel/output` and copies the demo snapshot plus PGlite's
+runtime data and WASM into the server function. Deploy that prebuilt output
+with:
 
 ```bash
 vercel deploy --prebuilt
