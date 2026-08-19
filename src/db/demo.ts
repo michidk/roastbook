@@ -43,6 +43,12 @@ function daysAgo(days: number): Date {
   return new Date(Date.now() - days * 86_400_000)
 }
 
+function daysAgoAt(days: number, hour: number, minute = 0): Date {
+  const date = daysAgo(days)
+  date.setUTCHours(hour, minute, 0, 0)
+  return date
+}
+
 function required<T>(value: T | undefined, message: string): T {
   if (value === undefined) throw new Error(message)
   return value
@@ -198,6 +204,48 @@ async function seedDemoDatabase(database: Database): Promise<void> {
         purchasePrice: '89.00',
         priceCurrency: 'EUR',
       },
+      {
+        name: 'Cinder Hand Mill',
+        brand: 'Fieldwork Coffee',
+        type: 'grinder',
+        purchasePrice: '219.00',
+        priceCurrency: 'EUR',
+      },
+      {
+        name: 'Ridge V60 02',
+        brand: 'Hario',
+        type: 'brewer',
+        purchasePrice: '24.00',
+        priceCurrency: 'EUR',
+      },
+      {
+        name: 'AeroPress Clear',
+        brand: 'AeroPress',
+        type: 'brewer',
+        purchasePrice: '59.00',
+        priceCurrency: 'EUR',
+      },
+      {
+        name: 'Fellow Stagg EKG',
+        brand: 'Fellow',
+        type: 'kettle',
+        purchasePrice: '179.00',
+        priceCurrency: 'EUR',
+      },
+      {
+        name: 'High Flow 18g',
+        brand: 'Foundry Tools',
+        type: 'basket',
+        purchasePrice: '39.00',
+        priceCurrency: 'EUR',
+      },
+      {
+        name: 'Needle Nine WDT',
+        brand: 'Quiet Mechanics',
+        type: 'wdt',
+        purchasePrice: '32.00',
+        priceCurrency: 'EUR',
+      },
     ])
     .returning()
   const beanId = new Map(beans.map((bean) => [bean.name, bean.id]))
@@ -222,34 +270,111 @@ async function seedDemoDatabase(database: Database): Promise<void> {
     })),
   )
 
-  const espressoId = required(
-    methodId.get('Espresso'),
-    'Espresso method missing',
-  )
   const activeBeans = beans.slice(0, 4)
+  const gearId = new Map(gear.map((item) => [item.name, item.id]))
+  const brewHistory = [
+    // Recent brews are intentionally uneven: gaps, dial-in pairs, and weekends.
+    [0, 7, 42, 'Espresso', 0, 4, 'Aurora One', 'Orbit Mill'],
+    [1, 7, 18, 'Espresso', 0, 4, 'Aurora One', 'Orbit Mill'],
+    [2, 15, 35, 'AeroPress', 2, 5, 'AeroPress Clear', 'Cinder Hand Mill'],
+    [3, 8, 5, 'Pour over', 3, 4, 'Ridge V60 02', 'Cinder Hand Mill'],
+    [4, 7, 12, 'Espresso', 1, 3, 'Aurora One', 'Orbit Mill'],
+    [4, 7, 28, 'Espresso', 1, 4, 'Aurora One', 'Orbit Mill'],
+    [5, 9, 5, 'Pour over', 3, 5, 'Ridge V60 02', 'Cinder Hand Mill'],
+    [6, 16, 25, 'AeroPress', 2, 4, 'AeroPress Clear', 'Cinder Hand Mill'],
+    [7, 7, 44, 'Espresso', 0, 4, 'Aurora One', 'Orbit Mill'],
+    [8, 18, 20, 'AeroPress', 2, 4, 'AeroPress Clear', 'Cinder Hand Mill'],
+    [9, 7, 31, 'Espresso', 1, 2, 'Aurora One', 'Orbit Mill'],
+    [9, 7, 48, 'Espresso', 1, 3, 'Aurora One', 'Orbit Mill'],
+    [10, 8, 10, 'Pour over', 3, 4, 'Ridge V60 02', 'Cinder Hand Mill'],
+    [11, 7, 55, 'Espresso', 0, 4, 'Aurora One', 'Orbit Mill'],
+    [12, 7, 22, 'Espresso', 0, 4, 'Aurora One', 'Orbit Mill'],
+    [13, 14, 15, 'AeroPress', 2, 4, 'AeroPress Clear', 'Cinder Hand Mill'],
+    [14, 8, 2, 'Pour over', 3, 5, 'Ridge V60 02', 'Cinder Hand Mill'],
+    [15, 7, 36, 'Espresso', 1, 3, 'Aurora One', 'Orbit Mill'],
+    [16, 10, 12, 'Pour over', 3, 4, 'Ridge V60 02', 'Cinder Hand Mill'],
+    [17, 7, 17, 'Espresso', 0, 4, 'Aurora One', 'Orbit Mill'],
+    [17, 7, 34, 'Espresso', 0, 5, 'Aurora One', 'Orbit Mill'],
+    [18, 16, 40, 'AeroPress', 2, 3, 'AeroPress Clear', 'Cinder Hand Mill'],
+    [19, 8, 25, 'Pour over', 3, 4, 'Ridge V60 02', 'Cinder Hand Mill'],
+    [20, 17, 10, 'AeroPress', 2, 5, 'AeroPress Clear', 'Cinder Hand Mill'],
+    [21, 7, 29, 'Espresso', 1, 3, 'Aurora One', 'Orbit Mill'],
+    [22, 7, 51, 'Espresso', 1, 4, 'Aurora One', 'Orbit Mill'],
+    [23, 13, 5, 'AeroPress', 2, 4, 'AeroPress Clear', 'Cinder Hand Mill'],
+    [24, 8, 14, 'Pour over', 3, 3, 'Ridge V60 02', 'Cinder Hand Mill'],
+    [25, 7, 46, 'Espresso', 0, 3, 'Aurora One', 'Orbit Mill'],
+    [26, 7, 8, 'Espresso', 0, 2, 'Aurora One', 'Orbit Mill'],
+    [26, 7, 25, 'Espresso', 0, 3, 'Aurora One', 'Orbit Mill'],
+    [27, 10, 30, 'Pour over', 3, 4, 'Ridge V60 02', 'Cinder Hand Mill'],
+    [29, 7, 40, 'Espresso', 1, 3, 'Aurora One', 'Orbit Mill'],
+  ] as const
   const shots = await database
     .insert(schema.shots)
     .values(
-      Array.from({ length: 25 }, (_, index) => ({
-        beanId: required(
-          activeBeans[index % activeBeans.length],
-          'Bean missing',
-        ).id,
-        machineId: required(gear[0], 'Machine missing').id,
-        grinderId: required(gear[1], 'Grinder missing').id,
-        brewingMethodId: espressoId,
-        doseGrams: (17.5 + (index % 4) * 0.2).toFixed(1),
-        yieldGrams: (36 + (index % 5)).toFixed(1),
-        shotTimeSeconds: String(26 + (index % 7)),
-        rating: 3 + (index % 3),
-        notes: ['Sweet and balanced.', 'Bright and juicy.', 'Syrupy finish.'][
-          index % 3
-        ],
-        brewedAt: daysAgo(index),
-        createdAt: daysAgo(index),
-      })),
+      brewHistory.map(
+        (
+          [day, hour, minute, method, beanIndex, rating, brewer, grinder],
+          index,
+        ) => {
+          const isEspresso = method === 'Espresso'
+          const brewedAt = daysAgoAt(day, hour, minute)
+          return {
+            beanId: required(activeBeans[beanIndex], 'Bean missing').id,
+            machineId: required(gearId.get(brewer), 'Brewer missing'),
+            grinderId: required(gearId.get(grinder), 'Grinder missing'),
+            basketId: isEspresso
+              ? required(gearId.get('High Flow 18g'), 'Basket missing')
+              : null,
+            brewingMethodId: required(
+              methodId.get(method),
+              `${method} method missing`,
+            ),
+            doseGrams: isEspresso
+              ? (17.7 + (index % 4) * 0.2).toFixed(1)
+              : (15 + (index % 3) * 0.5).toFixed(1),
+            brewWaterGrams: isEspresso
+              ? null
+              : String(method === 'AeroPress' ? 220 : 250),
+            yieldGrams: isEspresso ? (36 + (index % 6) * 0.8).toFixed(1) : null,
+            shotTimeSeconds: String(
+              isEspresso ? 25 + (index % 8) : 150 + (index % 5) * 12,
+            ),
+            brewTemperatureCelsius: String(isEspresso ? 93 : 92 + (index % 4)),
+            rating,
+            notes: [
+              'Sweet, balanced, and easy to drink.',
+              'A little sharp; adjusted the grind afterward.',
+              'Juicy acidity with a clean finish.',
+              'Good body, but slightly dry as it cooled.',
+              'Best cup from this coffee so far.',
+            ][index % 5],
+            brewedAt,
+            createdAt: brewedAt,
+          }
+        },
+      ),
     )
     .returning()
+
+  await database.insert(schema.shotAccessoryGear).values(
+    shots.flatMap((shot, index) => {
+      const accessories = [required(gearId.get('Mica Scale'), 'Scale missing')]
+      if (brewHistory[index]?.[3] === 'Espresso') {
+        accessories.push(
+          required(gearId.get('Presswell 58.5'), 'Tamper missing'),
+          required(gearId.get('Needle Nine WDT'), 'WDT missing'),
+        )
+      } else {
+        accessories.push(
+          required(gearId.get('Fellow Stagg EKG'), 'Kettle missing'),
+        )
+      }
+      return accessories.map((accessoryGearId) => ({
+        shotId: shot.id,
+        gearId: accessoryGearId,
+      }))
+    }),
+  )
 
   await database
     .insert(schema.tasteTags)
