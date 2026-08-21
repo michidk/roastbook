@@ -2,10 +2,10 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  PutObjectCommand,
   paginateListObjectsV2,
   S3Client,
 } from '@aws-sdk/client-s3'
-import { Upload } from '@aws-sdk/lib-storage'
 import type { StorageConfig, StorageProvider, StoredObject } from './types'
 
 export class S3StorageProvider implements StorageProvider {
@@ -26,17 +26,16 @@ export class S3StorageProvider implements StorageProvider {
   }
 
   async upload(file: File | Blob, path: string): Promise<string> {
-    const upload = new Upload({
-      client: this.client,
-      params: {
+    const body = new Uint8Array(await file.arrayBuffer())
+    await this.client.send(
+      new PutObjectCommand({
         Bucket: this.bucket,
         Key: path,
-        Body: file.stream(),
+        Body: body,
+        ContentLength: body.byteLength,
         ContentType: file.type || 'application/octet-stream',
-      },
-    })
-
-    await upload.done()
+      }),
+    )
     return path
   }
 

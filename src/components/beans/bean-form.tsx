@@ -21,7 +21,10 @@ import {
   extractBeanInfo,
 } from '@/lib/server/beans'
 import { getRoasters } from '@/lib/server/roasters'
-import { uploadEntityImages } from '@/lib/upload-entity-images'
+import {
+  getEntityImageUploadFailureMessage,
+  uploadEntityImages,
+} from '@/lib/upload-entity-images'
 
 type CreatedBean = Awaited<ReturnType<typeof createBean>>
 
@@ -140,11 +143,10 @@ export function BeanForm({
       })
 
       const uploadResult = await uploadEntityImages('beans', bean.id, images)
-      if (uploadResult.failures.length > 0) {
-        toast.warning(
-          `Beans saved, but ${uploadResult.failures.length} ${uploadResult.failures.length === 1 ? 'picture' : 'pictures'} could not be uploaded`,
-        )
-      }
+      const failureMessage = getEntityImageUploadFailureMessage(
+        uploadResult.failures,
+      )
+      if (failureMessage) toast.warning(`Beans saved. ${failureMessage}`)
       await onCreated(bean)
     },
     onError: (error) =>

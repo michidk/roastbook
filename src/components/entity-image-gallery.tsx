@@ -20,7 +20,10 @@ import { type ImageFile, useImageUpload } from '@/hooks/useImageUpload'
 import { getErrorMessage } from '@/lib/error-message'
 import { thumbnailUrl } from '@/lib/image-url'
 import { deleteEntityImage, setImageAsThumbnail } from '@/lib/server/images'
-import { uploadEntityImages } from '@/lib/upload-entity-images'
+import {
+  type EntityImageUploadFailure,
+  uploadEntityImages,
+} from '@/lib/upload-entity-images'
 import { cn } from '@/lib/utils'
 
 export interface EntityImage {
@@ -58,6 +61,9 @@ export function EntityImageGallery({
   )
   const [isDeletingImage, setIsDeletingImage] = useState<number | null>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const [uploadFailures, setUploadFailures] = useState<
+    readonly EntityImageUploadFailure[]
+  >([])
   const {
     images: queuedImages,
     fileInputRef,
@@ -72,10 +78,20 @@ export function EntityImageGallery({
   if (images.length === 0 && !editable) return null
 
   const uploadPictures = async (pictures: readonly ImageFile[]) => {
+    const attemptedPreviews = new Set(
+      pictures.map((picture) => picture.preview),
+    )
+    setUploadFailures((current) =>
+      current.filter(({ image }) => !attemptedPreviews.has(image.preview)),
+    )
     setIsUploading(true)
     try {
       const result = await uploadEntityImages(entityType, entityId, pictures)
       removeImages(result.uploaded)
+      setUploadFailures((current) => [
+        ...current.filter(({ image }) => !attemptedPreviews.has(image.preview)),
+        ...result.failures,
+      ])
       if (result.uploaded.length > 0) {
         try {
           await onImagesChange()
@@ -88,13 +104,11 @@ export function EntityImageGallery({
           )
         }
       }
-      if (result.failures.length > 0) {
-        toast.error(
-          `${result.failures.length} ${result.failures.length === 1 ? 'picture remains' : 'pictures remain'} to retry`,
-        )
-      }
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Could not upload pictures'))
+      setUploadFailures((current) => [
+        ...current.filter(({ image }) => !attemptedPreviews.has(image.preview)),
+        ...pictures.map((image) => ({ image, error })),
+      ])
     } finally {
       setIsUploading(false)
     }
@@ -297,7 +311,17 @@ export function EntityImageGallery({
               await uploadPictures(pictures)
               return pictures
             }}
-            onRemoveImage={removeImage}
+            onRemoveImage={(index) => {
+              const removedImage = queuedImages[index]
+              if (removedImage) {
+                setUploadFailures((current) =>
+                  current.filter(
+                    ({ image }) => image.preview !== removedImage.preview,
+                  ),
+                )
+              }
+              removeImage(index)
+            }}
             onOpenFilePicker={openFilePicker}
             prompt={
               entityType === 'beans'
@@ -305,24 +329,18 @@ export function EntityImageGallery({
                 : 'Add more equipment pictures'
             }
             previewAltPrefix={entityType === 'beans' ? 'Bean' : 'Gear'}
+            uploadMode="immediate"
             isBusy={isUploading}
             statusText={isUploading ? 'Uploading pictures' : undefined}
-            helperText={
-              isUploading
-                ? 'Uploading pictures…'
-                : 'New pictures upload immediately'
-            }
-            footer={
-              queuedImages.length > 0 && !isUploading ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => void uploadPictures(queuedImages)}
-                >
-                  Retry queued pictures
-                </Button>
-              ) : undefined
-            }
+            imageErrors={uploadFailures.map(({ image, error }) => ({
+              preview: image.preview,
+              filename: image.file.name,
+              message: getErrorMessage(
+                error,
+                'The server rejected this picture',
+              ),
+            }))}
+            onRetryImage={(image) => uploadPictures([image])}
           />
         )}
       </CardContent>

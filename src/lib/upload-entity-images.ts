@@ -1,4 +1,6 @@
 import type { ImageFile } from '@/hooks/useImageUpload'
+import { createEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
+import { getErrorMessage } from '@/lib/error-message'
 import { type EntityType, uploadEntityImage } from '@/lib/server/images'
 
 export type EntityImageUploadFailure = {
@@ -11,16 +13,23 @@ export type EntityImageUploadResult = {
   readonly failures: readonly EntityImageUploadFailure[]
 }
 
-type UploadImage = (input: {
-  data: {
-    entityType: EntityType
-    entityId: number
-    fileBase64: string
-    filename: string
-    mimeType: string
-    sizeBytes: number
+export function getEntityImageUploadFailureMessage(
+  failures: readonly EntityImageUploadFailure[],
+): string | null {
+  const firstFailure = failures[0]
+  if (!firstFailure) return null
+
+  const reason = getErrorMessage(firstFailure.error, 'The server rejected it')
+  const filename = firstFailure.image.file.name
+
+  if (failures.length === 1) {
+    return `Upload failed for ${filename}: ${reason}`
   }
-}) => Promise<unknown>
+
+  return `Could not upload ${failures.length} pictures. First failure — ${filename}: ${reason}`
+}
+
+type UploadImage = (input: { data: FormData }) => Promise<unknown>
 
 export async function uploadEntityImagesWith(
   uploadImage: UploadImage,
@@ -34,14 +43,7 @@ export async function uploadEntityImagesWith(
   for (const image of images) {
     try {
       await uploadImage({
-        data: {
-          entityType,
-          entityId,
-          fileBase64: image.base64,
-          filename: image.file.name,
-          mimeType: image.file.type,
-          sizeBytes: image.file.size,
-        },
+        data: createEntityImageUploadFormData(entityType, entityId, image.file),
       })
       uploaded.push(image)
     } catch (error) {

@@ -10,6 +10,7 @@ import {
   shotImages,
 } from '@/db/schema'
 import { expectReturnedRow } from '@/lib/domain-errors'
+import { parseEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
 import {
   cleanupUncommittedUpload,
   type DatabaseTransaction,
@@ -19,10 +20,6 @@ import {
 import { generateAndUploadThumbnail } from '@/lib/server/thumbnails'
 import {
   entityTypeSchema,
-  imageBase64Schema,
-  imageFilenameSchema,
-  imageMimeTypeSchema,
-  MAX_IMAGE_BYTES,
   positiveIdSchema,
   thumbnailEntityTypeSchema,
 } from '@/lib/server-validation'
@@ -31,15 +28,6 @@ import { validateImageBuffer } from '@/lib/thumbnail-image'
 
 export type EntityType = 'beans' | 'gear' | 'coffee-shops' | 'shots' | 'visits'
 const MAX_IMAGES_PER_ENTITY = 20
-
-const uploadEntityImageSchema = z.object({
-  entityType: entityTypeSchema,
-  entityId: positiveIdSchema,
-  fileBase64: imageBase64Schema,
-  filename: imageFilenameSchema,
-  mimeType: imageMimeTypeSchema,
-  sizeBytes: z.number().int().positive().max(MAX_IMAGE_BYTES),
-})
 
 const entityImageIdSchema = z.object({
   entityType: entityTypeSchema,
@@ -121,7 +109,7 @@ async function getVisitImageCount(entityId: number): Promise<number> {
 }
 
 export const uploadEntityImage = createServerFn({ method: 'POST' })
-  .validator(uploadEntityImageSchema)
+  .validator(parseEntityImageUploadFormData)
   .handler(async ({ data }) => {
     if (
       (await getEntityImageCount(data.entityType, data.entityId)) >=
@@ -140,10 +128,7 @@ export const uploadEntityImage = createServerFn({ method: 'POST' })
       data.filename,
     )
 
-    const binaryData = Buffer.from(data.fileBase64, 'base64')
-    if (binaryData.byteLength !== data.sizeBytes) {
-      throw new Error('Image size does not match the uploaded data')
-    }
+    const binaryData = Buffer.from(await data.file.arrayBuffer())
     await validateImageBuffer(binaryData, data.mimeType)
     const blob = new Blob([binaryData], { type: data.mimeType })
 

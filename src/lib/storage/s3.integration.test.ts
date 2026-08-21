@@ -64,4 +64,21 @@ s3Describe('S3StorageProvider', () => {
     await provider.delete(storagePath)
     expect(await provider.exists(storagePath)).toBe(false)
   })
+
+  test('uploads an image above the multipart threshold as one object', async () => {
+    if (!provider) throw new Error('S3 test provider is unavailable')
+    const storagePath = 'beans/42/pixel-photo.jpg'
+    const bytes = new Uint8Array(5_547_900)
+
+    await provider.upload(
+      new Blob([bytes], { type: 'image/jpeg' }),
+      storagePath,
+    )
+
+    expect(await provider.listObjects('beans/42/pixel-photo.jpg')).toEqual([
+      { path: storagePath, sizeBytes: bytes.byteLength },
+    ])
+
+    await provider.delete(storagePath)
+  })
 })

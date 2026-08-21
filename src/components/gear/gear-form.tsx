@@ -19,7 +19,10 @@ import {
   createGear,
   researchMachineSettings,
 } from '@/lib/server/gear'
-import { uploadEntityImages } from '@/lib/upload-entity-images'
+import {
+  getEntityImageUploadFailureMessage,
+  uploadEntityImages,
+} from '@/lib/upload-entity-images'
 
 type CreatedGear = Awaited<ReturnType<typeof createGear>>
 
@@ -104,11 +107,10 @@ export function GearForm({
       })
 
       const uploadResult = await uploadEntityImages('gear', item.id, images)
-      if (uploadResult.failures.length > 0) {
-        toast.warning(
-          `Gear saved, but ${uploadResult.failures.length} ${uploadResult.failures.length === 1 ? 'picture' : 'pictures'} could not be uploaded`,
-        )
-      }
+      const failureMessage = getEntityImageUploadFailureMessage(
+        uploadResult.failures,
+      )
+      if (failureMessage) toast.warning(`Gear saved. ${failureMessage}`)
       await onCreated(item)
     },
     onError: (error) =>

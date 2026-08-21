@@ -1,11 +1,12 @@
 import {
   Check,
+  ChevronDown,
+  CircleAlert,
   ClipboardPaste,
   ImagePlus,
-  Images,
   Link2,
   Loader2,
-  Plus,
+  RotateCw,
   UploadCloud,
   X,
 } from 'lucide-react'
@@ -19,8 +20,12 @@ import {
   useRef,
   useState,
 } from 'react'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import {
   Dialog,
   DialogBody,
@@ -32,7 +37,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import type { ImageFile } from '@/hooks/useImageUpload'
 import { cn } from '@/lib/utils'
 
@@ -48,14 +52,56 @@ interface PictureUploadDialogProps {
   readonly onOpenFilePicker: () => void
   readonly prompt: string
   readonly previewAltPrefix: string
+  readonly uploadMode?: 'immediate' | 'queued'
   readonly isBusy?: boolean
   readonly statusText?: string
   readonly helperText?: ReactNode
   readonly footer?: ReactNode
+  readonly imageErrors?: readonly {
+    readonly preview: string
+    readonly filename: string
+    readonly message: string
+  }[]
+  readonly onRetryImage?: (image: ImageFile) => void | Promise<void>
 }
 
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'Could not add that picture'
+function messageFromValue(value: unknown): string | null {
+  if (typeof value === 'string' && value.trim()) return value
+  if (!value || typeof value !== 'object') return null
+
+  if ('message' in value && typeof value.message === 'string') {
+    return value.message.trim() || null
+  }
+  if ('error' in value && typeof value.error === 'string') {
+    return value.error.trim() || null
+  }
+  return null
+}
+
+async function errorMessage(error: unknown): Promise<string> {
+  const directMessage = messageFromValue(error)
+  if (directMessage) return directMessage
+
+  if (error instanceof Response) {
+    try {
+      const payload: unknown = await error.clone().json()
+      const responseMessage = messageFromValue(payload)
+      if (responseMessage) return responseMessage
+    } catch {
+      // Fall through to the response status when there is no JSON error body.
+    }
+
+    if (error.statusText) {
+      return `${error.status} ${error.statusText}`
+    }
+  }
+
+  return 'Could not add that picture'
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 export function PictureUploadDialog({
@@ -68,25 +114,31 @@ export function PictureUploadDialog({
   onOpenFilePicker,
   prompt,
   previewAltPrefix,
+  uploadMode = 'queued',
   isBusy = false,
   statusText,
   helperText,
   footer,
+  imageErrors = [],
+  onRetryImage,
 }: PictureUploadDialogProps) {
   const [open, setOpen] = useState(false)
+  const [urlOpen, setUrlOpen] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [isAwaitingPaste, setIsAwaitingPaste] = useState(false)
   const [imageUrl, setImageUrl] = useState('')
+  const [intakeError, setIntakeError] = useState<string | null>(null)
   const dropzoneRef = useRef<HTMLButtonElement>(null)
   const intakeBusy = isBusy || isImporting
 
   const addFiles = useCallback(
     async (files: readonly File[]) => {
+      setIntakeError(null)
       try {
         await onFilesAdded(files)
       } catch (error) {
-        toast.error(errorMessage(error))
+        setIntakeError(await errorMessage(error))
       }
     },
     [onFilesAdded],
@@ -123,6 +175,7 @@ export function PictureUploadDialog({
   }
 
   const promptForKeyboardPaste = () => {
+    setIntakeError(null)
     setIsAwaitingPaste(true)
     dropzoneRef.current?.focus()
   }
@@ -133,239 +186,238 @@ export function PictureUploadDialog({
       return
     }
 
+    setIntakeError(null)
     try {
       await onPasteFromClipboard()
       setIsAwaitingPaste(false)
-    } catch {
-      promptForKeyboardPaste()
+    } catch (error) {
+      setIsAwaitingPaste(true)
+      setIntakeError(await errorMessage(error))
+      dropzoneRef.current?.focus()
     }
   }
 
   const handleUrlImport = async () => {
     const url = imageUrl.trim()
     if (!url) return
+    setIntakeError(null)
     setIsImporting(true)
     try {
       await onImportFromUrl(url)
       setImageUrl('')
     } catch (error) {
-      toast.error(errorMessage(error))
+      setIntakeError(await errorMessage(error))
     } finally {
       setIsImporting(false)
     }
   }
 
-  const readyLabel = `${images.length} ${images.length === 1 ? 'picture' : 'pictures'} ready`
+  const errorByPreview = new Map(
+    imageErrors.map((error) => [error.preview, error]),
+  )
+  const attentionMessage = `${imageErrors.length} ${
+    imageErrors.length === 1 ? 'picture needs' : 'pictures need'
+  } attention. Open the uploader to retry.`
+  const readyLabel = `${images.length} ${
+    images.length === 1 ? 'picture' : 'pictures'
+  } added`
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen)
+    if (!nextOpen) {
+      setIsDragging(false)
+      setIsAwaitingPaste(false)
+      setIntakeError(null)
+      setUrlOpen(false)
+    }
+  }
 
   return (
-    <div className="space-y-4" aria-busy={intakeBusy}>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {images.map((image, index) => (
-          <div
-            key={image.preview}
-            className="group relative overflow-hidden rounded-xl border border-border bg-muted shadow-coffee"
-          >
-            <img
-              src={image.preview}
-              alt={`${previewAltPrefix} ${index + 1}`}
-              width={360}
-              height={360}
-              className="aspect-square w-full object-cover transition-transform duration-300 motion-safe:group-hover:scale-[1.02]"
-            />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-foreground/40 to-transparent" />
-            <button
-              type="button"
-              onClick={() => onRemoveImage(index)}
-              disabled={intakeBusy}
-              className="absolute right-2 top-2 flex size-9 items-center justify-center rounded-full border border-white/25 bg-foreground/75 text-background shadow-sm backdrop-blur-sm transition hover:bg-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-              aria-label={`Remove ${previewAltPrefix.toLowerCase()} picture ${index + 1}`}
-            >
-              <X className="size-4" />
-            </button>
-            <span className="absolute bottom-2 left-2 rounded-full bg-background/85 px-2.5 py-1 text-xs font-semibold text-foreground backdrop-blur-sm">
-              Picture {index + 1}
-            </span>
-          </div>
-        ))}
-
-        <Dialog
-          open={open}
-          onOpenChange={(nextOpen) => {
-            if (!nextOpen && intakeBusy) return
-            setOpen(nextOpen)
-            if (!nextOpen) {
-              setIsDragging(false)
-              setIsAwaitingPaste(false)
-            }
-          }}
-        >
-          <DialogTrigger
-            render={
-              <button
-                type="button"
-                disabled={intakeBusy}
+    <div className="space-y-3" aria-busy={intakeBusy}>
+      {images.length > 0 ? (
+        <ul className="grid grid-cols-3 gap-3 sm:grid-cols-5">
+          {images.map((image, index) => {
+            const imageError = errorByPreview.get(image.preview)
+            return (
+              <li
+                key={image.preview}
                 className={cn(
-                  'group flex min-h-40 w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-primary/35 bg-gradient-to-br from-primary/10 via-secondary/60 to-card p-5 text-center transition-all hover:-translate-y-0.5 hover:border-primary/65 hover:shadow-coffee focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-60',
-                  images.length === 0 && 'col-span-2 sm:col-span-3 sm:min-h-44',
-                )}
-              />
-            }
-          >
-            <span className="flex size-11 items-center justify-center rounded-full bg-primary/15 text-link transition-transform group-hover:scale-105">
-              {images.length > 0 ? (
-                <Plus className="size-5" />
-              ) : (
-                <ImagePlus className="size-5" />
-              )}
-            </span>
-            <span className="mt-3 font-display text-sm font-bold text-foreground">
-              {images.length > 0 ? 'Add another' : prompt}
-            </span>
-            {images.length === 0 ? (
-              <span className="mt-1 text-xs text-muted-foreground">
-                Drop, paste, browse, or import a URL
-              </span>
-            ) : null}
-          </DialogTrigger>
-
-          <DialogContent
-            className="max-h-[90vh] w-full grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-2xl"
-            showCloseButton={!intakeBusy}
-          >
-            <DialogHeader className="border-b border-border bg-gradient-to-r from-primary/12 via-card to-card px-5 py-5 pr-14 sm:px-6">
-              <div className="flex items-start gap-3">
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-link ring-1 ring-primary/15">
-                  <Images className="size-5" />
-                </span>
-                <div className="space-y-1">
-                  <DialogTitle className="font-display text-xl font-bold">
-                    Add pictures
-                  </DialogTitle>
-                  <DialogDescription>{prompt}</DialogDescription>
-                </div>
-              </div>
-            </DialogHeader>
-
-            <DialogBody className="space-y-5">
-              <button
-                ref={dropzoneRef}
-                type="button"
-                disabled={intakeBusy}
-                onClick={onOpenFilePicker}
-                onDragEnter={(event) => {
-                  event.preventDefault()
-                  if (!intakeBusy) setIsDragging(true)
-                }}
-                onDragOver={(event) => event.preventDefault()}
-                onDragLeave={(event) => {
-                  if (
-                    !event.currentTarget.contains(
-                      event.relatedTarget as Node | null,
-                    )
-                  ) {
-                    setIsDragging(false)
-                  }
-                }}
-                onDrop={handleDrop}
-                onPaste={handlePaste}
-                className={cn(
-                  'relative flex min-h-52 w-full flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-primary/35 bg-secondary/45 px-6 py-8 text-center transition-all hover:border-primary/65 hover:bg-primary/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-wait disabled:opacity-65',
-                  isDragging &&
-                    'scale-[1.01] border-primary bg-primary/12 shadow-coffee-strong',
-                  isAwaitingPaste &&
-                    'border-primary bg-primary/12 ring-2 ring-primary/20',
+                  'group relative overflow-hidden rounded-xl border border-border bg-muted',
+                  imageError && 'border-destructive',
                 )}
               >
-                <span className="absolute -right-10 -top-10 size-36 rounded-full bg-primary/10 blur-2xl" />
-                <span className="absolute -bottom-12 -left-8 size-32 rounded-full bg-coffee/10 blur-2xl" />
-                <span
-                  className={cn(
-                    'relative flex size-14 items-center justify-center rounded-2xl bg-card text-link shadow-coffee ring-1 ring-border transition-transform',
-                    isDragging && 'scale-110',
-                  )}
-                >
-                  {intakeBusy ? (
-                    <Loader2 className="size-6 animate-spin" />
-                  ) : (
-                    <UploadCloud className="size-6" />
-                  )}
-                </span>
-                <span className="relative mt-4 font-display text-lg font-bold text-foreground">
-                  {isDragging
-                    ? 'Drop them here'
-                    : isAwaitingPaste
-                      ? 'Paste your picture now'
-                      : 'Drop pictures here'}
-                </span>
-                <span className="relative mt-1 text-sm text-muted-foreground">
-                  {isAwaitingPaste
-                    ? 'Press Ctrl+V or Cmd+V'
-                    : 'or click to choose from your device'}
-                </span>
-                <span className="relative mt-4 rounded-full border border-border bg-card/80 px-3 py-1 text-xs font-semibold text-muted-foreground">
-                  JPG, PNG, WebP, HEIC · up to 10 MB
-                </span>
-              </button>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                disabled={intakeBusy}
-                onChange={(event) => {
-                  const files = Array.from(event.target.files ?? [])
-                  if (files.length > 0) void addFiles(files)
-                }}
-                className="sr-only"
-                tabIndex={-1}
-              />
-
-              <div className="flex items-center gap-3" aria-hidden="true">
-                <div className="h-px flex-1 bg-border" />
-                <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                  Or add another way
-                </span>
-                <div className="h-px flex-1 bg-border" />
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-[0.85fr_1.5fr]">
-                <Button
+                <img
+                  src={image.preview}
+                  alt={`${previewAltPrefix} ${index + 1}`}
+                  width={160}
+                  height={160}
+                  className="aspect-square w-full object-cover"
+                />
+                <button
                   type="button"
-                  variant="outline"
-                  className="h-auto min-h-24 justify-start rounded-xl px-4 py-3 text-left"
+                  onClick={() => onRemoveImage(index)}
                   disabled={intakeBusy}
-                  onClick={() => void handleClipboardButton()}
+                  className="absolute right-1 top-1 flex size-11 items-center justify-center rounded-full border border-white/30 bg-foreground/80 text-background shadow-sm backdrop-blur-sm transition-colors hover:bg-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 [@media(hover:hover)_and_(pointer:fine)]:size-8"
+                  aria-label={`Remove ${previewAltPrefix.toLowerCase()} picture ${index + 1}`}
                 >
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-                    <ClipboardPaste className="size-5" />
+                  <X className="size-4" />
+                </button>
+                {imageError ? (
+                  <span className="absolute bottom-1 left-1 flex size-7 items-center justify-center rounded-full bg-destructive text-white shadow-sm">
+                    <CircleAlert className="size-4" />
+                    <span className="sr-only">Upload failed</span>
                   </span>
-                  <span className="min-w-0">
-                    <span className="block font-display font-bold">
-                      {isAwaitingPaste ? 'Ready to paste' : 'Paste'}
-                    </span>
-                    <span className="block whitespace-normal text-xs font-medium text-muted-foreground">
-                      {isAwaitingPaste
-                        ? 'Press Ctrl+V or Cmd+V'
-                        : 'Use your clipboard'}
-                    </span>
-                  </span>
-                </Button>
+                ) : null}
+              </li>
+            )
+          })}
+        </ul>
+      ) : null}
 
-                <fieldset className="min-w-0 rounded-xl border border-border bg-card p-3">
-                  <legend className="sr-only">Add picture from URL</legend>
-                  <div className="mb-2 flex items-center gap-2 text-sm font-bold text-foreground">
-                    <span className="flex size-7 items-center justify-center rounded-md bg-accent text-accent-foreground">
-                      <Link2 className="size-3.5" />
-                    </span>
-                    Import from URL
-                  </div>
-                  <div className="flex min-w-0 gap-2">
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogTrigger
+          render={
+            <Button type="button" variant="outline" disabled={intakeBusy} />
+          }
+        >
+          {isBusy ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <ImagePlus className="size-4" />
+          )}
+          Add pictures
+        </DialogTrigger>
+
+        <DialogContent
+          className="max-h-[calc(100dvh-1rem)] max-w-[calc(100%-1rem)] sm:max-h-[calc(100dvh-2rem)] sm:max-w-xl"
+          showCloseButton
+        >
+          <DialogHeader>
+            <DialogTitle>Add pictures</DialogTitle>
+            <DialogDescription>
+              {prompt}. JPG, PNG, WebP or HEIC, up to 10 MB each.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogBody className="space-y-4">
+            {intakeError ? (
+              <div
+                className="flex items-start gap-3 rounded-xl border border-destructive/50 bg-destructive/10 p-3 text-destructive-text"
+                role="alert"
+              >
+                <CircleAlert className="mt-0.5 size-5 shrink-0" />
+                <p className="min-w-0 flex-1 text-sm font-semibold">
+                  {intakeError}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setIntakeError(null)}
+                  className="-m-2 flex size-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label="Dismiss error"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+            ) : null}
+
+            <button
+              ref={dropzoneRef}
+              type="button"
+              disabled={intakeBusy}
+              onClick={onOpenFilePicker}
+              onDragEnter={(event) => {
+                event.preventDefault()
+                if (!intakeBusy) setIsDragging(true)
+              }}
+              onDragOver={(event) => event.preventDefault()}
+              onDragLeave={(event) => {
+                if (
+                  !event.currentTarget.contains(
+                    event.relatedTarget as Node | null,
+                  )
+                ) {
+                  setIsDragging(false)
+                }
+              }}
+              onDrop={handleDrop}
+              onPaste={handlePaste}
+              className={cn(
+                'flex min-h-32 w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-input bg-secondary/35 px-5 py-5 text-center transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-wait disabled:opacity-60',
+                isDragging && 'border-primary bg-primary/10',
+                isAwaitingPaste && 'border-primary bg-primary/10',
+              )}
+            >
+              {intakeBusy ? (
+                <Loader2 className="size-6 animate-spin text-link" />
+              ) : (
+                <UploadCloud className="size-6 text-link" />
+              )}
+              <span className="mt-2 font-display text-base font-bold">
+                {isDragging
+                  ? 'Drop pictures here'
+                  : isAwaitingPaste
+                    ? 'Paste your picture now'
+                    : 'Choose pictures'}
+              </span>
+              <span className="mt-0.5 text-sm text-muted-foreground">
+                {isAwaitingPaste
+                  ? 'Press Ctrl+V or Cmd+V'
+                  : 'or drop them here'}
+              </span>
+            </button>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              disabled={intakeBusy}
+              onChange={(event) => {
+                const files = Array.from(event.target.files ?? [])
+                event.target.value = ''
+                if (files.length > 0) void addFiles(files)
+              }}
+              className="sr-only"
+              tabIndex={-1}
+            />
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full justify-start"
+              disabled={intakeBusy}
+              onClick={() => void handleClipboardButton()}
+            >
+              <ClipboardPaste className="size-4" />
+              {isAwaitingPaste ? 'Waiting for a pasted picture…' : 'Paste'}
+            </Button>
+
+            <Collapsible
+              open={urlOpen}
+              onOpenChange={setUrlOpen}
+              className="space-y-3"
+            >
+              <CollapsibleTrigger className="group flex min-h-11 w-full items-center gap-2 rounded-full px-3 text-left font-display text-sm font-bold text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <Link2 className="size-4" />
+                Add from URL
+                <ChevronDown className="ml-auto size-4 transition-transform group-data-open:rotate-180" />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 motion-reduce:animate-none">
+                <div className="space-y-2 rounded-xl border border-border bg-secondary/35 p-3">
+                  <label
+                    htmlFor="picture-upload-url"
+                    className="text-sm font-semibold"
+                  >
+                    Picture URL
+                  </label>
+                  <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
                     <Input
+                      id="picture-upload-url"
                       type="url"
                       inputMode="url"
-                      aria-label="Picture URL"
-                      placeholder="https://…"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      placeholder="https://example.com/picture.jpg"
                       value={imageUrl}
                       disabled={intakeBusy}
                       onChange={(event) => setImageUrl(event.target.value)}
@@ -380,87 +432,136 @@ export function PictureUploadDialog({
                     <Button
                       type="button"
                       variant="secondary"
-                      size="icon"
-                      className="shrink-0"
                       disabled={intakeBusy || !imageUrl.trim()}
                       onClick={() => void handleUrlImport()}
-                      aria-label="Import picture URL"
                     >
                       {isImporting ? (
                         <Loader2 className="size-4 animate-spin" />
                       ) : (
-                        <Plus className="size-4" />
+                        <Link2 className="size-4" />
                       )}
+                      Add
                     </Button>
                   </div>
-                </fieldset>
-              </div>
-
-              {images.length > 0 ? (
-                <div className="rounded-xl border border-border bg-secondary/35 p-3">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <span className="text-sm font-bold text-foreground">
-                      Ready to use
-                    </span>
-                    <span className="text-xs font-semibold text-muted-foreground">
-                      {readyLabel}
-                    </span>
-                  </div>
-                  <ScrollArea orientation="horizontal" className="w-full">
-                    <div className="flex gap-2 pb-3">
-                      {images.map((image, index) => (
-                        <div key={image.preview} className="relative shrink-0">
-                          <img
-                            src={image.preview}
-                            alt={`${previewAltPrefix} ${index + 1}`}
-                            width={80}
-                            height={80}
-                            className="size-16 rounded-lg object-cover ring-1 ring-border sm:size-20"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => onRemoveImage(index)}
-                            disabled={intakeBusy}
-                            className="absolute -right-1 -top-1 flex size-6 items-center justify-center rounded-full bg-foreground text-background shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-                            aria-label={`Remove ${previewAltPrefix.toLowerCase()} picture ${index + 1}`}
-                          >
-                            <X className="size-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
                 </div>
-              ) : null}
-            </DialogBody>
+              </CollapsibleContent>
+            </Collapsible>
 
-            <DialogFooter className="m-0 gap-3 rounded-b-xl px-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-              <div className="min-w-0 flex-1 text-xs text-muted-foreground">
-                {intakeBusy ? (
-                  <span className="inline-flex items-center gap-2 font-semibold text-foreground">
-                    <Loader2 className="size-3.5 animate-spin" />
-                    {statusText ?? 'Adding pictures…'}
-                  </span>
-                ) : (
-                  (helperText ?? 'Tip: paste a picture anywhere in this dialog')
-                )}
-              </div>
-              <Button
-                type="button"
-                onClick={() => setOpen(false)}
-                disabled={intakeBusy}
-                className="shrink-0"
-              >
-                <Check className="size-4" />
-                Done
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+            {images.length > 0 ? (
+              <ul className="space-y-2" aria-label="Pictures to add">
+                {images.map((image, index) => {
+                  const imageError = errorByPreview.get(image.preview)
+                  const isWorking = isBusy && !imageError
+                  return (
+                    <li
+                      key={image.preview}
+                      className={cn(
+                        'grid grid-cols-[3.5rem_minmax(0,1fr)] gap-3 rounded-xl border border-border p-3 sm:grid-cols-[3.5rem_minmax(0,1fr)_auto] sm:items-center',
+                        imageError && 'border-destructive/60 bg-destructive/5',
+                      )}
+                    >
+                      <img
+                        src={image.preview}
+                        alt={`${previewAltPrefix} ${index + 1}`}
+                        width={56}
+                        height={56}
+                        className="size-14 rounded-lg object-cover ring-1 ring-border"
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold">
+                          {image.file.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatFileSize(image.file.size)}
+                        </p>
+                        {imageError ? (
+                          <p
+                            className="mt-1 text-sm font-medium text-destructive-text"
+                            role="alert"
+                          >
+                            {imageError.message}
+                          </p>
+                        ) : (
+                          <p
+                            className={cn(
+                              'mt-1 inline-flex items-center gap-1.5 text-sm font-semibold',
+                              isWorking
+                                ? 'text-muted-foreground'
+                                : 'text-positive-text',
+                            )}
+                          >
+                            {isWorking ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                            ) : (
+                              <Check className="size-3.5" />
+                            )}
+                            {isWorking
+                              ? (statusText ??
+                                (uploadMode === 'immediate'
+                                  ? 'Uploading…'
+                                  : 'Saving…'))
+                              : 'Added'}
+                          </p>
+                        )}
+                      </div>
+                      <div className="col-start-2 flex flex-wrap gap-2 sm:col-start-3 sm:row-start-1">
+                        {imageError && onRetryImage ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={intakeBusy}
+                            onClick={() => void onRetryImage(image)}
+                          >
+                            <RotateCw className="size-4" />
+                            Retry
+                          </Button>
+                        ) : null}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={intakeBusy}
+                          onClick={() => onRemoveImage(index)}
+                        >
+                          <X className="size-4" />
+                          Remove
+                        </Button>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            ) : null}
+          </DialogBody>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {!open && imageErrors.length > 0 ? (
+        <p className="text-sm font-semibold text-destructive-text" role="alert">
+          {attentionMessage}
+        </p>
+      ) : helperText ? (
+        <div className="text-sm text-muted-foreground">{helperText}</div>
+      ) : null}
 
       <div className="sr-only" role="status" aria-live="polite">
-        {statusText ?? (isImporting ? 'Downloading picture' : readyLabel)}
+        {statusText ??
+          (isImporting
+            ? 'Downloading picture'
+            : imageErrors.length > 0
+              ? attentionMessage
+              : readyLabel)}
       </div>
       {footer}
     </div>
