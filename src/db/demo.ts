@@ -29,6 +29,12 @@ export const getDb = createServerOnlyFn((): Database => {
   return instance
 })
 
+/**
+ * Mirrors the `db` export of `@/db`, which `vite.config.ts` aliases to this
+ * module for demo builds. Knip cannot follow that build-conditional alias.
+ *
+ * @public
+ */
 export const db = new Proxy({} as Database, {
   get: (_target, property) => Reflect.get(getDb(), property),
 })
