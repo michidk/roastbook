@@ -98,7 +98,6 @@ const SETTINGS_SECTIONS = [
   { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'map', label: 'Map', icon: MapIcon },
   { id: 'taste-profile', label: 'Taste profile', icon: Sparkles },
-  { id: 'taste-tags', label: 'Taste tags', icon: Tags },
   { id: 'ai', label: 'AI', icon: Bot },
   { id: 'storage', label: 'Storage', icon: HardDrive },
   { id: 'about', label: 'About', icon: Info },
@@ -501,46 +500,50 @@ function SettingsPage() {
         ) : null}
 
         {activeSection === 'taste-profile' ? (
-          <SettingsPanelSection
-            title="Taste profile"
-            description="Choose which tasting inputs Roastbook captures for brews and café visits. A disabled input is hidden everywhere, including on entries that already recorded it."
-            action={
-              tasteProfileMutation.isSaving ? (
-                <Loader2 className="size-5 animate-spin text-link" />
-              ) : (
-                <Sparkles className="size-5 text-link" aria-hidden="true" />
-              )
-            }
-          >
-            <TasteProfileSettings
-              config={settings.tasteProfile}
-              disabled={tasteProfileMutation.isSaving}
-              onToggle={(field: TasteProfileField, enabled) =>
-                void tasteProfileMutation.save({
-                  ...settings.tasteProfile,
-                  [field]: enabled,
-                })
-              }
-              onModeChange={(mode: TasteProfileMode) =>
-                void tasteProfileMutation.save(
-                  withTasteProfileMode(settings.tasteProfile, mode),
+          <>
+            <SettingsPanelSection
+              title="Taste profile"
+              description="Choose which tasting inputs Roastbook captures for brews and café visits. A disabled input is hidden everywhere, including on entries that already recorded it."
+              action={
+                tasteProfileMutation.isSaving ? (
+                  <Loader2 className="size-5 animate-spin text-link" />
+                ) : (
+                  <Sparkles className="size-5 text-link" aria-hidden="true" />
                 )
               }
-            />
-          </SettingsPanelSection>
-        ) : null}
+            >
+              <TasteProfileSettings
+                config={settings.tasteProfile}
+                disabled={tasteProfileMutation.isSaving}
+                onToggle={(field: TasteProfileField, enabled) =>
+                  void tasteProfileMutation.save({
+                    ...settings.tasteProfile,
+                    [field]: enabled,
+                  })
+                }
+                onModeChange={(mode: TasteProfileMode) =>
+                  void tasteProfileMutation.save(
+                    withTasteProfileMode(settings.tasteProfile, mode),
+                  )
+                }
+              />
+            </SettingsPanelSection>
 
-        {activeSection === 'taste-tags' ? (
-          <SettingsPanelSection
-            title="Taste tags"
-            description="The tags offered when rating shots and café visits. Removing a tag also removes it from existing entries."
-            action={<Tags className="size-5 text-link" aria-hidden="true" />}
-          >
-            <TasteTagSettings
-              tags={tasteTags}
-              onChanged={() => router.invalidate()}
-            />
-          </SettingsPanelSection>
+            {settings.tasteProfile.flavorTags ? (
+              <SettingsPanelSection
+                title="Taste tags"
+                description="The tags offered when rating brews and café visits. Removing a tag also removes it from existing entries."
+                action={
+                  <Tags className="size-5 text-link" aria-hidden="true" />
+                }
+              >
+                <TasteTagSettings
+                  tags={tasteTags}
+                  onChanged={() => router.invalidate()}
+                />
+              </SettingsPanelSection>
+            ) : null}
+          </>
         ) : null}
 
         {activeSection === 'ai' ? <AiSettings stats={aiStats} /> : null}
