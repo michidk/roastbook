@@ -272,6 +272,52 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
 
   const activeBeans = beans.slice(0, 4)
   const gearId = new Map(gear.map((item) => [item.name, item.id]))
+  const parameterHistory = [
+    // Newest first. Each coffee follows a small dial-in story so its charts
+    // show deliberate adjustments instead of repeating modulo patterns.
+    [
+      [18.2, 40.8, 12, 29, 93],
+      [18.1, 40.2, 12, 28, 93],
+      [18.1, 39.6, 11, 32, 93],
+      [18.0, 39.2, 12, 27, 93],
+      [18.0, 38.5, 12, 28, 92],
+      [17.9, 38.1, 13, 26, 92],
+      [18.0, 38.8, 12, 30, 92],
+      [17.8, 37.4, 13, 25, 92],
+      [17.9, 38.0, 13, 27, 92],
+      [17.7, 36.8, 14, 24, 92],
+    ],
+    [
+      [18.5, 42.0, 15, 31, 94],
+      [18.5, 41.6, 15, 30, 94],
+      [18.4, 40.8, 14, 34, 94],
+      [18.4, 41.2, 15, 29, 93],
+      [18.3, 40.4, 16, 26, 93],
+      [18.3, 40.0, 16, 27, 93],
+      [18.2, 39.2, 17, 24, 92],
+      [18.2, 39.8, 16, 28, 92],
+    ],
+    [
+      [16.0, null, 24, 165, 92],
+      [16.0, null, 24, 168, 92],
+      [15.8, null, 23, 178, 93],
+      [15.8, null, 24, 170, 93],
+      [15.5, null, 25, 158, 92],
+      [15.5, null, 25, 155, 92],
+      [15.0, null, 26, 148, 91],
+    ],
+    [
+      [15.2, null, 28, 182, 95],
+      [15.2, null, 28, 180, 95],
+      [15.0, null, 27, 195, 95],
+      [15.0, null, 28, 184, 94],
+      [15.0, null, 29, 172, 94],
+      [14.8, null, 30, 162, 93],
+      [15.0, null, 29, 176, 94],
+      [14.8, null, 31, 154, 93],
+    ],
+  ] as const
+  const parameterOffsets = [0, 0, 0, 0]
   const brewHistory = [
     // Recent brews are intentionally uneven: gaps, dial-in pairs, and weekends.
     [0, 7, 42, 'Espresso', 0, 4, 'Aurora One', 'Orbit Mill'],
@@ -318,6 +364,15 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
         ) => {
           const isEspresso = method === 'Espresso'
           const brewedAt = daysAgoAt(day, hour, minute)
+          const parameterIndex = required(
+            parameterOffsets[beanIndex],
+            'Brew parameter offset missing',
+          )
+          parameterOffsets[beanIndex] = parameterIndex + 1
+          const [dose, brewYield, grind, brewTime, temperature] = required(
+            parameterHistory[beanIndex]?.[parameterIndex],
+            'Brew parameter history missing',
+          )
           return {
             beanId: required(activeBeans[beanIndex], 'Bean missing').id,
             machineId: required(gearId.get(brewer), 'Brewer missing'),
@@ -329,17 +384,14 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
               methodId.get(method),
               `${method} method missing`,
             ),
-            doseGrams: isEspresso
-              ? (17.7 + (index % 4) * 0.2).toFixed(1)
-              : (15 + (index % 3) * 0.5).toFixed(1),
+            doseGrams: dose.toFixed(1),
             brewWaterGrams: isEspresso
               ? null
               : String(method === 'AeroPress' ? 220 : 250),
-            yieldGrams: isEspresso ? (36 + (index % 6) * 0.8).toFixed(1) : null,
-            shotTimeSeconds: String(
-              isEspresso ? 25 + (index % 8) : 150 + (index % 5) * 12,
-            ),
-            brewTemperatureCelsius: String(isEspresso ? 93 : 92 + (index % 4)),
+            yieldGrams: brewYield?.toFixed(1) ?? null,
+            grindSetting: String(grind),
+            shotTimeSeconds: String(brewTime),
+            brewTemperatureCelsius: String(temperature),
             rating,
             notes: [
               'Sweet, balanced, and easy to drink.',
