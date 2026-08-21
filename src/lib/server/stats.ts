@@ -5,6 +5,7 @@ import { normalizeRatingAverages, toNullableNumber } from "@/lib/stats-number"
 import { beans, gear, shots, cafeVisits, coffeeShops, recipeGear } from "@/db/schema"
 import { eq, count, sql, gte, desc, isNotNull, and } from "drizzle-orm"
 import { toDisplayableDatabaseError } from "@/lib/server/database-error"
+import { getVisitsAndPlacesStats } from "@/lib/server/stats-visits"
 
 export const getDashboardStats = createServerFn({ method: "GET" }).handler(
   async () => {
@@ -81,6 +82,7 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
       brewingAverages,
       recentActivity,
       firstShotDate,
+      visitsAndPlaces,
     ] = await Promise.all([
       db.select({ count: sql<number>`count(*)::int` }).from(shots),
 
@@ -193,6 +195,8 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
         .orderBy(sql`date(${shots.createdAt})`),
 
       db.select({ date: sql<Date>`min(${shots.createdAt})` }).from(shots),
+
+      getVisitsAndPlacesStats(startOfMonth),
     ])
 
     const daysSinceFirst = firstShotDate[0]?.date
@@ -240,6 +244,7 @@ export const getDetailedStats = createServerFn({ method: "GET" }).handler(
         },
       },
       activity: fillDailyActivity(recentActivity, now),
+      ...visitsAndPlaces,
     }
   }
 )

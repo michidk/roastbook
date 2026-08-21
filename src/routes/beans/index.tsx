@@ -12,6 +12,7 @@ import { ListPending } from "@/components/route-pending"
 import { EmptyState } from "@/components/EmptyState"
 import { thumbnailUrl } from "@/lib/image-url"
 import { ResilientImage } from "@/components/resilient-image"
+import { SectionTabs, beansTabs } from "@/components/section-tabs"
 
 export const Route = createFileRoute("/beans/")({
   loader: () => getBeans(),
@@ -66,6 +67,8 @@ function BeansPage() {
           </Link>
         </Button>
       </header>
+
+      <SectionTabs tabs={beansTabs} label="Beans sections" />
 
       {beans.length === 0 ? (
         <EmptyState

@@ -17,3 +17,23 @@ export const getRecipes = createServerFn({ method: "GET" }).handler(async () => 
   })
 })
 
+export const createRecipe = createServerFn({ method: "POST" })
+  .validator(
+    (data: {
+      name: string
+      defaultDoseGrams?: string
+      defaultYieldGrams?: string
+      defaultBrewTimeSeconds?: number
+      defaultGrindSetting?: string
+      defaultWaterTempCelsius?: string
+      defaultPressure?: string
+      notes?: string
+    }) => data
+  )
+  .handler(async ({ data }) => {
+    const [recipe] = await db
+      .insert(recipes)
+      .values({ ...data, brewingMethod: "espresso" })
+      .returning()
+    return recipe
+  })

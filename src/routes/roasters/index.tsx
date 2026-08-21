@@ -19,6 +19,7 @@ import { ListPending } from "@/components/route-pending"
 import { EmptyState } from "@/components/EmptyState"
 import { SortableTableHead } from "@/components/sortable-table-head"
 import { PaginationControls } from "@/components/pagination-controls"
+import { SectionTabs, beansTabs } from "@/components/section-tabs"
 
 export const Route = createFileRoute("/roasters/")({
   loader: () => getRoasters(),
@@ -117,6 +118,8 @@ function RoastersPage() {
           </Link>
         </Button>
       </header>
+
+      <SectionTabs tabs={beansTabs} label="Beans sections" />
 
       {roasters.length === 0 ? (
         <EmptyState

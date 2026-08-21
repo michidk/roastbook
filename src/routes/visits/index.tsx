@@ -1,13 +1,34 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { Plus, UtensilsCrossed, Star } from "lucide-react"
+import {
+  ChevronRight,
+  Heart,
+  MapPin,
+  MapPinOff,
+  Plus,
+  Star,
+  UtensilsCrossed,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/EmptyState"
+import { CoffeeShopMap } from "@/components/coffee-shops/coffee-shop-map"
 import { getCafeVisits } from "@/lib/server/cafe-visits"
+import { getCoffeeShops } from "@/lib/server/coffee-shops"
 import { RouteError } from "@/components/route-error"
 import { ListPending } from "@/components/route-pending"
 
+/**
+ * Places and visits share one page: a visit is always at a place
+ * (`cafeVisits.coffeeShopId`), so splitting them across two routes made you
+ * navigate away just to answer "where was that?".
+ */
 export const Route = createFileRoute("/visits/")({
-  loader: () => getCafeVisits(),
+  loader: async () => {
+    const [visits, coffeeShops] = await Promise.all([
+      getCafeVisits(),
+      getCoffeeShops(),
+    ])
+    return { visits, coffeeShops }
+  },
   component: VisitsPage,
   pendingComponent: ListPending,
   errorComponent: ({ error }) => (
@@ -16,17 +37,37 @@ export const Route = createFileRoute("/visits/")({
 })
 
 type Visit = Awaited<ReturnType<typeof getCafeVisits>>[number]
+type CoffeeShop = Awaited<ReturnType<typeof getCoffeeShops>>[number]
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
   day: "numeric",
   month: "short",
 })
 
+function SectionHeading({
+  title,
+  count,
+  action,
+}: {
+  title: string
+  count: number
+  action?: React.ReactNode
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <h2 className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
+        {title} · {count}
+      </h2>
+      {action}
+    </div>
+  )
+}
+
 function VisitsPage() {
-  const visits = Route.useLoaderData()
+  const { visits, coffeeShops } = Route.useLoaderData()
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
@@ -44,23 +85,105 @@ function VisitsPage() {
         </Button>
       </header>
 
-      {visits.length === 0 ? (
-        <EmptyState
-          icon={UtensilsCrossed}
-          title="No visits logged yet"
-          description="Track your cafe visits and coffee experiences"
-          actionLabel="Log a visit"
-          actionHref="/visits/new"
-          actionSearch={{ coffeeShopId: undefined }}
+      <section className="space-y-3">
+        <SectionHeading
+          title="Places"
+          count={coffeeShops.length}
+          action={
+            <Button asChild variant="outline" size="sm">
+              <Link to="/coffee-shops/new">
+                <Plus className="h-4 w-4" />
+                Add a place
+              </Link>
+            </Button>
+          }
         />
-      ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {visits.map((visit) => (
-            <VisitCard key={visit.id} visit={visit} />
-          ))}
-        </div>
-      )}
+
+        {coffeeShops.length === 0 ? (
+          <EmptyState
+            icon={MapPin}
+            title="No places added yet"
+            description="Add your favorite cafes and coffee spots"
+            actionLabel="Add a place"
+            actionHref="/coffee-shops/new"
+          />
+        ) : (
+          <div className="space-y-4">
+            <CoffeeShopMap
+              coffeeShops={coffeeShops}
+              heightClassName="h-[220px] md:h-[280px]"
+            />
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {coffeeShops.map((coffeeShop) => (
+                <PlaceCard key={coffeeShop.id} coffeeShop={coffeeShop} />
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <SectionHeading title="Visits" count={visits.length} />
+
+        {visits.length === 0 ? (
+          <EmptyState
+            icon={UtensilsCrossed}
+            title="No visits logged yet"
+            description="Track your cafe visits and coffee experiences"
+            actionLabel="Log a visit"
+            actionHref="/visits/new"
+            actionSearch={{ coffeeShopId: undefined }}
+          />
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {visits.map((visit) => (
+              <VisitCard key={visit.id} visit={visit} />
+            ))}
+          </div>
+        )}
+      </section>
     </div>
+  )
+}
+
+function PlaceCard({ coffeeShop }: { coffeeShop: CoffeeShop }) {
+  const hasCoordinates =
+    coffeeShop.latitude !== null && coffeeShop.longitude !== null
+  const LocationIcon = hasCoordinates ? MapPin : MapPinOff
+  const location = [coffeeShop.city, coffeeShop.country]
+    .filter(Boolean)
+    .join(", ")
+
+  return (
+    <Link
+      to="/coffee-shops/$coffeeShopId"
+      params={{ coffeeShopId: String(coffeeShop.id) }}
+      className="group flex items-center gap-3 rounded-3xl bg-card p-4 shadow-coffee transition-transform hover:-translate-y-0.5"
+    >
+      <span
+        className={
+          hasCoordinates
+            ? "flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+            : "flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
+        }
+      >
+        <LocationIcon className="size-4" />
+      </span>
+      <span className="min-w-0 flex-1 space-y-0.5">
+        <span className="flex items-center gap-1.5">
+          <span className="truncate font-display text-base font-bold text-foreground">
+            {coffeeShop.name}
+          </span>
+          {coffeeShop.isFavorite && (
+            <Heart className="size-3.5 shrink-0 fill-current text-destructive" />
+          )}
+        </span>
+        <span className="block truncate text-sm text-muted-foreground">
+          {location || (hasCoordinates ? "Location pinned" : "No location set")}
+        </span>
+      </span>
+      <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-1" />
+    </Link>
   )
 }
 

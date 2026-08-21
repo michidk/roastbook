@@ -44,8 +44,15 @@ export function BeanForm({
   const [loadedRoasters, setLoadedRoasters] = useState<readonly RoasterOption[]>(
     []
   )
-  const { images, fileInputRef, handleImageSelect, removeImage, openFilePicker } =
-    useImageUpload()
+  const {
+    images,
+    fileInputRef,
+    addFiles,
+    importFromUrl,
+    pasteFromClipboard,
+    removeImage,
+    openFilePicker,
+  } = useImageUpload()
 
   const form = useFormState({
     name: initialName,
@@ -169,18 +176,20 @@ export function BeanForm({
 
   return (
     <EntityForm onSubmit={handleSubmit}>
-      <FormSection title="Photos">
+      <FormSection title="Pictures">
         <ImageUploadField
           images={images}
           fileInputRef={fileInputRef}
-          onImageSelect={handleImageSelect}
+          onFilesAdded={addFiles}
+          onImportFromUrl={importFromUrl}
+          onPasteFromClipboard={pasteFromClipboard}
           onRemoveImage={removeImage}
           onOpenFilePicker={openFilePicker}
-          prompt="Click to add photos of the coffee bag"
+          prompt="Add pictures of the coffee bag"
           previewAltPrefix="Bean"
           helperText={
             visionEnabled
-              ? "AI can extract bean info from your photos"
+              ? "AI can extract bean info from your pictures"
               : undefined
           }
           footer={

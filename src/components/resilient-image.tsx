@@ -126,7 +126,7 @@ export function ResilientImage({
         )}
       >
         <ImageOff aria-hidden className="size-5" />
-        <span className="sr-only">{fallbackLabel}</span>
+        {alt ? <span className="sr-only">{fallbackLabel}</span> : null}
       </div>
     )
   }

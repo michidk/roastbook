@@ -30,8 +30,15 @@ export function GearForm({
   submitLabel = "Add Gear",
 }: GearFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { images, fileInputRef, handleImageSelect, removeImage, openFilePicker } =
-    useImageUpload()
+  const {
+    images,
+    fileInputRef,
+    addFiles,
+    importFromUrl,
+    pasteFromClipboard,
+    removeImage,
+    openFilePicker,
+  } = useImageUpload()
 
   const form = useFormState({
     name: initialName,
@@ -93,14 +100,16 @@ export function GearForm({
 
   return (
     <EntityForm onSubmit={handleSubmit}>
-      <FormSection title="Photos">
+      <FormSection title="Pictures">
         <ImageUploadField
           images={images}
           fileInputRef={fileInputRef}
-          onImageSelect={handleImageSelect}
+          onFilesAdded={addFiles}
+          onImportFromUrl={importFromUrl}
+          onPasteFromClipboard={pasteFromClipboard}
           onRemoveImage={removeImage}
           onOpenFilePicker={openFilePicker}
-          prompt="Click to add photos of your equipment"
+          prompt="Add pictures of your equipment"
           previewAltPrefix="Gear"
         />
       </FormSection>

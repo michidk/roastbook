@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { Bean, Cog, MapPin } from "lucide-react"
+import { Bean, Cog, Coffee, MapPin, UtensilsCrossed } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { getDashboardStats, getRecentShots } from "@/lib/server/stats"
@@ -133,6 +133,12 @@ function Dashboard() {
             <CardTitle>Quick add</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2.5">
+            <QuickAddRow icon={Coffee} label="Log a shot" href="/shots/new" />
+            <QuickAddRow
+              icon={UtensilsCrossed}
+              label="Log a visit"
+              href="/visits/new"
+            />
             <QuickAddRow icon={Bean} label="Add beans" href="/beans/new" />
             <QuickAddRow icon={Cog} label="Add gear" href="/gear/new" />
             <QuickAddRow icon={MapPin} label="Add a coffee shop" href="/coffee-shops/new" />

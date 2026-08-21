@@ -24,7 +24,7 @@ export function EntityCreateDialog({
 }: EntityCreateDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[88vh] flex-col gap-4 sm:max-w-2xl">
+      <DialogContent className="flex max-h-[88vh] flex-col gap-4 bg-background sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description ? (

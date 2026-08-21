@@ -40,7 +40,9 @@ describe("mobile controls", () => {
       <ImageUploadField
         images={[image]}
         fileInputRef={createRef<HTMLInputElement>()}
-        onImageSelect={() => {}}
+        onFilesAdded={async () => [image]}
+        onImportFromUrl={async () => image}
+        onPasteFromClipboard={async () => [image]}
         onRemoveImage={() => {}}
         onOpenFilePicker={() => {}}
         prompt="Add images"
@@ -59,7 +61,13 @@ describe("mobile controls", () => {
       <ImageUploadField
         images={[]}
         fileInputRef={createRef<HTMLInputElement>()}
-        onImageSelect={() => {}}
+        onFilesAdded={async () => []}
+        onImportFromUrl={async () => ({
+          file: new File(["image"], "coffee.png", { type: "image/png" }),
+          preview: "blob:coffee",
+          base64: "aW1hZ2U=",
+        })}
+        onPasteFromClipboard={async () => []}
         onRemoveImage={() => {}}
         onOpenFilePicker={() => {}}
         prompt="Add images"

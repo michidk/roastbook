@@ -1,12 +1,23 @@
+import { useState } from "react"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { Plus, Coffee } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { EmptyState } from "@/components/EmptyState"
 import { ShotsTable } from "@/components/ShotsTable"
+import { ShotsViewToggle, groupShotsByBean } from "@/components/shots-overview"
+import { ResilientImage } from "@/components/resilient-image"
+import { thumbnailUrl } from "@/lib/image-url"
 import { getShots } from "@/lib/server/shots"
 import { RouteError } from "@/components/route-error"
 import { ListPending } from "@/components/route-pending"
+import { SectionTabs, shotsTabs } from "@/components/section-tabs"
 
 export const Route = createFileRoute("/shots/")({
   loader: () => getShots(),
@@ -19,6 +30,8 @@ export const Route = createFileRoute("/shots/")({
 
 function ShotsPage() {
   const shots = Route.useLoaderData()
+  const [grouped, setGrouped] = useState(false)
+  const shotGroups = grouped ? groupShotsByBean(shots) : []
 
   return (
     <div className="space-y-6">
@@ -31,13 +44,20 @@ function ShotsPage() {
             Your espresso shot history
           </p>
         </div>
-        <Button asChild>
-          <Link to="/shots/new">
-            <Plus className="h-4 w-4" />
-            Log a shot
-          </Link>
-        </Button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {shots.length > 0 && (
+            <ShotsViewToggle grouped={grouped} onGroupedChange={setGrouped} />
+          )}
+          <Button asChild>
+            <Link to="/shots/new">
+              <Plus className="h-4 w-4" />
+              Log a shot
+            </Link>
+          </Button>
+        </div>
       </header>
+
+      <SectionTabs tabs={shotsTabs} label="Shots sections" />
 
       {shots.length === 0 ? (
         <EmptyState
@@ -47,6 +67,53 @@ function ShotsPage() {
           actionLabel="Log your first shot"
           actionHref="/shots/new"
         />
+      ) : grouped ? (
+        <div className="space-y-4">
+          {shotGroups.map((group) => {
+            const headingId = `shots-${group.key}`
+            const thumbnail =
+              group.bean?.images?.find((image) => image.isThumbnail) ?? group.bean?.images?.[0]
+
+            return (
+              <section key={group.key} aria-labelledby={headingId}>
+                <Card>
+                  <CardHeader className="items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <ResilientImage
+                        src={thumbnail ? thumbnailUrl(thumbnail.storagePath) : undefined}
+                        alt=""
+                        width={48}
+                        height={48}
+                        className="h-12 w-12 shrink-0 rounded-xl object-cover"
+                      />
+                      <CardTitle id={headingId} className="text-lg leading-tight">
+                        {group.bean ? (
+                          <Link
+                            to="/beans/$beanId"
+                            params={{ beanId: String(group.bean.id) }}
+                            className="rounded-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            {group.label}
+                          </Link>
+                        ) : (
+                          group.label
+                        )}
+                      </CardTitle>
+                    </div>
+                    <CardAction className="self-center">
+                      <span className="text-sm font-semibold text-muted-foreground">
+                        {group.shots.length} shot{group.shots.length === 1 ? "" : "s"}
+                      </span>
+                    </CardAction>
+                  </CardHeader>
+                  <CardContent>
+                    <ShotsTable shots={group.shots} hideBean />
+                  </CardContent>
+                </Card>
+              </section>
+            )
+          })}
+        </div>
       ) : (
         <Card>
           <CardContent className="pt-6">

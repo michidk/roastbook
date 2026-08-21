@@ -18,6 +18,9 @@ import { setImageAsThumbnail, deleteEntityImage } from "@/lib/server/images"
 import { thumbnailUrl } from "@/lib/image-url"
 import { cn } from "@/lib/utils"
 import { ResilientImage } from "@/components/resilient-image"
+import { ImageUploadField } from "@/components/image-upload-field"
+import { useImageUpload, type ImageFile } from "@/hooks/useImageUpload"
+import { uploadEntityImage } from "@/lib/server/images"
 
 interface EntityImage {
   id: number
@@ -42,8 +45,41 @@ export function EntityImageGallery({
 }: EntityImageGalleryProps) {
   const [isSettingThumbnail, setIsSettingThumbnail] = useState<number | null>(null)
   const [isDeletingImage, setIsDeletingImage] = useState<number | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const {
+    images: queuedImages,
+    fileInputRef,
+    addFiles,
+    importFromUrl,
+    pasteFromClipboard,
+    removeImage,
+    clearImages,
+    openFilePicker,
+  } = useImageUpload()
 
-  if (images.length === 0) return null
+  if (images.length === 0 && readOnly) return null
+
+  const uploadPictures = async (pictures: readonly ImageFile[]) => {
+    setIsUploading(true)
+    try {
+      for (const picture of pictures) {
+        await uploadEntityImage({
+          data: {
+            entityType,
+            entityId,
+            fileBase64: picture.base64,
+            filename: picture.file.name,
+            mimeType: picture.file.type,
+            sizeBytes: picture.file.size,
+          },
+        })
+      }
+      clearImages()
+      await onImagesChange()
+    } finally {
+      setIsUploading(false)
+    }
+  }
 
   const handleSetThumbnail = async (imageId: number) => {
     setIsSettingThumbnail(imageId)
@@ -74,10 +110,10 @@ export function EntityImageGallery({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Photos</CardTitle>
+        <CardTitle>Pictures</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+      <CardContent className="space-y-4">
+        {images.length > 0 && <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           {images.map((image) => (
             <div key={image.id} className="group relative">
               <ResilientImage
@@ -114,7 +150,7 @@ export function EntityImageGallery({
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Delete this photo?</AlertDialogTitle>
+                        <AlertDialogTitle>Delete this picture?</AlertDialogTitle>
                         <AlertDialogDescription>
                           This action cannot be undone.
                         </AlertDialogDescription>
@@ -131,7 +167,33 @@ export function EntityImageGallery({
               )}
             </div>
           ))}
-        </div>
+        </div>}
+        {!readOnly && (
+          <ImageUploadField
+            images={queuedImages}
+            fileInputRef={fileInputRef}
+            onFilesAdded={async (files) => {
+              const pictures = await addFiles(files)
+              await uploadPictures(pictures)
+              return pictures
+            }}
+            onImportFromUrl={async (url) => {
+              const picture = await importFromUrl(url)
+              await uploadPictures([picture])
+              return picture
+            }}
+            onPasteFromClipboard={async () => {
+              const pictures = await pasteFromClipboard()
+              await uploadPictures(pictures)
+              return pictures
+            }}
+            onRemoveImage={removeImage}
+            onOpenFilePicker={openFilePicker}
+            prompt={entityType === "beans" ? "Add more bean pictures" : "Add more equipment pictures"}
+            previewAltPrefix={entityType === "beans" ? "Bean" : "Gear"}
+            helperText={isUploading ? "Uploading pictures…" : "New pictures upload immediately"}
+          />
+        )}
       </CardContent>
     </Card>
   )

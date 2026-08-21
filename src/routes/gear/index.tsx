@@ -11,6 +11,7 @@ import {
 import { getGear } from "@/lib/server/gear"
 import { RouteError } from "@/components/route-error"
 import { ListPending } from "@/components/route-pending"
+import { SectionTabs, shotsTabs } from "@/components/section-tabs"
 import { EmptyState } from "@/components/EmptyState"
 import { imageUrl } from "@/lib/image-url"
 import { ResilientImage } from "@/components/resilient-image"
@@ -59,6 +60,8 @@ function GearPage() {
           </Link>
         </Button>
       </header>
+
+      <SectionTabs tabs={shotsTabs} label="Shots sections" />
 
       {gear.length === 0 ? (
         <EmptyState

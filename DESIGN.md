@@ -90,6 +90,12 @@ Roastbook should feel like a calm, tactile coffee journal: warm paper beneath cr
 - **States**: default, focus, disabled, invalid, loading where relevant.
 - **Accessibility**: deterministic server/client markup, label association, visible focus, and no hidden caret.
 
+### Picture uploader
+- **Structure**: preview grid, mobile-safe file picker, dashed drop target, explicit clipboard action, URL input, and contextual helper/status copy.
+- **States**: empty, drag-active, queued previews, URL downloading, clipboard unavailable, invalid file, and ready.
+- **Accessibility**: every action is keyboard reachable, the drop target opens the native picker, status changes are announced, and coarse-pointer controls retain a 44px minimum target.
+- **Interaction**: dropping, selecting, pasting, and URL import all feed the same preview queue; color and border transitions use the standard motion token without decorative animation.
+
 ### Mobile bottom navigation
 - **Structure**: four destinations plus centered create action.
 - **States**: default, active, focus, menu open.
@@ -115,6 +121,7 @@ Roastbook should feel like a calm, tactile coffee journal: warm paper beneath cr
 Roastbook uses a mixed strategy: cream/card tonal shifts for hierarchy, coffee-tinted soft shadows for elevation, and borders for controls or structural separation. Errors and empty states remain integrated within the same card geometry instead of introducing unrelated alert styling.
 
 - `--coffee-shadow` is the standard card elevation.
+- `--coffee-shadow-inline` gives attached trailing actions a coffee-tinted shadow toward their input content.
 - `--coffee-shadow-strong` is reserved for coffee-colored focal surfaces.
 
 ## 8. Accessibility Constraints & Accepted Debt

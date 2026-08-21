@@ -2,6 +2,7 @@ import { useState } from "react"
 import { ExternalLink, Search, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
+import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import {
   InputGroup,
@@ -16,8 +17,8 @@ export type CoffeeShopSearchResult = Awaited<
 >[number]
 
 interface CoffeeShopOsmSearchProps {
-  onApply: (result: CoffeeShopSearchResult) => void
-  initialQuery?: string
+  readonly onApply: (result: CoffeeShopSearchResult) => void
+  readonly initialQuery?: string
 }
 
 export function CoffeeShopOsmSearch({
@@ -26,6 +27,7 @@ export function CoffeeShopOsmSearch({
 }: CoffeeShopOsmSearchProps) {
   const [searchQuery, setSearchQuery] = useState(initialQuery)
   const [isSearching, setIsSearching] = useState(false)
+  const [searchStatus, setSearchStatus] = useState("")
   const [searchResults, setSearchResults] = useState<CoffeeShopSearchResult[]>(
     []
   )
@@ -34,14 +36,18 @@ export function CoffeeShopOsmSearch({
   >(null)
 
   const handleSearch = async () => {
+    if (isSearching) return
+
     const normalizedQuery = searchQuery.trim().replace(/\s+/g, " ")
 
     if (normalizedQuery.length < 3) {
+      setSearchStatus("Enter at least three characters to search OpenStreetMap")
       toast.error("Add a coffee shop name or address before searching")
       return
     }
 
     setIsSearching(true)
+    setSearchStatus("Searching OpenStreetMap")
 
     try {
       const results = await searchCoffeeShopCandidates({
@@ -49,11 +55,17 @@ export function CoffeeShopOsmSearch({
       })
       setSearchResults(results)
       setSelectedSearchResultId(null)
+      setSearchStatus(
+        results.length === 1
+          ? "1 coffee shop match found"
+          : `${results.length} coffee shop matches found`
+      )
 
       if (results.length === 0) {
         toast.info("No matching coffee shops found")
       }
     } catch {
+      setSearchStatus("OpenStreetMap search failed")
       toast.error("Could not search OpenStreetMap right now")
     } finally {
       setIsSearching(false)
@@ -70,15 +82,27 @@ export function CoffeeShopOsmSearch({
   return (
     <div className="space-y-2">
       <Label htmlFor="search">Search OpenStreetMap</Label>
-      <InputGroup className="items-stretch">
+      <InputGroup
+        aria-busy={isSearching}
+        className="items-stretch overflow-hidden has-[[data-slot=button]:focus-visible]:border-ring has-[[data-slot=button]:focus-visible]:ring-3 has-[[data-slot=button]:focus-visible]:ring-ring/50 pointer-coarse:box-content pointer-coarse:h-11!"
+      >
         <InputGroupInput
           id="search"
+          aria-describedby="coffee-shop-search-description"
           placeholder="e.g., Blue Bottle Coffee, San Francisco"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return
+            event.preventDefault()
+            void handleSearch()
+          }}
           className="h-11 text-base sm:h-full"
         />
-        <InputGroupAddon align="inline-end" className="pr-0.5 sm:pr-1.5">
+        <InputGroupAddon
+          align="inline-end"
+          className="h-full p-0 has-[>button]:mr-0"
+        >
           <InputGroupButton
             type="button"
             variant="secondary"
@@ -88,7 +112,7 @@ export function CoffeeShopOsmSearch({
             }
             onClick={handleSearch}
             disabled={isSearching || searchQuery.trim().length < 3}
-            className="size-11 p-0 sm:h-8 sm:w-auto sm:px-3"
+            className="relative z-10 h-full w-11 rounded-none p-0 shadow-coffee-inline! focus-visible:ring-0! sm:w-auto sm:px-3 pointer-coarse:h-11!"
           >
             <Search className="h-4 w-4" />
             <span className="hidden sm:inline">
@@ -97,14 +121,17 @@ export function CoffeeShopOsmSearch({
           </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>
-      <div className="flex items-start justify-between gap-3 text-xs text-muted-foreground">
-        <p>Apply a match to prefill contact and location details.</p>
-        <div className="shrink-0 rounded-full border bg-muted px-2 py-0.5 font-medium">
-          OSM
-        </div>
+      <p
+        id="coffee-shop-search-description"
+        className="text-xs text-muted-foreground"
+      >
+        Choose a match to fill in the address, coordinates, and website.
+      </p>
+      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {searchStatus}
       </div>
       {searchResults.length > 0 && (
-        <div className="space-y-3 rounded-xl border bg-muted/20 p-3">
+        <div className="space-y-2 pt-2">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 font-medium">
               <Sparkles className="h-4 w-4 text-primary" />
@@ -112,30 +139,27 @@ export function CoffeeShopOsmSearch({
             </div>
             <Badge variant="secondary">{searchResults.length} found</Badge>
           </div>
-          <div className="space-y-2">
+          <Card size="sm" className="gap-0 rounded-xl border py-0">
             {searchResults.map((result) => (
               <div
                 key={result.id}
-                className="flex items-stretch rounded-lg border bg-card transition-colors hover:bg-muted/50"
+                className="relative flex min-w-0 border-b transition-colors last:border-b-0 hover:bg-muted/50 focus-within:bg-muted/50"
               >
                 <button
                   type="button"
                   onClick={() => handleApply(result)}
-                  className="min-w-0 flex-1 p-3 text-left"
+                  className="min-w-0 flex-1 p-3 pr-14 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset sm:pr-12"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{result.name}</p>
-                        {selectedSearchResultId === result.id && (
-                          <Badge>Selected</Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {result.displayName}
-                      </p>
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{result.name}</p>
+                      {selectedSearchResultId === result.id && (
+                        <Badge>Selected</Badge>
+                      )}
                     </div>
-                    <Badge variant="outline">Use</Badge>
+                    <p className="text-sm text-muted-foreground">
+                      {result.displayName}
+                    </p>
                   </div>
                   <p className="mt-2 text-xs text-muted-foreground">
                     {result.latitude}, {result.longitude}
@@ -146,15 +170,16 @@ export function CoffeeShopOsmSearch({
                     href={result.openStreetMapUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="m-2 inline-flex min-h-11 shrink-0 items-center gap-1 self-center rounded-md border px-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    aria-label={`Open ${result.name} in OpenStreetMap`}
+                    title="View on OpenStreetMap"
+                    className="absolute top-1.5 right-1.5 inline-flex size-11 items-center justify-center rounded-md border bg-background/80 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:top-2 sm:right-2 sm:size-8 pointer-coarse:size-11"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
-                    OSM
                   </a>
                 )}
               </div>
             ))}
-          </div>
+          </Card>
           <p className="text-xs text-muted-foreground">
             Search results and map data © OpenStreetMap contributors via
             Nominatim.

@@ -57,6 +57,12 @@ bun run test             # Run tests
 bun run generate-routes  # Regenerate route tree
 ```
 
+## Browser QA
+
+- Use the Playwright MCP for temporary browser-based verification when needed.
+- Do not add Playwright test files, Playwright configuration, Playwright dependencies, or generated Playwright test artifacts to the codebase.
+- Keep browser QA ephemeral; repository tests remain on the existing Bun/Vitest setup.
+
 ## Adding UI Components
 
 ```bash

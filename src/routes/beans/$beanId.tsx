@@ -551,15 +551,13 @@ function BeanDetailPage() {
           </div>
 
           <div className="space-y-6">
-            {bean.images.length > 0 && (
-              <EntityImageGallery
-                entityType="beans"
-                entityId={bean.id}
-                images={bean.images}
-                
-                onImagesChange={() => router.invalidate()}
-              />
-            )}
+             <EntityImageGallery
+                 entityType="beans"
+                 entityId={bean.id}
+                 images={bean.images}
+
+                 onImagesChange={() => router.invalidate()}
+               />
 
             {(visionEnabled || researchEnabled) && (
               <Card>
