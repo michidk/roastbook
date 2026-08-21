@@ -13,6 +13,7 @@ function database() {
 async function expectPostgresError(
   operation: () => Promise<unknown>,
   code: string,
+  constraint?: string,
 ) {
   let error: unknown
   try {
@@ -23,6 +24,11 @@ async function expectPostgresError(
 
   expect(error).toBeDefined()
   expect((error as { code?: string }).code).toBe(code)
+  if (constraint) {
+    expect((error as { constraint_name?: string }).constraint_name).toBe(
+      constraint,
+    )
+  }
 }
 
 afterAll(async () => {
@@ -114,9 +120,12 @@ databaseDescribe('PostgreSQL schema', () => {
     expect(settings[0]?.backgroundTextureEnabled).toBe(true)
     expect(settings[0]?.defaultListView).toBe('cards')
 
-    await expect(
-      database()`update settings set default_list_view = 'grid' where id = 1`,
-    ).rejects.toThrow(/settings_list_view_check/)
+    await expectPostgresError(
+      () =>
+        database()`update settings set default_list_view = 'grid' where id = 1`,
+      '23514',
+      'settings_list_view_check',
+    )
   })
 
   test('stores valid AI usage and rejects negative token counts', async () => {
