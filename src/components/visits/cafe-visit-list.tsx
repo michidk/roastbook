@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { StarRating } from '@/components/ui/star-rating'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
+import { useTasteProfile } from '@/hooks/use-taste-profile'
 
 export type CafeVisitListItem = {
   readonly id: number
@@ -26,6 +27,7 @@ export function CafeVisitList({
   readonly limit?: number
 }) {
   const formatDate = useDateFormatter()
+  const showRating = useTasteProfile().overallRating
   const sortedVisits = sortCafeVisitsByDate(visits)
   const shownVisits = sortedVisits.slice(0, limit)
   const remainingCount = sortedVisits.length - shownVisits.length
@@ -43,7 +45,7 @@ export function CafeVisitList({
             <span className="truncate font-medium">
               {visit.drinkName || 'Coffee'}
             </span>
-            {visit.rating ? (
+            {showRating && visit.rating ? (
               <StarRating
                 value={visit.rating}
                 readOnly

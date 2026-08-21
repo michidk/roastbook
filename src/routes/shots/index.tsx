@@ -18,6 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { thumbnailUrl } from '@/lib/image-url'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getShotGroups, getShotPage } from '@/lib/server/shots'
@@ -92,6 +93,7 @@ function ShotsPage() {
   const data = Route.useLoaderData()
   const search = Route.useSearch()
   const navigate = useNavigate({ from: '/shots/' })
+  const showRating = useTasteProfile().overallRating
   const grouped = data.view === 'grouped'
   const totalItems = data.result.totalItems
 
@@ -103,9 +105,12 @@ function ShotsPage() {
       search: (current) => ({ ...current, ...values }),
       replace: options?.replace,
     })
+  // The server ignores a rating filter while the overall rating is switched
+  // off, so a stale search parameter must not count as an active filter here
+  // either — otherwise it would suppress the empty state.
   const hasActiveFilters =
     Boolean(search.query || search.methodId) ||
-    search.rating !== undefined ||
+    (showRating && search.rating !== undefined) ||
     search.beanId !== undefined
 
   return (

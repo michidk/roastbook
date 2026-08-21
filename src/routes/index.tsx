@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StarRating } from '@/components/ui/star-rating'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { getDailyHeadline } from '@/lib/daily-headline'
 import { thumbnailUrl } from '@/lib/image-url'
 import { getDashboardStats, getRecentShots } from '@/lib/server/stats'
@@ -31,6 +32,7 @@ function Dashboard() {
   const { stats, recentShots } = Route.useLoaderData()
   const formatDate = useDateFormatter()
   const formatNumber = useNumberFormatter()
+  const showRating = useTasteProfile().overallRating
   const now = new Date()
   const today = formatDate(now)
   const headline = getDailyHeadline(now)
@@ -124,7 +126,7 @@ function Dashboard() {
                       >
                         {formatDate(shot.brewedAt)}
                       </time>
-                      {shot.rating && (
+                      {showRating && shot.rating ? (
                         <StarRating
                           value={shot.rating}
                           variant="compact"
@@ -132,7 +134,7 @@ function Dashboard() {
                           className="text-sm"
                           ariaLabel="Shot rating"
                         />
-                      )}
+                      ) : null}
                     </div>
                   </Link>
                 )

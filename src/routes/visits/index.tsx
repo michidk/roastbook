@@ -22,6 +22,7 @@ import { StarRating } from '@/components/ui/star-rating'
 import { WebsiteLogo } from '@/components/website-logo'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { getCafeVisitPage } from '@/lib/server/cafe-visits'
 import { getCoffeeShopMapOverview } from '@/lib/server/coffee-shops'
 import { isNegativeTasteTag } from '@/lib/taste-tags'
@@ -231,11 +232,13 @@ function VisitsPage() {
 function VisitCard({ visit }: { visit: Visit }) {
   const formatDate = useDateFormatter()
   const formatNumber = useNumberFormatter()
+  const tasteProfile = useTasteProfile()
   const date = formatDate(visit.visitedAt)
-  const positiveTags =
-    visit.tasteTags?.filter((tt) => !isNegativeTasteTag(tt.tasteTag)) ?? []
-  const negativeTags =
-    visit.tasteTags?.filter((tt) => isNegativeTasteTag(tt.tasteTag)) ?? []
+  const visitTags = tasteProfile.flavorTags ? (visit.tasteTags ?? []) : []
+  const positiveTags = visitTags.filter(
+    (tt) => !isNegativeTasteTag(tt.tasteTag),
+  )
+  const negativeTags = visitTags.filter((tt) => isNegativeTasteTag(tt.tasteTag))
 
   return (
     <Link
@@ -270,7 +273,7 @@ function VisitCard({ visit }: { visit: Visit }) {
         )}
       </div>
 
-      {visit.rating != null && (
+      {tasteProfile.overallRating && visit.rating != null && (
         <StarRating
           value={visit.rating}
           readOnly

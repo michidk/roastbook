@@ -11,6 +11,7 @@ import {
 import { Progress } from '@/components/ui/progress'
 import { StarRating } from '@/components/ui/star-rating'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { StatsActivityCard } from './stats-activity-card'
 import {
   BrewingAveragesCard,
@@ -187,11 +188,13 @@ function RatingDistributionCard({ stats }: { readonly stats: DetailedStats }) {
 }
 
 export function StatsSections({ stats }: { readonly stats: DetailedStats }) {
+  const tasteProfile = useTasteProfile()
   const hasBrews = stats.shots.total > 0
   const hasComparableParameters =
     Boolean(stats.filter.method) || stats.methods.length <= 1
-  const hasBeanRankings =
-    stats.beans.topByShots.length > 0 || stats.beans.topByRating.length > 0
+  const showRatings = tasteProfile.overallRating
+  const showRatedBeans = showRatings && stats.beans.topByRating.length > 0
+  const hasBeanRankings = stats.beans.topByShots.length > 0 || showRatedBeans
 
   return (
     <div className="space-y-6 md:space-y-8">
@@ -202,7 +205,7 @@ export function StatsSections({ stats }: { readonly stats: DetailedStats }) {
               trend={stats.trend}
               bucket={stats.filter.range.bucket}
             />
-            {stats.ratings.totalRated > 0 ? (
+            {!showRatings ? null : stats.ratings.totalRated > 0 ? (
               <RatingDistributionCard stats={stats} />
             ) : (
               <Card>
@@ -233,8 +236,10 @@ export function StatsSections({ stats }: { readonly stats: DetailedStats }) {
               </CardContent>
             </Card>
           )}
-          <DialInCard stats={stats} />
-          <TasteProfileCard items={stats.tasteProfile} />
+          {showRatings ? <DialInCard stats={stats} /> : null}
+          {tasteProfile.flavorTags ? (
+            <TasteProfileCard items={stats.tasteProfile} />
+          ) : null}
 
           <div className="grid gap-6 lg:grid-cols-2">
             <MethodMixCard methods={stats.methods} />
@@ -249,7 +254,7 @@ export function StatsSections({ stats }: { readonly stats: DetailedStats }) {
               {stats.beans.topByShots.length > 0 ? (
                 <BeanRankingCard mode="usage" items={stats.beans.topByShots} />
               ) : null}
-              {stats.beans.topByRating.length > 0 ? (
+              {showRatedBeans ? (
                 <BeanRankingCard
                   mode="rating"
                   items={stats.beans.topByRating}

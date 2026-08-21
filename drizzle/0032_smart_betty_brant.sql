@@ -1,0 +1,2 @@
+ALTER TABLE "shots" ADD COLUMN "extraction_balance" integer;--> statement-breakpoint
+ALTER TABLE "shots" ADD CONSTRAINT "shots_extraction_balance_check" CHECK ("shots"."extraction_balance" between 1 and 5);

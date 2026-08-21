@@ -58,6 +58,12 @@ export const settings = pgTable(
     backgroundTextureEnabled: boolean('background_texture_enabled')
       .default(true)
       .notNull(),
+    tasteProfileFields: text('taste_profile_fields')
+      .array()
+      .default(
+        sql`'{overallRating,bitterness,acidity,sweetness,body,astringency,flavorTags,notes}'::text[]`,
+      )
+      .notNull(),
     defaultMapLatitude: doublePrecision('default_map_latitude').default(
       48.8566,
     ),
@@ -623,6 +629,7 @@ export const shots = pgTable(
     }),
     ...shotParameterColumns(),
     rating: integer('rating'),
+    extractionBalance: integer('extraction_balance'),
     bitterness: integer('bitterness'),
     acidity: integer('acidity'),
     sweetness: integer('sweetness'),
@@ -641,6 +648,10 @@ export const shots = pgTable(
       sql`${table.paperFilterPosition} in ('none', 'top', 'bottom', 'both')`,
     ),
     check('shots_rating_check', sql`${table.rating} between 1 and 5`),
+    check(
+      'shots_extraction_balance_check',
+      sql`${table.extractionBalance} between 1 and 5`,
+    ),
     check(
       'shots_sensory_ratings_check',
       sql`(${table.bitterness} is null or ${table.bitterness} between 1 and 5)

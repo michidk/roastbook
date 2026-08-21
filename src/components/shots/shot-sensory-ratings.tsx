@@ -13,12 +13,13 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { useTasteProfile } from '@/hooks/use-taste-profile'
 import {
-  SHOT_SENSORY_RATING_KEYS,
   SHOT_SENSORY_RATING_META,
   type ShotSensoryRatingKey,
   type ShotSensoryRatings,
 } from '@/lib/shot-sensory'
+import { enabledSensoryRatingKeys } from '@/lib/taste-profile'
 import { cn } from '@/lib/utils'
 
 const ICONS = {
@@ -40,9 +41,10 @@ export function ShotSensoryRatingFields({
   onChange,
   readOnly = false,
 }: ShotSensoryRatingFieldsProps) {
+  const enabledKeys = enabledSensoryRatingKeys(useTasteProfile())
   const visibleKeys = readOnly
-    ? SHOT_SENSORY_RATING_KEYS.filter((key) => values[key] > 0)
-    : SHOT_SENSORY_RATING_KEYS
+    ? enabledKeys.filter((key) => values[key] > 0)
+    : enabledKeys
 
   if (visibleKeys.length === 0) return null
 

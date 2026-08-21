@@ -22,6 +22,7 @@ import { CafeVisitList } from '@/components/visits/cafe-visit-list'
 import { VisitEditForm } from '@/components/visits/visit-edit-form'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { editModeSearchField } from '@/lib/edit-mode'
 import { getActiveBeans } from '@/lib/server/beans'
 import { deleteCafeVisit, getCafeVisit } from '@/lib/server/cafe-visits'
@@ -62,6 +63,7 @@ export const Route = createFileRoute('/visits/$visitId')({
 function VisitDetailPage() {
   const formatDateTime = useDateTimeFormatter()
   const formatNumber = useNumberFormatter()
+  const tasteProfile = useTasteProfile()
   const { visit, coffeeShops, tasteTags, beans, cafeVisitHistory } =
     Route.useLoaderData()
   const { edit: isEditing = false } = Route.useSearch()
@@ -106,6 +108,8 @@ function VisitDetailPage() {
   )
   const hasCoordinates =
     visit.coffeeShop?.latitude != null && visit.coffeeShop?.longitude != null
+  const showTasteTags = tasteProfile.flavorTags && visit.tasteTags.length > 0
+  const showNotes = tasteProfile.notes && Boolean(visit.notes)
 
   return (
     <Page width={isEditing ? 'form' : 'wide'}>
@@ -123,7 +127,7 @@ function VisitDetailPage() {
         }
         actions={
           <>
-            {visit.rating ? (
+            {tasteProfile.overallRating && visit.rating ? (
               <StarRating
                 value={visit.rating}
                 readOnly
@@ -204,7 +208,7 @@ function VisitDetailPage() {
                   </div>
                 </div>
 
-                {visit.tasteTags.length > 0 ? (
+                {showTasteTags ? (
                   <>
                     <Separator className="my-4" />
                     <div>
@@ -231,7 +235,7 @@ function VisitDetailPage() {
               </CardContent>
             </Card>
 
-            {visit.notes ? (
+            {showNotes ? (
               <Card>
                 <CardHeader>
                   <CardTitle>Notes</CardTitle>

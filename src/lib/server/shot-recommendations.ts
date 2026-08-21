@@ -3,6 +3,7 @@ import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
 import { db } from '@/db'
 import { brewingMethods, gear, shots } from '@/db/schema'
 import { isResearchEnabled, recommendShotFromHistory } from '@/lib/ai'
+import { extractionBalanceLabel } from '@/lib/extraction-balance'
 import { withResourceLimits } from '@/lib/server/resource-limits.server'
 import {
   isShotParameterKey,
@@ -270,6 +271,9 @@ export const getShotRecommendation = createServerFn({ method: 'POST' })
           ),
           achievedRatio: achievedRatio(shot),
           overallRating: shot.rating,
+          // Simple mode records only this axis; sour reads as under-extracted
+          // and bitter as over-extracted.
+          sourToBitterBalance: extractionBalanceLabel(shot.extractionBalance),
           sensory: {
             acidity: shot.acidity,
             sweetness: shot.sweetness,

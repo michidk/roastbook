@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, test } from 'bun:test'
 import postgres from 'postgres'
+import { DEFAULT_TASTE_PROFILE_FIELDS } from '@/lib/taste-profile'
 
 const testDatabaseUrl = process.env.TEST_DATABASE_URL
 const sql = testDatabaseUrl ? postgres(testDatabaseUrl, { max: 1 }) : undefined
@@ -105,6 +106,25 @@ databaseDescribe('PostgreSQL schema', () => {
       defaultMapLongitude: 2.3522,
       defaultMapLabel: 'Paris, France',
     })
+  })
+
+  test('starts the taste profile in detailed mode with every field on', async () => {
+    const settings = await database()<[{ tasteProfileFields: string[] }]>`
+      select taste_profile_fields as "tasteProfileFields"
+      from settings
+      where id = 1
+    `
+    expect(settings[0]?.tasteProfileFields).toEqual([
+      ...DEFAULT_TASTE_PROFILE_FIELDS,
+    ])
+  })
+
+  test('constrains the sour-to-bitter balance to the rating scale', async () => {
+    await expectPostgresError(
+      () => database()`update shots set extraction_balance = 6 where id = 1`,
+      '23514',
+      'shots_extraction_balance_check',
+    )
   })
 
   test('defaults the shared appearance and list view', async () => {

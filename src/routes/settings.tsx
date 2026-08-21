@@ -15,6 +15,7 @@ import {
   MonitorCog,
   Palette,
   SlidersHorizontal,
+  Sparkles,
   Tags,
   Wallpaper,
 } from 'lucide-react'
@@ -34,6 +35,7 @@ import {
   type SettingsSection,
   SettingsShell,
 } from '@/components/settings/settings-shell'
+import { TasteProfileSettings } from '@/components/settings/taste-profile-settings'
 import { TasteTagSettings } from '@/components/settings/taste-tag-settings'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -67,9 +69,17 @@ import {
   updateDefaultListView,
   updateDefaultMapLocation,
   updateNumberFormat,
+  updateTasteProfileFields,
   updateTimeZone,
 } from '@/lib/server/settings'
 import { getTasteTags } from '@/lib/server/taste-tags'
+import {
+  enabledTasteProfileFields,
+  type TasteProfileConfig,
+  type TasteProfileField,
+  type TasteProfileMode,
+  withTasteProfileMode,
+} from '@/lib/taste-profile'
 
 export const Route = createFileRoute('/settings')({
   loader: async () => {
@@ -87,6 +97,7 @@ const SETTINGS_SECTIONS = [
   { id: 'general', label: 'General', icon: SlidersHorizontal },
   { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'map', label: 'Map', icon: MapIcon },
+  { id: 'taste-profile', label: 'Taste profile', icon: Sparkles },
   { id: 'taste-tags', label: 'Taste tags', icon: Tags },
   { id: 'ai', label: 'AI', icon: Bot },
   { id: 'storage', label: 'Storage', icon: HardDrive },
@@ -148,6 +159,7 @@ function SettingsPage() {
   const savedDateFormat = savedSettings.dateFormat
   const savedListView = savedSettings.defaultListView
   const savedNumberFormat = savedSettings.numberFormat
+  const savedTasteProfile = savedSettings.tasteProfile
   const savedMapLatitude = savedSettings.defaultMapLocation?.latitude
   const savedMapLongitude = savedSettings.defaultMapLocation?.longitude
   const savedMapLabel = savedSettings.defaultMapLocation?.label
@@ -167,6 +179,7 @@ function SettingsPage() {
         dateFormat: savedDateFormat,
         defaultListView: savedListView,
         numberFormat: savedNumberFormat,
+        tasteProfile: savedTasteProfile,
         timeZone: savedTimeZone,
         defaultMapLocation:
           savedMapLatitude !== undefined &&
@@ -186,6 +199,7 @@ function SettingsPage() {
       savedDateFormat,
       savedListView,
       savedNumberFormat,
+      savedTasteProfile,
       savedMapLatitude,
       savedMapLongitude,
       savedMapLabel,
@@ -251,6 +265,18 @@ function SettingsPage() {
     onSaved,
     errorMessage: 'Could not save the time zone',
     successMessage: 'Time zone saved',
+  })
+  const tasteProfileMutation = useSettingMutation<TasteProfileConfig>({
+    savedValue: savedTasteProfile,
+    applyValue: (tasteProfile) =>
+      setSettings((current) => ({ ...current, tasteProfile })),
+    mutate: (tasteProfile) =>
+      updateTasteProfileFields({
+        data: enabledTasteProfileFields(tasteProfile),
+      }),
+    selectValue: (updated) => updated.tasteProfile,
+    onSaved,
+    errorMessage: 'Could not save the taste profile fields',
   })
   const mapLocationMutation = useSettingMutation({
     savedValue: savedSettings.defaultMapLocation,
@@ -470,6 +496,36 @@ function SettingsPage() {
               location={settings.defaultMapLocation}
               disabled={mapLocationMutation.isSaving}
               onChange={(location) => void mapLocationMutation.save(location)}
+            />
+          </SettingsPanelSection>
+        ) : null}
+
+        {activeSection === 'taste-profile' ? (
+          <SettingsPanelSection
+            title="Taste profile"
+            description="Choose which tasting inputs Roastbook captures for brews and café visits. A disabled input is hidden everywhere, including on entries that already recorded it."
+            action={
+              tasteProfileMutation.isSaving ? (
+                <Loader2 className="size-5 animate-spin text-link" />
+              ) : (
+                <Sparkles className="size-5 text-link" aria-hidden="true" />
+              )
+            }
+          >
+            <TasteProfileSettings
+              config={settings.tasteProfile}
+              disabled={tasteProfileMutation.isSaving}
+              onToggle={(field: TasteProfileField, enabled) =>
+                void tasteProfileMutation.save({
+                  ...settings.tasteProfile,
+                  [field]: enabled,
+                })
+              }
+              onModeChange={(mode: TasteProfileMode) =>
+                void tasteProfileMutation.save(
+                  withTasteProfileMode(settings.tasteProfile, mode),
+                )
+              }
             />
           </SettingsPanelSection>
         ) : null}
