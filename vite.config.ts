@@ -56,6 +56,10 @@ const demoAssets = () => ({
 })
 
 const config = defineConfig({
+  // Dev/preview servers run behind sandbox proxies that forward arbitrary
+  // hostnames, which Vite's host check would otherwise reject.
+  server: { allowedHosts: true },
+  preview: { allowedHosts: true },
   define: {
     __ROASTBOOK_DEMO_MODE__: JSON.stringify(roastbookEdition === 'demo'),
   },
