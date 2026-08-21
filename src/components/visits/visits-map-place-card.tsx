@@ -1,9 +1,10 @@
 import { Link } from '@tanstack/react-router'
-import { Bookmark, ExternalLink, Heart, MapPin, Plus, X } from 'lucide-react'
+import { ExternalLink, Plus, X } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { StarRating } from '@/components/ui/star-rating'
+import { WebsiteLogo } from '@/components/website-logo'
 import type { SavedMapPlace } from './visits-map-utils'
 
 type VisitsMapPlaceCardProps = {
@@ -39,18 +40,13 @@ export function VisitsMapPlaceCard({
       className="roastbook-visits-map-inspector relative z-20 m-3 rounded-3xl border border-border/80 bg-card/95 p-4 shadow-coffee-strong backdrop-blur-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50 lg:absolute lg:bottom-4 lg:left-4 lg:m-0 lg:w-[22rem]"
     >
       <div className="flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-secondary text-coffee">
-          {place.isFavorite ? (
-            <Heart className="size-4 fill-current text-favorite" aria-hidden />
-          ) : place.wantsToVisit ? (
-            <Bookmark
-              className="size-4 fill-current text-primary"
-              aria-hidden
-            />
-          ) : (
-            <MapPin className="size-4" aria-hidden />
-          )}
-        </span>
+        <WebsiteLogo
+          entityType="coffee-shops"
+          entityId={place.coffeeShopId}
+          website={place.website}
+          updatedAt={place.updatedAt}
+          className="size-10 rounded-2xl p-1"
+        />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h3

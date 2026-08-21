@@ -1,5 +1,5 @@
 import { Link, useRouterState } from '@tanstack/react-router'
-import { ChevronDown, Ellipsis, Plus } from 'lucide-react'
+import { ChevronDown, Coffee, Ellipsis, Plus } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { NavItem } from '@/components/app-navbar-items'
 import {
@@ -186,7 +186,17 @@ export function AppNavbar({ demoMode = false }: { demoMode?: boolean }) {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
-            {demoMode ? null : <DesktopCreateButton />}
+            {demoMode ? null : (
+              <>
+                <Button variant="outline" asChild>
+                  <Link to="/shots/new">
+                    <Coffee className="h-4 w-4" />
+                    Log a brew
+                  </Link>
+                </Button>
+                <DesktopCreateButton />
+              </>
+            )}
           </div>
         </div>
       </header>
