@@ -120,11 +120,46 @@ databaseDescribe('PostgreSQL schema', () => {
   })
 
   test('constrains the sour-to-bitter balance to the rating scale', async () => {
+    // Inserts its own brew rather than assuming a seeded one: an UPDATE that
+    // matches no row raises nothing and would pass vacuously.
+    const insertBalance = (balance: number) => () =>
+      database().begin(async (transaction) => {
+        const [method] = await transaction<[{ id: number }]>`
+          insert into brewing_methods (name)
+          values (${`balance-method-${crypto.randomUUID()}`}) returning id
+        `
+        await transaction`
+          insert into shots (brewing_method_id, extraction_balance)
+          values (${method.id}, ${balance})
+        `
+      })
+
     await expectPostgresError(
-      () => database()`update shots set extraction_balance = 6 where id = 1`,
+      insertBalance(6),
       '23514',
       'shots_extraction_balance_check',
     )
+    await expectPostgresError(
+      insertBalance(0),
+      '23514',
+      'shots_extraction_balance_check',
+    )
+
+    await database().begin(async (transaction) => {
+      const [method] = await transaction<[{ id: number }]>`
+        insert into brewing_methods (name)
+        values (${`balance-method-${crypto.randomUUID()}`}) returning id
+      `
+      const [shot] = await transaction<[{ extraction_balance: number }]>`
+        insert into shots (brewing_method_id, extraction_balance)
+        values (${method.id}, 3)
+        returning extraction_balance
+      `
+      expect(shot.extraction_balance).toBe(3)
+
+      await transaction`delete from shots where brewing_method_id = ${method.id}`
+      await transaction`delete from brewing_methods where id = ${method.id}`
+    })
   })
 
   test('defaults the shared appearance and list view', async () => {
