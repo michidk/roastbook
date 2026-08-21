@@ -13,6 +13,7 @@ import {
 import { FormErrorSummary, FormSection } from '@/components/form/form-shell'
 import { Page, PageHeader } from '@/components/page-layout'
 import { AiRecommendationDialog } from '@/components/shots/ai-recommendation-dialog'
+import { ExtractionBalanceField } from '@/components/shots/extraction-balance-field'
 import {
   availableGearForShot,
   EMPTY_SHOT_FORM_VALUES,
@@ -41,6 +42,7 @@ import {
   useCurrentLocalDateTimeLimit,
   useLocalDateTimeInput,
 } from '@/hooks/use-local-date-time-input'
+import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes'
 import { focusFirstInvalidControl } from '@/lib/form-validation'
 import { getLastBeanIdForBrewingMethod } from '@/lib/new-shot-defaults'
@@ -61,6 +63,10 @@ import {
   getLastBeansByBrewingMethod,
 } from '@/lib/server/suggestions'
 import { getTasteTags } from '@/lib/server/taste-tags'
+import {
+  enabledSensoryRatingKeys,
+  hasEnabledTasteProfileField,
+} from '@/lib/taste-profile'
 import { isLegacySensoryTasteTag } from '@/lib/taste-tags'
 import { getShotUpdateErrors } from '@/lib/update-validation'
 
@@ -106,6 +112,7 @@ export const Route = createFileRoute('/shots/new')({
 function currentTastingValues(current: ShotFormValues) {
   return {
     rating: current.rating,
+    extractionBalance: current.extractionBalance,
     bitterness: current.bitterness,
     acidity: current.acidity,
     sweetness: current.sweetness,
@@ -129,6 +136,7 @@ function NewShotPage() {
     defaultBrewedAt,
   } = Route.useLoaderData()
   const navigate = useNavigate()
+  const tasteProfile = useTasteProfile()
   const [values, setValues] = useState<ShotFormValues>(() => {
     const brewingMethodId = brewingMethodSuggestions[0]
       ? String(brewingMethodSuggestions[0].id)
@@ -337,6 +345,8 @@ function NewShotPage() {
   const flavorTags = tasteTags.filter(
     (tag) => !isLegacySensoryTasteTag(tag) || selectedTags.includes(tag.id),
   )
+  const showSensoryRatings = enabledSensoryRatingKeys(tasteProfile).length > 0
+  const showExtractionBalance = tasteProfile.extractionBalance
 
   return (
     <Page>
@@ -442,36 +452,58 @@ function NewShotPage() {
             errors={fieldErrors}
             onChange={set}
           />
-          <FormSection title="Taste profile">
-            <div className="space-y-1">
-              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-                <span className="text-sm font-medium">Overall rating</span>
-                <StarRating
-                  value={values.rating}
-                  onChange={(rating) => set('rating', rating)}
-                  sizeClassName="size-5"
-                  ariaLabel="Shot rating"
+          {hasEnabledTasteProfileField(tasteProfile) ? (
+            <FormSection title="Taste profile">
+              {tasteProfile.overallRating ||
+              showSensoryRatings ||
+              showExtractionBalance ? (
+                <div className="space-y-1">
+                  {tasteProfile.overallRating ? (
+                    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                      <span className="text-sm font-medium">
+                        Overall rating
+                      </span>
+                      <StarRating
+                        value={values.rating}
+                        onChange={(rating) => set('rating', rating)}
+                        sizeClassName="size-5"
+                        ariaLabel="Shot rating"
+                      />
+                    </div>
+                  ) : null}
+                  <ShotSensoryRatingFields
+                    values={values}
+                    onChange={(key, value) => set(key, value)}
+                  />
+                  {showExtractionBalance ? (
+                    <div className="pt-1">
+                      <ExtractionBalanceField
+                        value={values.extractionBalance}
+                        onChange={(value) => set('extractionBalance', value)}
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+              {tasteProfile.flavorTags ? (
+                <TasteTagSelector
+                  label="Flavor tags"
+                  tags={flavorTags}
+                  selected={selectedTags}
+                  onToggle={toggleTag}
                 />
-              </div>
-              <ShotSensoryRatingFields
-                values={values}
-                onChange={(key, value) => set(key, value)}
-              />
-            </div>
-            <TasteTagSelector
-              label="Flavor tags"
-              tags={flavorTags}
-              selected={selectedTags}
-              onToggle={toggleTag}
-            />
-            <TextareaField
-              id="notes"
-              label="Tasting notes"
-              value={values.notes}
-              onChange={(value) => set('notes', value)}
-              placeholder="How was it?"
-            />
-          </FormSection>
+              ) : null}
+              {tasteProfile.notes ? (
+                <TextareaField
+                  id="notes"
+                  label="Tasting notes"
+                  value={values.notes}
+                  onChange={(value) => set('notes', value)}
+                  placeholder="How was it?"
+                />
+              ) : null}
+            </FormSection>
+          ) : null}
         </div>
         <aside className="space-y-4 lg:sticky lg:top-24">
           {selectedBean ? <BeanCard bean={selectedBean} /> : null}

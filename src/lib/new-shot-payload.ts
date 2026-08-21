@@ -43,6 +43,7 @@ export function newShotPayload(
     brewedAt: brewedAt ?? undefined,
     recipeId: options?.recipeId ? Number(options.recipeId) : null,
     rating: toNullableRating(values.rating),
+    extractionBalance: toNullableRating(values.extractionBalance),
     ...shotSensoryPayload(values),
     notes: values.notes || null,
     tasteTagIds,

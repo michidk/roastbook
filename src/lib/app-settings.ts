@@ -1,5 +1,6 @@
 import type { CollectionView } from '@/lib/collection-view'
 import { CURRENCIES } from '@/lib/constants'
+import type { TasteProfileConfig } from '@/lib/taste-profile'
 
 export type Currency = (typeof CURRENCIES)[number]['value']
 
@@ -61,6 +62,7 @@ export type AppSettings = {
   readonly defaultListView: CollectionView
   readonly defaultMapLocation: DefaultMapLocation | null
   readonly numberFormat: NumberFormat
+  readonly tasteProfile: TasteProfileConfig
   readonly timeZone: string
 }
 

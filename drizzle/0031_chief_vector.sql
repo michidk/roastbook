@@ -1,0 +1,1 @@
+ALTER TABLE "settings" ADD COLUMN "taste_profile_fields" text[] DEFAULT '{overallRating,bitterness,acidity,sweetness,body,astringency,flavorTags,notes}'::text[] NOT NULL;

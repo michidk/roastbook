@@ -7,7 +7,8 @@ import {
 } from '@/components/ui/chart'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
-import { activityChartConfig } from './stats-chart-config'
+import { useTasteProfile } from '@/hooks/use-taste-profile'
+import { activityChartConfig, brewCountChartConfig } from './stats-chart-config'
 import type { DetailedStats } from './stats-types'
 
 export function StatsActivityCard({
@@ -19,23 +20,28 @@ export function StatsActivityCard({
 }) {
   const formatDate = useDateFormatter()
   const formatNumber = useNumberFormatter()
+  const showRatings = useTasteProfile().overallRating
   const total = trend.reduce((sum, point) => sum + point.count, 0)
   const rated = trend.reduce((sum, point) => sum + point.totalRated, 0)
+  const bucketLabel =
+    bucket === 'day' ? 'days' : bucket === 'week' ? 'weeks' : 'months'
 
   return (
     <Card className="min-w-0">
       <CardHeader>
-        <CardTitle>Brewing and quality trend</CardTitle>
+        <CardTitle>
+          {showRatings ? 'Brewing and quality trend' : 'Brewing trend'}
+        </CardTitle>
         <p className="text-sm text-muted-foreground">
           {formatNumber(total)} brews across {formatNumber(trend.length)}{' '}
-          {bucket === 'day' ? 'days' : bucket === 'week' ? 'weeks' : 'months'};{' '}
-          {formatNumber(rated)} include a rating.
+          {bucketLabel}
+          {showRatings ? `; ${formatNumber(rated)} include a rating.` : '.'}
         </p>
       </CardHeader>
       <CardContent>
         {total > 0 ? (
           <ChartContainer
-            config={activityChartConfig}
+            config={showRatings ? activityChartConfig : brewCountChartConfig}
             className="h-[240px] min-w-0 w-full"
           >
             <ComposedChart data={trend} accessibilityLayer>
@@ -55,15 +61,17 @@ export function StatsActivityCard({
                 tickLine={false}
                 axisLine={false}
               />
-              <YAxis
-                yAxisId="rating"
-                orientation="right"
-                domain={[1, 5]}
-                ticks={[1, 2, 3, 4, 5]}
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-              />
+              {showRatings ? (
+                <YAxis
+                  yAxisId="rating"
+                  orientation="right"
+                  domain={[1, 5]}
+                  ticks={[1, 2, 3, 4, 5]}
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
+              ) : null}
               <ChartTooltip
                 content={
                   <ChartTooltipContent
@@ -79,21 +87,25 @@ export function StatsActivityCard({
                 opacity={0.6}
                 isAnimationActive={false}
               />
-              <Line
-                yAxisId="rating"
-                type="monotone"
-                dataKey="averageRating"
-                stroke="var(--color-averageRating)"
-                strokeWidth={2}
-                dot={{ r: 3 }}
-                connectNulls
-                isAnimationActive={false}
-              />
+              {showRatings ? (
+                <Line
+                  yAxisId="rating"
+                  type="monotone"
+                  dataKey="averageRating"
+                  stroke="var(--color-averageRating)"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  connectNulls
+                  isAnimationActive={false}
+                />
+              ) : null}
             </ComposedChart>
           </ChartContainer>
         ) : (
           <div className="flex h-[240px] items-center justify-center rounded-2xl bg-secondary px-6 text-center text-sm text-muted-foreground">
-            Activity and quality will appear when this scope contains brews.
+            {showRatings
+              ? 'Activity and quality will appear when this scope contains brews.'
+              : 'Activity will appear when this scope contains brews.'}
           </div>
         )}
       </CardContent>

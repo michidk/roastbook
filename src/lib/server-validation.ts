@@ -171,6 +171,7 @@ export const shotCreateSchema = z.object({
   tampForceKg: nullableShotDecimal,
   accessoryGearIds: z.array(positiveIdSchema).max(100).optional(),
   rating: optionalNullableRatingSchema,
+  extractionBalance: optionalNullableRatingSchema,
   bitterness: optionalNullableRatingSchema,
   acidity: optionalNullableRatingSchema,
   sweetness: optionalNullableRatingSchema,

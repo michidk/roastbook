@@ -84,6 +84,12 @@ an assistant log this morning's espresso for you.
 - Log brews with recipe, dose, yield, time, equipment, overall and sensory
   ratings, and flavor notes; create recipes from scratch, duplicate variants,
   or reuse a brew’s values in a new or existing recipe.
+- Tailor the taste profile in settings: switch the overall rating, each sensory
+  factor, flavor tags, and tasting notes on or off. Disabled inputs disappear
+  from rating forms and from every place they were shown.
+- Or pick the simple taste profile, which replaces the individual factors with
+  one sour-to-bitter scale — sour points at under-extraction and bitter at
+  over-extraction, the usual first dial-in move.
 - Catalog beans, roasters, brewing methods, coffee shops, and gear.
 - Track café visits and explore saved places on a map.
 - Review filterable brew and café trends, quality, consistency, taste, rhythm,

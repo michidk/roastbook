@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { StarRating } from '@/components/ui/star-rating'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { getDetailedStats } from '@/lib/server/stats'
 import {
   percentChange,
@@ -48,6 +49,7 @@ function StatsPage() {
   const navigate = useNavigate({ from: '/stats' })
   const formatDate = useDateFormatter()
   const formatNumber = useNumberFormatter()
+  const showRatings = useTasteProfile().overallRating
   const range = stats.filter.range
   const ratedShare =
     stats.shots.total > 0
@@ -105,29 +107,33 @@ function StatsPage() {
           detail={`${formatNumber(stats.beans.uniqueBeansUsed)} beans · ${comparisonDetail(gramsChange)}`}
           icon={Bean}
         />
-        <MetricCard
-          label="Average rating"
-          value={
-            stats.ratings.average === null ? (
-              '—'
-            ) : (
-              <StarRating value={stats.ratings.average} variant="compact" />
-            )
-          }
-          detail={
-            stats.ratings.previousAverage === null ||
-            stats.ratings.average === null
-              ? 'No comparable previous rating'
-              : `${stats.ratings.average - stats.ratings.previousAverage >= 0 ? '+' : ''}${formatNumber((stats.ratings.average - stats.ratings.previousAverage).toFixed(2))} vs previous period`
-          }
-          icon={Star}
-        />
-        <MetricCard
-          label="Rated brews"
-          value={`${formatNumber(ratedShare)}%`}
-          detail={`${formatNumber(stats.ratings.totalRated)} of ${formatNumber(stats.shots.total)} brews`}
-          icon={Tags}
-        />
+        {showRatings ? (
+          <>
+            <MetricCard
+              label="Average rating"
+              value={
+                stats.ratings.average === null ? (
+                  '—'
+                ) : (
+                  <StarRating value={stats.ratings.average} variant="compact" />
+                )
+              }
+              detail={
+                stats.ratings.previousAverage === null ||
+                stats.ratings.average === null
+                  ? 'No comparable previous rating'
+                  : `${stats.ratings.average - stats.ratings.previousAverage >= 0 ? '+' : ''}${formatNumber((stats.ratings.average - stats.ratings.previousAverage).toFixed(2))} vs previous period`
+              }
+              icon={Star}
+            />
+            <MetricCard
+              label="Rated brews"
+              value={`${formatNumber(ratedShare)}%`}
+              detail={`${formatNumber(stats.ratings.totalRated)} of ${formatNumber(stats.shots.total)} brews`}
+              icon={Tags}
+            />
+          </>
+        ) : null}
       </section>
 
       {stats.shots.total === 0 ? (

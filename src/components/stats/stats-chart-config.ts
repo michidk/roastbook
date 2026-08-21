@@ -5,6 +5,10 @@ export const activityChartConfig = {
   averageRating: { label: 'Average rating', color: 'var(--chart-2)' },
 } satisfies ChartConfig
 
+export const brewCountChartConfig = {
+  count: { label: 'Brews', color: 'var(--chart-1)' },
+} satisfies ChartConfig
+
 export const ratingChartConfig = {
   count: { label: 'Brews', color: 'var(--chart-2)' },
 } satisfies ChartConfig

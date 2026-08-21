@@ -25,6 +25,7 @@ import {
   type SortDirection,
   useSortablePagination,
 } from '@/hooks/use-sortable-pagination'
+import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { thumbnailUrl } from '@/lib/image-url'
 
 type Shot = {
@@ -185,14 +186,16 @@ export function ShotsTable({
   serverPagination,
 }: ShotsTableProps) {
   const [search, setSearch] = useState('')
+  const showRating = useTasteProfile().overallRating
 
   // Computed once from the complete, unfiltered list so columns never
   // flicker in/out while searching or paginating.
   const hasRating = useMemo(
     () =>
-      serverPagination !== undefined ||
-      shots.some((shot) => Boolean(shot.rating)),
-    [serverPagination, shots],
+      showRating &&
+      (serverPagination !== undefined ||
+        shots.some((shot) => Boolean(shot.rating))),
+    [serverPagination, shots, showRating],
   )
 
   const activeSearch = serverPagination?.query ?? search

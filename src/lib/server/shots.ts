@@ -33,6 +33,7 @@ import {
   withAccessoryGearIds,
 } from '@/lib/server/accessory-gear.server'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
+import { readTasteProfile } from '@/lib/server/settings'
 import {
   projectAccessoryGearIds,
   projectShotParameters,
@@ -123,6 +124,7 @@ function getShotValues(
     beanId: data.beanId ?? null,
     ...projectShotParameters(data, enabledParameters),
     rating: data.rating ?? null,
+    extractionBalance: data.extractionBalance ?? null,
     bitterness: data.bitterness ?? null,
     acidity: data.acidity ?? null,
     sweetness: data.sweetness ?? null,
@@ -202,17 +204,35 @@ function shotBeanCondition(beanId: number | undefined) {
   return beanId === 0 ? isNull(shots.beanId) : eq(shots.beanId, beanId)
 }
 
+type ShotSortKey = z.infer<typeof shotListSchema>['sort']
+
+/**
+ * The rating filter and the rating sort only mean something while the overall
+ * rating is part of the taste profile. A search parameter left over from before
+ * it was switched off must not keep narrowing or reordering the list, since the
+ * controls that produced it are no longer rendered.
+ */
+async function ratingAwareScope(
+  rating: number | undefined,
+  sort: ShotSortKey,
+): Promise<{ rating: number | undefined; sort: ShotSortKey }> {
+  const { overallRating } = await readTasteProfile()
+  if (overallRating) return { rating, sort }
+  return { rating: undefined, sort: sort === 'rating' ? 'date' : sort }
+}
+
 async function loadShotPage(
   data: Omit<z.infer<typeof shotListSchema>, 'beanId'>,
   scope?: SQL,
 ) {
-  const search = shotSearchCondition(data.query, data.methodId, data.rating)
+  const scoped = await ratingAwareScope(data.rating, data.sort)
+  const search = shotSearchCondition(data.query, data.methodId, scoped.rating)
   const where = scope && search ? and(scope, search) : (scope ?? search)
   const countRows = await db.select({ value: count() }).from(shots).where(where)
   const totalItems = countRows[0]?.value ?? 0
   const pagination = resolvePagination(totalItems, data.page, SHOTS_PAGE_SIZE)
   const { page } = pagination
-  const sortExpression = shotSortExpression(data.sort)
+  const sortExpression = shotSortExpression(scoped.sort)
   const order =
     data.direction === 'asc' ? asc(sortExpression) : desc(sortExpression)
   const items = await db.query.shots.findMany({
@@ -338,7 +358,8 @@ export const getBeanShotAnalytics = createServerFn({ method: 'GET' })
 export const getShotGroups = createServerFn({ method: 'GET' })
   .validator(shotGroupListSchema)
   .handler(async ({ data }) => {
-    const where = shotSearchCondition(data.query, data.methodId, data.rating)
+    const { rating } = await ratingAwareScope(data.rating, 'date')
+    const where = shotSearchCondition(data.query, data.methodId, rating)
     const groupKey = sql<number>`coalesce(${shots.beanId}, 0)`
     const countRows = await db
       .select({ value: sql<number>`count(distinct ${groupKey})::int` })

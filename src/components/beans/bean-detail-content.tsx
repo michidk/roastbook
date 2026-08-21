@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/progress'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { useTasteProfile } from '@/hooks/use-taste-profile'
 import {
   BEAN_TYPE_LABELS,
   type BeanType,
@@ -304,6 +305,7 @@ export function BeanReadOnlyContent({
 }) {
   const formatDate = useDateFormatter()
   const formatNumber = useNumberFormatter()
+  const showFlavorTags = useTasteProfile().flavorTags
   return (
     <div
       className={cn(
@@ -336,7 +338,7 @@ export function BeanReadOnlyContent({
             </CardContent>
           </Card>
         )}
-        {topTasteTags.length > 0 && (
+        {showFlavorTags && topTasteTags.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle>Taste profile</CardTitle>

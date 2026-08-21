@@ -55,6 +55,7 @@ export function ShotEditForm({
   const [values, setValues] = useState<ShotFormValues>(() => ({
     ...shotFormValuesFrom(shot),
     rating: shot.rating ?? 0,
+    extractionBalance: shot.extractionBalance ?? 0,
     bitterness: shot.bitterness ?? 0,
     acidity: shot.acidity ?? 0,
     sweetness: shot.sweetness ?? 0,
@@ -88,6 +89,7 @@ export function ShotEditForm({
           ? shot.recipeId
           : null,
       rating: values.rating || null,
+      extractionBalance: values.extractionBalance || null,
       ...shotSensoryPayload(values),
       notes: values.notes || null,
       tasteTagIds,
@@ -201,6 +203,10 @@ export function ShotEditForm({
         sensory={{
           values,
           onChange: (key, value) => set(key, value),
+        }}
+        balance={{
+          value: values.extractionBalance,
+          onChange: (value) => set('extractionBalance', value),
         }}
       />
     </EntityForm>

@@ -1,5 +1,6 @@
 import { isDateTooFarInFuture } from '@/lib/date-input'
 import { CURRENCY_VALUES } from '@/lib/domain-contracts'
+import { EXTRACTION_BALANCE_META } from '@/lib/extraction-balance'
 import {
   DECIMAL_CONSTRAINTS,
   type DecimalConstraint,
@@ -14,6 +15,7 @@ export type ShotUpdateCandidate = ShotParameterInput & {
   readonly ratioBasis?: 'target_yield' | 'brew_water' | null
   readonly paperFilterPosition?: 'none' | 'top' | 'bottom' | 'both' | null
   readonly rating?: number | null
+  readonly extractionBalance?: number | null
   readonly bitterness?: number | null
   readonly acidity?: number | null
   readonly sweetness?: number | null
@@ -128,6 +130,11 @@ export function getShotUpdateErrors<
     addError(errors, field, getDecimalError(data[field], rule))
   }
   addError(errors, 'rating', getRatingError(data.rating))
+  addError(
+    errors,
+    'extractionBalance',
+    getRatingError(data.extractionBalance, EXTRACTION_BALANCE_META.label),
+  )
   for (const [field, label] of Object.entries(SHOT_SENSORY_RATING_LABELS)) {
     addError(
       errors,

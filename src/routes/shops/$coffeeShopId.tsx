@@ -47,6 +47,7 @@ import {
 import { WebsiteLogo } from '@/components/website-logo'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { editModeSearchField } from '@/lib/edit-mode'
 import { toNullableRating, toRatingInput } from '@/lib/rating'
 import {
@@ -215,6 +216,8 @@ function CoffeeShopDetailHeader({
   onSave: () => void
   onDelete: () => void
 }) {
+  const showRating = useTasteProfile().overallRating
+
   return (
     <PageHeader
       size="compact"
@@ -244,7 +247,7 @@ function CoffeeShopDetailHeader({
       }
       actions={
         <>
-          {coffeeShop.rating ? (
+          {showRating && coffeeShop.rating ? (
             <StarRating
               value={coffeeShop.rating}
               readOnly
@@ -383,6 +386,7 @@ function CoffeeShopEditContent({
 function CoffeeShopReadOnlyContent({ coffeeShop }: { coffeeShop: CoffeeShop }) {
   const formatDate = useDateFormatter()
   const formatNumber = useNumberFormatter()
+  const showVisitRatings = useTasteProfile().overallRating
   const hasCoordinates =
     coffeeShop.latitude !== null && coffeeShop.longitude !== null
   const openStreetMapUrl = hasCoordinates
@@ -394,7 +398,9 @@ function CoffeeShopReadOnlyContent({ coffeeShop }: { coffeeShop: CoffeeShop }) {
     .filter(Boolean)
     .join(', ')
 
-  const ratedVisits = sortedVisits.filter((visit) => visit.rating !== null)
+  const ratedVisits = showVisitRatings
+    ? sortedVisits.filter((visit) => visit.rating !== null)
+    : []
   const averageRating =
     ratedVisits.length > 0
       ? ratedVisits.reduce((sum, visit) => sum + (visit.rating ?? 0), 0) /

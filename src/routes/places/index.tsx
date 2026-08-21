@@ -19,6 +19,7 @@ import { StarRating } from '@/components/ui/star-rating'
 import { WebsiteLogo } from '@/components/website-logo'
 import { useCollectionView } from '@/hooks/use-collection-view'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
+import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { thumbnailUrl } from '@/lib/image-url'
 import { getCoffeeShopPage } from '@/lib/server/coffee-shops'
 import { cn } from '@/lib/utils'
@@ -139,6 +140,7 @@ function PlacesPage() {
   const navigate = useNavigate({ from: '/places/' })
   const { view, setView, isReady } = useCollectionView('places')
   const formatDate = useDateFormatter()
+  const showRating = useTasteProfile().overallRating
   const updateSearch = (values: Partial<typeof search>) =>
     navigate({ search: (current) => ({ ...current, ...values }) })
 
@@ -160,23 +162,27 @@ function PlacesPage() {
       cell: (coffeeShop) =>
         coffeeShop.latestVisitAt ? formatDate(coffeeShop.latestVisitAt) : '—',
     },
-    {
-      key: 'rating',
-      header: 'Rating',
-      align: 'right',
-      cell: (coffeeShop) =>
-        coffeeShop.rating ? (
-          <StarRating
-            readOnly
-            variant="compact"
-            value={coffeeShop.rating}
-            sizeClassName="size-3.5"
-            ariaLabel={`${coffeeShop.name} rating`}
-          />
-        ) : (
-          '—'
-        ),
-    },
+    ...(showRating
+      ? [
+          {
+            key: 'rating',
+            header: 'Rating',
+            align: 'right' as const,
+            cell: (coffeeShop: CoffeeShop) =>
+              coffeeShop.rating ? (
+                <StarRating
+                  readOnly
+                  variant="compact"
+                  value={coffeeShop.rating}
+                  sizeClassName="size-3.5"
+                  ariaLabel={`${coffeeShop.name} rating`}
+                />
+              ) : (
+                '—'
+              ),
+          },
+        ]
+      : []),
   ]
 
   return (

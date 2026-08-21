@@ -10,6 +10,7 @@ import {
 import { Progress } from '@/components/ui/progress'
 import { StarRating } from '@/components/ui/star-rating'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { gearChartConfig } from './stats-chart-config'
 import type { DetailedStats } from './stats-types'
 
@@ -27,6 +28,7 @@ function UsageList({
   readonly items: readonly UsageItem[]
 }) {
   const formatNumber = useNumberFormatter()
+  const showRatings = useTasteProfile().overallRating
   const max = Math.max(1, ...items.map((item) => item.count))
   return (
     <section aria-label={title}>
@@ -42,7 +44,7 @@ function UsageList({
               <div className="flex items-center justify-between gap-3 text-sm">
                 <span className="truncate font-medium">{item.name}</span>
                 <span className="flex shrink-0 items-center gap-2 text-muted-foreground">
-                  {item.avgRating !== null ? (
+                  {showRatings && item.avgRating !== null ? (
                     <StarRating value={item.avgRating} variant="compact" />
                   ) : null}
                   {formatNumber(item.count)}
@@ -67,6 +69,7 @@ export function MethodMixCard({
   readonly methods: DetailedStats['methods']
 }) {
   const formatNumber = useNumberFormatter()
+  const showRatings = useTasteProfile().overallRating
   const max = Math.max(1, ...methods.map((method) => method.shotCount))
   if (methods.length === 0) return null
   return (
@@ -74,7 +77,9 @@ export function MethodMixCard({
       <CardHeader>
         <CardTitle>Brewing method mix</CardTitle>
         <p className="text-sm text-muted-foreground">
-          A text summary accompanies the usage bars and average ratings.
+          {showRatings
+            ? 'A text summary accompanies the usage bars and average ratings.'
+            : 'A text summary accompanies the usage bars.'}
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -83,7 +88,7 @@ export function MethodMixCard({
             <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
               <span className="font-medium">{method.methodName}</span>
               <span className="flex items-center gap-3 text-muted-foreground">
-                {method.avgRating !== null ? (
+                {showRatings && method.avgRating !== null ? (
                   <StarRating value={method.avgRating} variant="compact" />
                 ) : null}
                 {formatNumber(method.shotCount)} brews
@@ -106,6 +111,7 @@ export function ExplorationCard({
 }: {
   readonly exploration: DetailedStats['exploration']
 }) {
+  const showRatings = useTasteProfile().overallRating
   const hasAny =
     exploration.roasters.length > 0 ||
     exploration.origins.length > 0 ||
@@ -122,8 +128,9 @@ export function ExplorationCard({
           Coffee exploration
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Usage and average rating across the bean metadata already in your
-          journal.
+          {showRatings
+            ? 'Usage and average rating across the bean metadata already in your journal.'
+            : 'Usage across the bean metadata already in your journal.'}
         </p>
       </CardHeader>
       <CardContent className="grid gap-8 sm:grid-cols-2 xl:grid-cols-3">
@@ -143,6 +150,7 @@ export function RecipePerformanceCard({
   readonly recipes: DetailedStats['exploration']['recipes']
 }) {
   const formatNumber = useNumberFormatter()
+  const showRatings = useTasteProfile().overallRating
   if (recipes.length === 0) return null
   return (
     <Card>
@@ -168,7 +176,7 @@ export function RecipePerformanceCard({
             >
               {recipe.recipeName}
             </Link>
-            {recipe.avgRating !== null ? (
+            {showRatings && recipe.avgRating !== null ? (
               <StarRating value={recipe.avgRating} variant="compact" />
             ) : null}
             <span className="text-sm text-muted-foreground">

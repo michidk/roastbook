@@ -67,6 +67,7 @@ export function shotSensoryPayload(values: ShotSensoryRatings) {
 
 export function hasShotSensoryRatings(
   values: NullableShotSensoryRatings,
+  keys: readonly ShotSensoryRatingKey[] = SHOT_SENSORY_RATING_KEYS,
 ): boolean {
-  return SHOT_SENSORY_RATING_KEYS.some((key) => (values[key] ?? 0) > 0)
+  return keys.some((key) => (values[key] ?? 0) > 0)
 }

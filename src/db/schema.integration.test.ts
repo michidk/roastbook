@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, test } from 'bun:test'
 import postgres from 'postgres'
+import { DEFAULT_TASTE_PROFILE_FIELDS } from '@/lib/taste-profile'
 
 const testDatabaseUrl = process.env.TEST_DATABASE_URL
 const sql = testDatabaseUrl ? postgres(testDatabaseUrl, { max: 1 }) : undefined
@@ -104,6 +105,60 @@ databaseDescribe('PostgreSQL schema', () => {
       defaultMapLatitude: 48.8566,
       defaultMapLongitude: 2.3522,
       defaultMapLabel: 'Paris, France',
+    })
+  })
+
+  test('starts the taste profile in detailed mode with every field on', async () => {
+    const settings = await database()<[{ tasteProfileFields: string[] }]>`
+      select taste_profile_fields as "tasteProfileFields"
+      from settings
+      where id = 1
+    `
+    expect(settings[0]?.tasteProfileFields).toEqual([
+      ...DEFAULT_TASTE_PROFILE_FIELDS,
+    ])
+  })
+
+  test('constrains the sour-to-bitter balance to the rating scale', async () => {
+    // Inserts its own brew rather than assuming a seeded one: an UPDATE that
+    // matches no row raises nothing and would pass vacuously.
+    const insertBalance = (balance: number) => () =>
+      database().begin(async (transaction) => {
+        const [method] = await transaction<[{ id: number }]>`
+          insert into brewing_methods (name)
+          values (${`balance-method-${crypto.randomUUID()}`}) returning id
+        `
+        await transaction`
+          insert into shots (brewing_method_id, extraction_balance)
+          values (${method.id}, ${balance})
+        `
+      })
+
+    await expectPostgresError(
+      insertBalance(6),
+      '23514',
+      'shots_extraction_balance_check',
+    )
+    await expectPostgresError(
+      insertBalance(0),
+      '23514',
+      'shots_extraction_balance_check',
+    )
+
+    await database().begin(async (transaction) => {
+      const [method] = await transaction<[{ id: number }]>`
+        insert into brewing_methods (name)
+        values (${`balance-method-${crypto.randomUUID()}`}) returning id
+      `
+      const [shot] = await transaction<[{ extraction_balance: number }]>`
+        insert into shots (brewing_method_id, extraction_balance)
+        values (${method.id}, 3)
+        returning extraction_balance
+      `
+      expect(shot.extraction_balance).toBe(3)
+
+      await transaction`delete from shots where brewing_method_id = ${method.id}`
+      await transaction`delete from brewing_methods where id = ${method.id}`
     })
   })
 

@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import { CollectionToolbar } from '@/components/collection-toolbar'
 import { SelectField } from '@/components/form/form-field'
+import { useTasteProfile } from '@/hooks/use-taste-profile'
+import { cn } from '@/lib/utils'
 
 type MethodOption = {
   readonly id: number
@@ -36,6 +38,8 @@ export function BrewCollectionToolbar({
   onMethodChange,
   onRatingChange,
 }: BrewCollectionToolbarProps) {
+  const showRating = useTasteProfile().overallRating
+
   return (
     <CollectionToolbar
       value={query}
@@ -44,7 +48,7 @@ export function BrewCollectionToolbar({
       ariaLabel="Search brews by bean or method"
       resultLabel={resultLabel}
       actions={
-        <div className="grid min-w-0 grid-cols-2 gap-2">
+        <div className={cn('grid min-w-0 gap-2', showRating && 'grid-cols-2')}>
           <SelectField
             id="brew-method-filter"
             label="Method"
@@ -56,14 +60,16 @@ export function BrewCollectionToolbar({
             }))}
             className="min-w-32"
           />
-          <SelectField
-            id="brew-rating-filter"
-            label="Rating"
-            value={rating}
-            onChange={onRatingChange}
-            options={RATING_OPTIONS}
-            className="min-w-28"
-          />
+          {showRating ? (
+            <SelectField
+              id="brew-rating-filter"
+              label="Rating"
+              value={rating}
+              onChange={onRatingChange}
+              options={RATING_OPTIONS}
+              className="min-w-28"
+            />
+          ) : null}
         </div>
       }
     />

@@ -18,6 +18,7 @@ import { Progress } from '@/components/ui/progress'
 import { StarRating } from '@/components/ui/star-rating'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { percentChange } from '@/lib/stats-filters'
 import type { DetailedStats } from './stats-types'
 
@@ -42,6 +43,7 @@ function RankedList({
   }[]
 }) {
   const formatNumber = useNumberFormatter()
+  const showRatings = useTasteProfile().overallRating
   return (
     <section>
       <h3 className="font-display text-base font-bold">{title}</h3>
@@ -57,7 +59,9 @@ function RankedList({
               <span className="min-w-0 flex-1 truncate font-medium">
                 {item.name}
               </span>
-              {item.avgRating !== null && item.avgRating !== undefined ? (
+              {showRatings &&
+              item.avgRating !== null &&
+              item.avgRating !== undefined ? (
                 <StarRating value={item.avgRating} variant="compact" />
               ) : null}
               <span className="text-muted-foreground">
@@ -74,6 +78,7 @@ function RankedList({
 export function StatsVisitsCard({ visits, places }: StatsVisitsCardProps) {
   const formatDate = useDateFormatter()
   const formatNumber = useNumberFormatter()
+  const tasteProfile = useTasteProfile()
   const visitChange = percentChange(visits.total, visits.previousTotal)
   const highestVisitCount = Math.max(
     1,
@@ -125,19 +130,21 @@ export function StatsVisitsCard({ visits, places }: StatsVisitsCardProps) {
             icon={MapPin}
             variant="quiet"
           />
-          <MetricCard
-            label="Average rating"
-            value={
-              visits.averageRating === null ? (
-                '—'
-              ) : (
-                <StarRating value={visits.averageRating} variant="compact" />
-              )
-            }
-            detail={`${formatNumber(visits.totalRated)} rated visits`}
-            icon={Star}
-            variant="quiet"
-          />
+          {tasteProfile.overallRating ? (
+            <MetricCard
+              label="Average rating"
+              value={
+                visits.averageRating === null ? (
+                  '—'
+                ) : (
+                  <StarRating value={visits.averageRating} variant="compact" />
+                )
+              }
+              detail={`${formatNumber(visits.totalRated)} rated visits`}
+              icon={Star}
+              variant="quiet"
+            />
+          ) : null}
           <MetricCard
             label="Longest visit streak"
             value={`${formatNumber(visits.streaks.longest)} days`}
@@ -243,7 +250,8 @@ export function StatsVisitsCard({ visits, places }: StatsVisitsCardProps) {
                         ) : null}
                       </div>
                       <div className="flex shrink-0 items-center gap-3 text-sm text-muted-foreground">
-                        {place.avgRating !== null ? (
+                        {tasteProfile.overallRating &&
+                        place.avgRating !== null ? (
                           <StarRating
                             value={place.avgRating}
                             variant="compact"
@@ -277,7 +285,9 @@ export function StatsVisitsCard({ visits, places }: StatsVisitsCardProps) {
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
             <RankedList title="Drink types" items={visits.drinkTypes} />
             <RankedList title="Cities" items={visits.cities} />
-            <RankedList title="Visit taste tags" items={visits.tasteTags} />
+            {tasteProfile.flavorTags ? (
+              <RankedList title="Visit taste tags" items={visits.tasteTags} />
+            ) : null}
           </div>
         ) : null}
       </CardContent>

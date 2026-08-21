@@ -1,15 +1,18 @@
 import type { ComponentType } from 'react'
 import { TextareaField } from '@/components/form/form-field'
+import { ExtractionBalanceField } from '@/components/shots/extraction-balance-field'
 import { ShotSensoryRatingFields } from '@/components/shots/shot-sensory-ratings'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { StarRating } from '@/components/ui/star-rating'
 import { Textarea } from '@/components/ui/textarea'
+import { useTasteProfile } from '@/hooks/use-taste-profile'
 import type {
   ShotSensoryRatingKey,
   ShotSensoryRatings,
 } from '@/lib/shot-sensory'
+import { enabledSensoryRatingKeys } from '@/lib/taste-profile'
 import { cn } from '@/lib/utils'
 
 type TasteTagOption = {
@@ -47,6 +50,8 @@ type TastingFieldsProps = {
   readonly notes: ValueControl<string>
   readonly tags: TasteTagControl
   readonly sensory?: SensoryControl
+  /** Simple-mode sour-to-bitter axis. Brews only; visits have no extraction. */
+  readonly balance?: ValueControl<number>
 }
 
 const TASTING_CONFIG = {
@@ -73,10 +78,24 @@ export function TastingFields({
   notes,
   tags,
   sensory,
+  balance,
 }: TastingFieldsProps) {
   const config = TASTING_CONFIG[kind]
   const NotesField = NOTES_FIELDS[kind]
   const idPrefix = kind === 'shot' ? 'shot' : 'visit'
+  const tasteProfile = useTasteProfile()
+  const showRating = tasteProfile.overallRating
+  const showSensory =
+    sensory !== undefined && enabledSensoryRatingKeys(tasteProfile).length > 0
+  const showBalance = balance !== undefined && tasteProfile.extractionBalance
+  const showTags = tasteProfile.flavorTags && tags.options.length > 0
+  const showNotes = tasteProfile.notes
+
+  // A visit has no sensory factors, so enabling only those must not leave an
+  // empty card behind.
+  if (!showRating && !showSensory && !showBalance && !showTags && !showNotes) {
+    return null
+  }
 
   return (
     <Card
@@ -87,26 +106,39 @@ export function TastingFields({
         <CardTitle id={config.headingId}>{config.heading}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-1">
-          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-            <span className="text-sm font-medium">Overall rating</span>
-            <StarRating
-              value={rating.value}
-              onChange={rating.onChange}
-              sizeClassName="size-5"
-              ariaLabel={config.ratingLabel}
-            />
+        {showRating || showSensory || showBalance ? (
+          <div className="space-y-1">
+            {showRating ? (
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                <span className="text-sm font-medium">Overall rating</span>
+                <StarRating
+                  value={rating.value}
+                  onChange={rating.onChange}
+                  sizeClassName="size-5"
+                  ariaLabel={config.ratingLabel}
+                />
+              </div>
+            ) : null}
+
+            {showSensory && sensory ? (
+              <ShotSensoryRatingFields
+                values={sensory.values}
+                onChange={sensory.onChange}
+              />
+            ) : null}
+
+            {showBalance && balance ? (
+              <div className="pt-1">
+                <ExtractionBalanceField
+                  value={balance.value}
+                  onChange={balance.onChange}
+                />
+              </div>
+            ) : null}
           </div>
+        ) : null}
 
-          {sensory ? (
-            <ShotSensoryRatingFields
-              values={sensory.values}
-              onChange={sensory.onChange}
-            />
-          ) : null}
-        </div>
-
-        {tags.options.length > 0 ? (
+        {showTags ? (
           <TasteTags
             id={`${idPrefix}-tags-label`}
             tags={tags.options}
@@ -115,7 +147,9 @@ export function TastingFields({
           />
         ) : null}
 
-        <NotesField notes={notes.value} onNotesChange={notes.onChange} />
+        {showNotes ? (
+          <NotesField notes={notes.value} onNotesChange={notes.onChange} />
+        ) : null}
       </CardContent>
     </Card>
   )

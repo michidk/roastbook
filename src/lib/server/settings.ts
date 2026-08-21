@@ -16,6 +16,13 @@ import {
 } from '@/lib/app-settings'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { type CollectionView, isCollectionView } from '@/lib/collection-view'
+import {
+  DEFAULT_TASTE_PROFILE_FIELDS,
+  TASTE_PROFILE_FIELDS,
+  type TasteProfileConfig,
+  type TasteProfileField,
+  tasteProfileConfigFrom,
+} from '@/lib/taste-profile'
 
 const defaultMapLocationSchema = z
   .object({
@@ -51,6 +58,14 @@ function listViewSchema(value: unknown): CollectionView {
   return value
 }
 
+// Normalizes to the canonical field order and silently drops anything the
+// current build does not know about, so a stored value from another version
+// never breaks the settings page.
+function tasteProfileFieldsSchema(value: unknown): TasteProfileField[] {
+  const fields = z.array(z.string()).max(64).parse(value)
+  return TASTE_PROFILE_FIELDS.filter((field) => fields.includes(field))
+}
+
 function toAppSettings(row: typeof settingsTable.$inferSelect): AppSettings {
   const latitude = row.defaultMapLatitude
   const longitude = row.defaultMapLongitude
@@ -68,6 +83,7 @@ function toAppSettings(row: typeof settingsTable.$inferSelect): AppSettings {
     defaultListView: listViewSchema(row.defaultListView),
     defaultMapLocation,
     numberFormat: numberFormatSchema(row.numberFormat),
+    tasteProfile: tasteProfileConfigFrom(row.tasteProfileFields),
     timeZone: timeZoneSchema(row.timeZone),
   }
 }
@@ -94,6 +110,7 @@ type EditableSettings = Pick<
   | 'dateFormat'
   | 'defaultListView'
   | 'numberFormat'
+  | 'tasteProfileFields'
   | 'timeZone'
   | 'defaultMapLatitude'
   | 'defaultMapLongitude'
@@ -119,6 +136,21 @@ async function upsertSettings(
 export const getAppSettings = createServerFn({ method: 'GET' }).handler(
   async () => toAppSettings(await ensureSettingsRow()),
 )
+
+/**
+ * Read-only taste profile lookup for server-side domain code that has to honor
+ * the configuration without creating the settings row. Falls back to the
+ * defaults when no row exists yet.
+ */
+export async function readTasteProfile(): Promise<TasteProfileConfig> {
+  const row = await db.query.settings.findFirst({
+    columns: { tasteProfileFields: true },
+    where: eq(settingsTable.id, 1),
+  })
+  return tasteProfileConfigFrom(
+    row?.tasteProfileFields ?? DEFAULT_TASTE_PROFILE_FIELDS,
+  )
+}
 
 export const updateDefaultCurrency = createServerFn({ method: 'POST' })
   .validator(currencySchema)
@@ -159,6 +191,15 @@ export const updateDefaultListView = createServerFn({ method: 'POST' })
   .validator(listViewSchema)
   .handler(({ data: defaultListView }) =>
     upsertSettings({ defaultListView }, 'Could not save the default list view'),
+  )
+
+export const updateTasteProfileFields = createServerFn({ method: 'POST' })
+  .validator(tasteProfileFieldsSchema)
+  .handler(({ data: tasteProfileFields }) =>
+    upsertSettings(
+      { tasteProfileFields },
+      'Could not save the taste profile fields',
+    ),
   )
 
 export const updateDefaultMapLocation = createServerFn({ method: 'POST' })

@@ -11,6 +11,7 @@ import { z } from 'zod'
 import { DeleteConfirmation } from '@/components/DeleteConfirmation'
 import { InputField, SelectField } from '@/components/form/form-field'
 import { Page, PageHeader } from '@/components/page-layout'
+import { ExtractionBalanceField } from '@/components/shots/extraction-balance-field'
 import { ShotEditForm } from '@/components/shots/shot-edit-form'
 import { ShotSensoryRatingFields } from '@/components/shots/shot-sensory-ratings'
 import { Badge } from '@/components/ui/badge'
@@ -31,7 +32,9 @@ import { Separator } from '@/components/ui/separator'
 import { StarRating } from '@/components/ui/star-rating'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { editModeSearchField } from '@/lib/edit-mode'
+import { hasExtractionBalance } from '@/lib/extraction-balance'
 import { getActiveBeans } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getGear } from '@/lib/server/gear'
@@ -42,6 +45,7 @@ import {
   hasShotSensoryRatings,
   shotSensoryRatingsFrom,
 } from '@/lib/shot-sensory'
+import { enabledSensoryRatingKeys } from '@/lib/taste-profile'
 import { isNegativeTasteTag } from '@/lib/taste-tags'
 
 export const Route = createFileRoute('/shots/$shotId')({
@@ -91,6 +95,7 @@ function ShotDetailPage() {
   const { shot, recipes, editData } = Route.useLoaderData()
   const { edit: isEditing = false } = Route.useSearch()
   const formatNumber = useNumberFormatter()
+  const tasteProfile = useTasteProfile()
   const navigate = useNavigate({ from: '/shots/$shotId' })
   const router = useRouter()
 
@@ -204,13 +209,19 @@ function ShotDetailPage() {
         }
       : null,
   ].filter((field) => field !== null)
-  const hasTasteTags = shot.tasteTags.length > 0
-  const hasNotes = Boolean(shot.notes?.trim())
+  const hasRating = tasteProfile.overallRating && Boolean(shot.rating)
+  const hasTasteTags = tasteProfile.flavorTags && shot.tasteTags.length > 0
+  const hasNotes = tasteProfile.notes && Boolean(shot.notes?.trim())
   const sensoryRatings = shotSensoryRatingsFrom(shot)
-  const hasSensoryRatings = hasShotSensoryRatings(shot)
-  const hasTasting = Boolean(
-    shot.rating || hasSensoryRatings || hasTasteTags || hasNotes,
+  const hasSensoryRatings = hasShotSensoryRatings(
+    shot,
+    enabledSensoryRatingKeys(tasteProfile),
   )
+  const hasBalance =
+    tasteProfile.extractionBalance &&
+    hasExtractionBalance(shot.extractionBalance)
+  const hasTasting =
+    hasRating || hasSensoryRatings || hasBalance || hasTasteTags || hasNotes
   const availableRecipes = recipes.filter(
     (recipe) => recipe.brewingMethodId === shot.brewingMethodId,
   )
@@ -402,14 +413,21 @@ function ShotDetailPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle as="h2">Tasting</CardTitle>
-                  {shot.rating && (
+                  {hasRating && shot.rating ? (
                     <StarRating value={shot.rating} variant="compact" />
-                  )}
+                  ) : null}
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 {hasSensoryRatings ? (
                   <ShotSensoryRatingFields values={sensoryRatings} readOnly />
+                ) : null}
+
+                {hasBalance ? (
+                  <ExtractionBalanceField
+                    value={shot.extractionBalance ?? 0}
+                    readOnly
+                  />
                 ) : null}
 
                 {hasTasteTags && (

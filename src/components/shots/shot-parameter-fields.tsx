@@ -40,6 +40,7 @@ export type ShotFormValues = {
   tampForceKg: string
   accessoryGearIds: number[]
   rating: number
+  extractionBalance: number
   bitterness: number
   acidity: number
   sweetness: number
@@ -73,6 +74,7 @@ export const EMPTY_SHOT_FORM_VALUES: ShotFormValues = {
   tampForceKg: '',
   accessoryGearIds: [],
   rating: 0,
+  extractionBalance: 0,
   notes: '',
 }
 

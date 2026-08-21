@@ -6,6 +6,7 @@ import {
 import { InputField, TextareaField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
 import { StarRating } from '@/components/ui/star-rating'
+import { useTasteProfile } from '@/hooks/use-taste-profile'
 
 type CoffeeShopRatingField = {
   readonly value: number
@@ -33,6 +34,7 @@ export function CoffeeShopFields({
   rating,
 }: CoffeeShopFieldsProps) {
   const id = (field: string) => `${idPrefix}-${field}`
+  const showRating = useTasteProfile().overallRating
 
   return (
     <>
@@ -49,7 +51,7 @@ export function CoffeeShopFields({
           onChange={(value) => onChange('name', value)}
           required
         />
-        {rating ? (
+        {rating && showRating ? (
           <div className="space-y-2">
             <span className="text-sm font-medium">Rating</span>
             <StarRating

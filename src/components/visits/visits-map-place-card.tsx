@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { StarRating } from '@/components/ui/star-rating'
+import { useTasteProfile } from '@/hooks/use-taste-profile'
 import type { SavedMapPlace } from './visits-map-utils'
 
 type VisitsMapPlaceCardProps = {
@@ -18,6 +19,7 @@ export function VisitsMapPlaceCard({
   onClose,
 }: VisitsMapPlaceCardProps) {
   const cardRef = useRef<HTMLElement | null>(null)
+  const showRating = useTasteProfile().overallRating
   const location = [place.city, place.country].filter(Boolean).join(', ')
   const openStreetMapUrl = `https://www.openstreetmap.org/?mlat=${place.latitude}&mlon=${place.longitude}#map=18/${place.latitude}/${place.longitude}`
 
@@ -91,7 +93,7 @@ export function VisitsMapPlaceCard({
         <span className="rounded-xl bg-secondary px-2.5 py-1 font-semibold">
           {place.visitCount} {place.visitCount === 1 ? 'visit' : 'visits'}
         </span>
-        {place.rating !== null && (
+        {showRating && place.rating !== null && (
           <span className="flex items-center gap-1 rounded-xl bg-primary/10 px-2.5 py-1 font-semibold text-foreground">
             <StarRating
               value={place.rating}

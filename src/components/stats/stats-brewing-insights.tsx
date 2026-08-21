@@ -18,6 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { highRatingRange } from '@/lib/stats-analysis'
 import { formatMeasurement, formatRatio } from '@/lib/stats-format'
 import { cn } from '@/lib/utils'
@@ -258,6 +259,7 @@ export function TasteProfileCard({
   readonly items: DetailedStats['tasteProfile']
 }) {
   const formatNumber = useNumberFormatter()
+  const showRatings = useTasteProfile().overallRating
   const maxCount = Math.max(1, ...items.map((item) => item.count))
   const plotted = items.filter(
     (item) => item.extractionAxis !== null && item.strengthAxis !== null,
@@ -273,7 +275,9 @@ export function TasteProfileCard({
           Taste profile
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          The most frequently recorded sensations and their average ratings.
+          {showRatings
+            ? 'The most frequently recorded sensations and their average ratings.'
+            : 'The most frequently recorded sensations.'}
         </p>
       </CardHeader>
       <CardContent className="grid gap-6 lg:grid-cols-2">
@@ -283,7 +287,7 @@ export function TasteProfileCard({
               <div className="flex items-center justify-between gap-3 text-sm">
                 <span className="font-medium">{item.name}</span>
                 <span className="flex items-center gap-3 text-muted-foreground">
-                  {item.avgRating !== null ? (
+                  {showRatings && item.avgRating !== null ? (
                     <StarRating value={item.avgRating} variant="compact" />
                   ) : null}
                   {formatNumber(item.count)}
