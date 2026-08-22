@@ -277,7 +277,7 @@ export function BeanEditContent({
           imageAction={
             visionEnabled
               ? {
-                  label: 'Fill from image',
+                  label: 'Extract details with AI',
                   pendingImageId: extractingImageId,
                   disabled: isResearching,
                   onSelect: onExtractFromImage,

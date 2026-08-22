@@ -437,6 +437,11 @@ async function extractBeanInfoFromImageImpl(
     })
     const responseBody: unknown = await response.json()
     if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(
+          'AI service authentication failed. Update the configured API key.',
+        )
+      }
       const providerError = z
         .object({ error: z.object({ message: z.string() }) })
         .safeParse(responseBody)
