@@ -410,7 +410,12 @@ export function PictureUploader({
             >
               <Link2 className="size-4" />
               Add from URL
-              <ChevronDown className="size-4 transition-transform group-data-[panel-open]:rotate-180" />
+              <ChevronDown
+                className={cn(
+                  'size-4 transition-transform',
+                  urlOpen && 'rotate-180',
+                )}
+              />
             </CollapsibleTrigger>
           </div>
 
