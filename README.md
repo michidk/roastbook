@@ -72,8 +72,8 @@ Set `OPENAI_API_KEY` and these turn on — everything else works without it:
   from Settings.
 
 Every AI call is optional, server-side only, rate-limited, schema-validated,
-and recorded in PostgreSQL for local debugging. Raw logs include full image
-payloads and remain inside the deployment's authentication boundary.
+and recorded in PostgreSQL for local debugging. Image logs retain metadata such
+as MIME type and byte count, not the image payload itself.
 
 **On the roadmap: an MCP server**, so your own agents can read and write your
 coffee log directly — ask what your last ten Gesha brews had in common, or have

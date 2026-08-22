@@ -307,8 +307,8 @@ export function AiRequestLogDialog({
           <DialogTitle>AI request log</DialogTitle>
           <DialogDescription>
             Inspect the raw application payload, response events, errors, and
-            token usage for every AI run. Image inputs include their full base64
-            data.
+            token usage for every AI run. Image logs include metadata, not the
+            image data itself.
           </DialogDescription>
         </DialogHeader>
         <DialogBody className="space-y-3">
