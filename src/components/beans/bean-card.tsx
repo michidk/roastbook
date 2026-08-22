@@ -93,18 +93,13 @@ export function BeanCard({ bean, showRemainingEstimate }: BeanCardProps) {
 
         {weightEstimate ? (
           <div
-            className="pointer-events-none absolute top-[4.5rem] right-4 bottom-4 z-20 flex w-10 flex-col items-center gap-2"
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-1.5"
             aria-hidden="true"
           >
-            <span className="rounded-full border border-white/50 bg-black/65 px-2 py-1 text-xs font-bold text-white tabular-nums backdrop-blur-[2px]">
-              {formatNumber(weightEstimate.percentRemaining)}%
-            </span>
-            <span className="relative min-h-0 w-2 flex-1 overflow-hidden rounded-full border border-white/45 bg-black/45 backdrop-blur-[2px]">
-              <span
-                className="absolute inset-x-0 bottom-0 rounded-full bg-white transition-[height] duration-200 motion-reduce:transition-none"
-                style={{ height: `${weightEstimate.percentRemaining}%` }}
-              />
-            </span>
+            <span
+              className="block h-full bg-white transition-[width] duration-200 motion-reduce:transition-none"
+              style={{ width: `${weightEstimate.percentRemaining}%` }}
+            />
           </div>
         ) : null}
 
@@ -127,9 +122,7 @@ export function BeanCard({ bean, showRemainingEstimate }: BeanCardProps) {
             </span>
           </div>
 
-          <CardContent
-            className={`mt-auto p-0 ${weightEstimate ? 'pr-14' : ''}`}
-          >
+          <CardContent className="mt-auto p-0">
             {roasterName && (
               <p className="mb-1 truncate text-sm font-bold tracking-[0.1em] text-white/90 uppercase">
                 {roasterName}
