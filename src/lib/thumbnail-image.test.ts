@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import sharp from 'sharp'
-import { createAiImage, validateImageBuffer } from '@/lib/thumbnail-image'
+import {
+  createAiImage,
+  createStoredImage,
+  validateImageBuffer,
+} from '@/lib/thumbnail-image'
 
 describe('validateImageBuffer', () => {
   test('accepts an image whose bytes match its declared MIME type', async () => {
@@ -60,5 +64,30 @@ describe('createAiImage', () => {
     expect(metadata.format).toBe('jpeg')
     expect(metadata.width).toBe(1_536)
     expect(metadata.height).toBe(2_048)
+  })
+})
+
+describe('createStoredImage', () => {
+  test('stores a bounded image instead of the full-resolution upload', async () => {
+    const image = await sharp({
+      create: {
+        width: 3_472,
+        height: 4_624,
+        channels: 3,
+        background: '#c7352c',
+      },
+    })
+      .jpeg()
+      .withMetadata({ orientation: 1 })
+      .toBuffer()
+
+    const result = await createStoredImage(image)
+    const metadata = await sharp(result).metadata()
+
+    expect(metadata.format).toBe('jpeg')
+    expect(metadata.width).toBe(1_922)
+    expect(metadata.height).toBe(2_560)
+    expect(metadata.orientation).toBeUndefined()
+    expect(result.byteLength).toBeLessThan(image.byteLength)
   })
 })

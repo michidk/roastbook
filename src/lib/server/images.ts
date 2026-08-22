@@ -24,7 +24,7 @@ import {
   thumbnailEntityTypeSchema,
 } from '@/lib/server-validation'
 import { generateStoragePath, getStorage } from '@/lib/storage'
-import { validateImageBuffer } from '@/lib/thumbnail-image'
+import { createStoredImage, validateImageBuffer } from '@/lib/thumbnail-image'
 
 export type EntityType = 'beans' | 'gear' | 'coffee-shops' | 'shots' | 'visits'
 const MAX_IMAGES_PER_ENTITY = 20
@@ -130,18 +130,21 @@ export const uploadEntityImage = createServerFn({ method: 'POST' })
 
     const binaryData = Buffer.from(await data.file.arrayBuffer())
     await validateImageBuffer(binaryData, data.mimeType)
-    const blob = new Blob([binaryData], { type: data.mimeType })
+    const storedImage = await createStoredImage(binaryData)
+    const blob = new Blob([new Uint8Array(storedImage)], {
+      type: data.mimeType,
+    })
 
     await storage.upload(blob, storagePath)
 
     try {
-      await generateAndUploadThumbnail(binaryData, storagePath)
+      await generateAndUploadThumbnail(storedImage, storagePath)
 
       const baseValues = {
         storagePath,
         originalFilename: data.filename,
         mimeType: data.mimeType,
-        sizeBytes: data.sizeBytes,
+        sizeBytes: storedImage.byteLength,
       }
 
       let image: { id: number; storagePath: string }

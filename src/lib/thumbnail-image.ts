@@ -5,6 +5,7 @@ export { getThumbnailPath } from '@/lib/image-path'
 
 const THUMB_WIDTH = 640
 const THUMB_QUALITY = 78
+const STORED_IMAGE_MAX_DIMENSION = 2_560
 const AI_IMAGE_MAX_DIMENSION = 2_048
 const AI_IMAGE_QUALITY = 85
 
@@ -60,6 +61,21 @@ export const createThumbnail = createServerOnlyFn(
       .rotate()
       .resize({ width: THUMB_WIDTH, withoutEnlargement: true })
       .webp({ quality: THUMB_QUALITY })
+      .toBuffer()
+  },
+)
+
+export const createStoredImage = createServerOnlyFn(
+  async (buffer: Buffer): Promise<Buffer> => {
+    const sharp = await loadSharp()
+    return sharp(buffer)
+      .rotate()
+      .resize({
+        width: STORED_IMAGE_MAX_DIMENSION,
+        height: STORED_IMAGE_MAX_DIMENSION,
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
       .toBuffer()
   },
 )
