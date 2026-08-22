@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/collapsible'
 import { Input } from '@/components/ui/input'
 import type { ImageFile } from '@/hooks/useImageUpload'
+import { getImageUploadErrorMessage } from '@/lib/image-upload-error'
 import { cn } from '@/lib/utils'
 
 interface PictureUploaderProps {
@@ -56,55 +57,16 @@ interface PictureUploaderProps {
   ) => void | Promise<void>
 }
 
-function messageFromValue(value: unknown): string | null {
-  if (typeof value === 'string' && value.trim()) {
-    const trimmed = value.trim()
-    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-      try {
-        const structuredMessage = messageFromValue(JSON.parse(trimmed))
-        if (structuredMessage) return structuredMessage
-      } catch {
-        // Keep the original text when it only resembles JSON.
-      }
-    }
-    return trimmed
-  }
-  if (!value || typeof value !== 'object') return null
-
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      const itemMessage = messageFromValue(item)
-      if (itemMessage) return itemMessage
-    }
-    return null
-  }
-
-  if ('message' in value && typeof value.message === 'string') {
-    return messageFromValue(value.message)
-  }
-  if ('error' in value && typeof value.error === 'string') {
-    return messageFromValue(value.error)
-  }
-  return null
-}
-
 async function errorMessage(error: unknown): Promise<string> {
-  const directMessage = messageFromValue(error)
-  if (directMessage) return directMessage
-
   if (error instanceof Response) {
     try {
       const payload: unknown = await error.clone().json()
-      const responseMessage = messageFromValue(payload)
-      if (responseMessage) return responseMessage
+      return getImageUploadErrorMessage(payload)
     } catch {
-      // Fall through to the response status when there is no JSON body.
+      return getImageUploadErrorMessage(error)
     }
-
-    if (error.statusText) return `${error.status} ${error.statusText}`
   }
-
-  return 'Could not add that picture. Try a different file.'
+  return getImageUploadErrorMessage(error)
 }
 
 function clipboardFiles(event: ClipboardEvent | ReactClipboardEvent): File[] {
@@ -174,7 +136,16 @@ export function PictureUploader({
   const intakeBusy = isBusy || isAddingFiles || isImporting || isRetrying
 
   const errorByPreview = useMemo(
-    () => new Map(imageErrors.map((error) => [error.preview, error])),
+    () =>
+      new Map(
+        imageErrors.map((error) => [
+          error.preview,
+          {
+            ...error,
+            message: getImageUploadErrorMessage(error.message),
+          },
+        ]),
+      ),
     [imageErrors],
   )
   const activeErrors = images.flatMap((image) => {
@@ -182,7 +153,7 @@ export function PictureUploader({
     return error ? [{ image, error }] : []
   })
   const failedImages = activeErrors.map(({ image }) => image)
-  const firstImageError = activeErrors[0]?.error
+  const failureMessage = activeErrors[0]?.error.message
 
   const addFiles = useCallback(
     async (files: readonly File[]) => {
@@ -281,10 +252,10 @@ export function PictureUploader({
   } not be uploaded`
 
   return (
-    <div ref={rootRef} className="space-y-4" aria-busy={intakeBusy}>
+    <div ref={rootRef} className="space-y-3" aria-busy={intakeBusy}>
       {images.length > 0 ? (
         <ul
-          className="grid grid-cols-2 gap-3 sm:grid-cols-4"
+          className="grid grid-cols-[repeat(auto-fill,minmax(6.25rem,1fr))] gap-2"
           aria-label="Selected pictures"
         >
           {images.map((image, index) => {
@@ -316,9 +287,9 @@ export function PictureUploader({
                   <X className="size-4" />
                 </button>
                 {imageError ? (
-                  <span className="absolute inset-x-1 bottom-1 inline-flex min-h-8 items-center gap-1.5 rounded-lg bg-destructive px-2 py-1 text-xs font-bold text-white shadow-sm">
+                  <span className="absolute inset-x-1 bottom-1 inline-flex min-h-7 items-center justify-center gap-1 rounded-lg bg-destructive px-2 py-1 text-xs font-bold text-white shadow-sm">
                     <CircleAlert className="size-3.5" />
-                    Upload failed
+                    Failed
                   </span>
                 ) : isBusy ? (
                   <span className="absolute inset-x-1 bottom-1 inline-flex min-h-8 items-center gap-1.5 rounded-lg bg-foreground/85 px-2 py-1 text-xs font-bold text-background shadow-sm backdrop-blur-sm">
@@ -339,7 +310,7 @@ export function PictureUploader({
             setUrlOpen(open)
             if (!open) setUrlError(null)
           }}
-          className="overflow-hidden rounded-2xl border border-border bg-card shadow-coffee"
+          className="space-y-2"
         >
           <button
             type="button"
@@ -363,18 +334,12 @@ export function PictureUploader({
             onPaste={handlePaste}
             aria-describedby={formatHintId}
             className={cn(
-              'group m-2 flex min-h-36 w-[calc(100%-1rem)] flex-col items-center justify-center rounded-xl border-2 border-dashed border-input bg-secondary/25 px-5 py-5 text-center transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/45 disabled:cursor-wait disabled:opacity-60',
+              'group flex min-h-28 w-full items-center gap-3 rounded-xl border-2 border-dashed border-input bg-secondary/25 px-4 py-4 text-left transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/45 disabled:cursor-wait disabled:opacity-60',
               isDragging && 'border-primary bg-primary/10',
-              images.length > 0 &&
-                'min-h-28 sm:min-h-24 sm:flex-row sm:text-left',
+              images.length > 0 && 'min-h-24',
             )}
           >
-            <span
-              className={cn(
-                'flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/12 text-link transition-transform group-hover:scale-105',
-                images.length > 0 && 'sm:mr-4',
-              )}
-            >
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/12 text-link transition-transform group-hover:scale-105">
               {intakeBusy ? (
                 <Loader2 className="size-5 animate-spin" />
               ) : isDragging ? (
@@ -383,7 +348,7 @@ export function PictureUploader({
                 <ImagePlus className="size-5" />
               )}
             </span>
-            <span className="mt-3 min-w-0 sm:mt-0">
+            <span className="min-w-0">
               <span className="block font-display text-base font-bold text-foreground">
                 {isDragging
                   ? 'Drop pictures here'
@@ -392,24 +357,27 @@ export function PictureUploader({
                     : prompt}
               </span>
               <span className="mt-1 block text-sm text-muted-foreground">
-                Choose, drop, or paste from your clipboard
+                Choose, drop, or paste
               </span>
             </span>
           </button>
 
-          <div className="flex min-h-12 flex-col gap-1 border-t border-border/70 bg-secondary/30 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-1">
             <p
               id={formatHintId}
-              className="px-1 text-xs font-medium text-muted-foreground"
+              className="text-xs font-medium text-muted-foreground"
             >
-              JPG, PNG, WebP, HEIC/HEIF, GIF or AVIF · 10 MB max
+              Images up to 10 MB
+              <span className="sr-only">
+                . Supported formats: JPG, PNG, WebP, HEIC, HEIF, GIF and AVIF.
+              </span>
             </p>
             <CollapsibleTrigger
               disabled={intakeBusy}
-              className="group flex min-h-11 shrink-0 items-center gap-2 self-start rounded-full px-3 font-display text-sm font-bold text-link transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:self-auto"
+              className="group flex min-h-11 shrink-0 items-center gap-2 rounded-full px-3 font-display text-sm font-bold text-link transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Link2 className="size-4" />
-              Add from URL
+              From URL
               <ChevronDown
                 className={cn(
                   'size-4 transition-transform',
@@ -419,12 +387,12 @@ export function PictureUploader({
             </CollapsibleTrigger>
           </div>
 
-          <CollapsibleContent className="border-t border-border/70 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 motion-reduce:animate-none">
-            <div className="space-y-2 bg-secondary/15 px-3 py-3 sm:px-4">
+          <CollapsibleContent className="data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 motion-reduce:animate-none">
+            <div className="space-y-3 rounded-xl border border-border/70 bg-secondary/20 p-3">
               <label htmlFor={urlInputId} className="text-sm font-semibold">
                 Picture URL
               </label>
-              <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
+              <div className="flex min-w-0 flex-col gap-2">
                 <Input
                   id={urlInputId}
                   type="url"
@@ -499,29 +467,24 @@ export function PictureUploader({
 
       {activeErrors.length > 0 ? (
         <div
-          className="flex flex-col gap-3 rounded-xl border border-destructive/45 bg-destructive/10 px-4 py-3 text-destructive-text sm:flex-row sm:items-center"
+          className="rounded-xl border border-destructive/45 bg-destructive/10 p-3 text-destructive-text"
           role="alert"
         >
-          <CircleAlert className="size-5 shrink-0" />
-          <div className="min-w-0 flex-1">
-            <p className="font-display text-sm font-bold">{failureLabel}</p>
-            {firstImageError ? (
-              <p className="mt-0.5 break-words text-sm">
-                <span className="font-semibold">
-                  {firstImageError.filename}
-                </span>
-                {`: ${firstImageError.message}`}
-                {activeErrors.length > 1
-                  ? ` · ${activeErrors.length - 1} more`
-                  : null}
-              </p>
-            ) : null}
+          <div className="flex items-start gap-2.5">
+            <CircleAlert className="mt-0.5 size-5 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="font-display text-sm font-bold">{failureLabel}</p>
+              {failureMessage ? (
+                <p className="mt-1 text-sm leading-snug">{failureMessage}</p>
+              ) : null}
+            </div>
           </div>
           {onRetryImages ? (
             <Button
               type="button"
+              size="sm"
               variant="outline"
-              className="self-start bg-card sm:self-auto"
+              className="mt-3 bg-card"
               disabled={intakeBusy}
               onClick={() => void handleRetry()}
             >
@@ -530,7 +493,7 @@ export function PictureUploader({
               ) : (
                 <RotateCw className="size-4" />
               )}
-              Try again
+              Retry upload
             </Button>
           ) : null}
         </div>

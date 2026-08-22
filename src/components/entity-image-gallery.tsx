@@ -161,7 +161,7 @@ export function EntityImageGallery({
   }
 
   return (
-    <Card>
+    <Card size={editable ? 'sm' : 'default'}>
       <CardHeader>
         <CardTitle>Pictures</CardTitle>
       </CardHeader>
@@ -341,8 +341,8 @@ export function EntityImageGallery({
             onOpenFilePicker={openFilePicker}
             prompt={
               entityType === 'beans'
-                ? 'Add more bean pictures'
-                : 'Add more equipment pictures'
+                ? 'Add bean pictures'
+                : 'Add equipment pictures'
             }
             previewAltPrefix={entityType === 'beans' ? 'Bean' : 'Gear'}
             isBusy={isUploading}
