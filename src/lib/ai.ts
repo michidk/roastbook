@@ -284,12 +284,16 @@ const aiDecimal = z
   ])
   .transform(String)
 
-const MACHINE_SETTINGS_FIELDS = defineStructuredResearchFields({
+const aiDecimalAtMost = (maximum: number) =>
+  aiDecimal.refine((value) => Number(value) <= maximum)
+
+export const MACHINE_SETTINGS_FIELDS = defineStructuredResearchFields({
   brewPressureOpvBar: {
-    description: 'The documented brew pressure or factory OPV setting in bar.',
+    description:
+      'The documented operating brew pressure or factory OPV setting in bar. This is not the pump’s advertised maximum pressure.',
     jsonType: 'number',
     format: 'non-negative decimal number without a unit',
-    schema: aiDecimal,
+    schema: aiDecimalAtMost(12),
     examples: [9, 10.5],
   },
   supportsPreinfusion: {
@@ -316,7 +320,7 @@ const MACHINE_SETTINGS_FIELDS = defineStructuredResearchFields({
     description: 'The factory default pre-infusion pressure in bar.',
     jsonType: 'number',
     format: 'non-negative decimal number without a unit',
-    schema: aiDecimal,
+    schema: aiDecimalAtMost(9),
     examples: [2, 3.5],
   },
   defaultFlowLimitMlPerSecond: {
@@ -358,10 +362,11 @@ const MACHINE_SETTINGS_FIELDS = defineStructuredResearchFields({
     examples: [130, 135.5],
   },
   steamPressureBar: {
-    description: 'The documented steam pressure in bar.',
+    description:
+      'The documented steam-boiler or steam-circuit operating pressure in bar. This is not pump pressure.',
     jsonType: 'number',
     format: 'non-negative decimal number without a unit',
-    schema: aiDecimal,
+    schema: aiDecimalAtMost(3.5),
     examples: [1.2, 2],
   },
 })
@@ -684,6 +689,8 @@ async function researchMachineSettingsFromWebImpl(
       'Do not infer a value from a similar machine or a different model revision.',
       'Capabilities may be derived from clearly documented behavior: for example, automatic low-pressure extraction means pre-infusion is supported, and programmable volumetric shot buttons mean the auto-stop mode is volume.',
       'Numerical values must be explicitly documented for this model; convert compatible units when necessary and return only the requested unit.',
+      'Never use the advertised maximum pump rating as brew pressure, an OPV setting, pre-infusion pressure, or steam pressure. A statement such as “15 bar pump” supports none of those fields.',
+      'Steam pressure requires a documented steam-boiler or steam-circuit operating pressure. Omit it for thermocoil and thermoblock machines unless that exact operating pressure is documented.',
       'Omit model-dependent and user-configured values unless a factory default is explicitly documented.',
     ],
     logLabel: 'machine-settings',
