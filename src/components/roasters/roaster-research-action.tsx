@@ -5,6 +5,7 @@ import type { RoasterFormValues } from '@/components/roasters/roaster-form-value
 import { RoasterInfoDiffModal } from '@/components/roasters/roaster-info-diff-modal'
 import { Button } from '@/components/ui/button'
 import type { ExtractedRoasterInfo } from '@/lib/ai'
+import { getErrorMessage } from '@/lib/error-message'
 import {
   checkRoasterResearchEnabled,
   researchRoasterInfo,
@@ -58,7 +59,7 @@ export function RoasterResearchAction({
       setSuggestedData(result)
       setModalOpen(true)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Research failed')
+      toast.error(getErrorMessage(error, 'Research failed'))
     } finally {
       setIsResearching(false)
     }

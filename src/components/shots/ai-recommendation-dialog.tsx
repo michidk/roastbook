@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
+import { getErrorMessage } from '@/lib/error-message'
 import { getShotRecommendation } from '@/lib/server/shot-recommendations'
 import { SHOT_PARAMETER_META } from '@/lib/shot-parameters'
 import type { ShotRecommendationRequest } from '@/lib/shot-recommendation'
@@ -61,11 +62,7 @@ export function AiRecommendationDialog({
     try {
       setResult(await getShotRecommendation({ data: request }))
     } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : 'Could not generate a recommendation',
-      )
+      setError(getErrorMessage(caught, 'Could not generate a recommendation'))
     } finally {
       setLoading(false)
     }
