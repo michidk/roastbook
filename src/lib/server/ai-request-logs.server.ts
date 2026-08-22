@@ -114,6 +114,49 @@ export async function startAiRequestLog({
   }
 }
 
+export async function completeAiRequestLog({
+  logId,
+  model,
+  responsePayload,
+  usage = EMPTY_AI_TOKEN_TOTALS,
+  durationMs,
+}: {
+  logId: number | undefined
+  model: string
+  responsePayload: unknown
+  usage?: AiTokenTotals
+  durationMs: number
+}) {
+  await updateLogSafely(logId, {
+    status: 'succeeded',
+    responsePayload: toJsonValue(responsePayload),
+    ...usageValues(model, usage),
+    durationMs,
+    completedAt: new Date(),
+  })
+}
+
+export async function failAiRequestLog({
+  logId,
+  model,
+  error,
+  durationMs,
+}: {
+  logId: number | undefined
+  model: string
+  error: unknown
+  durationMs: number
+}) {
+  await updateLogSafely(logId, {
+    status: 'failed',
+    responsePayload: toJsonValue({ error: errorPayload(error) }),
+    errorMessage: errorMessage(error),
+    ...usageValues(model, EMPTY_AI_TOKEN_TOTALS),
+    durationMs,
+    completedAt: new Date(),
+  })
+}
+
 function usageForResponse(
   accumulated: AiTokenTotals,
   finalUsage: TokenUsage | undefined,
