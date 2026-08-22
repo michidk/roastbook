@@ -5,6 +5,8 @@ export { getThumbnailPath } from '@/lib/image-path'
 
 const THUMB_WIDTH = 640
 const THUMB_QUALITY = 78
+const AI_IMAGE_MAX_DIMENSION = 2_048
+const AI_IMAGE_QUALITY = 85
 
 const IMAGE_FORMAT_BY_MIME_TYPE: Readonly<Record<string, readonly string[]>> = {
   'image/avif': ['avif', 'heif'],
@@ -58,6 +60,22 @@ export const createThumbnail = createServerOnlyFn(
       .rotate()
       .resize({ width: THUMB_WIDTH, withoutEnlargement: true })
       .webp({ quality: THUMB_QUALITY })
+      .toBuffer()
+  },
+)
+
+export const createAiImage = createServerOnlyFn(
+  async (buffer: Buffer): Promise<Buffer> => {
+    const sharp = await loadSharp()
+    return sharp(buffer)
+      .rotate()
+      .resize({
+        width: AI_IMAGE_MAX_DIMENSION,
+        height: AI_IMAGE_MAX_DIMENSION,
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
+      .jpeg({ quality: AI_IMAGE_QUALITY })
       .toBuffer()
   },
 )

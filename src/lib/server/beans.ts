@@ -30,7 +30,7 @@ import {
   positiveIdSchema,
   shortTextSchema,
 } from '@/lib/server-validation'
-import { validateImageBuffer } from '@/lib/thumbnail-image'
+import { createAiImage, validateImageBuffer } from '@/lib/thumbnail-image'
 
 const beanTypeSchema = z.enum(BEAN_TYPE_VALUES)
 const roastLevelSchema = z.enum(ROAST_LEVEL_VALUES)
@@ -249,8 +249,9 @@ export const extractBeanInfo = createServerFn({ method: 'POST' })
     }
     const image = Buffer.from(data.imageBase64, 'base64')
     await validateImageBuffer(image, data.mimeType)
+    const aiImage = await createAiImage(image)
     return withResourceLimits('bean-image-extraction', () =>
-      extractBeanInfoFromImage(data.imageBase64, data.mimeType),
+      extractBeanInfoFromImage(aiImage.toString('base64'), 'image/jpeg'),
     )
   })
 

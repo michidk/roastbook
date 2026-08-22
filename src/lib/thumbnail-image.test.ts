@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import sharp from 'sharp'
-import { validateImageBuffer } from '@/lib/thumbnail-image'
+import { createAiImage, validateImageBuffer } from '@/lib/thumbnail-image'
 
 describe('validateImageBuffer', () => {
   test('accepts an image whose bytes match its declared MIME type', async () => {
@@ -38,5 +38,27 @@ describe('validateImageBuffer', () => {
     await expect(
       validateImageBuffer(Buffer.from('not an image'), 'image/png'),
     ).rejects.toThrow()
+  })
+})
+
+describe('createAiImage', () => {
+  test('orients, downsizes, and converts phone photos for vision models', async () => {
+    const image = await sharp({
+      create: {
+        width: 3_000,
+        height: 4_000,
+        channels: 3,
+        background: '#c7352c',
+      },
+    })
+      .png()
+      .toBuffer()
+
+    const result = await createAiImage(image)
+    const metadata = await sharp(result).metadata()
+
+    expect(metadata.format).toBe('jpeg')
+    expect(metadata.width).toBe(1_536)
+    expect(metadata.height).toBe(2_048)
   })
 })

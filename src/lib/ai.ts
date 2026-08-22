@@ -179,7 +179,7 @@ const BEAN_INFO_FIELDS = defineStructuredResearchFields({
   },
   notes: {
     description:
-      'All flavor descriptions, tasting notes, flavor profiles, cupping scores, SCA scores, and quality descriptors. Prefix flavor notes with "Tasting notes:".',
+      'All flavor descriptions, tasting notes, flavor profiles, cupping scores, SCA scores, quality descriptors, and clearly stated label details that do not fit another field, such as a named or specialized processing technique. Prefix flavor notes with "Tasting notes:".',
     jsonType: 'string',
     schema: z.string().trim().min(1).max(10_000),
     examples: [
@@ -427,9 +427,15 @@ async function extractBeanInfoFromImageImpl(
       stream: false,
     })
 
-    return content
+    const extracted = content
       ? parseStructuredResearchResult(content, BEAN_INFO_FIELDS)
       : {}
+    console.info('[Bean image extraction] completed', {
+      model: config.visionModel,
+      responseCharacters: content.length,
+      fields: Object.keys(extracted),
+    })
+    return extracted
   } catch (error) {
     console.error('[Bean image extraction] failed', {
       model: config.visionModel,
