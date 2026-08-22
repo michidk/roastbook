@@ -1,4 +1,4 @@
-import { CircleAlert, ImageIcon, Loader2, Star, Trash2, X } from 'lucide-react'
+import { CircleAlert, Loader2, Sparkles, Star, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 import { ImageWithFallback } from '@/components/image-with-fallback'
 import { PictureUploader } from '@/components/picture-uploader'
@@ -238,11 +238,11 @@ export function EntityImageGallery({
                         {imageAction.pendingImageId === image.id ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          <ImageIcon className="h-4 w-4" />
+                          <Sparkles className="h-4 w-4" />
                         )}
                         {imageAction.pendingImageId === image.id
-                          ? 'Filling…'
-                          : 'Fill'}
+                          ? 'Analyzing…'
+                          : 'Use AI'}
                       </Button>
                     )}
                     <Button
