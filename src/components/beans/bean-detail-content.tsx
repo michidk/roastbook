@@ -226,7 +226,7 @@ export function BeanEditContent({
   isResearching: boolean
   extractingImageId: number | null
   onResearch: () => void
-  onExtractFromImage: (image: EntityImage) => void
+  onExtractFromImage: (image: EntityImage) => Promise<void>
   onImagesChange: () => void
 }) {
   const set = <Key extends keyof BeanFormValues>(

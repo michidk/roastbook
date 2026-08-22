@@ -77,4 +77,15 @@ describe('structured research contracts', () => {
 
     expect(result).toEqual({ status: 'active', score: 95 })
   })
+
+  test('parses a valid JSON object surrounded by model commentary', () => {
+    const result = parseStructuredResearchResult(
+      `I found these values:
+{"status":"active","score":95}
+Hope this helps.`,
+      fields,
+    )
+
+    expect(result).toEqual({ status: 'active', score: 95 })
+  })
 })

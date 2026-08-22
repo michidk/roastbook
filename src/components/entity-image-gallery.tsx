@@ -211,6 +211,7 @@ export function EntityImageGallery({
                         variant="secondary"
                         className="absolute bottom-2 left-2 h-11 px-3 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary sm:h-11 [@media(hover:hover)]:h-8"
                         onClick={() => {
+                          setGalleryError(null)
                           void Promise.resolve(
                             imageAction.onSelect(image),
                           ).catch((error) => {

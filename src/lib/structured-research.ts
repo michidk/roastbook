@@ -107,8 +107,18 @@ function parseSupportedJsonResponse(content: string): unknown {
   const fencedJson = trimmedContent.match(
     /```(?:json)?\s*([\s\S]*?)\s*```/i,
   )?.[1]
+  const firstObjectCharacter = trimmedContent.indexOf('{')
+  const lastObjectCharacter = trimmedContent.lastIndexOf('}')
+  const embeddedJson =
+    firstObjectCharacter >= 0 && lastObjectCharacter > firstObjectCharacter
+      ? trimmedContent.slice(firstObjectCharacter, lastObjectCharacter + 1)
+      : undefined
 
-  return parseJsonCandidate(trimmedContent) ?? parseJsonCandidate(fencedJson)
+  return (
+    parseJsonCandidate(trimmedContent) ??
+    parseJsonCandidate(fencedJson) ??
+    parseJsonCandidate(embeddedJson)
+  )
 }
 
 function isJsonObject(value: unknown): value is Record<string, unknown> {

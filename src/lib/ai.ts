@@ -193,6 +193,20 @@ export type ExtractedBeanInfo = StructuredResearchResult<
   typeof BEAN_INFO_FIELDS
 >
 
+const extractedBeanInfoSchema = z.object({
+  name: BEAN_INFO_FIELDS.name.schema.optional(),
+  roaster: BEAN_INFO_FIELDS.roaster.schema.optional(),
+  type: BEAN_INFO_FIELDS.type.schema.optional(),
+  origin: BEAN_INFO_FIELDS.origin.schema.optional(),
+  region: BEAN_INFO_FIELDS.region.schema.optional(),
+  farm: BEAN_INFO_FIELDS.farm.schema.optional(),
+  variety: BEAN_INFO_FIELDS.variety.schema.optional(),
+  process: BEAN_INFO_FIELDS.process.schema.optional(),
+  roastLevel: BEAN_INFO_FIELDS.roastLevel.schema.optional(),
+  roastDate: BEAN_INFO_FIELDS.roastDate.schema.optional(),
+  notes: BEAN_INFO_FIELDS.notes.schema.optional(),
+})
+
 function beanInfoPrompt(task: string, evidenceRule: string): string {
   return buildStructuredResearchPrompt({
     role: 'You are a coffee expert assistant',
@@ -416,10 +430,11 @@ async function extractBeanInfoFromImageImpl(
   const timeout = setTimeout(() => abortController.abort(), 45_000)
 
   try {
-    const content = await chat({
+    const extracted = await chat({
       adapter: createAdapter(config.visionModel, config),
       systemPrompts,
       messages,
+      outputSchema: extractedBeanInfoSchema,
       middleware: [
         createAiRequestLogMiddleware(requestLogId, config.visionModel),
       ],
@@ -427,9 +442,7 @@ async function extractBeanInfoFromImageImpl(
       stream: false,
     })
 
-    return content
-      ? parseStructuredResearchResult(content, BEAN_INFO_FIELDS)
-      : {}
+    return extracted
   } finally {
     clearTimeout(timeout)
   }

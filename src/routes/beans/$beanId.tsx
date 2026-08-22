@@ -178,16 +178,13 @@ function BeanDetailPage() {
     source: 'image' | 'web',
   ) => {
     if (Object.keys(result).length === 0) {
-      toast.error(
-        source === 'web'
-          ? 'No information found'
-          : "Couldn't extract any information",
-      )
-      return
+      if (source === 'web') toast.error('No information found')
+      return false
     }
     setSuggestedData(result)
     setAiSource(source)
     setDiffModalOpen(true)
+    return true
   }
 
   const handleResearchOnline = async () => {
@@ -228,17 +225,17 @@ function BeanDetailPage() {
       })
       const encodedImage = dataUrl.split(',', 2)[1]
       if (!encodedImage) throw new Error('Could not read that picture')
-      showSuggestion(
-        await extractBeanInfo({
-          data: {
-            imageBase64: encodedImage,
-            mimeType: blob.type,
-          },
-        }),
-        'image',
-      )
-    } catch (error) {
-      toast.error(getErrorMessage(error, 'Extraction failed'))
+      const extracted = await extractBeanInfo({
+        data: {
+          imageBase64: encodedImage,
+          mimeType: blob.type,
+        },
+      })
+      if (!showSuggestion(extracted, 'image')) {
+        throw new Error(
+          'No coffee details were readable. Try a sharp, well-lit photo of the front or label.',
+        )
+      }
     } finally {
       setExtractingImageId(null)
     }
