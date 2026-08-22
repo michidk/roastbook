@@ -31,6 +31,18 @@ describe('image upload errors', () => {
     ).toBe('The upload service is temporarily unavailable. Try again.')
   })
 
+  test('never exposes a Hodor upstream failure page', () => {
+    expect(
+      getImageUploadErrorMessage(`
+        <!DOCTYPE html><html lang="en"><head>
+          <title>Roastbook Login</title>
+        </head><body><main><p>502</p><h1>Upstream Unavailable</h1>
+          <p>Hodor is running, but the downstream service could not be reached.</p>
+        </main></body></html>
+      `),
+    ).toBe('The upload service is temporarily unavailable. Try again.')
+  })
+
   test('keeps concise application validation messages', () => {
     expect(
       getImageUploadErrorMessage(

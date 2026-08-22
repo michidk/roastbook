@@ -462,7 +462,10 @@ export function PictureUploader({
       />
 
       {fileError ? (
-        <InlineError message={fileError} onDismiss={() => setFileError(null)} />
+        <InlineError
+          message={getImageUploadErrorMessage(fileError)}
+          onDismiss={() => setFileError(null)}
+        />
       ) : null}
 
       {activeErrors.length > 0 ? (

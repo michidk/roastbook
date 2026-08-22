@@ -23,7 +23,14 @@ type SharpFactory = typeof import('sharp').default
 let sharpFactoryPromise: Promise<SharpFactory> | undefined
 
 function loadSharp(): Promise<SharpFactory> {
-  sharpFactoryPromise ??= import('sharp').then(({ default: sharp }) => sharp)
+  sharpFactoryPromise ??= import('sharp').then(({ default: sharp }) => {
+    // Image extraction is bursty and runs in a memory-constrained web process.
+    // Do not retain decoded image buffers after the request completes, and keep
+    // libvips from multiplying peak memory through parallel operations.
+    sharp.cache(false)
+    sharp.concurrency(1)
+    return sharp
+  })
   return sharpFactoryPromise
 }
 
