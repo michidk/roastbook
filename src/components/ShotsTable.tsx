@@ -384,7 +384,7 @@ function MobileShotCard({
   return (
     <li className="list-none">
       <Link
-        to="/shots/$shotId"
+        to="/brews/$shotId"
         params={{ shotId: String(shot.id) }}
         aria-label={`View brew from ${shotDate}`}
         className={interactiveCardLinkClassName}
@@ -454,17 +454,17 @@ function ShotRow({
   const shotDate = formatDate(shot.brewedAt)
 
   return (
-    <TableRow className="group relative cursor-pointer">
+    <TableRow className="relative cursor-pointer focus-within:bg-muted/50">
       <TableCell className="font-medium">
         <Link
-          to="/shots/$shotId"
+          to="/brews/$shotId"
           params={{ shotId: String(shot.id) }}
-          className="absolute inset-0 z-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+          className="peer absolute inset-0 z-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
           aria-label={`View brew from ${shotDate}`}
         >
           <span className="sr-only">View brew from {shotDate}</span>
         </Link>
-        <span className="relative text-link underline-offset-4 group-hover:underline">
+        <span className="pointer-events-none relative text-link underline-offset-4 peer-hover:underline peer-focus-within:underline">
           {shotDate}
         </span>
       </TableCell>

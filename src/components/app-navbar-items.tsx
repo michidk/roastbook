@@ -24,7 +24,7 @@ export type NavItem = {
 }
 
 export const primaryNavItems: readonly NavItem[] = [
-  { title: 'Brews', url: '/shots', icon: Coffee },
+  { title: 'Brews', url: '/brews', icon: Coffee },
   { title: 'Beans', url: '/beans', icon: Bean },
   { title: 'Visits', url: '/visits', icon: UtensilsCrossed },
 ]
@@ -44,7 +44,7 @@ export const moreNavItems: readonly NavItem[] = [
 
 export const primaryCreateAction: NavItem = {
   title: 'New brew',
-  url: '/shots/new',
+  url: '/brews/new',
   icon: Coffee,
 }
 

@@ -142,7 +142,7 @@ function StatsPage() {
           title="No brews in this scope"
           description="Adjust the filters or log a brew to start building these insights."
           actionLabel="Log a brew"
-          actionHref="/shots/new"
+          actionHref="/brews/new"
         />
       ) : null}
 
@@ -151,7 +151,7 @@ function StatsPage() {
       {stats.shots.total === 0 ? (
         <div className="flex justify-center">
           <Button variant="outline" asChild>
-            <Link to="/shots">View all brews</Link>
+            <Link to="/brews">View all brews</Link>
           </Button>
         </div>
       ) : null}

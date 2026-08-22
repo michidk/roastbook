@@ -177,7 +177,7 @@ function RecipesPage() {
           title="No recipes yet"
           description="Open any saved brew and choose “Save as recipe”."
           actionLabel="Browse brews"
-          actionHref="/shots"
+          actionHref="/brews"
         />
       ) : (
         <div className="space-y-4">

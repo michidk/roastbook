@@ -45,7 +45,7 @@ function Dashboard() {
         <MetricCard
           value={formatNumber(stats.totalShots)}
           label="brews logged"
-          href="/shots"
+          href="/brews"
           variant="hero"
         />
         <MetricCard
@@ -56,7 +56,7 @@ function Dashboard() {
         <MetricCard
           value={formatNumber(stats.shotsThisMonth)}
           label="brews this month"
-          href="/shots"
+          href="/brews"
         />
         <MetricCard
           value={formatNumber(stats.cafeVisits)}
@@ -70,7 +70,7 @@ function Dashboard() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Recent brews</CardTitle>
             <Link
-              to="/shots"
+              to="/brews"
               className="-mx-2 inline-flex min-h-11 items-center rounded-md px-2 font-display text-sm font-bold text-link hover:underline [@media(hover:hover)_and_(pointer:fine)]:min-h-0"
             >
               View all
@@ -83,7 +83,7 @@ function Dashboard() {
                   No brews logged yet. Start by recording your first coffee.
                 </p>
                 <Button className="mt-4" asChild>
-                  <Link to="/shots/new">Log your first brew</Link>
+                  <Link to="/brews/new">Log your first brew</Link>
                 </Button>
               </div>
             ) : (
@@ -92,7 +92,7 @@ function Dashboard() {
                 return (
                   <Link
                     key={shot.id}
-                    to="/shots/$shotId"
+                    to="/brews/$shotId"
                     params={{ shotId: String(shot.id) }}
                     className="flex items-center gap-3.5 rounded-2xl bg-secondary px-4 py-3 transition-colors hover:bg-accent/70"
                   >
@@ -148,7 +148,7 @@ function Dashboard() {
             <CardTitle>Quick add</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2.5">
-            <QuickAddRow icon={Coffee} label="Log a brew" href="/shots/new" />
+            <QuickAddRow icon={Coffee} label="Log a brew" href="/brews/new" />
             <QuickAddRow
               icon={UtensilsCrossed}
               label="Log a visit"
