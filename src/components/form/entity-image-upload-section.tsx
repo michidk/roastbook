@@ -66,6 +66,7 @@ export function EntityImageUploadRecovery({
   continueLabel,
   onContinue,
   onRemoveImage,
+  isBusy = false,
   ...displayProps
 }: EntityImageUploadRecoveryProps) {
   return (
@@ -80,11 +81,16 @@ export function EntityImageUploadRecovery({
           onOpenFilePicker={upload.openFilePicker}
           prompt="Add pictures"
           showIntake={false}
+          isBusy={isBusy}
           {...displayProps}
         />
       </FormSection>
       <div className="flex justify-end">
-        <Button type="button" onClick={() => void onContinue()}>
+        <Button
+          type="button"
+          disabled={isBusy}
+          onClick={() => void onContinue()}
+        >
           {continueLabel}
         </Button>
       </div>
