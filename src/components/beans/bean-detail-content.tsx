@@ -306,62 +306,17 @@ export function BeanReadOnlyContent({
   const formatDate = useDateFormatter()
   const formatNumber = useNumberFormatter()
   const showFlavorTags = useTasteProfile().flavorTags
+  const showTasteProfile = showFlavorTags && topTasteTags.length > 0
+  const showSidebar =
+    weightStats !== null || showTasteProfile || bean.images.length > 0
   return (
     <div
       className={cn(
         'grid gap-6',
-        bean.images.length > 0 && 'lg:grid-cols-[1fr_300px]',
+        showSidebar && 'lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start',
       )}
     >
       <div className="space-y-6">
-        {weightStats && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Remaining weight</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Progress value={weightStats.percentRemaining}>
-                <ProgressLabel>
-                  {formatNumber(weightStats.remainingWeight.toFixed(0))} g
-                  remaining
-                </ProgressLabel>
-                <ProgressValue>
-                  {(value) =>
-                    `${formatNumber(value ?? weightStats.percentRemaining)}% of ${formatNumber(weightStats.initialWeight.toFixed(0))} g`
-                  }
-                </ProgressValue>
-              </Progress>
-              <p className="text-sm text-muted-foreground">
-                {formatNumber(weightStats.usedWeight.toFixed(1))} g used across{' '}
-                {formatNumber(shotCount)} brew{shotCount !== 1 ? 's' : ''}
-              </p>
-            </CardContent>
-          </Card>
-        )}
-        {showFlavorTags && topTasteTags.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Taste profile</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Most used taste tags across all shots
-              </p>
-              <ul className="flex flex-wrap gap-2">
-                {topTasteTags.map((tag) => (
-                  <li key={tag.id}>
-                    <Badge variant="secondary" className="gap-1.5">
-                      {tag.name}
-                      <span className="font-normal text-muted-foreground">
-                        {formatNumber(tag.usageCount)}
-                      </span>
-                    </Badge>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        )}
         {(bean.price || bean.shopUrl) && (
           <Card>
             <CardHeader>
@@ -452,14 +407,67 @@ export function BeanReadOnlyContent({
           </Card>
         )}
       </div>
-      {bean.images.length > 0 && (
-        <EntityImageGallery
-          entityType="beans"
-          entityId={bean.id}
-          images={bean.images}
-          onImagesChange={onImagesChange}
-        />
-      )}
+      {showSidebar ? (
+        <aside className="order-first space-y-6 lg:order-last">
+          {weightStats ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Estimate</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Progress value={weightStats.percentRemaining}>
+                  <ProgressLabel>
+                    {formatNumber(weightStats.remainingWeight.toFixed(0))} g
+                    remaining
+                  </ProgressLabel>
+                  <ProgressValue>
+                    {() =>
+                      `${formatNumber(weightStats.percentRemaining)}% of ${formatNumber(weightStats.initialWeight.toFixed(0))} g`
+                    }
+                  </ProgressValue>
+                </Progress>
+                <p className="text-sm text-muted-foreground">
+                  {formatNumber(weightStats.usedWeight.toFixed(1))} g used
+                  across {formatNumber(shotCount)} brew
+                  {shotCount !== 1 ? 's' : ''}
+                </p>
+              </CardContent>
+            </Card>
+          ) : null}
+          {showTasteProfile ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Taste profile</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Most used taste tags across all shots
+                </p>
+                <ul className="flex flex-wrap gap-2">
+                  {topTasteTags.map((tag) => (
+                    <li key={tag.id}>
+                      <Badge variant="secondary" className="gap-1.5">
+                        {tag.name}
+                        <span className="font-normal text-muted-foreground">
+                          {formatNumber(tag.usageCount)}
+                        </span>
+                      </Badge>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          ) : null}
+          {bean.images.length > 0 ? (
+            <EntityImageGallery
+              entityType="beans"
+              entityId={bean.id}
+              images={bean.images}
+              onImagesChange={onImagesChange}
+            />
+          ) : null}
+        </aside>
+      ) : null}
     </div>
   )
 }

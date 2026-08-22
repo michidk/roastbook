@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/card'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { estimateRemainingBeanWeight } from '@/lib/bean-weight'
 import {
   BEAN_TYPE_LABELS,
   getProcessMethodLabel,
@@ -16,13 +17,16 @@ import {
 import { thumbnailUrl } from '@/lib/image-url'
 import type { getBeans } from '@/lib/server/beans'
 
-type BeanRecord = Awaited<ReturnType<typeof getBeans>>[number]
+type BeanRecord = Awaited<ReturnType<typeof getBeans>>[number] & {
+  readonly usedWeightGrams?: string
+}
 
 type BeanCardProps = {
   readonly bean: BeanRecord
+  readonly showRemainingEstimate?: boolean
 }
 
-export function BeanCard({ bean }: BeanCardProps) {
+export function BeanCard({ bean, showRemainingEstimate }: BeanCardProps) {
   const formatDate = useDateFormatter()
   const formatNumber = useNumberFormatter()
   const thumbnail =
@@ -36,13 +40,19 @@ export function BeanCard({ bean }: BeanCardProps) {
   const originAndProcess =
     origin && process ? `${origin} · ${process}` : origin || process || null
   const bagWeight = parseBagWeight(bean.weight)
+  const weightEstimate = showRemainingEstimate
+    ? estimateRemainingBeanWeight(bean.weight, bean.usedWeightGrams)
+    : null
   const roastDate = bean.roastDate ? formatDate(bean.roastDate) : null
+  const remainingLabel = weightEstimate
+    ? `${formatNumber(weightEstimate.remainingWeight.toFixed(0))} g remaining`
+    : null
 
   return (
     <Link
       to="/beans/$beanId"
       params={{ beanId: String(bean.id) }}
-      aria-label={`View ${bean.name}`}
+      aria-label={`View ${bean.name}${remainingLabel ? `, estimated ${remainingLabel}` : ''}`}
       className={`${interactiveCardLinkClassName} rounded-2xl`}
     >
       <Card
@@ -81,6 +91,23 @@ export function BeanCard({ bean }: BeanCardProps) {
           />
         </div>
 
+        {weightEstimate ? (
+          <div
+            className="pointer-events-none absolute top-[4.5rem] right-4 bottom-4 z-20 flex w-10 flex-col items-center gap-2"
+            aria-hidden="true"
+          >
+            <span className="rounded-full border border-white/50 bg-black/65 px-2 py-1 text-xs font-bold text-white tabular-nums backdrop-blur-[2px]">
+              {formatNumber(weightEstimate.percentRemaining)}%
+            </span>
+            <span className="relative min-h-0 w-2 flex-1 overflow-hidden rounded-full border border-white/45 bg-black/45 backdrop-blur-[2px]">
+              <span
+                className="absolute inset-x-0 bottom-0 rounded-full bg-white transition-[height] duration-200 motion-reduce:transition-none"
+                style={{ height: `${weightEstimate.percentRemaining}%` }}
+              />
+            </span>
+          </div>
+        ) : null}
+
         <div className="relative z-10 flex h-full flex-col p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex flex-wrap gap-2">
@@ -100,7 +127,9 @@ export function BeanCard({ bean }: BeanCardProps) {
             </span>
           </div>
 
-          <CardContent className="mt-auto p-0">
+          <CardContent
+            className={`mt-auto p-0 ${weightEstimate ? 'pr-14' : ''}`}
+          >
             {roasterName && (
               <p className="mb-1 truncate text-sm font-bold tracking-[0.1em] text-white/90 uppercase">
                 {roasterName}

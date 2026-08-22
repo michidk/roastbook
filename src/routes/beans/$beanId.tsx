@@ -30,6 +30,7 @@ import { ShotParameterCharts } from '@/components/shot-parameter-charts'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { ExtractedBeanInfo } from '@/lib/ai'
+import { estimateRemainingBeanWeight } from '@/lib/bean-weight'
 import { editModeSearchField } from '@/lib/edit-mode'
 import { getErrorMessage } from '@/lib/error-message'
 import { imageUrl } from '@/lib/image-url'
@@ -134,19 +135,10 @@ function BeanDetailPage() {
     if (bean) setFormData(toBeanFormValues(bean))
   }, [bean])
 
-  const weightStats = (() => {
-    if (!bean?.weight) return null
-    const initialWeight = Number.parseFloat(bean.weight)
-    if (!Number.isFinite(initialWeight) || initialWeight <= 0) return null
-    const usedWeight = Number.parseFloat(shotAnalytics.usedWeightGrams)
-    const remainingWeight = Math.max(0, initialWeight - usedWeight)
-    return {
-      initialWeight,
-      usedWeight,
-      remainingWeight,
-      percentRemaining: Math.round((remainingWeight / initialWeight) * 100),
-    }
-  })()
+  const weightStats = estimateRemainingBeanWeight(
+    bean?.weight,
+    shotAnalytics.usedWeightGrams,
+  )
 
   const updateShotSearch = (values: Partial<typeof search>) =>
     navigate({ search: (current) => ({ ...current, ...values }) })

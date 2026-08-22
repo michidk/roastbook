@@ -1,8 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, count, desc, eq, ilike, or } from 'drizzle-orm'
+import { and, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
-import { beans } from '@/db/schema'
+import { beans, shots } from '@/db/schema'
 import {
   type ExtractedBeanInfo,
   extractBeanInfoFromImage,
@@ -144,10 +144,42 @@ export const getBeanCollection = createServerFn({ method: 'GET' })
       return { items, ...pagination }
     }
 
-    const [active, archived] = await Promise.all([
+    async function includeWeightUsage<Bean extends { readonly id: number }>(
+      items: readonly Bean[],
+    ) {
+      if (items.length === 0) return items
+      const usage = await db
+        .select({
+          beanId: shots.beanId,
+          usedWeightGrams: sql<string>`coalesce(sum(${shots.doseGrams}), 0)::text`,
+        })
+        .from(shots)
+        .where(
+          inArray(
+            shots.beanId,
+            items.map((bean) => bean.id),
+          ),
+        )
+        .groupBy(shots.beanId)
+      const usedWeightByBeanId = new Map(
+        usage.flatMap((row) =>
+          row.beanId === null ? [] : [[row.beanId, row.usedWeightGrams]],
+        ),
+      )
+      return items.map((bean) => ({
+        ...bean,
+        usedWeightGrams: usedWeightByBeanId.get(bean.id) ?? '0',
+      }))
+    }
+
+    const [activePage, archived] = await Promise.all([
       loadArchiveState(false, data.activePage),
       loadArchiveState(true, data.archivedPage),
     ])
+    const active = {
+      ...activePage,
+      items: await includeWeightUsage(activePage.items),
+    }
     return {
       active,
       archived,
