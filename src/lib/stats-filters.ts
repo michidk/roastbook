@@ -1,4 +1,9 @@
-import { z } from 'zod'
+import {
+  searchEnum,
+  searchInteger,
+  searchRecord,
+  searchString,
+} from '@/lib/search-params'
 
 export const STATS_PERIOD_OPTIONS = [
   { value: '30d', label: 'Last 30 days' },
@@ -9,26 +14,41 @@ export const STATS_PERIOD_OPTIONS = [
   { value: 'custom', label: 'Custom range' },
 ] as const
 
-export const statsFilterSchema = z.object({
-  period: z
-    .enum(['30d', '90d', 'ytd', '1y', 'all', 'custom'])
-    .default('30d')
-    .catch('30d'),
-  method: z.number().int().positive().optional().catch(undefined),
-  bean: z.number().int().positive().optional().catch(undefined),
-  from: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional()
-    .catch(undefined),
-  to: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional()
-    .catch(undefined),
-})
+const STATS_PERIOD_VALUES = [
+  '30d',
+  '90d',
+  'ytd',
+  '1y',
+  'all',
+  'custom',
+] as const
+const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
-export type StatsFilter = z.infer<typeof statsFilterSchema>
+function optionalDateKey(value: unknown): string | undefined {
+  const date = searchString(value, '', 10)
+  return DATE_KEY_PATTERN.test(date) ? date : undefined
+}
+
+export function parseStatsFilter(input: unknown): StatsFilter {
+  const search = searchRecord(input)
+  return {
+    period: searchEnum(search.period, STATS_PERIOD_VALUES, '30d'),
+    method: searchInteger(search.method, undefined, 1),
+    bean: searchInteger(search.bean, undefined, 1),
+    from: optionalDateKey(search.from),
+    to: optionalDateKey(search.to),
+  }
+}
+
+export const statsFilterSchema = { parse: parseStatsFilter }
+
+export type StatsFilter = {
+  readonly period: (typeof STATS_PERIOD_VALUES)[number]
+  readonly method?: number
+  readonly bean?: number
+  readonly from?: string
+  readonly to?: string
+}
 export type StatsPeriod = StatsFilter['period']
 export type StatsBucket = 'day' | 'week' | 'month'
 

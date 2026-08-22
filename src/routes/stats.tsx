@@ -12,15 +12,16 @@ import { StarRating } from '@/components/ui/star-rating'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
+import { searchValidator } from '@/lib/search-params'
 import { getDetailedStats } from '@/lib/server/stats'
 import {
+  parseStatsFilter,
   percentChange,
   type StatsFilter,
-  statsFilterSchema,
 } from '@/lib/stats-filters'
 
 export const Route = createFileRoute('/stats')({
-  validateSearch: statsFilterSchema,
+  validateSearch: searchValidator(parseStatsFilter),
   loaderDeps: ({ search }) => ({
     period: search.period,
     method: search.method,

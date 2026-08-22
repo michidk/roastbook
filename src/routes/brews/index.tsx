@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { Coffee, Plus } from 'lucide-react'
-import { z } from 'zod'
 import { EmptyState } from '@/components/EmptyState'
 import { ImageWithFallback } from '@/components/image-with-fallback'
 import { Page, PageHeader } from '@/components/page-layout'
@@ -20,25 +19,41 @@ import {
 } from '@/components/ui/card'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { thumbnailUrl } from '@/lib/image-url'
+import {
+  searchEnum,
+  searchInteger,
+  searchRecord,
+  searchString,
+  searchValidator,
+} from '@/lib/search-params'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getShotGroups, getShotPage } from '@/lib/server/shots'
 
-const brewsSearchSchema = z.object({
-  page: z.number().int().min(1).default(1).catch(1),
-  query: z.string().max(200).default('').catch(''),
-  sort: z
-    .enum(['date', 'bean', 'dose', 'yield', 'time', 'rating'])
-    .default('date')
-    .catch('date'),
-  direction: z.enum(['asc', 'desc']).default('desc').catch('desc'),
-  view: z.enum(['list', 'grouped']).default('list').catch('list'),
-  methodId: z.number().int().positive().optional().catch(undefined),
-  rating: z.number().int().min(0).max(5).optional().catch(undefined),
-  beanId: z.number().int().min(0).max(100_000).optional().catch(undefined),
-})
+const SHOT_SORT_VALUES = [
+  'date',
+  'bean',
+  'dose',
+  'yield',
+  'time',
+  'rating',
+] as const
+
+const parseBrewsSearch = (input: unknown) => {
+  const search = searchRecord(input)
+  return {
+    page: searchInteger(search.page, 1, 1) ?? 1,
+    query: searchString(search.query),
+    sort: searchEnum(search.sort, SHOT_SORT_VALUES, 'date'),
+    direction: searchEnum(search.direction, ['asc', 'desc'], 'desc'),
+    view: searchEnum(search.view, ['list', 'grouped'], 'list'),
+    methodId: searchInteger(search.methodId, undefined, 1),
+    rating: searchInteger(search.rating, undefined, 0, 5),
+    beanId: searchInteger(search.beanId, undefined, 0, 100_000),
+  }
+}
 
 export const Route = createFileRoute('/brews/')({
-  validateSearch: brewsSearchSchema,
+  validateSearch: searchValidator(parseBrewsSearch),
   loaderDeps: ({ search }) => ({
     page: search.page,
     query: search.query,

@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { Plus, Store } from 'lucide-react'
-import { z } from 'zod'
 import {
   type CollectionColumn,
   type CollectionEntry,
@@ -17,17 +16,27 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { WebsiteLogo } from '@/components/website-logo'
 import { useCollectionView } from '@/hooks/use-collection-view'
+import {
+  searchEnum,
+  searchInteger,
+  searchRecord,
+  searchString,
+  searchValidator,
+} from '@/lib/search-params'
 import { getRoasterPage } from '@/lib/server/roasters'
 
-const roasterSearchSchema = z.object({
-  page: z.number().int().min(1).default(1).catch(1),
-  query: z.string().max(200).default('').catch(''),
-  sort: z.enum(['name', 'location', 'beans']).default('name').catch('name'),
-  direction: z.enum(['asc', 'desc']).default('asc').catch('asc'),
-})
+const parseRoasterSearch = (input: unknown) => {
+  const search = searchRecord(input)
+  return {
+    page: searchInteger(search.page, 1, 1) ?? 1,
+    query: searchString(search.query),
+    sort: searchEnum(search.sort, ['name', 'location', 'beans'], 'name'),
+    direction: searchEnum(search.direction, ['asc', 'desc'], 'asc'),
+  }
+}
 
 export const Route = createFileRoute('/roasters/')({
-  validateSearch: roasterSearchSchema,
+  validateSearch: searchValidator(parseRoasterSearch),
   loaderDeps: ({ search }) => ({
     page: search.page,
     query: search.query,

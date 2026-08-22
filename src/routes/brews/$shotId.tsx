@@ -7,7 +7,6 @@ import {
 import { ArrowLeft, BookOpen, Pencil } from 'lucide-react'
 import { type SyntheticEvent, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { z } from 'zod'
 import { DeleteConfirmation } from '@/components/DeleteConfirmation'
 import { InputField, SelectField } from '@/components/form/form-field'
 import { Page, PageHeader } from '@/components/page-layout'
@@ -33,8 +32,9 @@ import { StarRating } from '@/components/ui/star-rating'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
-import { editModeSearchField } from '@/lib/edit-mode'
+import { parseEditModeSearch } from '@/lib/edit-mode'
 import { hasExtractionBalance } from '@/lib/extraction-balance'
+import { searchValidator } from '@/lib/search-params'
 import { getActiveBeans } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getGear } from '@/lib/server/gear'
@@ -49,7 +49,7 @@ import { enabledSensoryRatingKeys } from '@/lib/taste-profile'
 import { isNegativeTasteTag } from '@/lib/taste-tags'
 
 export const Route = createFileRoute('/brews/$shotId')({
-  validateSearch: z.object({ edit: editModeSearchField }),
+  validateSearch: searchValidator(parseEditModeSearch),
   loaderDeps: ({ search }) => ({ edit: search.edit ?? false }),
   loader: async ({ params, deps }) => {
     const shotId = Number(params.shotId)

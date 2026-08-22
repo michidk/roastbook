@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { Bean, ChevronDown, Plus } from 'lucide-react'
-import { z } from 'zod'
 import { BeanCard } from '@/components/beans/bean-card'
 import { CollectionToolbar } from '@/components/collection-toolbar'
 import { EmptyState } from '@/components/EmptyState'
@@ -14,16 +13,25 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
+import {
+  searchInteger,
+  searchRecord,
+  searchString,
+  searchValidator,
+} from '@/lib/search-params'
 import { getBeanCollection } from '@/lib/server/beans'
 
-const beanSearchSchema = z.object({
-  activePage: z.number().int().min(1).default(1).catch(1),
-  archivedPage: z.number().int().min(1).default(1).catch(1),
-  query: z.string().max(200).default('').catch(''),
-})
+const parseBeanSearch = (input: unknown) => {
+  const search = searchRecord(input)
+  return {
+    activePage: searchInteger(search.activePage, 1, 1) ?? 1,
+    archivedPage: searchInteger(search.archivedPage, 1, 1) ?? 1,
+    query: searchString(search.query),
+  }
+}
 
 export const Route = createFileRoute('/beans/')({
-  validateSearch: beanSearchSchema,
+  validateSearch: searchValidator(parseBeanSearch),
   loaderDeps: ({ search }) => ({
     activePage: search.activePage,
     archivedPage: search.archivedPage,

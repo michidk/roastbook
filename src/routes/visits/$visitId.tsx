@@ -6,7 +6,6 @@ import {
 } from '@tanstack/react-router'
 import { ArrowLeft, Pencil } from 'lucide-react'
 import { useRef } from 'react'
-import { z } from 'zod'
 import { CoffeeShopCard } from '@/components/coffee-shops/coffee-shop-card'
 import { CoffeeShopMap } from '@/components/coffee-shops/coffee-shop-map'
 import { DeleteConfirmation } from '@/components/DeleteConfirmation'
@@ -23,7 +22,8 @@ import { VisitEditForm } from '@/components/visits/visit-edit-form'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
-import { editModeSearchField } from '@/lib/edit-mode'
+import { parseEditModeSearch } from '@/lib/edit-mode'
+import { searchValidator } from '@/lib/search-params'
 import { getActiveBeans } from '@/lib/server/beans'
 import { deleteCafeVisit, getCafeVisit } from '@/lib/server/cafe-visits'
 import { getCoffeeShop, getCoffeeShops } from '@/lib/server/coffee-shops'
@@ -32,7 +32,7 @@ import { isNegativeTasteTag } from '@/lib/taste-tags'
 import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/visits/$visitId')({
-  validateSearch: z.object({ edit: editModeSearchField }),
+  validateSearch: searchValidator(parseEditModeSearch),
   loader: async ({ params }) => {
     const visitId = Number(params.visitId)
     const visit = await getCafeVisit({ data: visitId })

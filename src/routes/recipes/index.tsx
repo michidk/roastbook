@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { BookOpen, Plus } from 'lucide-react'
-import { z } from 'zod'
 import {
   type CollectionColumn,
   type CollectionEntry,
@@ -20,17 +19,27 @@ import { useCollectionView } from '@/hooks/use-collection-view'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { thumbnailUrl } from '@/lib/image-url'
+import {
+  searchEnum,
+  searchInteger,
+  searchRecord,
+  searchString,
+  searchValidator,
+} from '@/lib/search-params'
 import { getRecipePage } from '@/lib/server/recipes'
 
-const recipeSearchSchema = z.object({
-  page: z.number().int().min(1).default(1).catch(1),
-  query: z.string().max(200).default('').catch(''),
-  sort: z.enum(['name', 'updated']).default('updated').catch('updated'),
-  direction: z.enum(['asc', 'desc']).default('desc').catch('desc'),
-})
+const parseRecipeSearch = (input: unknown) => {
+  const search = searchRecord(input)
+  return {
+    page: searchInteger(search.page, 1, 1) ?? 1,
+    query: searchString(search.query),
+    sort: searchEnum(search.sort, ['name', 'updated'], 'updated'),
+    direction: searchEnum(search.direction, ['asc', 'desc'], 'desc'),
+  }
+}
 
 export const Route = createFileRoute('/recipes/')({
-  validateSearch: recipeSearchSchema,
+  validateSearch: searchValidator(parseRecipeSearch),
   loaderDeps: ({ search }) => ({
     page: search.page,
     query: search.query,

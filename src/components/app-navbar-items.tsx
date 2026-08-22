@@ -67,7 +67,7 @@ export function BrandLink({ className }: { readonly className?: string }) {
     >
       <div className="flex size-9 items-center justify-center overflow-hidden rounded-xl">
         <img
-          src="/roastbook-logo.png"
+          src="/navbar-logo.png"
           alt=""
           width={36}
           height={36}

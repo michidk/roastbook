@@ -7,7 +7,6 @@ import {
 import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
 import { type SyntheticEvent, useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { z } from 'zod'
 import { DeleteConfirmation } from '@/components/DeleteConfirmation'
 import { Page, PageHeader } from '@/components/page-layout'
 import { RecipeDuplicateButton } from '@/components/recipes/recipe-duplicate-button'
@@ -24,6 +23,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { shotParameterPayload } from '@/lib/new-shot-payload'
+import {
+  optionalSearchBoolean,
+  searchRecord,
+  searchValidator,
+} from '@/lib/search-params'
 import { getActiveBeans } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getGear } from '@/lib/server/gear'
@@ -31,9 +35,9 @@ import { deleteRecipe, getRecipe, updateRecipe } from '@/lib/server/recipes'
 import { getShotUpdateErrors } from '@/lib/update-validation'
 
 export const Route = createFileRoute('/recipes/$recipeId')({
-  validateSearch: z.object({
-    edit: z.boolean().optional().catch(undefined),
-  }),
+  validateSearch: searchValidator((input) => ({
+    edit: optionalSearchBoolean(searchRecord(input).edit),
+  })),
   loader: async ({ params }) => {
     const recipeId = Number(params.recipeId)
     const [recipe, beans, methods, gear] = await Promise.all([

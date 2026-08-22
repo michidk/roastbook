@@ -23,7 +23,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { getErrorDisplayState } from '@/lib/error-display'
 import { usePreferencesStore } from '@/lib/preferences-store'
-import { getAppSettings } from '@/lib/server/settings'
+import { getAppSettings } from '@/lib/server/app-settings'
 
 export const Route = createRootRoute({
   loader: () => getAppSettings(),
@@ -48,7 +48,8 @@ export const Route = createRootRoute({
       },
       {
         rel: 'apple-touch-icon',
-        href: '/roastbook-logo.png',
+        sizes: '180x180',
+        href: '/apple-touch-icon.png',
       },
       {
         rel: 'manifest',

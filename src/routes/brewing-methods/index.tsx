@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { Coffee, Plus, Timer } from 'lucide-react'
-import { z } from 'zod'
 import {
   type CollectionColumn,
   type CollectionEntry,
@@ -16,15 +15,24 @@ import { ListPending } from '@/components/route-pending'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useCollectionView } from '@/hooks/use-collection-view'
+import {
+  searchInteger,
+  searchRecord,
+  searchString,
+  searchValidator,
+} from '@/lib/search-params'
 import { getBrewingMethodPage } from '@/lib/server/brewing-methods'
 
-const brewingMethodSearchSchema = z.object({
-  page: z.number().int().min(1).default(1).catch(1),
-  query: z.string().max(200).default('').catch(''),
-})
+const parseBrewingMethodSearch = (input: unknown) => {
+  const search = searchRecord(input)
+  return {
+    page: searchInteger(search.page, 1, 1) ?? 1,
+    query: searchString(search.query),
+  }
+}
 
 export const Route = createFileRoute('/brewing-methods/')({
-  validateSearch: brewingMethodSearchSchema,
+  validateSearch: searchValidator(parseBrewingMethodSearch),
   loaderDeps: ({ search }) => ({ page: search.page, query: search.query }),
   loader: ({ deps }) => getBrewingMethodPage({ data: deps }),
   staleTime: 15_000,

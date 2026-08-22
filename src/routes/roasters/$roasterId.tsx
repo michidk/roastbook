@@ -7,7 +7,6 @@ import {
 import { ArrowLeft, ExternalLink, Pencil, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { z } from 'zod'
 import { DeleteConfirmation } from '@/components/DeleteConfirmation'
 import { Page, PageHeader } from '@/components/page-layout'
 import { RoasterFields } from '@/components/roasters/roaster-fields'
@@ -23,11 +22,12 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { WebsiteLogo } from '@/components/website-logo'
 import { getRoastLevelLabel } from '@/lib/constants'
-import { editModeSearchField } from '@/lib/edit-mode'
+import { parseEditModeSearch } from '@/lib/edit-mode'
+import { searchValidator } from '@/lib/search-params'
 import { deleteRoaster, getRoaster, updateRoaster } from '@/lib/server/roasters'
 
 export const Route = createFileRoute('/roasters/$roasterId')({
-  validateSearch: z.object({ edit: editModeSearchField }),
+  validateSearch: searchValidator(parseEditModeSearch),
   loader: ({ params }) => getRoaster({ data: Number(params.roasterId) }),
   component: RoasterDetailPage,
   pendingComponent: DetailPending,

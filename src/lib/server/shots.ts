@@ -33,7 +33,7 @@ import {
   withAccessoryGearIds,
 } from '@/lib/server/accessory-gear.server'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
-import { readTasteProfile } from '@/lib/server/settings'
+import { readTasteProfile } from '@/lib/server/settings.server'
 import {
   projectAccessoryGearIds,
   projectShotParameters,

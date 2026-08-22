@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { Bookmark, Heart, MapPin, MapPinOff, Plus } from 'lucide-react'
-import { z } from 'zod'
 import {
   type CollectionColumn,
   type CollectionEntry,
@@ -21,20 +20,27 @@ import { useCollectionView } from '@/hooks/use-collection-view'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { thumbnailUrl } from '@/lib/image-url'
+import {
+  searchEnum,
+  searchInteger,
+  searchRecord,
+  searchString,
+  searchValidator,
+} from '@/lib/search-params'
 import { getCoffeeShopPage } from '@/lib/server/coffee-shops'
 import { cn } from '@/lib/utils'
 
-const placesSearchSchema = z.object({
-  page: z.number().int().min(1).default(1).catch(1),
-  query: z.string().max(200).default('').catch(''),
-  list: z
-    .enum(['all', 'favorites', 'want-to-visit'])
-    .default('all')
-    .catch('all'),
-})
+const parsePlacesSearch = (input: unknown) => {
+  const search = searchRecord(input)
+  return {
+    page: searchInteger(search.page, 1, 1) ?? 1,
+    query: searchString(search.query),
+    list: searchEnum(search.list, ['all', 'favorites', 'want-to-visit'], 'all'),
+  }
+}
 
 export const Route = createFileRoute('/places/')({
-  validateSearch: placesSearchSchema,
+  validateSearch: searchValidator(parsePlacesSearch),
   loaderDeps: ({ search }) => ({
     page: search.page,
     query: search.query,

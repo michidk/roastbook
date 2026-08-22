@@ -6,7 +6,6 @@ import {
   Store,
   UtensilsCrossed,
 } from 'lucide-react'
-import { z } from 'zod'
 import { CoffeeShopCard } from '@/components/coffee-shops/coffee-shop-card'
 import { CoffeeShopMap } from '@/components/coffee-shops/coffee-shop-map'
 import { CollectionToolbar } from '@/components/collection-toolbar'
@@ -23,18 +22,28 @@ import { WebsiteLogo } from '@/components/website-logo'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
+import {
+  searchEnum,
+  searchInteger,
+  searchRecord,
+  searchString,
+  searchValidator,
+} from '@/lib/search-params'
 import { getCafeVisitPage } from '@/lib/server/cafe-visits'
 import { getCoffeeShopMapOverview } from '@/lib/server/coffee-shops'
 import { isNegativeTasteTag } from '@/lib/taste-tags'
 
-const visitSearchSchema = z.object({
-  page: z.number().int().min(1).default(1).catch(1),
-  query: z.string().max(200).default('').catch(''),
-  view: z.enum(['history', 'map']).default('history').catch('history'),
-})
+const parseVisitSearch = (input: unknown) => {
+  const search = searchRecord(input)
+  return {
+    page: searchInteger(search.page, 1, 1) ?? 1,
+    query: searchString(search.query),
+    view: searchEnum(search.view, ['history', 'map'], 'history'),
+  }
+}
 
 export const Route = createFileRoute('/visits/')({
-  validateSearch: visitSearchSchema,
+  validateSearch: searchValidator(parseVisitSearch),
   loaderDeps: ({ search }) => ({
     page: search.page,
     query: search.query,

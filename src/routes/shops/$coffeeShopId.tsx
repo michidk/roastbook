@@ -22,7 +22,6 @@ import {
 } from 'lucide-react'
 import { type Dispatch, type SetStateAction, useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { z } from 'zod'
 import { CoffeeShopFields } from '@/components/coffee-shops/coffee-shop-fields'
 import {
   applyCoffeeShopSearchResult,
@@ -48,8 +47,9 @@ import { WebsiteLogo } from '@/components/website-logo'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
-import { editModeSearchField } from '@/lib/edit-mode'
+import { parseEditModeSearch } from '@/lib/edit-mode'
 import { toNullableRating, toRatingInput } from '@/lib/rating'
+import { searchValidator } from '@/lib/search-params'
 import {
   deleteCoffeeShop,
   getCoffeeShop,
@@ -58,7 +58,7 @@ import {
 import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/shops/$coffeeShopId')({
-  validateSearch: z.object({ edit: editModeSearchField }),
+  validateSearch: searchValidator(parseEditModeSearch),
   loader: ({ params }) => getCoffeeShop({ data: Number(params.coffeeShopId) }),
   component: CoffeeShopDetailPage,
   pendingComponent: DetailPending,

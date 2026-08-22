@@ -101,7 +101,21 @@ const config = defineConfig({
     devtools(),
     devMigrations(),
     tailwindcss(),
-    tanstackStart(),
+    tanstackStart({
+      router: {
+        codeSplittingOptions: {
+          // Load route data code with the route instead of placing every
+          // loader's server functions and validators in the root bundle.
+          defaultBehavior: [
+            ['loader'],
+            ['component'],
+            ['pendingComponent'],
+            ['errorComponent'],
+            ['notFoundComponent'],
+          ],
+        },
+      },
+    }),
     nitro({
       preset: roastbookEdition === 'demo' ? 'vercel' : 'bun',
       routes:

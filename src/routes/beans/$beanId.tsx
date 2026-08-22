@@ -6,7 +6,6 @@ import {
 } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { z } from 'zod'
 import {
   type BeanFormData,
   BeanInfoDiffModal,
@@ -31,9 +30,15 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { ExtractedBeanInfo } from '@/lib/ai'
 import { estimateRemainingBeanWeight } from '@/lib/bean-weight'
-import { editModeSearchField } from '@/lib/edit-mode'
+import { parseEditModeSearch } from '@/lib/edit-mode'
 import { getErrorMessage } from '@/lib/error-message'
 import { imageUrl } from '@/lib/image-url'
+import {
+  searchEnum,
+  searchInteger,
+  searchRecord,
+  searchValidator,
+} from '@/lib/search-params'
 import {
   checkResearchEnabled,
   checkVisionEnabled,
@@ -46,18 +51,22 @@ import {
 import { getRoasters } from '@/lib/server/roasters'
 import { getBeanShotAnalytics, getBeanShotPage } from '@/lib/server/shots'
 
-const beanDetailSearchSchema = z.object({
-  edit: editModeSearchField,
-  shotPage: z.number().int().min(1).max(100_000).default(1).catch(1),
-  shotSort: z
-    .enum(['date', 'bean', 'dose', 'yield', 'time', 'rating'])
-    .default('date')
-    .catch('date'),
-  shotDirection: z.enum(['asc', 'desc']).default('desc').catch('desc'),
-})
+const parseBeanDetailSearch = (input: unknown) => {
+  const search = searchRecord(input)
+  return {
+    ...parseEditModeSearch(search),
+    shotPage: searchInteger(search.shotPage, 1, 1, 100_000) ?? 1,
+    shotSort: searchEnum(
+      search.shotSort,
+      ['date', 'bean', 'dose', 'yield', 'time', 'rating'],
+      'date',
+    ),
+    shotDirection: searchEnum(search.shotDirection, ['asc', 'desc'], 'desc'),
+  }
+}
 
 export const Route = createFileRoute('/beans/$beanId')({
-  validateSearch: beanDetailSearchSchema,
+  validateSearch: searchValidator(parseBeanDetailSearch),
   loaderDeps: ({ search }) => ({
     shotPage: search.shotPage,
     shotSort: search.shotSort,

@@ -1,26 +1,36 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { z } from 'zod'
 import { GearDetailPage } from '@/components/gear/gear-detail-page'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import type { ShotsTableServerPagination } from '@/components/ShotsTable'
-import { editModeSearchField } from '@/lib/edit-mode'
+import { parseEditModeSearch } from '@/lib/edit-mode'
+import {
+  searchEnum,
+  searchInteger,
+  searchRecord,
+  searchString,
+  searchValidator,
+} from '@/lib/search-params'
 import { checkGearResearchEnabled, getGearById } from '@/lib/server/gear'
 import { getGearShotPage } from '@/lib/server/shots'
 
-const gearDetailSearchSchema = z.object({
-  shotPage: z.number().int().min(1).max(100_000).default(1).catch(1),
-  shotQuery: z.string().max(200).default('').catch(''),
-  shotSort: z
-    .enum(['date', 'bean', 'dose', 'yield', 'time', 'rating'])
-    .default('date')
-    .catch('date'),
-  shotDirection: z.enum(['asc', 'desc']).default('desc').catch('desc'),
-  edit: editModeSearchField,
-})
+const parseGearDetailSearch = (input: unknown) => {
+  const search = searchRecord(input)
+  return {
+    shotPage: searchInteger(search.shotPage, 1, 1, 100_000) ?? 1,
+    shotQuery: searchString(search.shotQuery),
+    shotSort: searchEnum(
+      search.shotSort,
+      ['date', 'bean', 'dose', 'yield', 'time', 'rating'],
+      'date',
+    ),
+    shotDirection: searchEnum(search.shotDirection, ['asc', 'desc'], 'desc'),
+    ...parseEditModeSearch(search),
+  }
+}
 
 export const Route = createFileRoute('/gear/$gearId')({
-  validateSearch: gearDetailSearchSchema,
+  validateSearch: searchValidator(parseGearDetailSearch),
   loaderDeps: ({ search }) => ({
     shotPage: search.shotPage,
     shotQuery: search.shotQuery,
