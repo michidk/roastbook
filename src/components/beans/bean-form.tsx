@@ -11,6 +11,7 @@ import {
   EntityImageUploadSection,
 } from '@/components/form/entity-image-upload-section'
 import { EntityForm } from '@/components/form/form-shell'
+import { ExtractedRoasterDialog } from '@/components/roasters/extracted-roaster-dialog'
 import type { RoasterOption } from '@/components/roasters/roaster-picker'
 import { Button } from '@/components/ui/button'
 import { useAppSettings } from '@/hooks/use-app-settings'
@@ -19,6 +20,7 @@ import { useFormSubmission } from '@/hooks/use-form-submission'
 import type { ImageFile } from '@/hooks/useImageUpload'
 import { useImageUpload } from '@/hooks/useImageUpload'
 import { getErrorMessage } from '@/lib/error-message'
+import { findRoasterByName } from '@/lib/roaster-match'
 import {
   checkVisionEnabled,
   createBean,
@@ -53,6 +55,12 @@ export function BeanForm({
   const [loadedRoasters, setLoadedRoasters] = useState<
     readonly RoasterOption[]
   >([])
+  const [createdRoasters, setCreatedRoasters] = useState<
+    readonly RoasterOption[]
+  >([])
+  const [extractedRoasterName, setExtractedRoasterName] = useState<
+    string | null
+  >(null)
   const [createdBean, setCreatedBean] = useState<CreatedBean | null>(null)
   const [uploadFailures, setUploadFailures] = useState<
     readonly EntityImageUploadFailure[]
@@ -98,7 +106,13 @@ export function BeanForm({
     }
   }, [roasters])
 
-  const roasterOptions = roasters ?? loadedRoasters
+  const baseRoasters = roasters ?? loadedRoasters
+  const roasterOptions = [
+    ...baseRoasters,
+    ...createdRoasters.filter(
+      (created) => !baseRoasters.some((roaster) => roaster.id === created.id),
+    ),
+  ]
 
   const handleFillWithAI = async () => {
     if (images.length === 0) return
@@ -116,18 +130,14 @@ export function BeanForm({
 
       const extractedRoaster = extracted.roaster
       const matchedRoaster = extractedRoaster
-        ? roasterOptions.find((roaster) =>
-            roaster.name.toLowerCase().includes(extractedRoaster.toLowerCase()),
-          )
-        : null
+        ? findRoasterByName(roasterOptions, extractedRoaster)
+        : undefined
 
       form.setValues((current) => ({
         ...current,
         name: extracted.name || current.name,
         type: extracted.type || current.type,
-        roasterId: matchedRoaster
-          ? String(matchedRoaster.id)
-          : current.roasterId,
+        roasterId: current.roasterId,
         origin: extracted.origin || current.origin,
         region: extracted.region || current.region,
         farm: extracted.farm || current.farm,
@@ -137,6 +147,12 @@ export function BeanForm({
         roastDate: extracted.roastDate || current.roastDate,
         notes: extracted.notes || current.notes,
       }))
+      if (
+        extractedRoaster &&
+        String(matchedRoaster?.id ?? '') !== form.values.roasterId
+      ) {
+        setExtractedRoasterName(extractedRoaster)
+      }
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to extract bean info'))
     } finally {
@@ -210,51 +226,70 @@ export function BeanForm({
   }
 
   return (
-    <EntityForm
-      onSubmit={handleSubmit}
-      actions={{
-        onCancel,
-        isSubmitting,
-        disabled: !form.values.name.trim(),
-        submitLabel,
-      }}
-    >
-      <EntityImageUploadSection
-        upload={imageUpload}
-        prompt="Add pictures of the coffee bag"
-        previewAltPrefix="Bean"
-        isBusy={isSubmitting}
-        statusText={isSubmitting ? 'Saving bean pictures' : undefined}
-        helperText={
-          visionEnabled
-            ? 'AI can extract bean info from your pictures'
-            : undefined
-        }
-        footer={
-          visionEnabled ? (
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={handleFillWithAI}
-              disabled={isExtracting || images.length === 0}
-            >
-              {isExtracting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="mr-2 h-4 w-4" />
-              )}
-              Extract details with AI
-            </Button>
-          ) : undefined
-        }
-      />
+    <>
+      <EntityForm
+        onSubmit={handleSubmit}
+        actions={{
+          onCancel,
+          isSubmitting,
+          disabled: !form.values.name.trim(),
+          submitLabel,
+        }}
+      >
+        <EntityImageUploadSection
+          upload={imageUpload}
+          prompt="Add pictures of the coffee bag"
+          previewAltPrefix="Bean"
+          isBusy={isSubmitting}
+          statusText={isSubmitting ? 'Saving bean pictures' : undefined}
+          helperText={
+            visionEnabled
+              ? 'AI can extract bean info from your pictures'
+              : undefined
+          }
+          footer={
+            visionEnabled ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={handleFillWithAI}
+                disabled={isExtracting || images.length === 0}
+              >
+                {isExtracting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-2 h-4 w-4" />
+                )}
+                Extract details with AI
+              </Button>
+            ) : undefined
+          }
+        />
 
-      <BeanFields
-        values={form.values}
-        onChange={form.set}
-        roasters={roasterOptions}
-      />
-    </EntityForm>
+        <BeanFields
+          values={form.values}
+          onChange={form.set}
+          roasters={roasterOptions}
+        />
+      </EntityForm>
+      {extractedRoasterName ? (
+        <ExtractedRoasterDialog
+          open
+          suggestedName={extractedRoasterName}
+          currentRoasterId={form.values.roasterId}
+          roasters={roasterOptions}
+          onOpenChange={(open) => {
+            if (!open) setExtractedRoasterName(null)
+          }}
+          onSelect={(roaster) => form.set('roasterId', String(roaster.id))}
+          onCreated={(roaster) => {
+            setCreatedRoasters((current) => [...current, roaster])
+            form.set('roasterId', String(roaster.id))
+            setExtractedRoasterName(null)
+          }}
+        />
+      ) : null}
+    </>
   )
 }

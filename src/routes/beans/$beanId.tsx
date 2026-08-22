@@ -22,6 +22,8 @@ import {
 } from '@/components/beans/bean-form-values'
 import type { EntityImage } from '@/components/entity-image-gallery'
 import { Page } from '@/components/page-layout'
+import { ExtractedRoasterDialog } from '@/components/roasters/extracted-roaster-dialog'
+import type { RoasterOption } from '@/components/roasters/roaster-picker'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import { ShotsTable } from '@/components/ShotsTable'
@@ -135,6 +137,11 @@ function BeanDetailPage() {
   const [suggestedData, setSuggestedData] = useState<ExtractedBeanInfo | null>(
     null,
   )
+  const [extractedRoasterName, setExtractedRoasterName] = useState<
+    string | null
+  >(null)
+  const [availableRoasters, setAvailableRoasters] =
+    useState<readonly RoasterOption[]>(roasters)
   const [aiSource, setAiSource] = useState<'image' | 'web'>('web')
   const [formData, setFormData] = useState(() =>
     bean ? toBeanFormValues(bean) : createEmptyBeanFormValues(),
@@ -143,6 +150,10 @@ function BeanDetailPage() {
   useEffect(() => {
     if (bean) setFormData(toBeanFormValues(bean))
   }, [bean])
+
+  useEffect(() => {
+    setAvailableRoasters(roasters)
+  }, [roasters])
 
   const weightStats = estimateRemainingBeanWeight(
     bean?.weight,
@@ -201,8 +212,9 @@ function BeanDetailPage() {
     setIsResearching(true)
     try {
       const roasterName = formData.roasterId
-        ? roasters.find((roaster) => String(roaster.id) === formData.roasterId)
-            ?.name
+        ? availableRoasters.find(
+            (roaster) => String(roaster.id) === formData.roasterId,
+          )?.name
         : undefined
       showSuggestion(
         await researchBeanInfo({
@@ -255,7 +267,7 @@ function BeanDetailPage() {
       <BeanDetailHeader
         bean={bean}
         formData={formData}
-        roasters={roasters}
+        roasters={availableRoasters}
         isEditing={isEditing}
         isSaving={isSaving}
         recommendationEnabled={researchEnabled}
@@ -291,7 +303,7 @@ function BeanDetailPage() {
           bean={bean}
           formData={formData}
           setFormData={setFormData}
-          roasters={roasters}
+          roasters={availableRoasters}
           researchEnabled={researchEnabled}
           visionEnabled={visionEnabled}
           isResearching={isResearching}
@@ -359,11 +371,40 @@ function BeanDetailPage() {
           suggestedData={suggestedData}
           onApply={(updates: Partial<BeanFormData>) => {
             setFormData((current) => ({ ...current, ...updates }))
-            toast.success(`Applied ${Object.keys(updates).length} changes`)
+            const updateCount = Object.keys(updates).length
+            if (updateCount > 0) {
+              toast.success(`Applied ${updateCount} changes`)
+            }
           }}
+          onReviewRoaster={setExtractedRoasterName}
           source={aiSource}
         />
       )}
+      {extractedRoasterName ? (
+        <ExtractedRoasterDialog
+          open
+          suggestedName={extractedRoasterName}
+          currentRoasterId={formData.roasterId}
+          roasters={availableRoasters}
+          onOpenChange={(open) => {
+            if (!open) setExtractedRoasterName(null)
+          }}
+          onSelect={(roaster) => {
+            setFormData((current) => ({
+              ...current,
+              roasterId: String(roaster.id),
+            }))
+          }}
+          onCreated={(roaster) => {
+            setAvailableRoasters((current) => [...current, roaster])
+            setFormData((current) => ({
+              ...current,
+              roasterId: String(roaster.id),
+            }))
+            setExtractedRoasterName(null)
+          }}
+        />
+      ) : null}
     </Page>
   )
 }

@@ -1,4 +1,4 @@
-import { ArrowRight, Check } from 'lucide-react'
+import { ArrowRight, Check, Store } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import type { BeanFormValues } from '@/components/beans/bean-form-values'
 import { Button } from '@/components/ui/button'
@@ -61,6 +61,7 @@ interface BeanInfoDiffModalProps {
   currentData: BeanFormData
   suggestedData: ExtractedBeanInfo
   onApply: (updates: Partial<BeanFormData>) => void
+  onReviewRoaster?: (name: string) => void
   source: 'image' | 'web'
 }
 
@@ -70,6 +71,7 @@ export function BeanInfoDiffModal({
   currentData,
   suggestedData,
   onApply,
+  onReviewRoaster,
   source,
 }: BeanInfoDiffModalProps) {
   const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set())
@@ -148,12 +150,15 @@ export function BeanInfoDiffModal({
 
     onApply(updates)
     onOpenChange(false)
+    const roasterName = suggestedData.roaster?.trim()
+    if (roasterName) onReviewRoaster?.(roasterName)
   }
 
   const conflictCount = diffs.filter((d) => d.hasConflict).length
   const newFieldCount = diffs.filter((d) => !d.hasConflict).length
+  const roasterName = suggestedData.roaster?.trim()
 
-  if (diffs.length === 0) {
+  if (diffs.length === 0 && !roasterName) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md">
@@ -195,6 +200,8 @@ export function BeanInfoDiffModal({
                 existing values
               </span>
             )}
+            {roasterName && (newFieldCount > 0 || conflictCount > 0) && ' · '}
+            {roasterName && <span>roaster reviewed separately</span>}
           </DialogDescription>
         </DialogHeader>
 
@@ -208,6 +215,22 @@ export function BeanInfoDiffModal({
                 onToggle={() => toggleField(diff.field.formKey)}
               />
             ))}
+            {roasterName ? (
+              <div className="flex items-start gap-3 rounded-lg border bg-secondary/60 p-3">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-background text-primary">
+                  <Store className="size-4" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">Roaster found</p>
+                  <p className="truncate text-sm font-semibold">
+                    {roasterName}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Review this in the roaster modal after the bean fields.
+                  </p>
+                </div>
+              </div>
+            ) : null}
           </div>
         </DialogBody>
 
@@ -224,9 +247,15 @@ export function BeanInfoDiffModal({
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button onClick={handleApply} disabled={selectedFields.size === 0}>
-              Apply {selectedFields.size} change
-              {selectedFields.size !== 1 ? 's' : ''}
+            <Button
+              onClick={handleApply}
+              disabled={selectedFields.size === 0 && !roasterName}
+            >
+              {roasterName
+                ? selectedFields.size > 0
+                  ? `Apply ${selectedFields.size} and review roaster`
+                  : 'Review roaster'
+                : `Apply ${selectedFields.size} change${selectedFields.size !== 1 ? 's' : ''}`}
             </Button>
           </div>
         </DialogFooter>
