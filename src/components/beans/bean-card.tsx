@@ -97,7 +97,7 @@ export function BeanCard({ bean, showRemainingEstimate }: BeanCardProps) {
             aria-hidden="true"
           >
             <span
-              className="block h-full bg-white transition-[width] duration-200 motion-reduce:transition-none"
+              className="block h-full rounded-r-full bg-white/75 transition-[width] duration-200 motion-reduce:transition-none"
               style={{ width: `${weightEstimate.percentRemaining}%` }}
             />
           </div>
