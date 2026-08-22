@@ -1,8 +1,7 @@
-import { ImageIcon, Loader2, Star, Trash2 } from 'lucide-react'
+import { CircleAlert, ImageIcon, Loader2, Star, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
-import { toast } from 'sonner'
 import { ImageWithFallback } from '@/components/image-with-fallback'
-import { PictureUploadDialog } from '@/components/picture-upload-dialog'
+import { PictureUploader } from '@/components/picture-uploader'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -64,12 +63,12 @@ export function EntityImageGallery({
   const [uploadFailures, setUploadFailures] = useState<
     readonly EntityImageUploadFailure[]
   >([])
+  const [galleryError, setGalleryError] = useState<string | null>(null)
   const {
     images: queuedImages,
     fileInputRef,
     addFiles,
     importFromUrl,
-    pasteFromClipboard,
     removeImage,
     removeImages,
     openFilePicker,
@@ -78,6 +77,7 @@ export function EntityImageGallery({
   if (images.length === 0 && !editable) return null
 
   const uploadPictures = async (pictures: readonly ImageFile[]) => {
+    setGalleryError(null)
     const attemptedPreviews = new Set(
       pictures.map((picture) => picture.preview),
     )
@@ -96,7 +96,7 @@ export function EntityImageGallery({
         try {
           await onImagesChange()
         } catch (error) {
-          toast.error(
+          setGalleryError(
             getErrorMessage(
               error,
               'Pictures were uploaded, but the gallery could not refresh',
@@ -115,18 +115,19 @@ export function EntityImageGallery({
   }
 
   const handleSetThumbnail = async (imageId: number) => {
+    setGalleryError(null)
     setIsSettingThumbnail(imageId)
     try {
       try {
         await setImageAsThumbnail({ data: { entityType, entityId, imageId } })
       } catch (error) {
-        toast.error(getErrorMessage(error, 'Failed to set thumbnail'))
+        setGalleryError(getErrorMessage(error, 'Failed to set thumbnail'))
         return
       }
       try {
         await onImagesChange()
       } catch (error) {
-        toast.error(
+        setGalleryError(
           getErrorMessage(error, 'Thumbnail changed, but the gallery is stale'),
         )
       }
@@ -136,6 +137,7 @@ export function EntityImageGallery({
   }
 
   const handleDeleteImage = async (image: EntityImage) => {
+    setGalleryError(null)
     setIsDeletingImage(image.id)
     try {
       try {
@@ -143,13 +145,13 @@ export function EntityImageGallery({
           data: { entityType, entityId, imageId: image.id },
         })
       } catch (error) {
-        toast.error(getErrorMessage(error, 'Failed to delete image'))
+        setGalleryError(getErrorMessage(error, 'Failed to delete image'))
         return
       }
       try {
         await onImagesChange()
       } catch (error) {
-        toast.error(
+        setGalleryError(
           getErrorMessage(error, 'Picture deleted, but the gallery is stale'),
         )
       }
@@ -164,6 +166,25 @@ export function EntityImageGallery({
         <CardTitle>Pictures</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {galleryError ? (
+          <div
+            className="flex items-start gap-3 rounded-xl border border-destructive/45 bg-destructive/10 px-3 py-3 text-destructive-text"
+            role="alert"
+          >
+            <CircleAlert className="mt-0.5 size-5 shrink-0" />
+            <p className="min-w-0 flex-1 text-sm font-semibold">
+              {galleryError}
+            </p>
+            <button
+              type="button"
+              onClick={() => setGalleryError(null)}
+              className="-m-2 flex size-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Dismiss picture error"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+        ) : null}
         {images.length > 0 && (
           <div
             className={cn(
@@ -193,7 +214,7 @@ export function EntityImageGallery({
                           void Promise.resolve(
                             imageAction.onSelect(image),
                           ).catch((error) => {
-                            toast.error(
+                            setGalleryError(
                               getErrorMessage(
                                 error,
                                 `Could not ${imageAction.label.toLowerCase()}`,
@@ -293,7 +314,7 @@ export function EntityImageGallery({
             </span>
           )}
         {editable && (
-          <PictureUploadDialog
+          <PictureUploader
             images={queuedImages}
             fileInputRef={fileInputRef}
             onFilesAdded={async (files) => {
@@ -305,11 +326,6 @@ export function EntityImageGallery({
               const picture = await importFromUrl(url)
               await uploadPictures([picture])
               return picture
-            }}
-            onPasteFromClipboard={async () => {
-              const pictures = await pasteFromClipboard()
-              await uploadPictures(pictures)
-              return pictures
             }}
             onRemoveImage={(index) => {
               const removedImage = queuedImages[index]
@@ -329,7 +345,6 @@ export function EntityImageGallery({
                 : 'Add more equipment pictures'
             }
             previewAltPrefix={entityType === 'beans' ? 'Bean' : 'Gear'}
-            uploadMode="immediate"
             isBusy={isUploading}
             statusText={isUploading ? 'Uploading pictures' : undefined}
             imageErrors={uploadFailures.map(({ image, error }) => ({
@@ -340,7 +355,7 @@ export function EntityImageGallery({
                 'The server rejected this picture',
               ),
             }))}
-            onRetryImage={(image) => uploadPictures([image])}
+            onRetryImages={uploadPictures}
           />
         )}
       </CardContent>

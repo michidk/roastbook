@@ -6,13 +6,17 @@ import {
   beanCreatePayload,
   createEmptyBeanFormValues,
 } from '@/components/beans/bean-form-values'
-import { EntityImageUploadSection } from '@/components/form/entity-image-upload-section'
+import {
+  EntityImageUploadRecovery,
+  EntityImageUploadSection,
+} from '@/components/form/entity-image-upload-section'
 import { EntityForm } from '@/components/form/form-shell'
 import type { RoasterOption } from '@/components/roasters/roaster-picker'
 import { Button } from '@/components/ui/button'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
+import type { ImageFile } from '@/hooks/useImageUpload'
 import { useImageUpload } from '@/hooks/useImageUpload'
 import { getErrorMessage } from '@/lib/error-message'
 import {
@@ -22,7 +26,7 @@ import {
 } from '@/lib/server/beans'
 import { getRoasters } from '@/lib/server/roasters'
 import {
-  getEntityImageUploadFailureMessage,
+  type EntityImageUploadFailure,
   uploadEntityImages,
 } from '@/lib/upload-entity-images'
 
@@ -49,6 +53,11 @@ export function BeanForm({
   const [loadedRoasters, setLoadedRoasters] = useState<
     readonly RoasterOption[]
   >([])
+  const [createdBean, setCreatedBean] = useState<CreatedBean | null>(null)
+  const [uploadFailures, setUploadFailures] = useState<
+    readonly EntityImageUploadFailure[]
+  >([])
+  const [isRetryingPictures, setIsRetryingPictures] = useState(false)
   const imageUpload = useImageUpload()
   const { images } = imageUpload
 
@@ -143,15 +152,62 @@ export function BeanForm({
       })
 
       const uploadResult = await uploadEntityImages('beans', bean.id, images)
-      const failureMessage = getEntityImageUploadFailureMessage(
-        uploadResult.failures,
-      )
-      if (failureMessage) toast.warning(`Beans saved. ${failureMessage}`)
+      imageUpload.removeImages(uploadResult.uploaded)
+      if (uploadResult.failures.length > 0) {
+        setCreatedBean(bean)
+        setUploadFailures(uploadResult.failures)
+        return
+      }
       await onCreated(bean)
     },
     onError: (error) =>
       toast.error(getErrorMessage(error, 'Could not save these beans')),
   })
+
+  const retryPictures = async (pictures: readonly ImageFile[]) => {
+    if (!createdBean) return
+    setIsRetryingPictures(true)
+    try {
+      const result = await uploadEntityImages('beans', createdBean.id, pictures)
+      imageUpload.removeImages(result.uploaded)
+      setUploadFailures(result.failures)
+      if (result.failures.length === 0) await onCreated(createdBean)
+    } finally {
+      setIsRetryingPictures(false)
+    }
+  }
+
+  const removeFailedPicture = (index: number) => {
+    const image = imageUpload.images[index]
+    if (image) {
+      setUploadFailures((current) =>
+        current.filter((failure) => failure.image.preview !== image.preview),
+      )
+    }
+    imageUpload.removeImage(index)
+  }
+
+  if (createdBean) {
+    return (
+      <EntityImageUploadRecovery
+        upload={imageUpload}
+        title="Beans saved"
+        description="The entry is safe, but one or more pictures could not be uploaded. Try again, remove them, or continue without them."
+        continueLabel="View beans"
+        previewAltPrefix="Bean"
+        isBusy={isRetryingPictures}
+        statusText={isRetryingPictures ? 'Retrying pictures' : undefined}
+        imageErrors={uploadFailures.map(({ image, error }) => ({
+          preview: image.preview,
+          filename: image.file.name,
+          message: getErrorMessage(error, 'The server rejected this picture'),
+        }))}
+        onRetryImages={retryPictures}
+        onRemoveImage={removeFailedPicture}
+        onContinue={() => onCreated(createdBean)}
+      />
+    )
+  }
 
   return (
     <EntityForm

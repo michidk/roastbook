@@ -1,9 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { ImageFile } from '@/hooks/useImageUpload'
-import {
-  getEntityImageUploadFailureMessage,
-  uploadEntityImagesWith,
-} from '@/lib/upload-entity-images'
+import { uploadEntityImagesWith } from '@/lib/upload-entity-images'
 
 function image(name: string): ImageFile {
   const file = new File(['image'], name, { type: 'image/png' })
@@ -31,26 +28,5 @@ describe('entity image batches', () => {
     expect(calls).toEqual(['first.png', 'second.png'])
     expect(result.uploaded).toEqual([first])
     expect(result.failures.map(({ image }) => image)).toEqual([second])
-  })
-
-  test('reports the failed filename and underlying reason', () => {
-    const failedImage = image('pixel-photo.jpg')
-
-    expect(
-      getEntityImageUploadFailureMessage([
-        { image: failedImage, error: new Error('Request body is too large') },
-      ]),
-    ).toBe('Upload failed for pixel-photo.jpg: Request body is too large')
-  })
-
-  test('summarizes a batch while preserving its first actionable error', () => {
-    expect(
-      getEntityImageUploadFailureMessage([
-        { image: image('first.jpg'), error: new Error('Storage unavailable') },
-        { image: image('second.jpg'), error: new Error('Timed out') },
-      ]),
-    ).toBe(
-      'Could not upload 2 pictures. First failure — first.jpg: Storage unavailable',
-    )
   })
 })

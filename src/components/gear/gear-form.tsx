@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { EntityImageUploadSection } from '@/components/form/entity-image-upload-section'
+import {
+  EntityImageUploadRecovery,
+  EntityImageUploadSection,
+} from '@/components/form/entity-image-upload-section'
 import { EntityForm } from '@/components/form/form-shell'
 import { GearFields } from '@/components/gear/gear-fields'
 import {
@@ -11,7 +14,7 @@ import { MachineSettingsDiffModal } from '@/components/gear/machine-settings-dif
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
-import { useImageUpload } from '@/hooks/useImageUpload'
+import { type ImageFile, useImageUpload } from '@/hooks/useImageUpload'
 import type { ExtractedMachineSettings } from '@/lib/ai'
 import { getErrorMessage } from '@/lib/error-message'
 import {
@@ -20,7 +23,7 @@ import {
   researchMachineSettings,
 } from '@/lib/server/gear'
 import {
-  getEntityImageUploadFailureMessage,
+  type EntityImageUploadFailure,
   uploadEntityImages,
 } from '@/lib/upload-entity-images'
 
@@ -45,6 +48,11 @@ export function GearForm({
   const [researchModalOpen, setResearchModalOpen] = useState(false)
   const [researchedSettings, setResearchedSettings] =
     useState<ExtractedMachineSettings | null>(null)
+  const [createdGear, setCreatedGear] = useState<CreatedGear | null>(null)
+  const [uploadFailures, setUploadFailures] = useState<
+    readonly EntityImageUploadFailure[]
+  >([])
+  const [isRetryingPictures, setIsRetryingPictures] = useState(false)
   const imageUpload = useImageUpload()
   const { images } = imageUpload
 
@@ -107,15 +115,62 @@ export function GearForm({
       })
 
       const uploadResult = await uploadEntityImages('gear', item.id, images)
-      const failureMessage = getEntityImageUploadFailureMessage(
-        uploadResult.failures,
-      )
-      if (failureMessage) toast.warning(`Gear saved. ${failureMessage}`)
+      imageUpload.removeImages(uploadResult.uploaded)
+      if (uploadResult.failures.length > 0) {
+        setCreatedGear(item)
+        setUploadFailures(uploadResult.failures)
+        return
+      }
       await onCreated(item)
     },
     onError: (error) =>
       toast.error(getErrorMessage(error, 'Could not save this gear')),
   })
+
+  const retryPictures = async (pictures: readonly ImageFile[]) => {
+    if (!createdGear) return
+    setIsRetryingPictures(true)
+    try {
+      const result = await uploadEntityImages('gear', createdGear.id, pictures)
+      imageUpload.removeImages(result.uploaded)
+      setUploadFailures(result.failures)
+      if (result.failures.length === 0) await onCreated(createdGear)
+    } finally {
+      setIsRetryingPictures(false)
+    }
+  }
+
+  const removeFailedPicture = (index: number) => {
+    const image = imageUpload.images[index]
+    if (image) {
+      setUploadFailures((current) =>
+        current.filter((failure) => failure.image.preview !== image.preview),
+      )
+    }
+    imageUpload.removeImage(index)
+  }
+
+  if (createdGear) {
+    return (
+      <EntityImageUploadRecovery
+        upload={imageUpload}
+        title="Gear saved"
+        description="The entry is safe, but one or more pictures could not be uploaded. Try again, remove them, or continue without them."
+        continueLabel="View gear"
+        previewAltPrefix="Gear"
+        isBusy={isRetryingPictures}
+        statusText={isRetryingPictures ? 'Retrying pictures' : undefined}
+        imageErrors={uploadFailures.map(({ image, error }) => ({
+          preview: image.preview,
+          filename: image.file.name,
+          message: getErrorMessage(error, 'The server rejected this picture'),
+        }))}
+        onRetryImages={retryPictures}
+        onRemoveImage={removeFailedPicture}
+        onContinue={() => onCreated(createdGear)}
+      />
+    )
+  }
 
   return (
     <EntityForm

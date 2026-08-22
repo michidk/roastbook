@@ -1,6 +1,5 @@
 import type { ImageFile } from '@/hooks/useImageUpload'
 import { createEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
-import { getErrorMessage } from '@/lib/error-message'
 import { type EntityType, uploadEntityImage } from '@/lib/server/images'
 
 export type EntityImageUploadFailure = {
@@ -11,22 +10,6 @@ export type EntityImageUploadFailure = {
 export type EntityImageUploadResult = {
   readonly uploaded: readonly ImageFile[]
   readonly failures: readonly EntityImageUploadFailure[]
-}
-
-export function getEntityImageUploadFailureMessage(
-  failures: readonly EntityImageUploadFailure[],
-): string | null {
-  const firstFailure = failures[0]
-  if (!firstFailure) return null
-
-  const reason = getErrorMessage(firstFailure.error, 'The server rejected it')
-  const filename = firstFailure.image.file.name
-
-  if (failures.length === 1) {
-    return `Upload failed for ${filename}: ${reason}`
-  }
-
-  return `Could not upload ${failures.length} pictures. First failure — ${filename}: ${reason}`
 }
 
 type UploadImage = (input: { data: FormData }) => Promise<unknown>

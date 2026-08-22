@@ -259,13 +259,17 @@ uses the circular 30-second progress ring. Disabling shot time removes it.
 
 ### Picture uploader
 
-Provide a preview grid, mobile-safe file picker, dashed drop target, clipboard
-action, URL input, and contextual status. Support empty, drag-active, queued,
-downloading, unavailable, invalid, and ready states.
+Keep the default flow inline and singular: one prominent surface chooses files,
+accepts drops, and accepts pasted image data while focused. Show selected and
+failed pictures once in the same preview grid. URL import is a secondary reveal,
+not a competing default action or permanently visible field.
 
-Every action is keyboard reachable. The drop target opens the native picker,
-status changes are announced, and coarse-pointer controls are at least 44px.
-All input methods feed the same preview queue.
+Put validation errors next to the intake method and upload failures beside the
+preview grid with one batch retry action. Do not use a toast or a separate retry
+queue for picture failures. Every action is keyboard reachable, the upload
+surface opens the native picker, status changes are announced, and
+coarse-pointer controls are at least 44px. All input methods feed the same
+preview state.
 
 ### Mobile bottom navigation
 

@@ -1,7 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { IMAGE_MIME_TYPE_VALUES, MAX_IMAGE_BYTES } from '@/lib/domain-contracts'
 import { downloadRemoteImage } from '@/lib/server/remote-image'
 
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024
+const IMAGE_MIME_TYPES = new Set<string>(IMAGE_MIME_TYPE_VALUES)
+const IMAGE_MIME_TYPE_BY_EXTENSION: Readonly<Record<string, string>> = {
+  avif: 'image/avif',
+  gif: 'image/gif',
+  heic: 'image/heic',
+  heif: 'image/heif',
+  jpeg: 'image/jpeg',
+  jpg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+}
 
 export interface ImageFile {
   readonly file: File
@@ -9,11 +20,53 @@ export interface ImageFile {
   readonly base64: string
 }
 
-class ImageUploadError extends Error {
+export class ImageUploadError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'ImageUploadError'
   }
+}
+
+function normalizeImageType(file: File): File | null {
+  if (IMAGE_MIME_TYPES.has(file.type.toLowerCase())) return file
+
+  const extension = file.name.split('.').pop()?.toLowerCase()
+  const inferredType = extension
+    ? IMAGE_MIME_TYPE_BY_EXTENSION[extension]
+    : undefined
+  if (!inferredType) return null
+
+  return new File([file], file.name, {
+    type: inferredType,
+    lastModified: file.lastModified,
+  })
+}
+
+export function validateImageFiles(files: readonly File[]): readonly File[] {
+  if (files.length === 0) {
+    throw new ImageUploadError('Choose, drop, or paste an image to continue')
+  }
+
+  const normalizedFiles: File[] = []
+  for (const file of files) {
+    const imageFile = normalizeImageType(file)
+    if (!imageFile) {
+      throw new ImageUploadError(
+        `${file.name || 'That file'} is not a supported image. Use JPG, PNG, WebP, HEIC/HEIF, GIF or AVIF.`,
+      )
+    }
+    if (imageFile.size === 0) {
+      throw new ImageUploadError(`${imageFile.name} is empty`)
+    }
+    if (imageFile.size > MAX_IMAGE_BYTES) {
+      throw new ImageUploadError(
+        `${imageFile.name} is larger than the 10 MB limit`,
+      )
+    }
+    normalizedFiles.push(imageFile)
+  }
+
+  return normalizedFiles
 }
 
 function readFileAsBase64(file: File): Promise<string> {
@@ -67,30 +120,19 @@ export function useImageUpload() {
   )
 
   const addFiles = useCallback(async (files: readonly File[]) => {
-    const imageFiles = files.filter((file) => file.type.startsWith('image/'))
-    if (imageFiles.length === 0) {
-      throw new ImageUploadError('Choose or paste a supported image file')
-    }
+    const imageFiles = validateImageFiles(files)
 
-    const oversizedImage = imageFiles.find(
-      (file) => file.size > MAX_IMAGE_BYTES,
-    )
-    if (oversizedImage) {
-      throw new ImageUploadError(
-        `${oversizedImage.name} must be smaller than 10 MB`,
-      )
-    }
-
-    const newImages = await Promise.all(
+    const encodedImages = await Promise.all(
       imageFiles.map(async (file) => {
         const base64 = await readFileAsBase64(file)
-        return {
-          file,
-          preview: URL.createObjectURL(file),
-          base64,
-        }
+        return { file, base64 }
       }),
     )
+    const newImages = encodedImages.map(({ file, base64 }) => ({
+      file,
+      preview: URL.createObjectURL(file),
+      base64,
+    }))
     setImages((current) => [...current, ...newImages])
     if (fileInputRef.current) fileInputRef.current.value = ''
     return newImages
@@ -108,28 +150,6 @@ export function useImageUpload() {
     setImages((current) => [...current, image])
     return image
   }, [])
-
-  const pasteFromClipboard = useCallback(async () => {
-    if (!navigator.clipboard?.read) {
-      throw new ImageUploadError(
-        'Clipboard pictures are not supported by this browser',
-      )
-    }
-
-    const clipboardItems = await navigator.clipboard.read()
-    const files: File[] = []
-    for (const item of clipboardItems) {
-      const imageType = item.types.find((type) => type.startsWith('image/'))
-      if (!imageType) continue
-      const blob = await item.getType(imageType)
-      files.push(
-        new File([blob], `clipboard-${Date.now()}.${imageType.split('/')[1]}`, {
-          type: imageType,
-        }),
-      )
-    }
-    return addFiles(files)
-  }, [addFiles])
 
   const removeImage = useCallback((index: number) => {
     setImages((current) => {
@@ -165,7 +185,6 @@ export function useImageUpload() {
     fileInputRef,
     addFiles,
     importFromUrl,
-    pasteFromClipboard,
     removeImage,
     removeImages,
     clearImages,
