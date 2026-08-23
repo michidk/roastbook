@@ -1,8 +1,7 @@
-import type { ReactNode } from 'react'
 import { CollectionToolbar } from '@/components/collection-toolbar'
 import { SelectField } from '@/components/form/form-field'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
-import { cn } from '@/lib/utils'
+import { activeFilterCount } from '@/lib/collection-toolbar-labels'
 
 type MethodOption = {
   readonly id: number
@@ -14,10 +13,11 @@ type BrewCollectionToolbarProps = {
   readonly methodId: string
   readonly rating: string
   readonly methods: readonly MethodOption[]
-  readonly resultLabel: ReactNode
+  readonly resultLabel: string
   readonly onQueryChange: (query: string) => void
   readonly onMethodChange: (methodId: string) => void
   readonly onRatingChange: (rating: string) => void
+  readonly onClearFilters: () => void
 }
 
 const RATING_OPTIONS = [
@@ -37,6 +37,7 @@ export function BrewCollectionToolbar({
   onQueryChange,
   onMethodChange,
   onRatingChange,
+  onClearFilters,
 }: BrewCollectionToolbarProps) {
   const showRating = useTasteProfile().overallRating
 
@@ -47,10 +48,14 @@ export function BrewCollectionToolbar({
       placeholder="Search brews…"
       ariaLabel="Search brews by bean or method"
       resultLabel={resultLabel}
-      actions={
-        <div className={cn('grid min-w-0 gap-2', showRating && 'grid-cols-2')}>
+      filterCount={activeFilterCount(
+        showRating ? [methodId, rating] : [methodId],
+      )}
+      onClearFilters={onClearFilters}
+      filters={(idSuffix) => (
+        <div className="grid min-w-0 gap-4 sm:grid-cols-2 sm:gap-2">
           <SelectField
-            id="brew-method-filter"
+            id={`brew-method-filter${idSuffix}`}
             label="Method"
             value={methodId}
             onChange={onMethodChange}
@@ -58,20 +63,20 @@ export function BrewCollectionToolbar({
               value: String(method.id),
               label: method.name,
             }))}
-            className="min-w-32"
+            className="sm:min-w-32"
           />
           {showRating ? (
             <SelectField
-              id="brew-rating-filter"
+              id={`brew-rating-filter${idSuffix}`}
               label="Rating"
               value={rating}
               onChange={onRatingChange}
               options={RATING_OPTIONS}
-              className="min-w-28"
+              className="sm:min-w-28"
             />
           ) : null}
         </div>
-      }
+      )}
     />
   )
 }

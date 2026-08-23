@@ -183,6 +183,13 @@ function ShotsPage() {
               page: 1,
             })
           }
+          onClearFilters={() =>
+            updateSearch({
+              methodId: undefined,
+              rating: undefined,
+              page: 1,
+            })
+          }
         />
       ) : null}
 

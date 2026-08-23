@@ -9,7 +9,6 @@
     "scripts/**/*.ts"
   ],
   "project": ["src/**/*.{ts,tsx}", "scripts/**/*.ts", "*.config.ts"],
-  "ignoreFiles": ["src/components/ui/sheet.tsx"],
   "ignoreIssues": {
     "src/components/ui/card.tsx": ["exports"],
     "src/components/ui/combobox.tsx": ["exports"],

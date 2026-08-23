@@ -110,6 +110,22 @@ result count, and optional adjacent view/filter actions. It stacks at narrow
 widths and becomes a single aligned row from `sm`. Keep the toolbar visible
 while a search has no results so the query can be cleared.
 
+A phone spends its height on records, not on chrome. Below `sm` the toolbar is
+one row: the search control plus a Filters trigger that opens a bottom sheet
+holding the filter fields. The trigger carries the number of active filters in
+its badge and its accessible name, and the sheet offers Clear all whenever a
+filter is set. From `sm` the same filter fields sit inline in the toolbar row
+and the trigger disappears.
+
+The result count rides in the search placeholder — `Search 186 brews…` — so it
+costs no vertical space. It stays in a polite live region at every width and
+becomes a visible line on phones only while a search or filter narrows the
+collection. Pass a short count phrase, not a sentence.
+
+Genuine filter fields belong in the sheet. Segmented list choices such as the
+café lists, and `CollectionViewToggle`, stay inline at every width because they
+are how the reader browses rather than how they narrow.
+
 ### Metrics and ratings
 
 Summary metrics use `MetricCard`. Use the hero variant for at most one focal
