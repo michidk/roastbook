@@ -72,7 +72,7 @@ export function PageHeader({
               'min-w-0 break-words font-display font-extrabold tracking-tight text-foreground',
               size === 'compact'
                 ? 'text-2xl sm:text-3xl'
-                : 'text-4xl md:text-5xl',
+                : 'text-3xl md:text-5xl',
             )}
           >
             {title}

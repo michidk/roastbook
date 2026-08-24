@@ -48,7 +48,8 @@ preference state, never a destructive state.
 
 Use this scale:
 
-- Page title: `2.25rem` on mobile and `3rem` on desktop, weight 800.
+- Page title: `1.875rem` on mobile and `3rem` on desktop, weight 800. The
+  compact variant is `1.5rem` on mobile and `1.875rem` from `sm`.
 - Section title: `1.125rem`, weight 700.
 - Body: `1rem`, weight 400 to 600.
 - Small text: `0.875rem`, weight 400 to 600.
