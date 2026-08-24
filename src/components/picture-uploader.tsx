@@ -28,7 +28,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import { Input } from '@/components/ui/input'
-import type { ImageFile } from '@/hooks/useImageUpload'
+import type { ImageFile } from '@/lib/image-file'
 import { getImageUploadErrorMessage } from '@/lib/image-upload-error'
 import { cn } from '@/lib/utils'
 

@@ -12,7 +12,7 @@ import {
 } from '@/components/collection/collection-list'
 import { CollectionViewToggle } from '@/components/collection/collection-view-toggle'
 import { CollectionToolbar } from '@/components/collection-toolbar'
-import { EmptyState } from '@/components/EmptyState'
+import { EmptyState } from '@/components/empty-state'
 import { Page, PageHeader } from '@/components/page-layout'
 import { PaginationControls } from '@/components/pagination-controls'
 import { RouteError } from '@/components/route-error'
@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { WebsiteLogo } from '@/components/website-logo'
 import { useCollectionView } from '@/hooks/use-collection-view'
+import { nextSortDirection } from '@/lib/collection-sort'
 import {
   searchEnum,
   searchInteger,
@@ -30,12 +31,14 @@ import {
 } from '@/lib/search-params'
 import { getRoasterPage } from '@/lib/server/roasters'
 
+const SORT_KEYS = ['name', 'location', 'beans'] as const
+
 const parseRoasterSearch = (input: unknown) => {
   const search = searchRecord(input)
   return {
     page: searchInteger(search.page, 1, 1) ?? 1,
     query: searchString(search.query),
-    sort: searchEnum(search.sort, ['name', 'location', 'beans'], 'name'),
+    sort: searchEnum(search.sort, SORT_KEYS, 'name'),
     direction: searchEnum(search.direction, ['asc', 'desc'], 'asc'),
   }
 }
@@ -68,8 +71,6 @@ export const Route = createFileRoute('/roasters/')({
 })
 
 type Roaster = Awaited<ReturnType<typeof getRoasterPage>>['items'][number]
-
-type SortKey = 'name' | 'location' | 'beans'
 
 function getRoasterLocation(roaster: Roaster): string {
   return [roaster.location, roaster.country].filter(Boolean).join(', ')
@@ -108,19 +109,22 @@ function RoastersPage() {
   const search = Route.useSearch()
   const navigate = useNavigate({ from: '/roasters/' })
   const { view, setView, isReady } = useCollectionView('roasters')
-  const updateSearch = (values: Partial<typeof search>) =>
-    navigate({ search: (current) => ({ ...current, ...values }) })
-  const handleSort = (key: string) =>
+  const updateSearch = (
+    values: Partial<typeof search>,
+    options?: { replace?: boolean },
+  ) =>
+    navigate({
+      search: (current) => ({ ...current, ...values }),
+      replace: options?.replace,
+    })
+  const handleSort = (key: string) => {
+    const sort = searchEnum(key, SORT_KEYS, 'name')
     updateSearch({
-      sort: key as SortKey,
-      direction:
-        search.sort === key
-          ? search.direction === 'asc'
-            ? 'desc'
-            : 'asc'
-          : 'asc',
+      sort,
+      direction: nextSortDirection(search.sort, search.direction, sort),
       page: 1,
     })
+  }
 
   const columns: readonly CollectionColumn<Roaster>[] = [
     {

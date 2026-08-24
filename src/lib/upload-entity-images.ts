@@ -1,5 +1,5 @@
-import type { ImageFile } from '@/hooks/useImageUpload'
 import { createEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
+import type { ImageFile } from '@/lib/image-file'
 import { type EntityType, uploadEntityImage } from '@/lib/server/images'
 
 export type EntityImageUploadFailure = {

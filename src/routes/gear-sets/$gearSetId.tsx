@@ -1,19 +1,22 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { DeleteConfirmation } from '@/components/DeleteConfirmation'
+import { DeleteConfirmation } from '@/components/delete-confirmation'
+import { EntityNotFound } from '@/components/entity-not-found'
 import { GearSetEditor } from '@/components/gear-sets/gear-set-editor'
 import { Page, PageHeader } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import { Button } from '@/components/ui/button'
+import { getErrorMessage } from '@/lib/error-message'
+import { parseIdParam } from '@/lib/route-params'
 import { getGear } from '@/lib/server/gear'
 import { deleteGearSet, getGearSetById } from '@/lib/server/gear-sets'
 
 export const Route = createFileRoute('/gear-sets/$gearSetId')({
   loader: async ({ params }) => {
     const [gearSet, gear] = await Promise.all([
-      getGearSetById({ data: Number(params.gearSetId) }),
+      getGearSetById({ data: parseIdParam(params.gearSetId) }),
       getGear(),
     ])
     return { gearSet, gear }
@@ -35,14 +38,11 @@ function GearSetDetailPage() {
 
   if (!gearSet) {
     return (
-      <Page width="form">
-        <div className="py-12 text-center">
-          <h2 className="font-display text-xl font-bold">Gear set not found</h2>
-          <Button asChild className="mt-4">
-            <Link to="/gear-sets">Back to gear sets</Link>
-          </Button>
-        </div>
-      </Page>
+      <EntityNotFound
+        entity="Gear set"
+        backTo="/gear-sets"
+        backLabel="Back to gear sets"
+      />
     )
   }
 
@@ -52,9 +52,7 @@ function GearSetDetailPage() {
       toast.success('Gear set deleted')
       navigate({ to: '/gear-sets' })
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Could not delete gear set',
-      )
+      toast.error(getErrorMessage(error, 'Could not delete gear set'))
     }
   }
 

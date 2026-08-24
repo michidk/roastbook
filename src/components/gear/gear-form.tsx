@@ -14,9 +14,10 @@ import { MachineSettingsDiffModal } from '@/components/gear/machine-settings-dif
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
-import { type ImageFile, useImageUpload } from '@/hooks/useImageUpload'
+import { useImageUpload } from '@/hooks/use-image-upload'
 import type { ExtractedMachineSettings } from '@/lib/ai'
 import { getErrorMessage } from '@/lib/error-message'
+import type { ImageFile } from '@/lib/image-file'
 import {
   checkGearResearchEnabled,
   createGear,

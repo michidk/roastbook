@@ -8,12 +8,18 @@ import { ArrowLeft } from 'lucide-react'
 import { BeanForm } from '@/components/beans/bean-form'
 import { FormPageHeader } from '@/components/form/form-shell'
 import { Page } from '@/components/page-layout'
+import { RouteError } from '@/components/route-error'
+import { DetailPending } from '@/components/route-pending'
 import { Button } from '@/components/ui/button'
 import { getRoasters } from '@/lib/server/roasters'
 
 export const Route = createFileRoute('/beans/new')({
   loader: () => getRoasters(),
   component: NewBeanPage,
+  pendingComponent: DetailPending,
+  errorComponent: ({ error }) => (
+    <RouteError error={error} backTo="/beans" backLabel="Back to beans" />
+  ),
 })
 
 function NewBeanPage() {

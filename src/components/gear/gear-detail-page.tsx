@@ -12,7 +12,7 @@ import {
 import { GearReadOnlyContent } from '@/components/gear/gear-read-only-content'
 import { MachineSettingsDiffModal } from '@/components/gear/machine-settings-diff-modal'
 import { Page } from '@/components/page-layout'
-import type { ShotsTableServerPagination } from '@/components/ShotsTable'
+import type { ShotsTableServerPagination } from '@/components/shots/shots-table'
 import { Button } from '@/components/ui/button'
 import type { ExtractedMachineSettings } from '@/lib/ai'
 import { getErrorMessage } from '@/lib/error-message'

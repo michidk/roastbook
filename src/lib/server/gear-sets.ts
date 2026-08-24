@@ -1,8 +1,12 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, asc, eq, ne, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, ilike, ne, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
 import { gearSets } from '@/db/schema'
+import {
+  escapedContainsPattern,
+  resolvePagination,
+} from '@/lib/collection-query'
 import { expectReturnedRow } from '@/lib/domain-errors'
 import { replaceGearSetAccessoryGear } from '@/lib/server/accessory-gear.server'
 import {
@@ -94,6 +98,43 @@ export const getGearSets = createServerFn({ method: 'GET' }).handler(
     return rows.map(toGearSet)
   },
 )
+
+const GEAR_SETS_PAGE_SIZE = 12
+const gearSetListSchema = z.object({
+  page: z.number().int().min(1).max(100_000).default(1),
+  query: z.string().trim().max(200).default(''),
+  sort: z.enum(['name', 'added']).default('name'),
+  direction: z.enum(['asc', 'desc']).default('asc'),
+})
+
+export const getGearSetPage = createServerFn({ method: 'GET' })
+  .validator(gearSetListSchema)
+  .handler(async ({ data }) => {
+    const where = data.query
+      ? ilike(gearSets.name, escapedContainsPattern(data.query))
+      : undefined
+    const countRows = await db
+      .select({ value: count() })
+      .from(gearSets)
+      .where(where)
+    const totalItems = countRows[0]?.value ?? 0
+    const pagination = resolvePagination(
+      totalItems,
+      data.page,
+      GEAR_SETS_PAGE_SIZE,
+    )
+    const sortColumn =
+      data.sort === 'added' ? gearSets.createdAt : gearSets.name
+    const order = data.direction === 'asc' ? asc(sortColumn) : desc(sortColumn)
+    const rows = await db.query.gearSets.findMany({
+      where,
+      orderBy: [order, asc(gearSets.id)],
+      limit: GEAR_SETS_PAGE_SIZE,
+      offset: (pagination.page - 1) * GEAR_SETS_PAGE_SIZE,
+      with: gearSetRelations,
+    })
+    return { items: rows.map(toGearSet), ...pagination }
+  })
 
 export const getGearSetById = createServerFn({ method: 'GET' })
   .validator(positiveIdSchema)

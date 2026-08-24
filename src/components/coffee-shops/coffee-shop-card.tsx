@@ -36,7 +36,7 @@ export function CoffeeShopCard({
 
   return (
     <Link
-      to="/shops/$coffeeShopId"
+      to="/places/$coffeeShopId"
       params={{ coffeeShopId: String(coffeeShop.id) }}
       className={cn(
         interactiveCardLinkClassName,

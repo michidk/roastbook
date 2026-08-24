@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { IMAGE_MIME_TYPE_VALUES, MAX_IMAGE_BYTES } from '@/lib/domain-contracts'
+import type { ImageFile } from '@/lib/image-file'
 import { downloadRemoteImage } from '@/lib/server/remote-image'
 
 const IMAGE_MIME_TYPES = new Set<string>(IMAGE_MIME_TYPE_VALUES)
@@ -15,12 +16,6 @@ const IMAGE_MIME_TYPE_BY_EXTENSION: Readonly<Record<string, string>> = {
   jpg: 'image/jpeg',
   png: 'image/png',
   webp: 'image/webp',
-}
-
-export interface ImageFile {
-  readonly file: File
-  readonly preview: string
-  readonly base64: string
 }
 
 export class ImageUploadError extends Error {

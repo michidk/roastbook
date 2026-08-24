@@ -1,8 +1,6 @@
 import { createServerOnlyFn } from '@tanstack/react-start'
 import { MAX_IMAGE_BYTES } from '@/lib/server-validation'
 
-export { getThumbnailPath } from '@/lib/image-path'
-
 const THUMB_WIDTH = 640
 const THUMB_QUALITY = 78
 const STORED_IMAGE_MAX_DIMENSION = 1_600

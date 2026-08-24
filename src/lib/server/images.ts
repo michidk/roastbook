@@ -17,7 +17,7 @@ import {
   drainMediaCleanupQueue,
   queueMediaCleanup,
 } from '@/lib/server/media-lifecycle.server'
-import { generateAndUploadThumbnail } from '@/lib/server/thumbnails'
+import { generateAndUploadThumbnail } from '@/lib/server/thumbnails.server'
 import {
   entityTypeSchema,
   positiveIdSchema,

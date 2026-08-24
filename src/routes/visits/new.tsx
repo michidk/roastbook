@@ -14,6 +14,8 @@ import {
   FormPageHeader,
 } from '@/components/form/form-shell'
 import { Page } from '@/components/page-layout'
+import { RouteError } from '@/components/route-error'
+import { DetailPending } from '@/components/route-pending'
 import { Button } from '@/components/ui/button'
 import { VisitFields } from '@/components/visits/visit-fields'
 import { useAppSettings } from '@/hooks/use-app-settings'
@@ -25,24 +27,27 @@ import {
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes'
 import { cafeVisitCreatePayload } from '@/lib/cafe-visit-payload'
 import { localDateTimeInputToDate } from '@/lib/date-input'
+import { getErrorMessage } from '@/lib/error-message'
 import { focusFirstInvalidControl } from '@/lib/form-validation'
 import { toNullableRating } from '@/lib/rating'
+import {
+  searchInteger,
+  searchRecord,
+  searchValidator,
+} from '@/lib/search-params'
 import { getActiveBeans } from '@/lib/server/beans'
 import { createCafeVisit } from '@/lib/server/cafe-visits'
 import { getCoffeeShops } from '@/lib/server/coffee-shops'
 import { getTasteTags } from '@/lib/server/taste-tags'
 import { getCafeVisitUpdateErrors } from '@/lib/update-validation'
 
+const parseNewVisitSearch = (input: unknown) => {
+  const search = searchRecord(input)
+  return { coffeeShopId: searchInteger(search.coffeeShopId, undefined, 1) }
+}
+
 export const Route = createFileRoute('/visits/new')({
-  validateSearch: (search: Record<string, unknown>) => {
-    let coffeeShopId: string | undefined
-    if (typeof search.coffeeShopId === 'string') {
-      coffeeShopId = search.coffeeShopId.replace(/^"|"$/g, '')
-    } else if (typeof search.coffeeShopId === 'number') {
-      coffeeShopId = String(search.coffeeShopId)
-    }
-    return { coffeeShopId: coffeeShopId || undefined }
-  },
+  validateSearch: searchValidator(parseNewVisitSearch),
   loader: async () => {
     const [coffeeShops, tasteTags, beans] = await Promise.all([
       getCoffeeShops(),
@@ -57,6 +62,10 @@ export const Route = createFileRoute('/visits/new')({
     }
   },
   component: NewVisitPage,
+  pendingComponent: DetailPending,
+  errorComponent: ({ error }) => (
+    <RouteError error={error} backTo="/visits" backLabel="Back to visits" />
+  ),
 })
 
 function NewVisitPage() {
@@ -67,11 +76,9 @@ function NewVisitPage() {
   const navigate = useNavigate()
   const router = useRouter()
   const initialCoffeeShopId =
-    search.coffeeShopId &&
-    coffeeShops.some(
-      (coffeeShop) => String(coffeeShop.id) === search.coffeeShopId,
-    )
-      ? search.coffeeShopId
+    search.coffeeShopId !== undefined &&
+    coffeeShops.some((coffeeShop) => coffeeShop.id === search.coffeeShopId)
+      ? String(search.coffeeShopId)
       : ''
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -135,9 +142,7 @@ function NewVisitPage() {
       await router.invalidate()
       await navigate({ to: '/visits' })
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Could not save this visit',
-      )
+      toast.error(getErrorMessage(error, 'Could not save this visit'))
     } finally {
       setIsSubmitting(false)
     }

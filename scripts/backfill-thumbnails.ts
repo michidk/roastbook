@@ -9,7 +9,8 @@ import {
   gearImages,
   shotImages,
 } from '../src/db/schema'
-import { createThumbnail, getThumbnailPath } from '../src/lib/thumbnail-image'
+import { getThumbnailPath } from '../src/lib/image-path'
+import { createThumbnail } from '../src/lib/thumbnail-image'
 
 const STORAGE_BASE = process.env.STORAGE_PATH || './uploads'
 

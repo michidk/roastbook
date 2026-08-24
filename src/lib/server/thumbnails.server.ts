@@ -1,7 +1,6 @@
+import { getThumbnailPath } from '@/lib/image-path'
 import { getStorage } from '@/lib/storage'
-import { createThumbnail, getThumbnailPath } from '@/lib/thumbnail-image'
-
-export { getThumbnailPath } from '@/lib/thumbnail-image'
+import { createThumbnail } from '@/lib/thumbnail-image'
 
 export async function generateAndUploadThumbnail(
   buffer: Buffer,

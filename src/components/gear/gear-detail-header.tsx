@@ -6,7 +6,7 @@ import {
   Pencil,
   Trash2,
 } from 'lucide-react'
-import { DeleteConfirmation } from '@/components/DeleteConfirmation'
+import { DeleteConfirmation } from '@/components/delete-confirmation'
 import type { GearFormValues } from '@/components/gear/gear-form-values'
 import { PageHeader } from '@/components/page-layout'
 import { Badge } from '@/components/ui/badge'

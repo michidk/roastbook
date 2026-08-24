@@ -7,7 +7,7 @@ import {
 import { Bean, ChevronDown, Plus } from 'lucide-react'
 import { BeanCard } from '@/components/beans/bean-card'
 import { CollectionToolbar } from '@/components/collection-toolbar'
-import { EmptyState } from '@/components/EmptyState'
+import { EmptyState } from '@/components/empty-state'
 import { Page, PageHeader } from '@/components/page-layout'
 import { PaginationControls } from '@/components/pagination-controls'
 import { RouteError } from '@/components/route-error'
@@ -64,7 +64,7 @@ function BeansPage() {
   const archivedBeans = collection.archived.items
   const updateSearch = (
     values: Partial<typeof search>,
-    options?: { readonly replace?: boolean },
+    options?: { replace?: boolean },
   ) =>
     navigate({
       search: (current) => ({ ...current, ...values }),

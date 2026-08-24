@@ -14,7 +14,7 @@ import {
 import { CoffeeShopCard } from '@/components/coffee-shops/coffee-shop-card'
 import { CoffeeShopMap } from '@/components/coffee-shops/coffee-shop-map'
 import { CollectionToolbar } from '@/components/collection-toolbar'
-import { EmptyState } from '@/components/EmptyState'
+import { EmptyState } from '@/components/empty-state'
 import { Page, PageHeader } from '@/components/page-layout'
 import { PaginationControls } from '@/components/pagination-controls'
 import { RouteError } from '@/components/route-error'
@@ -114,7 +114,7 @@ function VisitsPage() {
   ].slice(0, RECENT_PLACES_LIMIT)
   const updateSearch = (
     values: Partial<typeof search>,
-    options?: { readonly replace?: boolean },
+    options?: { replace?: boolean },
   ) =>
     navigate({
       search: (current) => ({ ...current, ...values }),

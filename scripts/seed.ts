@@ -1,7 +1,7 @@
 import * as schema from '../src/db/schema'
 import { DEFAULT_BREWING_METHODS } from '../src/lib/brewing-methods'
 import { getFaviconStoragePath } from '../src/lib/favicon'
-import { generateAndUploadThumbnail } from '../src/lib/server/thumbnails'
+import { generateAndUploadThumbnail } from '../src/lib/server/thumbnails.server'
 import { getStorage } from '../src/lib/storage'
 import { client, db } from './database'
 import { TASTE_TAGS } from './taste-tags'

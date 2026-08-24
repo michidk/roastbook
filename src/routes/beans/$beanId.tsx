@@ -1,16 +1,11 @@
 import {
   createFileRoute,
-  Link,
   stripSearchParams,
   useNavigate,
   useRouter,
 } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import {
-  type BeanFormData,
-  BeanInfoDiffModal,
-} from '@/components/BeanInfoDiffModal'
 import {
   BeanDetailHeader,
   BeanEditContent,
@@ -21,7 +16,12 @@ import {
   createEmptyBeanFormValues,
   toBeanFormValues,
 } from '@/components/beans/bean-form-values'
+import {
+  type BeanFormData,
+  BeanInfoDiffModal,
+} from '@/components/beans/bean-info-diff-modal'
 import type { EntityImage } from '@/components/entity-image-gallery'
+import { EntityNotFound } from '@/components/entity-not-found'
 import { Page } from '@/components/page-layout'
 import {
   ExtractedRoasterDialog,
@@ -30,15 +30,18 @@ import {
 import type { RoasterOption } from '@/components/roasters/roaster-picker'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
-import { ShotsTable } from '@/components/ShotsTable'
-import { ShotParameterCharts } from '@/components/shot-parameter-charts'
-import { Button } from '@/components/ui/button'
+import { ShotParameterCharts } from '@/components/shots/shot-parameter-charts'
+import { ShotsTable } from '@/components/shots/shots-table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useFormState } from '@/hooks/use-form-state'
 import type { ExtractedBeanInfo } from '@/lib/ai'
 import { estimateRemainingBeanWeight } from '@/lib/bean-weight'
+import { nextSortDirection } from '@/lib/collection-sort'
 import { parseEditModeSearch } from '@/lib/edit-mode'
 import { getErrorMessage } from '@/lib/error-message'
+import { fetchImageAsBase64 } from '@/lib/image-base64'
 import { imageUrl } from '@/lib/image-url'
+import { parseIdParam } from '@/lib/route-params'
 import {
   searchEnum,
   searchInteger,
@@ -61,13 +64,13 @@ const parseBeanDetailSearch = (input: unknown) => {
   const search = searchRecord(input)
   return {
     ...parseEditModeSearch(search),
-    shotPage: searchInteger(search.shotPage, 1, 1, 100_000) ?? 1,
-    shotSort: searchEnum(
-      search.shotSort,
+    brewPage: searchInteger(search.brewPage, 1, 1, 100_000) ?? 1,
+    brewSort: searchEnum(
+      search.brewSort,
       ['date', 'bean', 'dose', 'yield', 'time', 'rating'],
       'date',
     ),
-    shotDirection: searchEnum(search.shotDirection, ['asc', 'desc'], 'desc'),
+    brewDirection: searchEnum(search.brewDirection, ['asc', 'desc'], 'desc'),
   }
 }
 
@@ -76,19 +79,19 @@ export const Route = createFileRoute('/beans/$beanId')({
   search: {
     middlewares: [
       stripSearchParams({
-        shotPage: 1,
-        shotSort: 'date',
-        shotDirection: 'desc',
+        brewPage: 1,
+        brewSort: 'date',
+        brewDirection: 'desc',
       } as const),
     ],
   },
   loaderDeps: ({ search }) => ({
-    shotPage: search.shotPage,
-    shotSort: search.shotSort,
-    shotDirection: search.shotDirection,
+    brewPage: search.brewPage,
+    brewSort: search.brewSort,
+    brewDirection: search.brewDirection,
   }),
   loader: async ({ params, deps }) => {
-    const beanId = Number(params.beanId)
+    const beanId = parseIdParam(params.beanId)
     const [
       bean,
       shotPage,
@@ -101,10 +104,10 @@ export const Route = createFileRoute('/beans/$beanId')({
       getBeanShotPage({
         data: {
           entityId: beanId,
-          page: deps.shotPage,
+          page: deps.brewPage,
           query: '',
-          sort: deps.shotSort,
-          direction: deps.shotDirection,
+          sort: deps.brewSort,
+          direction: deps.brewDirection,
         },
       }),
       getBeanShotAnalytics({ data: beanId }),
@@ -143,6 +146,14 @@ function BeanDetailPage() {
   const router = useRouter()
   const [isSaving, setIsSaving] = useState(false)
   const [isResearching, setIsResearching] = useState(false)
+  const updateSearch = (
+    values: Partial<typeof search>,
+    options?: { replace?: boolean },
+  ) =>
+    navigate({
+      search: (current) => ({ ...current, ...values }),
+      replace: options?.replace,
+    })
   const [extractingImageId, setExtractingImageId] = useState<number | null>(
     null,
   )
@@ -156,13 +167,17 @@ function BeanDetailPage() {
   const [availableRoasters, setAvailableRoasters] =
     useState<readonly RoasterOption[]>(roasters)
   const [aiSource, setAiSource] = useState<'image' | 'web'>('web')
-  const [formData, setFormData] = useState(() =>
+  const {
+    values: formData,
+    patch: patchFormData,
+    setValues: setFormData,
+  } = useFormState(() =>
     bean ? toBeanFormValues(bean) : createEmptyBeanFormValues(),
   )
 
   useEffect(() => {
     if (bean) setFormData(toBeanFormValues(bean))
-  }, [bean])
+  }, [bean, setFormData])
 
   useEffect(() => {
     setAvailableRoasters(roasters)
@@ -173,17 +188,9 @@ function BeanDetailPage() {
     shotAnalytics.usedWeightGrams,
   )
 
-  const updateShotSearch = (values: Partial<typeof search>) =>
-    navigate({ search: (current) => ({ ...current, ...values }) })
-
   if (!bean) {
     return (
-      <div className="py-12 text-center">
-        <h2 className="text-xl font-semibold">Bean not found</h2>
-        <Button asChild className="mt-4">
-          <Link to="/beans">Back to beans</Link>
-        </Button>
-      </div>
+      <EntityNotFound entity="Bean" backTo="/beans" backLabel="Back to beans" />
     )
   }
 
@@ -194,10 +201,7 @@ function BeanDetailPage() {
       await updateBean({
         data: beanUpdatePayload(bean.id, formData),
       })
-      await navigate({
-        search: (current) => ({ ...current, edit: undefined }),
-        replace: true,
-      })
+      await updateSearch({ edit: undefined }, { replace: true })
       await router.invalidate()
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to update bean'))
@@ -245,24 +249,11 @@ function BeanDetailPage() {
   const handleExtractFromImage = async (image: EntityImage) => {
     setExtractingImageId(image.id)
     try {
-      const response = await fetch(imageUrl(image.storagePath))
-      if (!response.ok) throw new Error('Could not load that picture')
-      const blob = await response.blob()
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onerror = () => reject(new Error('Could not read that picture'))
-        reader.onloadend = () => {
-          if (typeof reader.result === 'string') resolve(reader.result)
-          else reject(new Error('Could not read that picture'))
-        }
-        reader.readAsDataURL(blob)
-      })
-      const encodedImage = dataUrl.split(',', 2)[1]
-      if (!encodedImage) throw new Error('Could not read that picture')
+      const encodedImage = await fetchImageAsBase64(imageUrl(image.storagePath))
       const extracted = await extractBeanInfo({
         data: {
-          imageBase64: encodedImage,
-          mimeType: blob.type,
+          imageBase64: encodedImage.base64,
+          mimeType: encodedImage.mimeType,
         },
       })
       if (!showSuggestion(extracted, 'image')) {
@@ -296,10 +287,7 @@ function BeanDetailPage() {
         }}
         onCancelEdit={() => {
           setFormData(toBeanFormValues(bean))
-          void navigate({
-            search: (current) => ({ ...current, edit: undefined }),
-            replace: true,
-          })
+          void updateSearch({ edit: undefined }, { replace: true })
         }}
         onSave={handleSave}
         onDelete={async () => {
@@ -348,22 +336,25 @@ function BeanDetailPage() {
               totalPages: shotPage.totalPages,
               totalItems: shotPage.totalItems,
               query: '',
-              sortKey: search.shotSort,
-              sortDirection: search.shotDirection,
-              onPageChange: (shotPage) => updateShotSearch({ shotPage }),
+              sortKey: search.brewSort,
+              sortDirection: search.brewDirection,
+              onPageChange: (brewPage) => updateSearch({ brewPage }),
               onQueryChange: () => undefined,
-              onSort: (shotSort) =>
-                updateShotSearch({
-                  shotSort,
-                  shotDirection:
-                    search.shotSort === shotSort
-                      ? search.shotDirection === 'asc'
-                        ? 'desc'
-                        : 'asc'
-                      : shotSort === 'date' || shotSort === 'rating'
-                        ? 'desc'
-                        : 'asc',
-                  shotPage: 1,
+              onSort: (brewSort) =>
+                updateSearch({
+                  brewSort,
+                  // New date/rating columns start with the most recent or
+                  // best brews first instead of the shared ascending default.
+                  brewDirection:
+                    search.brewSort !== brewSort &&
+                    (brewSort === 'date' || brewSort === 'rating')
+                      ? 'desc'
+                      : nextSortDirection(
+                          search.brewSort,
+                          search.brewDirection,
+                          brewSort,
+                        ),
+                  brewPage: 1,
                 }),
             }}
           />
@@ -376,7 +367,7 @@ function BeanDetailPage() {
           currentData={formData}
           suggestedData={suggestedData}
           onApply={(updates: Partial<BeanFormData>) => {
-            setFormData((current) => ({ ...current, ...updates }))
+            patchFormData(updates)
             const updateCount = Object.keys(updates).length
             if (updateCount > 0) {
               toast.success(`Applied ${updateCount} changes`)
@@ -401,17 +392,11 @@ function BeanDetailPage() {
             if (!open) setExtractedRoasterName(null)
           }}
           onSelect={(roaster) => {
-            setFormData((current) => ({
-              ...current,
-              roasterId: String(roaster.id),
-            }))
+            patchFormData({ roasterId: String(roaster.id) })
           }}
           onCreated={(roaster) => {
             setAvailableRoasters((current) => [...current, roaster])
-            setFormData((current) => ({
-              ...current,
-              roasterId: String(roaster.id),
-            }))
+            patchFormData({ roasterId: String(roaster.id) })
             setExtractedRoasterName(null)
           }}
         />

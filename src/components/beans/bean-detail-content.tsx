@@ -12,7 +12,7 @@ import {
 import type { Dispatch, SetStateAction } from 'react'
 import { BeanFields } from '@/components/beans/bean-fields'
 import type { BeanFormValues } from '@/components/beans/bean-form-values'
-import { DeleteConfirmation } from '@/components/DeleteConfirmation'
+import { DeleteConfirmation } from '@/components/delete-confirmation'
 import {
   type EntityImage,
   EntityImageGallery,

@@ -5,7 +5,7 @@ import {
   useNavigate,
 } from '@tanstack/react-router'
 import { Bean, Coffee, Star, Tags } from 'lucide-react'
-import { EmptyState } from '@/components/EmptyState'
+import { EmptyState } from '@/components/empty-state'
 import { MetricCard } from '@/components/metric-card'
 import { Page, PageHeader } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
@@ -19,11 +19,7 @@ import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { searchValidator } from '@/lib/search-params'
 import { getDetailedStats } from '@/lib/server/stats'
-import {
-  parseStatsFilter,
-  percentChange,
-  type StatsFilter,
-} from '@/lib/stats-filters'
+import { parseStatsFilter, percentChange } from '@/lib/stats-filters'
 
 export const Route = createFileRoute('/stats')({
   validateSearch: searchValidator(parseStatsFilter),
@@ -73,8 +69,14 @@ function StatsPage() {
     ? `${formatDate(range.start)}–${formatDate(range.end)}`
     : `Through ${formatDate(range.end)}`
 
-  const updateSearch = (values: Partial<StatsFilter>) =>
-    navigate({ search: (current) => ({ ...current, ...values }) })
+  const updateSearch = (
+    values: Partial<typeof search>,
+    options?: { replace?: boolean },
+  ) =>
+    navigate({
+      search: (current) => ({ ...current, ...values }),
+      replace: options?.replace,
+    })
 
   return (
     <Page>

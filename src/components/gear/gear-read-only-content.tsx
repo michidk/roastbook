@@ -2,7 +2,7 @@ import { ExternalLink } from 'lucide-react'
 import {
   ShotsTable,
   type ShotsTableServerPagination,
-} from '@/components/ShotsTable'
+} from '@/components/shots/shots-table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'

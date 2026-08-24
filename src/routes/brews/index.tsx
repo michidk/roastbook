@@ -5,15 +5,15 @@ import {
   useNavigate,
 } from '@tanstack/react-router'
 import { Coffee, Plus } from 'lucide-react'
-import { EmptyState } from '@/components/EmptyState'
+import { EmptyState } from '@/components/empty-state'
 import { ImageWithFallback } from '@/components/image-with-fallback'
 import { Page, PageHeader } from '@/components/page-layout'
 import { PaginationControls } from '@/components/pagination-controls'
 import { RouteError } from '@/components/route-error'
 import { ListPending } from '@/components/route-pending'
-import { ShotsTable } from '@/components/ShotsTable'
 import { BrewCollectionToolbar } from '@/components/shots/brew-collection-toolbar'
-import { ShotsViewToggle } from '@/components/shots-overview'
+import { ShotsViewToggle } from '@/components/shots/shots-overview'
+import { ShotsTable } from '@/components/shots/shots-table'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -23,6 +23,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
+import { nextSortDirection } from '@/lib/collection-sort'
 import { thumbnailUrl } from '@/lib/image-url'
 import {
   searchEnum,
@@ -130,7 +131,7 @@ function ShotsPage() {
 
   const updateSearch = (
     values: Partial<typeof search>,
-    options?: { readonly replace?: boolean },
+    options?: { replace?: boolean },
   ) =>
     navigate({
       search: (current) => ({ ...current, ...values }),
@@ -345,14 +346,18 @@ function ShotsPage() {
                   onSort: (sort) =>
                     updateSearch({
                       sort,
+                      // New date/rating columns start with the most recent or
+                      // best brews first instead of the shared ascending
+                      // default.
                       direction:
-                        search.sort === sort
-                          ? search.direction === 'asc'
-                            ? 'desc'
-                            : 'asc'
-                          : sort === 'date' || sort === 'rating'
-                            ? 'desc'
-                            : 'asc',
+                        search.sort !== sort &&
+                        (sort === 'date' || sort === 'rating')
+                          ? 'desc'
+                          : nextSortDirection(
+                              search.sort,
+                              search.direction,
+                              sort,
+                            ),
                       page: 1,
                     }),
                 }}

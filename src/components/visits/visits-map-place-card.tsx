@@ -109,17 +109,14 @@ export function VisitsMapPlaceCard({
       <div className="mt-4 flex flex-wrap gap-2">
         <Button asChild size="sm" className="min-h-11">
           <Link
-            to="/shops/$coffeeShopId"
+            to="/places/$coffeeShopId"
             params={{ coffeeShopId: String(place.coffeeShopId) }}
           >
             View café
           </Link>
         </Button>
         <Button asChild variant="outline" size="sm" className="min-h-11">
-          <Link
-            to="/visits/new"
-            search={{ coffeeShopId: String(place.coffeeShopId) }}
-          >
+          <Link to="/visits/new" search={{ coffeeShopId: place.coffeeShopId }}>
             <Plus />
             Log visit
           </Link>

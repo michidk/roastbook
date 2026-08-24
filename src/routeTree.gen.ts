@@ -33,6 +33,8 @@ import { Route as RoastersNewRouteImport } from './routes/roasters/new'
 import { Route as RoastersRoasterIdRouteImport } from './routes/roasters/$roasterId'
 import { Route as RecipesNewRouteImport } from './routes/recipes/new'
 import { Route as RecipesRecipeIdRouteImport } from './routes/recipes/$recipeId'
+import { Route as PlacesNewRouteImport } from './routes/places/new'
+import { Route as PlacesCoffeeShopIdRouteImport } from './routes/places/$coffeeShopId'
 import { Route as GearNewRouteImport } from './routes/gear/new'
 import { Route as GearGearIdRouteImport } from './routes/gear/$gearId'
 import { Route as GearSetsNewRouteImport } from './routes/gear-sets/new'
@@ -165,6 +167,16 @@ const RecipesRecipeIdRoute = RecipesRecipeIdRouteImport.update({
   path: '/recipes/$recipeId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlacesNewRoute = PlacesNewRouteImport.update({
+  id: '/places/new',
+  path: '/places/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlacesCoffeeShopIdRoute = PlacesCoffeeShopIdRouteImport.update({
+  id: '/places/$coffeeShopId',
+  path: '/places/$coffeeShopId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GearNewRoute = GearNewRouteImport.update({
   id: '/gear/new',
   path: '/gear/new',
@@ -237,6 +249,8 @@ export interface FileRoutesByFullPath {
   '/gear-sets/new': typeof GearSetsNewRoute
   '/gear/$gearId': typeof GearGearIdRoute
   '/gear/new': typeof GearNewRoute
+  '/places/$coffeeShopId': typeof PlacesCoffeeShopIdRoute
+  '/places/new': typeof PlacesNewRoute
   '/recipes/$recipeId': typeof RecipesRecipeIdRoute
   '/recipes/new': typeof RecipesNewRoute
   '/roasters/$roasterId': typeof RoastersRoasterIdRoute
@@ -274,6 +288,8 @@ export interface FileRoutesByTo {
   '/gear-sets/new': typeof GearSetsNewRoute
   '/gear/$gearId': typeof GearGearIdRoute
   '/gear/new': typeof GearNewRoute
+  '/places/$coffeeShopId': typeof PlacesCoffeeShopIdRoute
+  '/places/new': typeof PlacesNewRoute
   '/recipes/$recipeId': typeof RecipesRecipeIdRoute
   '/recipes/new': typeof RecipesNewRoute
   '/roasters/$roasterId': typeof RoastersRoasterIdRoute
@@ -312,6 +328,8 @@ export interface FileRoutesById {
   '/gear-sets/new': typeof GearSetsNewRoute
   '/gear/$gearId': typeof GearGearIdRoute
   '/gear/new': typeof GearNewRoute
+  '/places/$coffeeShopId': typeof PlacesCoffeeShopIdRoute
+  '/places/new': typeof PlacesNewRoute
   '/recipes/$recipeId': typeof RecipesRecipeIdRoute
   '/recipes/new': typeof RecipesNewRoute
   '/roasters/$roasterId': typeof RoastersRoasterIdRoute
@@ -351,6 +369,8 @@ export interface FileRouteTypes {
     | '/gear-sets/new'
     | '/gear/$gearId'
     | '/gear/new'
+    | '/places/$coffeeShopId'
+    | '/places/new'
     | '/recipes/$recipeId'
     | '/recipes/new'
     | '/roasters/$roasterId'
@@ -388,6 +408,8 @@ export interface FileRouteTypes {
     | '/gear-sets/new'
     | '/gear/$gearId'
     | '/gear/new'
+    | '/places/$coffeeShopId'
+    | '/places/new'
     | '/recipes/$recipeId'
     | '/recipes/new'
     | '/roasters/$roasterId'
@@ -425,6 +447,8 @@ export interface FileRouteTypes {
     | '/gear-sets/new'
     | '/gear/$gearId'
     | '/gear/new'
+    | '/places/$coffeeShopId'
+    | '/places/new'
     | '/recipes/$recipeId'
     | '/recipes/new'
     | '/roasters/$roasterId'
@@ -463,6 +487,8 @@ export interface RootRouteChildren {
   GearSetsNewRoute: typeof GearSetsNewRoute
   GearGearIdRoute: typeof GearGearIdRoute
   GearNewRoute: typeof GearNewRoute
+  PlacesCoffeeShopIdRoute: typeof PlacesCoffeeShopIdRoute
+  PlacesNewRoute: typeof PlacesNewRoute
   RecipesRecipeIdRoute: typeof RecipesRecipeIdRoute
   RecipesNewRoute: typeof RecipesNewRoute
   RoastersRoasterIdRoute: typeof RoastersRoasterIdRoute
@@ -656,6 +682,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RecipesRecipeIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/places/new': {
+      id: '/places/new'
+      path: '/places/new'
+      fullPath: '/places/new'
+      preLoaderRoute: typeof PlacesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/places/$coffeeShopId': {
+      id: '/places/$coffeeShopId'
+      path: '/places/$coffeeShopId'
+      fullPath: '/places/$coffeeShopId'
+      preLoaderRoute: typeof PlacesCoffeeShopIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/gear/new': {
       id: '/gear/new'
       path: '/gear/new'
@@ -751,6 +791,8 @@ const rootRouteChildren: RootRouteChildren = {
   GearSetsNewRoute: GearSetsNewRoute,
   GearGearIdRoute: GearGearIdRoute,
   GearNewRoute: GearNewRoute,
+  PlacesCoffeeShopIdRoute: PlacesCoffeeShopIdRoute,
+  PlacesNewRoute: PlacesNewRoute,
   RecipesRecipeIdRoute: RecipesRecipeIdRoute,
   RecipesNewRoute: RecipesNewRoute,
   RoastersRoasterIdRoute: RoastersRoasterIdRoute,

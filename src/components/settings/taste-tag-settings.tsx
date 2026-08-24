@@ -1,7 +1,7 @@
 import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { DeleteConfirmation } from '@/components/DeleteConfirmation'
+import { DeleteConfirmation } from '@/components/delete-confirmation'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {

@@ -31,7 +31,7 @@ import {
   localTimestamp,
   statsBucketExpression,
 } from '@/lib/server/stats-sql.server'
-import { getVisitsAndPlacesStats } from '@/lib/server/stats-visits'
+import { getVisitsAndPlacesStats } from '@/lib/server/stats-visits.server'
 import { calculateStreaks, fillBucketSeries } from '@/lib/stats-analysis'
 import {
   dateKeyInTimeZone,

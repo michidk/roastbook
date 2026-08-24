@@ -7,11 +7,14 @@ import {
 import { ArrowLeft, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { BrewingMethodEditor } from '@/components/brewing-methods/brewing-method-editor'
-import { DeleteConfirmation } from '@/components/DeleteConfirmation'
+import { DeleteConfirmation } from '@/components/delete-confirmation'
+import { EntityNotFound } from '@/components/entity-not-found'
 import { Page, PageHeader } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import { Button } from '@/components/ui/button'
+import { getErrorMessage } from '@/lib/error-message'
+import { parseIdParam } from '@/lib/route-params'
 import {
   deleteBrewingMethod,
   getBrewingMethod,
@@ -19,7 +22,7 @@ import {
 
 export const Route = createFileRoute('/brewing-methods/$brewingMethodId')({
   loader: ({ params }) =>
-    getBrewingMethod({ data: Number(params.brewingMethodId) }),
+    getBrewingMethod({ data: parseIdParam(params.brewingMethodId) }),
   component: BrewingMethodDetailPage,
   pendingComponent: DetailPending,
   errorComponent: ({ error }) => (
@@ -38,16 +41,11 @@ function BrewingMethodDetailPage() {
 
   if (!method) {
     return (
-      <Page width="form">
-        <div className="py-12 text-center">
-          <h2 className="font-display text-xl font-bold">
-            Brewing method not found
-          </h2>
-          <Button asChild className="mt-4">
-            <Link to="/brewing-methods">Back to brewing methods</Link>
-          </Button>
-        </div>
-      </Page>
+      <EntityNotFound
+        entity="Brewing method"
+        backTo="/brewing-methods"
+        backLabel="Back to brewing methods"
+      />
     )
   }
 
@@ -58,11 +56,7 @@ function BrewingMethodDetailPage() {
       toast.success('Brewing method deleted')
       await navigate({ to: '/brewing-methods' })
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : 'Could not delete brewing method',
-      )
+      toast.error(getErrorMessage(error, 'Could not delete brewing method'))
     }
   }
 

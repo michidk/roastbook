@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { desc, eq } from 'drizzle-orm'
+import { and, asc, count, desc, eq, ilike, or } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
 import { basketDetails, gear, machineSettings } from '@/db/schema'
@@ -8,6 +8,10 @@ import {
   isResearchEnabled,
   researchMachineSettingsFromWeb,
 } from '@/lib/ai'
+import {
+  escapedContainsPattern,
+  resolvePagination,
+} from '@/lib/collection-query'
 import { isEspressoMachineGearType } from '@/lib/constants'
 import { AUTO_STOP_MODE_VALUES, GEAR_TYPE_VALUES } from '@/lib/domain-contracts'
 import { expectReturnedRow } from '@/lib/domain-errors'
@@ -108,6 +112,72 @@ export const getGear = createServerFn({ method: 'GET' }).handler(async () =>
     with: gearRelations,
   }),
 )
+
+const GEAR_PAGE_SIZE = 12
+const gearListSchema = z.object({
+  activePage: z.number().int().min(1).max(100_000).default(1),
+  archivedPage: z.number().int().min(1).max(100_000).default(1),
+  query: z.string().trim().max(200).default(''),
+  sort: z.enum(['added', 'name', 'type']).default('added'),
+  direction: z.enum(['asc', 'desc']).default('desc'),
+})
+
+export const getGearPage = createServerFn({ method: 'GET' })
+  .validator(gearListSchema)
+  .handler(async ({ data }) => {
+    const pattern = escapedContainsPattern(data.query)
+    const search = data.query
+      ? or(
+          ilike(gear.name, pattern),
+          ilike(gear.brand, pattern),
+          ilike(gear.model, pattern),
+        )
+      : undefined
+    const sortColumn =
+      data.sort === 'name'
+        ? gear.name
+        : data.sort === 'type'
+          ? gear.type
+          : gear.createdAt
+    const order = data.direction === 'asc' ? asc(sortColumn) : desc(sortColumn)
+
+    async function loadArchiveState(
+      isArchived: boolean,
+      requestedPage: number,
+    ) {
+      const where = search
+        ? and(eq(gear.isArchived, isArchived), search)
+        : eq(gear.isArchived, isArchived)
+      const countRows = await db
+        .select({ value: count() })
+        .from(gear)
+        .where(where)
+      const totalItems = countRows[0]?.value ?? 0
+      const pagination = resolvePagination(
+        totalItems,
+        requestedPage,
+        GEAR_PAGE_SIZE,
+      )
+      const items = await db.query.gear.findMany({
+        where,
+        orderBy: [order, asc(gear.id)],
+        limit: GEAR_PAGE_SIZE,
+        offset: (pagination.page - 1) * GEAR_PAGE_SIZE,
+        with: { images: true },
+      })
+      return { items, ...pagination }
+    }
+
+    const [active, archived] = await Promise.all([
+      loadArchiveState(false, data.activePage),
+      loadArchiveState(true, data.archivedPage),
+    ])
+    return {
+      active,
+      archived,
+      totalItems: active.totalItems + archived.totalItems,
+    }
+  })
 
 export const getGearById = createServerFn({ method: 'GET' })
   .validator(positiveIdSchema)

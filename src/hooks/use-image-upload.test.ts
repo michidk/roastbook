@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { ImageUploadError, validateImageFiles } from '@/hooks/useImageUpload'
+import { ImageUploadError, validateImageFiles } from '@/hooks/use-image-upload'
 
 describe('image upload file validation', () => {
   test('accepts every image format supported by the server', () => {

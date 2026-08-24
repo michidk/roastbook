@@ -128,7 +128,7 @@ function Dashboard() {
                           variant="compact"
                           sizeClassName="size-4"
                           className="text-sm"
-                          ariaLabel="Shot rating"
+                          ariaLabel="Brew rating"
                         />
                       ) : null}
                     </div>
@@ -152,7 +152,7 @@ function Dashboard() {
             />
             <QuickAddRow icon={Bean} label="Add beans" href="/beans/new" />
             <QuickAddRow icon={Cog} label="Add gear" href="/gear/new" />
-            <QuickAddRow icon={MapPin} label="Add café" href="/shops/new" />
+            <QuickAddRow icon={MapPin} label="Add café" href="/places/new" />
           </CardContent>
         </Card>
       </section>

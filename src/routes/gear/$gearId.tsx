@@ -6,8 +6,10 @@ import {
 import { GearDetailPage } from '@/components/gear/gear-detail-page'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
-import type { ShotsTableServerPagination } from '@/components/ShotsTable'
+import type { ShotsTableServerPagination } from '@/components/shots/shots-table'
+import { nextSortDirection } from '@/lib/collection-sort'
 import { parseEditModeSearch } from '@/lib/edit-mode'
+import { parseIdParam } from '@/lib/route-params'
 import {
   searchEnum,
   searchInteger,
@@ -21,14 +23,14 @@ import { getGearShotPage } from '@/lib/server/shots'
 const parseGearDetailSearch = (input: unknown) => {
   const search = searchRecord(input)
   return {
-    shotPage: searchInteger(search.shotPage, 1, 1, 100_000) ?? 1,
-    shotQuery: searchString(search.shotQuery),
-    shotSort: searchEnum(
-      search.shotSort,
+    brewPage: searchInteger(search.brewPage, 1, 1, 100_000) ?? 1,
+    brewQuery: searchString(search.brewQuery),
+    brewSort: searchEnum(
+      search.brewSort,
       ['date', 'bean', 'dose', 'yield', 'time', 'rating'],
       'date',
     ),
-    shotDirection: searchEnum(search.shotDirection, ['asc', 'desc'], 'desc'),
+    brewDirection: searchEnum(search.brewDirection, ['asc', 'desc'], 'desc'),
     ...parseEditModeSearch(search),
   }
 }
@@ -38,30 +40,30 @@ export const Route = createFileRoute('/gear/$gearId')({
   search: {
     middlewares: [
       stripSearchParams({
-        shotPage: 1,
-        shotQuery: '',
-        shotSort: 'date',
-        shotDirection: 'desc',
+        brewPage: 1,
+        brewQuery: '',
+        brewSort: 'date',
+        brewDirection: 'desc',
       } as const),
     ],
   },
   loaderDeps: ({ search }) => ({
-    shotPage: search.shotPage,
-    shotQuery: search.shotQuery,
-    shotSort: search.shotSort,
-    shotDirection: search.shotDirection,
+    brewPage: search.brewPage,
+    brewQuery: search.brewQuery,
+    brewSort: search.brewSort,
+    brewDirection: search.brewDirection,
   }),
   loader: async ({ params, deps }) => {
-    const gearId = Number(params.gearId)
+    const gearId = parseIdParam(params.gearId)
     const [gear, shotPage, research] = await Promise.all([
       getGearById({ data: gearId }),
       getGearShotPage({
         data: {
           entityId: gearId,
-          page: deps.shotPage,
-          query: deps.shotQuery,
-          sort: deps.shotSort,
-          direction: deps.shotDirection,
+          page: deps.brewPage,
+          query: deps.brewQuery,
+          sort: deps.brewSort,
+          direction: deps.brewDirection,
         },
       }),
       checkGearResearchEnabled(),
@@ -87,23 +89,26 @@ function GearDetailRoute() {
     page: shotPage.page,
     totalPages: shotPage.totalPages,
     totalItems: shotPage.totalItems,
-    query: search.shotQuery,
-    sortKey: search.shotSort,
-    sortDirection: search.shotDirection,
-    onPageChange: (shotPage) => updateShotSearch({ shotPage }),
-    onQueryChange: (shotQuery) => updateShotSearch({ shotQuery, shotPage: 1 }),
-    onSort: (shotSort) =>
+    query: search.brewQuery,
+    sortKey: search.brewSort,
+    sortDirection: search.brewDirection,
+    onPageChange: (brewPage) => updateShotSearch({ brewPage }),
+    onQueryChange: (brewQuery) => updateShotSearch({ brewQuery, brewPage: 1 }),
+    onSort: (brewSort) =>
       updateShotSearch({
-        shotSort,
-        shotDirection:
-          search.shotSort === shotSort
-            ? search.shotDirection === 'asc'
-              ? 'desc'
-              : 'asc'
-            : shotSort === 'date' || shotSort === 'rating'
-              ? 'desc'
-              : 'asc',
-        shotPage: 1,
+        brewSort,
+        // New date/rating columns start with the most recent or best
+        // brews first instead of the shared ascending default.
+        brewDirection:
+          search.brewSort !== brewSort &&
+          (brewSort === 'date' || brewSort === 'rating')
+            ? 'desc'
+            : nextSortDirection(
+                search.brewSort,
+                search.brewDirection,
+                brewSort,
+              ),
+        brewPage: 1,
       }),
   }
 

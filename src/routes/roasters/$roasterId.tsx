@@ -5,9 +5,9 @@ import {
   useRouter,
 } from '@tanstack/react-router'
 import { ArrowLeft, ExternalLink, Pencil, Trash2 } from 'lucide-react'
-import { useState } from 'react'
 import { toast } from 'sonner'
-import { DeleteConfirmation } from '@/components/DeleteConfirmation'
+import { DeleteConfirmation } from '@/components/delete-confirmation'
+import { EntityNotFound } from '@/components/entity-not-found'
 import { Page, PageHeader } from '@/components/page-layout'
 import { RoasterFields } from '@/components/roasters/roaster-fields'
 import {
@@ -21,14 +21,18 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { WebsiteLogo } from '@/components/website-logo'
+import { useFormState } from '@/hooks/use-form-state'
+import { useFormSubmission } from '@/hooks/use-form-submission'
 import { getRoastLevelLabel } from '@/lib/constants'
 import { parseEditModeSearch } from '@/lib/edit-mode'
+import { getErrorMessage } from '@/lib/error-message'
+import { parseIdParam } from '@/lib/route-params'
 import { searchValidator } from '@/lib/search-params'
 import { deleteRoaster, getRoaster, updateRoaster } from '@/lib/server/roasters'
 
 export const Route = createFileRoute('/roasters/$roasterId')({
   validateSearch: searchValidator(parseEditModeSearch),
-  loader: ({ params }) => getRoaster({ data: Number(params.roasterId) }),
+  loader: ({ params }) => getRoaster({ data: parseIdParam(params.roasterId) }),
   component: RoasterDetailPage,
   pendingComponent: DetailPending,
   errorComponent: ({ error }) => (
@@ -41,19 +45,37 @@ function RoasterDetailPage() {
   const { edit: isEditing = false } = Route.useSearch()
   const navigate = useNavigate({ from: '/roasters/$roasterId' })
   const router = useRouter()
-  const [isSaving, setIsSaving] = useState(false)
-  const [formData, setFormData] = useState(() =>
-    createRoasterFormValues(roaster),
-  )
+  const {
+    values: formData,
+    set,
+    patch,
+    setValues: setFormData,
+  } = useFormState(() => createRoasterFormValues(roaster))
+  const { isSubmitting: isSaving, handleSubmit: handleSave } =
+    useFormSubmission({
+      canSubmit: () => Boolean(roaster) && Boolean(formData.name.trim()),
+      submit: async () => {
+        if (!roaster) return
+        await updateRoaster({
+          data: roasterUpdatePayload(roaster.id, formData),
+        })
+        await navigate({
+          search: (current) => ({ ...current, edit: undefined }),
+          replace: true,
+        })
+        await router.invalidate()
+      },
+      onError: (error) =>
+        toast.error(getErrorMessage(error, 'Failed to update roaster')),
+    })
 
   if (!roaster) {
     return (
-      <div className="text-center py-12">
-        <h2 className="text-xl font-semibold">Roaster not found</h2>
-        <Button asChild className="mt-4">
-          <Link to="/roasters">Back to roasters</Link>
-        </Button>
-      </div>
+      <EntityNotFound
+        entity="Roaster"
+        backTo="/roasters"
+        backLabel="Back to roasters"
+      />
     )
   }
 
@@ -69,26 +91,6 @@ function RoasterDetailPage() {
       search: (current) => ({ ...current, edit: undefined }),
       replace: true,
     })
-  }
-
-  const handleSave = async () => {
-    if (!formData.name.trim()) return
-
-    setIsSaving(true)
-    try {
-      await updateRoaster({
-        data: roasterUpdatePayload(roaster.id, formData),
-      })
-      await navigate({
-        search: (current) => ({ ...current, edit: undefined }),
-        replace: true,
-      })
-      await router.invalidate()
-    } catch {
-      toast.error('Failed to update roaster')
-    } finally {
-      setIsSaving(false)
-    }
   }
 
   const beanCount = roaster.beans?.length ?? 0
@@ -137,7 +139,8 @@ function RoasterDetailPage() {
                 </Button>
                 <Button
                   size="sm"
-                  onClick={handleSave}
+                  type="submit"
+                  form="roaster-edit-form"
                   disabled={isSaving || !formData.name.trim()}
                 >
                   {isSaving ? 'Saving…' : 'Save'}
@@ -176,18 +179,18 @@ function RoasterDetailPage() {
               currentData={formData}
               disabled={isSaving}
               onApply={(updates) => {
-                setFormData((current) => ({ ...current, ...updates }))
+                patch(updates)
                 toast.success(`Applied ${Object.keys(updates).length} changes`)
               }}
             />
           </div>
-          <RoasterFields
-            values={formData}
-            onChange={(key, value) =>
-              setFormData((current) => ({ ...current, [key]: value }))
-            }
-            idPrefix="roaster-edit"
-          />
+          <form id="roaster-edit-form" onSubmit={handleSave}>
+            <RoasterFields
+              values={formData}
+              onChange={set}
+              idPrefix="roaster-edit"
+            />
+          </form>
         </>
       ) : (
         <>

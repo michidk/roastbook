@@ -27,8 +27,9 @@ import {
   DialogContent,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { type ImageFile, useImageUpload } from '@/hooks/useImageUpload'
+import { useImageUpload } from '@/hooks/use-image-upload'
 import { getErrorMessage } from '@/lib/error-message'
+import type { ImageFile } from '@/lib/image-file'
 import { imageUrl, thumbnailUrl } from '@/lib/image-url'
 import { deleteEntityImage, setImageAsThumbnail } from '@/lib/server/images'
 import {

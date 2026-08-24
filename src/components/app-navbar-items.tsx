@@ -6,6 +6,7 @@ import {
   Coffee,
   Cog,
   Layers,
+  MapPin,
   Settings,
   SlidersHorizontal,
   Store,
@@ -28,6 +29,7 @@ export const primaryNavItems: readonly NavItem[] = [
   { title: 'Brews', url: '/brews', icon: Coffee },
   { title: 'Beans', url: '/beans', icon: Bean },
   { title: 'Visits', url: '/visits', icon: UtensilsCrossed },
+  { title: 'Places', url: '/places', icon: MapPin },
 ]
 
 export const moreNavItems: readonly NavItem[] = [

@@ -12,7 +12,7 @@ import {
 } from '@/components/collection/collection-list'
 import { CollectionViewToggle } from '@/components/collection/collection-view-toggle'
 import { CollectionToolbar } from '@/components/collection-toolbar'
-import { EmptyState } from '@/components/EmptyState'
+import { EmptyState } from '@/components/empty-state'
 import { ImageWithFallback } from '@/components/image-with-fallback'
 import { Page, PageHeader } from '@/components/page-layout'
 import { PaginationControls } from '@/components/pagination-controls'
@@ -145,7 +145,7 @@ function toEntry(coffeeShop: CoffeeShop): CollectionEntry {
         )}
       </>
     ),
-    to: '/shops/$coffeeShopId',
+    to: '/places/$coffeeShopId',
     params: { coffeeShopId: String(coffeeShop.id) },
   }
 }
@@ -157,8 +157,14 @@ function PlacesPage() {
   const { view, setView, isReady } = useCollectionView('places')
   const formatDate = useDateFormatter()
   const showRating = useTasteProfile().overallRating
-  const updateSearch = (values: Partial<typeof search>) =>
-    navigate({ search: (current) => ({ ...current, ...values }) })
+  const updateSearch = (
+    values: Partial<typeof search>,
+    options?: { replace?: boolean },
+  ) =>
+    navigate({
+      search: (current) => ({ ...current, ...values }),
+      replace: options?.replace,
+    })
 
   const columns: readonly CollectionColumn<CoffeeShop>[] = [
     {
@@ -213,7 +219,7 @@ function PlacesPage() {
         }
         actions={
           <Button asChild>
-            <Link to="/shops/new">
+            <Link to="/places/new">
               <Plus aria-hidden className="h-4 w-4" />
               Add café
             </Link>
@@ -279,7 +285,7 @@ function PlacesPage() {
           title="No cafés added yet"
           description="Add the cafés you want to remember"
           actionLabel="Add café"
-          actionHref="/shops/new"
+          actionHref="/places/new"
         />
       ) : pageData.totalItems === 0 &&
         !search.query &&

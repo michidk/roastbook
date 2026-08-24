@@ -1,6 +1,6 @@
 import { MapPin } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
-import { EmptyState } from '@/components/EmptyState'
+import { EmptyState } from '@/components/empty-state'
 import { VisitsMapCanvas } from '@/components/visits/visits-map-canvas'
 import { VisitsMapPlaceCard } from '@/components/visits/visits-map-place-card'
 import {
@@ -47,7 +47,7 @@ export function CoffeeShopMap({
         title="No cafés on the map yet"
         description="Add a location to a saved café to see it here."
         actionLabel="Add a café"
-        actionHref="/shops/new"
+        actionHref="/places/new"
       />
     )
   }

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { ImageFile } from '@/hooks/useImageUpload'
+import type { ImageFile } from '@/lib/image-file'
 import { uploadEntityImagesWith } from '@/lib/upload-entity-images'
 
 function image(name: string): ImageFile {

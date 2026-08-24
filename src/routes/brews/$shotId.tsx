@@ -4,36 +4,33 @@ import {
   useNavigate,
   useRouter,
 } from '@tanstack/react-router'
-import { ArrowLeft, BookOpen, Pencil } from 'lucide-react'
-import { type SyntheticEvent, useRef, useState } from 'react'
+import { ArrowLeft, Pencil } from 'lucide-react'
+import { useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { DeleteConfirmation } from '@/components/DeleteConfirmation'
-import { InputField, SelectField } from '@/components/form/form-field'
+import { DeleteConfirmation } from '@/components/delete-confirmation'
+import { EntityNotFound } from '@/components/entity-not-found'
 import { Page, PageHeader } from '@/components/page-layout'
+import { RouteError } from '@/components/route-error'
+import { DetailPending } from '@/components/route-pending'
 import { ExtractionBalanceField } from '@/components/shots/extraction-balance-field'
+import {
+  SaveToRecipeDialog,
+  type SaveToRecipeTarget,
+} from '@/components/shots/save-to-recipe-dialog'
 import { ShotEditForm } from '@/components/shots/shot-edit-form'
 import { ShotSensoryRatingFields } from '@/components/shots/shot-sensory-ratings'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Dialog,
-  DialogBody,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { StarRating } from '@/components/ui/star-rating'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { parseEditModeSearch } from '@/lib/edit-mode'
+import { getErrorMessage } from '@/lib/error-message'
 import { hasExtractionBalance } from '@/lib/extraction-balance'
+import { parseIdParam } from '@/lib/route-params'
 import { searchValidator } from '@/lib/search-params'
 import { getActiveBeans } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
@@ -52,7 +49,7 @@ export const Route = createFileRoute('/brews/$shotId')({
   validateSearch: searchValidator(parseEditModeSearch),
   loaderDeps: ({ search }) => ({ edit: search.edit ?? false }),
   loader: async ({ params, deps }) => {
-    const shotId = Number(params.shotId)
+    const shotId = parseIdParam(params.shotId)
     const [shot, recipes, editData] = await Promise.all([
       getShot({ data: shotId }),
       getRecipeOptions(),
@@ -73,6 +70,10 @@ export const Route = createFileRoute('/brews/$shotId')({
     return { shot, recipes, editData }
   },
   component: ShotDetailPage,
+  pendingComponent: DetailPending,
+  errorComponent: ({ error }) => (
+    <RouteError error={error} backTo="/brews" backLabel="Back to brews" />
+  ),
 })
 
 function ShotDataFields({
@@ -99,22 +100,12 @@ function ShotDetailPage() {
   const navigate = useNavigate({ from: '/brews/$shotId' })
   const router = useRouter()
 
-  const [isRecipeDialogOpen, setIsRecipeDialogOpen] = useState(false)
-  const [recipeTarget, setRecipeTarget] = useState(
-    shot?.recipe ? String(shot.recipe.id) : 'new',
-  )
-  const [recipeName, setRecipeName] = useState('')
   const [isSavingRecipe, setIsSavingRecipe] = useState(false)
   const editButtonRef = useRef<HTMLAnchorElement>(null)
 
   if (!shot) {
     return (
-      <div className="text-center py-12">
-        <h2 className="text-xl font-semibold">Brew not found</h2>
-        <Button asChild className="mt-4">
-          <Link to="/brews">Back to brews</Link>
-        </Button>
-      </div>
+      <EntityNotFound entity="Brew" backTo="/brews" backLabel="Back to brews" />
     )
   }
 
@@ -139,31 +130,25 @@ function ShotDetailPage() {
     requestAnimationFrame(() => editButtonRef.current?.focus())
   }
 
-  const handleSaveRecipe = async (event: SyntheticEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const isNewRecipe = recipeTarget === 'new'
-    const name = recipeName.trim()
-    if (isNewRecipe && !name) return
+  const handleSaveRecipe = async (target: SaveToRecipeTarget) => {
+    const isNewRecipe = target.kind === 'new'
     setIsSavingRecipe(true)
     try {
       const recipe = await saveShotAsRecipe({
         data: isNewRecipe
-          ? { shotId: shot.id, name }
-          : { shotId: shot.id, recipeId: Number(recipeTarget) },
+          ? { shotId: shot.id, name: target.name }
+          : { shotId: shot.id, recipeId: target.recipeId },
       })
       if (!recipe) {
         toast.error('Could not save this recipe')
-        return
+        return false
       }
-      setRecipeTarget(String(recipe.id))
-      setRecipeName('')
-      setIsRecipeDialogOpen(false)
       await router.invalidate()
       toast.success(isNewRecipe ? 'Recipe created' : 'Recipe updated')
+      return true
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Could not save this recipe',
-      )
+      toast.error(getErrorMessage(error, 'Could not save this recipe'))
+      return false
     } finally {
       setIsSavingRecipe(false)
     }
@@ -248,91 +233,20 @@ function ShotDetailPage() {
           <>
             {!isEditing && (
               <>
-                <Dialog
-                  open={isRecipeDialogOpen}
-                  onOpenChange={setIsRecipeDialogOpen}
-                >
-                  <DialogTrigger
-                    render={<Button variant="outline" size="sm" />}
-                  >
-                    <BookOpen />
-                    Save to recipe
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Save shot values to a recipe</DialogTitle>
-                      <DialogDescription>
-                        Save this brew’s method, equipment, and recipe values
-                        for reuse.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <form
-                      onSubmit={handleSaveRecipe}
-                      className="grid min-h-0 grid-rows-[1fr_auto]"
-                    >
-                      <DialogBody>
-                        <SelectField
-                          id="recipe-target"
-                          label="Save values to"
-                          value={recipeTarget}
-                          onChange={setRecipeTarget}
-                          options={[
-                            { value: 'new', label: 'A new recipe' },
-                            ...availableRecipes.map((recipe) => ({
-                              value: String(recipe.id),
-                              label:
-                                recipe.id === shot.recipe?.id
-                                  ? `${recipe.name} (used for this shot)`
-                                  : recipe.name,
-                            })),
-                          ]}
-                        />
-                        {recipeTarget === 'new' ? (
-                          <InputField
-                            id="recipe-name"
-                            label="Recipe name"
-                            value={recipeName}
-                            onChange={setRecipeName}
-                            autoFocus
-                            required
-                          />
-                        ) : (
-                          <p className="text-sm text-muted-foreground">
-                            The selected recipe’s current values will be
-                            replaced. Its name will stay the same.
-                          </p>
-                        )}
-                      </DialogBody>
-                      <DialogFooter>
-                        <DialogClose
-                          render={
-                            <Button
-                              type="button"
-                              variant="outline"
-                              disabled={isSavingRecipe}
-                            />
-                          }
-                        >
-                          Cancel
-                        </DialogClose>
-                        <Button
-                          type="submit"
-                          disabled={
-                            (recipeTarget === 'new' && !recipeName.trim()) ||
-                            isSavingRecipe
-                          }
-                          aria-busy={isSavingRecipe}
-                        >
-                          {isSavingRecipe
-                            ? 'Saving…'
-                            : recipeTarget === 'new'
-                              ? 'Create recipe'
-                              : 'Update recipe'}
-                        </Button>
-                      </DialogFooter>
-                    </form>
-                  </DialogContent>
-                </Dialog>
+                <SaveToRecipeDialog
+                  trigger={<Button variant="outline" size="sm" />}
+                  triggerLabel="Save to recipe"
+                  title="Save shot values to a recipe"
+                  description="Save this brew’s method, equipment, and recipe values for reuse."
+                  availableRecipes={availableRecipes}
+                  currentRecipeId={shot.recipe?.id}
+                  currentRecipeHint="used for this shot"
+                  nameLabel="Recipe name"
+                  submitLabel="Create recipe"
+                  updateSubmitLabel="Update recipe"
+                  isSubmitting={isSavingRecipe}
+                  onSubmit={handleSaveRecipe}
+                />
                 <Button variant="outline" size="sm" asChild>
                   <Link
                     ref={editButtonRef}

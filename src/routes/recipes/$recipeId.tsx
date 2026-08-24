@@ -5,9 +5,10 @@ import {
   useRouter,
 } from '@tanstack/react-router'
 import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
-import { type SyntheticEvent, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { DeleteConfirmation } from '@/components/DeleteConfirmation'
+import { DeleteConfirmation } from '@/components/delete-confirmation'
+import { EntityNotFound } from '@/components/entity-not-found'
 import { Page, PageHeader } from '@/components/page-layout'
 import { RecipeDuplicateButton } from '@/components/recipes/recipe-duplicate-button'
 import { RecipeFields } from '@/components/recipes/recipe-fields'
@@ -21,13 +22,13 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useFormSubmission } from '@/hooks/use-form-submission'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { parseEditModeSearch } from '@/lib/edit-mode'
+import { getErrorMessage } from '@/lib/error-message'
 import { shotParameterPayload } from '@/lib/new-shot-payload'
-import {
-  optionalSearchBoolean,
-  searchRecord,
-  searchValidator,
-} from '@/lib/search-params'
+import { parseIdParam } from '@/lib/route-params'
+import { searchValidator } from '@/lib/search-params'
 import { getActiveBeans } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getGear } from '@/lib/server/gear'
@@ -35,11 +36,9 @@ import { deleteRecipe, getRecipe, updateRecipe } from '@/lib/server/recipes'
 import { getShotUpdateErrors } from '@/lib/update-validation'
 
 export const Route = createFileRoute('/recipes/$recipeId')({
-  validateSearch: searchValidator((input) => ({
-    edit: optionalSearchBoolean(searchRecord(input).edit),
-  })),
+  validateSearch: searchValidator(parseEditModeSearch),
   loader: async ({ params }) => {
-    const recipeId = Number(params.recipeId)
+    const recipeId = parseIdParam(params.recipeId)
     const [recipe, beans, methods, gear] = await Promise.all([
       getRecipe({ data: recipeId }),
       getActiveBeans(),
@@ -68,7 +67,6 @@ function RecipeDetailPage() {
   const { edit: isEditing = false } = Route.useSearch()
   const navigate = useNavigate({ from: '/recipes/$recipeId' })
   const router = useRouter()
-  const [isSaving, setIsSaving] = useState(false)
   const [name, setName] = useState(recipe?.name ?? '')
   const [values, setValues] = useState(() => createFormValues(recipe))
   const [fieldErrors, setFieldErrors] = useState<
@@ -81,14 +79,40 @@ function RecipeDetailPage() {
     setValues(createFormValues(recipe))
   }, [recipe])
 
+  const recipeUpdateData = () =>
+    recipe ? { id: recipe.id, name, ...shotParameterPayload(values) } : null
+
+  const { isSubmitting: isSaving, handleSubmit: handleSave } =
+    useFormSubmission({
+      canSubmit: () => {
+        const data = recipeUpdateData()
+        if (!data) return false
+        const errors = getShotUpdateErrors(data)
+        setFieldErrors(errors)
+        return Boolean(name.trim()) && Object.keys(errors).length === 0
+      },
+      submit: async () => {
+        const data = recipeUpdateData()
+        if (!data) return
+        await updateRecipe({ data })
+        await navigate({
+          search: (current) => ({ ...current, edit: undefined }),
+          replace: true,
+        })
+        await router.invalidate()
+        toast.success('Recipe updated')
+      },
+      onError: (error) =>
+        toast.error(getErrorMessage(error, 'Could not update recipe')),
+    })
+
   if (!recipe) {
     return (
-      <div className="py-12 text-center">
-        <h1 className="text-xl font-semibold">Recipe not found</h1>
-        <Button asChild className="mt-4">
-          <Link to="/recipes">Back to recipes</Link>
-        </Button>
-      </div>
+      <EntityNotFound
+        entity="Recipe"
+        backTo="/recipes"
+        backLabel="Back to recipes"
+      />
     )
   }
 
@@ -109,35 +133,6 @@ function RecipeDetailPage() {
       search: (current) => ({ ...current, edit: undefined }),
       replace: true,
     })
-  }
-
-  const handleSave = async (event: SyntheticEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const data = {
-      id: recipe.id,
-      name,
-      ...shotParameterPayload(values),
-    }
-    const errors = getShotUpdateErrors(data)
-    setFieldErrors(errors)
-    if (!name.trim() || Object.keys(errors).length > 0) return
-
-    setIsSaving(true)
-    try {
-      await updateRecipe({ data })
-      await navigate({
-        search: (current) => ({ ...current, edit: undefined }),
-        replace: true,
-      })
-      await router.invalidate()
-      toast.success('Recipe updated')
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Could not update recipe',
-      )
-    } finally {
-      setIsSaving(false)
-    }
   }
 
   return (

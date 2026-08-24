@@ -44,6 +44,13 @@
         "noYodaExpression": "error",
         "useDefaultParameterLast": "error",
         "useExportType": "error",
+        "useFilenamingConvention": {
+          "level": "error",
+          "options": {
+            "filenameCases": ["kebab-case"],
+            "requireAscii": true
+          }
+        },
         "useFragmentSyntax": "error",
         "useImportType": "error",
         "useNodejsImportProtocol": "error",
@@ -71,6 +78,18 @@
       "tailwindDirectives": true
     }
   },
+  "overrides": [
+    {
+      "includes": ["src/routes/**/$*"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useFilenamingConvention": "off"
+          }
+        }
+      }
+    }
+  ],
   "assist": {
     "enabled": true,
     "actions": {

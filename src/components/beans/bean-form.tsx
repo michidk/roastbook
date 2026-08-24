@@ -21,9 +21,9 @@ import { Button } from '@/components/ui/button'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
-import type { ImageFile } from '@/hooks/useImageUpload'
-import { useImageUpload } from '@/hooks/useImageUpload'
+import { useImageUpload } from '@/hooks/use-image-upload'
 import { getErrorMessage } from '@/lib/error-message'
+import type { ImageFile } from '@/lib/image-file'
 import { findRoasterByName } from '@/lib/roaster-match'
 import {
   checkVisionEnabled,

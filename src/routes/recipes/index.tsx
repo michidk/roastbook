@@ -12,7 +12,7 @@ import {
 } from '@/components/collection/collection-list'
 import { CollectionViewToggle } from '@/components/collection/collection-view-toggle'
 import { CollectionToolbar } from '@/components/collection-toolbar'
-import { EmptyState } from '@/components/EmptyState'
+import { EmptyState } from '@/components/empty-state'
 import { Page, PageHeader } from '@/components/page-layout'
 import { PaginationControls } from '@/components/pagination-controls'
 import { RouteError } from '@/components/route-error'
@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button'
 import { useCollectionView } from '@/hooks/use-collection-view'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { nextSortDirection } from '@/lib/collection-sort'
 import { thumbnailUrl } from '@/lib/image-url'
 import {
   searchEnum,
@@ -32,12 +33,14 @@ import {
 } from '@/lib/search-params'
 import { getRecipePage } from '@/lib/server/recipes'
 
+const SORT_KEYS = ['name', 'updated'] as const
+
 const parseRecipeSearch = (input: unknown) => {
   const search = searchRecord(input)
   return {
     page: searchInteger(search.page, 1, 1) ?? 1,
     query: searchString(search.query),
-    sort: searchEnum(search.sort, ['name', 'updated'], 'updated'),
+    sort: searchEnum(search.sort, SORT_KEYS, 'updated'),
     direction: searchEnum(search.direction, ['asc', 'desc'], 'desc'),
   }
 }
@@ -70,8 +73,6 @@ export const Route = createFileRoute('/recipes/')({
 })
 
 type Recipe = Awaited<ReturnType<typeof getRecipePage>>['items'][number]
-
-type SortKey = 'name' | 'updated'
 
 function getBeanThumbnail(recipe: Recipe): string | null {
   const images = recipe.bean?.images ?? []
@@ -107,21 +108,27 @@ function RecipesPage() {
   const { view, setView, isReady } = useCollectionView('recipes')
   const formatNumber = useNumberFormatter()
   const formatDate = useDateFormatter()
-  const updateSearch = (values: Partial<typeof search>) =>
-    navigate({ search: (current) => ({ ...current, ...values }) })
-  const handleSort = (key: string) =>
+  const updateSearch = (
+    values: Partial<typeof search>,
+    options?: { replace?: boolean },
+  ) =>
+    navigate({
+      search: (current) => ({ ...current, ...values }),
+      replace: options?.replace,
+    })
+  const handleSort = (key: string) => {
+    const sort = searchEnum(key, SORT_KEYS, 'updated')
     updateSearch({
-      sort: key as SortKey,
+      sort,
+      // New non-name columns start with the most recent recipes first
+      // instead of the shared ascending default.
       direction:
-        search.sort === key
-          ? search.direction === 'asc'
-            ? 'desc'
-            : 'asc'
-          : key === 'name'
-            ? 'asc'
-            : 'desc',
+        search.sort !== sort && sort !== 'name'
+          ? 'desc'
+          : nextSortDirection(search.sort, search.direction, sort),
       page: 1,
     })
+  }
 
   /** Only render a parameter the recipe's brewing method actually records. */
   const parameter = (

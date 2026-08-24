@@ -8,7 +8,8 @@ import { ArrowLeft, Pencil } from 'lucide-react'
 import { useRef } from 'react'
 import { CoffeeShopCard } from '@/components/coffee-shops/coffee-shop-card'
 import { CoffeeShopMap } from '@/components/coffee-shops/coffee-shop-map'
-import { DeleteConfirmation } from '@/components/DeleteConfirmation'
+import { DeleteConfirmation } from '@/components/delete-confirmation'
+import { EntityNotFound } from '@/components/entity-not-found'
 import { Page, PageHeader } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
@@ -23,6 +24,7 @@ import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { parseEditModeSearch } from '@/lib/edit-mode'
+import { parseIdParam } from '@/lib/route-params'
 import { searchValidator } from '@/lib/search-params'
 import { getActiveBeans } from '@/lib/server/beans'
 import { deleteCafeVisit, getCafeVisit } from '@/lib/server/cafe-visits'
@@ -34,7 +36,7 @@ import { cn } from '@/lib/utils'
 export const Route = createFileRoute('/visits/$visitId')({
   validateSearch: searchValidator(parseEditModeSearch),
   loader: async ({ params }) => {
-    const visitId = Number(params.visitId)
+    const visitId = parseIdParam(params.visitId)
     const visit = await getCafeVisit({ data: visitId })
     const [coffeeShops, tasteTags, beans, visitCoffeeShop] = await Promise.all([
       getCoffeeShops(),
@@ -73,12 +75,11 @@ function VisitDetailPage() {
 
   if (!visit) {
     return (
-      <div className="text-center py-12">
-        <h2 className="text-xl font-semibold">Visit not found</h2>
-        <Button asChild className="mt-4">
-          <Link to="/visits">Back to visits</Link>
-        </Button>
-      </div>
+      <EntityNotFound
+        entity="Visit"
+        backTo="/visits"
+        backLabel="Back to visits"
+      />
     )
   }
 
