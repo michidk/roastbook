@@ -41,7 +41,7 @@ function Dashboard() {
     <Page>
       <PageHeader title={headline} eyebrow={today} />
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <MetricCard
           value={formatNumber(stats.totalShots)}
           label="brews logged"
@@ -65,7 +65,7 @@ function Dashboard() {
         />
       </section>
 
-      <section className="grid gap-5 lg:grid-cols-[1fr_340px]">
+      <section className="grid gap-4 lg:grid-cols-[1fr_340px] lg:gap-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Recent brews</CardTitle>
@@ -147,7 +147,7 @@ function Dashboard() {
           <CardHeader>
             <CardTitle>Quick add</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2.5">
+          <CardContent className="space-y-2">
             <QuickAddRow icon={Coffee} label="Log a brew" href="/brews/new" />
             <QuickAddRow
               icon={UtensilsCrossed}
@@ -176,9 +176,9 @@ function QuickAddRow({
   return (
     <Link
       to={href}
-      className="flex items-center gap-3 rounded-2xl border border-border bg-secondary px-4 py-3 transition-colors hover:bg-accent/70"
+      className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-secondary px-3.5 py-2 transition-colors hover:bg-accent/70 sm:px-4 sm:py-3"
     >
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground sm:size-9">
         <Icon className="h-4 w-4" />
       </span>
       <span className="font-display text-base font-bold text-foreground">

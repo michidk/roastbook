@@ -132,6 +132,12 @@ Summary metrics use `MetricCard`. Use the hero variant for at most one focal
 metric, default for peers, and quiet for metrics nested inside another card.
 Avoid route-local stat-card variants.
 
+Metric cards are denser on a phone: 16px internal spacing and one step smaller
+value type below `sm`. A metric row whose values are short numbers pairs two
+cards per row on phones, as the dashboard overview does, so the summary costs
+one screen band instead of four. A row that can hold dates, names, or ratings
+stays one card per row until `sm`, because those values need the full width.
+
 Use `StarRating` for overall quality ratings. Editable ratings and prominent
 record details show the full star treatment; dense read-only contexts show the
 compact star plus `value/max`. Brew sensory intensity is the deliberate
