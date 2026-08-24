@@ -34,12 +34,11 @@ function Dashboard() {
   const formatNumber = useNumberFormatter()
   const showRating = useTasteProfile().overallRating
   const now = new Date()
-  const today = formatDate(now)
   const headline = getDailyHeadline(now)
 
   return (
     <Page>
-      <PageHeader title={headline} eyebrow={today} />
+      <PageHeader title={headline} />
 
       <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <MetricCard
