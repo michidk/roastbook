@@ -58,7 +58,7 @@ export function BeanCard({ bean, showRemainingEstimate }: BeanCardProps) {
     >
       <Card
         size="sm"
-        className={`relative isolate min-w-0 overflow-hidden rounded-2xl border-0 bg-coffee p-0 text-white shadow-none ${bean.isArchived ? 'h-[20rem] lg:h-[19rem]' : 'h-[23rem] sm:h-[23.5rem] lg:h-[22rem]'}`}
+        className={`relative isolate min-w-0 overflow-hidden rounded-2xl border-0 bg-coffee p-0 text-white shadow-none ${bean.isArchived ? 'h-[20rem] lg:h-[19rem]' : 'h-[20rem] sm:h-[23.5rem] lg:h-[22rem]'}`}
       >
         <div className="absolute inset-0">
           {thumbnail ? (
