@@ -16,6 +16,7 @@ import {
 } from '@/lib/constants'
 import { thumbnailUrl } from '@/lib/image-url'
 import type { getBeans } from '@/lib/server/beans'
+import { cn } from '@/lib/utils'
 
 type BeanRecord = Awaited<ReturnType<typeof getBeans>>[number] & {
   readonly usedWeightGrams?: string
@@ -53,7 +54,7 @@ export function BeanCard({ bean, showRemainingEstimate }: BeanCardProps) {
       to="/beans/$beanId"
       params={{ beanId: String(bean.id) }}
       aria-label={`View ${bean.name}${remainingLabel ? `, estimated ${remainingLabel}` : ''}`}
-      className={`${interactiveCardLinkClassName} rounded-2xl`}
+      className={cn(interactiveCardLinkClassName, 'h-auto')}
     >
       <Card
         size="sm"

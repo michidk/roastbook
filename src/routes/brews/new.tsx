@@ -506,7 +506,11 @@ function NewShotPage() {
           ) : null}
         </div>
         <aside className="space-y-4 lg:sticky lg:top-24">
-          {selectedBean ? <BeanCard bean={selectedBean} /> : null}
+          {selectedBean ? (
+            <div className="hidden lg:block">
+              <BeanCard bean={selectedBean} />
+            </div>
+          ) : null}
           <AiRecommendationDialog
             enabled={recommendationEnabled}
             request={
