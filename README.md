@@ -92,7 +92,9 @@ an assistant log this morning's espresso for you.
   over-extraction, the usual first dial-in move.
 - Catalog beans, roasters, brewing methods, coffee shops, and gear, and group
   equipment into reusable gear sets that fill a new brew's gear in one tap.
-- Track café visits and explore saved places on a map.
+- Track café visits and explore visited locations on a map.
+- Keep a Places list of saved cafés, from favorites to a want-to-visit
+  wishlist.
 - Review filterable brew and café trends, quality, consistency, taste, rhythm,
   exploration, recipe performance, gear usage, and costs.
 - Scan labels and research beans, roasters, and machine settings with AI, with
@@ -121,8 +123,8 @@ from the database row to the rendered field:
 | Deployment | Docker Compose or Helm, fronted by the Hodor auth proxy |
 
 Server-only concerns — database access, storage providers, AI calls, and secrets
-— never cross into browser code, and configuration is validated at startup
-instead of failing at request time.
+— never cross into browser code, and configuration is validated lazily on first
+use, reporting the affected variable names.
 
 ## Quick start with Docker Compose
 

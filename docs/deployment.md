@@ -1,5 +1,7 @@
 # Deployment
 
+A read-only demo build deploys to Vercel — see [docs/demo-mode.md](demo-mode.md).
+
 ## Security boundary
 
 Roastbook is a single-user application. It delegates authentication to the
@@ -47,6 +49,10 @@ cp .env.example .env
 # Replace the Hodor password and signing secret.
 docker compose up --build
 ```
+
+Note that `docker-compose.yaml` uses the `postgres:16` image while the Helm
+chart defaults to `postgres:17-alpine`; upgrading the Compose image in place
+would break existing local database volumes.
 
 ## Helm
 

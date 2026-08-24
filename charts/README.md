@@ -79,7 +79,9 @@ storage class that supports `ReadWriteMany`.
 
 Set `openai.existingSecret` to a Secret containing an API key. The key defaults
 to `api-key`. `openai.baseUrl`, `openai.visionModel`, and
-`openai.researchModel` support compatible providers and model overrides.
+`openai.researchModel` support compatible providers and model overrides; they
+only take effect when `openai.existingSecret` is set, because the deployment
+template renders them inside that guard.
 
 ## Migrations
 

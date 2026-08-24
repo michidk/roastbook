@@ -6,9 +6,6 @@
   "engines": {
     "bun": "1.3.14"
   },
-  "imports": {
-    "#/*": "./src/*"
-  },
   "scripts": {
     "dev": "vite dev --port 3000",
     "dev:log": "mkdir -p logs && bun run dev 2>&1 | tee logs/dev.log",
@@ -37,7 +34,10 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "bun run scripts/seed.ts",
-    "storage:orphans": "bun run scripts/report-media-orphans.ts"
+    "db:seed:imported": "bun run scripts/seed-imported.ts",
+    "db:duplicate-roasters": "bun run scripts/find-duplicate-roasters.ts",
+    "storage:orphans": "bun run scripts/report-media-orphans.ts",
+    "storage:backfill-thumbnails": "bun run scripts/backfill-thumbnails.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1068.0",

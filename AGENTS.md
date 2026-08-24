@@ -11,6 +11,7 @@ Hodor authentication proxy in front of the application.
 - Local development and verification: `docs/development.md`
 - Runtime configuration: `docs/configuration.md`
 - Docker, Helm, and security boundary: `docs/deployment.md`
+- Demo edition and Vercel build: `docs/demo-mode.md`
 - Visual and interaction rules: `DESIGN.md`
 - Database schema: `src/db/schema.ts`
 - Helm defaults: `charts/values.yaml`
@@ -30,7 +31,9 @@ work as shipped.
   instead of recreating their behavior in route components.
 - Reusable page, form, dialog, and entity components live in
   `src/components/`.
-- Server-side domain operations live in `src/lib/server/`.
+- Server-side domain operations live in `src/lib/server/`. There, files with a
+  `.server.ts` suffix are internal server modules; unsuffixed files export
+  `createServerFn` boundaries.
 - `src/lib/ai.ts`, database access, storage providers, and secrets are
   server-only. Never import them into browser code or expose non-`VITE_`
   environment variables to the client.
@@ -97,6 +100,11 @@ Do not claim integration or browser coverage when it was skipped or unavailable.
 
 ## Implementation style
 
+- Imports use the `@/` alias for `./src`.
+- Files use kebab-case names; TanStack Router files (`$param.tsx`,
+  `__root.tsx`) and generated files are the exception.
+- "Brew" is the user-facing and URL vocabulary; "shot" remains the internal
+  code and database identifier. Do not rename database tables.
 - Keep server functions thin: validate input at the boundary and delegate to a
   focused server/domain helper.
 - Prefer inferred TanStack Router types; avoid casts that bypass route, search,

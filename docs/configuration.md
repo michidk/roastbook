@@ -19,9 +19,15 @@ modules instead of reading the environment directly.
 | --- | --- | --- | --- |
 | `DATABASE_URL` | — | Yes | PostgreSQL connection URL |
 | `STORAGE_PROVIDER` | `local` | No | `local` or `s3` |
-| `STORAGE_PATH` | `./uploads` | Local storage only | Filesystem upload root |
+| `STORAGE_PATH` | `./uploads` | No | Filesystem upload root for local storage |
 | `STORAGE_URL` | `/media` | No | Server-side public media URL base |
-| `VITE_STORAGE_URL` | `/media` | No | Browser media URL base |
+| `VITE_STORAGE_URL` | `/media` | No | Browser media URL base (build time) |
+
+`VITE_STORAGE_URL` is a build-time variable: Vite inlines `import.meta.env`
+values into the browser bundle when the application is built, so it cannot be
+changed at container runtime and the Helm chart does not expose it. The Helm
+chart pins the server-side `STORAGE_URL` to `/media`
+(`charts/templates/deployment.yaml`).
 
 Demo mode is selected when the application is built rather than through runtime
 configuration. See [Demo mode](demo-mode.md) for build instructions and the
@@ -32,7 +38,7 @@ proposed database-free architecture.
 | Variable | Default | Required | Description |
 | --- | --- | --- | --- |
 | `S3_BUCKET` | — | S3 only | Bucket name |
-| `S3_REGION` | `us-east-1` | S3 only | AWS region |
+| `S3_REGION` | `us-east-1` | No | AWS region |
 | `S3_ENDPOINT` | AWS default | No | MinIO or compatible endpoint |
 | `S3_ACCESS_KEY_ID` | — | S3 only | Access key ID |
 | `S3_SECRET_ACCESS_KEY` | — | S3 only | Secret access key |

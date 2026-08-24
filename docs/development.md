@@ -55,7 +55,6 @@ migration command when its CLI output or flags are needed.
 bun run check
 bun run typecheck
 bun run test
-bun run test:coverage
 bun run lint:deadcode
 bun run build
 bun run check:client-assets
@@ -78,6 +77,20 @@ a hard threshold. `test:integration` is strict and requires all of:
 
 Always use isolated test services. CI provisions PostgreSQL and MinIO, applies
 the complete migration chain, and then runs all tests.
+
+## Maintenance scripts
+
+- `bun run storage:backfill-thumbnails` (`scripts/backfill-thumbnails.ts`) is a
+  one-shot backfill that generates missing thumbnails for existing images
+  across all image tables in local storage under `STORAGE_PATH`, skipping
+  images that already have one.
+- `bun run db:duplicate-roasters` (`scripts/find-duplicate-roasters.ts`)
+  reports roaster rows whose normalized names collide. The default run is a
+  dry-run report; `--merge` reassigns beans to the canonical roaster (most
+  beans, then oldest id) and deletes the duplicates.
+- `bun run db:seed:imported` (`scripts/seed-imported.ts`) is an alternative
+  seeder that loads a previously imported coffee-log dataset — gear, beans,
+  shots, and their image files — instead of the standard `db:seed` sample data.
 
 ## Browser QA
 
