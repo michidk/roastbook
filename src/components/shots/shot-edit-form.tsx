@@ -1,7 +1,8 @@
 import { type SyntheticEvent, useState } from 'react'
 import { toast } from 'sonner'
 import { BeanPicker } from '@/components/beans/bean-picker'
-import { InputField, SelectField } from '@/components/form/form-field'
+import { DateTimeField } from '@/components/form/date-field'
+import { SelectField } from '@/components/form/form-field'
 import {
   EntityForm,
   FormErrorSummary,
@@ -164,10 +165,9 @@ export function ShotEditForm({
           required
           error={fieldErrors.brewingMethodId}
         />
-        <InputField
+        <DateTimeField
           id="edit-brewed-at"
           label="Brewed at"
-          type="datetime-local"
           value={brewedAt}
           onChange={setBrewedAt}
           max={latestBrewedAt}

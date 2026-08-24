@@ -1,5 +1,6 @@
 import { BeanPicker } from '@/components/beans/bean-picker'
 import { CoffeeShopPicker } from '@/components/coffee-shops/coffee-shop-picker'
+import { DateTimeField } from '@/components/form/date-field'
 import {
   CurrencyField,
   InputField,
@@ -70,10 +71,9 @@ export function VisitFields({
           onChange={(value) => onFieldChange('beanId', value)}
           beans={choices.beans}
         />
-        <InputField
+        <DateTimeField
           id="visitedAt"
           label="Visited at"
-          type="datetime-local"
           value={visitedAt.value}
           onChange={visitedAt.onChange}
           max={visitedAt.max}

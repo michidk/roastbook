@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { BeanCard } from '@/components/beans/bean-card'
 import { BeanPicker } from '@/components/beans/bean-picker'
 import { CreatableCombobox } from '@/components/form/creatable-combobox'
+import { DateTimeField } from '@/components/form/date-field'
 import {
   InputField,
   SelectField,
@@ -402,10 +403,9 @@ function NewShotPage() {
                 emptyMessage="No recipes saved for this method."
               />
             ) : null}
-            <InputField
+            <DateTimeField
               id="brewed-at"
               label="Brewed at"
-              type="datetime-local"
               value={brewedAt}
               onChange={(value) => {
                 setBrewedAt(value)

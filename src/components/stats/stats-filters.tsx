@@ -1,5 +1,6 @@
 import { RotateCcw } from 'lucide-react'
-import { InputField, SelectField } from '@/components/form/form-field'
+import { DateField } from '@/components/form/date-field'
+import { SelectField } from '@/components/form/form-field'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -86,17 +87,15 @@ export function StatsFilters({
         </Button>
         {value.period === 'custom' ? (
           <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2 lg:col-span-4">
-            <InputField
+            <DateField
               id="stats-from"
               label="From"
-              type="date"
               value={value.from ?? ''}
               onChange={(from) => onChange({ from: from || undefined })}
             />
-            <InputField
+            <DateField
               id="stats-to"
               label="To"
-              type="date"
               value={value.to ?? ''}
               onChange={(to) => onChange({ to: to || undefined })}
             />

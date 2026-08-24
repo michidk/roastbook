@@ -1,3 +1,4 @@
+import { DateField } from '@/components/form/date-field'
 import {
   CurrencyField,
   InputField,
@@ -92,10 +93,9 @@ export function GearFields({
 
       <FormSection title="Purchase info">
         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-          <InputField
+          <DateField
             id={id('purchaseDate')}
             label="Purchase date"
-            type="date"
             value={values.purchaseDate}
             onChange={(value) => onChange('purchaseDate', value)}
           />

@@ -24,7 +24,7 @@ interface FormFieldBaseProps {
   error?: string
 }
 
-function FieldShell({
+export function FieldShell({
   label,
   id,
   required,
@@ -50,12 +50,12 @@ function FieldShell({
   )
 }
 
-function describedBy(id: string, error?: string) {
+export function describedBy(id: string, error?: string) {
   return error ? `${id}-error` : undefined
 }
 
 interface InputFieldProps extends FormFieldBaseProps {
-  type?: 'text' | 'number' | 'date' | 'datetime-local' | 'url' | 'email'
+  type?: 'text' | 'number' | 'url' | 'email'
   inputMode?: 'text' | 'decimal' | 'numeric'
   placeholder?: string
   value: string

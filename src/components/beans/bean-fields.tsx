@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import type { BeanFormValues } from '@/components/beans/bean-form-values'
+import { DateField } from '@/components/form/date-field'
 import {
   CurrencyField,
   InputField,
@@ -160,10 +161,9 @@ export function BeanFields({
             }
             options={ROAST_LEVELS}
           />
-          <InputField
+          <DateField
             id={id('roastDate')}
             label="Roast date"
-            type="date"
             value={values.roastDate}
             onChange={(value) => onChange('roastDate', value)}
           />
