@@ -1,4 +1,9 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  Link,
+  stripSearchParams,
+  useNavigate,
+} from '@tanstack/react-router'
 import { Coffee, Plus } from 'lucide-react'
 import { EmptyState } from '@/components/EmptyState'
 import { ImageWithFallback } from '@/components/image-with-fallback'
@@ -54,6 +59,17 @@ const parseBrewsSearch = (input: unknown) => {
 
 export const Route = createFileRoute('/brews/')({
   validateSearch: searchValidator(parseBrewsSearch),
+  search: {
+    middlewares: [
+      stripSearchParams({
+        page: 1,
+        query: '',
+        sort: 'date',
+        direction: 'desc',
+        view: 'list',
+      } as const),
+    ],
+  },
   loaderDeps: ({ search }) => ({
     page: search.page,
     query: search.query,

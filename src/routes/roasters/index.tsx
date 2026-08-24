@@ -1,4 +1,9 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  Link,
+  stripSearchParams,
+  useNavigate,
+} from '@tanstack/react-router'
 import { Plus, Store } from 'lucide-react'
 import {
   type CollectionColumn,
@@ -37,6 +42,16 @@ const parseRoasterSearch = (input: unknown) => {
 
 export const Route = createFileRoute('/roasters/')({
   validateSearch: searchValidator(parseRoasterSearch),
+  search: {
+    middlewares: [
+      stripSearchParams({
+        page: 1,
+        query: '',
+        sort: 'name',
+        direction: 'asc',
+      } as const),
+    ],
+  },
   loaderDeps: ({ search }) => ({
     page: search.page,
     query: search.query,

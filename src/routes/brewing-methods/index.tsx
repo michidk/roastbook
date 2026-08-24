@@ -1,4 +1,9 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  Link,
+  stripSearchParams,
+  useNavigate,
+} from '@tanstack/react-router'
 import { Coffee, Plus, Timer } from 'lucide-react'
 import {
   type CollectionColumn,
@@ -33,6 +38,9 @@ const parseBrewingMethodSearch = (input: unknown) => {
 
 export const Route = createFileRoute('/brewing-methods/')({
   validateSearch: searchValidator(parseBrewingMethodSearch),
+  search: {
+    middlewares: [stripSearchParams({ page: 1, query: '' } as const)],
+  },
   loaderDeps: ({ search }) => ({ page: search.page, query: search.query }),
   loader: ({ deps }) => getBrewingMethodPage({ data: deps }),
   staleTime: 15_000,

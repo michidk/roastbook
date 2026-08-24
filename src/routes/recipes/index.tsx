@@ -1,4 +1,9 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  Link,
+  stripSearchParams,
+  useNavigate,
+} from '@tanstack/react-router'
 import { BookOpen, Plus } from 'lucide-react'
 import {
   type CollectionColumn,
@@ -39,6 +44,16 @@ const parseRecipeSearch = (input: unknown) => {
 
 export const Route = createFileRoute('/recipes/')({
   validateSearch: searchValidator(parseRecipeSearch),
+  search: {
+    middlewares: [
+      stripSearchParams({
+        page: 1,
+        query: '',
+        sort: 'updated',
+        direction: 'desc',
+      } as const),
+    ],
+  },
   loaderDeps: ({ search }) => ({
     page: search.page,
     query: search.query,

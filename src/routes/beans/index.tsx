@@ -1,4 +1,9 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  Link,
+  stripSearchParams,
+  useNavigate,
+} from '@tanstack/react-router'
 import { Bean, ChevronDown, Plus } from 'lucide-react'
 import { BeanCard } from '@/components/beans/bean-card'
 import { CollectionToolbar } from '@/components/collection-toolbar'
@@ -32,6 +37,11 @@ const parseBeanSearch = (input: unknown) => {
 
 export const Route = createFileRoute('/beans/')({
   validateSearch: searchValidator(parseBeanSearch),
+  search: {
+    middlewares: [
+      stripSearchParams({ activePage: 1, archivedPage: 1, query: '' } as const),
+    ],
+  },
   loaderDeps: ({ search }) => ({
     activePage: search.activePage,
     archivedPage: search.archivedPage,

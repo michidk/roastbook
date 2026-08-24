@@ -1,4 +1,9 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  Link,
+  stripSearchParams,
+  useNavigate,
+} from '@tanstack/react-router'
 import {
   History,
   Map as MapIcon,
@@ -44,6 +49,11 @@ const parseVisitSearch = (input: unknown) => {
 
 export const Route = createFileRoute('/visits/')({
   validateSearch: searchValidator(parseVisitSearch),
+  search: {
+    middlewares: [
+      stripSearchParams({ page: 1, query: '', view: 'history' } as const),
+    ],
+  },
   loaderDeps: ({ search }) => ({
     page: search.page,
     query: search.query,

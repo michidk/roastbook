@@ -1,4 +1,9 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  Link,
+  stripSearchParams,
+  useNavigate,
+} from '@tanstack/react-router'
 import { Bean, Coffee, Star, Tags } from 'lucide-react'
 import { EmptyState } from '@/components/EmptyState'
 import { MetricCard } from '@/components/metric-card'
@@ -22,6 +27,9 @@ import {
 
 export const Route = createFileRoute('/stats')({
   validateSearch: searchValidator(parseStatsFilter),
+  search: {
+    middlewares: [stripSearchParams({ period: '30d' } as const)],
+  },
   loaderDeps: ({ search }) => ({
     period: search.period,
     method: search.method,

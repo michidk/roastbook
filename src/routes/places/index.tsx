@@ -1,4 +1,9 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  Link,
+  stripSearchParams,
+  useNavigate,
+} from '@tanstack/react-router'
 import { Bookmark, Heart, MapPin, MapPinOff, Plus } from 'lucide-react'
 import {
   type CollectionColumn,
@@ -41,6 +46,11 @@ const parsePlacesSearch = (input: unknown) => {
 
 export const Route = createFileRoute('/places/')({
   validateSearch: searchValidator(parsePlacesSearch),
+  search: {
+    middlewares: [
+      stripSearchParams({ page: 1, query: '', list: 'all' } as const),
+    ],
+  },
   loaderDeps: ({ search }) => ({
     page: search.page,
     query: search.query,
