@@ -405,6 +405,79 @@ export const basketDetailsRelations = relations(basketDetails, ({ one }) => ({
   }),
 }))
 
+export const gearSets = pgTable(
+  'gear_sets',
+  {
+    id: serial('id').primaryKey(),
+    name: text('name').notNull(),
+    description: text('description'),
+    machineId: integer('machine_id').references(() => gear.id, {
+      onDelete: 'set null',
+    }),
+    grinderId: integer('grinder_id').references(() => gear.id, {
+      onDelete: 'set null',
+    }),
+    basketId: integer('basket_id').references(() => gear.id, {
+      onDelete: 'set null',
+    }),
+    ...timestamps(),
+  },
+  (table) => [index('gear_sets_created_at_idx').on(table.createdAt)],
+)
+
+export const gearSetAccessoryGear = pgTable(
+  'gear_set_accessory_gear',
+  {
+    id: serial('id').primaryKey(),
+    gearSetId: integer('gear_set_id')
+      .references(() => gearSets.id, { onDelete: 'cascade' })
+      .notNull(),
+    gearId: integer('gear_id')
+      .references(() => gear.id, { onDelete: 'cascade' })
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex('gear_set_accessory_gear_set_gear_idx').on(
+      table.gearSetId,
+      table.gearId,
+    ),
+    index('gear_set_accessory_gear_gear_id_idx').on(table.gearId),
+  ],
+)
+
+export const gearSetsRelations = relations(gearSets, ({ one, many }) => ({
+  machine: one(gear, {
+    fields: [gearSets.machineId],
+    references: [gear.id],
+    relationName: 'gearSetMachine',
+  }),
+  grinder: one(gear, {
+    fields: [gearSets.grinderId],
+    references: [gear.id],
+    relationName: 'gearSetGrinder',
+  }),
+  basket: one(gear, {
+    fields: [gearSets.basketId],
+    references: [gear.id],
+    relationName: 'gearSetBasket',
+  }),
+  accessoryGearLinks: many(gearSetAccessoryGear),
+}))
+
+export const gearSetAccessoryGearRelations = relations(
+  gearSetAccessoryGear,
+  ({ one }) => ({
+    gearSet: one(gearSets, {
+      fields: [gearSetAccessoryGear.gearSetId],
+      references: [gearSets.id],
+    }),
+    gear: one(gear, {
+      fields: [gearSetAccessoryGear.gearId],
+      references: [gear.id],
+    }),
+  }),
+)
+
 export const gearImages = pgTable(
   'gear_images',
   {

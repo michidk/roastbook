@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import {
   EMPTY_SHOT_FORM_VALUES,
   shotFormValuesFrom,
+  shotFormValuesWithGearSet,
   shotFormValuesWithRecipe,
 } from '@/components/shots/shot-parameter-fields'
 import { DISTRIBUTION_METHOD_OPTIONS } from '@/lib/shot-parameters'
@@ -84,5 +85,41 @@ describe('shot form values', () => {
       doseGrams: '18',
       usesPuckScreen: false,
     })
+  })
+
+  test('applies only populated gear set slots to an existing shot', () => {
+    const current = {
+      ...EMPTY_SHOT_FORM_VALUES,
+      machineId: '4',
+      grinderId: '3',
+      accessoryGearIds: [11],
+      doseGrams: '18',
+    }
+    const gearSet = {
+      machineId: 7,
+      grinderId: null,
+      basketId: 9,
+      accessoryGearIds: [],
+    }
+
+    expect(shotFormValuesWithGearSet(current, gearSet)).toEqual({
+      ...current,
+      machineId: '7',
+      basketId: '9',
+    })
+  })
+
+  test('replaces accessories when the gear set defines some', () => {
+    const current = { ...EMPTY_SHOT_FORM_VALUES, accessoryGearIds: [11] }
+    const gearSet = {
+      machineId: null,
+      grinderId: null,
+      basketId: null,
+      accessoryGearIds: [5, 6],
+    }
+
+    expect(
+      shotFormValuesWithGearSet(current, gearSet).accessoryGearIds,
+    ).toEqual([5, 6])
   })
 })

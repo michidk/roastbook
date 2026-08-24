@@ -1,6 +1,10 @@
 import { eq } from 'drizzle-orm'
 import type { db } from '@/db'
-import { recipeAccessoryGear, shotAccessoryGear } from '@/db/schema'
+import {
+  gearSetAccessoryGear,
+  recipeAccessoryGear,
+  shotAccessoryGear,
+} from '@/db/schema'
 
 type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
@@ -29,6 +33,21 @@ export async function replaceRecipeAccessoryGear(
     await tx
       .insert(recipeAccessoryGear)
       .values([...new Set(gearIds)].map((gearId) => ({ recipeId, gearId })))
+  }
+}
+
+export async function replaceGearSetAccessoryGear(
+  tx: DatabaseTransaction,
+  gearSetId: number,
+  gearIds: readonly number[],
+) {
+  await tx
+    .delete(gearSetAccessoryGear)
+    .where(eq(gearSetAccessoryGear.gearSetId, gearSetId))
+  if (gearIds.length > 0) {
+    await tx
+      .insert(gearSetAccessoryGear)
+      .values([...new Set(gearIds)].map((gearId) => ({ gearSetId, gearId })))
   }
 }
 

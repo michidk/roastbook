@@ -90,7 +90,8 @@ an assistant log this morning's espresso for you.
 - Or pick the simple taste profile, which replaces the individual factors with
   one sour-to-bitter scale — sour points at under-extraction and bitter at
   over-extraction, the usual first dial-in move.
-- Catalog beans, roasters, brewing methods, coffee shops, and gear.
+- Catalog beans, roasters, brewing methods, coffee shops, and gear, and group
+  equipment into reusable gear sets that fill a new brew's gear in one tap.
 - Track café visits and explore saved places on a map.
 - Review filterable brew and café trends, quality, consistency, taste, rhythm,
   exploration, recipe performance, gear usage, and costs.

@@ -19,6 +19,7 @@ import { Route as RoastersIndexRouteImport } from './routes/roasters/index'
 import { Route as RecipesIndexRouteImport } from './routes/recipes/index'
 import { Route as PlacesIndexRouteImport } from './routes/places/index'
 import { Route as GearIndexRouteImport } from './routes/gear/index'
+import { Route as GearSetsIndexRouteImport } from './routes/gear-sets/index'
 import { Route as BrewsIndexRouteImport } from './routes/brews/index'
 import { Route as BrewingMethodsIndexRouteImport } from './routes/brewing-methods/index'
 import { Route as BeansIndexRouteImport } from './routes/beans/index'
@@ -34,6 +35,8 @@ import { Route as RecipesNewRouteImport } from './routes/recipes/new'
 import { Route as RecipesRecipeIdRouteImport } from './routes/recipes/$recipeId'
 import { Route as GearNewRouteImport } from './routes/gear/new'
 import { Route as GearGearIdRouteImport } from './routes/gear/$gearId'
+import { Route as GearSetsNewRouteImport } from './routes/gear-sets/new'
+import { Route as GearSetsGearSetIdRouteImport } from './routes/gear-sets/$gearSetId'
 import { Route as BrewsNewRouteImport } from './routes/brews/new'
 import { Route as BrewsShotIdRouteImport } from './routes/brews/$shotId'
 import { Route as BrewingMethodsNewRouteImport } from './routes/brewing-methods/new'
@@ -90,6 +93,11 @@ const PlacesIndexRoute = PlacesIndexRouteImport.update({
 const GearIndexRoute = GearIndexRouteImport.update({
   id: '/gear/',
   path: '/gear/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GearSetsIndexRoute = GearSetsIndexRouteImport.update({
+  id: '/gear-sets/',
+  path: '/gear-sets/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BrewsIndexRoute = BrewsIndexRouteImport.update({
@@ -167,6 +175,16 @@ const GearGearIdRoute = GearGearIdRouteImport.update({
   path: '/gear/$gearId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GearSetsNewRoute = GearSetsNewRouteImport.update({
+  id: '/gear-sets/new',
+  path: '/gear-sets/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GearSetsGearSetIdRoute = GearSetsGearSetIdRouteImport.update({
+  id: '/gear-sets/$gearSetId',
+  path: '/gear-sets/$gearSetId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BrewsNewRoute = BrewsNewRouteImport.update({
   id: '/brews/new',
   path: '/brews/new',
@@ -215,6 +233,8 @@ export interface FileRoutesByFullPath {
   '/brewing-methods/new': typeof BrewingMethodsNewRoute
   '/brews/$shotId': typeof BrewsShotIdRoute
   '/brews/new': typeof BrewsNewRoute
+  '/gear-sets/$gearSetId': typeof GearSetsGearSetIdRoute
+  '/gear-sets/new': typeof GearSetsNewRoute
   '/gear/$gearId': typeof GearGearIdRoute
   '/gear/new': typeof GearNewRoute
   '/recipes/$recipeId': typeof RecipesRecipeIdRoute
@@ -230,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/beans/': typeof BeansIndexRoute
   '/brewing-methods/': typeof BrewingMethodsIndexRoute
   '/brews/': typeof BrewsIndexRoute
+  '/gear-sets/': typeof GearSetsIndexRoute
   '/gear/': typeof GearIndexRoute
   '/places/': typeof PlacesIndexRoute
   '/recipes/': typeof RecipesIndexRoute
@@ -249,6 +270,8 @@ export interface FileRoutesByTo {
   '/brewing-methods/new': typeof BrewingMethodsNewRoute
   '/brews/$shotId': typeof BrewsShotIdRoute
   '/brews/new': typeof BrewsNewRoute
+  '/gear-sets/$gearSetId': typeof GearSetsGearSetIdRoute
+  '/gear-sets/new': typeof GearSetsNewRoute
   '/gear/$gearId': typeof GearGearIdRoute
   '/gear/new': typeof GearNewRoute
   '/recipes/$recipeId': typeof RecipesRecipeIdRoute
@@ -264,6 +287,7 @@ export interface FileRoutesByTo {
   '/beans': typeof BeansIndexRoute
   '/brewing-methods': typeof BrewingMethodsIndexRoute
   '/brews': typeof BrewsIndexRoute
+  '/gear-sets': typeof GearSetsIndexRoute
   '/gear': typeof GearIndexRoute
   '/places': typeof PlacesIndexRoute
   '/recipes': typeof RecipesIndexRoute
@@ -284,6 +308,8 @@ export interface FileRoutesById {
   '/brewing-methods/new': typeof BrewingMethodsNewRoute
   '/brews/$shotId': typeof BrewsShotIdRoute
   '/brews/new': typeof BrewsNewRoute
+  '/gear-sets/$gearSetId': typeof GearSetsGearSetIdRoute
+  '/gear-sets/new': typeof GearSetsNewRoute
   '/gear/$gearId': typeof GearGearIdRoute
   '/gear/new': typeof GearNewRoute
   '/recipes/$recipeId': typeof RecipesRecipeIdRoute
@@ -299,6 +325,7 @@ export interface FileRoutesById {
   '/beans/': typeof BeansIndexRoute
   '/brewing-methods/': typeof BrewingMethodsIndexRoute
   '/brews/': typeof BrewsIndexRoute
+  '/gear-sets/': typeof GearSetsIndexRoute
   '/gear/': typeof GearIndexRoute
   '/places/': typeof PlacesIndexRoute
   '/recipes/': typeof RecipesIndexRoute
@@ -320,6 +347,8 @@ export interface FileRouteTypes {
     | '/brewing-methods/new'
     | '/brews/$shotId'
     | '/brews/new'
+    | '/gear-sets/$gearSetId'
+    | '/gear-sets/new'
     | '/gear/$gearId'
     | '/gear/new'
     | '/recipes/$recipeId'
@@ -335,6 +364,7 @@ export interface FileRouteTypes {
     | '/beans/'
     | '/brewing-methods/'
     | '/brews/'
+    | '/gear-sets/'
     | '/gear/'
     | '/places/'
     | '/recipes/'
@@ -354,6 +384,8 @@ export interface FileRouteTypes {
     | '/brewing-methods/new'
     | '/brews/$shotId'
     | '/brews/new'
+    | '/gear-sets/$gearSetId'
+    | '/gear-sets/new'
     | '/gear/$gearId'
     | '/gear/new'
     | '/recipes/$recipeId'
@@ -369,6 +401,7 @@ export interface FileRouteTypes {
     | '/beans'
     | '/brewing-methods'
     | '/brews'
+    | '/gear-sets'
     | '/gear'
     | '/places'
     | '/recipes'
@@ -388,6 +421,8 @@ export interface FileRouteTypes {
     | '/brewing-methods/new'
     | '/brews/$shotId'
     | '/brews/new'
+    | '/gear-sets/$gearSetId'
+    | '/gear-sets/new'
     | '/gear/$gearId'
     | '/gear/new'
     | '/recipes/$recipeId'
@@ -403,6 +438,7 @@ export interface FileRouteTypes {
     | '/beans/'
     | '/brewing-methods/'
     | '/brews/'
+    | '/gear-sets/'
     | '/gear/'
     | '/places/'
     | '/recipes/'
@@ -423,6 +459,8 @@ export interface RootRouteChildren {
   BrewingMethodsNewRoute: typeof BrewingMethodsNewRoute
   BrewsShotIdRoute: typeof BrewsShotIdRoute
   BrewsNewRoute: typeof BrewsNewRoute
+  GearSetsGearSetIdRoute: typeof GearSetsGearSetIdRoute
+  GearSetsNewRoute: typeof GearSetsNewRoute
   GearGearIdRoute: typeof GearGearIdRoute
   GearNewRoute: typeof GearNewRoute
   RecipesRecipeIdRoute: typeof RecipesRecipeIdRoute
@@ -438,6 +476,7 @@ export interface RootRouteChildren {
   BeansIndexRoute: typeof BeansIndexRoute
   BrewingMethodsIndexRoute: typeof BrewingMethodsIndexRoute
   BrewsIndexRoute: typeof BrewsIndexRoute
+  GearSetsIndexRoute: typeof GearSetsIndexRoute
   GearIndexRoute: typeof GearIndexRoute
   PlacesIndexRoute: typeof PlacesIndexRoute
   RecipesIndexRoute: typeof RecipesIndexRoute
@@ -517,6 +556,13 @@ declare module '@tanstack/react-router' {
       path: '/gear'
       fullPath: '/gear/'
       preLoaderRoute: typeof GearIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gear-sets/': {
+      id: '/gear-sets/'
+      path: '/gear-sets'
+      fullPath: '/gear-sets/'
+      preLoaderRoute: typeof GearSetsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/brews/': {
@@ -624,6 +670,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GearGearIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/gear-sets/new': {
+      id: '/gear-sets/new'
+      path: '/gear-sets/new'
+      fullPath: '/gear-sets/new'
+      preLoaderRoute: typeof GearSetsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gear-sets/$gearSetId': {
+      id: '/gear-sets/$gearSetId'
+      path: '/gear-sets/$gearSetId'
+      fullPath: '/gear-sets/$gearSetId'
+      preLoaderRoute: typeof GearSetsGearSetIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/brews/new': {
       id: '/brews/new'
       path: '/brews/new'
@@ -687,6 +747,8 @@ const rootRouteChildren: RootRouteChildren = {
   BrewingMethodsNewRoute: BrewingMethodsNewRoute,
   BrewsShotIdRoute: BrewsShotIdRoute,
   BrewsNewRoute: BrewsNewRoute,
+  GearSetsGearSetIdRoute: GearSetsGearSetIdRoute,
+  GearSetsNewRoute: GearSetsNewRoute,
   GearGearIdRoute: GearGearIdRoute,
   GearNewRoute: GearNewRoute,
   RecipesRecipeIdRoute: RecipesRecipeIdRoute,
@@ -702,6 +764,7 @@ const rootRouteChildren: RootRouteChildren = {
   BeansIndexRoute: BeansIndexRoute,
   BrewingMethodsIndexRoute: BrewingMethodsIndexRoute,
   BrewsIndexRoute: BrewsIndexRoute,
+  GearSetsIndexRoute: GearSetsIndexRoute,
   GearIndexRoute: GearIndexRoute,
   PlacesIndexRoute: PlacesIndexRoute,
   RecipesIndexRoute: RecipesIndexRoute,

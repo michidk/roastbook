@@ -174,15 +174,41 @@ export function shotFormValuesWithRecipe(
   return next
 }
 
-type GearOption = {
+type GearSetSource = {
+  readonly machineId: number | null
+  readonly grinderId: number | null
+  readonly basketId: number | null
+  readonly accessoryGearIds: readonly number[]
+}
+
+export function shotFormValuesWithGearSet(
+  current: ShotFormValues,
+  gearSet: GearSetSource,
+): ShotFormValues {
+  const next = { ...current }
+  if (gearSet.machineId) next.machineId = String(gearSet.machineId)
+  if (gearSet.grinderId) next.grinderId = String(gearSet.grinderId)
+  if (gearSet.basketId) next.basketId = String(gearSet.basketId)
+  if (gearSet.accessoryGearIds.length > 0) {
+    next.accessoryGearIds = [...gearSet.accessoryGearIds]
+  }
+  return next
+}
+
+export type GearOption = {
   readonly id: number
   readonly name: string
   readonly type: string
   readonly isArchived?: boolean
 }
 
+export type EquipmentSelection = Pick<
+  ShotFormValues,
+  'machineId' | 'grinderId' | 'basketId' | 'accessoryGearIds'
+>
+
 export function availableGearForShot(
-  values: ShotFormValues,
+  values: EquipmentSelection,
   gear: readonly GearOption[],
 ): GearOption[] {
   const selectedIds = new Set([
@@ -194,6 +220,23 @@ export function availableGearForShot(
   return gear.filter(
     (item) => !item.isArchived || selectedIds.has(String(item.id)),
   )
+}
+
+export function gearByEquipmentRole(gear: readonly GearOption[]) {
+  return {
+    brewers: gear.filter(
+      (item) => isEspressoMachineGearType(item.type) || item.type === 'brewer',
+    ),
+    grinders: gear.filter((item) => isGrinderGearType(item.type)),
+    baskets: gear.filter((item) => item.type === 'basket'),
+    accessories: gear.filter(
+      (item) =>
+        !isEspressoMachineGearType(item.type) &&
+        !isGrinderGearType(item.type) &&
+        item.type !== 'brewer' &&
+        item.type !== 'basket',
+    ),
+  }
 }
 
 type ShotParameterFieldsProps = {
@@ -217,18 +260,7 @@ export function ShotParameterFields({
   onChange,
 }: ShotParameterFieldsProps) {
   const show = (key: ShotParameterKey) => enabledParameters.includes(key)
-  const brewers = gear.filter(
-    (item) => isEspressoMachineGearType(item.type) || item.type === 'brewer',
-  )
-  const grinders = gear.filter((item) => isGrinderGearType(item.type))
-  const baskets = gear.filter((item) => item.type === 'basket')
-  const accessories = gear.filter(
-    (item) =>
-      !isEspressoMachineGearType(item.type) &&
-      !isGrinderGearType(item.type) &&
-      item.type !== 'brewer' &&
-      item.type !== 'basket',
-  )
+  const { brewers, grinders, baskets, accessories } = gearByEquipmentRole(gear)
   const hasExtraction =
     show('doseGrams') ||
     show('brewWaterGrams') ||

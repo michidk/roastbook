@@ -26,6 +26,7 @@ import {
   type ShotFormValues,
   ShotParameterFields,
   shotFormValuesFrom,
+  shotFormValuesWithGearSet,
   shotFormValuesWithRecipe,
 } from '@/components/shots/shot-parameter-fields'
 import { ShotSensoryRatingFields } from '@/components/shots/shot-sensory-ratings'
@@ -56,6 +57,7 @@ import { newShotPayload } from '@/lib/new-shot-payload'
 import { getActiveBeans } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getGear } from '@/lib/server/gear'
+import { getGearSets } from '@/lib/server/gear-sets'
 import { getRecipes } from '@/lib/server/recipes'
 import { checkShotRecommendationEnabled } from '@/lib/server/shot-recommendations'
 import {
@@ -87,6 +89,7 @@ export const Route = createFileRoute('/brews/new')({
       brewingMethodSuggestions,
       lastBeansByBrewingMethod,
       gear,
+      gearSets,
       recommendation,
     ] = await Promise.all([
       getActiveBeans(),
@@ -97,6 +100,7 @@ export const Route = createFileRoute('/brews/new')({
       getBrewingMethodSuggestions(),
       getLastBeansByBrewingMethod(),
       getGear(),
+      getGearSets(),
       checkShotRecommendationEnabled(),
     ])
     return {
@@ -108,6 +112,7 @@ export const Route = createFileRoute('/brews/new')({
       brewingMethodSuggestions,
       lastBeansByBrewingMethod,
       gear,
+      gearSets,
       recommendationEnabled: recommendation.enabled,
       defaultBrewedAt: new Date().toISOString(),
     }
@@ -138,6 +143,7 @@ function NewShotPage() {
     brewingMethodSuggestions,
     lastBeansByBrewingMethod,
     gear,
+    gearSets,
     recommendationEnabled,
     defaultBrewedAt,
   } = Route.useLoaderData()
@@ -158,6 +164,7 @@ function NewShotPage() {
     }
   })
   const [recipeId, setRecipeId] = useState('')
+  const [gearSetId, setGearSetId] = useState('')
   const [brewedAt, setBrewedAt] = useLocalDateTimeInput(defaultBrewedAt)
   const latestBrewedAt = useCurrentLocalDateTimeLimit()
   const [recipeTarget, setRecipeTarget] = useState('new')
@@ -247,6 +254,15 @@ function NewShotPage() {
     setTimerKey((current) => current + 1)
     setValues((current) => shotFormValuesWithRecipe(current, recipe))
     toast.success(`Loaded ${recipe.name}`)
+  }
+
+  const loadGearSet = (id: string) => {
+    setGearSetId(id)
+    const gearSet = gearSets.find((item) => String(item.id) === id)
+    if (!gearSet) return
+    setIsDirty(true)
+    setValues((current) => shotFormValuesWithGearSet(current, gearSet))
+    toast.success(`Loaded ${gearSet.name}`)
   }
 
   const loadLastShot = async () => {
@@ -414,6 +430,21 @@ function NewShotPage() {
                 placeholder="Choose a recipe"
                 searchPlaceholder="Search recipes…"
                 emptyMessage="No recipes saved for this method."
+              />
+            ) : null}
+            {selectedMethod && gearSets.length > 0 ? (
+              <CreatableCombobox
+                id="shot-gear-set"
+                label="Load gear set"
+                value={gearSetId}
+                items={gearSets}
+                suggestions={gearSets.slice(0, 5)}
+                getKey={({ id }) => id}
+                getLabel={({ name }) => name}
+                onChange={loadGearSet}
+                placeholder="Choose a gear set"
+                searchPlaceholder="Search gear sets…"
+                emptyMessage="No gear sets found."
               />
             ) : null}
             <DateTimeField

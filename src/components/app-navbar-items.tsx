@@ -5,6 +5,7 @@ import {
   BookOpen,
   Coffee,
   Cog,
+  Layers,
   Settings,
   SlidersHorizontal,
   Store,
@@ -32,6 +33,7 @@ export const primaryNavItems: readonly NavItem[] = [
 export const moreNavItems: readonly NavItem[] = [
   { title: 'Roasters', url: '/roasters', icon: Store },
   { title: 'Gear', url: '/gear', icon: Cog },
+  { title: 'Gear sets', url: '/gear-sets', icon: Layers },
   {
     title: 'Brewing methods',
     url: '/brewing-methods',
@@ -55,7 +57,9 @@ const createActions: readonly NavItem[] = [
 ]
 
 export function isNavItemActive(pathname: string, item: NavItem) {
-  return item.url === '/' ? pathname === '/' : pathname.startsWith(item.url)
+  if (item.url === '/') return pathname === '/'
+  // Match whole path segments so /gear does not claim /gear-sets pages.
+  return pathname === item.url || pathname.startsWith(`${item.url}/`)
 }
 
 export function BrandLink({ className }: { readonly className?: string }) {
