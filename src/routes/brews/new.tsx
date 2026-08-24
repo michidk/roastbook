@@ -460,7 +460,12 @@ function NewShotPage() {
             onChange={set}
           />
           {hasEnabledTasteProfileField(tasteProfile) ? (
-            <FormSection title="Taste profile">
+            <FormSection
+              title="Taste profile"
+              description="Rate the result once you have tasted it."
+              collapsible
+              defaultOpen={false}
+            >
               {tasteProfile.overallRating ||
               showSensoryRatings ||
               showExtractionBalance ? (

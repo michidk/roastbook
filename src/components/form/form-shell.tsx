@@ -1,7 +1,13 @@
+import { ChevronDown } from 'lucide-react'
 import { type ReactNode, type SyntheticEvent, useId } from 'react'
 import { PageHeader } from '@/components/page-layout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
 
 interface FormPageHeaderProps {
@@ -28,6 +34,9 @@ interface FormSectionProps {
   children: ReactNode
   className?: string
   contentClassName?: string
+  /** Collapses the section behind its header; requires a title and no action. */
+  collapsible?: boolean
+  defaultOpen?: boolean
 }
 
 export function FormSection({
@@ -38,8 +47,38 @@ export function FormSection({
   children,
   className,
   contentClassName,
+  collapsible = false,
+  defaultOpen = true,
 }: FormSectionProps) {
   const headingId = useId()
+
+  if (collapsible && title) {
+    return (
+      <Card className={className} role="group" aria-labelledby={headingId}>
+        <Collapsible defaultOpen={defaultOpen} className="contents">
+          <CollapsibleTrigger className="group flex w-full items-start justify-between gap-3 px-(--card-spacing) text-left outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <div className="space-y-1">
+              <CardTitle as={titleAs} id={headingId}>
+                {title}
+              </CardTitle>
+              {description ? (
+                <p className="text-sm text-muted-foreground">{description}</p>
+              ) : null}
+            </div>
+            <ChevronDown
+              aria-hidden="true"
+              className="mt-1 size-5 shrink-0 text-muted-foreground transition-transform group-data-[open]:rotate-180"
+            />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className={cn('space-y-4', contentClassName)}>
+              {children}
+            </CardContent>
+          </CollapsibleContent>
+        </Collapsible>
+      </Card>
+    )
+  }
 
   return (
     <Card
