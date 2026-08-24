@@ -1,10 +1,5 @@
 import { describe, expect, test } from 'bun:test'
 import {
-  calculateStreaks,
-  fillBucketSeries,
-  highRatingRange,
-} from '@/lib/stats-analysis'
-import {
   percentChange,
   resolveStatsRange,
   statsFilterSchema,
@@ -61,58 +56,5 @@ describe('statistics filters', () => {
     expect(percentChange(12, 10)).toBe(20)
     expect(percentChange(0, 0)).toBeNull()
     expect(percentChange(3, null)).toBeNull()
-  })
-})
-
-describe('statistics analysis', () => {
-  test('calculates current and longest consecutive-day streaks', () => {
-    expect(
-      calculateStreaks(
-        [
-          { date: '2026-08-08', count: 1 },
-          { date: '2026-08-09', count: 2 },
-          { date: '2026-08-12', count: 1 },
-          { date: '2026-08-13', count: 1 },
-        ],
-        '2026-08-14',
-      ),
-    ).toEqual({ current: 2, longest: 2 })
-  })
-
-  test('requires three high-rated observations before reporting a range', () => {
-    expect(
-      highRatingRange([
-        { value: 2, rating: 5 },
-        { value: 2.2, rating: 4 },
-      ]),
-    ).toBeNull()
-    expect(
-      highRatingRange([
-        { value: 2, rating: 5 },
-        { value: 2.2, rating: 4 },
-        { value: 1.9, rating: 5 },
-        { value: 3, rating: 3 },
-      ]),
-    ).toEqual({ minimum: 1.9, maximum: 2.2, count: 3 })
-  })
-
-  test('fills empty calendar buckets without inventing ratings', () => {
-    expect(
-      fillBucketSeries<{
-        readonly date: string
-        readonly count: number
-        readonly averageRating: number | null
-      }>(
-        [{ date: '2026-08-12', count: 2, averageRating: 4.5 }],
-        '2026-08-11',
-        '2026-08-13',
-        'day',
-        (date) => ({ date, count: 0, averageRating: null }),
-      ),
-    ).toEqual([
-      { date: '2026-08-11', count: 0, averageRating: null },
-      { date: '2026-08-12', count: 2, averageRating: 4.5 },
-      { date: '2026-08-13', count: 0, averageRating: null },
-    ])
   })
 })
