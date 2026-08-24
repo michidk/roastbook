@@ -10,7 +10,6 @@ import { CollectionToolbar } from '@/components/collection-toolbar'
 import { EmptyState } from '@/components/EmptyState'
 import { Page, PageHeader } from '@/components/page-layout'
 import { PaginationControls } from '@/components/pagination-controls'
-import { RecipeDuplicateButton } from '@/components/recipes/recipe-duplicate-button'
 import { RouteError } from '@/components/route-error'
 import { ListPending } from '@/components/route-pending'
 import { Badge } from '@/components/ui/badge'
@@ -81,7 +80,6 @@ function toEntry(recipe: Recipe): CollectionEntry {
         {recipe.brewingMethod.name}
       </Badge>
     ),
-    action: <RecipeDuplicateButton recipe={recipe} compact />,
     to: '/recipes/$recipeId',
     params: { recipeId: String(recipe.id) },
   }
