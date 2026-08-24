@@ -1,4 +1,8 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  stripSearchParams,
+  useNavigate,
+} from '@tanstack/react-router'
 import { GearDetailPage } from '@/components/gear/gear-detail-page'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
@@ -31,6 +35,16 @@ const parseGearDetailSearch = (input: unknown) => {
 
 export const Route = createFileRoute('/gear/$gearId')({
   validateSearch: searchValidator(parseGearDetailSearch),
+  search: {
+    middlewares: [
+      stripSearchParams({
+        shotPage: 1,
+        shotQuery: '',
+        shotSort: 'date',
+        shotDirection: 'desc',
+      } as const),
+    ],
+  },
   loaderDeps: ({ search }) => ({
     shotPage: search.shotPage,
     shotQuery: search.shotQuery,
