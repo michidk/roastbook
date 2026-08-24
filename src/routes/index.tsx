@@ -88,6 +88,7 @@ function Dashboard() {
             ) : (
               recentShots.map((shot) => {
                 const beanImage = shot.bean?.images?.[0]
+                const brewedToday = isSameDay(new Date(shot.brewedAt), now)
                 return (
                   <Link
                     key={shot.id}
@@ -109,22 +110,18 @@ function Dashboard() {
                         {shot.bean?.name ?? 'Unknown beans'}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {shot.brewingMethod.name} ·{' '}
-                        {shot.doseGrams && shot.yieldGrams
-                          ? `${formatNumber(shot.doseGrams)} g → ${formatNumber(shot.yieldGrams)} g`
-                          : 'No dose or yield recorded'}
-                        {shot.shotTimeSeconds
-                          ? ` · ${formatNumber(shot.shotTimeSeconds)} s`
-                          : ''}
+                        {shot.brewingMethod.name}
                       </p>
                     </div>
-                    <div className="flex shrink-0 self-stretch flex-col items-end justify-between">
-                      <time
-                        dateTime={new Date(shot.brewedAt).toISOString()}
-                        className="text-xs font-semibold text-muted-foreground"
-                      >
-                        {formatDate(shot.brewedAt)}
-                      </time>
+                    <div className="flex shrink-0 self-stretch flex-col items-end justify-center gap-1">
+                      {brewedToday ? null : (
+                        <time
+                          dateTime={new Date(shot.brewedAt).toISOString()}
+                          className="text-xs font-semibold text-muted-foreground"
+                        >
+                          {formatDate(shot.brewedAt)}
+                        </time>
+                      )}
                       {showRating && shot.rating ? (
                         <StarRating
                           value={shot.rating}
@@ -160,6 +157,14 @@ function Dashboard() {
         </Card>
       </section>
     </Page>
+  )
+}
+
+function isSameDay(left: Date, right: Date) {
+  return (
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
   )
 }
 
