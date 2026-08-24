@@ -129,7 +129,7 @@ function RecipeDetailPage() {
         search: (current) => ({ ...current, edit: undefined }),
         replace: true,
       })
-      await router.invalidate({ filter: (match) => match.routeId === Route.id })
+      await router.invalidate()
       toast.success('Recipe updated')
     } catch (error) {
       toast.error(
@@ -193,6 +193,7 @@ function RecipeDetailPage() {
                 description="This recipe will be removed permanently. Existing brews are not affected."
                 onConfirm={async () => {
                   await deleteRecipe({ data: recipe.id })
+                  await router.invalidate()
                   toast.success('Recipe deleted')
                   await navigate({ to: '/recipes' })
                 }}

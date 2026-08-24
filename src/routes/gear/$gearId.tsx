@@ -99,7 +99,6 @@ function GearDetailRoute() {
       shots={shotPage.items}
       shotsPagination={shotsPagination}
       researchEnabled={researchEnabled}
-      detailRouteId={Route.id}
       isEditing={search.edit ?? false}
       onFinishEditing={() =>
         navigate({ search: (current) => ({ ...current, edit: undefined }) })

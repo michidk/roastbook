@@ -1,4 +1,9 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  Link,
+  useNavigate,
+  useRouter,
+} from '@tanstack/react-router'
 import { ArrowLeft, BookOpen, History } from 'lucide-react'
 import { type SyntheticEvent, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -137,6 +142,7 @@ function NewShotPage() {
     defaultBrewedAt,
   } = Route.useLoaderData()
   const navigate = useNavigate()
+  const router = useRouter()
   const tasteProfile = useTasteProfile()
   const [values, setValues] = useState<ShotFormValues>(() => {
     const brewingMethodId = brewingMethodSuggestions[0]
@@ -309,6 +315,7 @@ function NewShotPage() {
         await createShot({ data })
       }
       setIsDirty(false)
+      await router.invalidate()
       await navigate({ to: '/brews' })
     } catch (error) {
       toast.error(

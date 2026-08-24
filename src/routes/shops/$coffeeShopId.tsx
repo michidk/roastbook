@@ -116,7 +116,7 @@ function CoffeeShopDetailPage() {
         search: (current) => ({ ...current, edit: undefined }),
         replace: true,
       })
-      await router.invalidate({ filter: (match) => match.routeId === Route.id })
+      await router.invalidate()
       toast.success('Café updated')
     } catch {
       toast.error('Could not save this café')
@@ -173,6 +173,7 @@ function CoffeeShopDetailPage() {
         onSave={handleSave}
         onDelete={async () => {
           await deleteCoffeeShop({ data: coffeeShop.id })
+          await router.invalidate()
           await navigate({ to: '/shops' })
         }}
       />

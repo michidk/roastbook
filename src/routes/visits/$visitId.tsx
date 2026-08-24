@@ -84,7 +84,8 @@ function VisitDetailPage() {
 
   const handleDelete = async () => {
     await deleteCafeVisit({ data: visit.id })
-    navigate({ to: '/visits' })
+    await router.invalidate()
+    await navigate({ to: '/visits' })
   }
 
   const handleSaved = async () => {
@@ -92,7 +93,7 @@ function VisitDetailPage() {
       search: (current) => ({ ...current, edit: undefined }),
       replace: true,
     })
-    await router.invalidate({ filter: (match) => match.routeId === Route.id })
+    await router.invalidate()
     requestAnimationFrame(() => editButtonRef.current?.focus())
   }
 

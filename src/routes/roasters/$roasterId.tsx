@@ -59,7 +59,8 @@ function RoasterDetailPage() {
 
   const handleDelete = async () => {
     await deleteRoaster({ data: roaster.id })
-    navigate({ to: '/roasters' })
+    await router.invalidate()
+    await navigate({ to: '/roasters' })
   }
 
   const handleCancelEdit = () => {
@@ -82,7 +83,7 @@ function RoasterDetailPage() {
         search: (current) => ({ ...current, edit: undefined }),
         replace: true,
       })
-      await router.invalidate({ filter: (match) => match.routeId === Route.id })
+      await router.invalidate()
     } catch {
       toast.error('Failed to update roaster')
     } finally {

@@ -1,4 +1,9 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  Link,
+  useNavigate,
+  useRouter,
+} from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import { type SyntheticEvent, useEffect, useState } from 'react'
 import { toast } from 'sonner'
@@ -60,6 +65,7 @@ function NewVisitPage() {
     Route.useLoaderData()
   const search = Route.useSearch()
   const navigate = useNavigate()
+  const router = useRouter()
   const initialCoffeeShopId =
     search.coffeeShopId &&
     coffeeShops.some(
@@ -126,7 +132,8 @@ function NewVisitPage() {
     try {
       await createCafeVisit({ data })
       setIsDirty(false)
-      navigate({ to: '/visits' })
+      await router.invalidate()
+      await navigate({ to: '/visits' })
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Could not save this visit',

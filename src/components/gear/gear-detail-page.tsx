@@ -32,7 +32,6 @@ export function GearDetailPage({
   shots,
   shotsPagination,
   researchEnabled,
-  detailRouteId,
   isEditing,
   onFinishEditing,
 }: {
@@ -40,7 +39,6 @@ export function GearDetailPage({
   shots: Shots
   shotsPagination: ShotsTableServerPagination
   researchEnabled: boolean
-  detailRouteId: string
   isEditing: boolean
   onFinishEditing: () => void | Promise<void>
 }) {
@@ -64,10 +62,7 @@ export function GearDetailPage({
     )
   }
 
-  const invalidateDetail = () =>
-    router.invalidate({
-      filter: (match) => match.routeId === detailRouteId,
-    })
+  const invalidateDetail = () => router.invalidate()
   const resetForm = () => setFormData(gearFormValuesFrom(gear))
 
   const handleResearch = async () => {
@@ -137,6 +132,7 @@ export function GearDetailPage({
         }}
         onDelete={async () => {
           await deleteGear({ data: gear.id })
+          await router.invalidate()
           await navigate({ to: '/gear' })
         }}
       />

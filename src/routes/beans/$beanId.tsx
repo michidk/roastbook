@@ -1,6 +1,7 @@
 import {
   createFileRoute,
   Link,
+  stripSearchParams,
   useNavigate,
   useRouter,
 } from '@tanstack/react-router'
@@ -72,6 +73,15 @@ const parseBeanDetailSearch = (input: unknown) => {
 
 export const Route = createFileRoute('/beans/$beanId')({
   validateSearch: searchValidator(parseBeanDetailSearch),
+  search: {
+    middlewares: [
+      stripSearchParams({
+        shotPage: 1,
+        shotSort: 'date',
+        shotDirection: 'desc',
+      } as const),
+    ],
+  },
   loaderDeps: ({ search }) => ({
     shotPage: search.shotPage,
     shotSort: search.shotSort,
@@ -188,7 +198,7 @@ function BeanDetailPage() {
         search: (current) => ({ ...current, edit: undefined }),
         replace: true,
       })
-      await router.invalidate({ filter: (match) => match.routeId === Route.id })
+      await router.invalidate()
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to update bean'))
     } finally {
@@ -279,11 +289,7 @@ function BeanDetailPage() {
           void updateBean({
             data: { id: bean.id, isArchived: !bean.isArchived },
           })
-            .then(() =>
-              router.invalidate({
-                filter: (match) => match.routeId === Route.id,
-              }),
-            )
+            .then(() => router.invalidate())
             .catch((error) => {
               toast.error(getErrorMessage(error, 'Could not update this bean'))
             })
@@ -298,6 +304,7 @@ function BeanDetailPage() {
         onSave={handleSave}
         onDelete={async () => {
           await deleteBean({ data: bean.id })
+          await router.invalidate()
           await navigate({ to: '/beans' })
         }}
       />
@@ -313,9 +320,7 @@ function BeanDetailPage() {
           extractingImageId={extractingImageId}
           onResearch={handleResearchOnline}
           onExtractFromImage={handleExtractFromImage}
-          onImagesChange={() =>
-            router.invalidate({ filter: (match) => match.routeId === Route.id })
-          }
+          onImagesChange={() => router.invalidate()}
         />
       ) : (
         <BeanReadOnlyContent
@@ -323,9 +328,7 @@ function BeanDetailPage() {
           shotCount={shotAnalytics.totalShots}
           topTasteTags={shotAnalytics.topTasteTags}
           weightStats={weightStats}
-          onImagesChange={() =>
-            router.invalidate({ filter: (match) => match.routeId === Route.id })
-          }
+          onImagesChange={() => router.invalidate()}
         />
       )}
       <ShotParameterCharts

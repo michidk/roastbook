@@ -121,7 +121,8 @@ function ShotDetailPage() {
   const handleDelete = async () => {
     try {
       await deleteShot({ data: shot.id })
-      navigate({ to: '/brews' })
+      await router.invalidate()
+      await navigate({ to: '/brews' })
     } catch {
       toast.error('Failed to delete brew')
     }
@@ -133,7 +134,7 @@ function ShotDetailPage() {
   }
 
   const handleSaved = async () => {
-    await router.invalidate({ filter: (match) => match.routeId === Route.id })
+    await router.invalidate()
     await navigate({ search: (current) => ({ ...current, edit: undefined }) })
     requestAnimationFrame(() => editButtonRef.current?.focus())
   }
@@ -157,7 +158,7 @@ function ShotDetailPage() {
       setRecipeTarget(String(recipe.id))
       setRecipeName('')
       setIsRecipeDialogOpen(false)
-      await router.invalidate({ filter: (match) => match.routeId === Route.id })
+      await router.invalidate()
       toast.success(isNewRecipe ? 'Recipe created' : 'Recipe updated')
     } catch (error) {
       toast.error(
