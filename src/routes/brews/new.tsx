@@ -555,7 +555,10 @@ function NewShotPage() {
             </FormSection>
           ) : null}
         </div>
-        <aside className="space-y-4 lg:sticky lg:top-24">
+        {/* The height cap keeps the save buttons reachable on short windows:
+            a pinned sidebar taller than the viewport never scrolls its tail
+            into view, so it scrolls internally instead. */}
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto">
           {selectedBean ? (
             <div className="hidden lg:block">
               <BeanCard bean={selectedBean} />
