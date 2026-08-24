@@ -3,8 +3,8 @@ import { IMAGE_MIME_TYPE_VALUES, MAX_IMAGE_BYTES } from '@/lib/domain-contracts'
 import { downloadRemoteImage } from '@/lib/server/remote-image'
 
 const IMAGE_MIME_TYPES = new Set<string>(IMAGE_MIME_TYPE_VALUES)
-const CLIENT_IMAGE_MAX_DIMENSION = 2_560
-const CLIENT_IMAGE_QUALITY = 0.82
+const CLIENT_IMAGE_MAX_DIMENSION = 1_600
+const CLIENT_IMAGE_QUALITY = 0.8
 const CLIENT_IMAGE_COMPRESSION_THRESHOLD = 2 * 1024 * 1024
 const IMAGE_MIME_TYPE_BY_EXTENSION: Readonly<Record<string, string>> = {
   avif: 'image/avif',
@@ -53,11 +53,8 @@ function canvasToBlob(
   return new Promise((resolve) => canvas.toBlob(resolve, type, quality))
 }
 
-async function compressLargeJpeg(file: File): Promise<File> {
-  if (
-    file.type.toLowerCase() !== 'image/jpeg' ||
-    file.size < CLIENT_IMAGE_COMPRESSION_THRESHOLD
-  ) {
+async function compressLargeImage(file: File): Promise<File> {
+  if (file.size < CLIENT_IMAGE_COMPRESSION_THRESHOLD) {
     return file
   }
 
@@ -80,11 +77,12 @@ async function compressLargeJpeg(file: File): Promise<File> {
 
     context.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
     bitmap.close()
-    const blob = await canvasToBlob(canvas, 'image/jpeg', CLIENT_IMAGE_QUALITY)
+    const blob = await canvasToBlob(canvas, 'image/webp', CLIENT_IMAGE_QUALITY)
     if (!blob || blob.size >= file.size) return file
 
-    return new File([blob], file.name, {
-      type: 'image/jpeg',
+    const basename = file.name.replace(/\.[^.]+$/, '') || 'image'
+    return new File([blob], `${basename}.webp`, {
+      type: 'image/webp',
       lastModified: file.lastModified,
     })
   } catch {
@@ -113,7 +111,7 @@ async function prepareImageFiles(
   })
 
   return validateImageFiles(
-    await Promise.all(normalizedFiles.map(compressLargeJpeg)),
+    await Promise.all(normalizedFiles.map(compressLargeImage)),
   )
 }
 

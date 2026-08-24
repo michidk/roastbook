@@ -125,14 +125,14 @@ export const uploadEntityImage = createServerFn({ method: 'POST' })
     const storagePath = generateStoragePath(
       storagePathType,
       data.entityId,
-      data.filename,
+      'image.webp',
     )
 
     const binaryData = Buffer.from(await data.file.arrayBuffer())
     await validateImageBuffer(binaryData, data.mimeType)
     const storedImage = await createStoredImage(binaryData)
     const blob = new Blob([new Uint8Array(storedImage)], {
-      type: data.mimeType,
+      type: 'image/webp',
     })
 
     await storage.upload(blob, storagePath)
@@ -143,7 +143,7 @@ export const uploadEntityImage = createServerFn({ method: 'POST' })
       const baseValues = {
         storagePath,
         originalFilename: data.filename,
-        mimeType: data.mimeType,
+        mimeType: 'image/webp',
         sizeBytes: storedImage.byteLength,
       }
 

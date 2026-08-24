@@ -84,9 +84,9 @@ describe('createStoredImage', () => {
     const result = await createStoredImage(image)
     const metadata = await sharp(result).metadata()
 
-    expect(metadata.format).toBe('jpeg')
-    expect(metadata.width).toBe(1_922)
-    expect(metadata.height).toBe(2_560)
+    expect(metadata.format).toBe('webp')
+    expect(metadata.width).toBe(1_201)
+    expect(metadata.height).toBe(1_600)
     expect(metadata.orientation).toBeUndefined()
     expect(result.byteLength).toBeLessThan(image.byteLength)
   })

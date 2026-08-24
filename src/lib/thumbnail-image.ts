@@ -5,7 +5,8 @@ export { getThumbnailPath } from '@/lib/image-path'
 
 const THUMB_WIDTH = 640
 const THUMB_QUALITY = 78
-const STORED_IMAGE_MAX_DIMENSION = 2_560
+const STORED_IMAGE_MAX_DIMENSION = 1_600
+const STORED_IMAGE_QUALITY = 80
 const AI_IMAGE_MAX_DIMENSION = 2_048
 const AI_IMAGE_QUALITY = 85
 
@@ -83,6 +84,7 @@ export const createStoredImage = createServerOnlyFn(
         fit: 'inside',
         withoutEnlargement: true,
       })
+      .webp({ quality: STORED_IMAGE_QUALITY })
       .toBuffer()
   },
 )
