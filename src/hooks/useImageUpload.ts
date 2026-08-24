@@ -3,6 +3,9 @@ import { IMAGE_MIME_TYPE_VALUES, MAX_IMAGE_BYTES } from '@/lib/domain-contracts'
 import { downloadRemoteImage } from '@/lib/server/remote-image'
 
 const IMAGE_MIME_TYPES = new Set<string>(IMAGE_MIME_TYPE_VALUES)
+const CLIENT_IMAGE_MAX_DIMENSION = 2_560
+const CLIENT_IMAGE_QUALITY = 0.82
+const CLIENT_IMAGE_COMPRESSION_THRESHOLD = 2 * 1024 * 1024
 const IMAGE_MIME_TYPE_BY_EXTENSION: Readonly<Record<string, string>> = {
   avif: 'image/avif',
   gif: 'image/gif',
@@ -40,6 +43,78 @@ function normalizeImageType(file: File): File | null {
     type: inferredType,
     lastModified: file.lastModified,
   })
+}
+
+function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  type: string,
+  quality: number,
+): Promise<Blob | null> {
+  return new Promise((resolve) => canvas.toBlob(resolve, type, quality))
+}
+
+async function compressLargeJpeg(file: File): Promise<File> {
+  if (
+    file.type.toLowerCase() !== 'image/jpeg' ||
+    file.size < CLIENT_IMAGE_COMPRESSION_THRESHOLD
+  ) {
+    return file
+  }
+
+  try {
+    const bitmap = await createImageBitmap(file, {
+      imageOrientation: 'from-image',
+    })
+    const scale = Math.min(
+      1,
+      CLIENT_IMAGE_MAX_DIMENSION / Math.max(bitmap.width, bitmap.height),
+    )
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale))
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale))
+    const context = canvas.getContext('2d')
+    if (!context) {
+      bitmap.close()
+      return file
+    }
+
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+    bitmap.close()
+    const blob = await canvasToBlob(canvas, 'image/jpeg', CLIENT_IMAGE_QUALITY)
+    if (!blob || blob.size >= file.size) return file
+
+    return new File([blob], file.name, {
+      type: 'image/jpeg',
+      lastModified: file.lastModified,
+    })
+  } catch {
+    // Some browsers cannot decode every image they can select (notably HEIC).
+    // The original still goes through the normal size and format validation.
+    return file
+  }
+}
+
+async function prepareImageFiles(
+  files: readonly File[],
+): Promise<readonly File[]> {
+  if (files.length === 0) return validateImageFiles(files)
+
+  const normalizedFiles = files.map((file) => {
+    const imageFile = normalizeImageType(file)
+    if (!imageFile) {
+      throw new ImageUploadError(
+        `${file.name || 'That file'} is not a supported image. Use JPG, PNG, WebP, HEIC/HEIF, GIF or AVIF.`,
+      )
+    }
+    if (imageFile.size === 0) {
+      throw new ImageUploadError(`${imageFile.name} is empty`)
+    }
+    return imageFile
+  })
+
+  return validateImageFiles(
+    await Promise.all(normalizedFiles.map(compressLargeJpeg)),
+  )
 }
 
 export function validateImageFiles(files: readonly File[]): readonly File[] {
@@ -120,7 +195,7 @@ export function useImageUpload() {
   )
 
   const addFiles = useCallback(async (files: readonly File[]) => {
-    const imageFiles = validateImageFiles(files)
+    const imageFiles = await prepareImageFiles(files)
 
     const encodedImages = await Promise.all(
       imageFiles.map(async (file) => {
