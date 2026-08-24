@@ -170,7 +170,7 @@ function CollectionCard({ entry }: { readonly entry: CollectionEntry }) {
         params={entry.params}
         className={cn(
           interactiveCardLinkClassName,
-          'flex items-center gap-3 p-4 hover:translate-y-0 motion-reduce:hover:translate-y-0',
+          'flex items-center gap-3 p-3 hover:translate-y-0 motion-reduce:hover:translate-y-0 sm:p-4',
           entry.action && 'pr-14',
         )}
       >
@@ -252,7 +252,7 @@ export function CollectionList<TItem>({
   if (view === 'cards') {
     return (
       <div className="@container">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
           {entries.map(({ entry }) => (
             <CollectionCard key={entry.id} entry={entry} />
           ))}

@@ -168,12 +168,12 @@ function VisitDetailPage() {
       ) : (
         <div
           className={cn(
-            'grid gap-6',
+            'grid gap-4 md:gap-6',
             hasCoordinates &&
               'lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-start',
           )}
         >
-          <div className="min-w-0 space-y-6">
+          <div className="min-w-0 space-y-4 md:space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Details</CardTitle>

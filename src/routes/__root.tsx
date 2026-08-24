@@ -213,7 +213,7 @@ function RootComponent() {
               onSubmitCapture={
                 settings.demoMode ? preventDemoSubmit : undefined
               }
-              className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:px-8 md:py-8 md:pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8"
+              className="mx-auto w-full max-w-7xl flex-1 px-4 py-5 pb-[calc(6rem+env(safe-area-inset-bottom))] md:px-8 md:py-8 md:pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8"
             >
               <Outlet />
             </main>

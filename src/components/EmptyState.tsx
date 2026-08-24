@@ -22,8 +22,8 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <Card>
-      <CardContent className="flex flex-col items-center justify-center py-12">
-        <Icon className="h-12 w-12 text-muted-foreground mb-4" />
+      <CardContent className="flex flex-col items-center justify-center py-9 sm:py-12">
+        <Icon className="mb-3 size-10 text-muted-foreground sm:mb-4 sm:size-12" />
         <h2 className="font-display text-lg font-bold">{title}</h2>
         <p className="text-sm text-muted-foreground mb-4">{description}</p>
         <Button asChild>

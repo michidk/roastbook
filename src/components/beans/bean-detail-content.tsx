@@ -235,8 +235,8 @@ export function BeanEditContent({
   ) => setFormData((current) => ({ ...current, [key]: value }))
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-      <div className="space-y-6">
+    <div className="grid gap-4 md:gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="space-y-4 md:space-y-6">
         <BeanFields
           values={formData}
           onChange={set}
@@ -267,7 +267,7 @@ export function BeanEditContent({
           }
         />
       </div>
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         <EntityImageGallery
           entityType="beans"
           entityId={bean.id}
@@ -312,11 +312,11 @@ export function BeanReadOnlyContent({
   return (
     <div
       className={cn(
-        'grid gap-6',
+        'grid gap-4 md:gap-6',
         showSidebar && 'lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start',
       )}
     >
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         {(bean.price || bean.shopUrl) && (
           <Card>
             <CardHeader>
@@ -408,7 +408,7 @@ export function BeanReadOnlyContent({
         )}
       </div>
       {showSidebar ? (
-        <aside className="order-first space-y-6 lg:order-last">
+        <aside className="order-first space-y-4 md:space-y-6 lg:order-last">
           {weightStats ? (
             <Card>
               <CardHeader>

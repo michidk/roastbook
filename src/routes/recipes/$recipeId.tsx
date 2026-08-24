@@ -213,7 +213,11 @@ function RecipeDetailPage() {
       />
 
       {isEditing ? (
-        <form id="recipe-edit-form" onSubmit={handleSave} className="space-y-6">
+        <form
+          id="recipe-edit-form"
+          onSubmit={handleSave}
+          className="space-y-5 sm:space-y-6"
+        >
           <RecipeFields
             name={name}
             values={values}
@@ -299,7 +303,7 @@ function RecipeSummary({
     )
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Details</CardTitle>

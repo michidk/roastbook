@@ -41,7 +41,7 @@ function Dashboard() {
     <Page>
       <PageHeader title={headline} eyebrow={today} />
 
-      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <MetricCard
           value={formatNumber(stats.totalShots)}
           label="brews logged"
@@ -65,7 +65,7 @@ function Dashboard() {
         />
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-[1fr_340px] lg:gap-5">
+      <section className="grid gap-3 sm:gap-4 lg:grid-cols-[1fr_340px] lg:gap-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Recent brews</CardTitle>
@@ -78,7 +78,7 @@ function Dashboard() {
           </CardHeader>
           <CardContent className="space-y-2">
             {recentShots.length === 0 ? (
-              <div className="rounded-2xl bg-secondary px-5 py-8 text-center">
+              <div className="rounded-2xl bg-secondary px-4 py-6 text-center sm:px-5 sm:py-8">
                 <p className="text-sm text-muted-foreground">
                   No brews logged yet. Start by recording your first coffee.
                 </p>

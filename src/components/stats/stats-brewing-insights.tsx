@@ -56,7 +56,7 @@ export function BrewingAveragesCard({
           Brewing averages
         </CardTitle>
       </CardHeader>
-      <CardContent className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <CardContent className="grid gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <Average
           label="Average dose"
           value={formatMeasurement(brewing.avgDose, 'g', formatNumber)}
@@ -175,17 +175,17 @@ export function DialInCard({ stats }: { readonly stats: DetailedStats }) {
       </CardHeader>
       <CardContent>
         {!isFocused ? (
-          <div className="rounded-2xl bg-secondary/70 p-6 text-center text-sm text-muted-foreground">
+          <div className="rounded-2xl bg-secondary/70 p-5 text-center sm:p-6 text-sm text-muted-foreground">
             Choose both a brewing method and a bean to compare like-for-like
             brews.
           </div>
         ) : points.length < 5 ? (
-          <div className="rounded-2xl bg-secondary/70 p-6 text-center text-sm text-muted-foreground">
+          <div className="rounded-2xl bg-secondary/70 p-5 text-center sm:p-6 text-sm text-muted-foreground">
             This combination needs at least five rated brews with a calculable
             ratio.
           </div>
         ) : (
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="grid gap-4 md:gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
             <ChartContainer
               config={dialInChartConfig}
               className="h-[260px] min-w-0 w-full"
@@ -280,7 +280,7 @@ export function TasteProfileCard({
             : 'The most frequently recorded sensations.'}
         </p>
       </CardHeader>
-      <CardContent className="grid gap-6 lg:grid-cols-2">
+      <CardContent className="grid gap-4 md:gap-6 lg:grid-cols-2">
         <div className="space-y-4">
           {items.slice(0, 8).map((item) => (
             <div key={item.id}>

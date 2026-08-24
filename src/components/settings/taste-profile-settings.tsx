@@ -27,7 +27,7 @@ export function TasteProfileSettings({
   const mode = tasteProfileMode(config)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <FieldToggle
         field="overallRating"
         config={config}

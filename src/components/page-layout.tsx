@@ -20,7 +20,7 @@ export function Page({ width = 'full', className, ...props }: PageProps) {
     <div
       data-slot="page"
       className={cn(
-        'w-full space-y-6 md:space-y-8',
+        'w-full space-y-5 md:space-y-8',
         pageWidths[width],
         className,
       )}
@@ -53,7 +53,7 @@ export function PageHeader({
     <header
       data-slot="page-header"
       className={cn(
-        'flex flex-col gap-4 sm:flex-row sm:justify-between',
+        'flex flex-col gap-3 sm:flex-row sm:justify-between sm:gap-4',
         size === 'compact' ? 'sm:items-center' : 'sm:items-end',
         className,
       )}

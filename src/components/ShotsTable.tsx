@@ -393,7 +393,7 @@ function MobileShotCard({
           size="sm"
           className="gap-0 border border-border py-0 transition-colors group-hover:bg-accent/40"
         >
-          <CardContent className="flex items-center gap-3 p-4">
+          <CardContent className="flex items-center gap-3 p-3 sm:p-4">
             {!hideBean && beanThumb && (
               <ImageWithFallback
                 src={beanThumb}

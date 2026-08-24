@@ -28,12 +28,10 @@ export function MetricCard({
     <Card
       className={cn(
         'h-full',
-        variant !== 'quiet' &&
-          '[--card-spacing:--spacing(4)] sm:[--card-spacing:--spacing(5)]',
         variant === 'hero' &&
           'bg-coffee text-coffee-foreground shadow-coffee-strong',
         variant === 'quiet' &&
-          'rounded-2xl bg-secondary/70 py-4 shadow-none [--card-spacing:--spacing(4)]',
+          'rounded-2xl bg-secondary/70 py-4 shadow-none [--card-spacing:--spacing(4)] sm:[--card-spacing:--spacing(4)]',
       )}
     >
       <CardContent className="flex items-start justify-between gap-3">

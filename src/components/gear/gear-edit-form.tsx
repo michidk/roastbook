@@ -23,7 +23,11 @@ export function GearEditForm({
   ) => setFormData((current) => ({ ...current, [key]: value }))
 
   return (
-    <form id="gear-edit-form" onSubmit={onSubmit} className="space-y-6">
+    <form
+      id="gear-edit-form"
+      onSubmit={onSubmit}
+      className="space-y-5 sm:space-y-6"
+    >
       <GearFields
         values={formData}
         onChange={set}

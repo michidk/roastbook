@@ -70,10 +70,21 @@ visual affordance reinforces each one.
 - Base unit: 4px.
 - Content maximum: `80rem` or `max-w-7xl`.
 - Page gutter: 16px on mobile and 32px from `md`.
-- Route rhythm: 24px on mobile and 32px on desktop.
-- Cards: 20px default internal spacing and a `1rem` base radius.
+- Route rhythm: 20px on mobile and 32px from `md`.
+- Cards: 16px internal spacing on phones and 20px from `sm`. Compact cards
+  (`size="sm"`) use 12px and 16px. Radius stays at a `1rem` base.
+- Card grids: 12px gutters on phones and 16px from `sm`.
+- Stacks and grids of cards inside a route: 16px on phones and 24px from `md`.
+- Forms: 20px between sections on phones and 24px from `sm`.
 - Breakpoints: `sm` 640, `md` 768, `lg` 1024, and `xl` 1280.
 - Mobile pages account for navigation height and the safe-area inset.
+
+A phone spends its height on records, not on chrome. Density is a property of
+the shared primitives, so `Page`, `Card`, `CollectionList`, `EntityForm`, and
+the settings sections carry the phone step and every route inherits it. Reach
+for a route-local mobile spacing override only when that route's content
+genuinely differs, and keep the desktop value unchanged so wide layouts stay
+calm.
 
 Dense tables may scroll horizontally, but primary routes also need a readable
 mobile representation.
@@ -132,11 +143,12 @@ Summary metrics use `MetricCard`. Use the hero variant for at most one focal
 metric, default for peers, and quiet for metrics nested inside another card.
 Avoid route-local stat-card variants.
 
-Metric cards are denser on a phone: 16px internal spacing and one step smaller
-value type below `sm`. A metric row whose values are short numbers pairs two
-cards per row on phones, as the dashboard overview does, so the summary costs
-one screen band instead of four. A row that can hold dates, names, or ratings
-stays one card per row until `sm`, because those values need the full width.
+Metric cards take the shared phone card spacing and drop their value type one
+step below `sm`. A metric row whose values are short numbers pairs two cards per
+row on phones, as the dashboard overview does, so the summary costs one screen
+band instead of four. A row that can hold dates, names, or ratings stays one
+card per row until `sm`, because those values need the full width. The quiet
+variant stays at 16px spacing at every width.
 
 Use `StarRating` for overall quality ratings. Editable ratings and prominent
 record details show the full star treatment; dense read-only contexts show the
@@ -423,7 +435,8 @@ centered.
 - Use `FormSection` for grouped form content and heading association.
 - Keep cancel before save in the DOM.
 - Stacked actions may reverse visually so the primary action appears first.
-- Use `gap-4` for standard grids and `gap-5` for prominent card grids.
+- Use `gap-4` for standard grids and `gap-5` for prominent card grids; card
+  grids tighten to `gap-3` on phones.
 - Keep tables and maps wide; constrain long forms.
 
 ### Dialogs

@@ -68,7 +68,7 @@ function GearPage() {
             <div className="@container">
               <div
                 className={cn(
-                  'grid gap-4 sm:grid-cols-2',
+                  'grid gap-3 sm:grid-cols-2 sm:gap-4',
                   activeGear.length > 2 && 'lg:grid-cols-3',
                 )}
               >
@@ -97,7 +97,7 @@ function GearPage() {
                 <div className="@container">
                   <div
                     className={cn(
-                      'grid gap-4 sm:grid-cols-2',
+                      'grid gap-3 sm:grid-cols-2 sm:gap-4',
                       archivedGear.length > 2 && 'lg:grid-cols-3',
                     )}
                   >

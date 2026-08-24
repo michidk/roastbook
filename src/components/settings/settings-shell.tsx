@@ -112,7 +112,7 @@ export function SettingsPanelSection({
   return (
     <section
       aria-labelledby={headingId}
-      className={cn('py-6 first:pt-0 last:pb-0', className)}
+      className={cn('py-5 first:pt-0 last:pb-0 sm:py-6', className)}
     >
       <header className="flex items-start justify-between gap-4">
         <div className="min-w-0 space-y-1">

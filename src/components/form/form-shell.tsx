@@ -163,7 +163,7 @@ export function EntityForm({
         event.stopPropagation()
         onSubmit(event)
       }}
-      className={cn('space-y-6', className)}
+      className={cn('space-y-5 sm:space-y-6', className)}
     >
       {children}
       {actions ? <FormActions {...actions} /> : null}

@@ -197,10 +197,10 @@ export function StatsSections({ stats }: { readonly stats: DetailedStats }) {
   const hasBeanRankings = stats.beans.topByShots.length > 0 || showRatedBeans
 
   return (
-    <div className="space-y-6 md:space-y-8">
+    <div className="space-y-5 md:space-y-8">
       {hasBrews ? (
         <>
-          <div className="grid min-w-0 gap-6 lg:grid-cols-2">
+          <div className="grid min-w-0 gap-4 md:gap-6 lg:grid-cols-2">
             <StatsActivityCard
               trend={stats.trend}
               bucket={stats.filter.range.bucket}
@@ -241,7 +241,7 @@ export function StatsSections({ stats }: { readonly stats: DetailedStats }) {
             <TasteProfileCard items={stats.tasteProfile} />
           ) : null}
 
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
             <MethodMixCard methods={stats.methods} />
             <BrewRhythmCard
               rhythm={stats.rhythm}
@@ -250,7 +250,7 @@ export function StatsSections({ stats }: { readonly stats: DetailedStats }) {
           </div>
 
           {hasBeanRankings ? (
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
               {stats.beans.topByShots.length > 0 ? (
                 <BeanRankingCard mode="usage" items={stats.beans.topByShots} />
               ) : null}
@@ -272,7 +272,7 @@ export function StatsSections({ stats }: { readonly stats: DetailedStats }) {
       <CostCard stats={stats} />
 
       {hasBrews ? (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
           <GearUsageCard title="Brewer usage" items={stats.gear.brewers} />
           <GearUsageCard title="Grinder usage" items={stats.gear.grinders} />
           <GearUsageCard

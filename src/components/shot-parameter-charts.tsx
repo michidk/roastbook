@@ -158,7 +158,7 @@ export function ShotParameterCharts({
             : `${totalShots} ${totalShots === 1 ? 'brew' : 'brews'}`}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 md:space-y-6">
         {(hasDoseData || hasYieldData) && (
           <ShotLineChartSection title="Dose & yield" data={chartData}>
             {hasDoseData && (

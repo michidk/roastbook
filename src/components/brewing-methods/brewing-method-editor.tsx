@@ -69,7 +69,7 @@ export function BrewingMethodEditor({
   }
 
   return (
-    <form onSubmit={handleSave} className="space-y-6">
+    <form onSubmit={handleSave} className="space-y-5 sm:space-y-6">
       <FormSection title="Method">
         <InputField
           id={`brewing-method-${method.id}`}

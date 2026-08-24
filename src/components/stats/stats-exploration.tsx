@@ -133,7 +133,7 @@ export function ExplorationCard({
             : 'Usage across the bean metadata already in your journal.'}
         </p>
       </CardHeader>
-      <CardContent className="grid gap-8 sm:grid-cols-2 xl:grid-cols-3">
+      <CardContent className="grid gap-5 md:gap-8 sm:grid-cols-2 xl:grid-cols-3">
         <UsageList title="Roasters" items={exploration.roasters} />
         <UsageList title="Origins" items={exploration.origins} />
         <UsageList title="Processes" items={exploration.processes} />
@@ -265,7 +265,7 @@ export function CostCard({ stats }: { readonly stats: DetailedStats }) {
           weight, and recorded dose.
         </p>
       </CardHeader>
-      <CardContent className="grid gap-6 sm:grid-cols-2">
+      <CardContent className="grid gap-4 md:gap-6 sm:grid-cols-2">
         <section>
           <h3 className="font-display font-bold">Home brewing</h3>
           <div className="mt-3 space-y-3">
