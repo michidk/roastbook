@@ -1,4 +1,13 @@
-import { CircleAlert, Loader2, Sparkles, Star, Trash2, X } from 'lucide-react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  CircleAlert,
+  Loader2,
+  Sparkles,
+  Star,
+  Trash2,
+  X,
+} from 'lucide-react'
 import { useState } from 'react'
 import { ImageWithFallback } from '@/components/image-with-fallback'
 import { PictureUploader } from '@/components/picture-uploader'
@@ -14,10 +23,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogTitle,
 } from '@/components/ui/dialog'
 import { type ImageFile, useImageUpload } from '@/hooks/useImageUpload'
 import { getErrorMessage } from '@/lib/error-message'
-import { thumbnailUrl } from '@/lib/image-url'
+import { imageUrl, thumbnailUrl } from '@/lib/image-url'
 import { deleteEntityImage, setImageAsThumbnail } from '@/lib/server/images'
 import {
   type EntityImageUploadFailure,
@@ -64,6 +76,7 @@ export function EntityImageGallery({
     readonly EntityImageUploadFailure[]
   >([])
   const [galleryError, setGalleryError] = useState<string | null>(null)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const {
     images: queuedImages,
     fileInputRef,
@@ -160,6 +173,15 @@ export function EntityImageGallery({
     }
   }
 
+  const entityLabel = entityType === 'beans' ? 'Bean' : 'Gear'
+  const lightboxImage =
+    lightboxIndex === null ? undefined : images[lightboxIndex]
+
+  const stepLightbox = (offset: number) => {
+    if (lightboxIndex === null || images.length < 2) return
+    setLightboxIndex((lightboxIndex + offset + images.length) % images.length)
+  }
+
   return (
     <Card size={editable ? 'sm' : 'default'}>
       <CardHeader>
@@ -194,22 +216,29 @@ export function EntityImageGallery({
           >
             {images.map((image, index) => (
               <div key={image.id} className="group relative">
-                <ImageWithFallback
-                  src={thumbnailUrl(image.storagePath)}
-                  alt={`${entityType === 'beans' ? 'Bean' : 'Gear'} picture ${index + 1}`}
-                  loading="lazy"
-                  decoding="async"
-                  width={640}
-                  height={640}
-                  className="aspect-square w-full rounded-lg object-cover"
-                />
+                <button
+                  type="button"
+                  className="block w-full cursor-zoom-in rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  onClick={() => setLightboxIndex(index)}
+                  aria-label={`View ${entityLabel.toLowerCase()} picture ${index + 1} in full size`}
+                >
+                  <ImageWithFallback
+                    src={thumbnailUrl(image.storagePath)}
+                    alt={`${entityLabel} picture ${index + 1}`}
+                    loading="lazy"
+                    decoding="async"
+                    width={640}
+                    height={640}
+                    className="aspect-square w-full rounded-lg object-cover"
+                  />
+                </button>
                 {editable && (
-                  <div className="absolute inset-0 rounded-lg opacity-100 transition-colors [@media(hover:hover)]:group-hover:bg-foreground/55">
+                  <div className="pointer-events-none absolute inset-0 rounded-lg opacity-100 transition-colors [@media(hover:hover)]:group-hover:bg-foreground/55">
                     {imageAction && (
                       <Button
                         size="sm"
                         variant="secondary"
-                        className="absolute bottom-2 left-2 h-11 px-3 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary sm:h-11 [@media(hover:hover)]:h-8"
+                        className="pointer-events-auto absolute bottom-2 left-2 h-11 px-3 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary sm:h-11 [@media(hover:hover)]:h-8"
                         onClick={() => {
                           setGalleryError(null)
                           void Promise.resolve(
@@ -248,7 +277,7 @@ export function EntityImageGallery({
                     <Button
                       size="icon"
                       variant={image.isThumbnail ? 'default' : 'secondary'}
-                      className="absolute left-2 top-2 h-11 w-11 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary sm:h-11 sm:w-11 [@media(hover:hover)]:h-8 [@media(hover:hover)]:w-8"
+                      className="pointer-events-auto absolute left-2 top-2 h-11 w-11 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary sm:h-11 sm:w-11 [@media(hover:hover)]:h-8 [@media(hover:hover)]:w-8"
                       onClick={() => handleSetThumbnail(image.id)}
                       disabled={
                         isSettingThumbnail === image.id || image.isThumbnail
@@ -276,7 +305,7 @@ export function EntityImageGallery({
                         <Button
                           size="icon"
                           variant="destructive"
-                          className="absolute right-2 top-2 h-11 w-11 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary sm:h-11 sm:w-11 [@media(hover:hover)]:h-8 [@media(hover:hover)]:w-8"
+                          className="pointer-events-auto absolute right-2 top-2 h-11 w-11 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary sm:h-11 sm:w-11 [@media(hover:hover)]:h-8 [@media(hover:hover)]:w-8"
                           disabled={isDeletingImage === image.id}
                           aria-label={`Delete picture ${index + 1}`}
                         >
@@ -359,6 +388,55 @@ export function EntityImageGallery({
             onRetryImages={uploadPictures}
           />
         )}
+        <Dialog
+          open={lightboxIndex !== null && lightboxImage !== undefined}
+          onOpenChange={(open) => {
+            if (!open) setLightboxIndex(null)
+          }}
+        >
+          {lightboxIndex !== null && lightboxImage !== undefined && (
+            <DialogContent
+              className="w-fit max-w-[calc(100%-1rem)] p-2 sm:max-w-[min(1100px,calc(100%-2rem))]"
+              onKeyDown={(event) => {
+                if (event.key === 'ArrowLeft') stepLightbox(-1)
+                if (event.key === 'ArrowRight') stepLightbox(1)
+              }}
+            >
+              <DialogTitle className="sr-only">
+                {entityLabel} picture {lightboxIndex + 1} of {images.length}
+              </DialogTitle>
+              <ImageWithFallback
+                key={lightboxImage.id}
+                src={imageUrl(lightboxImage.storagePath)}
+                alt={`${entityLabel} picture ${lightboxIndex + 1}`}
+                className="max-h-[80dvh] w-auto max-w-full rounded-xl object-contain"
+              />
+              {images.length > 1 && (
+                <div className="flex items-center justify-center gap-3 pt-2">
+                  <Button
+                    size="icon"
+                    variant="secondary"
+                    onClick={() => stepLightbox(-1)}
+                    aria-label="Previous picture"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm tabular-nums text-muted-foreground">
+                    {lightboxIndex + 1} / {images.length}
+                  </span>
+                  <Button
+                    size="icon"
+                    variant="secondary"
+                    onClick={() => stepLightbox(1)}
+                    aria-label="Next picture"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </DialogContent>
+          )}
+        </Dialog>
       </CardContent>
     </Card>
   )
