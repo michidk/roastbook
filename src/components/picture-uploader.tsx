@@ -1,4 +1,5 @@
 import {
+  Camera,
   ChevronDown,
   CircleAlert,
   ImagePlus,
@@ -131,6 +132,7 @@ export function PictureUploader({
   const [fileError, setFileError] = useState<string | null>(null)
   const [urlError, setUrlError] = useState<string | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
   const urlInputId = useId()
   const formatHintId = useId()
   const intakeBusy = isBusy || isAddingFiles || isImporting || isRetrying
@@ -357,7 +359,8 @@ export function PictureUploader({
                     : prompt}
               </span>
               <span className="mt-1 block text-sm text-muted-foreground">
-                Choose, drop, or paste
+                <span className="sm:hidden">Choose existing photos</span>
+                <span className="hidden sm:inline">Choose, drop, or paste</span>
               </span>
             </span>
           </button>
@@ -372,19 +375,30 @@ export function PictureUploader({
                 . Supported formats: JPG, PNG, WebP, HEIC, HEIF, GIF and AVIF.
               </span>
             </p>
-            <CollapsibleTrigger
-              disabled={intakeBusy}
-              className="group flex min-h-11 shrink-0 items-center gap-2 rounded-full px-3 font-display text-sm font-bold text-link transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <Link2 className="size-4" />
-              From URL
-              <ChevronDown
-                className={cn(
-                  'size-4 transition-transform',
-                  urlOpen && 'rotate-180',
-                )}
-              />
-            </CollapsibleTrigger>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={intakeBusy}
+                onClick={() => cameraInputRef.current?.click()}
+                className="flex min-h-11 shrink-0 items-center gap-2 rounded-full px-3 font-display text-sm font-bold text-link transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 sm:hidden"
+              >
+                <Camera className="size-4" />
+                Take photo
+              </button>
+              <CollapsibleTrigger
+                disabled={intakeBusy}
+                className="group flex min-h-11 shrink-0 items-center gap-2 rounded-full px-3 font-display text-sm font-bold text-link transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <Link2 className="size-4" />
+                From URL
+                <ChevronDown
+                  className={cn(
+                    'size-4 transition-transform',
+                    urlOpen && 'rotate-180',
+                  )}
+                />
+              </CollapsibleTrigger>
+            </div>
           </div>
 
           <CollapsibleContent className="data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 motion-reduce:animate-none">
@@ -451,6 +465,20 @@ export function PictureUploader({
         type="file"
         accept="image/avif,image/gif,image/heic,image/heif,image/jpeg,image/png,image/webp,.heic,.heif"
         multiple
+        disabled={intakeBusy || !showIntake}
+        onChange={(event) => {
+          const files = Array.from(event.target.files ?? [])
+          event.target.value = ''
+          if (files.length > 0) void addFiles(files)
+        }}
+        className="sr-only"
+        tabIndex={-1}
+      />
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
         disabled={intakeBusy || !showIntake}
         onChange={(event) => {
           const files = Array.from(event.target.files ?? [])
