@@ -11,7 +11,11 @@ import {
   EntityImageUploadSection,
 } from '@/components/form/entity-image-upload-section'
 import { EntityForm } from '@/components/form/form-shell'
-import { ExtractedRoasterDialog } from '@/components/roasters/extracted-roaster-dialog'
+import {
+  ExtractedRoasterDialog,
+  roasterDetailsFromExtraction,
+} from '@/components/roasters/extracted-roaster-dialog'
+import type { RoasterFormValues } from '@/components/roasters/roaster-form-values'
 import type { RoasterOption } from '@/components/roasters/roaster-picker'
 import { Button } from '@/components/ui/button'
 import { useAppSettings } from '@/hooks/use-app-settings'
@@ -61,6 +65,9 @@ export function BeanForm({
   const [extractedRoasterName, setExtractedRoasterName] = useState<
     string | null
   >(null)
+  const [extractedRoasterDetails, setExtractedRoasterDetails] = useState<
+    Partial<RoasterFormValues>
+  >({})
   const [createdBean, setCreatedBean] = useState<CreatedBean | null>(null)
   const [uploadFailures, setUploadFailures] = useState<
     readonly EntityImageUploadFailure[]
@@ -151,6 +158,7 @@ export function BeanForm({
         extractedRoaster &&
         String(matchedRoaster?.id ?? '') !== form.values.roasterId
       ) {
+        setExtractedRoasterDetails(roasterDetailsFromExtraction(extracted))
         setExtractedRoasterName(extractedRoaster)
       }
     } catch (error) {
@@ -277,6 +285,7 @@ export function BeanForm({
         <ExtractedRoasterDialog
           open
           suggestedName={extractedRoasterName}
+          suggestedDetails={extractedRoasterDetails}
           currentRoasterId={form.values.roasterId}
           roasters={roasterOptions}
           onOpenChange={(open) => {

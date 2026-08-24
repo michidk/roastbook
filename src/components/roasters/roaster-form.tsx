@@ -3,6 +3,7 @@ import { EntityForm } from '@/components/form/form-shell'
 import { RoasterFields } from '@/components/roasters/roaster-fields'
 import {
   createRoasterFormValues,
+  type RoasterFormValues,
   roasterCreatePayload,
 } from '@/components/roasters/roaster-form-values'
 import { RoasterResearchAction } from '@/components/roasters/roaster-research-action'
@@ -17,6 +18,7 @@ interface RoasterFormProps {
   onCreated: (roaster: CreatedRoaster) => void | Promise<void>
   onCancel: () => void
   initialName?: string
+  initialValues?: Partial<RoasterFormValues>
   submitLabel?: string
 }
 
@@ -24,9 +26,13 @@ export function RoasterForm({
   onCreated,
   onCancel,
   initialName = '',
+  initialValues,
   submitLabel = 'Create roaster',
 }: RoasterFormProps) {
-  const form = useFormState(createRoasterFormValues(null, initialName))
+  const form = useFormState({
+    ...createRoasterFormValues(null, initialName),
+    ...initialValues,
+  })
 
   const { isSubmitting, handleSubmit } = useFormSubmission({
     canSubmit: () => Boolean(form.values.name.trim()),

@@ -191,15 +191,53 @@ const BEAN_INFO_FIELDS = defineStructuredResearchFields({
   },
 })
 
+const BEAN_IMAGE_INFO_FIELDS = defineStructuredResearchFields({
+  ...BEAN_INFO_FIELDS,
+  roasterLocation: {
+    description:
+      'The roaster city and, when useful, state or region as printed on the packaging. Do not include the country.',
+    jsonType: 'string',
+    schema: aiText,
+    examples: ['London', 'Rogers, Arkansas'],
+  },
+  roasterCountry: {
+    description: 'The roaster country as printed on the packaging.',
+    jsonType: 'string',
+    schema: aiText,
+    examples: ['United Kingdom', 'United States'],
+  },
+  roasterWebsite: {
+    description: 'The roaster website printed on the packaging.',
+    jsonType: 'string',
+    format: 'absolute HTTPS URL',
+    schema: z.url().max(2_048),
+    examples: ['https://squaremilecoffee.com/'],
+  },
+  roasterInstagramHandle: {
+    description:
+      'The roaster Instagram username printed on the packaging, without an @ sign or URL.',
+    jsonType: 'string',
+    format: 'Instagram username without @',
+    schema: z
+      .string()
+      .trim()
+      .min(1)
+      .max(100)
+      .regex(/^@?[A-Za-z0-9._]+$/)
+      .transform((value) => value.replace(/^@/, '')),
+    examples: ['squaremilecoffee', 'onyxcoffeelab'],
+  },
+})
+
 export type ExtractedBeanInfo = StructuredResearchResult<
-  typeof BEAN_INFO_FIELDS
+  typeof BEAN_IMAGE_INFO_FIELDS
 >
 
 function beanInfoPrompt(task: string, evidenceRule: string): string {
   return buildStructuredResearchPrompt({
     role: 'You are a coffee expert assistant',
     task,
-    fields: BEAN_INFO_FIELDS,
+    fields: BEAN_IMAGE_INFO_FIELDS,
     evidenceRules: [evidenceRule],
   })
 }
@@ -478,7 +516,7 @@ async function extractBeanInfoFromImageImpl(
     const content = result.choices[0]?.message.content ?? ''
 
     const extracted = content
-      ? parseStructuredResearchResult(content, BEAN_INFO_FIELDS)
+      ? parseStructuredResearchResult(content, BEAN_IMAGE_INFO_FIELDS)
       : {}
     const usage = result.usage
       ? {

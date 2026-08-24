@@ -1,5 +1,6 @@
 import { ArrowRight, Store } from 'lucide-react'
 import { RoasterForm } from '@/components/roasters/roaster-form'
+import type { RoasterFormValues } from '@/components/roasters/roaster-form-values'
 import type { RoasterOption } from '@/components/roasters/roaster-picker'
 import { Button } from '@/components/ui/button'
 import {
@@ -11,7 +12,27 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import type { ExtractedBeanInfo } from '@/lib/ai'
 import { findRoasterByName } from '@/lib/roaster-match'
+
+export function roasterDetailsFromExtraction(
+  extracted: ExtractedBeanInfo,
+): Partial<RoasterFormValues> {
+  return {
+    ...(extracted.roasterLocation
+      ? { location: extracted.roasterLocation }
+      : undefined),
+    ...(extracted.roasterCountry
+      ? { country: extracted.roasterCountry }
+      : undefined),
+    ...(extracted.roasterWebsite
+      ? { website: extracted.roasterWebsite }
+      : undefined),
+    ...(extracted.roasterInstagramHandle
+      ? { instagramHandle: extracted.roasterInstagramHandle }
+      : undefined),
+  }
+}
 
 export function ExtractedRoasterDialog({
   currentRoasterId,
@@ -20,6 +41,7 @@ export function ExtractedRoasterDialog({
   onSelect,
   open,
   roasters,
+  suggestedDetails,
   suggestedName,
 }: {
   readonly currentRoasterId: string
@@ -28,6 +50,7 @@ export function ExtractedRoasterDialog({
   readonly onSelect: (roaster: RoasterOption) => void
   readonly open: boolean
   readonly roasters: readonly RoasterOption[]
+  readonly suggestedDetails?: Partial<RoasterFormValues>
   readonly suggestedName: string
 }) {
   const matchedRoaster = findRoasterByName(roasters, suggestedName)
@@ -49,6 +72,7 @@ export function ExtractedRoasterDialog({
           <DialogBody>
             <RoasterForm
               initialName={suggestedName}
+              initialValues={suggestedDetails}
               submitLabel="Create and select roaster"
               onCreated={onCreated}
               onCancel={() => onOpenChange(false)}

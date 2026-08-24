@@ -22,7 +22,10 @@ import {
 } from '@/components/beans/bean-form-values'
 import type { EntityImage } from '@/components/entity-image-gallery'
 import { Page } from '@/components/page-layout'
-import { ExtractedRoasterDialog } from '@/components/roasters/extracted-roaster-dialog'
+import {
+  ExtractedRoasterDialog,
+  roasterDetailsFromExtraction,
+} from '@/components/roasters/extracted-roaster-dialog'
 import type { RoasterOption } from '@/components/roasters/roaster-picker'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
@@ -384,6 +387,11 @@ function BeanDetailPage() {
         <ExtractedRoasterDialog
           open
           suggestedName={extractedRoasterName}
+          suggestedDetails={
+            suggestedData
+              ? roasterDetailsFromExtraction(suggestedData)
+              : undefined
+          }
           currentRoasterId={formData.roasterId}
           roasters={availableRoasters}
           onOpenChange={(open) => {
