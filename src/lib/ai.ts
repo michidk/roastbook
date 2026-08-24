@@ -708,11 +708,10 @@ export const researchRoasterFromWeb = createServerOnlyFn(
 )
 
 async function researchMachineSettingsFromWebImpl(
-  name: string,
   brand: string,
   model: string,
 ): Promise<ExtractedMachineSettings> {
-  const searchQuery = `"${brand} ${model}" "${name}" manual specifications pre-infusion volumetric steam pressure`
+  const searchQuery = `"${brand} ${model}" manual specifications pre-infusion volumetric steam pressure`
 
   return researchStructuredDataFromWebImpl({
     subject: 'espresso machine',

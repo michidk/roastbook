@@ -32,14 +32,12 @@ type CreatedGear = Awaited<ReturnType<typeof createGear>>
 interface GearFormProps {
   onCreated: (gear: CreatedGear) => void | Promise<void>
   onCancel: () => void
-  initialName?: string
   submitLabel?: string
 }
 
 export function GearForm({
   onCreated,
   onCancel,
-  initialName = '',
   submitLabel = 'Add gear',
 }: GearFormProps) {
   const { defaultCurrency } = useAppSettings()
@@ -56,7 +54,7 @@ export function GearForm({
   const imageUpload = useImageUpload()
   const { images } = imageUpload
 
-  const form = useFormState(createEmptyGearFormValues(initialName))
+  const form = useFormState(createEmptyGearFormValues())
 
   useEffect(() => {
     form.set('priceCurrency', defaultCurrency)
@@ -77,11 +75,10 @@ export function GearForm({
   }, [])
 
   const handleResearch = async () => {
-    const name = form.values.name.trim()
     const brand = form.values.brand.trim()
     const model = form.values.model.trim()
-    if (!name || !brand || !model) {
-      toast.error('Enter the machine name, brand, and model first')
+    if (!brand || !model) {
+      toast.error('Enter the machine brand and model first')
       return
     }
 
@@ -89,7 +86,6 @@ export function GearForm({
     try {
       const result = await researchMachineSettings({
         data: {
-          name,
           brand,
           model,
         },
@@ -108,7 +104,12 @@ export function GearForm({
   }
 
   const { isSubmitting, handleSubmit } = useFormSubmission({
-    canSubmit: () => Boolean(form.values.name.trim() && form.values.type),
+    canSubmit: () =>
+      Boolean(
+        form.values.brand.trim() &&
+          form.values.model.trim() &&
+          form.values.type,
+      ),
     submit: async () => {
       const item = await createGear({
         data: gearCreatePayload(form.values),
@@ -178,7 +179,10 @@ export function GearForm({
       actions={{
         onCancel,
         isSubmitting,
-        disabled: !form.values.name.trim() || !form.values.type,
+        disabled:
+          !form.values.brand.trim() ||
+          !form.values.model.trim() ||
+          !form.values.type,
         submitLabel,
       }}
     >

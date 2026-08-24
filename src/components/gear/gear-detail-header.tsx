@@ -81,7 +81,12 @@ export function GearDetailHeader({
               <Button
                 type="submit"
                 form="gear-edit-form"
-                disabled={isSaving || !formData.name.trim() || !formData.type}
+                disabled={
+                  isSaving ||
+                  !formData.brand.trim() ||
+                  !formData.model.trim() ||
+                  !formData.type
+                }
               >
                 {isSaving ? 'Saving…' : 'Save'}
               </Button>

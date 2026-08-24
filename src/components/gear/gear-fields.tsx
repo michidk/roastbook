@@ -39,11 +39,19 @@ export function GearFields({
       <FormSection title="Equipment info">
         <div className="grid gap-4 sm:grid-cols-2">
           <InputField
-            id={id('name')}
-            label="Name"
-            placeholder="e.g., My Grinder"
-            value={values.name}
-            onChange={(value) => onChange('name', value)}
+            id={id('brand')}
+            label="Brand"
+            placeholder="e.g., Niche"
+            value={values.brand}
+            onChange={(value) => onChange('brand', value)}
+            required
+          />
+          <InputField
+            id={id('model')}
+            label="Model"
+            placeholder="e.g., Zero"
+            value={values.model}
+            onChange={(value) => onChange('model', value)}
             required
           />
           <SelectField
@@ -54,20 +62,6 @@ export function GearFields({
             onChange={(value) => onChange('type', value as GearType | '')}
             options={GEAR_TYPES}
             required
-          />
-          <InputField
-            id={id('brand')}
-            label="Brand"
-            placeholder="e.g., Niche"
-            value={values.brand}
-            onChange={(value) => onChange('brand', value)}
-          />
-          <InputField
-            id={id('model')}
-            label="Model"
-            placeholder="e.g., Zero"
-            value={values.model}
-            onChange={(value) => onChange('model', value)}
           />
         </div>
         <TextareaField
@@ -86,8 +80,7 @@ export function GearFields({
         onChange={onChange}
         research={{
           ...research,
-          disabled:
-            !values.name.trim() || !values.brand.trim() || !values.model.trim(),
+          disabled: !values.brand.trim() || !values.model.trim(),
         }}
       />
 

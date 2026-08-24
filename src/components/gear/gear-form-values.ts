@@ -19,7 +19,6 @@ export type GearSubtypeFormValues = {
 }
 
 export type GearFormValues = GearSubtypeFormValues & {
-  readonly name: string
   readonly brand: string
   readonly model: string
   readonly type: GearType | ''
@@ -47,7 +46,6 @@ export const EMPTY_GEAR_SUBTYPE_VALUES: GearSubtypeFormValues = {
 }
 
 type GearFormValueSource = {
-  readonly name: string
   readonly brand: string | null
   readonly model: string | null
   readonly type: GearType
@@ -87,9 +85,8 @@ function booleanForInput(value: boolean | null | undefined) {
   return value == null ? '' : String(value)
 }
 
-export function createEmptyGearFormValues(initialName = ''): GearFormValues {
+export function createEmptyGearFormValues(): GearFormValues {
   return {
-    name: initialName,
     brand: '',
     model: '',
     type: '',
@@ -108,7 +105,6 @@ export function gearFormValuesFrom(
 ): GearFormValues {
   if (!gear) return createEmptyGearFormValues()
   return {
-    name: gear.name,
     brand: gear.brand ?? '',
     model: gear.model ?? '',
     type: gear.type,
@@ -184,12 +180,17 @@ function requiredGearType(value: GearType | ''): GearType {
   return value
 }
 
+function requiredTrimmed(value: string, message: string): string {
+  const trimmed = value.trim()
+  if (!trimmed) throw new DomainError('validation', message)
+  return trimmed
+}
+
 export function gearCreatePayload(values: GearFormValues) {
   const type = requiredGearType(values.type)
   return {
-    name: values.name.trim(),
-    brand: values.brand.trim() || undefined,
-    model: values.model.trim() || undefined,
+    brand: requiredTrimmed(values.brand, 'Enter the brand'),
+    model: requiredTrimmed(values.model, 'Enter the model'),
     type,
     purchaseDate: values.purchaseDate
       ? new Date(values.purchaseDate)
@@ -209,9 +210,8 @@ export function gearUpdatePayload(id: number, values: GearFormValues) {
   const type = requiredGearType(values.type)
   return {
     id,
-    name: values.name.trim(),
-    brand: values.brand.trim() || null,
-    model: values.model.trim() || null,
+    brand: requiredTrimmed(values.brand, 'Enter the brand'),
+    model: requiredTrimmed(values.model, 'Enter the model'),
     type,
     purchaseDate: values.purchaseDate ? new Date(values.purchaseDate) : null,
     purchasePrice: values.purchasePrice.trim() || null,

@@ -1,6 +1,7 @@
 import { createServerOnlyFn } from '@tanstack/react-start'
 import type { PgliteDatabase } from 'drizzle-orm/pglite'
 import { DEFAULT_BREWING_METHODS } from '@/lib/brewing-methods'
+import { gearName } from '@/lib/gear-name'
 import * as schema from './schema'
 
 type Database = PgliteDatabase<typeof schema>
@@ -173,80 +174,77 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
     })),
   )
 
+  const gearSeeds = [
+    {
+      brand: 'Arc & Ember',
+      model: 'Aurora One',
+      type: 'espresso_machine',
+      purchasePrice: '3299.00',
+    },
+    {
+      brand: 'Quiet Mechanics',
+      model: 'Orbit Mill',
+      type: 'grinder',
+      purchasePrice: '629.00',
+    },
+    {
+      brand: 'Northline Instruments',
+      model: 'Mica Scale',
+      type: 'scale',
+      purchasePrice: '250.00',
+    },
+    {
+      brand: 'Foundry Tools',
+      model: 'Presswell 58.5',
+      type: 'tamper',
+      purchasePrice: '89.00',
+    },
+    {
+      brand: 'Fieldwork Coffee',
+      model: 'Cinder Hand Mill',
+      type: 'grinder',
+      purchasePrice: '219.00',
+    },
+    {
+      brand: 'Hario',
+      model: 'V60 02',
+      type: 'brewer',
+      purchasePrice: '24.00',
+    },
+    {
+      brand: 'AeroPress',
+      model: 'Clear',
+      type: 'brewer',
+      purchasePrice: '59.00',
+    },
+    {
+      brand: 'Fellow',
+      model: 'Stagg EKG',
+      type: 'kettle',
+      purchasePrice: '179.00',
+    },
+    {
+      brand: 'Foundry Tools',
+      model: 'High Flow 18g',
+      type: 'basket',
+      purchasePrice: '39.00',
+    },
+    {
+      brand: 'Quiet Mechanics',
+      model: 'Needle Nine WDT',
+      type: 'wdt',
+      purchasePrice: '32.00',
+    },
+  ] satisfies ReadonlyArray<Omit<typeof schema.gear.$inferInsert, 'name'>>
   const gear = await database
     .insert(schema.gear)
-    .values([
-      {
-        name: 'Aurora One',
-        brand: 'Arc & Ember',
-        type: 'espresso_machine',
-        purchasePrice: '3299.00',
+    .values(
+      gearSeeds.map((item) => ({
+        ...item,
+        name: gearName(item.brand, item.model),
         priceCurrency: 'EUR',
-      },
-      {
-        name: 'Orbit Mill',
-        brand: 'Quiet Mechanics',
-        type: 'grinder',
-        purchasePrice: '629.00',
-        priceCurrency: 'EUR',
-      },
-      {
-        name: 'Mica Scale',
-        brand: 'Northline Instruments',
-        type: 'scale',
-        purchasePrice: '250.00',
-        priceCurrency: 'EUR',
-      },
-      {
-        name: 'Presswell 58.5',
-        brand: 'Foundry Tools',
-        type: 'tamper',
-        purchasePrice: '89.00',
-        priceCurrency: 'EUR',
-      },
-      {
-        name: 'Cinder Hand Mill',
-        brand: 'Fieldwork Coffee',
-        type: 'grinder',
-        purchasePrice: '219.00',
-        priceCurrency: 'EUR',
-      },
-      {
-        name: 'Ridge V60 02',
-        brand: 'Hario',
-        type: 'brewer',
-        purchasePrice: '24.00',
-        priceCurrency: 'EUR',
-      },
-      {
-        name: 'AeroPress Clear',
-        brand: 'AeroPress',
-        type: 'brewer',
-        purchasePrice: '59.00',
-        priceCurrency: 'EUR',
-      },
-      {
-        name: 'Fellow Stagg EKG',
-        brand: 'Fellow',
-        type: 'kettle',
-        purchasePrice: '179.00',
-        priceCurrency: 'EUR',
-      },
-      {
-        name: 'High Flow 18g',
-        brand: 'Foundry Tools',
-        type: 'basket',
-        purchasePrice: '39.00',
-        priceCurrency: 'EUR',
-      },
-      {
-        name: 'Needle Nine WDT',
-        brand: 'Quiet Mechanics',
-        type: 'wdt',
-        purchasePrice: '32.00',
-        priceCurrency: 'EUR',
-      },
-    ])
+      })),
+    )
     .returning()
   const beanId = new Map(beans.map((bean) => [bean.name, bean.id]))
   const recipes = [
@@ -271,7 +269,7 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
   )
 
   const activeBeans = beans.slice(0, 4)
-  const gearId = new Map(gear.map((item) => [item.name, item.id]))
+  const gearId = new Map(gear.map((item) => [item.model, item.id]))
   const parameterHistory = [
     // Newest first. Each coffee follows a small dial-in story so its charts
     // show deliberate adjustments instead of repeating modulo patterns.
@@ -322,36 +320,36 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
     // Recent brews are intentionally uneven: gaps, dial-in pairs, and weekends.
     [0, 7, 42, 'Espresso', 0, 4, 'Aurora One', 'Orbit Mill'],
     [1, 7, 18, 'Espresso', 0, 4, 'Aurora One', 'Orbit Mill'],
-    [2, 15, 35, 'AeroPress', 2, 5, 'AeroPress Clear', 'Cinder Hand Mill'],
-    [3, 8, 5, 'Pour over', 3, 4, 'Ridge V60 02', 'Cinder Hand Mill'],
+    [2, 15, 35, 'AeroPress', 2, 5, 'Clear', 'Cinder Hand Mill'],
+    [3, 8, 5, 'Pour over', 3, 4, 'V60 02', 'Cinder Hand Mill'],
     [4, 7, 12, 'Espresso', 1, 3, 'Aurora One', 'Orbit Mill'],
     [4, 7, 28, 'Espresso', 1, 4, 'Aurora One', 'Orbit Mill'],
-    [5, 9, 5, 'Pour over', 3, 5, 'Ridge V60 02', 'Cinder Hand Mill'],
-    [6, 16, 25, 'AeroPress', 2, 4, 'AeroPress Clear', 'Cinder Hand Mill'],
+    [5, 9, 5, 'Pour over', 3, 5, 'V60 02', 'Cinder Hand Mill'],
+    [6, 16, 25, 'AeroPress', 2, 4, 'Clear', 'Cinder Hand Mill'],
     [7, 7, 44, 'Espresso', 0, 4, 'Aurora One', 'Orbit Mill'],
-    [8, 18, 20, 'AeroPress', 2, 4, 'AeroPress Clear', 'Cinder Hand Mill'],
+    [8, 18, 20, 'AeroPress', 2, 4, 'Clear', 'Cinder Hand Mill'],
     [9, 7, 31, 'Espresso', 1, 2, 'Aurora One', 'Orbit Mill'],
     [9, 7, 48, 'Espresso', 1, 3, 'Aurora One', 'Orbit Mill'],
-    [10, 8, 10, 'Pour over', 3, 4, 'Ridge V60 02', 'Cinder Hand Mill'],
+    [10, 8, 10, 'Pour over', 3, 4, 'V60 02', 'Cinder Hand Mill'],
     [11, 7, 55, 'Espresso', 0, 4, 'Aurora One', 'Orbit Mill'],
     [12, 7, 22, 'Espresso', 0, 4, 'Aurora One', 'Orbit Mill'],
-    [13, 14, 15, 'AeroPress', 2, 4, 'AeroPress Clear', 'Cinder Hand Mill'],
-    [14, 8, 2, 'Pour over', 3, 5, 'Ridge V60 02', 'Cinder Hand Mill'],
+    [13, 14, 15, 'AeroPress', 2, 4, 'Clear', 'Cinder Hand Mill'],
+    [14, 8, 2, 'Pour over', 3, 5, 'V60 02', 'Cinder Hand Mill'],
     [15, 7, 36, 'Espresso', 1, 3, 'Aurora One', 'Orbit Mill'],
-    [16, 10, 12, 'Pour over', 3, 4, 'Ridge V60 02', 'Cinder Hand Mill'],
+    [16, 10, 12, 'Pour over', 3, 4, 'V60 02', 'Cinder Hand Mill'],
     [17, 7, 17, 'Espresso', 0, 4, 'Aurora One', 'Orbit Mill'],
     [17, 7, 34, 'Espresso', 0, 5, 'Aurora One', 'Orbit Mill'],
-    [18, 16, 40, 'AeroPress', 2, 3, 'AeroPress Clear', 'Cinder Hand Mill'],
-    [19, 8, 25, 'Pour over', 3, 4, 'Ridge V60 02', 'Cinder Hand Mill'],
-    [20, 17, 10, 'AeroPress', 2, 5, 'AeroPress Clear', 'Cinder Hand Mill'],
+    [18, 16, 40, 'AeroPress', 2, 3, 'Clear', 'Cinder Hand Mill'],
+    [19, 8, 25, 'Pour over', 3, 4, 'V60 02', 'Cinder Hand Mill'],
+    [20, 17, 10, 'AeroPress', 2, 5, 'Clear', 'Cinder Hand Mill'],
     [21, 7, 29, 'Espresso', 1, 3, 'Aurora One', 'Orbit Mill'],
     [22, 7, 51, 'Espresso', 1, 4, 'Aurora One', 'Orbit Mill'],
-    [23, 13, 5, 'AeroPress', 2, 4, 'AeroPress Clear', 'Cinder Hand Mill'],
-    [24, 8, 14, 'Pour over', 3, 3, 'Ridge V60 02', 'Cinder Hand Mill'],
+    [23, 13, 5, 'AeroPress', 2, 4, 'Clear', 'Cinder Hand Mill'],
+    [24, 8, 14, 'Pour over', 3, 3, 'V60 02', 'Cinder Hand Mill'],
     [25, 7, 46, 'Espresso', 0, 3, 'Aurora One', 'Orbit Mill'],
     [26, 7, 8, 'Espresso', 0, 2, 'Aurora One', 'Orbit Mill'],
     [26, 7, 25, 'Espresso', 0, 3, 'Aurora One', 'Orbit Mill'],
-    [27, 10, 30, 'Pour over', 3, 4, 'Ridge V60 02', 'Cinder Hand Mill'],
+    [27, 10, 30, 'Pour over', 3, 4, 'V60 02', 'Cinder Hand Mill'],
     [29, 7, 40, 'Espresso', 1, 3, 'Aurora One', 'Orbit Mill'],
   ] as const
   const shots = await database
@@ -417,9 +415,7 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
           required(gearId.get('Needle Nine WDT'), 'WDT missing'),
         )
       } else {
-        accessories.push(
-          required(gearId.get('Fellow Stagg EKG'), 'Kettle missing'),
-        )
+        accessories.push(required(gearId.get('Stagg EKG'), 'Kettle missing'))
       }
       return accessories.map((accessoryGearId) => ({
         shotId: shot.id,

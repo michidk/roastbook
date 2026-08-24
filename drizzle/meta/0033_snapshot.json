@@ -1,0 +1,3114 @@
+{
+  "id": "fd778619-a37c-4341-a4d6-b33b7c1c92ce",
+  "prevId": "3df27f33-041d-4a06-9e51-4ea85d82814d",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.ai_request_logs": {
+      "name": "ai_request_logs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "request_type": {
+          "name": "request_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'in_progress'"
+        },
+        "request_payload": {
+          "name": "request_payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "response_payload": {
+          "name": "response_payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "error_message": {
+          "name": "error_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "prompt_tokens": {
+          "name": "prompt_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "cached_prompt_tokens": {
+          "name": "cached_prompt_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "completion_tokens": {
+          "name": "completion_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "total_tokens": {
+          "name": "total_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "estimated_cost_usd": {
+          "name": "estimated_cost_usd",
+          "type": "numeric(18, 10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "duration_ms": {
+          "name": "duration_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "ai_request_logs_created_at_idx": {
+          "name": "ai_request_logs_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ai_request_logs_status_check": {
+          "name": "ai_request_logs_status_check",
+          "value": "\"ai_request_logs\".\"status\" in ('in_progress', 'succeeded', 'failed', 'aborted')"
+        },
+        "ai_request_logs_usage_check": {
+          "name": "ai_request_logs_usage_check",
+          "value": "\"ai_request_logs\".\"prompt_tokens\" >= 0\n        and \"ai_request_logs\".\"cached_prompt_tokens\" >= 0\n        and \"ai_request_logs\".\"cached_prompt_tokens\" <= \"ai_request_logs\".\"prompt_tokens\"\n        and \"ai_request_logs\".\"completion_tokens\" >= 0\n        and \"ai_request_logs\".\"total_tokens\" >= 0\n        and (\"ai_request_logs\".\"estimated_cost_usd\" is null or \"ai_request_logs\".\"estimated_cost_usd\" >= 0)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.ai_usage": {
+      "name": "ai_usage",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "feature": {
+          "name": "feature",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "prompt_tokens": {
+          "name": "prompt_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cached_prompt_tokens": {
+          "name": "cached_prompt_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "completion_tokens": {
+          "name": "completion_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_tokens": {
+          "name": "total_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "estimated_cost_usd": {
+          "name": "estimated_cost_usd",
+          "type": "numeric(18, 10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "ai_usage_request_id_idx": {
+          "name": "ai_usage_request_id_idx",
+          "columns": [
+            {
+              "expression": "request_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "ai_usage_created_at_idx": {
+          "name": "ai_usage_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ai_usage_tokens_nonnegative_check": {
+          "name": "ai_usage_tokens_nonnegative_check",
+          "value": "\"ai_usage\".\"prompt_tokens\" >= 0\n        and \"ai_usage\".\"cached_prompt_tokens\" >= 0\n        and \"ai_usage\".\"cached_prompt_tokens\" <= \"ai_usage\".\"prompt_tokens\"\n        and \"ai_usage\".\"completion_tokens\" >= 0\n        and \"ai_usage\".\"total_tokens\" >= 0"
+        },
+        "ai_usage_cost_nonnegative_check": {
+          "name": "ai_usage_cost_nonnegative_check",
+          "value": "\"ai_usage\".\"estimated_cost_usd\" is null or \"ai_usage\".\"estimated_cost_usd\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.basket_details": {
+      "name": "basket_details",
+      "schema": "",
+      "columns": {
+        "gear_id": {
+          "name": "gear_id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "nominal_dose_grams": {
+          "name": "nominal_dose_grams",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "basket_details_gear_id_gear_id_fk": {
+          "name": "basket_details_gear_id_gear_id_fk",
+          "tableFrom": "basket_details",
+          "tableTo": "gear",
+          "columnsFrom": [
+            "gear_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "basket_details_dose_nonnegative": {
+          "name": "basket_details_dose_nonnegative",
+          "value": "\"basket_details\".\"nominal_dose_grams\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.bean_images": {
+      "name": "bean_images",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "bean_id": {
+          "name": "bean_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "storage_path": {
+          "name": "storage_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "original_filename": {
+          "name": "original_filename",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mime_type": {
+          "name": "mime_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "size_bytes": {
+          "name": "size_bytes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_thumbnail": {
+          "name": "is_thumbnail",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "bean_images_bean_id_idx": {
+          "name": "bean_images_bean_id_idx",
+          "columns": [
+            {
+              "expression": "bean_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bean_images_one_thumbnail_idx": {
+          "name": "bean_images_one_thumbnail_idx",
+          "columns": [
+            {
+              "expression": "bean_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"bean_images\".\"is_thumbnail\" = true",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "bean_images_bean_id_beans_id_fk": {
+          "name": "bean_images_bean_id_beans_id_fk",
+          "tableFrom": "bean_images",
+          "tableTo": "beans",
+          "columnsFrom": [
+            "bean_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.beans": {
+      "name": "beans",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "bean_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "roaster": {
+          "name": "roaster",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "roaster_id": {
+          "name": "roaster_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "origin": {
+          "name": "origin",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "region": {
+          "name": "region",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "farm": {
+          "name": "farm",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "variety": {
+          "name": "variety",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "process": {
+          "name": "process",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "roast_level": {
+          "name": "roast_level",
+          "type": "roast_level",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "roast_date": {
+          "name": "roast_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "weight": {
+          "name": "weight",
+          "type": "numeric(6, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price": {
+          "name": "price",
+          "type": "numeric(8, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_currency": {
+          "name": "price_currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'EUR'"
+        },
+        "shop_url": {
+          "name": "shop_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_archived": {
+          "name": "is_archived",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "beans_created_at_idx": {
+          "name": "beans_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "beans_roaster_id_idx": {
+          "name": "beans_roaster_id_idx",
+          "columns": [
+            {
+              "expression": "roaster_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "beans_roaster_id_roasters_id_fk": {
+          "name": "beans_roaster_id_roasters_id_fk",
+          "tableFrom": "beans",
+          "tableTo": "roasters",
+          "columnsFrom": [
+            "roaster_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "beans_weight_nonnegative": {
+          "name": "beans_weight_nonnegative",
+          "value": "\"beans\".\"weight\" >= 0"
+        },
+        "beans_price_nonnegative": {
+          "name": "beans_price_nonnegative",
+          "value": "\"beans\".\"price\" >= 0"
+        },
+        "beans_currency_check": {
+          "name": "beans_currency_check",
+          "value": "\"beans\".\"price_currency\" in ('EUR', 'USD', 'GBP', 'CHF')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.brewing_methods": {
+      "name": "brewing_methods",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "enabled_parameters": {
+          "name": "enabled_parameters",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::text[]"
+        },
+        "timer_enabled": {
+          "name": "timer_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "brewing_methods_name_unique": {
+          "name": "brewing_methods_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.cafe_visit_images": {
+      "name": "cafe_visit_images",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "cafe_visit_id": {
+          "name": "cafe_visit_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "storage_path": {
+          "name": "storage_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "original_filename": {
+          "name": "original_filename",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mime_type": {
+          "name": "mime_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "size_bytes": {
+          "name": "size_bytes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "cafe_visit_images_visit_id_idx": {
+          "name": "cafe_visit_images_visit_id_idx",
+          "columns": [
+            {
+              "expression": "cafe_visit_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "cafe_visit_images_cafe_visit_id_cafe_visits_id_fk": {
+          "name": "cafe_visit_images_cafe_visit_id_cafe_visits_id_fk",
+          "tableFrom": "cafe_visit_images",
+          "tableTo": "cafe_visits",
+          "columnsFrom": [
+            "cafe_visit_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.cafe_visit_taste_tags": {
+      "name": "cafe_visit_taste_tags",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "cafe_visit_id": {
+          "name": "cafe_visit_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "taste_tag_id": {
+          "name": "taste_tag_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "cafe_visit_taste_tags_visit_tag_idx": {
+          "name": "cafe_visit_taste_tags_visit_tag_idx",
+          "columns": [
+            {
+              "expression": "cafe_visit_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "taste_tag_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "cafe_visit_taste_tags_taste_tag_id_idx": {
+          "name": "cafe_visit_taste_tags_taste_tag_id_idx",
+          "columns": [
+            {
+              "expression": "taste_tag_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "cafe_visit_taste_tags_cafe_visit_id_cafe_visits_id_fk": {
+          "name": "cafe_visit_taste_tags_cafe_visit_id_cafe_visits_id_fk",
+          "tableFrom": "cafe_visit_taste_tags",
+          "tableTo": "cafe_visits",
+          "columnsFrom": [
+            "cafe_visit_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "cafe_visit_taste_tags_taste_tag_id_taste_tags_id_fk": {
+          "name": "cafe_visit_taste_tags_taste_tag_id_taste_tags_id_fk",
+          "tableFrom": "cafe_visit_taste_tags",
+          "tableTo": "taste_tags",
+          "columnsFrom": [
+            "taste_tag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.cafe_visits": {
+      "name": "cafe_visits",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "coffee_shop_id": {
+          "name": "coffee_shop_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bean_id": {
+          "name": "bean_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "drink_name": {
+          "name": "drink_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "drink_type": {
+          "name": "drink_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price": {
+          "name": "price",
+          "type": "numeric(6, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'EUR'"
+        },
+        "rating": {
+          "name": "rating",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "visited_at": {
+          "name": "visited_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "cafe_visits_visited_at_idx": {
+          "name": "cafe_visits_visited_at_idx",
+          "columns": [
+            {
+              "expression": "visited_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "cafe_visits_coffee_shop_id_idx": {
+          "name": "cafe_visits_coffee_shop_id_idx",
+          "columns": [
+            {
+              "expression": "coffee_shop_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "cafe_visits_bean_id_idx": {
+          "name": "cafe_visits_bean_id_idx",
+          "columns": [
+            {
+              "expression": "bean_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "cafe_visits_coffee_shop_id_coffee_shops_id_fk": {
+          "name": "cafe_visits_coffee_shop_id_coffee_shops_id_fk",
+          "tableFrom": "cafe_visits",
+          "tableTo": "coffee_shops",
+          "columnsFrom": [
+            "coffee_shop_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "cafe_visits_bean_id_beans_id_fk": {
+          "name": "cafe_visits_bean_id_beans_id_fk",
+          "tableFrom": "cafe_visits",
+          "tableTo": "beans",
+          "columnsFrom": [
+            "bean_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "cafe_visits_price_nonnegative": {
+          "name": "cafe_visits_price_nonnegative",
+          "value": "\"cafe_visits\".\"price\" >= 0"
+        },
+        "cafe_visits_rating_check": {
+          "name": "cafe_visits_rating_check",
+          "value": "\"cafe_visits\".\"rating\" between 1 and 5"
+        },
+        "cafe_visits_currency_check": {
+          "name": "cafe_visits_currency_check",
+          "value": "\"cafe_visits\".\"currency\" in ('EUR', 'USD', 'GBP', 'CHF')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.coffee_shop_images": {
+      "name": "coffee_shop_images",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "coffee_shop_id": {
+          "name": "coffee_shop_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "storage_path": {
+          "name": "storage_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "original_filename": {
+          "name": "original_filename",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mime_type": {
+          "name": "mime_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "size_bytes": {
+          "name": "size_bytes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "coffee_shop_images_shop_id_idx": {
+          "name": "coffee_shop_images_shop_id_idx",
+          "columns": [
+            {
+              "expression": "coffee_shop_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "coffee_shop_images_coffee_shop_id_coffee_shops_id_fk": {
+          "name": "coffee_shop_images_coffee_shop_id_coffee_shops_id_fk",
+          "tableFrom": "coffee_shop_images",
+          "tableTo": "coffee_shops",
+          "columnsFrom": [
+            "coffee_shop_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.coffee_shops": {
+      "name": "coffee_shops",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "address": {
+          "name": "address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "country": {
+          "name": "country",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "latitude": {
+          "name": "latitude",
+          "type": "numeric(10, 7)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "longitude": {
+          "name": "longitude",
+          "type": "numeric(10, 7)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "website": {
+          "name": "website",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "instagram_handle": {
+          "name": "instagram_handle",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rating": {
+          "name": "rating",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_favorite": {
+          "name": "is_favorite",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "wants_to_visit": {
+          "name": "wants_to_visit",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "coffee_shops_created_at_idx": {
+          "name": "coffee_shops_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "coffee_shops_city_idx": {
+          "name": "coffee_shops_city_idx",
+          "columns": [
+            {
+              "expression": "city",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "coffee_shops_rating_check": {
+          "name": "coffee_shops_rating_check",
+          "value": "\"coffee_shops\".\"rating\" between 1 and 5"
+        },
+        "coffee_shops_latitude_check": {
+          "name": "coffee_shops_latitude_check",
+          "value": "\"coffee_shops\".\"latitude\" between -90 and 90"
+        },
+        "coffee_shops_longitude_check": {
+          "name": "coffee_shops_longitude_check",
+          "value": "\"coffee_shops\".\"longitude\" between -180 and 180"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.gear": {
+      "name": "gear",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "brand": {
+          "name": "brand",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "type": {
+          "name": "type",
+          "type": "gear_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "purchase_date": {
+          "name": "purchase_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "purchase_price": {
+          "name": "purchase_price",
+          "type": "numeric(8, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_currency": {
+          "name": "price_currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'EUR'"
+        },
+        "manual_url": {
+          "name": "manual_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "product_url": {
+          "name": "product_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_archived": {
+          "name": "is_archived",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "gear_created_at_idx": {
+          "name": "gear_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "gear_purchase_price_nonnegative": {
+          "name": "gear_purchase_price_nonnegative",
+          "value": "\"gear\".\"purchase_price\" >= 0"
+        },
+        "gear_currency_check": {
+          "name": "gear_currency_check",
+          "value": "\"gear\".\"price_currency\" in ('EUR', 'USD', 'GBP', 'CHF')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.gear_images": {
+      "name": "gear_images",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "gear_id": {
+          "name": "gear_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "storage_path": {
+          "name": "storage_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "original_filename": {
+          "name": "original_filename",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mime_type": {
+          "name": "mime_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "size_bytes": {
+          "name": "size_bytes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_thumbnail": {
+          "name": "is_thumbnail",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "gear_images_gear_id_idx": {
+          "name": "gear_images_gear_id_idx",
+          "columns": [
+            {
+              "expression": "gear_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "gear_images_one_thumbnail_idx": {
+          "name": "gear_images_one_thumbnail_idx",
+          "columns": [
+            {
+              "expression": "gear_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"gear_images\".\"is_thumbnail\" = true",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "gear_images_gear_id_gear_id_fk": {
+          "name": "gear_images_gear_id_gear_id_fk",
+          "tableFrom": "gear_images",
+          "tableTo": "gear",
+          "columnsFrom": [
+            "gear_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.machine_settings": {
+      "name": "machine_settings",
+      "schema": "",
+      "columns": {
+        "gear_id": {
+          "name": "gear_id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "brew_pressure_opv_bar": {
+          "name": "brew_pressure_opv_bar",
+          "type": "numeric(4, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "supports_preinfusion": {
+          "name": "supports_preinfusion",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "default_preinfusion_enabled": {
+          "name": "default_preinfusion_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "default_preinfusion_time_seconds": {
+          "name": "default_preinfusion_time_seconds",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "default_preinfusion_pressure_bar": {
+          "name": "default_preinfusion_pressure_bar",
+          "type": "numeric(4, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "default_flow_limit_ml_per_second": {
+          "name": "default_flow_limit_ml_per_second",
+          "type": "numeric(4, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "temperature_offset_celsius": {
+          "name": "temperature_offset_celsius",
+          "type": "numeric(4, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "volumetric_shot_volume_ml": {
+          "name": "volumetric_shot_volume_ml",
+          "type": "numeric(6, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "auto_stop_mode": {
+          "name": "auto_stop_mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "steam_temperature_celsius": {
+          "name": "steam_temperature_celsius",
+          "type": "numeric(4, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "steam_pressure_bar": {
+          "name": "steam_pressure_bar",
+          "type": "numeric(4, 2)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "machine_settings_gear_id_gear_id_fk": {
+          "name": "machine_settings_gear_id_gear_id_fk",
+          "tableFrom": "machine_settings",
+          "tableTo": "gear",
+          "columnsFrom": [
+            "gear_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "machine_settings_auto_stop_mode_check": {
+          "name": "machine_settings_auto_stop_mode_check",
+          "value": "\"machine_settings\".\"auto_stop_mode\" in ('manual', 'weight', 'time', 'volume')"
+        },
+        "machine_settings_measurements_nonnegative": {
+          "name": "machine_settings_measurements_nonnegative",
+          "value": "(\"machine_settings\".\"brew_pressure_opv_bar\" is null or \"machine_settings\".\"brew_pressure_opv_bar\" >= 0)\n        and (\"machine_settings\".\"default_preinfusion_time_seconds\" is null or \"machine_settings\".\"default_preinfusion_time_seconds\" >= 0)\n        and (\"machine_settings\".\"default_preinfusion_pressure_bar\" is null or \"machine_settings\".\"default_preinfusion_pressure_bar\" >= 0)\n        and (\"machine_settings\".\"default_flow_limit_ml_per_second\" is null or \"machine_settings\".\"default_flow_limit_ml_per_second\" >= 0)\n        and (\"machine_settings\".\"volumetric_shot_volume_ml\" is null or \"machine_settings\".\"volumetric_shot_volume_ml\" >= 0)\n        and (\"machine_settings\".\"steam_temperature_celsius\" is null or \"machine_settings\".\"steam_temperature_celsius\" >= 0)\n        and (\"machine_settings\".\"steam_pressure_bar\" is null or \"machine_settings\".\"steam_pressure_bar\" >= 0)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.media_cleanup_jobs": {
+      "name": "media_cleanup_jobs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "storage_path": {
+          "name": "storage_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "last_error": {
+          "name": "last_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "next_attempt_at": {
+          "name": "next_attempt_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "media_cleanup_jobs_next_attempt_at_idx": {
+          "name": "media_cleanup_jobs_next_attempt_at_idx",
+          "columns": [
+            {
+              "expression": "next_attempt_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "media_cleanup_jobs_storage_path_unique": {
+          "name": "media_cleanup_jobs_storage_path_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "storage_path"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.recipe_accessory_gear": {
+      "name": "recipe_accessory_gear",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "recipe_id": {
+          "name": "recipe_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gear_id": {
+          "name": "gear_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "recipe_accessory_gear_recipe_gear_idx": {
+          "name": "recipe_accessory_gear_recipe_gear_idx",
+          "columns": [
+            {
+              "expression": "recipe_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "gear_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "recipe_accessory_gear_gear_id_idx": {
+          "name": "recipe_accessory_gear_gear_id_idx",
+          "columns": [
+            {
+              "expression": "gear_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "recipe_accessory_gear_recipe_id_recipes_id_fk": {
+          "name": "recipe_accessory_gear_recipe_id_recipes_id_fk",
+          "tableFrom": "recipe_accessory_gear",
+          "tableTo": "recipes",
+          "columnsFrom": [
+            "recipe_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "recipe_accessory_gear_gear_id_gear_id_fk": {
+          "name": "recipe_accessory_gear_gear_id_gear_id_fk",
+          "tableFrom": "recipe_accessory_gear",
+          "tableTo": "gear",
+          "columnsFrom": [
+            "gear_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.recipes": {
+      "name": "recipes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "brewing_method_id": {
+          "name": "brewing_method_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bean_id": {
+          "name": "bean_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "machine_id": {
+          "name": "machine_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dose_grams": {
+          "name": "dose_grams",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "brew_water_grams": {
+          "name": "brew_water_grams",
+          "type": "numeric(7, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ratio_basis": {
+          "name": "ratio_basis",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "grinder_id": {
+          "name": "grinder_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "grind_setting": {
+          "name": "grind_setting",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "yield_grams": {
+          "name": "yield_grams",
+          "type": "numeric(6, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shot_time_seconds": {
+          "name": "shot_time_seconds",
+          "type": "numeric(8, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "brew_temperature_celsius": {
+          "name": "brew_temperature_celsius",
+          "type": "numeric(4, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "preinfusion_time_seconds": {
+          "name": "preinfusion_time_seconds",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "preinfusion_pressure_bar": {
+          "name": "preinfusion_pressure_bar",
+          "type": "numeric(4, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bloom_time_seconds": {
+          "name": "bloom_time_seconds",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "brew_pressure_bar": {
+          "name": "brew_pressure_bar",
+          "type": "numeric(4, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "flow_rate_ml_per_second": {
+          "name": "flow_rate_ml_per_second",
+          "type": "numeric(4, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "basket_id": {
+          "name": "basket_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "uses_puck_screen": {
+          "name": "uses_puck_screen",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "paper_filter_position": {
+          "name": "paper_filter_position",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "distribution_method": {
+          "name": "distribution_method",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tamp_force_kg": {
+          "name": "tamp_force_kg",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "recipes_brewing_method_id_idx": {
+          "name": "recipes_brewing_method_id_idx",
+          "columns": [
+            {
+              "expression": "brewing_method_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "recipes_bean_id_idx": {
+          "name": "recipes_bean_id_idx",
+          "columns": [
+            {
+              "expression": "bean_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "recipes_brewing_method_id_brewing_methods_id_fk": {
+          "name": "recipes_brewing_method_id_brewing_methods_id_fk",
+          "tableFrom": "recipes",
+          "tableTo": "brewing_methods",
+          "columnsFrom": [
+            "brewing_method_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "recipes_bean_id_beans_id_fk": {
+          "name": "recipes_bean_id_beans_id_fk",
+          "tableFrom": "recipes",
+          "tableTo": "beans",
+          "columnsFrom": [
+            "bean_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "recipes_machine_id_gear_id_fk": {
+          "name": "recipes_machine_id_gear_id_fk",
+          "tableFrom": "recipes",
+          "tableTo": "gear",
+          "columnsFrom": [
+            "machine_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "recipes_grinder_id_gear_id_fk": {
+          "name": "recipes_grinder_id_gear_id_fk",
+          "tableFrom": "recipes",
+          "tableTo": "gear",
+          "columnsFrom": [
+            "grinder_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "recipes_basket_id_gear_id_fk": {
+          "name": "recipes_basket_id_gear_id_fk",
+          "tableFrom": "recipes",
+          "tableTo": "gear",
+          "columnsFrom": [
+            "basket_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "recipes_ratio_basis_check": {
+          "name": "recipes_ratio_basis_check",
+          "value": "\"recipes\".\"ratio_basis\" in ('target_yield', 'brew_water')"
+        },
+        "recipes_paper_filter_position_check": {
+          "name": "recipes_paper_filter_position_check",
+          "value": "\"recipes\".\"paper_filter_position\" in ('none', 'top', 'bottom', 'both')"
+        },
+        "recipes_measurements_nonnegative": {
+          "name": "recipes_measurements_nonnegative",
+          "value": "(\"recipes\".\"dose_grams\" is null or \"recipes\".\"dose_grams\" >= 0)\n        and (\"recipes\".\"brew_water_grams\" is null or \"recipes\".\"brew_water_grams\" >= 0)\n        and (\"recipes\".\"yield_grams\" is null or \"recipes\".\"yield_grams\" >= 0)\n        and (\"recipes\".\"shot_time_seconds\" is null or \"recipes\".\"shot_time_seconds\" >= 0)\n        and (\"recipes\".\"brew_temperature_celsius\" is null or \"recipes\".\"brew_temperature_celsius\" >= 0)\n        and (\"recipes\".\"preinfusion_time_seconds\" is null or \"recipes\".\"preinfusion_time_seconds\" >= 0)\n        and (\"recipes\".\"preinfusion_pressure_bar\" is null or \"recipes\".\"preinfusion_pressure_bar\" >= 0)\n        and (\"recipes\".\"bloom_time_seconds\" is null or \"recipes\".\"bloom_time_seconds\" >= 0)\n        and (\"recipes\".\"brew_pressure_bar\" is null or \"recipes\".\"brew_pressure_bar\" >= 0)\n        and (\"recipes\".\"flow_rate_ml_per_second\" is null or \"recipes\".\"flow_rate_ml_per_second\" >= 0)\n        and (\"recipes\".\"tamp_force_kg\" is null or \"recipes\".\"tamp_force_kg\" >= 0)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.roasters": {
+      "name": "roasters",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "location": {
+          "name": "location",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "country": {
+          "name": "country",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "website": {
+          "name": "website",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "instagram_handle": {
+          "name": "instagram_handle",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "roasters_name_idx": {
+          "name": "roasters_name_idx",
+          "columns": [
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.settings": {
+      "name": "settings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "default": 1
+        },
+        "default_currency": {
+          "name": "default_currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'EUR'"
+        },
+        "date_format": {
+          "name": "date_format",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'day-month-year-slash'"
+        },
+        "number_format": {
+          "name": "number_format",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'decimal-point'"
+        },
+        "time_zone": {
+          "name": "time_zone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'UTC'"
+        },
+        "default_list_view": {
+          "name": "default_list_view",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'cards'"
+        },
+        "background_texture_enabled": {
+          "name": "background_texture_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "taste_profile_fields": {
+          "name": "taste_profile_fields",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{overallRating,bitterness,acidity,sweetness,body,astringency,flavorTags,notes}'::text[]"
+        },
+        "default_map_latitude": {
+          "name": "default_map_latitude",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 48.8566
+        },
+        "default_map_longitude": {
+          "name": "default_map_longitude",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 2.3522
+        },
+        "default_map_label": {
+          "name": "default_map_label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'Paris, France'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "settings_singleton_check": {
+          "name": "settings_singleton_check",
+          "value": "\"settings\".\"id\" = 1"
+        },
+        "settings_currency_check": {
+          "name": "settings_currency_check",
+          "value": "\"settings\".\"default_currency\" in ('EUR', 'USD', 'GBP', 'CHF')"
+        },
+        "settings_date_format_check": {
+          "name": "settings_date_format_check",
+          "value": "\"settings\".\"date_format\" in ('day-month-year-slash', 'month-day-year-slash', 'day-month-year-dot', 'year-month-day')"
+        },
+        "settings_number_format_check": {
+          "name": "settings_number_format_check",
+          "value": "\"settings\".\"number_format\" in ('decimal-point', 'decimal-comma', 'space-decimal-point', 'space-decimal-comma', 'apostrophe-decimal-point', 'apostrophe-decimal-comma')"
+        },
+        "settings_list_view_check": {
+          "name": "settings_list_view_check",
+          "value": "\"settings\".\"default_list_view\" in ('cards', 'table')"
+        },
+        "settings_map_location_check": {
+          "name": "settings_map_location_check",
+          "value": "(\n        (\"settings\".\"default_map_latitude\" is null\n          and \"settings\".\"default_map_longitude\" is null\n          and \"settings\".\"default_map_label\" is null)\n        or\n        (\"settings\".\"default_map_latitude\" is not null\n          and \"settings\".\"default_map_longitude\" is not null\n          and \"settings\".\"default_map_label\" is not null\n          and \"settings\".\"default_map_latitude\" between -90 and 90\n          and \"settings\".\"default_map_longitude\" between -180 and 180\n          and length(trim(\"settings\".\"default_map_label\")) > 0)\n      )"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.shot_accessory_gear": {
+      "name": "shot_accessory_gear",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "shot_id": {
+          "name": "shot_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gear_id": {
+          "name": "gear_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "shot_accessory_gear_shot_gear_idx": {
+          "name": "shot_accessory_gear_shot_gear_idx",
+          "columns": [
+            {
+              "expression": "shot_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "gear_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "shot_accessory_gear_gear_id_idx": {
+          "name": "shot_accessory_gear_gear_id_idx",
+          "columns": [
+            {
+              "expression": "gear_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "shot_accessory_gear_shot_id_shots_id_fk": {
+          "name": "shot_accessory_gear_shot_id_shots_id_fk",
+          "tableFrom": "shot_accessory_gear",
+          "tableTo": "shots",
+          "columnsFrom": [
+            "shot_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "shot_accessory_gear_gear_id_gear_id_fk": {
+          "name": "shot_accessory_gear_gear_id_gear_id_fk",
+          "tableFrom": "shot_accessory_gear",
+          "tableTo": "gear",
+          "columnsFrom": [
+            "gear_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.shot_images": {
+      "name": "shot_images",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "shot_id": {
+          "name": "shot_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "storage_path": {
+          "name": "storage_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "original_filename": {
+          "name": "original_filename",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mime_type": {
+          "name": "mime_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "size_bytes": {
+          "name": "size_bytes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "shot_images_shot_id_idx": {
+          "name": "shot_images_shot_id_idx",
+          "columns": [
+            {
+              "expression": "shot_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "shot_images_shot_id_shots_id_fk": {
+          "name": "shot_images_shot_id_shots_id_fk",
+          "tableFrom": "shot_images",
+          "tableTo": "shots",
+          "columnsFrom": [
+            "shot_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.shot_taste_tags": {
+      "name": "shot_taste_tags",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "shot_id": {
+          "name": "shot_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "taste_tag_id": {
+          "name": "taste_tag_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "shot_taste_tags_shot_tag_idx": {
+          "name": "shot_taste_tags_shot_tag_idx",
+          "columns": [
+            {
+              "expression": "shot_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "taste_tag_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "shot_taste_tags_taste_tag_id_idx": {
+          "name": "shot_taste_tags_taste_tag_id_idx",
+          "columns": [
+            {
+              "expression": "taste_tag_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "shot_taste_tags_shot_id_shots_id_fk": {
+          "name": "shot_taste_tags_shot_id_shots_id_fk",
+          "tableFrom": "shot_taste_tags",
+          "tableTo": "shots",
+          "columnsFrom": [
+            "shot_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "shot_taste_tags_taste_tag_id_taste_tags_id_fk": {
+          "name": "shot_taste_tags_taste_tag_id_taste_tags_id_fk",
+          "tableFrom": "shot_taste_tags",
+          "tableTo": "taste_tags",
+          "columnsFrom": [
+            "taste_tag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.shots": {
+      "name": "shots",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "brewed_at": {
+          "name": "brewed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "brewing_method_id": {
+          "name": "brewing_method_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bean_id": {
+          "name": "bean_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recipe_id": {
+          "name": "recipe_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "machine_id": {
+          "name": "machine_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dose_grams": {
+          "name": "dose_grams",
+          "type": "numeric(6, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "brew_water_grams": {
+          "name": "brew_water_grams",
+          "type": "numeric(7, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ratio_basis": {
+          "name": "ratio_basis",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "grinder_id": {
+          "name": "grinder_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "grind_setting": {
+          "name": "grind_setting",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "yield_grams": {
+          "name": "yield_grams",
+          "type": "numeric(6, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shot_time_seconds": {
+          "name": "shot_time_seconds",
+          "type": "numeric(8, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "brew_temperature_celsius": {
+          "name": "brew_temperature_celsius",
+          "type": "numeric(4, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "preinfusion_time_seconds": {
+          "name": "preinfusion_time_seconds",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "preinfusion_pressure_bar": {
+          "name": "preinfusion_pressure_bar",
+          "type": "numeric(4, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bloom_time_seconds": {
+          "name": "bloom_time_seconds",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "brew_pressure_bar": {
+          "name": "brew_pressure_bar",
+          "type": "numeric(4, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "flow_rate_ml_per_second": {
+          "name": "flow_rate_ml_per_second",
+          "type": "numeric(4, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "basket_id": {
+          "name": "basket_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "uses_puck_screen": {
+          "name": "uses_puck_screen",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "paper_filter_position": {
+          "name": "paper_filter_position",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "distribution_method": {
+          "name": "distribution_method",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tamp_force_kg": {
+          "name": "tamp_force_kg",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rating": {
+          "name": "rating",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extraction_balance": {
+          "name": "extraction_balance",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bitterness": {
+          "name": "bitterness",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "acidity": {
+          "name": "acidity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sweetness": {
+          "name": "sweetness",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "body": {
+          "name": "body",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "astringency": {
+          "name": "astringency",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "shots_created_at_idx": {
+          "name": "shots_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "shots_brewed_at_idx": {
+          "name": "shots_brewed_at_idx",
+          "columns": [
+            {
+              "expression": "brewed_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "shots_brewing_method_id_idx": {
+          "name": "shots_brewing_method_id_idx",
+          "columns": [
+            {
+              "expression": "brewing_method_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "shots_bean_id_idx": {
+          "name": "shots_bean_id_idx",
+          "columns": [
+            {
+              "expression": "bean_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "shots_recipe_id_idx": {
+          "name": "shots_recipe_id_idx",
+          "columns": [
+            {
+              "expression": "recipe_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "shots_machine_id_idx": {
+          "name": "shots_machine_id_idx",
+          "columns": [
+            {
+              "expression": "machine_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "shots_grinder_id_idx": {
+          "name": "shots_grinder_id_idx",
+          "columns": [
+            {
+              "expression": "grinder_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "shots_basket_id_idx": {
+          "name": "shots_basket_id_idx",
+          "columns": [
+            {
+              "expression": "basket_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "shots_brewing_method_id_brewing_methods_id_fk": {
+          "name": "shots_brewing_method_id_brewing_methods_id_fk",
+          "tableFrom": "shots",
+          "tableTo": "brewing_methods",
+          "columnsFrom": [
+            "brewing_method_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "shots_bean_id_beans_id_fk": {
+          "name": "shots_bean_id_beans_id_fk",
+          "tableFrom": "shots",
+          "tableTo": "beans",
+          "columnsFrom": [
+            "bean_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "shots_recipe_id_recipes_id_fk": {
+          "name": "shots_recipe_id_recipes_id_fk",
+          "tableFrom": "shots",
+          "tableTo": "recipes",
+          "columnsFrom": [
+            "recipe_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "shots_machine_id_gear_id_fk": {
+          "name": "shots_machine_id_gear_id_fk",
+          "tableFrom": "shots",
+          "tableTo": "gear",
+          "columnsFrom": [
+            "machine_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "shots_grinder_id_gear_id_fk": {
+          "name": "shots_grinder_id_gear_id_fk",
+          "tableFrom": "shots",
+          "tableTo": "gear",
+          "columnsFrom": [
+            "grinder_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "shots_basket_id_gear_id_fk": {
+          "name": "shots_basket_id_gear_id_fk",
+          "tableFrom": "shots",
+          "tableTo": "gear",
+          "columnsFrom": [
+            "basket_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "shots_ratio_basis_check": {
+          "name": "shots_ratio_basis_check",
+          "value": "\"shots\".\"ratio_basis\" in ('target_yield', 'brew_water')"
+        },
+        "shots_paper_filter_position_check": {
+          "name": "shots_paper_filter_position_check",
+          "value": "\"shots\".\"paper_filter_position\" in ('none', 'top', 'bottom', 'both')"
+        },
+        "shots_rating_check": {
+          "name": "shots_rating_check",
+          "value": "\"shots\".\"rating\" between 1 and 5"
+        },
+        "shots_extraction_balance_check": {
+          "name": "shots_extraction_balance_check",
+          "value": "\"shots\".\"extraction_balance\" between 1 and 5"
+        },
+        "shots_sensory_ratings_check": {
+          "name": "shots_sensory_ratings_check",
+          "value": "(\"shots\".\"bitterness\" is null or \"shots\".\"bitterness\" between 1 and 5)\n        and (\"shots\".\"acidity\" is null or \"shots\".\"acidity\" between 1 and 5)\n        and (\"shots\".\"sweetness\" is null or \"shots\".\"sweetness\" between 1 and 5)\n        and (\"shots\".\"body\" is null or \"shots\".\"body\" between 1 and 5)\n        and (\"shots\".\"astringency\" is null or \"shots\".\"astringency\" between 1 and 5)"
+        },
+        "shots_measurements_nonnegative": {
+          "name": "shots_measurements_nonnegative",
+          "value": "(\"shots\".\"dose_grams\" is null or \"shots\".\"dose_grams\" >= 0)\n        and (\"shots\".\"brew_water_grams\" is null or \"shots\".\"brew_water_grams\" >= 0)\n        and (\"shots\".\"yield_grams\" is null or \"shots\".\"yield_grams\" >= 0)\n        and (\"shots\".\"shot_time_seconds\" is null or \"shots\".\"shot_time_seconds\" >= 0)\n        and (\"shots\".\"brew_temperature_celsius\" is null or \"shots\".\"brew_temperature_celsius\" >= 0)\n        and (\"shots\".\"preinfusion_time_seconds\" is null or \"shots\".\"preinfusion_time_seconds\" >= 0)\n        and (\"shots\".\"preinfusion_pressure_bar\" is null or \"shots\".\"preinfusion_pressure_bar\" >= 0)\n        and (\"shots\".\"bloom_time_seconds\" is null or \"shots\".\"bloom_time_seconds\" >= 0)\n        and (\"shots\".\"brew_pressure_bar\" is null or \"shots\".\"brew_pressure_bar\" >= 0)\n        and (\"shots\".\"flow_rate_ml_per_second\" is null or \"shots\".\"flow_rate_ml_per_second\" >= 0)\n        and (\"shots\".\"tamp_force_kg\" is null or \"shots\".\"tamp_force_kg\" >= 0)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.taste_tags": {
+      "name": "taste_tags",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extraction_axis": {
+          "name": "extraction_axis",
+          "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "strength_axis": {
+          "name": "strength_axis",
+          "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hint": {
+          "name": "hint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "taste_tags_name_unique": {
+          "name": "taste_tags_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "taste_tags_extraction_axis_check": {
+          "name": "taste_tags_extraction_axis_check",
+          "value": "\"taste_tags\".\"extraction_axis\" between -1 and 1"
+        },
+        "taste_tags_strength_axis_check": {
+          "name": "taste_tags_strength_axis_check",
+          "value": "\"taste_tags\".\"strength_axis\" between -1 and 1"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.bean_type": {
+      "name": "bean_type",
+      "schema": "public",
+      "values": [
+        "espresso",
+        "filter",
+        "decaf"
+      ]
+    },
+    "public.gear_type": {
+      "name": "gear_type",
+      "schema": "public",
+      "values": [
+        "espresso_machine",
+        "espresso_machine_with_grinder",
+        "brewer",
+        "grinder",
+        "kettle",
+        "scale",
+        "tamper",
+        "wdt",
+        "basket",
+        "other"
+      ]
+    },
+    "public.roast_level": {
+      "name": "roast_level",
+      "schema": "public",
+      "values": [
+        "light",
+        "medium_light",
+        "medium",
+        "medium_dark",
+        "dark"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

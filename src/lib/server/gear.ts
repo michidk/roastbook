@@ -11,6 +11,7 @@ import {
 import { isEspressoMachineGearType } from '@/lib/constants'
 import { AUTO_STOP_MODE_VALUES, GEAR_TYPE_VALUES } from '@/lib/domain-contracts'
 import { expectReturnedRow } from '@/lib/domain-errors'
+import { gearName } from '@/lib/gear-name'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
 import { withResourceLimits } from '@/lib/server/resource-limits.server'
 import {
@@ -19,7 +20,6 @@ import {
   nameSchema,
   notesSchema,
   positiveIdSchema,
-  shortTextSchema,
 } from '@/lib/server-validation'
 
 const nullableDecimal = boundedDecimalStringSchema(99_999, 2).nullable()
@@ -44,9 +44,8 @@ const basketDetailsSchema = z.object({
 })
 
 const gearCreateSchema = z.object({
-  name: nameSchema,
-  brand: shortTextSchema.nullable().optional(),
-  model: shortTextSchema.nullable().optional(),
+  brand: nameSchema,
+  model: nameSchema,
   type: z.enum(GEAR_TYPE_VALUES),
   purchaseDate: z.date().nullable().optional(),
   purchasePrice: boundedDecimalStringSchema(999_999.99, 2)
@@ -66,7 +65,6 @@ const gearUpdateSchema = gearCreateSchema.partial().extend({
 })
 
 const researchMachineSettingsSchema = z.object({
-  name: nameSchema,
   brand: nameSchema,
   model: nameSchema,
 })
@@ -91,7 +89,7 @@ function toGearUpdateRow(data: Partial<GearValues>) {
 async function replaceSubtype(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
   gearId: number,
-  data: GearValues,
+  data: Pick<GearValues, 'type' | 'machineSettings' | 'basketDetails'>,
 ) {
   await tx.delete(machineSettings).where(eq(machineSettings.gearId, gearId))
   await tx.delete(basketDetails).where(eq(basketDetails.gearId, gearId))
@@ -129,7 +127,10 @@ export const createGear = createServerFn({ method: 'POST' })
         basketDetails: _basketDetails,
         ...gearValues
       } = data
-      const [item] = await tx.insert(gear).values(gearValues).returning()
+      const [item] = await tx
+        .insert(gear)
+        .values({ ...gearValues, name: gearName(data.brand, data.model) })
+        .returning()
       const persistedItem = expectReturnedRow(item, 'Gear')
       await replaceSubtype(tx, persistedItem.id, data)
       return persistedItem
@@ -141,9 +142,25 @@ export const updateGear = createServerFn({ method: 'POST' })
   .handler(async ({ data }) =>
     db.transaction(async (tx) => {
       const { id, ...values } = data
+      let derivedName: string | undefined
+      if (values.brand !== undefined || values.model !== undefined) {
+        const current = await tx.query.gear.findFirst({
+          where: eq(gear.id, id),
+          columns: { brand: true, model: true },
+        })
+        derivedName =
+          gearName(
+            values.brand ?? current?.brand,
+            values.model ?? current?.model,
+          ) || undefined
+      }
       const [item] = await tx
         .update(gear)
-        .set({ ...toGearUpdateRow(values), updatedAt: new Date() })
+        .set({
+          ...toGearUpdateRow(values),
+          ...(derivedName ? { name: derivedName } : {}),
+          updatedAt: new Date(),
+        })
         .where(eq(gear.id, id))
         .returning()
       const persistedItem = expectReturnedRow(item, 'Gear')
@@ -154,7 +171,6 @@ export const updateGear = createServerFn({ method: 'POST' })
       ) {
         await replaceSubtype(tx, id, {
           ...values,
-          name: values.name ?? persistedItem.name,
           type: values.type ?? persistedItem.type,
         })
       }
@@ -178,6 +194,6 @@ export const researchMachineSettings = createServerFn({ method: 'POST' })
     }
 
     return withResourceLimits('machine-web-research', () =>
-      researchMachineSettingsFromWeb(data.name, data.brand, data.model),
+      researchMachineSettingsFromWeb(data.brand, data.model),
     )
   })

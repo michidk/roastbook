@@ -7,18 +7,31 @@ import {
 } from '@/components/gear/gear-form-values'
 
 describe('gear form payloads', () => {
-  test('requires a type and normalizes optional create values', () => {
+  test('requires a type, brand, and model, and normalizes create values', () => {
     expect(() => gearCreatePayload(createEmptyGearFormValues())).toThrow(
       'Choose a gear type',
     )
+    expect(() =>
+      gearCreatePayload({ ...createEmptyGearFormValues(), type: 'grinder' }),
+    ).toThrow('Enter the brand')
+    expect(() =>
+      gearCreatePayload({
+        ...createEmptyGearFormValues(),
+        type: 'grinder',
+        brand: 'Niche',
+      }),
+    ).toThrow('Enter the model')
 
     const payload = gearCreatePayload({
-      ...createEmptyGearFormValues('  Grinder  '),
+      ...createEmptyGearFormValues(),
+      brand: '  Niche  ',
+      model: '  Zero  ',
       type: 'grinder',
       priceCurrency: 'BTC',
     })
     expect(payload).toMatchObject({
-      name: 'Grinder',
+      brand: 'Niche',
+      model: 'Zero',
       type: 'grinder',
       priceCurrency: undefined,
       machineSettings: null,
@@ -28,7 +41,9 @@ describe('gear form payloads', () => {
 
   test('maps machine settings consistently for create and update', () => {
     const values = {
-      ...createEmptyGearFormValues('Machine'),
+      ...createEmptyGearFormValues(),
+      brand: 'Arc',
+      model: 'One',
       type: 'espresso_machine' as const,
       supportsPreinfusion: 'true',
       autoStopMode: 'volume',
@@ -51,7 +66,6 @@ describe('gear form payloads', () => {
 
   test('round-trips persisted form values', () => {
     const values = gearFormValuesFrom({
-      name: 'Machine',
       brand: null,
       model: 'One',
       type: 'espresso_machine',

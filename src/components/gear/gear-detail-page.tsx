@@ -66,18 +66,17 @@ export function GearDetailPage({
   const resetForm = () => setFormData(gearFormValuesFrom(gear))
 
   const handleResearch = async () => {
-    const name = formData.name.trim()
     const brand = formData.brand.trim()
     const model = formData.model.trim()
-    if (!name || !brand || !model) {
-      toast.error('Enter the machine name, brand, and model first')
+    if (!brand || !model) {
+      toast.error('Enter the machine brand and model first')
       return
     }
 
     setIsResearching(true)
     try {
       const result = await researchMachineSettings({
-        data: { name, brand, model },
+        data: { brand, model },
       })
       if (Object.keys(result).length === 0) {
         toast.error('No documented machine settings found')
@@ -94,7 +93,8 @@ export function GearDetailPage({
 
   const handleSave = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!formData.name.trim() || !formData.type) return
+    if (!formData.brand.trim() || !formData.model.trim() || !formData.type)
+      return
     setIsSaving(true)
     try {
       await updateGear({ data: gearUpdatePayload(gear.id, formData) })
