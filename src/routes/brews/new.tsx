@@ -171,11 +171,17 @@ function NewShotPage() {
   >({})
   const [isDirty, setIsDirty] = useState(false)
   const [timerKey, setTimerKey] = useState(0)
+  // Starts collapsed to keep the phone page short; desktops have room, so the
+  // section opens there after mount (matchMedia is unavailable during SSR).
+  const [isTasteProfileOpen, setIsTasteProfileOpen] = useState(false)
   const isInitializing = useRef(true)
   const timerRef = useRef<ShotTimerHandle>(null)
 
   useEffect(() => {
     isInitializing.current = false
+    if (window.matchMedia('(min-width: 1024px)').matches) {
+      setIsTasteProfileOpen(true)
+    }
   }, [])
 
   useUnsavedChanges(isDirty && !isSubmitting)
@@ -464,7 +470,8 @@ function NewShotPage() {
               title="Taste profile"
               description="Rate the result once you have tasted it."
               collapsible
-              defaultOpen={false}
+              open={isTasteProfileOpen}
+              onOpenChange={setIsTasteProfileOpen}
             >
               {tasteProfile.overallRating ||
               showSensoryRatings ||
