@@ -295,8 +295,8 @@ export const getGearShotPage = createServerFn({ method: 'GET' })
         eq(shots.basketId, data.entityId),
         sql`exists (
           select 1 from ${shotAccessoryGear}
-          where "shot_accessory_gear"."shot_id" = ${shots.id}
-            and "shot_accessory_gear"."gear_id" = ${data.entityId}
+          where "brew_accessory_gear"."brew_id" = ${shots.id}
+            and "brew_accessory_gear"."gear_id" = ${data.entityId}
         )`,
       ),
     ),

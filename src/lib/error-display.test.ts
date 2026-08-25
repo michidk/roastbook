@@ -60,7 +60,7 @@ describe('error display state', () => {
 
   test('classifies failed queries against missing app tables as not initialized', () => {
     const state = getErrorDisplayState(
-      new Error('Failed query: relation "shots" does not exist'),
+      new Error('Failed query: relation "brews" does not exist'),
     )
     expect(state.title).toBe('Database not initialized')
     expect(state.hint).toBe('Run the Drizzle migrations, then retry the page.')
@@ -68,7 +68,7 @@ describe('error display state', () => {
 
   test('requires both the failed-query marker and a known relation', () => {
     expect(
-      getErrorDisplayState(new Error('relation "shots" does not exist')).title,
+      getErrorDisplayState(new Error('relation "brews" does not exist')).title,
     ).toBe('Failed to load')
     expect(
       getErrorDisplayState(

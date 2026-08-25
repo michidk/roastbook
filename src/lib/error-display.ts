@@ -64,7 +64,7 @@ export function getErrorDisplayState(error: Error): ErrorDisplayState {
 
   if (
     lowerMessage.includes('failed query') &&
-    (lowerMessage.includes('relation "shots" does not exist') ||
+    (lowerMessage.includes('relation "brews" does not exist') ||
       lowerMessage.includes('relation "beans" does not exist') ||
       lowerMessage.includes('relation "gear" does not exist') ||
       lowerMessage.includes('relation "cafe_visits" does not exist') ||
@@ -116,7 +116,7 @@ export function toDisplayableError(error: unknown): Error {
   }
 
   if (
-    lowerMessage.includes('relation "shots" does not exist') ||
+    lowerMessage.includes('relation "brews" does not exist') ||
     lowerMessage.includes('relation "beans" does not exist') ||
     lowerMessage.includes('relation "gear" does not exist') ||
     lowerMessage.includes('relation "cafe_visits" does not exist') ||

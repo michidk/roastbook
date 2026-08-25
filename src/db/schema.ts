@@ -692,7 +692,7 @@ export const coffeeShopImagesRelations = relations(
 )
 
 export const shots = pgTable(
-  'shots',
+  'brews',
   {
     id: serial('id').primaryKey(),
     brewedAt: timestamp('brewed_at').defaultNow().notNull(),
@@ -713,20 +713,20 @@ export const shots = pgTable(
   },
   (table) => [
     check(
-      'shots_ratio_basis_check',
+      'brews_ratio_basis_check',
       sql`${table.ratioBasis} in ('target_yield', 'brew_water')`,
     ),
     check(
-      'shots_paper_filter_position_check',
+      'brews_paper_filter_position_check',
       sql`${table.paperFilterPosition} in ('none', 'top', 'bottom', 'both')`,
     ),
-    check('shots_rating_check', sql`${table.rating} between 1 and 5`),
+    check('brews_rating_check', sql`${table.rating} between 1 and 5`),
     check(
-      'shots_extraction_balance_check',
+      'brews_extraction_balance_check',
       sql`${table.extractionBalance} between 1 and 5`,
     ),
     check(
-      'shots_sensory_ratings_check',
+      'brews_sensory_ratings_check',
       sql`(${table.bitterness} is null or ${table.bitterness} between 1 and 5)
         and (${table.acidity} is null or ${table.acidity} between 1 and 5)
         and (${table.sweetness} is null or ${table.sweetness} between 1 and 5)
@@ -734,7 +734,7 @@ export const shots = pgTable(
         and (${table.astringency} is null or ${table.astringency} between 1 and 5)`,
     ),
     check(
-      'shots_measurements_nonnegative',
+      'brews_measurements_nonnegative',
       sql`(${table.doseGrams} is null or ${table.doseGrams} >= 0)
         and (${table.brewWaterGrams} is null or ${table.brewWaterGrams} >= 0)
         and (${table.yieldGrams} is null or ${table.yieldGrams} >= 0)
@@ -747,14 +747,14 @@ export const shots = pgTable(
         and (${table.flowRateMlPerSecond} is null or ${table.flowRateMlPerSecond} >= 0)
         and (${table.tampForceKg} is null or ${table.tampForceKg} >= 0)`,
     ),
-    index('shots_created_at_idx').on(table.createdAt),
-    index('shots_brewed_at_idx').on(table.brewedAt),
-    index('shots_brewing_method_id_idx').on(table.brewingMethodId),
-    index('shots_bean_id_idx').on(table.beanId),
-    index('shots_recipe_id_idx').on(table.recipeId),
-    index('shots_machine_id_idx').on(table.machineId),
-    index('shots_grinder_id_idx').on(table.grinderId),
-    index('shots_basket_id_idx').on(table.basketId),
+    index('brews_created_at_idx').on(table.createdAt),
+    index('brews_brewed_at_idx').on(table.brewedAt),
+    index('brews_brewing_method_id_idx').on(table.brewingMethodId),
+    index('brews_bean_id_idx').on(table.beanId),
+    index('brews_recipe_id_idx').on(table.recipeId),
+    index('brews_machine_id_idx').on(table.machineId),
+    index('brews_grinder_id_idx').on(table.grinderId),
+    index('brews_basket_id_idx').on(table.basketId),
   ],
 )
 
@@ -826,10 +826,10 @@ export const recipeAccessoryGearRelations = relations(
 )
 
 export const shotAccessoryGear = pgTable(
-  'shot_accessory_gear',
+  'brew_accessory_gear',
   {
     id: serial('id').primaryKey(),
-    shotId: integer('shot_id')
+    shotId: integer('brew_id')
       .references(() => shots.id, { onDelete: 'cascade' })
       .notNull(),
     gearId: integer('gear_id')
@@ -837,11 +837,11 @@ export const shotAccessoryGear = pgTable(
       .notNull(),
   },
   (table) => [
-    uniqueIndex('shot_accessory_gear_shot_gear_idx').on(
+    uniqueIndex('brew_accessory_gear_brew_gear_idx').on(
       table.shotId,
       table.gearId,
     ),
-    index('shot_accessory_gear_gear_id_idx').on(table.gearId),
+    index('brew_accessory_gear_gear_id_idx').on(table.gearId),
   ],
 )
 
@@ -868,16 +868,16 @@ export const brewingMethodsRelations = relations(
 )
 
 export const shotImages = pgTable(
-  'shot_images',
+  'brew_images',
   {
     id: serial('id').primaryKey(),
-    shotId: integer('shot_id')
+    shotId: integer('brew_id')
       .references(() => shots.id, { onDelete: 'cascade' })
       .notNull(),
     ...imageFile(),
     createdAt: createdAt(),
   },
-  (table) => [index('shot_images_shot_id_idx').on(table.shotId)],
+  (table) => [index('brew_images_brew_id_idx').on(table.shotId)],
 )
 
 export const shotImagesRelations = relations(shotImages, ({ one }) => ({
@@ -915,10 +915,10 @@ export const tasteTagsRelations = relations(tasteTags, ({ many }) => ({
 }))
 
 export const shotTasteTags = pgTable(
-  'shot_taste_tags',
+  'brew_taste_tags',
   {
     id: serial('id').primaryKey(),
-    shotId: integer('shot_id')
+    shotId: integer('brew_id')
       .references(() => shots.id, { onDelete: 'cascade' })
       .notNull(),
     tasteTagId: integer('taste_tag_id')
@@ -926,11 +926,11 @@ export const shotTasteTags = pgTable(
       .notNull(),
   },
   (table) => [
-    uniqueIndex('shot_taste_tags_shot_tag_idx').on(
+    uniqueIndex('brew_taste_tags_brew_tag_idx').on(
       table.shotId,
       table.tasteTagId,
     ),
-    index('shot_taste_tags_taste_tag_id_idx').on(table.tasteTagId),
+    index('brew_taste_tags_taste_tag_id_idx').on(table.tasteTagId),
   ],
 )
 

@@ -45,13 +45,13 @@ databaseDescribe('PostgreSQL schema', () => {
       select indexname from pg_indexes
       where schemaname = 'public'
         and indexname in (
-          'shot_taste_tags_shot_tag_idx',
-          'shot_accessory_gear_shot_gear_idx',
+          'brew_taste_tags_brew_tag_idx',
+          'brew_accessory_gear_brew_gear_idx',
           'recipe_accessory_gear_recipe_gear_idx',
           'bean_images_one_thumbnail_idx',
           'ai_request_logs_created_at_idx',
           'roasters_name_idx',
-          'shots_recipe_id_idx'
+          'brews_recipe_id_idx'
         )
     `
 
@@ -59,11 +59,11 @@ databaseDescribe('PostgreSQL schema', () => {
     expect(indexes.map(({ indexname }) => indexname).sort()).toEqual([
       'ai_request_logs_created_at_idx',
       'bean_images_one_thumbnail_idx',
+      'brew_accessory_gear_brew_gear_idx',
+      'brew_taste_tags_brew_tag_idx',
+      'brews_recipe_id_idx',
       'recipe_accessory_gear_recipe_gear_idx',
       'roasters_name_idx',
-      'shot_accessory_gear_shot_gear_idx',
-      'shot_taste_tags_shot_tag_idx',
-      'shots_recipe_id_idx',
     ])
   })
 
@@ -137,12 +137,12 @@ databaseDescribe('PostgreSQL schema', () => {
     await expectPostgresError(
       insertBalance(6),
       '23514',
-      'shots_extraction_balance_check',
+      'brews_extraction_balance_check',
     )
     await expectPostgresError(
       insertBalance(0),
       '23514',
-      'shots_extraction_balance_check',
+      'brews_extraction_balance_check',
     )
 
     await database().begin(async (transaction) => {
@@ -315,7 +315,7 @@ databaseDescribe('PostgreSQL schema', () => {
             values (${`tag-${crypto.randomUUID()}`}) returning id
           `
           await transaction`
-            insert into shot_taste_tags (shot_id, taste_tag_id)
+            insert into brew_taste_tags (brew_id, taste_tag_id)
             values (${shot.id}, ${tag.id}), (${shot.id}, ${tag.id})
           `
         }),
@@ -412,14 +412,14 @@ databaseDescribe('PostgreSQL schema', () => {
       `
 
       await transaction`
-        insert into shot_accessory_gear (shot_id, gear_id)
+        insert into brew_accessory_gear (brew_id, gear_id)
         values (${shot.id}, ${item.id})
       `
       await transaction`delete from gear where id = ${item.id}`
       const [remaining] = await transaction<[{ count: number }]>`
         select count(*)::int as count
-        from shot_accessory_gear
-        where shot_id = ${shot.id}
+        from brew_accessory_gear
+        where brew_id = ${shot.id}
       `
       expect(remaining.count).toBe(0)
     })

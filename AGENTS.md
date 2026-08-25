@@ -103,8 +103,9 @@ Do not claim integration or browser coverage when it was skipped or unavailable.
 - Imports use the `@/` alias for `./src`.
 - Files use kebab-case names; TanStack Router files (`$param.tsx`,
   `__root.tsx`) and generated files are the exception.
-- "Brew" is the user-facing and URL vocabulary; "shot" remains the internal
-  code and database identifier. Do not rename database tables.
+- "Brew" is the user-facing, URL, and database vocabulary (`brews` and
+  `brew_*` tables); "shot" remains the internal TypeScript identifier.
+  Measurement columns such as `shot_time_seconds` keep their physical names.
 - Keep server functions thin: validate input at the boundary and delegate to a
   focused server/domain helper.
 - Prefer inferred TanStack Router types; avoid casts that bypass route, search,

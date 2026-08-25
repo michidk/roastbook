@@ -39,7 +39,7 @@ export async function toDisplayableDatabaseError(
     )
 
     if (!result[0]?.table_name) {
-      return toDisplayableError(new Error('relation "shots" does not exist'))
+      return toDisplayableError(new Error('relation "brews" does not exist'))
     }
   } catch {
     // Ignore diagnostics failures here and fall back to the original error below.
