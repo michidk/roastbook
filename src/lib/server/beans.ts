@@ -87,7 +87,8 @@ const researchBeanInfoSchema = z.object({
   roasterName: nameSchema.optional(),
 })
 
-const BEANS_PAGE_SIZE = 12
+const ACTIVE_BEANS_PAGE_SIZE = 12
+const ARCHIVED_BEANS_PAGE_SIZE = 24
 const beanListSchema = z.object({
   activePage: z.number().int().min(1).max(100_000).default(1),
   archivedPage: z.number().int().min(1).max(100_000).default(1),
@@ -120,6 +121,9 @@ export const getBeanCollection = createServerFn({ method: 'GET' })
       isArchived: boolean,
       requestedPage: number,
     ) {
+      const pageSize = isArchived
+        ? ARCHIVED_BEANS_PAGE_SIZE
+        : ACTIVE_BEANS_PAGE_SIZE
       const where = search
         ? and(eq(beans.isArchived, isArchived), search)
         : eq(beans.isArchived, isArchived)
@@ -128,17 +132,13 @@ export const getBeanCollection = createServerFn({ method: 'GET' })
         .from(beans)
         .where(where)
       const totalItems = countRows[0]?.value ?? 0
-      const pagination = resolvePagination(
-        totalItems,
-        requestedPage,
-        BEANS_PAGE_SIZE,
-      )
+      const pagination = resolvePagination(totalItems, requestedPage, pageSize)
       const { page } = pagination
       const items = await db.query.beans.findMany({
         where,
         orderBy: [desc(beans.createdAt), desc(beans.id)],
-        limit: BEANS_PAGE_SIZE,
-        offset: (page - 1) * BEANS_PAGE_SIZE,
+        limit: pageSize,
+        offset: (page - 1) * pageSize,
         with: { images: true, roasterRef: true },
       })
       return { items, ...pagination }
