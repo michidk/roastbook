@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import {
   EMPTY_SHOT_FORM_VALUES,
+  gearByEquipmentRole,
   shotFormValuesFrom,
   shotFormValuesWithGearSet,
   shotFormValuesWithRecipe,
@@ -37,6 +38,22 @@ function shotParameters(
 }
 
 describe('shot form values', () => {
+  test('offers machines with built-in grinders in both equipment selectors', () => {
+    const machineWithGrinder = {
+      id: 2,
+      name: 'Barista Express',
+      type: 'espresso_machine_with_grinder',
+    }
+    const roles = gearByEquipmentRole([
+      { id: 1, name: 'Linea Mini', type: 'espresso_machine' },
+      machineWithGrinder,
+      { id: 3, name: 'Niche Zero', type: 'grinder' },
+    ])
+
+    expect(roles.brewers).toContainEqual(machineWithGrinder)
+    expect(roles.grinders).toContainEqual(machineWithGrinder)
+  })
+
   test('offers only the supported distribution methods', () => {
     expect(DISTRIBUTION_METHOD_OPTIONS).toEqual([
       { value: 'WDT', label: 'WDT' },
