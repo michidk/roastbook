@@ -270,6 +270,81 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
 
   const activeBeans = beans.slice(0, 4)
   const gearId = new Map(gear.map((item) => [item.model, item.id]))
+  const insertedGearSets = await database
+    .insert(schema.gearSets)
+    .values([
+      {
+        name: 'Espresso bar',
+        description: 'The complete setup for daily espresso dial-ins.',
+        machineId: required(
+          gearId.get('Aurora One'),
+          'Espresso machine missing',
+        ),
+        grinderId: required(
+          gearId.get('Orbit Mill'),
+          'Espresso grinder missing',
+        ),
+        basketId: required(gearId.get('High Flow 18g'), 'Basket missing'),
+      },
+      {
+        name: 'V60 bench',
+        description: 'A bright pour-over setup for weekday brews.',
+        machineId: required(gearId.get('V60 02'), 'V60 brewer missing'),
+        grinderId: required(
+          gearId.get('Cinder Hand Mill'),
+          'Filter grinder missing',
+        ),
+      },
+      {
+        name: 'AeroPress travel',
+        description: 'A compact setup for brewing away from home.',
+        machineId: required(gearId.get('Clear'), 'AeroPress brewer missing'),
+        grinderId: required(
+          gearId.get('Cinder Hand Mill'),
+          'Travel grinder missing',
+        ),
+      },
+    ])
+    .returning()
+  const gearSetId = new Map(
+    insertedGearSets.map((gearSet) => [gearSet.name, gearSet.id]),
+  )
+  await database.insert(schema.gearSetAccessoryGear).values([
+    {
+      gearSetId: required(gearSetId.get('Espresso bar'), 'Gear set missing'),
+      gearId: required(gearId.get('Mica Scale'), 'Scale missing'),
+    },
+    {
+      gearSetId: required(gearSetId.get('Espresso bar'), 'Gear set missing'),
+      gearId: required(gearId.get('Presswell 58.5'), 'Tamper missing'),
+    },
+    {
+      gearSetId: required(gearSetId.get('Espresso bar'), 'Gear set missing'),
+      gearId: required(gearId.get('Needle Nine WDT'), 'WDT missing'),
+    },
+    {
+      gearSetId: required(gearSetId.get('V60 bench'), 'Gear set missing'),
+      gearId: required(gearId.get('Mica Scale'), 'Scale missing'),
+    },
+    {
+      gearSetId: required(gearSetId.get('V60 bench'), 'Gear set missing'),
+      gearId: required(gearId.get('Stagg EKG'), 'Kettle missing'),
+    },
+    {
+      gearSetId: required(
+        gearSetId.get('AeroPress travel'),
+        'Gear set missing',
+      ),
+      gearId: required(gearId.get('Mica Scale'), 'Scale missing'),
+    },
+    {
+      gearSetId: required(
+        gearSetId.get('AeroPress travel'),
+        'Gear set missing',
+      ),
+      gearId: required(gearId.get('Stagg EKG'), 'Kettle missing'),
+    },
+  ])
   const parameterHistory = [
     // Newest first. Each coffee follows a small dial-in story so its charts
     // show deliberate adjustments instead of repeating modulo patterns.
