@@ -129,7 +129,7 @@ databaseDescribe('PostgreSQL schema', () => {
           values (${`balance-method-${crypto.randomUUID()}`}) returning id
         `
         await transaction`
-          insert into shots (brewing_method_id, extraction_balance)
+          insert into brews (brewing_method_id, extraction_balance)
           values (${method.id}, ${balance})
         `
       })
@@ -151,13 +151,13 @@ databaseDescribe('PostgreSQL schema', () => {
         values (${`balance-method-${crypto.randomUUID()}`}) returning id
       `
       const [shot] = await transaction<[{ extraction_balance: number }]>`
-        insert into shots (brewing_method_id, extraction_balance)
+        insert into brews (brewing_method_id, extraction_balance)
         values (${method.id}, 3)
         returning extraction_balance
       `
       expect(shot.extraction_balance).toBe(3)
 
-      await transaction`delete from shots where brewing_method_id = ${method.id}`
+      await transaction`delete from brews where brewing_method_id = ${method.id}`
       await transaction`delete from brewing_methods where id = ${method.id}`
     })
   })
@@ -307,7 +307,7 @@ databaseDescribe('PostgreSQL schema', () => {
             values (${`method-${crypto.randomUUID()}`}) returning id
           `
           const [shot] = await transaction<[{ id: number }]>`
-            insert into shots (brewing_method_id)
+            insert into brews (brewing_method_id)
             values (${method.id}) returning id
           `
           const [tag] = await transaction<[{ id: number }]>`
@@ -377,7 +377,7 @@ databaseDescribe('PostgreSQL schema', () => {
       const [shot] = await transaction<
         [{ id: number; brewed_at: Date; recipe_id: number | null }]
       >`
-        insert into shots (brewing_method_id, recipe_id)
+        insert into brews (brewing_method_id, recipe_id)
         values (${method.id}, ${recipe.id})
         returning id, brewed_at, recipe_id
       `
@@ -387,11 +387,11 @@ databaseDescribe('PostgreSQL schema', () => {
 
       await transaction`delete from recipes where id = ${recipe.id}`
       const [updated] = await transaction<[{ recipe_id: number | null }]>`
-        select recipe_id from shots where id = ${shot.id}
+        select recipe_id from brews where id = ${shot.id}
       `
       expect(updated.recipe_id).toBeNull()
 
-      await transaction`delete from shots where id = ${shot.id}`
+      await transaction`delete from brews where id = ${shot.id}`
       await transaction`delete from brewing_methods where id = ${method.id}`
     })
   })
@@ -403,7 +403,7 @@ databaseDescribe('PostgreSQL schema', () => {
         values (${`accessory-method-${crypto.randomUUID()}`}) returning id
       `
       const [shot] = await transaction<[{ id: number }]>`
-        insert into shots (brewing_method_id)
+        insert into brews (brewing_method_id)
         values (${method.id}) returning id
       `
       const [item] = await transaction<[{ id: number }]>`
