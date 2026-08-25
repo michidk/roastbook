@@ -1,11 +1,21 @@
+import { Bean as BeanIcon } from 'lucide-react'
 import { BeanForm } from '@/components/beans/bean-form'
 import { EntityPicker } from '@/components/form/entity-picker'
+import { ImageWithFallback } from '@/components/image-with-fallback'
+import { thumbnailUrl } from '@/lib/image-url'
+import { cn } from '@/lib/utils'
+
+interface BeanImage {
+  readonly storagePath: string
+  readonly isThumbnail: boolean
+}
 
 interface BeanOption {
   id: number
   name: string
   roaster?: string | null
   origin?: string | null
+  images?: readonly BeanImage[]
 }
 
 interface BeanPickerProps {
@@ -48,6 +58,12 @@ export function BeanPicker({
       getDescription={(bean) =>
         [bean.roaster, bean.origin].filter(Boolean).join(' · ') || null
       }
+      renderItemLeading={(bean) => (
+        <BeanThumbnail bean={bean} className="size-10" />
+      )}
+      renderSelectedLeading={(bean) => (
+        <BeanThumbnail bean={bean} className="size-6" />
+      )}
       placeholder={placeholder}
       searchPlaceholder="Search beans…"
       emptyMessage="No matching beans."
@@ -66,6 +82,33 @@ export function BeanPicker({
           onCancel={onCancel}
         />
       )}
+    />
+  )
+}
+
+function BeanThumbnail({
+  bean,
+  className,
+}: {
+  readonly bean: BeanOption
+  readonly className: string
+}) {
+  const image =
+    bean.images?.find((candidate) => candidate.isThumbnail) ?? bean.images?.[0]
+
+  return (
+    <ImageWithFallback
+      src={image ? thumbnailUrl(image.storagePath) : undefined}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      width={40}
+      height={40}
+      className={cn(
+        'shrink-0 rounded-md border border-border object-cover',
+        className,
+      )}
+      fallback={<BeanIcon className="size-4" strokeWidth={1.5} />}
     />
   )
 }

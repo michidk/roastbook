@@ -1,5 +1,5 @@
 import { Plus, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import {
   type PickerSuggestion,
   SuggestionChips,
@@ -25,6 +25,8 @@ type Entry =
       readonly key: string
       readonly label: string
       readonly description?: string
+      readonly itemLeading?: ReactNode
+      readonly selectedLeading?: ReactNode
     }
   | {
       readonly kind: 'create'
@@ -49,6 +51,8 @@ export interface CreatableComboboxProps<T> {
   getKey: (item: T) => string | number
   getLabel: (item: T) => string
   getDescription?: (item: T) => string | null | undefined
+  renderItemLeading?: (item: T) => ReactNode
+  renderSelectedLeading?: (item: T) => ReactNode
   suggestions?: readonly PickerSuggestion[]
   onCreateRequest?: (query: string) => void
   createLabel?: (query: string) => string
@@ -79,6 +83,8 @@ export function CreatableCombobox<T>({
   getKey,
   getLabel,
   getDescription,
+  renderItemLeading,
+  renderSelectedLeading,
   suggestions = [],
   onCreateRequest,
   createLabel = (query) => `Create “${query}”`,
@@ -103,6 +109,8 @@ export function CreatableCombobox<T>({
     key: String(getKey(item)),
     label: getLabel(item),
     description: getDescription?.(item) ?? undefined,
+    itemLeading: renderItemLeading?.(item),
+    selectedLeading: renderSelectedLeading?.(item),
   }))
 
   const trimmedQuery = query.trim()
@@ -223,12 +231,15 @@ export function CreatableCombobox<T>({
               >
                 <span
                   className={cn(
-                    'flex flex-1 truncate text-left',
+                    'flex min-w-0 flex-1 items-center gap-2 text-left',
                     !selected && 'text-muted-foreground',
                     !required && selected && 'pr-8',
                   )}
                 >
-                  {selected ? selected.label : placeholder}
+                  {selected?.kind === 'item' ? selected.selectedLeading : null}
+                  <span className="truncate">
+                    {selected ? selected.label : placeholder}
+                  </span>
                 </span>
               </ComboboxTrigger>
               {!required && selected ? (
@@ -266,6 +277,7 @@ export function CreatableCombobox<T>({
                     </ComboboxItem>
                   ) : (
                     <ComboboxItem key={entry.key} value={entry}>
+                      {entry.itemLeading}
                       <span className="flex min-w-0 flex-col gap-0.5">
                         <span className="truncate">{entry.label}</span>
                         {entry.description ? (
