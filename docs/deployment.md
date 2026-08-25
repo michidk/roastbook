@@ -50,9 +50,37 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Note that `docker-compose.yaml` uses the `postgres:16` image while the Helm
-chart defaults to `postgres:17-alpine`; upgrading the Compose image in place
-would break existing local database volumes.
+### Upgrading PostgreSQL from an earlier major version
+
+PostgreSQL data volumes are tied to a major version, so a volume created by
+`postgres:16` will not start under `postgres:17`. Upgrade existing Compose
+deployments with a dump and restore:
+
+```bash
+# 1. Back up the whole cluster while the old image is still running.
+docker compose exec postgres pg_dumpall -U roastbook > roastbook-backup.sql
+
+# 2. Verify the backup before deleting anything.
+tail -1 roastbook-backup.sql   # must end with "cluster dump complete"
+
+# 3. Stop the stack and remove the old data volume.
+docker compose down
+docker volume rm "$(basename "$PWD")_postgres_data"
+
+# 4. Start PostgreSQL 17 with an empty volume and restore.
+docker compose up -d postgres
+docker compose exec -T postgres psql -U roastbook -d roastbook \
+  < roastbook-backup.sql
+
+# 5. Start the rest of the stack.
+docker compose up -d
+```
+
+The restore reports two `already exists` errors for the bootstrap role and
+database; they are harmless. If the Compose file was already updated to
+`postgres:17` before backing up, temporarily change the `postgres` service
+image back to `postgres:16`, run `docker compose up -d postgres`, and follow
+the steps above from the beginning.
 
 ## Helm
 
