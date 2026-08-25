@@ -4,7 +4,15 @@ import {
   stripSearchParams,
   useNavigate,
 } from '@tanstack/react-router'
-import { Bookmark, Heart, MapPin, MapPinOff, Plus } from 'lucide-react'
+import {
+  Bookmark,
+  Heart,
+  Map as MapIcon,
+  MapPin,
+  MapPinOff,
+  Plus,
+} from 'lucide-react'
+import { CoffeeShopMap } from '@/components/coffee-shops/coffee-shop-map'
 import {
   type CollectionColumn,
   type CollectionEntry,
@@ -24,6 +32,7 @@ import { WebsiteLogo } from '@/components/website-logo'
 import { useCollectionView } from '@/hooks/use-collection-view'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
+import { DEMO_MODE } from '@/lib/build-mode'
 import { thumbnailUrl } from '@/lib/image-url'
 import {
   searchEnum,
@@ -32,7 +41,10 @@ import {
   searchString,
   searchValidator,
 } from '@/lib/search-params'
-import { getCoffeeShopPage } from '@/lib/server/coffee-shops'
+import {
+  getCoffeeShopMapOverview,
+  getCoffeeShopPage,
+} from '@/lib/server/coffee-shops'
 import { cn } from '@/lib/utils'
 
 const parsePlacesSearch = (input: unknown) => {
@@ -41,6 +53,7 @@ const parsePlacesSearch = (input: unknown) => {
     page: searchInteger(search.page, 1, 1) ?? 1,
     query: searchString(search.query),
     list: searchEnum(search.list, ['all', 'favorites', 'want-to-visit'], 'all'),
+    display: searchEnum(search.display, ['list', 'map'], 'list'),
   }
 }
 
@@ -48,15 +61,27 @@ export const Route = createFileRoute('/places/')({
   validateSearch: searchValidator(parsePlacesSearch),
   search: {
     middlewares: [
-      stripSearchParams({ page: 1, query: '', list: 'all' } as const),
+      stripSearchParams({
+        page: 1,
+        query: '',
+        list: 'all',
+        display: 'list',
+      } as const),
     ],
   },
   loaderDeps: ({ search }) => ({
     page: search.page,
     query: search.query,
     list: search.list,
+    display: search.display,
   }),
-  loader: ({ deps }) => getCoffeeShopPage({ data: deps }),
+  loader: async ({ deps }) => {
+    const [page, mapCoffeeShops] = await Promise.all([
+      getCoffeeShopPage({ data: deps }),
+      deps.display === 'map' ? getCoffeeShopMapOverview() : Promise.resolve([]),
+    ])
+    return { ...page, mapCoffeeShops }
+  },
   staleTime: 15_000,
   component: PlacesPage,
   pendingComponent: ListPending,
@@ -83,52 +108,53 @@ function toEntry(coffeeShop: CoffeeShop): CollectionEntry {
     title: coffeeShop.name,
     subtitle:
       location || (hasCoordinates ? 'Location pinned' : 'No location set'),
-    media: coffeeShop.website
-      ? {
-          kind: 'custom',
-          render: (sizeClassName) =>
-            coffeeShop.imagePath ? (
-              <span className={cn('relative block shrink-0', sizeClassName)}>
-                <ImageWithFallback
-                  src={thumbnailUrl(coffeeShop.imagePath)}
-                  alt=""
-                  loading="lazy"
-                  className="size-full rounded-full object-cover"
-                  fallback={<MapPin aria-hidden className="size-4" />}
-                />
+    media:
+      coffeeShop.website || DEMO_MODE
+        ? {
+            kind: 'custom',
+            render: (sizeClassName) =>
+              coffeeShop.imagePath ? (
+                <span className={cn('relative block shrink-0', sizeClassName)}>
+                  <ImageWithFallback
+                    src={thumbnailUrl(coffeeShop.imagePath)}
+                    alt=""
+                    loading="lazy"
+                    className="size-full rounded-full object-cover"
+                    fallback={<MapPin aria-hidden className="size-4" />}
+                  />
+                  <WebsiteLogo
+                    entityType="coffee-shops"
+                    entityId={coffeeShop.id}
+                    website={coffeeShop.website}
+                    updatedAt={coffeeShop.updatedAt}
+                    className={cn(
+                      'absolute -right-1 -bottom-1 rounded-full p-0.5 shadow-sm',
+                      sizeClassName === 'size-8' ? 'size-4' : 'size-5',
+                    )}
+                  />
+                </span>
+              ) : (
                 <WebsiteLogo
                   entityType="coffee-shops"
                   entityId={coffeeShop.id}
                   website={coffeeShop.website}
                   updatedAt={coffeeShop.updatedAt}
-                  className={cn(
-                    'absolute -right-1 -bottom-1 rounded-full p-0.5 shadow-sm',
-                    sizeClassName === 'size-8' ? 'size-4' : 'size-5',
-                  )}
+                  className={cn(sizeClassName, 'rounded-full p-1')}
                 />
-              </span>
-            ) : (
-              <WebsiteLogo
-                entityType="coffee-shops"
-                entityId={coffeeShop.id}
-                website={coffeeShop.website}
-                updatedAt={coffeeShop.updatedAt}
-                className={cn(sizeClassName, 'rounded-full p-1')}
-              />
-            ),
-        }
-      : coffeeShop.imagePath
-        ? {
-            kind: 'image',
-            src: thumbnailUrl(coffeeShop.imagePath),
-            alt: coffeeShop.name,
-            fallbackIcon: MapPin,
+              ),
           }
-        : {
-            kind: 'icon',
-            icon: hasCoordinates ? MapPin : MapPinOff,
-            tone: hasCoordinates ? 'primary' : 'muted',
-          },
+        : coffeeShop.imagePath
+          ? {
+              kind: 'image',
+              src: thumbnailUrl(coffeeShop.imagePath),
+              alt: coffeeShop.name,
+              fallbackIcon: MapPin,
+            }
+          : {
+              kind: 'icon',
+              icon: hasCoordinates ? MapPin : MapPinOff,
+              tone: hasCoordinates ? 'primary' : 'muted',
+            },
     flags: (
       <>
         {coffeeShop.isFavorite && (
@@ -276,11 +302,27 @@ function PlacesPage() {
               disabled={!isReady}
               label="Café list view"
             />
+            <Button
+              type="button"
+              size="sm"
+              variant={search.display === 'map' ? 'primary' : 'secondary'}
+              aria-pressed={search.display === 'map'}
+              onClick={() =>
+                updateSearch({
+                  display: search.display === 'map' ? 'list' : 'map',
+                })
+              }
+            >
+              <MapIcon aria-hidden />
+              Map
+            </Button>
           </>
         }
       />
 
-      {pageData.listCounts.all === 0 && !search.query ? (
+      {search.display === 'map' ? (
+        <CoffeeShopMap coffeeShops={pageData.mapCoffeeShops} />
+      ) : pageData.listCounts.all === 0 && !search.query ? (
         <EmptyState
           icon={MapPin}
           title="No cafés added yet"

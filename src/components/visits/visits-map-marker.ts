@@ -1,4 +1,5 @@
 import type { Map as MapLibreMap } from 'maplibre-gl'
+import { getStoredFaviconUrl } from '@/lib/favicon'
 import { getMapMarkerVariant, type SavedMapPlace } from './visits-map-utils'
 
 export function getVisibleVisitsMapPlaceIds(
@@ -32,6 +33,18 @@ export function createVisitsMapMarkerElement(
   const pin = document.createElement('span')
   pin.className = 'roastbook-visits-map-marker-pin'
   pin.setAttribute('aria-hidden', 'true')
+  const icon = document.createElement('img')
+  icon.className = 'roastbook-visits-map-marker-icon'
+  icon.alt = ''
+  icon.src =
+    getStoredFaviconUrl({
+      entityType: 'coffee-shops',
+      entityId: place.coffeeShopId,
+      updatedAt: place.updatedAt,
+      website: place.website,
+    }) ?? ''
+  icon.addEventListener('error', () => icon.remove())
+  pin.append(icon)
   marker.append(pin)
 
   marker.addEventListener('click', (event) => {

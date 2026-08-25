@@ -9,6 +9,7 @@ export type SavedPlaceInput = {
   readonly latitude: string | number | null
   readonly longitude: string | number | null
   readonly website: string | null
+  readonly updatedAt: Date | string
   readonly rating: number | null
   readonly isFavorite: boolean
   readonly wantsToVisit: boolean
@@ -28,6 +29,7 @@ type MapPlaceBase = {
   readonly latitude: number
   readonly longitude: number
   readonly website: string | null
+  readonly updatedAt: Date | string
 }
 
 export type SavedMapPlace = MapPlaceBase & {
@@ -69,6 +71,7 @@ export function toSavedMapPlaces(
         latitude,
         longitude,
         website: coffeeShop.website,
+        updatedAt: coffeeShop.updatedAt,
         rating: coffeeShop.rating,
         isFavorite: coffeeShop.isFavorite,
         wantsToVisit: coffeeShop.wantsToVisit,

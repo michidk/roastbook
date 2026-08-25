@@ -4,15 +4,7 @@ import {
   stripSearchParams,
   useNavigate,
 } from '@tanstack/react-router'
-import {
-  History,
-  Map as MapIcon,
-  Plus,
-  Store,
-  UtensilsCrossed,
-} from 'lucide-react'
-import { CoffeeShopCard } from '@/components/coffee-shops/coffee-shop-card'
-import { CoffeeShopMap } from '@/components/coffee-shops/coffee-shop-map'
+import { Plus, UtensilsCrossed } from 'lucide-react'
 import { CollectionToolbar } from '@/components/collection-toolbar'
 import { EmptyState } from '@/components/empty-state'
 import { Page, PageHeader } from '@/components/page-layout'
@@ -21,21 +13,18 @@ import { RouteError } from '@/components/route-error'
 import { ListPending } from '@/components/route-pending'
 import { Button } from '@/components/ui/button'
 import { interactiveCardLinkClassName } from '@/components/ui/card'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { StarRating } from '@/components/ui/star-rating'
 import { WebsiteLogo } from '@/components/website-logo'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 import {
-  searchEnum,
   searchInteger,
   searchRecord,
   searchString,
   searchValidator,
 } from '@/lib/search-params'
 import { getCafeVisitPage } from '@/lib/server/cafe-visits'
-import { getCoffeeShopMapOverview } from '@/lib/server/coffee-shops'
 import { isNegativeTasteTag } from '@/lib/taste-tags'
 
 const parseVisitSearch = (input: unknown) => {
@@ -43,29 +32,19 @@ const parseVisitSearch = (input: unknown) => {
   return {
     page: searchInteger(search.page, 1, 1) ?? 1,
     query: searchString(search.query),
-    view: searchEnum(search.view, ['history', 'map'], 'history'),
   }
 }
 
 export const Route = createFileRoute('/visits/')({
   validateSearch: searchValidator(parseVisitSearch),
   search: {
-    middlewares: [
-      stripSearchParams({ page: 1, query: '', view: 'history' } as const),
-    ],
+    middlewares: [stripSearchParams({ page: 1, query: '' } as const)],
   },
   loaderDeps: ({ search }) => ({
     page: search.page,
     query: search.query,
-    view: search.view,
   }),
-  loader: async ({ deps }) => {
-    const [visitPage, coffeeShops] = await Promise.all([
-      getCafeVisitPage({ data: { page: deps.page, query: deps.query } }),
-      deps.view === 'map' ? getCoffeeShopMapOverview() : Promise.resolve([]),
-    ])
-    return { visitPage, coffeeShops }
-  },
+  loader: ({ deps }) => getCafeVisitPage({ data: deps }),
   staleTime: 15_000,
   component: VisitsPage,
   pendingComponent: ListPending,
@@ -76,42 +55,21 @@ export const Route = createFileRoute('/visits/')({
 
 type Visit = Awaited<ReturnType<typeof getCafeVisitPage>>['items'][number]
 
-const RECENT_PLACES_LIMIT = 6
-
-function SectionHeading({
-  title,
-  count,
-  action,
-}: {
-  title: string
-  count: number
-  action?: React.ReactNode
-}) {
+function SectionHeading({ title, count }: { title: string; count: number }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <h2 className="font-display text-lg font-bold tracking-tight text-foreground">
         {title} · {count}
       </h2>
-      {action}
     </div>
   )
 }
 
 function VisitsPage() {
-  const { visitPage, coffeeShops } = Route.useLoaderData()
+  const visitPage = Route.useLoaderData()
   const search = Route.useSearch()
   const navigate = useNavigate({ from: '/visits/' })
   const visits = visitPage.items
-  const featuredCoffeeShops = [
-    ...coffeeShops.filter((shop) => shop.isFavorite),
-    ...coffeeShops.filter((shop) => !shop.isFavorite && shop.wantsToVisit),
-    ...coffeeShops
-      .filter(
-        (shop) =>
-          !shop.isFavorite && !shop.wantsToVisit && shop.latestVisitAt !== null,
-      )
-      .slice(0, RECENT_PLACES_LIMIT),
-  ].slice(0, RECENT_PLACES_LIMIT)
   const updateSearch = (
     values: Partial<typeof search>,
     options?: { replace?: boolean },
@@ -137,114 +95,49 @@ function VisitsPage() {
         }
       />
 
-      <nav className="flex gap-2" aria-label="Café visit views">
-        <Button
-          asChild
-          variant={search.view === 'history' ? 'primary' : 'outline'}
-        >
-          <Link
-            from="/visits/"
-            search={(current) => ({ ...current, view: 'history', page: 1 })}
-          >
-            <History aria-hidden="true" />
-            History
-          </Link>
-        </Button>
-        <Button asChild variant={search.view === 'map' ? 'primary' : 'outline'}>
-          <Link
-            from="/visits/"
-            search={(current) => ({ ...current, view: 'map' })}
-          >
-            <MapIcon aria-hidden="true" />
-            Map
-          </Link>
-        </Button>
-      </nav>
+      <section className="space-y-3">
+        <SectionHeading title="Visit history" count={visitPage.totalItems} />
 
-      {search.view === 'history' ? (
-        <section className="space-y-3">
-          <SectionHeading title="Visit history" count={visitPage.totalItems} />
+        <CollectionToolbar
+          value={search.query}
+          onValueChange={(query) =>
+            updateSearch({ query, page: 1 }, { replace: true })
+          }
+          placeholder="Search visits…"
+          ariaLabel="Search visits"
+          resultLabel={`${visitPage.totalItems} ${visitPage.totalItems === 1 ? 'visit' : 'visits'}`}
+        />
 
-          <CollectionToolbar
-            value={search.query}
-            onValueChange={(query) =>
-              updateSearch({ query, page: 1 }, { replace: true })
-            }
-            placeholder="Search visits…"
-            ariaLabel="Search visits"
-            resultLabel={`${visitPage.totalItems} ${visitPage.totalItems === 1 ? 'visit' : 'visits'}`}
+        {visitPage.totalItems === 0 && !search.query ? (
+          <EmptyState
+            icon={UtensilsCrossed}
+            title="No visits logged yet"
+            description="Log your first visit to start your café experience history."
+            actionLabel="Log a visit"
+            actionHref="/visits/new"
+            actionSearch={{ coffeeShopId: undefined }}
           />
-
-          {visitPage.totalItems === 0 && !search.query ? (
-            <EmptyState
-              icon={UtensilsCrossed}
-              title="No visits logged yet"
-              description="Log your first visit to start your café experience history."
-              actionLabel="Log a visit"
-              actionHref="/visits/new"
-              actionSearch={{ coffeeShopId: undefined }}
-            />
-          ) : visitPage.totalItems === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No visits match “{search.query}”.
-            </p>
-          ) : (
-            <>
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {visits.map((visit) => (
-                  <VisitCard key={visit.id} visit={visit} />
-                ))}
-              </div>
-              {visitPage.totalPages > 1 && (
-                <PaginationControls
-                  page={visitPage.page}
-                  totalPages={visitPage.totalPages}
-                  onPageChange={(page) => updateSearch({ page })}
-                />
-              )}
-            </>
-          )}
-        </section>
-      ) : (
-        <section className="space-y-3">
-          <SectionHeading
-            title="Café map"
-            count={coffeeShops.length}
-            action={
-              <Button asChild variant="outline" size="sm">
-                <Link to="/places">
-                  <Store aria-hidden className="h-4 w-4" />
-                  Manage all cafés
-                </Link>
-              </Button>
-            }
-          />
-          <div className="grid items-stretch gap-4 lg:grid-cols-4">
-            <div className="min-w-0 lg:col-span-3">
-              <CoffeeShopMap coffeeShops={coffeeShops} />
+        ) : visitPage.totalItems === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No visits match “{search.query}”.
+          </p>
+        ) : (
+          <>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {visits.map((visit) => (
+                <VisitCard key={visit.id} visit={visit} />
+              ))}
             </div>
-
-            {featuredCoffeeShops.length > 0 && (
-              <aside className="min-w-0 space-y-3 lg:col-span-1 lg:flex lg:min-h-0 lg:flex-col lg:space-y-0 lg:gap-3">
-                <h3 className="font-display text-lg font-bold tracking-tight text-foreground">
-                  Quick picks · {featuredCoffeeShops.length}
-                </h3>
-                <ScrollArea className="lg:h-[540px]">
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 lg:pr-3">
-                    {featuredCoffeeShops.map((coffeeShop) => (
-                      <CoffeeShopCard
-                        key={coffeeShop.id}
-                        coffeeShop={coffeeShop}
-                        emphasizeFavorite
-                      />
-                    ))}
-                  </div>
-                </ScrollArea>
-              </aside>
+            {visitPage.totalPages > 1 && (
+              <PaginationControls
+                page={visitPage.page}
+                totalPages={visitPage.totalPages}
+                onPageChange={(page) => updateSearch({ page })}
+              />
             )}
-          </div>
-        </section>
-      )}
+          </>
+        )}
+      </section>
     </Page>
   )
 }

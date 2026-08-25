@@ -275,6 +275,7 @@
 }
 
 .roastbook-visits-map-marker-pin {
+  display: grid;
   pointer-events: none;
   width: 18px;
   height: 18px;
@@ -285,6 +286,16 @@
   transition:
     border-color 150ms ease-out,
     box-shadow 150ms ease-out;
+}
+
+.roastbook-visits-map-marker-icon {
+  width: 100%;
+  height: 100%;
+  place-self: center;
+  border-radius: inherit;
+  background: var(--card);
+  object-fit: contain;
+  padding: 1px;
 }
 
 .roastbook-visits-map-marker[data-variant="favorite"]
