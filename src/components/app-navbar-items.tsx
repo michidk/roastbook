@@ -25,11 +25,17 @@ export type NavItem = {
   readonly icon: ComponentType<{ className?: string }>
 }
 
+const cafesNavItem: NavItem = {
+  title: 'Cafés',
+  url: '/places',
+  icon: MapPin,
+}
+
 export const primaryNavItems: readonly NavItem[] = [
   { title: 'Brews', url: '/brews', icon: Coffee },
   { title: 'Beans', url: '/beans', icon: Bean },
   { title: 'Café visits', url: '/visits', icon: UtensilsCrossed },
-  { title: 'Cafés', url: '/places', icon: MapPin },
+  cafesNavItem,
 ]
 
 export const moreNavItems: readonly NavItem[] = [
@@ -44,6 +50,16 @@ export const moreNavItems: readonly NavItem[] = [
   { title: 'Recipes', url: '/recipes', icon: BookOpen },
   { title: 'Statistics', url: '/stats', icon: BarChart3 },
   { title: 'Settings', url: '/settings', icon: Settings },
+]
+
+export const mobilePrimaryNavItems: readonly NavItem[] = primaryNavItems.slice(
+  0,
+  3,
+)
+
+export const mobileMoreNavItems: readonly NavItem[] = [
+  cafesNavItem,
+  ...moreNavItems,
 ]
 
 export const primaryCreateAction: NavItem = {

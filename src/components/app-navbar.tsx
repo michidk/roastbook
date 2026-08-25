@@ -7,6 +7,8 @@ import {
   CreateMenuItems,
   isNavItemActive,
   MoreMenuItems,
+  mobileMoreNavItems,
+  mobilePrimaryNavItems,
   moreNavItems,
   primaryNavItems,
 } from '@/components/app-navbar-items'
@@ -25,11 +27,11 @@ function useNavItemIsActive(item: NavItem): boolean {
   return isNavItemActive(pathname, item)
 }
 
-function useMoreNavIsActive(): boolean {
+function useMoreNavIsActive(items: readonly NavItem[]): boolean {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
-  return moreNavItems.some((item) => isNavItemActive(pathname, item))
+  return items.some((item) => isNavItemActive(pathname, item))
 }
 
 function NavItemLink({
@@ -73,7 +75,7 @@ function DesktopNavLink({ item }: { item: NavItem }) {
 }
 
 function DesktopMoreMenu() {
-  const isActive = useMoreNavIsActive()
+  const isActive = useMoreNavIsActive(moreNavItems)
 
   return (
     <DropdownMenu>
@@ -134,7 +136,7 @@ function MobileNavLink({ item }: { item: NavItem }) {
 }
 
 function MobileMoreMenu() {
-  const isActive = useMoreNavIsActive()
+  const isActive = useMoreNavIsActive(mobileMoreNavItems)
 
   return (
     <DropdownMenu>
@@ -155,7 +157,7 @@ function MobileMoreMenu() {
         <span className="text-[10px] font-semibold">More</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" side="top" sideOffset={12}>
-        <MoreMenuItems items={moreNavItems} />
+        <MoreMenuItems items={mobileMoreNavItems} />
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -204,7 +206,7 @@ export function AppNavbar({ demoMode = false }: { demoMode?: boolean }) {
         className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
         <div className="flex h-16 items-center justify-around px-1">
-          {primaryNavItems.slice(0, 2).map((item) => (
+          {mobilePrimaryNavItems.slice(0, 2).map((item) => (
             <MobileNavLink key={item.url} item={item} />
           ))}
 
@@ -230,7 +232,7 @@ export function AppNavbar({ demoMode = false }: { demoMode?: boolean }) {
             </DropdownMenu>
           )}
 
-          {primaryNavItems.slice(2).map((item) => (
+          {mobilePrimaryNavItems.slice(2).map((item) => (
             <MobileNavLink key={item.url} item={item} />
           ))}
           <MobileMoreMenu />
