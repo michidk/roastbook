@@ -99,7 +99,8 @@ function GearSetsPage() {
     <Page>
       <PageHeader
         title="Gear sets"
-        description="Reusable equipment setups you can load into a brew"
+        description="Save equipment combinations you regularly brew with."
+        help="Gear sets group equipment you use together, such as your home, work, or travel setup. Load a set into a new brew to fill its equipment with one tap."
         actions={
           <Button asChild>
             <Link to="/gear-sets/new">
@@ -114,7 +115,7 @@ function GearSetsPage() {
         <EmptyState
           icon={Layers}
           title="No gear sets yet"
-          description="Group the equipment you use together — at work, at home, or when traveling — and load it into new brews with one tap"
+          description="Create your first set to reuse a familiar equipment setup."
           actionLabel="Add gear set"
           actionHref="/gear-sets/new"
         />

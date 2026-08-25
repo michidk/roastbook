@@ -149,7 +149,8 @@ function ShotsPage() {
     <Page>
       <PageHeader
         title="Brews"
-        description="Your brewing history across every method"
+        description="Review every coffee you brew and how it turned out."
+        help="Brews are individual coffee-making sessions. Log the beans, method, equipment, measurements, tasting notes, and rating so you can learn from each cup."
         actions={
           <>
             {totalItems > 0 && (
@@ -214,7 +215,7 @@ function ShotsPage() {
         <EmptyState
           icon={Coffee}
           title="No brews logged yet"
-          description="Start tracking your coffee brewing"
+          description="Log your first brew to start building your coffee history."
           actionLabel="Log your first brew"
           actionHref="/brews/new"
         />

@@ -125,7 +125,8 @@ function VisitsPage() {
     <Page>
       <PageHeader
         title="Café visits"
-        description="Your coffee experiences out and about"
+        description="Remember the coffees and cafés you experience."
+        help="Café visits capture what you ordered, where you went, what it cost, and how it tasted. Use them as a personal history of coffee experiences away from home."
         actions={
           <Button asChild>
             <Link to="/visits/new" search={{ coffeeShopId: undefined }}>
@@ -178,7 +179,7 @@ function VisitsPage() {
             <EmptyState
               icon={UtensilsCrossed}
               title="No visits logged yet"
-              description="Track your café visits and coffee experiences"
+              description="Log your first visit to start your café experience history."
               actionLabel="Log a visit"
               actionHref="/visits/new"
               actionSearch={{ coffeeShopId: undefined }}

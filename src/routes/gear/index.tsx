@@ -115,7 +115,8 @@ function GearPage() {
     <Page>
       <PageHeader
         title="Gear"
-        description="Your coffee equipment"
+        description="Keep track of the equipment you use to brew."
+        help="Gear includes brewers, espresso machines, grinders, baskets, and other equipment. Save it once, then attach it to brews directly or through a gear set."
         actions={
           <Button asChild>
             <Link to="/gear/new">
@@ -130,7 +131,7 @@ function GearPage() {
         <EmptyState
           icon={Cog}
           title="No gear added yet"
-          description="Add your espresso machine, grinder, and other equipment"
+          description="Add your first brewer, grinder, or other piece of equipment."
           actionLabel="Add gear"
           actionHref="/gear/new"
         />

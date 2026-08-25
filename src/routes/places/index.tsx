@@ -217,6 +217,7 @@ function PlacesPage() {
             {pageData.listCounts.all === 1 ? 'café' : 'cafés'}
           </>
         }
+        help="Cafés are coffee shops you want to remember. Save their location and details, mark favorites or places to visit, and connect them to your café visits."
         actions={
           <Button asChild>
             <Link to="/places/new">
@@ -283,7 +284,7 @@ function PlacesPage() {
         <EmptyState
           icon={MapPin}
           title="No cafés added yet"
-          description="Add the cafés you want to remember"
+          description="Add your first café to start building your saved places."
           actionLabel="Add café"
           actionHref="/places/new"
         />

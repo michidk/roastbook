@@ -122,7 +122,8 @@ function BrewingMethodsPage() {
     <Page>
       <PageHeader
         title="Brewing methods"
-        description="Define each method and the brew parameters it uses. Recipes and brews always belong to one method."
+        description="Define how you brew and which measurements you track."
+        help="Brewing methods define workflows such as espresso, pour-over, or AeroPress and the parameters each one records. Every recipe and brew belongs to a method."
         actions={
           <Button asChild>
             <Link to="/brewing-methods/new">
@@ -137,7 +138,7 @@ function BrewingMethodsPage() {
         <EmptyState
           icon={Coffee}
           title="No brewing methods yet"
-          description="Add the methods you brew with so shots and recipes can use them"
+          description="Add your first method to customize recipes and brew records."
           actionLabel="Add method"
           actionHref="/brewing-methods/new"
         />

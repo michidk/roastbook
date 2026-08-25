@@ -75,7 +75,8 @@ function BeansPage() {
     <Page>
       <PageHeader
         title="Beans"
-        description="Your coffee bean collection"
+        description="Keep track of the coffee beans you brew."
+        help="Beans represent the coffees in your collection. Save their roaster, origin, process, roast details, and tasting notes, then select them when you log a brew."
         actions={
           <Button asChild>
             <Link to="/beans/new">
@@ -103,7 +104,7 @@ function BeansPage() {
         <EmptyState
           icon={Bean}
           title="No beans added yet"
-          description="Start by adding your first bag of coffee"
+          description="Add your first coffee to start building your bean collection."
           actionLabel="Add beans"
           actionHref="/beans/new"
         />

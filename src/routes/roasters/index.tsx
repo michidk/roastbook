@@ -157,7 +157,8 @@ function RoastersPage() {
     <Page>
       <PageHeader
         title="Roasters"
-        description="Coffee roasters you buy from"
+        description="Keep track of the coffee roasters you buy from."
+        help="Roasters are the companies that roast your coffee. Save their details here to organize beans by roaster and quickly revisit their coffee offerings."
         actions={
           <Button asChild>
             <Link to="/roasters/new">
@@ -172,7 +173,7 @@ function RoastersPage() {
         <EmptyState
           icon={Store}
           title="No roasters added yet"
-          description="Start by adding your favorite coffee roasters"
+          description="Add your first roaster to organize the coffees you buy."
           actionLabel="Add roaster"
           actionHref="/roasters/new"
         />

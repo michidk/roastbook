@@ -190,7 +190,8 @@ function RecipesPage() {
     <Page>
       <PageHeader
         title="Recipes"
-        description="Reusable brew values, organized by brewing method."
+        description="Save brew settings you want to use again."
+        help="Recipes are reusable starting points for a brewing method. Save measurements, temperatures, timings, beans, and equipment, then load them when creating a new brew."
         actions={
           <Button asChild>
             <Link to="/recipes/new">
@@ -204,7 +205,7 @@ function RecipesPage() {
         <EmptyState
           icon={BookOpen}
           title="No recipes yet"
-          description="Open any saved brew and choose “Save as recipe”."
+          description="Create a recipe or save one from a brew you enjoyed."
           actionLabel="Browse brews"
           actionHref="/brews"
         />

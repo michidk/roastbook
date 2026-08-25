@@ -1,4 +1,11 @@
+import { CircleHelp } from 'lucide-react'
 import type { ComponentProps, ReactNode } from 'react'
+import { useRef, useState } from 'react'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 
 type PageWidth = 'full' | 'wide' | 'content' | 'form'
@@ -32,6 +39,7 @@ export function Page({ width = 'full', className, ...props }: PageProps) {
 interface PageHeaderProps extends Omit<ComponentProps<'header'>, 'title'> {
   title: ReactNode
   description?: ReactNode
+  help?: ReactNode
   eyebrow?: ReactNode
   leading?: ReactNode
   actions?: ReactNode
@@ -42,6 +50,7 @@ interface PageHeaderProps extends Omit<ComponentProps<'header'>, 'title'> {
 export function PageHeader({
   title,
   description,
+  help,
   eyebrow,
   leading,
   actions,
@@ -67,16 +76,19 @@ export function PageHeader({
               {eyebrow}
             </p>
           ) : null}
-          <h1
-            className={cn(
-              'min-w-0 break-words font-display font-extrabold tracking-tight text-foreground',
-              size === 'compact'
-                ? 'text-2xl sm:text-3xl'
-                : 'text-3xl md:text-5xl',
-            )}
-          >
-            {title}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1
+              className={cn(
+                'min-w-0 break-words font-display font-extrabold tracking-tight text-foreground',
+                size === 'compact'
+                  ? 'text-2xl sm:text-3xl'
+                  : 'text-3xl md:text-5xl',
+              )}
+            >
+              {title}
+            </h1>
+            {help ? <PageHelp>{help}</PageHelp> : null}
+          </div>
           {description ? (
             <p className="mt-1 max-w-2xl text-sm font-semibold leading-relaxed text-muted-foreground">
               {description}
@@ -90,5 +102,42 @@ export function PageHeader({
         </div>
       ) : null}
     </header>
+  )
+}
+
+function PageHelp({ children }: { readonly children: ReactNode }) {
+  const [open, setOpen] = useState(false)
+  const closeTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  const show = () => {
+    clearTimeout(closeTimer.current)
+    setOpen(true)
+  }
+  const hide = () => {
+    closeTimer.current = setTimeout(() => setOpen(false), 100)
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        aria-label="About this page"
+        className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        onMouseEnter={show}
+        onMouseLeave={hide}
+        onFocus={show}
+        onBlur={hide}
+      >
+        <CircleHelp aria-hidden="true" className="size-5" />
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-72 text-sm leading-relaxed text-muted-foreground"
+        side="bottom"
+        sideOffset={6}
+        onMouseEnter={show}
+        onMouseLeave={hide}
+      >
+        {children}
+      </PopoverContent>
+    </Popover>
   )
 }
