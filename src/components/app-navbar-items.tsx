@@ -28,8 +28,8 @@ export type NavItem = {
 export const primaryNavItems: readonly NavItem[] = [
   { title: 'Brews', url: '/brews', icon: Coffee },
   { title: 'Beans', url: '/beans', icon: Bean },
-  { title: 'Visits', url: '/visits', icon: UtensilsCrossed },
-  { title: 'Places', url: '/places', icon: MapPin },
+  { title: 'Café visits', url: '/visits', icon: UtensilsCrossed },
+  { title: 'Cafés', url: '/places', icon: MapPin },
 ]
 
 export const moreNavItems: readonly NavItem[] = [
@@ -42,7 +42,7 @@ export const moreNavItems: readonly NavItem[] = [
     icon: SlidersHorizontal,
   },
   { title: 'Recipes', url: '/recipes', icon: BookOpen },
-  { title: 'Stats', url: '/stats', icon: BarChart3 },
+  { title: 'Statistics', url: '/stats', icon: BarChart3 },
   { title: 'Settings', url: '/settings', icon: Settings },
 ]
 
