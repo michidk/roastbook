@@ -132,10 +132,25 @@ export async function loadDetailedStats(filter: StatsFilter) {
     })
     const timeZone = installationSettings?.timeZone ?? 'UTC'
     const range = resolveStatsRange(filter, now, timeZone)
+    const today = dateKeyInTimeZone(now, timeZone)
     const currentWhere = shotCondition({
       timeZone,
       start: range.start,
       end: range.end,
+      method: filter.method,
+      bean: filter.bean,
+    })
+    const activityCalendarStartDate = new Date(`${today}T00:00:00Z`)
+    activityCalendarStartDate.setUTCDate(
+      activityCalendarStartDate.getUTCDate() - 364,
+    )
+    const activityCalendarStart = activityCalendarStartDate
+      .toISOString()
+      .slice(0, 10)
+    const activityCalendarWhere = shotCondition({
+      timeZone,
+      start: activityCalendarStart,
+      end: today,
       method: filter.method,
       bean: filter.bean,
     })
@@ -181,6 +196,7 @@ export async function loadDetailedStats(filter: StatsFilter) {
       dialInRows,
       rhythmRows,
       activityDates,
+      activityCalendarDates,
       roasterUsage,
       originUsage,
       processUsage,
@@ -404,6 +420,13 @@ export async function loadDetailedStats(filter: StatsFilter) {
         .select({ date: shotDateKey, count: shotCountSql })
         .from(shots)
         .where(currentWhere)
+        .groupBy(sql`1`)
+        .orderBy(sql`1`),
+
+      db
+        .select({ date: shotDateKey, count: shotCountSql })
+        .from(shots)
+        .where(activityCalendarWhere)
         .groupBy(sql`1`)
         .orderBy(sql`1`),
 
@@ -646,6 +669,17 @@ export async function loadDetailedStats(filter: StatsFilter) {
           highRated: 0,
         }),
       ),
+      activityCalendar: {
+        start: activityCalendarStart,
+        end: today,
+        days: fillBucketSeries(
+          activityCalendarDates,
+          activityCalendarStart,
+          today,
+          'day',
+          (date) => ({ date, count: 0 }),
+        ),
+      },
       methods: normalizeRatingAverages(methodUsage),
       tasteProfile: normalizeRatingAverages(tasteProfile).map((row) => ({
         ...row,
@@ -661,10 +695,7 @@ export async function loadDetailedStats(filter: StatsFilter) {
       })),
       rhythm: {
         cells: rhythmRows,
-        streaks: calculateStreaks(
-          activityDates,
-          dateKeyInTimeZone(now, timeZone),
-        ),
+        streaks: calculateStreaks(activityDates, today),
       },
       exploration: {
         roasters: normalizeRatingAverages(

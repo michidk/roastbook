@@ -10,6 +10,7 @@ import { MetricCard } from '@/components/metric-card'
 import { Page, PageHeader } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
 import { RoutePending } from '@/components/route-pending'
+import { StatsActivityCalendar } from '@/components/stats/stats-activity-calendar'
 import { StatsFilters } from '@/components/stats/stats-filters'
 import { StatsSections } from '@/components/stats/stats-sections'
 import { Button } from '@/components/ui/button'
@@ -79,7 +80,7 @@ function StatsPage() {
     })
 
   return (
-    <Page>
+    <Page className="min-w-0 max-w-[calc(100vw-2rem)] md:max-w-[calc(100vw-4rem)]">
       <PageHeader
         title="Statistics"
         description={`${rangeLabel} · Calendar boundaries use ${stats.filter.timeZone}`}
@@ -101,6 +102,8 @@ function StatsPage() {
           })
         }
       />
+
+      <StatsActivityCalendar activity={stats.activityCalendar} />
 
       <section
         aria-label="Brewing overview"

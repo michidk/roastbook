@@ -37,9 +37,10 @@ desktop where you dig through the numbers afterwards.
   flow rate, brew temperature, grind setting, tamp force, basket, puck screen, and
   paper filter position per brew — plus documented machine-level OPV, factory
   pre-infusion, flow limit, and volumetric defaults on your gear.
-- **Numbers that answer questions.** Filterable statistics connect brew quality
-  to beans, methods, recipes, taste, consistency, timing, gear, and cost, while
-  parameter charts show what a change to grind, dose, or pressure actually did.
+- **Numbers that answer questions.** A year-long coffee activity calendar and
+  filterable statistics connect brew quality to beans, methods, recipes, taste,
+  consistency, timing, gear, and cost, while parameter charts show what a change
+  to grind, dose, or pressure actually did.
 - **Mobile and desktop, both first-class.** Large touch targets and compact cards
   next to the machine; full data tables, charts, and maps at the desk.
 - **AI-native, not AI-bolted-on.** Research and extraction are wired into the
