@@ -7,6 +7,10 @@ import {
   createEmptyBeanFormValues,
 } from '@/components/beans/bean-form-values'
 import {
+  type BeanFormData,
+  BeanInfoDiffModal,
+} from '@/components/beans/bean-info-diff-modal'
+import {
   EntityImageUploadRecovery,
   EntityImageUploadSection,
 } from '@/components/form/entity-image-upload-section'
@@ -22,6 +26,7 @@ import { useAppSettings } from '@/hooks/use-app-settings'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
 import { useImageUpload } from '@/hooks/use-image-upload'
+import type { ExtractedBeanInfo } from '@/lib/ai'
 import { getErrorMessage } from '@/lib/error-message'
 import type { ImageFile } from '@/lib/image-file'
 import { findRoasterByName } from '@/lib/roaster-match'
@@ -62,6 +67,10 @@ export function BeanForm({
   const [createdRoasters, setCreatedRoasters] = useState<
     readonly RoasterOption[]
   >([])
+  const [suggestedData, setSuggestedData] = useState<ExtractedBeanInfo | null>(
+    null,
+  )
+  const [diffModalOpen, setDiffModalOpen] = useState(false)
   const [extractedRoasterName, setExtractedRoasterName] = useState<
     string | null
   >(null)
@@ -135,32 +144,8 @@ export function BeanForm({
         },
       })
 
-      const extractedRoaster = extracted.roaster
-      const matchedRoaster = extractedRoaster
-        ? findRoasterByName(roasterOptions, extractedRoaster)
-        : undefined
-
-      form.setValues((current) => ({
-        ...current,
-        name: extracted.name || current.name,
-        type: extracted.type || current.type,
-        roasterId: current.roasterId,
-        origin: extracted.origin || current.origin,
-        region: extracted.region || current.region,
-        farm: extracted.farm || current.farm,
-        variety: extracted.variety || current.variety,
-        process: extracted.process || current.process,
-        roastLevel: extracted.roastLevel || current.roastLevel,
-        roastDate: extracted.roastDate || current.roastDate,
-        notes: extracted.notes || current.notes,
-      }))
-      if (
-        extractedRoaster &&
-        String(matchedRoaster?.id ?? '') !== form.values.roasterId
-      ) {
-        setExtractedRoasterDetails(roasterDetailsFromExtraction(extracted))
-        setExtractedRoasterName(extractedRoaster)
-      }
+      setSuggestedData(extracted)
+      setDiffModalOpen(true)
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to extract bean info'))
     } finally {
@@ -281,6 +266,26 @@ export function BeanForm({
           roasters={roasterOptions}
         />
       </EntityForm>
+      {suggestedData ? (
+        <BeanInfoDiffModal
+          open={diffModalOpen}
+          onOpenChange={setDiffModalOpen}
+          currentData={form.values}
+          suggestedData={suggestedData}
+          onApply={(updates: Partial<BeanFormData>) => form.patch(updates)}
+          onReviewRoaster={(name) => {
+            const matchedRoaster = findRoasterByName(roasterOptions, name)
+            if (String(matchedRoaster?.id ?? '') === form.values.roasterId) {
+              return
+            }
+            setExtractedRoasterDetails(
+              roasterDetailsFromExtraction(suggestedData),
+            )
+            setExtractedRoasterName(name)
+          }}
+          source="image"
+        />
+      ) : null}
       {extractedRoasterName ? (
         <ExtractedRoasterDialog
           open
