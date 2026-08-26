@@ -6,6 +6,7 @@ FROM oven/bun:1.3.14 AS builder
 WORKDIR /app
 
 ARG ROASTBOOK_EDITION=standard
+ARG VITE_HEAD_HTML
 
 # Copy package files
 COPY package.json bun.lock ./
@@ -17,7 +18,7 @@ RUN bun install --frozen-lockfile
 COPY . .
 
 # Build the application
-RUN ROASTBOOK_EDITION=${ROASTBOOK_EDITION} bun run build
+RUN ROASTBOOK_EDITION=${ROASTBOOK_EDITION} VITE_HEAD_HTML="${VITE_HEAD_HTML}" bun run build
 
 # Production stage
 FROM oven/bun:1.3.14-slim AS runner

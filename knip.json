@@ -3,6 +3,7 @@
   "entry": [
     "src/routes/**/*.tsx",
     "src/router.tsx",
+    "src/server.ts",
     "src/start.ts",
     "src/lib/server/media-handler.ts",
     "src/**/*.test.ts",

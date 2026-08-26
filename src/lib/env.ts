@@ -4,6 +4,7 @@ import { z } from 'zod'
 const env = createEnv({
   clientPrefix: 'VITE_',
   client: {
+    VITE_HEAD_HTML: z.string().trim().optional(),
     VITE_STORAGE_URL: z
       .string()
       .trim()
@@ -15,5 +16,6 @@ const env = createEnv({
 })
 
 export const publicEnv = {
+  VITE_HEAD_HTML: env.VITE_HEAD_HTML,
   VITE_STORAGE_URL: env.VITE_STORAGE_URL,
 } as const

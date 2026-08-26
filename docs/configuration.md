@@ -21,13 +21,21 @@ modules instead of reading the environment directly.
 | `STORAGE_PROVIDER` | `local` | No | `local` or `s3` |
 | `STORAGE_PATH` | `./uploads` | No | Filesystem upload root for local storage |
 | `STORAGE_URL` | `/media` | No | Server-side public media URL base |
+| `VITE_HEAD_HTML` | — | No | Trusted head markup (build time) |
 | `VITE_STORAGE_URL` | `/media` | No | Browser media URL base (build time) |
 
-`VITE_STORAGE_URL` is a build-time variable: Vite inlines `import.meta.env`
-values into the browser bundle when the application is built, so it cannot be
-changed at container runtime and the Helm chart does not expose it. The Helm
-chart pins the server-side `STORAGE_URL` to `/media`
+`VITE_HEAD_HTML` and `VITE_STORAGE_URL` are build-time variables: Vite inlines
+`import.meta.env` values when the application is built, so they cannot be
+changed at container runtime and the Helm chart does not expose them. Pass
+`VITE_HEAD_HTML` to `docker compose build` through the project `.env` file or
+as a `--build-arg` when building the image directly. The Helm chart pins the
+server-side `STORAGE_URL` to `/media`
 (`charts/templates/deployment.yaml`).
+
+`VITE_HEAD_HTML` accepts complete tags, for example an analytics `<script>` or
+site-verification `<meta>` tag. The value is inserted verbatim into every HTML
+document. Treat it as trusted executable configuration: never populate it from
+user input or another untrusted source. Leave it unset to inject nothing.
 
 Demo mode is selected when the application is built rather than through runtime
 configuration. See [Demo mode](demo-mode.md) for build instructions and the

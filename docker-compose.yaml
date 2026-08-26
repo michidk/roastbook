@@ -17,6 +17,8 @@ services:
   migrate:
     build:
       context: .
+      args:
+        VITE_HEAD_HTML: ${VITE_HEAD_HTML:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -28,6 +30,8 @@ services:
   app:
     build:
       context: .
+      args:
+        VITE_HEAD_HTML: ${VITE_HEAD_HTML:-}
     restart: unless-stopped
     depends_on:
       migrate:
