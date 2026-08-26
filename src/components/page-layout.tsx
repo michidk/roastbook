@@ -1,6 +1,5 @@
 import { CircleHelp } from 'lucide-react'
 import type { ComponentProps, ReactNode } from 'react'
-import { useRef, useState } from 'react'
 import {
   Popover,
   PopoverContent,
@@ -106,26 +105,14 @@ export function PageHeader({
 }
 
 function PageHelp({ children }: { readonly children: ReactNode }) {
-  const [open, setOpen] = useState(false)
-  const closeTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
-
-  const show = () => {
-    clearTimeout(closeTimer.current)
-    setOpen(true)
-  }
-  const hide = () => {
-    closeTimer.current = setTimeout(() => setOpen(false), 100)
-  }
-
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover>
       <PopoverTrigger
         aria-label="About this page"
-        className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        onMouseEnter={show}
-        onMouseLeave={hide}
-        onFocus={show}
-        onBlur={hide}
+        className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [@media(pointer:coarse)]:size-11"
+        openOnHover
+        delay={0}
+        closeDelay={100}
       >
         <CircleHelp aria-hidden="true" className="size-5" />
       </PopoverTrigger>
@@ -133,8 +120,6 @@ function PageHelp({ children }: { readonly children: ReactNode }) {
         className="w-72 text-sm leading-relaxed text-muted-foreground"
         side="bottom"
         sideOffset={6}
-        onMouseEnter={show}
-        onMouseLeave={hide}
       >
         {children}
       </PopoverContent>
