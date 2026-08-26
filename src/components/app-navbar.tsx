@@ -12,6 +12,7 @@ import {
   moreNavItems,
   primaryNavItems,
 } from '@/components/app-navbar-items'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -188,6 +189,7 @@ export function AppNavbar({ demoMode = false }: { demoMode?: boolean }) {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
             {demoMode ? null : <DesktopCreateButton />}
           </div>
         </div>
@@ -198,6 +200,9 @@ export function AppNavbar({ demoMode = false }: { demoMode?: boolean }) {
       <header className="sticky top-0 z-50 w-full border-b border-border bg-card lg:hidden">
         <div className="flex h-14 items-center px-4">
           <BrandLink />
+          <div className="ml-auto">
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
