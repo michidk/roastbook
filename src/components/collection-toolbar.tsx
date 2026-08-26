@@ -24,6 +24,8 @@ interface CollectionToolbarProps {
   readonly resultLabel?: string
   /** Inline at every width: view toggles and other always-visible controls. */
   readonly actions?: ReactNode
+  /** Controls that sit beside the search field below `sm`. */
+  readonly mobileSearchActions?: ReactNode
   /**
    * Filter controls, rendered inline from `sm` and inside the mobile filter
    * sheet. The suffix keeps control ids unique across the two copies.
@@ -41,6 +43,7 @@ export function CollectionToolbar({
   ariaLabel,
   resultLabel,
   actions,
+  mobileSearchActions,
   filters,
   filterCount = 0,
   onClearFilters,
@@ -117,6 +120,11 @@ export function CollectionToolbar({
             resultLabel={resultLabel}
           />
         ) : null}
+        {mobileSearchActions ? (
+          <div className="flex shrink-0 items-center sm:hidden">
+            {mobileSearchActions}
+          </div>
+        ) : null}
       </div>
 
       {resultLabel ? (
@@ -136,6 +144,7 @@ export function CollectionToolbar({
           className={cn(
             'flex flex-wrap items-center justify-between gap-3 sm:justify-end',
             !actions && 'max-sm:hidden',
+            mobileSearchActions && 'max-sm:hidden',
           )}
         >
           {resultLabel ? (

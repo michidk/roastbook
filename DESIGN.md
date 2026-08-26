@@ -180,8 +180,9 @@ Omit missing values instead of inventing placeholder copy. The whole card is a
 named link, its image is decorative, and its scrim preserves contrast. The
 arrow remains decorative rather than becoming a nested control.
 
-Active cards retain the tall reference geometry. Archived cards use a 320px
-height on mobile and tablet and 304px on desktop. Long names clamp to two lines.
+The `/beans` collection uses compact portrait geometry: 288px on phones, 320px
+from `sm`, and 304px from `lg`. The selected-bean card in the brew form retains
+the taller reference geometry. Long names clamp to two lines.
 
 ### Image with fallback
 

@@ -24,10 +24,15 @@ type BeanRecord = Awaited<ReturnType<typeof getBeans>>[number] & {
 
 type BeanCardProps = {
   readonly bean: BeanRecord
+  readonly compact?: boolean
   readonly showRemainingEstimate?: boolean
 }
 
-export function BeanCard({ bean, showRemainingEstimate }: BeanCardProps) {
+export function BeanCard({
+  bean,
+  compact = false,
+  showRemainingEstimate,
+}: BeanCardProps) {
   const formatDate = useDateFormatter()
   const formatNumber = useNumberFormatter()
   const thumbnail =
@@ -58,7 +63,14 @@ export function BeanCard({ bean, showRemainingEstimate }: BeanCardProps) {
     >
       <Card
         size="sm"
-        className={`relative isolate min-w-0 overflow-hidden rounded-2xl border-0 bg-coffee p-0 text-white shadow-none ${bean.isArchived ? 'h-[20rem] lg:h-[19rem]' : 'h-[20rem] sm:h-[23.5rem] lg:h-[22rem]'}`}
+        className={cn(
+          'relative isolate min-w-0 overflow-hidden rounded-2xl border-0 bg-coffee p-0 text-white shadow-none',
+          compact
+            ? 'h-72 sm:h-80 lg:h-[19rem]'
+            : bean.isArchived
+              ? 'h-[20rem] lg:h-[19rem]'
+              : 'h-[20rem] sm:h-[23.5rem] lg:h-[22rem]',
+        )}
       >
         <div className="absolute inset-0">
           {thumbnail ? (

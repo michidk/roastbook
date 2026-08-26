@@ -77,14 +77,6 @@ function BeansPage() {
         title="Beans"
         description="Keep track of the coffee beans you brew."
         help="Beans represent the coffees in your collection. Save their roaster, origin, process, roast details, and tasting notes, then select them when you log a brew."
-        actions={
-          <Button asChild>
-            <Link to="/beans/new">
-              <Plus className="h-4 w-4" />
-              Add beans
-            </Link>
-          </Button>
-        }
       />
 
       <CollectionToolbar
@@ -98,6 +90,21 @@ function BeansPage() {
         placeholder="Search beans…"
         ariaLabel="Search beans"
         resultLabel={`${collection.totalItems} ${collection.totalItems === 1 ? 'bag' : 'bags'}`}
+        actions={
+          <Button asChild>
+            <Link to="/beans/new">
+              <Plus aria-hidden className="h-4 w-4" />
+              Add beans
+            </Link>
+          </Button>
+        }
+        mobileSearchActions={
+          <Button asChild size="icon">
+            <Link to="/beans/new" aria-label="Add beans">
+              <Plus aria-hidden />
+            </Link>
+          </Button>
+        }
       />
 
       {collection.totalItems === 0 && !search.query ? (
@@ -115,9 +122,14 @@ function BeansPage() {
               <h2 className="font-display text-lg font-bold tracking-tight text-foreground">
                 Active · {collection.active.totalItems}
               </h2>
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
                 {activeBeans.map((bean) => (
-                  <BeanCard key={bean.id} bean={bean} showRemainingEstimate />
+                  <BeanCard
+                    key={bean.id}
+                    bean={bean}
+                    compact
+                    showRemainingEstimate
+                  />
                 ))}
               </div>
               {collection.active.totalPages > 1 && (
@@ -144,9 +156,9 @@ function BeansPage() {
                 Archived ({collection.archived.totalItems})
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
                   {archivedBeans.map((bean) => (
-                    <BeanCard key={bean.id} bean={bean} />
+                    <BeanCard key={bean.id} bean={bean} compact />
                   ))}
                 </div>
                 {collection.archived.totalPages > 1 && (
