@@ -1,6 +1,6 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import { ChevronDown, Ellipsis, Plus } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
 import type { NavItem } from '@/components/app-navbar-items'
 import {
   BrandLink,
@@ -125,12 +125,7 @@ function MobileNavLink({ item }: { item: NavItem }) {
       className="flex flex-1 flex-col items-center justify-center gap-1 rounded-lg py-2 text-muted-foreground transition-colors"
       activeClassName="bg-accent text-foreground"
     >
-      <div className="relative">
-        <item.icon className={cn('h-5 w-5', isActive && 'stroke-[2.5]')} />
-        {isActive && (
-          <div className="absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-primary" />
-        )}
-      </div>
+      <item.icon className={cn('h-5 w-5', isActive && 'stroke-[2.5]')} />
       <span className="text-[10px] font-semibold">{item.title}</span>
     </NavItemLink>
   )
@@ -138,23 +133,19 @@ function MobileNavLink({ item }: { item: NavItem }) {
 
 function MobileMoreMenu() {
   const isActive = useMoreNavIsActive(mobileMoreNavItems)
+  const [isOpen, setIsOpen] = useState(false)
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger
         aria-label="More navigation"
         aria-current={isActive ? 'page' : undefined}
         className={cn(
           'flex flex-1 flex-col items-center justify-center gap-1 rounded-lg py-2 text-muted-foreground transition-colors',
-          isActive && 'bg-accent text-foreground',
+          (isActive || isOpen) && 'bg-accent text-foreground',
         )}
       >
-        <div className="relative">
-          <Ellipsis className={cn('h-5 w-5', isActive && 'stroke-[2.5]')} />
-          {isActive && (
-            <div className="absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-primary" />
-          )}
-        </div>
+        <Ellipsis className={cn('h-5 w-5', isActive && 'stroke-[2.5]')} />
         <span className="text-[10px] font-semibold">More</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" side="top" sideOffset={12}>
@@ -165,6 +156,8 @@ function MobileMoreMenu() {
 }
 
 export function AppNavbar({ demoMode = false }: { demoMode?: boolean }) {
+  const [isMobileCreateOpen, setIsMobileCreateOpen] = useState(false)
+
   return (
     <>
       <a
@@ -215,13 +208,32 @@ export function AppNavbar({ demoMode = false }: { demoMode?: boolean }) {
             <MobileNavLink key={item.url} item={item} />
           ))}
 
-          <DropdownMenu>
+          <DropdownMenu
+            open={isMobileCreateOpen}
+            onOpenChange={setIsMobileCreateOpen}
+          >
             <DropdownMenuTrigger
               aria-label="Create new item"
-              className="flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg py-2 text-foreground"
+              disabled={demoMode}
+              className={cn(
+                'flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg py-2 text-foreground transition-colors',
+                isMobileCreateOpen && 'bg-accent',
+                demoMode &&
+                  'cursor-not-allowed text-muted-foreground opacity-60',
+              )}
             >
-              <div className="-mt-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary shadow-lg">
-                <Plus className="h-6 w-6 text-primary-foreground" />
+              <div
+                className={cn(
+                  '-mt-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary shadow-lg',
+                  demoMode && 'bg-muted shadow-none',
+                )}
+              >
+                <Plus
+                  className={cn(
+                    'h-6 w-6 text-primary-foreground',
+                    demoMode && 'text-muted-foreground',
+                  )}
+                />
               </div>
               <span className="text-[10px] font-semibold">Create</span>
             </DropdownMenuTrigger>

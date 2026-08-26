@@ -32,12 +32,11 @@ image. The edition cannot be toggled at runtime.
 The enforcement boundary is server-side request middleware. With demo mode
 enabled, only GET and HEAD requests proceed; writes, uploads, settings changes,
 AI actions, and other POST endpoints fail with a read-only error. The UI also
-shows a persistent banner and prevents form submissions. The mobile Create menu
-remains available so visitors can explore the form flows. The bean-package seed
-images are emitted as static assets during the demo build. All demo business
-and product records are fictional. Roasters and cafés have no website URLs,
-and five bundled abstract favicon marks are reused across them without making
-network requests.
+shows a persistent banner, prevents form submissions, and disables its global
+create controls. The bean-package seed images are emitted as static assets
+during the demo build. All demo business and product records are fictional.
+Roasters and cafés have no website URLs, and five bundled abstract favicon
+marks are reused across them without making network requests.
 
 Do not rely on hidden buttons as the security boundary. TanStack server
 functions are directly callable endpoints, so the server middleware remains
