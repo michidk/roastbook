@@ -203,8 +203,8 @@ function RootComponent() {
               <div className="border-b border-amber-300 bg-amber-50 px-4 py-2 text-amber-950 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
                 <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 text-sm font-medium">
                   <LockKeyhole className="h-4 w-4" aria-hidden="true" />
-                  Demo mode: you can explore everything, but changes are
-                  disabled.
+                  Demo mode: explore with sample data; changes are disabled.
+                  First loads may be slower while the demo wakes up.
                 </div>
               </div>
             ) : null}

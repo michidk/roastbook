@@ -1,3 +1,4 @@
+import { DEMO_MODE } from '@/lib/build-mode'
 import { publicEnv } from '@/lib/env'
 import { getThumbnailPath } from '@/lib/image-path'
 
@@ -7,7 +8,12 @@ function storageUrl(storagePath: string, fallbackPath?: string): string {
   const encodedPath = storagePath.split('/').map(encodeURIComponent).join('/')
   const url = `${STORAGE_BASE_URL.replace(/\/$/, '')}/${encodedPath}`
 
-  if (!fallbackPath || STORAGE_BASE_URL !== '/media') return url
+  if (
+    !fallbackPath ||
+    STORAGE_BASE_URL !== '/media' ||
+    (DEMO_MODE && storagePath.startsWith('demo/'))
+  )
+    return url
 
   const search = new URLSearchParams({ fallback: fallbackPath })
   return `${url}?${search}`

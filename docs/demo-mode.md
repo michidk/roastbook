@@ -16,9 +16,11 @@ output with:
 bun run build:demo
 ```
 
-The build emits `.vercel/output` and copies the demo snapshot plus PGlite's
-runtime data and WASM into the server function. Deploy that prebuilt output
-with:
+The build emits `.vercel/output` and copies the demo snapshot plus the PGlite
+runtime data and WASM needed to restore it into the server function. Demo-only
+aliases replace disabled storage, image-processing, and AI integrations so
+their production dependencies are not shipped in the read-only function.
+Deploy that prebuilt output with:
 
 ```bash
 vercel deploy --prebuilt
@@ -44,4 +46,6 @@ required even when every visible write control is unavailable.
 
 Each serverless instance initializes its own read-only copy. Existing Drizzle
 queries, joins, pagination, and statistics therefore keep the same abstraction
-as the PostgreSQL edition while the deployment remains stateless.
+as the PostgreSQL edition while the deployment remains stateless. The public
+demo warns that its first request may be slower while a serverless instance
+starts and restores the database snapshot.

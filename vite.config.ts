@@ -66,7 +66,29 @@ const config = defineConfig({
   resolve: {
     alias:
       roastbookEdition === 'demo'
-        ? [{ find: /^@\/db$/, replacement: resolve('src/db/demo.ts') }]
+        ? [
+            { find: /^@\/db$/, replacement: resolve('src/db/demo.ts') },
+            {
+              find: /^@\/lib\/storage$/,
+              replacement: resolve('src/lib/demo/storage.ts'),
+            },
+            {
+              find: /^@\/lib\/thumbnail-image$/,
+              replacement: resolve('src/lib/demo/thumbnail-image.ts'),
+            },
+            {
+              find: /^@tanstack\/ai$/,
+              replacement: resolve('src/lib/demo/tanstack-ai.ts'),
+            },
+            {
+              find: /^@tanstack\/ai-openai$/,
+              replacement: resolve('src/lib/demo/tanstack-ai-openai.ts'),
+            },
+            {
+              find: /^@tanstack\/ai-openai\/tools$/,
+              replacement: resolve('src/lib/demo/tanstack-ai-openai-tools.ts'),
+            },
+          ]
         : [],
     tsconfigPaths: true,
     dedupe: ['react', 'react-dom'],
@@ -104,14 +126,16 @@ const config = defineConfig({
     tanstackStart({
       router: {
         codeSplittingOptions: {
-          // Load route data code with the route instead of placing every
-          // loader's server functions and validators in the root bundle.
+          // Keep route loaders in the critical route bundle so client-side
+          // navigation can start data fetching immediately. Group the route
+          // UI into one lazy chunk instead of creating a request per property.
           defaultBehavior: [
-            ['loader'],
-            ['component'],
-            ['pendingComponent'],
-            ['errorComponent'],
-            ['notFoundComponent'],
+            [
+              'component',
+              'pendingComponent',
+              'errorComponent',
+              'notFoundComponent',
+            ],
           ],
         },
       },
