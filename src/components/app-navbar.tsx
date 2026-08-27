@@ -12,6 +12,7 @@ import {
   moreNavItems,
   primaryNavItems,
 } from '@/components/app-navbar-items'
+import { CommandPalette } from '@/components/command-palette'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import {
@@ -182,6 +183,7 @@ export function AppNavbar({ demoMode = false }: { demoMode?: boolean }) {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
+            <CommandPalette demoMode={demoMode} />
             <ThemeToggle />
             {demoMode ? null : <DesktopCreateButton />}
           </div>

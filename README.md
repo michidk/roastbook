@@ -42,7 +42,8 @@ desktop where you dig through the numbers afterwards.
   consistency, timing, gear, and cost, while parameter charts show what a change
   to grind, dose, or pressure actually did.
 - **Mobile and desktop, both first-class.** Large touch targets and compact cards
-  next to the machine; full data tables, charts, and maps at the desk.
+  next to the machine; full data tables, charts, and maps at the desk, plus a
+  `⌘K` command palette for jumping anywhere without the mouse.
 - **AI-native, not AI-bolted-on.** Research and extraction are wired into the
   forms you already use and return typed, validated fields you confirm before
   anything is saved.
@@ -100,6 +101,8 @@ an assistant log this morning's espresso for you.
   exploration, recipe performance, gear usage, and costs.
 - Scan labels and research beans, roasters, and machine settings with AI, with
   local request logs and token-cost estimates.
+- Jump to any page, start a new brew, bean, or visit, and switch theme from the
+  desktop command palette (`⌘K` or `Ctrl+K`).
 - Store media locally or in S3-compatible object storage.
 - Gate self-hosted deployments with the Hodor reverse proxy.
 - Explore a database-free, read-only demo backed by ephemeral PGlite seed data.

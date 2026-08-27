@@ -319,6 +319,24 @@ The named More trigger opens icon-led links to Roasters, Gear, Brewing methods,
 Recipes, Stats, and Settings. Use the shared dropdown primitive, expose whether
 the current route is inside the menu, and retain 44px mobile targets.
 
+### Command palette
+
+The desktop header carries a quiet Search control that opens a command palette;
+so does `⌘K` or `Ctrl+K`. Both are desktop-only, from `lg` upward, because the
+palette is a keyboard shortcut and the mobile layout already spends its chrome
+budget on the bottom navigation. The control shows the shortcut from `xl` and
+stays an icon-only labelled button below it.
+
+The palette is a dialog holding one search field and a grouped, always-visible
+list: navigation destinations, the same create actions as the New menu, and the
+theme choices. Groups come from the navigation items, so a new destination
+appears in both places. Read-only demo mode drops the create group.
+
+Destinations are real links, so modifier-click still opens a new tab. The first
+match is highlighted, the arrow keys move the highlight, Enter runs it, and
+Escape closes. Keep the field focused on open, clear the query between openings,
+show the keyboard hints in the footer, and keep an intentional no-match state.
+
 ### Responsive record list
 
 Use compact cards on mobile and a shared data table from `md`. Both versions

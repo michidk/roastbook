@@ -68,7 +68,7 @@ export const primaryCreateAction: NavItem = {
   icon: Coffee,
 }
 
-const createActions: readonly NavItem[] = [
+export const createNavItems: readonly NavItem[] = [
   primaryCreateAction,
   { title: 'New bean', url: '/beans/new', icon: Bean },
   { title: 'New visit', url: '/visits/new', icon: UtensilsCrossed },
@@ -106,7 +106,7 @@ export function BrandLink({ className }: { readonly className?: string }) {
 export function CreateMenuItems() {
   return (
     <DropdownMenuGroup>
-      {createActions.map((action) => (
+      {createNavItems.map((action) => (
         <DropdownMenuItem key={action.url} className="min-h-11 px-3 py-2">
           <Link to={action.url} className="flex w-full items-center gap-2">
             <action.icon className="h-4 w-4" />
