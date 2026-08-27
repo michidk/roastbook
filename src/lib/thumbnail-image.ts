@@ -3,6 +3,8 @@ import { MAX_IMAGE_BYTES } from '@/lib/server-validation'
 
 const THUMB_WIDTH = 640
 const THUMB_QUALITY = 78
+const SMALL_THUMB_WIDTH = 128
+const SMALL_THUMB_QUALITY = 72
 const STORED_IMAGE_MAX_DIMENSION = 1_600
 const STORED_IMAGE_QUALITY = 80
 const AI_IMAGE_MAX_DIMENSION = 2_048
@@ -67,6 +69,17 @@ export const createThumbnail = createServerOnlyFn(
       .rotate()
       .resize({ width: THUMB_WIDTH, withoutEnlargement: true })
       .webp({ quality: THUMB_QUALITY })
+      .toBuffer()
+  },
+)
+
+export const createSmallThumbnail = createServerOnlyFn(
+  async (buffer: Buffer): Promise<Buffer> => {
+    const sharp = await loadSharp()
+    return sharp(buffer)
+      .rotate()
+      .resize({ width: SMALL_THUMB_WIDTH, withoutEnlargement: true })
+      .webp({ quality: SMALL_THUMB_QUALITY })
       .toBuffer()
   },
 )

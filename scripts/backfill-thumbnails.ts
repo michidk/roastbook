@@ -9,8 +9,11 @@ import {
   gearImages,
   shotImages,
 } from '../src/db/schema'
-import { getThumbnailPath } from '../src/lib/image-path'
-import { createThumbnail } from '../src/lib/thumbnail-image'
+import { getSmallThumbnailPath, getThumbnailPath } from '../src/lib/image-path'
+import {
+  createSmallThumbnail,
+  createThumbnail,
+} from '../src/lib/thumbnail-image'
 
 const STORAGE_BASE = process.env.STORAGE_PATH || './uploads'
 
@@ -26,15 +29,29 @@ async function exists(path: string) {
 async function processOne(storagePath: string) {
   const fullOriginal = join(STORAGE_BASE, storagePath)
   const fullThumb = join(STORAGE_BASE, getThumbnailPath(storagePath))
+  const fullSmallThumb = join(STORAGE_BASE, getSmallThumbnailPath(storagePath))
 
-  if (await exists(fullThumb)) return { status: 'skip' as const }
+  const [hasThumb, hasSmallThumb] = await Promise.all([
+    exists(fullThumb),
+    exists(fullSmallThumb),
+  ])
+  if (hasThumb && hasSmallThumb) return { status: 'skip' as const }
   if (!(await exists(fullOriginal))) return { status: 'missing' as const }
 
   const input = await readFile(fullOriginal)
-  const thumb = await createThumbnail(input)
+  const [thumb, smallThumb] = await Promise.all([
+    hasThumb ? null : createThumbnail(input),
+    hasSmallThumb ? null : createSmallThumbnail(input),
+  ])
   await mkdir(dirname(fullThumb), { recursive: true })
-  await writeFile(fullThumb, thumb)
-  return { status: 'wrote' as const, bytes: thumb.length }
+  await Promise.all([
+    thumb ? writeFile(fullThumb, thumb) : undefined,
+    smallThumb ? writeFile(fullSmallThumb, smallThumb) : undefined,
+  ])
+  return {
+    status: 'wrote' as const,
+    bytes: (thumb?.length ?? 0) + (smallThumb?.length ?? 0),
+  }
 }
 
 async function main() {

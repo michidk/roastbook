@@ -12,7 +12,7 @@ import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { getDailyHeadline } from '@/lib/daily-headline'
-import { thumbnailUrl } from '@/lib/image-url'
+import { smallThumbnailUrl } from '@/lib/image-url'
 import { getDashboardStats, getRecentShots } from '@/lib/server/stats'
 
 export const Route = createFileRoute('/')({
@@ -98,8 +98,12 @@ function Dashboard() {
                   >
                     {beanImage ? (
                       <ImageWithFallback
-                        src={thumbnailUrl(beanImage.storagePath)}
+                        src={smallThumbnailUrl(beanImage.storagePath)}
                         alt=""
+                        loading="lazy"
+                        decoding="async"
+                        width={44}
+                        height={44}
                         className="h-11 w-11 shrink-0 rounded-xl object-cover"
                       />
                     ) : (

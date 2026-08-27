@@ -1,11 +1,11 @@
-import { CircleHelp } from 'lucide-react'
-import type { ComponentProps, ReactNode } from 'react'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+import { type ComponentProps, lazy, type ReactNode, Suspense } from 'react'
 import { cn } from '@/lib/utils'
+
+const PageHelp = lazy(() =>
+  import('@/components/page-help').then((module) => ({
+    default: module.PageHelp,
+  })),
+)
 
 type PageWidth = 'full' | 'wide' | 'content' | 'form'
 
@@ -86,7 +86,11 @@ export function PageHeader({
             >
               {title}
             </h1>
-            {help ? <PageHelp>{help}</PageHelp> : null}
+            {help ? (
+              <Suspense fallback={null}>
+                <PageHelp>{help}</PageHelp>
+              </Suspense>
+            ) : null}
           </div>
           {description ? (
             <p className="mt-1 max-w-2xl text-sm font-semibold leading-relaxed text-muted-foreground">
@@ -101,28 +105,5 @@ export function PageHeader({
         </div>
       ) : null}
     </header>
-  )
-}
-
-function PageHelp({ children }: { readonly children: ReactNode }) {
-  return (
-    <Popover>
-      <PopoverTrigger
-        aria-label="About this page"
-        className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [@media(pointer:coarse)]:size-11"
-        openOnHover
-        delay={0}
-        closeDelay={100}
-      >
-        <CircleHelp aria-hidden="true" className="size-5" />
-      </PopoverTrigger>
-      <PopoverContent
-        className="w-72 text-sm leading-relaxed text-muted-foreground"
-        side="bottom"
-        sideOffset={6}
-      >
-        {children}
-      </PopoverContent>
-    </Popover>
   )
 }

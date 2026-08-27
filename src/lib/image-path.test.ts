@@ -8,8 +8,10 @@ describe('media lifecycle paths', () => {
     ).toEqual([
       'beans/1/front.jpg',
       'beans/1/front.thumb.webp',
+      'beans/1/front.small.webp',
       'beans/1/back.png',
       'beans/1/back.thumb.webp',
+      'beans/1/back.small.webp',
     ])
   })
 })

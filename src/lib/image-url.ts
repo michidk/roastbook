@@ -1,6 +1,6 @@
 import { DEMO_MODE } from '@/lib/build-mode'
 import { publicEnv } from '@/lib/env'
-import { getThumbnailPath } from '@/lib/image-path'
+import { getSmallThumbnailPath, getThumbnailPath } from '@/lib/image-path'
 
 const STORAGE_BASE_URL = publicEnv.VITE_STORAGE_URL
 
@@ -25,4 +25,14 @@ export function imageUrl(storagePath: string): string {
 
 export function thumbnailUrl(storagePath: string): string {
   return storageUrl(getThumbnailPath(storagePath), storagePath)
+}
+
+export function smallThumbnailUrl(storagePath: string): string {
+  if (DEMO_MODE && storagePath.startsWith('demo/')) {
+    return storageUrl(getSmallThumbnailPath(storagePath))
+  }
+  return storageUrl(
+    getSmallThumbnailPath(storagePath),
+    getThumbnailPath(storagePath),
+  )
 }

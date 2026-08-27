@@ -2,9 +2,32 @@ import { describe, expect, test } from 'bun:test'
 import sharp from 'sharp'
 import {
   createAiImage,
+  createSmallThumbnail,
   createStoredImage,
   validateImageBuffer,
 } from '@/lib/thumbnail-image'
+
+describe('createSmallThumbnail', () => {
+  test('creates a compact image for list avatars', async () => {
+    const image = await sharp({
+      create: {
+        width: 800,
+        height: 600,
+        channels: 3,
+        background: '#6f4e37',
+      },
+    })
+      .png()
+      .toBuffer()
+
+    const result = await createSmallThumbnail(image)
+    const metadata = await sharp(result).metadata()
+
+    expect(metadata.format).toBe('webp')
+    expect(metadata.width).toBe(128)
+    expect(metadata.height).toBe(96)
+  })
+})
 
 describe('validateImageBuffer', () => {
   test('accepts an image whose bytes match its declared MIME type', async () => {

@@ -5,6 +5,7 @@ import { devtools } from '@tanstack/devtools-vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact from '@vitejs/plugin-react'
 import { nitro } from 'nitro/vite'
+import sharp from 'sharp'
 import { defineConfig } from 'vite'
 import { devMigrations } from './scripts/vite-dev-migrations'
 
@@ -15,7 +16,7 @@ if (roastbookEdition !== 'standard' && roastbookEdition !== 'demo') {
 
 const demoAssets = () => ({
   name: 'roastbook-demo-assets',
-  generateBundle(this: { emitFile: (asset: object) => void }) {
+  async generateBundle(this: { emitFile: (asset: object) => void }) {
     for (const filename of [
       'kraft-orange.webp',
       'forest-botanical.webp',
@@ -35,6 +36,14 @@ const demoAssets = () => ({
         type: 'asset',
         fileName: `media/demo/${filename.replace('.webp', '.thumb.webp')}`,
         source,
+      })
+      this.emitFile({
+        type: 'asset',
+        fileName: `media/demo/${filename.replace('.webp', '.small.webp')}`,
+        source: await sharp(source)
+          .resize({ width: 128, withoutEnlargement: true })
+          .webp({ quality: 72 })
+          .toBuffer(),
       })
     }
     for (const filename of [

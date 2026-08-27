@@ -81,7 +81,8 @@ the complete migration chain, and then runs all tests.
 ## Maintenance scripts
 
 - `bun run storage:backfill-thumbnails` (`scripts/backfill-thumbnails.ts`) is a
-  one-shot backfill that generates missing thumbnails for existing images
+  one-shot backfill that generates missing standard and small thumbnails for
+  existing images
   across all image tables in local storage under `STORAGE_PATH`, skipping
   images that already have one.
 - `bun run db:duplicate-roasters` (`scripts/find-duplicate-roasters.ts`)
