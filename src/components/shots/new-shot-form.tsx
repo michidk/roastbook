@@ -35,10 +35,7 @@ import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes'
 import { focusFirstInvalidControl } from '@/lib/form-validation'
 import { getLastBeanIdForBrewingMethod } from '@/lib/new-shot-defaults'
-import {
-  newShotPayload,
-  newShotRecommendationRequest,
-} from '@/lib/new-shot-payload'
+import { newShotPayload } from '@/lib/new-shot-payload'
 import type { getActiveBeans } from '@/lib/server/beans'
 import type { getBrewingMethods } from '@/lib/server/brewing-methods'
 import type { getGear } from '@/lib/server/gear'
@@ -328,10 +325,6 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
   )
   const showSensoryRatings = enabledSensoryRatingKeys(tasteProfile).length > 0
   const showExtractionBalance = tasteProfile.extractionBalance
-  const recommendationRequest = newShotRecommendationRequest(
-    values,
-    selectedMethod?.enabledParameters ?? [],
-  )
 
   return (
     <form
@@ -505,6 +498,19 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
             <BeanCard bean={selectedBean} />
           </div>
         ) : null}
+        <AiRecommendationDialog
+          enabled={recommendationEnabled}
+          request={
+            values.beanId && values.brewingMethodId
+              ? {
+                  beanId: Number(values.beanId),
+                  brewingMethodId: Number(values.brewingMethodId),
+                }
+              : null
+          }
+          size="lg"
+          className="w-full"
+        />
         {hasShotTimer ? (
           <ShotTimer
             key={timerKey}
@@ -513,12 +519,6 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
             onCommit={(value) => set('shotTimeSeconds', value)}
           />
         ) : null}
-        <AiRecommendationDialog
-          enabled={recommendationEnabled}
-          request={recommendationRequest}
-          size="lg"
-          className="w-full"
-        />
         <SaveToRecipeDialog
           trigger={
             <Button

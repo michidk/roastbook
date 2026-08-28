@@ -96,9 +96,8 @@ export function AiRecommendationDialog({
           <DialogHeader>
             <DialogTitle>AI recommendation</DialogTitle>
             <DialogDescription>
-              {request?.currentDraft
-                ? 'A next-brew adjustment based on the current setup and parameters, plus matching history for these beans.'
-                : 'A next-brew adjustment based only on this bean, brewing method, exact gear setup, and its matching history.'}
+              A next-brew adjustment based only on this bean, brewing method,
+              exact gear setup, and its matching history.
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
