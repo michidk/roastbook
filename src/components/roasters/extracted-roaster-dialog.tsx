@@ -63,17 +63,18 @@ export function ExtractedRoasterDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="bg-background sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Add extracted roaster</DialogTitle>
+            <DialogTitle>Create extracted roaster</DialogTitle>
             <DialogDescription>
-              AI identified “{suggestedName}”. Roasters are managed separately,
-              so review and create it before linking it to this coffee.
+              AI identified “{suggestedName}”, and no matching roaster exists in
+              Roastbook. Review the details, then create and link it to this
+              coffee.
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
             <RoasterForm
               initialName={suggestedName}
               initialValues={suggestedDetails}
-              submitLabel="Create and select roaster"
+              submitLabel="Create and link roaster"
               onCreated={onCreated}
               onCancel={() => onOpenChange(false)}
             />
@@ -89,9 +90,15 @@ export function ExtractedRoasterDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Review extracted roaster</DialogTitle>
+          <DialogTitle>
+            {alreadySelected
+              ? 'Roaster already linked'
+              : 'Link existing roaster'}
+          </DialogTitle>
           <DialogDescription>
-            The extracted name matches a roaster already in Roastbook.
+            {alreadySelected
+              ? `This coffee already uses ${matchedRoaster.name}. No changes are needed.`
+              : `AI identified “${suggestedName}”, which matches an existing roaster. Confirm linking this coffee to it.`}
           </DialogDescription>
         </DialogHeader>
         <DialogBody>
@@ -132,7 +139,7 @@ export function ExtractedRoasterDialog({
                 onOpenChange(false)
               }}
             >
-              Use this roaster
+              Link roaster
             </Button>
           ) : null}
         </DialogFooter>

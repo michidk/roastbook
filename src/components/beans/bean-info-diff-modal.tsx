@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog'
 import type { ExtractedBeanInfo } from '@/lib/ai'
 import type { BeanType, RoastLevel } from '@/lib/constants'
+import type { ExtractedRoasterAction } from '@/lib/roaster-match'
 import { cn } from '@/lib/utils'
 
 interface FieldDef {
@@ -62,6 +63,7 @@ interface BeanInfoDiffModalProps {
   suggestedData: ExtractedBeanInfo
   onApply: (updates: Partial<BeanFormData>) => void
   onReviewRoaster?: (name: string) => void
+  roasterAction: ExtractedRoasterAction | null
   source: 'image' | 'web'
 }
 
@@ -72,6 +74,7 @@ export function BeanInfoDiffModal({
   suggestedData,
   onApply,
   onReviewRoaster,
+  roasterAction,
   source,
 }: BeanInfoDiffModalProps) {
   const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set())
@@ -151,7 +154,12 @@ export function BeanInfoDiffModal({
     onApply(updates)
     onOpenChange(false)
     const roasterName = suggestedData.roaster?.trim()
-    if (roasterName) onReviewRoaster?.(roasterName)
+    if (
+      roasterName &&
+      (roasterAction === 'create' || roasterAction === 'link')
+    ) {
+      onReviewRoaster?.(roasterName)
+    }
   }
 
   const conflictCount = diffs.filter((d) => d.hasConflict).length
@@ -201,7 +209,15 @@ export function BeanInfoDiffModal({
               </span>
             )}
             {roasterName && (newFieldCount > 0 || conflictCount > 0) && ' · '}
-            {roasterName && <span>roaster reviewed separately</span>}
+            {roasterName && (
+              <span>
+                {roasterAction === 'create'
+                  ? 'new roaster to create'
+                  : roasterAction === 'link'
+                    ? 'existing roaster to link'
+                    : 'roaster already linked'}
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -221,12 +237,22 @@ export function BeanInfoDiffModal({
                   <Store className="size-4" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium">Roaster found</p>
+                  <p className="text-sm font-medium">
+                    {roasterAction === 'create'
+                      ? 'New roaster found'
+                      : roasterAction === 'link'
+                        ? 'Existing roaster found'
+                        : 'Roaster already linked'}
+                  </p>
                   <p className="truncate text-sm font-semibold">
                     {roasterName}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Review this in the roaster modal after the bean fields.
+                    {roasterAction === 'create'
+                      ? "You'll review its details, then create and link it to this coffee."
+                      : roasterAction === 'link'
+                        ? "You'll confirm linking this coffee to the existing roaster."
+                        : 'This coffee already uses the extracted roaster. No roaster changes are needed.'}
                   </p>
                 </div>
               </div>
@@ -251,17 +277,38 @@ export function BeanInfoDiffModal({
               onClick={handleApply}
               disabled={selectedFields.size === 0 && !roasterName}
             >
-              {roasterName
-                ? selectedFields.size > 0
-                  ? `Apply ${selectedFields.size} and review roaster`
-                  : 'Review roaster'
-                : `Apply ${selectedFields.size} change${selectedFields.size !== 1 ? 's' : ''}`}
+              {applyButtonLabel(
+                selectedFields.size,
+                roasterName,
+                roasterAction,
+              )}
             </Button>
           </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   )
+}
+
+function applyButtonLabel(
+  selectedFieldCount: number,
+  roasterName: string | undefined,
+  roasterAction: ExtractedRoasterAction | null,
+) {
+  const changeLabel = `${selectedFieldCount} change${selectedFieldCount !== 1 ? 's' : ''}`
+  if (!roasterName) return `Apply ${changeLabel}`
+
+  if (roasterAction === 'create') {
+    return selectedFieldCount > 0
+      ? `Apply ${changeLabel} and create roaster`
+      : 'Create roaster'
+  }
+  if (roasterAction === 'link') {
+    return selectedFieldCount > 0
+      ? `Apply ${changeLabel} and link roaster`
+      : 'Link roaster'
+  }
+  return selectedFieldCount > 0 ? `Apply ${changeLabel}` : 'Done'
 }
 
 interface DiffRowProps {

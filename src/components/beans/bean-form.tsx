@@ -30,7 +30,7 @@ import { useImageUpload } from '@/hooks/use-image-upload'
 import type { ExtractedBeanInfo } from '@/lib/ai'
 import { getErrorMessage } from '@/lib/error-message'
 import type { ImageFile } from '@/lib/image-file'
-import { findRoasterByName } from '@/lib/roaster-match'
+import { getExtractedRoasterAction } from '@/lib/roaster-match'
 import {
   checkVisionEnabled,
   createBean,
@@ -130,6 +130,11 @@ export function BeanForm({
       (created) => !baseRoasters.some((roaster) => roaster.id === created.id),
     ),
   ]
+  const extractedRoasterAction = getExtractedRoasterAction(
+    roasterOptions,
+    suggestedData?.roaster,
+    form.values.roasterId,
+  )
 
   const handleFillWithAI = async () => {
     if (images.length === 0) return
@@ -280,11 +285,8 @@ export function BeanForm({
           currentData={form.values}
           suggestedData={suggestedData}
           onApply={(updates: Partial<BeanFormData>) => form.patch(updates)}
+          roasterAction={extractedRoasterAction}
           onReviewRoaster={(name) => {
-            const matchedRoaster = findRoasterByName(roasterOptions, name)
-            if (String(matchedRoaster?.id ?? '') === form.values.roasterId) {
-              return
-            }
             setExtractedRoasterDetails(
               roasterDetailsFromExtraction(suggestedData),
             )

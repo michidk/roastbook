@@ -41,6 +41,7 @@ import { parseEditModeSearch } from '@/lib/edit-mode'
 import { getErrorMessage } from '@/lib/error-message'
 import { fetchImageAsBase64 } from '@/lib/image-base64'
 import { imageUrl } from '@/lib/image-url'
+import { getExtractedRoasterAction } from '@/lib/roaster-match'
 import { parseIdParam } from '@/lib/route-params'
 import {
   searchEnum,
@@ -378,6 +379,11 @@ function BeanDetailPage() {
           onOpenChange={setDiffModalOpen}
           currentData={formData}
           suggestedData={suggestedData}
+          roasterAction={getExtractedRoasterAction(
+            availableRoasters,
+            suggestedData.roaster,
+            formData.roasterId,
+          )}
           onApply={(updates: Partial<BeanFormData>) => {
             patchFormData(updates)
             const updateCount = Object.keys(updates).length
