@@ -108,7 +108,10 @@ export function CreateMenuItems() {
   return (
     <DropdownMenuGroup>
       {createNavItems.map((action) => (
-        <DropdownMenuItem key={action.url} className="min-h-11 px-3 py-2">
+        <DropdownMenuItem
+          key={action.url}
+          className="min-h-11 cursor-pointer px-3 py-2"
+        >
           <Link to={action.url} className="flex w-full items-center gap-2">
             <action.icon className="h-4 w-4" />
             {action.title}
@@ -142,7 +145,7 @@ export function MoreMenuItems({
         <DropdownMenuItem
           key={item.url}
           className={cn(
-            'min-h-11 gap-2.5 rounded-lg px-3 py-2 [@media(hover:hover)_and_(pointer:fine)]:min-h-9 [@media(hover:hover)_and_(pointer:fine)]:py-1.5',
+            'min-h-11 cursor-pointer gap-2.5 rounded-lg px-3 py-2 [@media(hover:hover)_and_(pointer:fine)]:min-h-9 [@media(hover:hover)_and_(pointer:fine)]:py-1.5',
             isActive && 'bg-accent text-accent-foreground',
           )}
         >
