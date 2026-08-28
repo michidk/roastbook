@@ -1,4 +1,7 @@
-import { CollectionToolbar } from '@/components/collection-toolbar'
+import {
+  CollectionFilterControls,
+  CollectionToolbar,
+} from '@/components/collection-toolbar'
 import { SelectField } from '@/components/form/form-field'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { activeFilterCount } from '@/lib/collection-toolbar-labels'
@@ -8,14 +11,21 @@ type MethodOption = {
   readonly name: string
 }
 
-type BrewCollectionToolbarProps = {
+type BrewCollectionFilterStateProps = {
   readonly methodId: string
   readonly rating: string
+}
+
+type BrewCollectionFiltersProps = BrewCollectionFilterStateProps & {
   readonly methods: readonly MethodOption[]
   readonly resultLabel: string
   readonly onMethodChange: (methodId: string) => void
   readonly onRatingChange: (rating: string) => void
   readonly onClearFilters: () => void
+}
+
+type BrewCollectionToolbarProps = BrewCollectionFilterStateProps & {
+  readonly resultLabel: string
 }
 
 const RATING_OPTIONS = [
@@ -26,7 +36,7 @@ const RATING_OPTIONS = [
   })),
 ]
 
-export function BrewCollectionToolbar({
+export function BrewCollectionFilters({
   methodId,
   rating,
   methods,
@@ -34,11 +44,11 @@ export function BrewCollectionToolbar({
   onMethodChange,
   onRatingChange,
   onClearFilters,
-}: BrewCollectionToolbarProps) {
+}: BrewCollectionFiltersProps) {
   const showRating = useTasteProfile().overallRating
 
   return (
-    <CollectionToolbar
+    <CollectionFilterControls
       resultLabel={resultLabel}
       filterCount={activeFilterCount(
         showRating ? [methodId, rating] : [methodId],
@@ -68,6 +78,23 @@ export function BrewCollectionToolbar({
             />
           ) : null}
         </div>
+      )}
+    />
+  )
+}
+
+export function BrewCollectionToolbar({
+  methodId,
+  rating,
+  resultLabel,
+}: BrewCollectionToolbarProps) {
+  const showRating = useTasteProfile().overallRating
+
+  return (
+    <CollectionToolbar
+      resultLabel={resultLabel}
+      filterCount={activeFilterCount(
+        showRating ? [methodId, rating] : [methodId],
       )}
     />
   )

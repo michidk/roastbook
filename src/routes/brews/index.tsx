@@ -16,7 +16,10 @@ import { Page, PageHeader } from '@/components/page-layout'
 import { PaginationControls } from '@/components/pagination-controls'
 import { RouteError } from '@/components/route-error'
 import { ListPending } from '@/components/route-pending'
-import { BrewCollectionToolbar } from '@/components/shots/brew-collection-toolbar'
+import {
+  BrewCollectionFilters,
+  BrewCollectionToolbar,
+} from '@/components/shots/brew-collection-toolbar'
 import { ShotsViewToggle } from '@/components/shots/shots-overview'
 import { ShotsTable } from '@/components/shots/shots-table'
 import { Button } from '@/components/ui/button'
@@ -141,6 +144,9 @@ function ShotsPage() {
   const showRating = useTasteProfile().overallRating
   const grouped = data.view === 'grouped'
   const totalItems = data.result.totalItems
+  const resultLabel = grouped
+    ? `${totalItems} ${totalItems === 1 ? 'bean group' : 'bean groups'}`
+    : `${totalItems} ${totalItems === 1 ? 'brew' : 'brews'}`
 
   const updateSearch = (
     values: Partial<typeof search>,
@@ -292,6 +298,35 @@ function ShotsPage() {
                 }
               />
             )}
+            {(totalItems > 0 || hasActiveFilters) && (
+              <BrewCollectionFilters
+                methodId={search.methodId ? String(search.methodId) : ''}
+                rating={
+                  search.rating !== undefined ? String(search.rating) : ''
+                }
+                methods={data.methods}
+                resultLabel={resultLabel}
+                onMethodChange={(value) =>
+                  updateSearch({
+                    methodId: value ? Number(value) : undefined,
+                    page: 1,
+                  })
+                }
+                onRatingChange={(value) =>
+                  updateSearch({
+                    rating: value ? Number(value) : undefined,
+                    page: 1,
+                  })
+                }
+                onClearFilters={() =>
+                  updateSearch({
+                    methodId: undefined,
+                    rating: undefined,
+                    page: 1,
+                  })
+                }
+              />
+            )}
             <Button asChild>
               <Link to="/brews/new">
                 <Plus className="h-4 w-4" />
@@ -306,31 +341,7 @@ function ShotsPage() {
         <BrewCollectionToolbar
           methodId={search.methodId ? String(search.methodId) : ''}
           rating={search.rating !== undefined ? String(search.rating) : ''}
-          methods={data.methods}
-          resultLabel={
-            grouped
-              ? `${totalItems} ${totalItems === 1 ? 'bean group' : 'bean groups'}`
-              : `${totalItems} ${totalItems === 1 ? 'brew' : 'brews'}`
-          }
-          onMethodChange={(value) =>
-            updateSearch({
-              methodId: value ? Number(value) : undefined,
-              page: 1,
-            })
-          }
-          onRatingChange={(value) =>
-            updateSearch({
-              rating: value ? Number(value) : undefined,
-              page: 1,
-            })
-          }
-          onClearFilters={() =>
-            updateSearch({
-              methodId: undefined,
-              rating: undefined,
-              page: 1,
-            })
-          }
+          resultLabel={resultLabel}
         />
       ) : null}
 

@@ -41,6 +41,13 @@ interface CollectionToolbarProps {
   readonly debounceMs?: number
 }
 
+interface CollectionFilterControlsProps {
+  readonly filters: (idSuffix: string) => ReactNode
+  readonly filterCount?: number
+  readonly onClearFilters?: () => void
+  readonly resultLabel?: string
+}
+
 const ignoreValueChange = () => undefined
 
 export function CollectionToolbar({
@@ -82,7 +89,7 @@ export function CollectionToolbar({
   // A phone only spends height on the count once the collection is narrowed;
   // until then the placeholder carries it and the line stays screen-reader
   // only.
-  const isNarrowed = draftValue !== '' || filterCount > 0
+  const isNarrowed = !showSearch || draftValue !== '' || filterCount > 0
 
   return (
     <div
@@ -176,6 +183,30 @@ export function CollectionToolbar({
         </div>
       ) : null}
     </div>
+  )
+}
+
+/** Responsive filter trigger for page headers and custom collection layouts. */
+export function CollectionFilterControls({
+  filters,
+  filterCount = 0,
+  onClearFilters,
+  resultLabel,
+}: CollectionFilterControlsProps) {
+  return (
+    <>
+      <CollectionFilterSheet
+        filters={filters}
+        filterCount={filterCount}
+        onClearFilters={onClearFilters}
+        resultLabel={resultLabel}
+      />
+      <CollectionFilterPopover
+        filters={filters}
+        filterCount={filterCount}
+        onClearFilters={onClearFilters}
+      />
+    </>
   )
 }
 
