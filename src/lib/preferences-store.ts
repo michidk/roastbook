@@ -92,7 +92,6 @@ export const usePreferencesStore = create<PreferencesState>()(
           collectionViews: readCollectionViews(persistedState),
         }
       },
-      onRehydrateStorage: () => (state) => state?.markHydrated(),
     },
   ),
 )

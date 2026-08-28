@@ -103,7 +103,9 @@ function SettingsHydrator() {
   const hasHydrated = usePreferencesStore((state) => state.hasHydrated)
 
   useEffect(() => {
-    void usePreferencesStore.persist.rehydrate()
+    void Promise.resolve(usePreferencesStore.persist.rehydrate())
+      .catch(() => undefined)
+      .then(() => usePreferencesStore.getState().markHydrated())
   }, [])
 
   useEffect(() => {
