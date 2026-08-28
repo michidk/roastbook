@@ -24,6 +24,7 @@ import { usePreferencesStore } from '@/lib/preferences-store'
 import { searchCommandEntities } from '@/lib/server/command-search'
 
 const EMPTY_ENTITY_RESULTS: CommandEntitySearchResults = {
+  brews: [],
   beans: [],
   cafes: [],
   gear: [],
@@ -153,7 +154,7 @@ export function CommandPaletteDialog({
   return (
     <CommandDialog
       title="Command palette"
-      description="Search Roastbook beans, cafés, gear, pages, and actions, then press Enter to open the highlighted result."
+      description="Search Roastbook brews, beans, cafés, gear, pages, and actions, then press Enter to open the highlighted result."
       open={open}
       onOpenChange={onOpenChange}
       className="sm:max-w-xl"
@@ -169,18 +170,18 @@ export function CommandPaletteDialog({
               autoFocus
               value={query}
               onValueChange={setQuery}
-              aria-label="Search beans, cafés, gear, pages, and actions"
-              placeholder="Search beans, cafés, gear, pages…"
+              aria-label="Search brews, beans, cafés, gear, pages, and actions"
+              placeholder="Search brews, beans, cafés, gear, pages…"
             />
           </div>
         </DialogHeader>
         <CommandList aria-busy={entitySearchState === 'loading'}>
           <CommandEmpty className="text-muted-foreground">
             {entitySearchState === 'loading'
-              ? 'Searching beans, cafés, and gear…'
+              ? 'Searching brews, beans, cafés, and gear…'
               : entitySearchState === 'error'
                 ? 'Entity search is unavailable. Try again.'
-                : 'No bean, café, gear, page, or action matches that search.'}
+                : 'No brew, bean, café, gear, page, or action matches that search.'}
           </CommandEmpty>
           {groups.map((group) => (
             <CommandGroup key={group.label} heading={group.label}>

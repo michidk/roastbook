@@ -92,6 +92,14 @@ describe('command palette actions', () => {
 
   it('builds direct entity links with searchable metadata', () => {
     const groups = buildEntityCommandGroups({
+      brews: [
+        {
+          id: 7,
+          label: 'Worka Sakaro',
+          description: 'V60 · 2026-08-28 · #7',
+          keywords: ['brew', 'brew 7', '#7', 'Worka Sakaro', 'V60'],
+        },
+      ],
       beans: [
         {
           id: 12,
@@ -119,6 +127,7 @@ describe('command palette actions', () => {
     })
 
     expect(groups.map((group) => group.label)).toEqual([
+      'Brews',
       'Beans',
       'Cafés',
       'Gear',
@@ -127,9 +136,12 @@ describe('command palette actions', () => {
     const targets = actions.flatMap((action) =>
       action.kind === 'navigate' ? [action.to] : [],
     )
-    expect(targets).toEqual(['/beans/12', '/places/23', '/gear/34'])
-    const [bean, cafe, gear] = actions
-    if (!bean || !cafe || !gear) throw new Error('Missing entity actions')
+    expect(targets).toEqual(['/brews/7', '/beans/12', '/places/23', '/gear/34'])
+    const [brew, bean, cafe, gear] = actions
+    if (!brew || !bean || !cafe || !gear) {
+      throw new Error('Missing entity actions')
+    }
+    expect(matchesCommandQuery(brew, 'brew v60')).toBe(true)
     expect(matchesCommandQuery(bean, 'ethiopia bean')).toBe(true)
     expect(matchesCommandQuery(cafe, 'cafe berlin')).toBe(true)
     expect(matchesCommandQuery(gear, 'equipment clear')).toBe(true)
@@ -137,7 +149,7 @@ describe('command palette actions', () => {
 
   it('omits empty entity groups', () => {
     expect(
-      buildEntityCommandGroups({ beans: [], cafes: [], gear: [] }),
+      buildEntityCommandGroups({ brews: [], beans: [], cafes: [], gear: [] }),
     ).toEqual([])
   })
 })

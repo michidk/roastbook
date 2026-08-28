@@ -72,7 +72,7 @@ export function CommandPalette({
         type="button"
         variant="outline"
         size="sm"
-        aria-label="Search beans, cafés, gear, pages, and actions"
+        aria-label="Search brews, beans, cafés, gear, pages, and actions"
         aria-keyshortcuts="Meta+K Control+K"
         className="gap-2 pr-2 pl-3 font-normal text-muted-foreground hover:text-foreground xl:pr-1.5"
         onClick={() => setOpen(true)}
