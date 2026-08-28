@@ -4,14 +4,7 @@ import {
   stripSearchParams,
   useNavigate,
 } from '@tanstack/react-router'
-import {
-  Bookmark,
-  Heart,
-  Map as MapIcon,
-  MapPin,
-  MapPinOff,
-  Plus,
-} from 'lucide-react'
+import { Bookmark, Heart, Map as MapIcon, MapPin, Plus } from 'lucide-react'
 import { CoffeeShopMap } from '@/components/coffee-shops/coffee-shop-map'
 import {
   type CollectionColumn,
@@ -32,7 +25,6 @@ import { WebsiteLogo } from '@/components/website-logo'
 import { useCollectionView } from '@/hooks/use-collection-view'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
-import { DEMO_MODE } from '@/lib/build-mode'
 import { thumbnailUrl } from '@/lib/image-url'
 import {
   searchEnum,
@@ -108,53 +100,39 @@ function toEntry(coffeeShop: CoffeeShop): CollectionEntry {
     title: coffeeShop.name,
     subtitle:
       location || (hasCoordinates ? 'Location pinned' : 'No location set'),
-    media:
-      coffeeShop.website || DEMO_MODE
-        ? {
-            kind: 'custom',
-            render: (sizeClassName) =>
-              coffeeShop.imagePath ? (
-                <span className={cn('relative block shrink-0', sizeClassName)}>
-                  <ImageWithFallback
-                    src={thumbnailUrl(coffeeShop.imagePath)}
-                    alt=""
-                    loading="lazy"
-                    className="size-full rounded-full object-cover"
-                    fallback={<MapPin aria-hidden className="size-4" />}
-                  />
-                  <WebsiteLogo
-                    entityType="coffee-shops"
-                    entityId={coffeeShop.id}
-                    website={coffeeShop.website}
-                    updatedAt={coffeeShop.updatedAt}
-                    className={cn(
-                      'absolute -right-1 -bottom-1 rounded-full p-0.5 shadow-sm',
-                      sizeClassName === 'size-8' ? 'size-4' : 'size-5',
-                    )}
-                  />
-                </span>
-              ) : (
-                <WebsiteLogo
-                  entityType="coffee-shops"
-                  entityId={coffeeShop.id}
-                  website={coffeeShop.website}
-                  updatedAt={coffeeShop.updatedAt}
-                  className={cn(sizeClassName, 'rounded-full p-1')}
-                />
-              ),
-          }
-        : coffeeShop.imagePath
-          ? {
-              kind: 'image',
-              src: thumbnailUrl(coffeeShop.imagePath),
-              alt: coffeeShop.name,
-              fallbackIcon: MapPin,
-            }
-          : {
-              kind: 'icon',
-              icon: hasCoordinates ? MapPin : MapPinOff,
-              tone: hasCoordinates ? 'primary' : 'muted',
-            },
+    media: {
+      kind: 'custom',
+      render: (sizeClassName) =>
+        coffeeShop.imagePath ? (
+          <span className={cn('relative block shrink-0', sizeClassName)}>
+            <ImageWithFallback
+              src={thumbnailUrl(coffeeShop.imagePath)}
+              alt=""
+              loading="lazy"
+              className="size-full rounded-full object-cover"
+              fallback={<MapPin aria-hidden className="size-4" />}
+            />
+            <WebsiteLogo
+              entityType="coffee-shops"
+              entityId={coffeeShop.id}
+              website={coffeeShop.website}
+              updatedAt={coffeeShop.updatedAt}
+              className={cn(
+                'absolute -right-1 -bottom-1 rounded-full p-0.5 shadow-sm',
+                sizeClassName === 'size-8' ? 'size-4' : 'size-5',
+              )}
+            />
+          </span>
+        ) : (
+          <WebsiteLogo
+            entityType="coffee-shops"
+            entityId={coffeeShop.id}
+            website={coffeeShop.website}
+            updatedAt={coffeeShop.updatedAt}
+            className={cn(sizeClassName, 'rounded-full p-1')}
+          />
+        ),
+    },
     flags: (
       <>
         {coffeeShop.isFavorite && (
