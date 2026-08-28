@@ -1,4 +1,12 @@
-import { LayoutDashboard, Monitor, Moon, Sun } from 'lucide-react'
+import {
+  Bean,
+  Coffee,
+  Cog,
+  LayoutDashboard,
+  Monitor,
+  Moon,
+  Sun,
+} from 'lucide-react'
 import type { ComponentType } from 'react'
 import {
   createNavItems,
@@ -6,12 +14,14 @@ import {
   type NavItem,
   primaryNavItems,
 } from '@/components/app-navbar-items'
+import type { CommandEntitySearchResults } from '@/lib/command-search-contract'
 import type { ThemePreference } from '@/lib/preferences-store'
 import { normalizeForComparison } from '@/lib/utils'
 
 type CommandActionBase = {
   readonly value: string
   readonly label: string
+  readonly description?: string
   readonly icon: ComponentType<{ className?: string }>
   /** Extra terms the action matches, for words the label does not contain. */
   readonly keywords: readonly string[]
@@ -121,6 +131,55 @@ export function buildCommandGroups({
     { label: 'Create', items: createNavItems.map(toNavigateAction) },
     appearance,
   ]
+}
+
+/** Turns database matches into normal palette navigation actions. */
+export function buildEntityCommandGroups(
+  results: CommandEntitySearchResults,
+): readonly CommandActionGroup[] {
+  const definitions = [
+    {
+      label: 'Beans',
+      items: results.beans,
+      icon: Bean,
+      path: 'beans',
+      keywords: ['bean', 'beans', 'coffee'],
+    },
+    {
+      label: 'Cafés',
+      items: results.cafes,
+      icon: Coffee,
+      path: 'places',
+      keywords: ['cafe', 'cafes', 'café', 'cafés', 'coffee shop'],
+    },
+    {
+      label: 'Gear',
+      items: results.gear,
+      icon: Cog,
+      path: 'gear',
+      keywords: ['gear', 'equipment'],
+    },
+  ] as const
+
+  return definitions.flatMap((definition) => {
+    if (definition.items.length === 0) return []
+    return [
+      {
+        label: definition.label,
+        items: definition.items.map(
+          (item): CommandAction => ({
+            kind: 'navigate',
+            value: `entity:${definition.path}:${item.id}`,
+            label: item.label,
+            description: item.description ?? undefined,
+            icon: definition.icon,
+            keywords: [...definition.keywords, ...item.keywords],
+            to: `/${definition.path}/${item.id}`,
+          }),
+        ),
+      },
+    ]
+  })
 }
 
 /**
