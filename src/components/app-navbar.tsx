@@ -85,15 +85,20 @@ function DesktopMoreMenu() {
         aria-label="More navigation"
         aria-current={isActive ? 'page' : undefined}
         className={cn(
-          'inline-flex min-h-11 items-center gap-1 rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground [@media(hover:hover)_and_(pointer:fine)]:min-h-0',
-          isActive && 'bg-primary text-primary-foreground',
+          'group/more inline-flex min-h-11 items-center gap-1 rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground data-popup-open:bg-accent data-popup-open:text-foreground [@media(hover:hover)_and_(pointer:fine)]:min-h-0',
+          isActive &&
+            'bg-primary text-primary-foreground data-popup-open:bg-primary data-popup-open:text-primary-foreground',
         )}
       >
         More
-        <ChevronDown className="h-4 w-4" />
+        <ChevronDown className="size-4 transition-transform duration-200 group-data-[popup-open]/more:rotate-180 motion-reduce:transition-none" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" sideOffset={8}>
-        <MoreMenuItems items={moreNavItems} />
+      <DropdownMenuContent
+        align="start"
+        sideOffset={8}
+        className="w-64 rounded-2xl p-2 shadow-coffee-strong"
+      >
+        <MoreMenuItems items={moreNavItems} showLabels />
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -149,7 +154,12 @@ function MobileMoreMenu() {
         <Ellipsis className={cn('h-5 w-5', isActive && 'stroke-[2.5]')} />
         <span className="text-[10px] font-semibold">More</span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" side="top" sideOffset={12}>
+      <DropdownMenuContent
+        align="end"
+        side="top"
+        sideOffset={12}
+        className="w-64 rounded-2xl p-2 shadow-coffee-strong"
+      >
         <MoreMenuItems items={mobileMoreNavItems} />
       </DropdownMenuContent>
     </DropdownMenu>
