@@ -7,13 +7,9 @@ import {
   Loader2,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import {
-  CurrencyField,
-  InputField,
-  SelectField,
-} from '@/components/form/form-field'
+import { CurrencyField, SelectField } from '@/components/form/form-field'
+import { TimeZoneField } from '@/components/form/time-zone-field'
 import { SettingsPanelSection } from '@/components/settings/settings-shell'
-import { Button } from '@/components/ui/button'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useSettingMutation } from '@/hooks/use-setting-mutation'
 import {
@@ -21,7 +17,6 @@ import {
   isCurrency,
   isDateFormat,
   isNumberFormat,
-  isTimeZone,
   NUMBER_FORMAT_OPTIONS,
 } from '@/lib/app-settings'
 import {
@@ -182,7 +177,7 @@ export function GeneralSettings({ onSaved }: { readonly onSaved: () => void }) {
 
       <SettingsPanelSection
         title="Time zone"
-        description="Used for brew-day boundaries, streaks, and time-of-day statistics. Enter an IANA name such as Europe/Berlin."
+        description="Used for brew-day boundaries, streaks, and time-of-day statistics."
         action={
           timeZoneMutation.isSaving ? (
             <Loader2 className="size-5 animate-spin text-link" />
@@ -191,35 +186,12 @@ export function GeneralSettings({ onSaved }: { readonly onSaved: () => void }) {
           )
         }
       >
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <InputField
-            id="time-zone"
-            label="IANA time zone"
-            value={settings.timeZone}
-            onChange={(timeZone) =>
-              setSettings((current) => ({ ...current, timeZone }))
-            }
-            error={
-              settings.timeZone && !isTimeZone(settings.timeZone)
-                ? 'Enter a valid IANA time zone'
-                : undefined
-            }
-            disabled={timeZoneMutation.isSaving}
-            className="flex-1"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            disabled={
-              timeZoneMutation.isSaving ||
-              !isTimeZone(settings.timeZone) ||
-              settings.timeZone === savedTimeZone
-            }
-            onClick={() => void timeZoneMutation.save(settings.timeZone)}
-          >
-            Save time zone
-          </Button>
-        </div>
+        <TimeZoneField
+          id="time-zone"
+          value={settings.timeZone}
+          disabled={timeZoneMutation.isSaving}
+          onChange={(timeZone) => void timeZoneMutation.save(timeZone)}
+        />
       </SettingsPanelSection>
 
       <SettingsPanelSection
