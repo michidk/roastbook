@@ -1,6 +1,7 @@
 import { Loader2, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { AiActionHelp } from '@/components/ai-action-help'
 import type { RoasterFormValues } from '@/components/roasters/roaster-form-values'
 import { RoasterInfoDiffModal } from '@/components/roasters/roaster-info-diff-modal'
 import { Button } from '@/components/ui/button'
@@ -78,18 +79,24 @@ export function RoasterResearchAction({
 
   return (
     <>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={handleResearch}
-        disabled={disabled || isResearching || !currentData.name.trim()}
-        aria-busy={isResearching}
-        className="h-11 sm:h-11 [@media(hover:hover)]:h-8"
-      >
-        {isResearching ? <Loader2 className="animate-spin" /> : <Search />}
-        {isResearching ? 'Researching…' : 'Research online'}
-      </Button>
+      <div className="flex items-center gap-1">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleResearch}
+          disabled={disabled || isResearching || !currentData.name.trim()}
+          aria-busy={isResearching}
+          className="h-11 sm:h-11 [@media(hover:hover)]:h-8"
+        >
+          {isResearching ? <Loader2 className="animate-spin" /> : <Search />}
+          {isResearching ? 'Researching…' : 'Research online'}
+        </Button>
+        <AiActionHelp>
+          Finds and verifies official roaster details online. Uses the name plus
+          any entered location, country, website, Instagram handle, and notes.
+        </AiActionHelp>
+      </div>
 
       {suggestedData ? (
         <RoasterInfoDiffModal

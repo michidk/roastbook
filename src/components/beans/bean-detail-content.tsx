@@ -10,6 +10,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import type { Dispatch, SetStateAction } from 'react'
+import { AiActionHelp } from '@/components/ai-action-help'
 import { BeanFields } from '@/components/beans/bean-fields'
 import type { BeanFormValues } from '@/components/beans/bean-form-values'
 import { DeleteConfirmation } from '@/components/delete-confirmation'
@@ -244,25 +245,32 @@ export function BeanEditContent({
           idPrefix="bean-edit"
           basicAction={
             researchEnabled ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onResearch}
-                disabled={
-                  isResearching ||
-                  extractingImageId !== null ||
-                  !formData.name.trim()
-                }
-                aria-busy={isResearching}
-                className="h-11 sm:h-11 [@media(hover:hover)]:h-8"
-              >
-                {isResearching ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <Search />
-                )}
-                {isResearching ? 'Researching…' : 'Research online'}
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onResearch}
+                  disabled={
+                    isResearching ||
+                    extractingImageId !== null ||
+                    !formData.name.trim()
+                  }
+                  aria-busy={isResearching}
+                  className="h-11 sm:h-11 [@media(hover:hover)]:h-8"
+                >
+                  {isResearching ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Search />
+                  )}
+                  {isResearching ? 'Researching…' : 'Research online'}
+                </Button>
+                <AiActionHelp>
+                  Finds and verifies coffee details online. Uses the bean name,
+                  selected roaster, and any entered origin, processing, roast,
+                  shop, and notes details.
+                </AiActionHelp>
+              </div>
             ) : undefined
           }
         />
@@ -280,6 +288,12 @@ export function BeanEditContent({
                   label: 'Extract details with AI',
                   pendingImageId: extractingImageId,
                   disabled: isResearching,
+                  help: (
+                    <AiActionHelp>
+                      Reads coffee and roaster details from the packaging. Uses
+                      only the selected picture.
+                    </AiActionHelp>
+                  ),
                   onSelect: onExtractFromImage,
                 }
               : undefined

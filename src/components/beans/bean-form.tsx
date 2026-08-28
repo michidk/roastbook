@@ -1,6 +1,7 @@
 import { Loader2, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { AiActionHelp } from '@/components/ai-action-help'
 import { BeanFields } from '@/components/beans/bean-fields'
 import {
   beanCreatePayload,
@@ -242,20 +243,26 @@ export function BeanForm({
           }
           footer={
             visionEnabled ? (
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={handleFillWithAI}
-                disabled={isExtracting || images.length === 0}
-              >
-                {isExtracting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="mr-2 h-4 w-4" />
-                )}
-                Extract details with AI
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-w-0 flex-1"
+                  onClick={handleFillWithAI}
+                  disabled={isExtracting || images.length === 0}
+                >
+                  {isExtracting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="mr-2 h-4 w-4" />
+                  )}
+                  Extract details with AI
+                </Button>
+                <AiActionHelp>
+                  Reads coffee and roaster details from the packaging. Uses only
+                  the first uploaded picture.
+                </AiActionHelp>
+              </div>
             ) : undefined
           }
         />

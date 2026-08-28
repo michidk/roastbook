@@ -7,6 +7,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { useState } from 'react'
+import { AiActionHelp } from '@/components/ai-action-help'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -82,21 +83,28 @@ export function AiRecommendationDialog({
 
   return (
     <>
-      <Button
-        type="button"
-        variant="outline"
-        size={size}
-        className={className}
-        disabled={!enabled || !request}
-        title={buttonTitle}
-        onClick={() => {
-          setOpen(true)
-          void loadRecommendation()
-        }}
-      >
-        <Sparkles />
-        AI Recommendation
-      </Button>
+      <div className={`flex items-center gap-1 ${className ?? ''}`}>
+        <Button
+          type="button"
+          variant="outline"
+          size={size}
+          className={className ? 'min-w-0 flex-1' : undefined}
+          disabled={!enabled || !request}
+          title={buttonTitle}
+          onClick={() => {
+            setOpen(true)
+            void loadRecommendation()
+          }}
+        >
+          <Sparkles />
+          AI Recommendation
+        </Button>
+        <AiActionHelp>
+          {isFocusedShot
+            ? 'Assesses this brew and suggests the next adjustment. Uses its beans, method, exact gear, parameters, tasting result, and matching history.'
+            : 'Suggests the next controlled brew adjustment. Uses the selected beans, method, exact gear, current parameters when entered, and matching brew history.'}
+        </AiActionHelp>
+      </div>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>

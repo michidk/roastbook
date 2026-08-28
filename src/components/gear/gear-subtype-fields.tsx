@@ -1,4 +1,5 @@
 import { Loader2, Search } from 'lucide-react'
+import { AiActionHelp } from '@/components/ai-action-help'
 import { InputField, SelectField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
 import type { GearSubtypeFormValues } from '@/components/gear/gear-form-values'
@@ -60,22 +61,29 @@ export function GearSubtypeFields({
       description="Capabilities and defaults stay optional so unknown values remain honest."
       action={
         research?.enabled ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={research.onResearch}
-            disabled={research.isResearching || research.disabled}
-            aria-busy={research.isResearching}
-            className="h-11 sm:h-11 [@media(hover:hover)]:h-8"
-          >
-            {research.isResearching ? (
-              <Loader2 className="animate-spin" />
-            ) : (
-              <Search />
-            )}
-            {research.isResearching ? 'Researching…' : 'Research online'}
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={research.onResearch}
+              disabled={research.isResearching || research.disabled}
+              aria-busy={research.isResearching}
+              className="h-11 sm:h-11 [@media(hover:hover)]:h-8"
+            >
+              {research.isResearching ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Search />
+              )}
+              {research.isResearching ? 'Researching…' : 'Research online'}
+            </Button>
+            <AiActionHelp>
+              Finds documented machine capabilities and factory defaults online.
+              Uses brand and model plus any entered equipment type, manual or
+              product URLs, and notes.
+            </AiActionHelp>
+          </div>
         ) : undefined
       }
     >

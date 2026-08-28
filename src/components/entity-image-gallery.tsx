@@ -8,7 +8,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { ImageWithFallback } from '@/components/image-with-fallback'
 import { PictureUploader } from '@/components/picture-uploader'
 import { Button } from '@/components/ui/button'
@@ -48,6 +48,7 @@ interface EntityImageAction {
   readonly label: string
   readonly pendingImageId: number | null
   readonly disabled?: boolean
+  readonly help?: ReactNode
   readonly onSelect: (image: EntityImage) => void | Promise<void>
 }
 
@@ -236,44 +237,47 @@ export function EntityImageGallery({
                 {editable && (
                   <div className="pointer-events-none absolute inset-0 rounded-lg opacity-100 transition-colors [@media(hover:hover)]:group-hover:bg-foreground/55">
                     {imageAction && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="pointer-events-auto absolute bottom-2 left-2 h-11 px-3 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary sm:h-11 [@media(hover:hover)]:h-8"
-                        onClick={() => {
-                          setGalleryError(null)
-                          void Promise.resolve(
-                            imageAction.onSelect(image),
-                          ).catch((error) => {
-                            setGalleryError(
-                              getErrorMessage(
-                                error,
-                                `Could not ${imageAction.label.toLowerCase()}`,
-                              ),
-                            )
-                          })
-                        }}
-                        disabled={
-                          imageAction.disabled ||
-                          imageAction.pendingImageId !== null
-                        }
-                        aria-label={
-                          imageAction.pendingImageId === image.id
-                            ? `${imageAction.label} using picture ${index + 1}, in progress`
-                            : `${imageAction.label} using picture ${index + 1}`
-                        }
-                        aria-busy={imageAction.pendingImageId === image.id}
-                        title={imageAction.label}
-                      >
-                        {imageAction.pendingImageId === image.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Sparkles className="h-4 w-4" />
-                        )}
-                        {imageAction.pendingImageId === image.id
-                          ? 'Analyzing…'
-                          : 'Use AI'}
-                      </Button>
+                      <div className="pointer-events-auto absolute bottom-2 left-2 flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-11 px-3 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary sm:h-11 [@media(hover:hover)]:h-8"
+                          onClick={() => {
+                            setGalleryError(null)
+                            void Promise.resolve(
+                              imageAction.onSelect(image),
+                            ).catch((error) => {
+                              setGalleryError(
+                                getErrorMessage(
+                                  error,
+                                  `Could not ${imageAction.label.toLowerCase()}`,
+                                ),
+                              )
+                            })
+                          }}
+                          disabled={
+                            imageAction.disabled ||
+                            imageAction.pendingImageId !== null
+                          }
+                          aria-label={
+                            imageAction.pendingImageId === image.id
+                              ? `${imageAction.label} using picture ${index + 1}, in progress`
+                              : `${imageAction.label} using picture ${index + 1}`
+                          }
+                          aria-busy={imageAction.pendingImageId === image.id}
+                          title={imageAction.label}
+                        >
+                          {imageAction.pendingImageId === image.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Sparkles className="h-4 w-4" />
+                          )}
+                          {imageAction.pendingImageId === image.id
+                            ? 'Analyzing…'
+                            : 'Use AI'}
+                        </Button>
+                        {imageAction.help}
+                      </div>
                     )}
                     <Button
                       size="icon"
