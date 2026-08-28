@@ -139,13 +139,6 @@ export function buildEntityCommandGroups(
 ): readonly CommandActionGroup[] {
   const definitions = [
     {
-      label: 'Brews',
-      items: results.brews,
-      icon: Coffee,
-      path: 'brews',
-      keywords: ['brew', 'brews', 'shot', 'shots', 'coffee'],
-    },
-    {
       label: 'Beans',
       items: results.beans,
       icon: Bean,

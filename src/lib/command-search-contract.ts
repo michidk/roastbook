@@ -29,7 +29,6 @@ export type CommandEntitySearchResult = {
 }
 
 export type CommandEntitySearchResults = {
-  readonly brews: readonly CommandEntitySearchResult[]
   readonly beans: readonly CommandEntitySearchResult[]
   readonly cafes: readonly CommandEntitySearchResult[]
   readonly gear: readonly CommandEntitySearchResult[]

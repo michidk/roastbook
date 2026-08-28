@@ -4,7 +4,7 @@ import { commandEntitySearchTerm } from '@/lib/command-search-contract'
 describe('command entity search terms', () => {
   it('shows recent items for an entity-only query', () => {
     expect(commandEntitySearchTerm('gear', ['gear', 'equipment'])).toBe('')
-    expect(commandEntitySearchTerm('BREWS', ['brew', 'brews'])).toBe('')
+    expect(commandEntitySearchTerm('BEANS', ['bean', 'beans'])).toBe('')
   })
 
   it('removes an entity prefix before searching its collection', () => {

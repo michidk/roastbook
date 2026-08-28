@@ -101,9 +101,9 @@ an assistant log this morning's espresso for you.
   exploration, recipe performance, gear usage, and costs.
 - Scan labels and research beans, roasters, and machine settings with AI, with
   local request logs and token-cost estimates.
-- Search brews, beans, cafés, and gear directly; jump to any page; start a new
-  brew, bean, or visit; and switch theme from the desktop command palette
-  (`⌘K` or `Ctrl+K`).
+- Search beans, cafés, and gear directly; jump to any page; start a new brew,
+  bean, or visit; and switch theme from the command palette (`⌘K` or
+  `Ctrl+K`).
 - Store media locally or in S3-compatible object storage.
 - Gate self-hosted deployments with the Hodor reverse proxy.
 - Explore a database-free, read-only demo backed by ephemeral PGlite seed data.

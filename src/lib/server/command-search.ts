@@ -1,15 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
-import { asc, desc, eq, ilike, or, sql } from 'drizzle-orm'
+import { asc, eq, ilike, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
-import {
-  beans,
-  brewingMethods,
-  coffeeShops,
-  gear,
-  roasters,
-  shots,
-} from '@/db/schema'
+import { beans, coffeeShops, gear, roasters } from '@/db/schema'
 import { escapedContainsPattern } from '@/lib/collection-query'
 import type {
   CommandEntitySearchResult,
@@ -32,9 +25,6 @@ function compactKeywords(
 export const searchCommandEntities = createServerFn({ method: 'GET' })
   .validator(commandSearchSchema)
   .handler(async ({ data }): Promise<CommandEntitySearchResults> => {
-    const brewPattern = escapedContainsPattern(
-      commandEntitySearchTerm(data.query, ['brew', 'brews', 'shot', 'shots']),
-    )
     const beanPattern = escapedContainsPattern(
       commandEntitySearchTerm(data.query, ['bean', 'beans']),
     )
@@ -52,29 +42,7 @@ export const searchCommandEntities = createServerFn({ method: 'GET' })
       commandEntitySearchTerm(data.query, ['gear', 'equipment']),
     )
 
-    const [brewRows, beanRows, cafeRows, gearRows] = await Promise.all([
-      db
-        .select({
-          id: shots.id,
-          brewedAt: shots.brewedAt,
-          bean: beans.name,
-          method: brewingMethods.name,
-          notes: shots.notes,
-        })
-        .from(shots)
-        .leftJoin(beans, eq(shots.beanId, beans.id))
-        .innerJoin(brewingMethods, eq(shots.brewingMethodId, brewingMethods.id))
-        .where(
-          or(
-            ilike(beans.name, brewPattern),
-            ilike(brewingMethods.name, brewPattern),
-            ilike(shots.notes, brewPattern),
-            sql`${shots.id}::text ilike ${brewPattern}`,
-            sql`${shots.brewedAt}::text ilike ${brewPattern}`,
-          ),
-        )
-        .orderBy(desc(shots.brewedAt), desc(shots.id))
-        .limit(COMMAND_SEARCH_RESULT_LIMIT),
+    const [beanRows, cafeRows, gearRows] = await Promise.all([
       db
         .select({
           id: beans.id,
@@ -134,21 +102,6 @@ export const searchCommandEntities = createServerFn({ method: 'GET' })
         .limit(COMMAND_SEARCH_RESULT_LIMIT),
     ])
 
-    const brewResults: readonly CommandEntitySearchResult[] = brewRows.map(
-      (brew) => ({
-        id: brew.id,
-        label: brew.bean ?? `Brew #${brew.id}`,
-        description: `${brew.method} · ${brew.brewedAt.toISOString().slice(0, 10)} · #${brew.id}`,
-        keywords: compactKeywords([
-          'brew',
-          `brew ${brew.id}`,
-          `#${brew.id}`,
-          brew.bean,
-          brew.method,
-          brew.notes,
-        ]),
-      }),
-    )
     const beanResults: readonly CommandEntitySearchResult[] = beanRows.map(
       (bean) => ({
         id: bean.id,
@@ -177,7 +130,6 @@ export const searchCommandEntities = createServerFn({ method: 'GET' })
     )
 
     return {
-      brews: brewResults,
       beans: beanResults,
       cafes: cafeResults,
       gear: gearResults,

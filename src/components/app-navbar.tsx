@@ -214,6 +214,8 @@ export function AppNavbar({ demoMode = false }: { demoMode?: boolean }) {
 
   return (
     <>
+      <CommandPalette demoMode={demoMode} />
+
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:left-4 focus:top-4 focus:rounded-md focus:border focus:bg-background focus:px-4 focus:py-2"
@@ -236,7 +238,6 @@ export function AppNavbar({ demoMode = false }: { demoMode?: boolean }) {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
-            <CommandPalette demoMode={demoMode} />
             <ThemeToggle />
             {demoMode ? null : <DesktopCreateButton />}
           </div>
