@@ -85,6 +85,20 @@ const extractBeanInfoSchema = z.object({
 const researchBeanInfoSchema = z.object({
   beanName: nameSchema,
   roasterName: nameSchema.optional(),
+  knownContext: z
+    .object({
+      type: beanTypeSchema.optional(),
+      origin: shortTextSchema.optional(),
+      region: shortTextSchema.optional(),
+      farm: shortTextSchema.optional(),
+      variety: shortTextSchema.optional(),
+      process: shortTextSchema.optional(),
+      roastLevel: roastLevelSchema.optional(),
+      roastDate: shortTextSchema.optional(),
+      shopUrl: z.string().trim().max(2_048).optional(),
+      notes: notesSchema.optional(),
+    })
+    .optional(),
 })
 
 const ACTIVE_BEANS_PAGE_SIZE = 12
@@ -274,6 +288,6 @@ export const researchBeanInfo = createServerFn({ method: 'POST' })
     })
 
     return withResourceLimits('bean-web-research', () =>
-      researchBeanFromWeb(data.beanName, data.roasterName),
+      researchBeanFromWeb(data.beanName, data.roasterName, data.knownContext),
     )
   })

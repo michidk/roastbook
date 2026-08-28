@@ -51,7 +51,18 @@ export function RoasterResearchAction({
 
     setIsResearching(true)
     try {
-      const result = await researchRoasterInfo({ data: { name } })
+      const result = await researchRoasterInfo({
+        data: {
+          name,
+          knownContext: {
+            location: currentData.location,
+            country: currentData.country,
+            website: currentData.website,
+            instagramHandle: currentData.instagramHandle,
+            notes: currentData.notes,
+          },
+        },
+      })
       if (Object.keys(result).length === 0) {
         toast.error('No roaster details found')
         return

@@ -47,7 +47,18 @@ const roasterUpdateSchema = roasterCreateSchema.partial().extend({
   notes: notesSchema.nullable().optional(),
 })
 
-const researchRoasterInfoSchema = z.object({ name: nameSchema })
+const researchRoasterInfoSchema = z.object({
+  name: nameSchema,
+  knownContext: z
+    .object({
+      location: shortTextSchema.optional(),
+      country: shortTextSchema.optional(),
+      website: z.string().trim().max(2_048).optional(),
+      instagramHandle: z.string().trim().max(100).optional(),
+      notes: notesSchema.optional(),
+    })
+    .optional(),
+})
 
 const ROASTERS_PAGE_SIZE = 25
 const roasterListSchema = z.object({
@@ -139,7 +150,7 @@ export const researchRoasterInfo = createServerFn({ method: 'POST' })
     }
 
     return withResourceLimits('roaster-web-research', () =>
-      researchRoasterFromWeb(data.name),
+      researchRoasterFromWeb(data.name, data.knownContext),
     )
   })
 

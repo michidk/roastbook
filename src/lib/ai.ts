@@ -29,6 +29,7 @@ import {
 } from '@/lib/shot-recommendation'
 import {
   buildStructuredResearchPrompt,
+  buildStructuredResearchSubjectPrompt,
   defineStructuredResearchFields,
   parseStructuredResearchResult,
   type StructuredResearchFields,
@@ -579,6 +580,7 @@ export type StructuredWebResearchRequest<
   readonly task: string
   readonly fields: TFields
   readonly evidenceRules: readonly string[]
+  readonly knownContext?: Readonly<Record<string, unknown>>
   readonly logLabel: string
   readonly logContext?: Readonly<Record<string, unknown>>
 }
@@ -592,6 +594,7 @@ async function researchStructuredDataFromWebImpl<
   task,
   fields,
   evidenceRules,
+  knownContext,
   logLabel,
   logContext,
 }: StructuredWebResearchRequest<TFields>): Promise<
@@ -616,7 +619,11 @@ async function researchStructuredDataFromWebImpl<
   const messages: Array<ModelMessage> = [
     {
       role: 'user',
-      content: `Research this ${subject}: "${searchQuery}"`,
+      content: buildStructuredResearchSubjectPrompt({
+        subject,
+        searchQuery,
+        knownContext,
+      }),
     },
   ]
   const requestLogId = await startAiRequestLog({
@@ -661,6 +668,7 @@ async function researchStructuredDataFromWebImpl<
 async function researchBeanFromWebImpl(
   beanName: string,
   roasterName?: string,
+  knownContext?: Readonly<Record<string, unknown>>,
 ): Promise<ExtractedBeanInfo> {
   const searchQuery = roasterName
     ? `${roasterName} ${beanName} coffee beans`
@@ -676,6 +684,7 @@ async function researchBeanFromWebImpl(
       'Use reliable coffee roaster websites, review sites, or specialty coffee databases.',
       'Prefer the roaster or producer as the primary source when available.',
     ],
+    knownContext,
     logLabel: 'bean',
     logContext: { beanName, roasterName: roasterName ?? null },
   })
@@ -685,6 +694,7 @@ export const researchBeanFromWeb = createServerOnlyFn(researchBeanFromWebImpl)
 
 async function researchRoasterFromWebImpl(
   roasterName: string,
+  knownContext?: Readonly<Record<string, unknown>>,
 ): Promise<ExtractedRoasterInfo> {
   return researchStructuredDataFromWebImpl({
     subject: 'coffee roaster',
@@ -698,6 +708,7 @@ async function researchRoasterFromWebImpl(
       'Verify that every result belongs to the exact roaster and not a similarly named café or coffee company.',
       'Use the headquarters or primary roasting location, not a retailer, stockist, or temporary event location.',
     ],
+    knownContext,
     logLabel: 'roaster',
     logContext: { roasterName },
   })
@@ -710,6 +721,7 @@ export const researchRoasterFromWeb = createServerOnlyFn(
 async function researchMachineSettingsFromWebImpl(
   brand: string,
   model: string,
+  knownContext?: Readonly<Record<string, unknown>>,
 ): Promise<ExtractedMachineSettings> {
   const searchQuery = `"${brand} ${model}" manual specifications pre-infusion volumetric steam pressure`
 
@@ -730,12 +742,9 @@ async function researchMachineSettingsFromWebImpl(
       'Steam pressure requires a documented steam-boiler or steam-circuit operating pressure. Omit it for thermocoil and thermoblock machines unless that exact operating pressure is documented.',
       'Omit model-dependent and user-configured values unless a factory default is explicitly documented.',
     ],
+    knownContext,
     logLabel: 'machine-settings',
-    logContext: {
-      name,
-      brand,
-      model,
-    },
+    logContext: { brand, model },
   })
 }
 

@@ -12,6 +12,7 @@ import { EntityNotFound } from '@/components/entity-not-found'
 import { Page, PageHeader } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
+import { AiRecommendationDialog } from '@/components/shots/ai-recommendation-dialog'
 import { ExtractionBalanceField } from '@/components/shots/extraction-balance-field'
 import {
   SaveToRecipeDialog,
@@ -36,6 +37,7 @@ import { getActiveBeans } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getGear } from '@/lib/server/gear'
 import { getRecipeOptions, saveShotAsRecipe } from '@/lib/server/recipes'
+import { checkShotRecommendationEnabled } from '@/lib/server/shot-recommendations'
 import { deleteShot, getShot } from '@/lib/server/shots'
 import { getTasteTags } from '@/lib/server/taste-tags'
 import {
@@ -50,7 +52,7 @@ export const Route = createFileRoute('/brews/$shotId')({
   loaderDeps: ({ search }) => ({ edit: search.edit ?? false }),
   loader: async ({ params, deps }) => {
     const shotId = parseIdParam(params.shotId)
-    const [shot, recipes, editData] = await Promise.all([
+    const [shot, recipes, editData, recommendation] = await Promise.all([
       getShot({ data: shotId }),
       getRecipeOptions(),
       deps.edit
@@ -66,8 +68,14 @@ export const Route = createFileRoute('/brews/$shotId')({
             methods,
           }))
         : null,
+      checkShotRecommendationEnabled(),
     ])
-    return { shot, recipes, editData }
+    return {
+      shot,
+      recipes,
+      editData,
+      recommendationEnabled: recommendation.enabled,
+    }
   },
   component: ShotDetailPage,
   pendingComponent: DetailPending,
@@ -93,7 +101,8 @@ function ShotDataFields({
 
 function ShotDetailPage() {
   const formatDateTime = useDateTimeFormatter()
-  const { shot, recipes, editData } = Route.useLoaderData()
+  const { shot, recipes, editData, recommendationEnabled } =
+    Route.useLoaderData()
   const { edit: isEditing = false } = Route.useSearch()
   const formatNumber = useNumberFormatter()
   const tasteProfile = useTasteProfile()
@@ -233,6 +242,11 @@ function ShotDetailPage() {
           <>
             {!isEditing && (
               <>
+                <AiRecommendationDialog
+                  enabled={recommendationEnabled}
+                  request={shot.beanId ? { shotId: shot.id } : null}
+                  size="sm"
+                />
                 <SaveToRecipeDialog
                   trigger={<Button variant="outline" size="sm" />}
                   triggerLabel="Save to recipe"

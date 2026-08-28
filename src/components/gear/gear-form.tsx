@@ -89,6 +89,12 @@ export function GearForm({
         data: {
           brand,
           model,
+          knownContext: {
+            type: form.values.type || undefined,
+            manualUrl: form.values.manualUrl || undefined,
+            productUrl: form.values.productUrl || undefined,
+            notes: form.values.notes,
+          },
         },
       })
       if (Object.keys(result).length === 0) {

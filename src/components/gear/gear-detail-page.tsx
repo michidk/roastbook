@@ -76,7 +76,16 @@ export function GearDetailPage({
     setIsResearching(true)
     try {
       const result = await researchMachineSettings({
-        data: { brand, model },
+        data: {
+          brand,
+          model,
+          knownContext: {
+            type: formData.type || undefined,
+            manualUrl: formData.manualUrl || undefined,
+            productUrl: formData.productUrl || undefined,
+            notes: formData.notes,
+          },
+        },
       })
       if (Object.keys(result).length === 0) {
         toast.error('No documented machine settings found')

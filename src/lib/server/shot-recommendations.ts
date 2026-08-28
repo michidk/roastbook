@@ -3,14 +3,16 @@ import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
 import { db } from '@/db'
 import { brewingMethods, gear, shots } from '@/db/schema'
 import { isResearchEnabled, recommendShotFromHistory } from '@/lib/ai'
-import { extractionBalanceLabel } from '@/lib/extraction-balance'
 import { withResourceLimits } from '@/lib/server/resource-limits.server'
 import {
-  isShotParameterKey,
-  type ShotParameterKey,
-} from '@/lib/shot-parameters'
+  recommendationBeanEvidence,
+  recommendationGearEvidence,
+  recommendationHistoryIds,
+  recommendationShotEvidence,
+} from '@/lib/server/shot-recommendation-evidence.server'
 import {
   haveSameAccessoryGear,
+  isFocusedShotRecommendationRequest,
   type ShotRecommendationContext,
   shotRecommendationRequestSchema,
 } from '@/lib/shot-recommendation'
@@ -24,9 +26,11 @@ type RecommendationSetup = {
   readonly grinderId: number | null
   readonly basketId: number | null
   readonly accessoryGearIds: readonly number[]
+  readonly focusedShotId: number | null
 }
 
 const recommendationShotRelations = {
+  recipe: { columns: { id: true, name: true } },
   tasteTags: { with: { tasteTag: true } },
   accessoryGearLinks: { columns: { gearId: true } },
 } as const
@@ -45,6 +49,41 @@ function normalizedAccessoryIds(ids: readonly number[]) {
 async function resolveSetup(
   request: ReturnType<typeof shotRecommendationRequestSchema.parse>,
 ): Promise<RecommendationSetup> {
+  if (isFocusedShotRecommendationRequest(request)) {
+    const focusedShot = await db.query.shots.findFirst({
+      where: eq(shots.id, request.shotId),
+      columns: {
+        id: true,
+        beanId: true,
+        brewingMethodId: true,
+        machineId: true,
+        grinderId: true,
+        basketId: true,
+      },
+      with: { accessoryGearLinks: { columns: { gearId: true } } },
+    })
+    if (!focusedShot) {
+      throw new ShotRecommendationError('Brew not found.')
+    }
+    if (!focusedShot.beanId) {
+      throw new ShotRecommendationError(
+        'Add beans to this brew before requesting an AI opinion.',
+      )
+    }
+
+    return {
+      beanId: focusedShot.beanId,
+      brewingMethodId: focusedShot.brewingMethodId,
+      machineId: focusedShot.machineId,
+      grinderId: focusedShot.grinderId,
+      basketId: focusedShot.basketId,
+      accessoryGearIds: normalizedAccessoryIds(
+        focusedShot.accessoryGearLinks.map((link) => link.gearId),
+      ),
+      focusedShotId: focusedShot.id,
+    }
+  }
+
   if (request.currentDraft && request.brewingMethodId) {
     return {
       beanId: request.beanId,
@@ -55,6 +94,7 @@ async function resolveSetup(
       accessoryGearIds: normalizedAccessoryIds(
         request.currentDraft.accessoryGearIds,
       ),
+      focusedShotId: null,
     }
   }
 
@@ -65,7 +105,7 @@ async function resolveSetup(
           eq(shots.brewingMethodId, request.brewingMethodId),
         )
       : eq(shots.beanId, request.beanId),
-    orderBy: [desc(shots.createdAt), desc(shots.id)],
+    orderBy: [desc(shots.brewedAt), desc(shots.id)],
     columns: {
       beanId: true,
       brewingMethodId: true,
@@ -92,6 +132,7 @@ async function resolveSetup(
     accessoryGearIds: normalizedAccessoryIds(
       latestShot.accessoryGearLinks.map((link) => link.gearId),
     ),
+    focusedShotId: null,
   }
 }
 
@@ -111,53 +152,6 @@ function setupConditions(setup: RecommendationSetup) {
   )
 }
 
-function shotParameters(
-  shot: typeof shots.$inferSelect,
-  accessoryGearIds: readonly number[],
-  enabledParameters: readonly string[],
-) {
-  const values = {
-    machineId: shot.machineId,
-    doseGrams: shot.doseGrams,
-    brewWaterGrams: shot.brewWaterGrams,
-    ratioBasis: shot.ratioBasis,
-    grinderId: shot.grinderId,
-    grindSetting: shot.grindSetting,
-    yieldGrams: shot.yieldGrams,
-    shotTimeSeconds: shot.shotTimeSeconds,
-    brewTemperatureCelsius: shot.brewTemperatureCelsius,
-    preinfusionTimeSeconds: shot.preinfusionTimeSeconds,
-    preinfusionPressureBar: shot.preinfusionPressureBar,
-    bloomTimeSeconds: shot.bloomTimeSeconds,
-    brewPressureBar: shot.brewPressureBar,
-    flowRateMlPerSecond: shot.flowRateMlPerSecond,
-    basketId: shot.basketId,
-    usesPuckScreen: shot.usesPuckScreen,
-    paperFilterPosition: shot.paperFilterPosition,
-    distributionMethod: shot.distributionMethod,
-    tampForceKg: shot.tampForceKg,
-    accessoryGearIds,
-  } satisfies Record<ShotParameterKey, unknown>
-
-  return Object.fromEntries(
-    enabledParameters
-      .filter(isShotParameterKey)
-      .map((key) => [key, values[key]]),
-  )
-}
-
-function achievedRatio(shot: typeof shots.$inferSelect) {
-  const beverageValue =
-    shot.ratioBasis === 'brew_water' ? shot.brewWaterGrams : shot.yieldGrams
-  if (shot.doseGrams === null || beverageValue === null) return null
-  const dose = Number(shot.doseGrams)
-  const beverage = Number(beverageValue)
-  if (!Number.isFinite(dose) || dose <= 0 || !Number.isFinite(beverage)) {
-    return null
-  }
-  return `1:${(beverage / dose).toFixed(2)}`
-}
-
 export const checkShotRecommendationEnabled = createServerFn({
   method: 'GET',
 }).handler(async () => ({ enabled: isResearchEnabled() }))
@@ -170,9 +164,12 @@ export const getShotRecommendation = createServerFn({ method: 'POST' })
     }
 
     const setup = await resolveSetup(request)
+    const currentDraft = isFocusedShotRecommendationRequest(request)
+      ? null
+      : (request.currentDraft ?? null)
     const candidateShots = await db.query.shots.findMany({
       where: setupConditions(setup),
-      orderBy: [desc(shots.createdAt), desc(shots.id)],
+      orderBy: [desc(shots.brewedAt), desc(shots.id)],
       columns: { id: true },
       with: { accessoryGearLinks: { columns: { gearId: true } } },
     })
@@ -182,15 +179,25 @@ export const getShotRecommendation = createServerFn({ method: 'POST' })
         setup.accessoryGearIds,
       ),
     )
-    if (matchingShots.length === 0 && !request.currentDraft) {
+    if (matchingShots.length === 0 && !currentDraft) {
       throw new ShotRecommendationError(
         'No previous brews match this bean, method, and exact gear setup.',
       )
     }
+    if (
+      setup.focusedShotId !== null &&
+      !matchingShots.some((shot) => shot.id === setup.focusedShotId)
+    ) {
+      throw new ShotRecommendationError(
+        'The selected brew no longer matches its recorded equipment setup.',
+      )
+    }
 
-    const includedIds = matchingShots
-      .slice(0, RECOMMENDATION_HISTORY_LIMIT)
-      .map((shot) => shot.id)
+    const includedIds = recommendationHistoryIds(
+      matchingShots,
+      setup.focusedShotId,
+      RECOMMENDATION_HISTORY_LIMIT,
+    )
     const gearIds = normalizedAccessoryIds(
       [setup.machineId, setup.grinderId, setup.basketId]
         .filter((id): id is number => id !== null)
@@ -209,7 +216,7 @@ export const getShotRecommendation = createServerFn({ method: 'POST' })
           ? Promise.resolve([])
           : db.query.shots.findMany({
               where: inArray(shots.id, includedIds),
-              orderBy: [asc(shots.createdAt), asc(shots.id)],
+              orderBy: [asc(shots.brewedAt), asc(shots.id)],
               with: recommendationShotRelations,
             }),
         gearIds.length === 0
@@ -228,35 +235,25 @@ export const getShotRecommendation = createServerFn({ method: 'POST' })
     const gearById = new Map(selectedGear.map((item) => [item.id, item]))
     const gearEvidence = (id: number | null) => {
       if (id === null) return null
-      const item = gearById.get(id)
-      if (!item) return { id, unavailable: true }
-      return {
-        id: item.id,
-        name: item.name,
-        brand: item.brand,
-        model: item.model,
-        type: item.type,
-        notes: item.notes,
-        machineSettings: item.machineSettings,
-        basketDetails: item.basketDetails,
-      }
+      return recommendationGearEvidence(id, gearById.get(id))
+    }
+
+    const shotsEvidence = matchingHistory.map((shot) =>
+      recommendationShotEvidence(shot, brewingMethod.enabledParameters),
+    )
+    const focusedShot =
+      setup.focusedShotId === null
+        ? null
+        : (shotsEvidence.find((shot) => shot.id === setup.focusedShotId) ??
+          null)
+    if (setup.focusedShotId !== null && !focusedShot) {
+      throw new ShotRecommendationError(
+        'The selected brew could not be included in its recommendation history.',
+      )
     }
 
     const context: ShotRecommendationContext = {
-      bean: {
-        id: bean.id,
-        name: bean.name,
-        roaster: bean.roasterRef?.name ?? bean.roaster,
-        type: bean.type,
-        origin: bean.origin,
-        region: bean.region,
-        farm: bean.farm,
-        variety: bean.variety,
-        process: bean.process,
-        roastLevel: bean.roastLevel,
-        roastDate: bean.roastDate,
-        notes: bean.notes,
-      },
+      bean: recommendationBeanEvidence(bean),
       brewingMethod: {
         id: brewingMethod.id,
         name: brewingMethod.name,
@@ -268,10 +265,11 @@ export const getShotRecommendation = createServerFn({ method: 'POST' })
         basket: gearEvidence(setup.basketId),
         accessories: setup.accessoryGearIds.map(gearEvidence),
       },
-      currentDraft: request.currentDraft
+      focusedShot,
+      currentDraft: currentDraft
         ? {
             parameters: Object.fromEntries(
-              Object.entries(request.currentDraft.parameters).filter(([key]) =>
+              Object.entries(currentDraft.parameters).filter(([key]) =>
                 brewingMethod.enabledParameters.includes(key),
               ),
             ),
@@ -281,40 +279,7 @@ export const getShotRecommendation = createServerFn({ method: 'POST' })
       matchingShotCount: matchingShots.length,
       historyIncluded: matchingHistory.length,
       historyTruncated: matchingShots.length > matchingHistory.length,
-      shotsOldestToNewest: matchingHistory.map((shot) => {
-        const accessoryGearIds = shot.accessoryGearLinks.map(
-          (link) => link.gearId,
-        )
-        return {
-          id: shot.id,
-          createdAt: shot.createdAt,
-          parameters: shotParameters(
-            shot,
-            accessoryGearIds,
-            brewingMethod.enabledParameters,
-          ),
-          achievedRatio: achievedRatio(shot),
-          overallRating: shot.rating,
-          // Simple mode records only this axis; sour reads as under-extracted
-          // and bitter as over-extracted.
-          sourToBitterBalance: extractionBalanceLabel(shot.extractionBalance),
-          sensory: {
-            acidity: shot.acidity,
-            sweetness: shot.sweetness,
-            bitterness: shot.bitterness,
-            body: shot.body,
-            astringency: shot.astringency,
-          },
-          flavorTags: shot.tasteTags.map(({ tasteTag }) => ({
-            name: tasteTag.name,
-            category: tasteTag.category,
-            extractionAxis: tasteTag.extractionAxis,
-            strengthAxis: tasteTag.strengthAxis,
-            compassHint: tasteTag.hint,
-          })),
-          tastingNotes: shot.notes,
-        }
-      }),
+      shotsOldestToNewest: shotsEvidence,
     }
 
     const recommendation = await withResourceLimits('shot-recommendation', () =>
@@ -327,6 +292,11 @@ export const getShotRecommendation = createServerFn({ method: 'POST' })
       ...setup.accessoryGearIds.map((id) => gearById.get(id)?.name),
     ].filter((name): name is string => Boolean(name))
     const latestShot = matchingHistory.at(-1)
+    const focusedShotRecord =
+      setup.focusedShotId === null
+        ? null
+        : (matchingHistory.find((shot) => shot.id === setup.focusedShotId) ??
+          null)
 
     return {
       recommendation,
@@ -337,7 +307,8 @@ export const getShotRecommendation = createServerFn({ method: 'POST' })
         matchingShotCount: matchingShots.length,
         historyIncluded: matchingHistory.length,
         historyTruncated: matchingShots.length > matchingHistory.length,
-        latestShotAt: latestShot?.createdAt ?? null,
+        focusedShotAt: focusedShotRecord?.brewedAt ?? null,
+        latestShotAt: latestShot?.brewedAt ?? null,
       },
     }
   })

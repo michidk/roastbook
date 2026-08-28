@@ -234,7 +234,22 @@ function BeanDetailPage() {
         : undefined
       showSuggestion(
         await researchBeanInfo({
-          data: { beanName: formData.name, roasterName },
+          data: {
+            beanName: formData.name,
+            roasterName,
+            knownContext: {
+              type: formData.type || undefined,
+              origin: formData.origin,
+              region: formData.region,
+              farm: formData.farm,
+              variety: formData.variety,
+              process: formData.process,
+              roastLevel: formData.roastLevel || undefined,
+              roastDate: formData.roastDate,
+              shopUrl: formData.shopUrl,
+              notes: formData.notes,
+            },
+          },
         }),
         'web',
       )

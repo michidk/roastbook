@@ -23,7 +23,10 @@ import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { getErrorMessage } from '@/lib/error-message'
 import { getShotRecommendation } from '@/lib/server/shot-recommendations'
 import { SHOT_PARAMETER_META } from '@/lib/shot-parameters'
-import type { ShotRecommendationRequest } from '@/lib/shot-recommendation'
+import {
+  isFocusedShotRecommendationRequest,
+  type ShotRecommendationRequest,
+} from '@/lib/shot-recommendation'
 
 type RecommendationResult = Awaited<ReturnType<typeof getShotRecommendation>>
 
@@ -53,6 +56,9 @@ export function AiRecommendationDialog({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<RecommendationResult | null>(null)
+  const isFocusedShot = request
+    ? isFocusedShotRecommendationRequest(request)
+    : false
 
   const loadRecommendation = async () => {
     if (!request) return
@@ -94,11 +100,17 @@ export function AiRecommendationDialog({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>AI recommendation</DialogTitle>
+            <DialogTitle>
+              {isFocusedShot ? 'AI opinion on this brew' : 'AI recommendation'}
+            </DialogTitle>
             <DialogDescription>
-              {request?.currentDraft
-                ? 'A next-brew adjustment based on the current setup and parameters, plus matching history for these beans.'
-                : 'A next-brew adjustment based only on this bean, brewing method, exact gear setup, and its matching history.'}
+              {isFocusedShot
+                ? 'An assessment of this specific brew and a next-brew adjustment based on its beans, brewing method, exact gear, tasting result, and matching history.'
+                : request &&
+                    !isFocusedShotRecommendationRequest(request) &&
+                    request.currentDraft
+                  ? 'A next-brew adjustment based on the current setup and parameters, plus matching history for these beans.'
+                  : 'A next-brew adjustment based only on this bean, brewing method, exact gear setup, and its matching history.'}
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
@@ -109,7 +121,11 @@ export function AiRecommendationDialog({
               >
                 <Loader2 className="size-7 animate-spin text-primary" />
                 <div>
-                  <p className="font-medium">Analyzing brew history…</p>
+                  <p className="font-medium">
+                    {isFocusedShot
+                      ? 'Analyzing this brew and its history…'
+                      : 'Analyzing brew history…'}
+                  </p>
                   <p className="mt-1 text-sm text-muted-foreground">
                     Comparing settings, extraction, strength, and flavor
                     development.
@@ -159,7 +175,9 @@ export function AiRecommendationDialog({
                 <section className="rounded-xl border border-border bg-muted/35 p-4">
                   <h3 className="flex items-center gap-2 font-semibold">
                     <History className="size-4 text-primary" />
-                    How this setup developed
+                    {isFocusedShot
+                      ? 'How this brew compares'
+                      : 'How this setup developed'}
                   </h3>
                   <p className="mt-2 leading-relaxed text-muted-foreground">
                     {result.recommendation.historyInsight}
@@ -198,8 +216,9 @@ export function AiRecommendationDialog({
                     </ol>
                   ) : (
                     <p className="rounded-xl border border-positive/35 bg-positive/10 p-4 text-sm text-positive-text">
-                      No parameter change is recommended. Repeat the latest brew
-                      as consistently as possible.
+                      No parameter change is recommended. Repeat{' '}
+                      {isFocusedShot ? 'this' : 'the latest'} brew as
+                      consistently as possible.
                     </p>
                   )}
                 </section>
@@ -234,9 +253,11 @@ export function AiRecommendationDialog({
                   {result.basis.gearNames.length > 0
                     ? ` · ${result.basis.gearNames.join(', ')}`
                     : ' · no gear recorded'}
-                  {result.basis.latestShotAt
-                    ? ` · latest ${formatDate(result.basis.latestShotAt)}`
-                    : ''}
+                  {result.basis.focusedShotAt
+                    ? ` · focused ${formatDate(result.basis.focusedShotAt)}`
+                    : result.basis.latestShotAt
+                      ? ` · latest ${formatDate(result.basis.latestShotAt)}`
+                      : ''}
                   {result.basis.historyTruncated
                     ? ' · recent history limit applied'
                     : ''}

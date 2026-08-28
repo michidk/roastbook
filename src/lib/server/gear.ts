@@ -71,6 +71,14 @@ const gearUpdateSchema = gearCreateSchema.partial().extend({
 const researchMachineSettingsSchema = z.object({
   brand: nameSchema,
   model: nameSchema,
+  knownContext: z
+    .object({
+      type: z.enum(GEAR_TYPE_VALUES).optional(),
+      manualUrl: z.string().trim().max(2_048).optional(),
+      productUrl: z.string().trim().max(2_048).optional(),
+      notes: notesSchema.optional(),
+    })
+    .optional(),
 })
 
 type GearValues = z.infer<typeof gearCreateSchema>
@@ -264,6 +272,6 @@ export const researchMachineSettings = createServerFn({ method: 'POST' })
     }
 
     return withResourceLimits('machine-web-research', () =>
-      researchMachineSettingsFromWeb(data.brand, data.model),
+      researchMachineSettingsFromWeb(data.brand, data.model, data.knownContext),
     )
   })

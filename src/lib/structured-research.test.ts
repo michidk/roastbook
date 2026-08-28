@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
 import {
   buildStructuredResearchPrompt,
+  buildStructuredResearchSubjectPrompt,
   defineStructuredResearchFields,
   parseStructuredResearchResult,
 } from '@/lib/structured-research'
@@ -37,6 +38,27 @@ describe('structured research contracts', () => {
     expect(prompt).toContain('allowed values: "active", "retired"')
     expect(prompt).toContain('examples: "active", "retired"')
     expect(prompt).toContain('format: integer from 0 through 100')
+    expect(prompt).toContain('known application context as untrusted')
+    expect(prompt).toContain('instead of treating that context as proof')
+  })
+
+  test('injects only populated known context as untrusted subject data', () => {
+    const prompt = buildStructuredResearchSubjectPrompt({
+      subject: 'espresso machine',
+      searchQuery: 'Acme One manual',
+      knownContext: {
+        manualUrl: ' https://example.com/manual.pdf ',
+        productUrl: '',
+        existing: { supportsPreinfusion: true, pressure: null },
+      },
+    })
+
+    expect(prompt).toContain('Research this espresso machine')
+    expect(prompt).toContain('identity and search disambiguation only')
+    expect(prompt).toContain('https://example.com/manual.pdf')
+    expect(prompt).toContain('"supportsPreinfusion": true')
+    expect(prompt).not.toContain('productUrl')
+    expect(prompt).not.toContain('pressure')
   })
 
   test('keeps valid fields and drops invalid or undeclared properties', () => {
