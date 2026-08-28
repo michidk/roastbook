@@ -1,6 +1,5 @@
 import {
   Calculator,
-  CalendarDays,
   CircleDollarSign,
   Globe2,
   LayoutGrid,
@@ -145,10 +144,7 @@ export function GeneralSettings({ onSaved }: { readonly onSaved: () => void }) {
           numberFormatMutation.isSaving || dateFormatMutation.isSaving ? (
             <Loader2 className="size-5 animate-spin text-link" />
           ) : (
-            <div className="flex items-center gap-2 text-link">
-              <Calculator className="size-5" aria-hidden="true" />
-              <CalendarDays className="size-5" aria-hidden="true" />
-            </div>
+            <Calculator className="size-5 text-link" />
           )
         }
         contentClassName="grid gap-4 space-y-0 sm:grid-cols-2"
