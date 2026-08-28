@@ -1,4 +1,5 @@
 import { Link, useNavigate } from '@tanstack/react-router'
+import { Search } from 'lucide-react'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import {
   buildCommandGroups,
@@ -14,6 +15,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
+import { DialogFooter, DialogHeader } from '@/components/ui/dialog'
 import {
   COMMAND_ENTITY_SEARCH_MIN_LENGTH,
   type CommandEntitySearchResults,
@@ -157,17 +159,22 @@ export function CommandPaletteDialog({
       className="sm:max-w-xl"
     >
       <Command loop>
-        <CommandInput
-          autoFocus
-          value={query}
-          onValueChange={setQuery}
-          aria-label="Search beans, cafés, gear, pages, and actions"
-          placeholder="Search beans, cafés, gear, pages…"
-        />
-        <CommandList
-          aria-busy={entitySearchState === 'loading'}
-          className="max-h-[min(24rem,50dvh)] p-1 [scrollbar-color:var(--border)_transparent] [scrollbar-width:thin]"
-        >
+        <DialogHeader className="gap-0 py-4 sm:py-4">
+          <div className="flex items-center gap-2.5">
+            <Search
+              className="size-4 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <CommandInput
+              autoFocus
+              value={query}
+              onValueChange={setQuery}
+              aria-label="Search beans, cafés, gear, pages, and actions"
+              placeholder="Search beans, cafés, gear, pages…"
+            />
+          </div>
+        </DialogHeader>
+        <CommandList aria-busy={entitySearchState === 'loading'}>
           <CommandEmpty className="text-muted-foreground">
             {entitySearchState === 'loading'
               ? 'Searching beans, cafés, and gear…'
@@ -187,7 +194,7 @@ export function CommandPaletteDialog({
             </CommandGroup>
           ))}
         </CommandList>
-        <div className="flex flex-row justify-center gap-4 border-t border-border/70 bg-muted/35 px-5 py-3 text-xs text-muted-foreground">
+        <DialogFooter className="flex-row justify-center gap-4 py-3 text-xs text-muted-foreground sm:justify-center">
           <span className="flex items-center gap-1.5">
             <PaletteKey>↑</PaletteKey>
             <PaletteKey>↓</PaletteKey>
@@ -197,7 +204,7 @@ export function CommandPaletteDialog({
             <PaletteKey>esc</PaletteKey>
             to close
           </span>
-        </div>
+        </DialogFooter>
       </Command>
     </CommandDialog>
   )

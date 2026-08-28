@@ -1,6 +1,10 @@
 import type { ShotFormValues } from '@/components/shots/shot-parameter-fields'
 import { localDateTimeInputToDate } from '@/lib/date-input'
 import { toNullableRating } from '@/lib/rating'
+import {
+  SHOT_RECOMMENDATION_PARAMETER_KEYS,
+  type ShotRecommendationRequest,
+} from '@/lib/shot-recommendation'
 import { shotSensoryPayload } from '@/lib/shot-sensory'
 
 export function shotParameterPayload(values: ShotFormValues) {
@@ -47,5 +51,43 @@ export function newShotPayload(
     ...shotSensoryPayload(values),
     notes: values.notes || null,
     tasteTagIds,
+  }
+}
+
+export function newShotRecommendationRequest(
+  values: ShotFormValues,
+  enabledParameters: readonly string[],
+): ShotRecommendationRequest | null {
+  if (!values.beanId || !values.brewingMethodId) return null
+
+  const enabledParameterKeys = new Set(enabledParameters)
+  return {
+    beanId: Number(values.beanId),
+    brewingMethodId: Number(values.brewingMethodId),
+    currentDraft: {
+      machineId:
+        enabledParameterKeys.has('machineId') && values.machineId
+          ? Number(values.machineId)
+          : null,
+      grinderId:
+        enabledParameterKeys.has('grinderId') && values.grinderId
+          ? Number(values.grinderId)
+          : null,
+      basketId:
+        enabledParameterKeys.has('basketId') && values.basketId
+          ? Number(values.basketId)
+          : null,
+      accessoryGearIds: enabledParameterKeys.has('accessoryGearIds')
+        ? values.accessoryGearIds
+        : [],
+      parameters: Object.fromEntries(
+        SHOT_RECOMMENDATION_PARAMETER_KEYS.filter((key) =>
+          enabledParameterKeys.has(key),
+        ).flatMap((key) => {
+          const value = values[key]
+          return value === '' || value === null ? [] : [[key, value]]
+        }),
+      ),
+    },
   }
 }

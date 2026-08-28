@@ -45,6 +45,19 @@ function normalizedAccessoryIds(ids: readonly number[]) {
 async function resolveSetup(
   request: ReturnType<typeof shotRecommendationRequestSchema.parse>,
 ): Promise<RecommendationSetup> {
+  if (request.currentDraft && request.brewingMethodId) {
+    return {
+      beanId: request.beanId,
+      brewingMethodId: request.brewingMethodId,
+      machineId: request.currentDraft.machineId,
+      grinderId: request.currentDraft.grinderId,
+      basketId: request.currentDraft.basketId,
+      accessoryGearIds: normalizedAccessoryIds(
+        request.currentDraft.accessoryGearIds,
+      ),
+    }
+  }
+
   const latestShot = await db.query.shots.findFirst({
     where: request.brewingMethodId
       ? and(
@@ -169,7 +182,7 @@ export const getShotRecommendation = createServerFn({ method: 'POST' })
         setup.accessoryGearIds,
       ),
     )
-    if (matchingShots.length === 0) {
+    if (matchingShots.length === 0 && !request.currentDraft) {
       throw new ShotRecommendationError(
         'No previous brews match this bean, method, and exact gear setup.',
       )
@@ -192,11 +205,13 @@ export const getShotRecommendation = createServerFn({ method: 'POST' })
         db.query.brewingMethods.findFirst({
           where: eq(brewingMethods.id, setup.brewingMethodId),
         }),
-        db.query.shots.findMany({
-          where: inArray(shots.id, includedIds),
-          orderBy: [asc(shots.createdAt), asc(shots.id)],
-          with: recommendationShotRelations,
-        }),
+        includedIds.length === 0
+          ? Promise.resolve([])
+          : db.query.shots.findMany({
+              where: inArray(shots.id, includedIds),
+              orderBy: [asc(shots.createdAt), asc(shots.id)],
+              with: recommendationShotRelations,
+            }),
         gearIds.length === 0
           ? Promise.resolve([])
           : db.query.gear.findMany({
@@ -253,6 +268,15 @@ export const getShotRecommendation = createServerFn({ method: 'POST' })
         basket: gearEvidence(setup.basketId),
         accessories: setup.accessoryGearIds.map(gearEvidence),
       },
+      currentDraft: request.currentDraft
+        ? {
+            parameters: Object.fromEntries(
+              Object.entries(request.currentDraft.parameters).filter(([key]) =>
+                brewingMethod.enabledParameters.includes(key),
+              ),
+            ),
+          }
+        : null,
       enabledParameters: brewingMethod.enabledParameters,
       matchingShotCount: matchingShots.length,
       historyIncluded: matchingHistory.length,
