@@ -77,4 +77,23 @@ describe('demo database', () => {
       },
     ])
   })
+
+  test('includes taste ratings for every brew', async () => {
+    const brews = await database.query.shots.findMany({
+      columns: {
+        rating: true,
+        extractionBalance: true,
+        bitterness: true,
+        acidity: true,
+        sweetness: true,
+        body: true,
+        astringency: true,
+      },
+    })
+
+    expect(brews.length).toBeGreaterThan(0)
+    for (const brew of brews) {
+      expect(Object.values(brew).every((value) => value !== null)).toBe(true)
+    }
+  })
 })

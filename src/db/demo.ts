@@ -391,6 +391,14 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
     ],
   ] as const
   const parameterOffsets = [0, 0, 0, 0]
+  const tasteRatingHistory = [
+    // balance, bitterness, acidity, sweetness, body, astringency
+    [3, 2, 4, 4, 3, 1],
+    [2, 2, 5, 3, 2, 2],
+    [3, 3, 3, 4, 4, 2],
+    [4, 4, 2, 3, 4, 3],
+    [3, 2, 3, 5, 3, 1],
+  ] as const
   const brewHistory = [
     // Recent brews are intentionally uneven: gaps, dial-in pairs, and weekends.
     [0, 7, 42, 'Espresso', 0, 4, 'Aurora One', 'Orbit Mill'],
@@ -446,6 +454,17 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
             parameterHistory[beanIndex]?.[parameterIndex],
             'Brew parameter history missing',
           )
+          const [
+            extractionBalance,
+            bitterness,
+            acidity,
+            sweetness,
+            body,
+            astringency,
+          ] = required(
+            tasteRatingHistory[index % tasteRatingHistory.length],
+            'Taste rating history missing',
+          )
           return {
             beanId: required(activeBeans[beanIndex], 'Bean missing').id,
             machineId: required(gearId.get(brewer), 'Brewer missing'),
@@ -466,6 +485,12 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
             shotTimeSeconds: String(brewTime),
             brewTemperatureCelsius: String(temperature),
             rating,
+            extractionBalance,
+            bitterness,
+            acidity,
+            sweetness,
+            body,
+            astringency,
             notes: [
               'Sweet, balanced, and easy to drink.',
               'A little sharp; adjusted the grind afterward.',
