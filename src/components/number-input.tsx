@@ -170,7 +170,7 @@ export function NumberInput({
         type="button"
         variant="outline"
         size="icon-sm"
-        className="relative z-10 rounded-r-none border-input bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"
+        className="relative z-10 rounded-r-none border-input bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground [@media(hover:hover)_and_(pointer:fine)]:size-9"
         disabled={disabled || atMinimum}
         onClick={() => changeBy(-1)}
         aria-label={`Decrease by ${formatNumber(String(increment), numberFormat)}`}
@@ -182,7 +182,7 @@ export function NumberInput({
         type="button"
         variant="outline"
         size="icon-sm"
-        className="relative z-10 rounded-l-none border-input bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"
+        className="relative z-10 rounded-l-none border-input bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground [@media(hover:hover)_and_(pointer:fine)]:size-9"
         disabled={disabled || atMaximum}
         onClick={() => changeBy(1)}
         aria-label={`Increase by ${formatNumber(String(increment), numberFormat)}`}

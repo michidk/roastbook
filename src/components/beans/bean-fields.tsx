@@ -70,10 +70,11 @@ export function BeanFields({
           />
           <InputField
             id={id('weight')}
-            label="Bag weight (g)"
+            label="Bag weight"
             type="number"
             min="0"
             step="50"
+            unit="g"
             placeholder="e.g., 250"
             value={values.weight}
             onChange={(value) => onChange('weight', value)}
