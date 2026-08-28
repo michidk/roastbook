@@ -8,9 +8,11 @@ into a demo by altering its runtime environment.
 
 The demo uses an ephemeral PGlite database loaded from a build-generated
 snapshot. The snapshot is derived from the bundled migrations and deterministic
-seed fixtures, so cold starts do not need to migrate and seed a new database.
-It needs neither `DATABASE_URL` nor writable media storage. Build its Vercel
-output with:
+seed fixtures. The same fixtures back `bun run db:seed` for an empty PostgreSQL
+database, so local seeded environments and the public demo stay aligned. Demo
+cold starts do not need to migrate and seed a new database, and the edition
+needs neither `DATABASE_URL` nor writable media storage. Build its Vercel output
+with:
 
 ```bash
 bun run build:demo

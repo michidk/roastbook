@@ -49,6 +49,10 @@ For a schema change:
 local databases. `bun run db:migrate:cli` exposes the lower-level Drizzle Kit
 migration command when its CLI output or flags are needed.
 
+`bun run db:seed` loads the same fictional records as the database-free public
+demo and installs its bean-package images through the configured storage
+provider. Run it against an empty database after applying migrations.
+
 ## Tests and quality checks
 
 ```bash
@@ -89,9 +93,6 @@ the complete migration chain, and then runs all tests.
   reports roaster rows whose normalized names collide. The default run is a
   dry-run report; `--merge` reassigns beans to the canonical roaster (most
   beans, then oldest id) and deletes the duplicates.
-- `bun run db:seed:imported` (`scripts/seed-imported.ts`) is an alternative
-  seeder that loads a previously imported coffee-log dataset — gear, beans,
-  shots, and their image files — instead of the standard `db:seed` sample data.
 
 ## Browser QA
 

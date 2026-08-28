@@ -177,7 +177,7 @@ running.
 | `bun run db:generate` | Generate a Drizzle migration after a schema change |
 | `bun run db:migrate` | Apply committed migrations |
 | `bun run db:studio` | Open Drizzle Studio |
-| `bun run db:seed` | Seed sample data |
+| `bun run db:seed` | Seed the same fictional dataset as the public demo |
 | `bun run storage:orphans` | Report media drift without changing data |
 
 ## Documentation

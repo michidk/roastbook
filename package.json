@@ -34,7 +34,6 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "bun run scripts/seed.ts",
-    "db:seed:imported": "bun run scripts/seed-imported.ts",
     "db:duplicate-roasters": "bun run scripts/find-duplicate-roasters.ts",
     "storage:orphans": "bun run scripts/report-media-orphans.ts",
     "storage:backfill-thumbnails": "bun run scripts/backfill-thumbnails.ts"
