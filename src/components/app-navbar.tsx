@@ -1,6 +1,12 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import { ChevronDown, Ellipsis, Plus } from 'lucide-react'
-import { type ReactNode, useState } from 'react'
+import {
+  type ReactNode,
+  type PointerEvent as ReactPointerEvent,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import type { NavItem } from '@/components/app-navbar-items'
 import {
   BrandLink,
@@ -78,12 +84,46 @@ function DesktopNavLink({ item }: { item: NavItem }) {
 
 function DesktopMoreMenu() {
   const isActive = useMoreNavIsActive(moreNavItems)
+  const [isOpen, setIsOpen] = useState(false)
+  const closeTimerRef = useRef<number | null>(null)
+
+  const cancelScheduledClose = () => {
+    if (closeTimerRef.current === null) return
+    window.clearTimeout(closeTimerRef.current)
+    closeTimerRef.current = null
+  }
+
+  const handlePointerEnter = (event: ReactPointerEvent) => {
+    if (event.pointerType !== 'mouse') return
+    cancelScheduledClose()
+    setIsOpen(true)
+  }
+
+  const handlePointerLeave = (event: ReactPointerEvent) => {
+    if (event.pointerType !== 'mouse') return
+    cancelScheduledClose()
+    closeTimerRef.current = window.setTimeout(() => {
+      setIsOpen(false)
+      closeTimerRef.current = null
+    }, 150)
+  }
+
+  useEffect(
+    () => () => {
+      if (closeTimerRef.current !== null) {
+        window.clearTimeout(closeTimerRef.current)
+      }
+    },
+    [],
+  )
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger
         aria-label="More navigation"
         aria-current={isActive ? 'page' : undefined}
+        onPointerEnter={handlePointerEnter}
+        onPointerLeave={handlePointerLeave}
         className={cn(
           'group/more inline-flex min-h-11 items-center gap-1 rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground data-popup-open:bg-accent data-popup-open:text-foreground [@media(hover:hover)_and_(pointer:fine)]:min-h-0',
           isActive &&
@@ -96,9 +136,11 @@ function DesktopMoreMenu() {
       <DropdownMenuContent
         align="start"
         sideOffset={8}
-        className="w-64 rounded-2xl p-2 shadow-coffee-strong"
+        className="w-52 rounded-xl p-1.5"
+        onPointerEnter={handlePointerEnter}
+        onPointerLeave={handlePointerLeave}
       >
-        <MoreMenuItems items={moreNavItems} showLabels />
+        <MoreMenuItems items={moreNavItems} />
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -158,7 +200,7 @@ function MobileMoreMenu() {
         align="end"
         side="top"
         sideOffset={12}
-        className="w-64 rounded-2xl p-2 shadow-coffee-strong"
+        className="w-52 rounded-xl p-1.5"
       >
         <MoreMenuItems items={mobileMoreNavItems} />
       </DropdownMenuContent>
