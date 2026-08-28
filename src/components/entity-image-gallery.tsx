@@ -5,7 +5,6 @@ import {
   Loader2,
   Sparkles,
   Star,
-  Trash2,
   X,
 } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
@@ -282,7 +281,7 @@ export function EntityImageGallery({
                     <Button
                       size="icon"
                       variant={image.isThumbnail ? 'default' : 'secondary'}
-                      className="pointer-events-auto absolute left-2 top-2 h-11 w-11 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary sm:h-11 sm:w-11 [@media(hover:hover)]:h-8 [@media(hover:hover)]:w-8"
+                      className="pointer-events-auto absolute left-1 top-1 size-7 after:absolute after:-inset-2 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary"
                       onClick={() => handleSetThumbnail(image.id)}
                       disabled={
                         isSettingThumbnail === image.id || image.isThumbnail
@@ -300,7 +299,7 @@ export function EntityImageGallery({
                     >
                       <Star
                         className={cn(
-                          'h-4 w-4',
+                          'size-3.5',
                           image.isThumbnail && 'fill-current',
                         )}
                       />
@@ -310,11 +309,11 @@ export function EntityImageGallery({
                         <Button
                           size="icon"
                           variant="destructive"
-                          className="pointer-events-auto absolute right-2 top-2 h-11 w-11 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary sm:h-11 sm:w-11 [@media(hover:hover)]:h-8 [@media(hover:hover)]:w-8"
+                          className="pointer-events-auto absolute right-1 top-1 size-7 after:absolute after:-inset-2 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary"
                           disabled={isDeletingImage === image.id}
                           aria-label={`Delete picture ${index + 1}`}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <X className="size-3.5" />
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
