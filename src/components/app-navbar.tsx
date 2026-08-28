@@ -171,7 +171,7 @@ function MobileNavLink({ item }: { item: NavItem }) {
       item={item}
       isActive={isActive}
       className="flex flex-1 flex-col items-center justify-center gap-1 rounded-lg py-2 text-muted-foreground transition-colors"
-      activeClassName="bg-accent text-foreground"
+      activeClassName="text-foreground"
     >
       <item.icon className={cn('h-5 w-5', isActive && 'stroke-[2.5]')} />
       <span className="text-[10px] font-semibold">{item.title}</span>
@@ -190,7 +190,8 @@ function MobileMoreMenu() {
         aria-current={isActive ? 'page' : undefined}
         className={cn(
           'flex flex-1 flex-col items-center justify-center gap-1 rounded-lg py-2 text-muted-foreground transition-colors',
-          (isActive || isOpen) && 'bg-accent text-foreground',
+          isActive && 'text-foreground',
+          isOpen && 'bg-accent text-foreground',
         )}
       >
         <Ellipsis className={cn('h-5 w-5', isActive && 'stroke-[2.5]')} />
