@@ -9,12 +9,10 @@ type MethodOption = {
 }
 
 type BrewCollectionToolbarProps = {
-  readonly query: string
   readonly methodId: string
   readonly rating: string
   readonly methods: readonly MethodOption[]
   readonly resultLabel: string
-  readonly onQueryChange: (query: string) => void
   readonly onMethodChange: (methodId: string) => void
   readonly onRatingChange: (rating: string) => void
   readonly onClearFilters: () => void
@@ -29,12 +27,10 @@ const RATING_OPTIONS = [
 ]
 
 export function BrewCollectionToolbar({
-  query,
   methodId,
   rating,
   methods,
   resultLabel,
-  onQueryChange,
   onMethodChange,
   onRatingChange,
   onClearFilters,
@@ -43,10 +39,6 @@ export function BrewCollectionToolbar({
 
   return (
     <CollectionToolbar
-      value={query}
-      onValueChange={onQueryChange}
-      placeholder="Search brews…"
-      ariaLabel="Search brews by bean or method"
       resultLabel={resultLabel}
       filterCount={activeFilterCount(
         showRating ? [methodId, rating] : [methodId],

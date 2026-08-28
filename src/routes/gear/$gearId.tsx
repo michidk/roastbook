@@ -14,7 +14,6 @@ import {
   searchEnum,
   searchInteger,
   searchRecord,
-  searchString,
   searchValidator,
 } from '@/lib/search-params'
 import { checkGearResearchEnabled, getGearById } from '@/lib/server/gear'
@@ -24,7 +23,6 @@ const parseGearDetailSearch = (input: unknown) => {
   const search = searchRecord(input)
   return {
     brewPage: searchInteger(search.brewPage, 1, 1, 100_000) ?? 1,
-    brewQuery: searchString(search.brewQuery),
     brewSort: searchEnum(
       search.brewSort,
       ['date', 'bean', 'dose', 'yield', 'time', 'rating'],
@@ -41,7 +39,6 @@ export const Route = createFileRoute('/gear/$gearId')({
     middlewares: [
       stripSearchParams({
         brewPage: 1,
-        brewQuery: '',
         brewSort: 'date',
         brewDirection: 'desc',
       } as const),
@@ -49,7 +46,6 @@ export const Route = createFileRoute('/gear/$gearId')({
   },
   loaderDeps: ({ search }) => ({
     brewPage: search.brewPage,
-    brewQuery: search.brewQuery,
     brewSort: search.brewSort,
     brewDirection: search.brewDirection,
   }),
@@ -61,7 +57,6 @@ export const Route = createFileRoute('/gear/$gearId')({
         data: {
           entityId: gearId,
           page: deps.brewPage,
-          query: deps.brewQuery,
           sort: deps.brewSort,
           direction: deps.brewDirection,
         },
@@ -89,11 +84,9 @@ function GearDetailRoute() {
     page: shotPage.page,
     totalPages: shotPage.totalPages,
     totalItems: shotPage.totalItems,
-    query: search.brewQuery,
     sortKey: search.brewSort,
     sortDirection: search.brewDirection,
     onPageChange: (brewPage) => updateShotSearch({ brewPage }),
-    onQueryChange: (brewQuery) => updateShotSearch({ brewQuery, brewPage: 1 }),
     onSort: (brewSort) =>
       updateShotSearch({
         brewSort,

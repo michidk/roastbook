@@ -105,7 +105,6 @@ export const Route = createFileRoute('/beans/$beanId')({
         data: {
           entityId: beanId,
           page: deps.brewPage,
-          query: '',
           sort: deps.brewSort,
           direction: deps.brewDirection,
         },
@@ -335,11 +334,9 @@ function BeanDetailPage() {
               page: shotPage.page,
               totalPages: shotPage.totalPages,
               totalItems: shotPage.totalItems,
-              query: '',
               sortKey: search.brewSort,
               sortDirection: search.brewDirection,
               onPageChange: (brewPage) => updateSearch({ brewPage }),
-              onQueryChange: () => undefined,
               onSort: (brewSort) =>
                 updateSearch({
                   brewSort,

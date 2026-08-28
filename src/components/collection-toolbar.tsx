@@ -16,10 +16,10 @@ import { collectionSearchPlaceholder } from '@/lib/collection-toolbar-labels'
 import { cn } from '@/lib/utils'
 
 interface CollectionToolbarProps {
-  readonly value: string
-  readonly onValueChange: (value: string) => void
-  readonly placeholder: string
-  readonly ariaLabel: string
+  readonly value?: string
+  readonly onValueChange?: (value: string) => void
+  readonly placeholder?: string
+  readonly ariaLabel?: string
   /** Short count phrase such as `186 brews`; also carried by the placeholder. */
   readonly resultLabel?: string
   /** Inline at every width: view toggles and other always-visible controls. */
@@ -36,11 +36,13 @@ interface CollectionToolbarProps {
   readonly debounceMs?: number
 }
 
+const ignoreValueChange = () => undefined
+
 export function CollectionToolbar({
-  value,
-  onValueChange,
-  placeholder,
-  ariaLabel,
+  value = '',
+  onValueChange = ignoreValueChange,
+  placeholder = '',
+  ariaLabel = '',
   resultLabel,
   actions,
   mobileSearchActions,
@@ -49,6 +51,7 @@ export function CollectionToolbar({
   onClearFilters,
   debounceMs = 300,
 }: CollectionToolbarProps) {
+  const showSearch = Boolean(placeholder && ariaLabel)
   const [draftValue, setDraftValue] = useState(value)
   const onValueChangeRef = useRef(onValueChange)
   const lastEmittedValue = useRef(value)
@@ -82,36 +85,41 @@ export function CollectionToolbar({
       className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
     >
       <div className="flex w-full items-center gap-2 sm:max-w-sm">
-        <div className="relative w-full">
-          <Search
-            aria-hidden
-            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-          />
-          <Input
-            type="search"
-            value={draftValue}
-            onChange={(event) => setDraftValue(event.target.value)}
-            placeholder={collectionSearchPlaceholder(placeholder, resultLabel)}
-            aria-label={ariaLabel}
-            className="pr-11 pl-9"
-          />
-          {draftValue ? (
-            <Button
-              type="button"
-              size="icon-sm"
-              variant="ghost"
-              aria-label={`Clear ${ariaLabel.toLowerCase()}`}
-              className="absolute top-1/2 right-0 -translate-y-1/2"
-              onClick={() => {
-                setDraftValue('')
-                lastEmittedValue.current = ''
-                onValueChangeRef.current('')
-              }}
-            >
-              <X aria-hidden="true" />
-            </Button>
-          ) : null}
-        </div>
+        {showSearch ? (
+          <div className="relative w-full">
+            <Search
+              aria-hidden
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+            />
+            <Input
+              type="search"
+              value={draftValue}
+              onChange={(event) => setDraftValue(event.target.value)}
+              placeholder={collectionSearchPlaceholder(
+                placeholder,
+                resultLabel,
+              )}
+              aria-label={ariaLabel}
+              className="pr-11 pl-9"
+            />
+            {draftValue ? (
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="ghost"
+                aria-label={`Clear ${ariaLabel.toLowerCase()}`}
+                className="absolute top-1/2 right-0 -translate-y-1/2"
+                onClick={() => {
+                  setDraftValue('')
+                  lastEmittedValue.current = ''
+                  onValueChangeRef.current('')
+                }}
+              >
+                <X aria-hidden="true" />
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
         {filters ? (
           <CollectionFilterSheet
             filters={filters}

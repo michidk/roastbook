@@ -22,10 +22,7 @@ import {
   shotTasteTags,
   tasteTags,
 } from '@/db/schema'
-import {
-  escapedContainsPattern,
-  resolvePagination,
-} from '@/lib/collection-query'
+import { resolvePagination } from '@/lib/collection-query'
 import { expectReturnedRow } from '@/lib/domain-errors'
 import { recipeTargetSchema } from '@/lib/recipe-target'
 import {
@@ -54,7 +51,6 @@ const BEAN_SHOT_CHART_LIMIT = 100
 
 const shotListSchema = z.object({
   page: z.number().int().min(1).max(100_000).default(1),
-  query: z.string().trim().max(200).default(''),
   sort: z
     .enum(['date', 'bean', 'dose', 'yield', 'time', 'rating'])
     .default('date'),
@@ -75,7 +71,6 @@ const createShotWithRecipeSchema = z.object({
 
 const shotGroupListSchema = shotListSchema.pick({
   page: true,
-  query: true,
   methodId: true,
   rating: true,
 })
@@ -146,33 +141,8 @@ const shotRelations = {
   images: true,
 } as const
 
-function shotSearchCondition(
-  query: string,
-  methodId?: number,
-  rating?: number,
-) {
-  const pattern = query ? escapedContainsPattern(query) : null
-  const textCondition = pattern
-    ? or(
-        sql`exists (
-          select 1 from ${beans}
-          where ${beans.id} = ${shots.beanId}
-            and ${beans.name} ilike ${pattern} escape '\\'
-        )`,
-        sql`exists (
-          select 1 from ${brewingMethods}
-          where ${brewingMethods.id} = ${shots.brewingMethodId}
-            and ${brewingMethods.name} ilike ${pattern} escape '\\'
-        )`,
-        sql`exists (
-          select 1 from ${recipes}
-          where ${recipes.id} = ${shots.recipeId}
-            and ${recipes.name} ilike ${pattern} escape '\\'
-        )`,
-      )
-    : undefined
+function shotFilterCondition(methodId?: number, rating?: number) {
   return and(
-    textCondition,
     methodId ? eq(shots.brewingMethodId, methodId) : undefined,
     rating === undefined
       ? undefined
@@ -226,8 +196,8 @@ async function loadShotPage(
   scope?: SQL,
 ) {
   const scoped = await ratingAwareScope(data.rating, data.sort)
-  const search = shotSearchCondition(data.query, data.methodId, scoped.rating)
-  const where = scope && search ? and(scope, search) : (scope ?? search)
+  const filters = shotFilterCondition(data.methodId, scoped.rating)
+  const where = scope && filters ? and(scope, filters) : (scope ?? filters)
   const countRows = await db.select({ value: count() }).from(shots).where(where)
   const totalItems = countRows[0]?.value ?? 0
   const pagination = resolvePagination(totalItems, data.page, SHOTS_PAGE_SIZE)
@@ -359,7 +329,7 @@ export const getShotGroups = createServerFn({ method: 'GET' })
   .validator(shotGroupListSchema)
   .handler(async ({ data }) => {
     const { rating } = await ratingAwareScope(data.rating, 'date')
-    const where = shotSearchCondition(data.query, data.methodId, rating)
+    const where = shotFilterCondition(data.methodId, rating)
     const groupKey = sql<number>`coalesce(${shots.beanId}, 0)`
     const countRows = await db
       .select({ value: sql<number>`count(distinct ${groupKey})::int` })

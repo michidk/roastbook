@@ -1,10 +1,8 @@
 import { Link } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
-import { CollectionToolbar } from '@/components/collection-toolbar'
+import { useMemo } from 'react'
 import { ImageWithFallback } from '@/components/image-with-fallback'
 import { PaginationControls } from '@/components/pagination-controls'
 import { SortableTableHead } from '@/components/sortable-table-head'
-import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -57,20 +55,15 @@ export interface ShotsTableServerPagination {
   readonly page: number
   readonly totalPages: number
   readonly totalItems: number
-  readonly query: string
-  readonly scopeLabel?: string | null
   readonly sortKey: SortKey
   readonly sortDirection: SortDirection
   readonly onPageChange: (page: number) => void
-  readonly onQueryChange: (query: string) => void
-  readonly onClearScope?: () => void
   readonly onSort: (key: SortKey) => void
 }
 
 interface ShotsTableProps {
   shots: Shot[]
   hideBean?: boolean
-  hideToolbar?: boolean
   serverPagination?: ShotsTableServerPagination
 }
 
@@ -182,10 +175,8 @@ function getShotSortDirection(key: SortKey): SortDirection {
 export function ShotsTable({
   shots,
   hideBean,
-  hideToolbar = false,
   serverPagination,
 }: ShotsTableProps) {
-  const [search, setSearch] = useState('')
   const showRating = useTasteProfile().overallRating
 
   // Computed once from the complete, unfiltered list so columns never
@@ -198,25 +189,8 @@ export function ShotsTable({
     [serverPagination, shots, showRating],
   )
 
-  const activeSearch = serverPagination?.query ?? search
-  const showSearch =
-    !hideToolbar &&
-    !hideBean &&
-    (serverPagination !== undefined || shots.length > PAGE_SIZE)
-
-  const filtered = useMemo(() => {
-    if (serverPagination) return shots
-    const query = activeSearch.trim().toLowerCase()
-    if (!query) return shots
-    return shots.filter(
-      (shot) =>
-        shot.bean?.name.toLowerCase().includes(query) ||
-        shot.brewingMethod.name.toLowerCase().includes(query),
-    )
-  }, [activeSearch, serverPagination, shots])
-
   const localPagination = useSortablePagination<Shot, SortKey>({
-    items: filtered,
+    items: shots,
     initialSortKey: 'date',
     initialSortDirection: 'desc',
     pageSize: PAGE_SIZE,
@@ -235,44 +209,11 @@ export function ShotsTable({
   const sorted = serverPagination ? shots : localPagination.sorted
   const sortKey = serverPagination?.sortKey ?? localPagination.sortKey
   const totalPages = serverPagination?.totalPages ?? localPagination.totalPages
-  const displayedTotal = serverPagination?.totalItems ?? sorted.length
-
   return (
     <div className="space-y-4">
-      {showSearch && (
-        <CollectionToolbar
-          value={activeSearch}
-          onValueChange={(query) => {
-            if (serverPagination) {
-              serverPagination.onQueryChange(query)
-            } else {
-              setSearch(query)
-              setPage(1)
-            }
-          }}
-          placeholder="Search brews…"
-          ariaLabel="Search brews by bean or method"
-          resultLabel={`${displayedTotal} ${displayedTotal === 1 ? 'brew' : 'brews'}${serverPagination?.scopeLabel ? ` · ${serverPagination.scopeLabel}` : ''}`}
-          actions={
-            serverPagination?.scopeLabel && serverPagination.onClearScope ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={serverPagination.onClearScope}
-              >
-                Clear filter
-              </Button>
-            ) : undefined
-          }
-        />
-      )}
-
       {sorted.length === 0 ? (
         <p className="py-4 text-sm text-muted-foreground">
-          {activeSearch
-            ? `No brews match “${activeSearch}”.`
-            : 'No brews recorded yet.'}
+          No brews recorded yet.
         </p>
       ) : (
         <>

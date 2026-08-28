@@ -29,7 +29,6 @@ import {
   searchEnum,
   searchInteger,
   searchRecord,
-  searchString,
   searchValidator,
 } from '@/lib/search-params'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
@@ -48,7 +47,6 @@ const parseBrewsSearch = (input: unknown) => {
   const search = searchRecord(input)
   return {
     page: searchInteger(search.page, 1, 1) ?? 1,
-    query: searchString(search.query),
     sort: searchEnum(search.sort, SHOT_SORT_VALUES, 'date'),
     direction: searchEnum(search.direction, ['asc', 'desc'], 'desc'),
     view: searchEnum(search.view, ['list', 'grouped'], 'list'),
@@ -64,7 +62,6 @@ export const Route = createFileRoute('/brews/')({
     middlewares: [
       stripSearchParams({
         page: 1,
-        query: '',
         sort: 'date',
         direction: 'desc',
         view: 'list',
@@ -73,7 +70,6 @@ export const Route = createFileRoute('/brews/')({
   },
   loaderDeps: ({ search }) => ({
     page: search.page,
-    query: search.query,
     sort: search.sort,
     direction: search.direction,
     view: search.view,
@@ -88,7 +84,6 @@ export const Route = createFileRoute('/brews/')({
         getShotGroups({
           data: {
             page: deps.page,
-            query: deps.query,
             methodId: deps.methodId,
             rating: deps.rating,
           },
@@ -102,7 +97,6 @@ export const Route = createFileRoute('/brews/')({
       getShotPage({
         data: {
           page: deps.page,
-          query: deps.query,
           sort: deps.sort,
           direction: deps.direction,
           methodId: deps.methodId,
@@ -141,7 +135,7 @@ function ShotsPage() {
   // off, so a stale search parameter must not count as an active filter here
   // either — otherwise it would suppress the empty state.
   const hasActiveFilters =
-    Boolean(search.query || search.methodId) ||
+    Boolean(search.methodId) ||
     (showRating && search.rating !== undefined) ||
     search.beanId !== undefined
 
@@ -177,7 +171,6 @@ function ShotsPage() {
 
       {totalItems > 0 || hasActiveFilters ? (
         <BrewCollectionToolbar
-          query={search.query}
           methodId={search.methodId ? String(search.methodId) : ''}
           rating={search.rating !== undefined ? String(search.rating) : ''}
           methods={data.methods}
@@ -185,9 +178,6 @@ function ShotsPage() {
             grouped
               ? `${totalItems} ${totalItems === 1 ? 'bean group' : 'bean groups'}`
               : `${totalItems} ${totalItems === 1 ? 'brew' : 'brews'}`
-          }
-          onQueryChange={(query) =>
-            updateSearch({ query, page: 1 }, { replace: true })
           }
           onMethodChange={(value) =>
             updateSearch({
@@ -282,7 +272,6 @@ function ShotsPage() {
                               view: 'list',
                               beanId: group.bean?.id ?? 0,
                               page: 1,
-                              query: '',
                               sort: 'date',
                               direction: 'desc',
                             })
@@ -329,21 +318,13 @@ function ShotsPage() {
             <CardContent className="pt-6 max-md:px-0 max-md:pt-0">
               <ShotsTable
                 shots={data.result.items}
-                hideToolbar
                 serverPagination={{
                   page: data.result.page,
                   totalPages: data.result.totalPages,
                   totalItems: data.result.totalItems,
-                  query: search.query,
-                  scopeLabel: data.result.scopeLabel,
                   sortKey: search.sort,
                   sortDirection: search.direction,
                   onPageChange: (page) => updateSearch({ page }),
-                  onQueryChange: (query) =>
-                    updateSearch({ query, page: 1 }, { replace: true }),
-                  onClearScope: data.result.scopeLabel
-                    ? () => updateSearch({ beanId: undefined, page: 1 })
-                    : undefined,
                   onSort: (sort) =>
                     updateSearch({
                       sort,
