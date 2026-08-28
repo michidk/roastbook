@@ -262,8 +262,8 @@ export function CollectionList<TItem>({
   }
 
   return (
-    <Card>
-      <CardContent>
+    <Card className="min-w-0 w-full max-w-[calc(100vw-2rem)] md:max-w-[calc(100vw-4rem)] xl:max-w-full">
+      <CardContent className="min-w-0">
         <Table>
           <TableHeader>
             <TableRow>

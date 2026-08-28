@@ -5,6 +5,11 @@ import {
   useNavigate,
 } from '@tanstack/react-router'
 import { Coffee, Plus } from 'lucide-react'
+import {
+  type CollectionColumn,
+  type CollectionEntry,
+  CollectionList,
+} from '@/components/collection/collection-list'
 import { EmptyState } from '@/components/empty-state'
 import { ImageWithFallback } from '@/components/image-with-fallback'
 import { Page, PageHeader } from '@/components/page-layout'
@@ -22,6 +27,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { StarRating } from '@/components/ui/star-rating'
+import { useDateFormatter } from '@/hooks/use-date-formatter'
+import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { nextSortDirection } from '@/lib/collection-sort'
 import { thumbnailUrl } from '@/lib/image-url'
@@ -42,6 +50,15 @@ const SHOT_SORT_VALUES = [
   'time',
   'rating',
 ] as const
+
+type Shot = Awaited<ReturnType<typeof getShotPage>>['items'][number]
+
+function getBeanThumbnail(bean: Shot['bean']): string | null {
+  if (!bean?.images.length) return null
+  const image =
+    bean.images.find((candidate) => candidate.isThumbnail) ?? bean.images[0]
+  return image ? thumbnailUrl(image.storagePath) : null
+}
 
 const parseBrewsSearch = (input: unknown) => {
   const search = searchRecord(input)
@@ -119,6 +136,8 @@ function ShotsPage() {
   const data = Route.useLoaderData()
   const search = Route.useSearch()
   const navigate = useNavigate({ from: '/brews/' })
+  const formatDate = useDateFormatter()
+  const formatNumber = useNumberFormatter()
   const showRating = useTasteProfile().overallRating
   const grouped = data.view === 'grouped'
   const totalItems = data.result.totalItems
@@ -138,6 +157,120 @@ function ShotsPage() {
     Boolean(search.methodId) ||
     (showRating && search.rating !== undefined) ||
     search.beanId !== undefined
+
+  const handleSort = (sort: (typeof SHOT_SORT_VALUES)[number]) =>
+    updateSearch({
+      sort,
+      // New date/rating columns start with the most recent or best brews
+      // first instead of the shared ascending default.
+      direction:
+        search.sort !== sort && (sort === 'date' || sort === 'rating')
+          ? 'desc'
+          : nextSortDirection(search.sort, search.direction, sort),
+      page: 1,
+    })
+
+  const getEntry = (shot: Shot): CollectionEntry => ({
+    id: shot.id,
+    title: formatDate(shot.brewedAt),
+    to: '/brews/$shotId',
+    params: { shotId: String(shot.id) },
+  })
+
+  const columns: readonly CollectionColumn<Shot>[] = [
+    {
+      key: 'bean',
+      header: 'Bean',
+      sortKey: 'bean',
+      cell: (shot) => {
+        if (!shot.bean) return '—'
+        const thumbnail = getBeanThumbnail(shot.bean)
+        return (
+          <Link
+            to="/beans/$beanId"
+            params={{ beanId: String(shot.bean.id) }}
+            className="inline-flex min-h-11 items-center gap-2 rounded-sm text-link underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            {thumbnail ? (
+              <ImageWithFallback
+                src={thumbnail}
+                alt=""
+                className="size-8 rounded-full object-cover"
+              />
+            ) : null}
+            {shot.bean.name}
+          </Link>
+        )
+      },
+    },
+    {
+      key: 'method',
+      header: 'Method',
+      cell: (shot) => shot.brewingMethod.name,
+    },
+    {
+      key: 'recipe',
+      header: 'Recipe',
+      cell: (shot) =>
+        shot.recipe ? (
+          <Link
+            to="/recipes/$recipeId"
+            params={{ recipeId: String(shot.recipe.id) }}
+            className="inline-flex min-h-11 items-center rounded-sm text-link underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            {shot.recipe.name}
+          </Link>
+        ) : (
+          '—'
+        ),
+    },
+    {
+      key: 'dose',
+      header: 'Dose',
+      align: 'right',
+      sortKey: 'dose',
+      cell: (shot) =>
+        shot.doseGrams ? `${formatNumber(shot.doseGrams)} g` : '—',
+    },
+    {
+      key: 'yield',
+      header: 'Yield',
+      align: 'right',
+      sortKey: 'yield',
+      cell: (shot) =>
+        shot.yieldGrams ? `${formatNumber(shot.yieldGrams)} g` : '—',
+    },
+    {
+      key: 'time',
+      header: 'Time',
+      align: 'right',
+      sortKey: 'time',
+      cell: (shot) =>
+        shot.shotTimeSeconds ? `${formatNumber(shot.shotTimeSeconds)} s` : '—',
+    },
+    ...(showRating
+      ? [
+          {
+            key: 'rating',
+            header: 'Rating',
+            align: 'right' as const,
+            sortKey: 'rating',
+            cell: (shot: Shot) =>
+              shot.rating ? (
+                <StarRating
+                  value={shot.rating}
+                  readOnly
+                  variant="compact"
+                  sizeClassName="size-3.5"
+                  ariaLabel="Brew rating"
+                />
+              ) : (
+                '—'
+              ),
+          },
+        ]
+      : []),
+  ]
 
   return (
     <Page>
@@ -314,38 +447,27 @@ function ShotsPage() {
               </Button>
             </div>
           ) : null}
-          <Card className="max-md:overflow-visible max-md:bg-transparent max-md:py-0 max-md:shadow-none">
-            <CardContent className="pt-6 max-md:px-0 max-md:pt-0">
-              <ShotsTable
-                shots={data.result.items}
-                serverPagination={{
-                  page: data.result.page,
-                  totalPages: data.result.totalPages,
-                  totalItems: data.result.totalItems,
-                  sortKey: search.sort,
-                  sortDirection: search.direction,
-                  onPageChange: (page) => updateSearch({ page }),
-                  onSort: (sort) =>
-                    updateSearch({
-                      sort,
-                      // New date/rating columns start with the most recent or
-                      // best brews first instead of the shared ascending
-                      // default.
-                      direction:
-                        search.sort !== sort &&
-                        (sort === 'date' || sort === 'rating')
-                          ? 'desc'
-                          : nextSortDirection(
-                              search.sort,
-                              search.direction,
-                              sort,
-                            ),
-                      page: 1,
-                    }),
-                }}
-              />
-            </CardContent>
-          </Card>
+          <CollectionList
+            view="table"
+            items={data.result.items}
+            getEntry={getEntry}
+            columns={columns}
+            titleHeader="Date"
+            titleSortKey="date"
+            sort={{
+              key: search.sort,
+              direction: search.direction,
+              onSort: (sort) =>
+                handleSort(searchEnum(sort, SHOT_SORT_VALUES, search.sort)),
+            }}
+          />
+          {data.result.totalPages > 1 ? (
+            <PaginationControls
+              page={data.result.page}
+              totalPages={data.result.totalPages}
+              onPageChange={(page) => updateSearch({ page })}
+            />
+          ) : null}
         </div>
       )}
     </Page>

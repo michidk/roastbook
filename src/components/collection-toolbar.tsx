@@ -3,6 +3,11 @@ import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
   Sheet,
   SheetClose,
   SheetContent,
@@ -27,8 +32,8 @@ interface CollectionToolbarProps {
   /** Controls that sit beside the search field below `sm`. */
   readonly mobileSearchActions?: ReactNode
   /**
-   * Filter controls, rendered inline from `sm` and inside the mobile filter
-   * sheet. The suffix keeps control ids unique across the two copies.
+   * Filter controls, rendered inside a desktop popover and a mobile sheet.
+   * The suffix keeps control ids unique across the two copies.
    */
   readonly filters?: (idSuffix: string) => ReactNode
   readonly filterCount?: number
@@ -161,11 +166,78 @@ export function CollectionToolbar({
             </p>
           ) : null}
           {filters ? (
-            <div className="hidden min-w-0 sm:block">{filters('')}</div>
+            <CollectionFilterPopover
+              filters={filters}
+              filterCount={filterCount}
+              onClearFilters={onClearFilters}
+            />
           ) : null}
           {actions}
         </div>
       ) : null}
+    </div>
+  )
+}
+
+function CollectionFilterPopover({
+  filters,
+  filterCount,
+  onClearFilters,
+}: {
+  readonly filters: (idSuffix: string) => ReactNode
+  readonly filterCount: number
+  readonly onClearFilters?: () => void
+}) {
+  return (
+    <div className="hidden sm:block">
+      <Popover>
+        <PopoverTrigger
+          render={
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              aria-label={
+                filterCount > 0
+                  ? `Filters, ${filterCount} active`
+                  : 'Filters, none active'
+              }
+            />
+          }
+        >
+          <SlidersHorizontal aria-hidden />
+          Filters
+          {filterCount > 0 ? (
+            <span
+              aria-hidden
+              className="flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 font-display text-xs font-bold text-primary-foreground"
+            >
+              {filterCount}
+            </span>
+          ) : null}
+        </PopoverTrigger>
+        <PopoverContent
+          align="end"
+          sideOffset={8}
+          aria-label="Filters"
+          className="w-80 max-w-[calc(100vw-2rem)] space-y-4 p-4"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <p className="font-display font-bold text-foreground">Filters</p>
+            {onClearFilters && filterCount > 0 ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="xs"
+                onClick={onClearFilters}
+              >
+                Clear all
+              </Button>
+            ) : null}
+          </div>
+          <div className="min-w-0">{filters('-popover')}</div>
+        </PopoverContent>
+      </Popover>
     </div>
   )
 }

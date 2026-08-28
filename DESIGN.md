@@ -126,8 +126,9 @@ A phone spends its height on records, not on chrome. Below `sm` the toolbar is
 one row: the search control plus a Filters trigger that opens a bottom sheet
 holding the filter fields. The trigger carries the number of active filters in
 its badge and its accessible name, and the sheet offers Clear all whenever a
-filter is set. From `sm` the same filter fields sit inline in the toolbar row
-and the trigger disappears.
+filter is set. From `sm` the same fields live in a compact Filters popover
+instead of occupying the toolbar by default. The desktop trigger also exposes
+the active count and Clear all action.
 
 The result count rides in the search placeholder — `Search 186 brews…` — so it
 costs no vertical space. It stays in a polite live region at every width and

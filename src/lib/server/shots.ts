@@ -37,6 +37,11 @@ import {
 } from '@/lib/server/shot-parameter-projection'
 import { saveShotToRecipeInTransaction } from '@/lib/server/shot-recipes.server'
 import {
+  SHOT_SORT_VALUES,
+  type ShotSortKey,
+  shotSortExpression,
+} from '@/lib/server/shot-sort.server'
+import {
   positiveIdSchema,
   shotCreateSchema,
   shotUpdateSchema,
@@ -51,9 +56,7 @@ const BEAN_SHOT_CHART_LIMIT = 100
 
 const shotListSchema = z.object({
   page: z.number().int().min(1).max(100_000).default(1),
-  sort: z
-    .enum(['date', 'bean', 'dose', 'yield', 'time', 'rating'])
-    .default('date'),
+  sort: z.enum(SHOT_SORT_VALUES).default('date'),
   direction: z.enum(['asc', 'desc']).default('desc'),
   methodId: positiveIdSchema.optional(),
   rating: z.number().int().min(0).max(5).optional(),
@@ -152,29 +155,10 @@ function shotFilterCondition(methodId?: number, rating?: number) {
   )
 }
 
-function shotSortExpression(sort: z.infer<typeof shotListSchema>['sort']) {
-  switch (sort) {
-    case 'bean':
-      return sql`coalesce((select ${beans.name} from ${beans} where ${beans.id} = ${shots.beanId}), '')`
-    case 'dose':
-      return shots.doseGrams
-    case 'yield':
-      return shots.yieldGrams
-    case 'time':
-      return shots.shotTimeSeconds
-    case 'rating':
-      return shots.rating
-    case 'date':
-      return shots.brewedAt
-  }
-}
-
 function shotBeanCondition(beanId: number | undefined) {
   if (beanId === undefined) return undefined
   return beanId === 0 ? isNull(shots.beanId) : eq(shots.beanId, beanId)
 }
-
-type ShotSortKey = z.infer<typeof shotListSchema>['sort']
 
 /**
  * The rating filter and the rating sort only mean something while the overall
