@@ -1,5 +1,5 @@
 import { Minus, Plus } from 'lucide-react'
-import type { ComponentProps, KeyboardEvent } from 'react'
+import { type ComponentProps, type KeyboardEvent, useId } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAppSettings } from '@/hooks/use-app-settings'
@@ -21,6 +21,8 @@ type NumberInputProps = Omit<
   max?: string | number
   step?: string | number
   showStepper?: boolean
+  unit?: string
+  unitPosition?: 'prefix' | 'suffix'
 }
 
 function finiteNumber(value: string | number | undefined) {
@@ -39,10 +41,14 @@ export function NumberInput({
   disabled,
   placeholder,
   onKeyDown,
+  'aria-describedby': ariaDescribedBy,
   showStepper = true,
+  unit,
+  unitPosition = 'suffix',
   ...props
 }: NumberInputProps) {
   const { numberFormat } = useAppSettings()
+  const unitDescriptionId = useId()
   const minimum = finiteNumber(min)
   const maximum = finiteNumber(max)
   const increment = finiteNumber(step) ?? 1
@@ -55,6 +61,12 @@ export function NumberInput({
     numericValue !== undefined &&
     maximum !== undefined &&
     numericValue >= maximum
+  const formattedValue = formatNumber(value, numberFormat)
+  const valueWithUnit = unit
+    ? unitPosition === 'prefix'
+      ? `${unit} ${formattedValue}`
+      : `${formattedValue} ${unit}`
+    : formattedValue
 
   const changeBy = (direction: -1 | 1) => {
     onChange(
@@ -93,13 +105,25 @@ export function NumberInput({
       type="text"
       role={showStepper ? 'spinbutton' : undefined}
       inputMode="decimal"
-      value={formatNumber(value, numberFormat)}
+      value={formattedValue}
       placeholder={formatNumberPlaceholder(placeholder, numberFormat)}
       disabled={disabled}
+      aria-describedby={
+        [ariaDescribedBy, !showStepper && unit ? unitDescriptionId : undefined]
+          .filter(Boolean)
+          .join(' ') || undefined
+      }
       className={
         showStepper
-          ? 'relative min-w-0 flex-1 rounded-none border-x-0 text-center tabular-nums focus-visible:z-20'
-          : cn('tabular-nums', className)
+          ? cn(
+              'relative min-w-0 flex-1 rounded-none border-x-0 text-center tabular-nums focus-visible:z-20',
+              unit && (unitPosition === 'prefix' ? 'pl-12' : 'pr-12'),
+            )
+          : cn(
+              'tabular-nums',
+              unit && (unitPosition === 'prefix' ? 'pl-12' : 'pr-12'),
+              !unit && className,
+            )
       }
       aria-valuemin={showStepper ? minimum : undefined}
       aria-valuemax={showStepper ? maximum : undefined}
@@ -110,9 +134,7 @@ export function NumberInput({
           ? numericValue
           : undefined
       }
-      aria-valuetext={
-        showStepper && value ? formatNumber(value, numberFormat) : undefined
-      }
+      aria-valuetext={showStepper && value ? valueWithUnit : undefined}
       onChange={(event) => {
         const normalized = normalizeNumberInput(event.target.value)
         if (normalized !== null) onChange(normalized)
@@ -121,7 +143,26 @@ export function NumberInput({
     />
   )
 
-  if (!showStepper) return input
+  const inputWithUnit = unit ? (
+    <div className={cn('relative min-w-0', showStepper ? 'flex-1' : className)}>
+      {input}
+      <span
+        id={!showStepper ? unitDescriptionId : undefined}
+        aria-hidden={showStepper ? true : undefined}
+        className={cn(
+          'pointer-events-none absolute inset-y-0 z-20 flex items-center text-sm text-muted-foreground',
+          unitPosition === 'prefix' ? 'left-3' : 'right-3',
+          disabled && 'opacity-60',
+        )}
+      >
+        {unit}
+      </span>
+    </div>
+  ) : (
+    input
+  )
+
+  if (!showStepper) return inputWithUnit
 
   return (
     <div className={cn('flex min-w-0', className)}>
@@ -136,7 +177,7 @@ export function NumberInput({
       >
         <Minus aria-hidden="true" />
       </Button>
-      {input}
+      {inputWithUnit}
       <Button
         type="button"
         variant="outline"

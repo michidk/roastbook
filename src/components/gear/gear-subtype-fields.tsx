@@ -41,10 +41,11 @@ export function GearSubtypeFields({
       >
         <InputField
           id="basket-dose"
-          label="Nominal dose (g)"
+          label="Nominal dose"
           type="number"
           min="0"
           step="0.5"
+          unit="g"
           value={values.nominalDoseGrams}
           onChange={(value) => onChange('nominalDoseGrams', value)}
         />

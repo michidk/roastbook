@@ -64,6 +64,8 @@ interface InputFieldProps extends FormFieldBaseProps {
   max?: string | number
   step?: string | number
   showStepper?: boolean
+  unit?: string
+  unitPosition?: 'prefix' | 'suffix'
   autoFocus?: boolean
 }
 
@@ -83,6 +85,8 @@ export function InputField({
   max,
   step,
   showStepper,
+  unit,
+  unitPosition,
   autoFocus,
 }: InputFieldProps) {
   return (
@@ -105,6 +109,8 @@ export function InputField({
           max={max}
           step={step}
           showStepper={showStepper}
+          unit={unit}
+          unitPosition={unitPosition}
           autoFocus={autoFocus}
           aria-invalid={Boolean(error)}
           aria-describedby={describedBy(id, error)}
