@@ -3,34 +3,59 @@ import {
   ArrowRight,
   Bean,
   BookOpen,
+  Camera,
   Coffee,
   Github,
-  LineChart,
   LockKeyhole,
+  MapPin,
+  Plus,
+  Search,
   Sparkles,
+  WandSparkles,
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 
-const features = [
+const aiFeatures = [
   {
-    icon: Coffee,
-    title: 'Log the details that matter',
+    icon: Camera,
+    title: 'Scan the bag, skip the typing',
     description:
-      'Capture dose, yield, time, taste, recipes, and gear without turning every brew into homework.',
+      'Photograph a coffee bag and turn its label into structured bean details, ready to review and save.',
   },
   {
-    icon: LineChart,
-    title: 'Turn notes into answers',
+    icon: Search,
+    title: 'Research the missing context',
     description:
-      'See how grind, method, beans, and equipment shape the cups you want to make again.',
+      'Fill in beans, roasters, and machine settings from relevant sources instead of hunting them down yourself.',
   },
   {
-    icon: LockKeyhole,
-    title: 'Keep your journal yours',
+    icon: WandSparkles,
+    title: 'Dial in the next brew',
     description:
-      'Self-host on your own infrastructure with no account, telemetry, subscription, or upsell.',
+      'Compare a brew with your matching history and get one evidence-grounded adjustment to try next.',
+  },
+] as const
+
+const previewBeans = [
+  {
+    name: 'Worka Sakaro',
+    roaster: 'Friedhats',
+    detail: 'Ethiopia · Natural',
+    gradient: 'from-[#8f452d] via-[#bd7552] to-[#e7b978]',
+  },
+  {
+    name: 'La Muralla',
+    roaster: 'Manhattan',
+    detail: 'Colombia · Washed',
+    gradient: 'from-[#435641] via-[#788a64] to-[#d0b77d]',
+  },
+  {
+    name: 'Finca El Paraíso',
+    roaster: 'Dak',
+    detail: 'Colombia · Anaerobic',
+    gradient: 'from-[#633d58] via-[#a46677] to-[#e1ad8c]',
   },
 ] as const
 
@@ -54,6 +79,7 @@ export function DemoLandingPage() {
       <main id="main-content" className="flex-1">
         <LandingHero />
         <LandingFeatures />
+        <LandingBeanShowcase />
         <LandingCta />
       </main>
       <LandingFooter />
@@ -113,11 +139,11 @@ function LandingHero() {
           AI-native. Self-hosted. Entirely yours.
         </div>
         <h1 className="font-display text-5xl leading-[0.98] font-extrabold tracking-[-0.045em] text-balance sm:text-6xl lg:text-7xl">
-          The coffee journal you actually own.
+          Scan the bag. Dial in the brew.
         </h1>
         <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
-          Remember every great cup, understand what made it work, and let
-          Roastbook handle the tedious details in between.
+          Roastbook turns a label photo into structured coffee details, then
+          uses your own brew history to suggest what to change next.
         </p>
         <div className="mt-8 flex flex-col gap-3 min-[420px]:flex-row">
           <Button asChild size="lg">
@@ -154,17 +180,21 @@ function LandingFeatures() {
     >
       <div className="max-w-2xl">
         <p className="font-display text-sm font-bold tracking-[0.16em] text-primary uppercase">
-          Brew with context
+          AI that earns its place
         </p>
         <h2
           id="why-roastbook"
           className="mt-3 font-display text-3xl font-extrabold tracking-tight sm:text-4xl"
         >
-          More useful than a notebook. More personal than a platform.
+          Less data entry. More useful context.
         </h2>
+        <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
+          Use AI where it saves time or helps you make a decision. Every core
+          journal feature keeps working when AI is turned off.
+        </p>
       </div>
       <div className="mt-8 grid gap-4 md:grid-cols-3">
-        {features.map((feature) => (
+        {aiFeatures.map((feature) => (
           <Card key={feature.title} className="h-full">
             <CardContent>
               <span className="mb-5 flex size-11 items-center justify-center rounded-xl bg-accent text-accent-foreground">
@@ -181,6 +211,119 @@ function LandingFeatures() {
         ))}
       </div>
     </section>
+  )
+}
+
+function LandingBeanShowcase() {
+  return (
+    <section className="grid items-center gap-10 border-t border-border/70 py-14 sm:py-20 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] lg:gap-16">
+      <BeanCollectionPreview />
+      <div className="max-w-xl">
+        <p className="font-display text-sm font-bold tracking-[0.16em] text-primary uppercase">
+          From photo to coffee record
+        </p>
+        <h2 className="mt-3 font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
+          Start with a bag, not an empty form.
+        </h2>
+        <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
+          Scan the label, review the extracted origin, process, roast, and
+          tasting notes, then keep everything linked to every brew you make.
+        </p>
+        <div className="mt-6 flex gap-3 rounded-2xl border border-border bg-card/80 p-4 shadow-coffee">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+            <LockKeyhole className="size-5" aria-hidden="true" />
+          </span>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            <strong className="font-bold text-foreground">
+              Optional and server-side.
+            </strong>{' '}
+            Self-host your journal, choose an OpenAI-compatible endpoint, and
+            inspect the raw inputs and responses behind every request.
+          </p>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function BeanCollectionPreview() {
+  return (
+    <div aria-hidden="true" className="relative min-w-0">
+      <div className="absolute -inset-6 -z-10 rounded-[3rem] bg-[radial-gradient(circle,var(--accent)_0%,transparent_68%)] opacity-75" />
+      <div className="overflow-hidden rounded-3xl border border-border bg-background/85 shadow-coffee-strong backdrop-blur-sm">
+        <BeanPreviewHeader />
+        <div className="p-4 sm:p-6">
+          <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
+            {previewBeans.map((bean, index) => (
+              <BeanPreviewCard key={bean.name} bean={bean} scanned={!index} />
+            ))}
+          </div>
+          <div className="mt-4 flex items-center gap-3 rounded-2xl border border-primary/30 bg-accent/75 p-3 sm:p-4">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+              <Sparkles className="size-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="font-display text-sm font-bold">Label scanned</p>
+              <p className="truncate text-xs text-muted-foreground sm:text-sm">
+                12 bean details extracted and ready to review
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function BeanPreviewHeader() {
+  return (
+    <div className="flex items-center gap-3 border-b border-border bg-card/85 px-4 py-3 sm:px-5">
+      <div className="min-w-0 flex-1">
+        <p className="font-display text-lg font-extrabold">Beans</p>
+        <p className="hidden text-xs text-muted-foreground sm:block">
+          Keep track of the coffee beans you brew.
+        </p>
+      </div>
+      <span className="hidden min-h-9 items-center gap-2 rounded-full border border-border bg-background px-3 text-xs text-muted-foreground min-[480px]:flex">
+        <Search className="size-3.5" />
+        Search beans…
+      </span>
+      <span className="flex min-h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-bold text-primary-foreground">
+        <Plus className="size-3.5" />
+        <span className="hidden sm:inline">Add beans</span>
+      </span>
+    </div>
+  )
+}
+
+function BeanPreviewCard({
+  bean,
+  scanned,
+}: {
+  readonly bean: (typeof previewBeans)[number]
+  readonly scanned: boolean
+}) {
+  return (
+    <div
+      className={`relative flex aspect-[0.72] min-w-0 flex-col overflow-hidden rounded-xl bg-gradient-to-br ${bean.gradient} p-2.5 text-white shadow-sm sm:rounded-2xl sm:p-4`}
+    >
+      <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-black/80" />
+      <span className="relative w-fit rounded-full border border-white/50 bg-black/40 px-2 py-1 text-[8px] font-bold tracking-wide uppercase backdrop-blur-sm sm:text-[10px]">
+        {scanned ? 'AI scanned' : 'Active'}
+      </span>
+      <div className="relative mt-auto min-w-0">
+        <p className="truncate text-[8px] font-bold tracking-wider text-white/80 uppercase sm:text-xs">
+          {bean.roaster}
+        </p>
+        <p className="mt-0.5 line-clamp-2 font-display text-xs leading-tight font-extrabold sm:text-lg">
+          {bean.name}
+        </p>
+        <p className="mt-2 flex min-w-0 items-center gap-1 text-[8px] text-white/80 sm:text-xs">
+          <MapPin className="size-2.5 shrink-0 sm:size-3.5" />
+          <span className="truncate">{bean.detail}</span>
+        </p>
+      </div>
+    </div>
   )
 }
 
