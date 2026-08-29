@@ -15,8 +15,8 @@ import { Button } from '@/components/ui/button'
 import { interactiveCardLinkClassName } from '@/components/ui/card'
 import { StarRating } from '@/components/ui/star-rating'
 import { WebsiteLogo } from '@/components/website-logo'
+import { useCurrencyFormatter } from '@/hooks/use-currency-formatter'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
-import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 import {
   searchInteger,
@@ -144,7 +144,7 @@ function VisitsPage() {
 
 function VisitCard({ visit }: { visit: Visit }) {
   const formatDate = useDateFormatter()
-  const formatNumber = useNumberFormatter()
+  const formatCurrency = useCurrencyFormatter()
   const tasteProfile = useTasteProfile()
   const date = formatDate(visit.visitedAt)
   const visitTags = tasteProfile.flavorTags ? (visit.tasteTags ?? []) : []
@@ -172,18 +172,13 @@ function VisitCard({ visit }: { visit: Visit }) {
           ) : null}
           <div className="min-w-0">
             <p className="font-display text-lg font-bold text-foreground">
-              {visit.drinkName || 'Coffee'}
+              {visit.drinkType?.name || 'Coffee'}
             </p>
             <p className="mt-0.5 truncate text-sm text-muted-foreground">
               {visit.coffeeShop?.name ?? 'Unknown café'} · {date}
             </p>
           </div>
         </div>
-        {visit.drinkType && (
-          <span className="shrink-0 rounded-xl bg-coffee px-2.5 py-1 text-xs font-bold text-coffee-foreground">
-            {visit.drinkType}
-          </span>
-        )}
       </div>
 
       {tasteProfile.overallRating && visit.rating != null && (
@@ -210,7 +205,7 @@ function VisitCard({ visit }: { visit: Visit }) {
           {visit.bean && visit.price && ' · '}
           {visit.price && (
             <span className="font-bold text-foreground">
-              {visit.currency || 'EUR'} {formatNumber(visit.price)}
+              {formatCurrency(visit.price, visit.currency || 'EUR')}
             </span>
           )}
         </p>

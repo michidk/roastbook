@@ -19,10 +19,16 @@ import {
   deleteBrewingMethod,
   getBrewingMethod,
 } from '@/lib/server/brewing-methods'
+import { getDrinkConfiguration } from '@/lib/server/drink-options'
 
 export const Route = createFileRoute('/brewing-methods/$brewingMethodId')({
-  loader: ({ params }) =>
-    getBrewingMethod({ data: parseIdParam(params.brewingMethodId) }),
+  loader: async ({ params }) => {
+    const [method, drinks] = await Promise.all([
+      getBrewingMethod({ data: parseIdParam(params.brewingMethodId) }),
+      getDrinkConfiguration(),
+    ])
+    return { method, drinks }
+  },
   component: BrewingMethodDetailPage,
   pendingComponent: DetailPending,
   errorComponent: ({ error }) => (
@@ -35,7 +41,7 @@ export const Route = createFileRoute('/brewing-methods/$brewingMethodId')({
 })
 
 function BrewingMethodDetailPage() {
-  const method = Route.useLoaderData()
+  const { method, drinks } = Route.useLoaderData()
   const navigate = useNavigate()
   const router = useRouter()
 
@@ -86,7 +92,7 @@ function BrewingMethodDetailPage() {
           />
         }
       />
-      <BrewingMethodEditor method={method} />
+      <BrewingMethodEditor method={method} drinkTypes={drinks.drinkTypes} />
     </Page>
   )
 }

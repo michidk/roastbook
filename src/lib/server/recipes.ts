@@ -26,7 +26,6 @@ import { assertValidUpdate, getShotUpdateErrors } from '@/lib/update-validation'
 const recipeUpdateSchema = shotUpdateSchema
   .omit({
     brewedAt: true,
-    recipeId: true,
     rating: true,
     bitterness: true,
     acidity: true,

@@ -109,6 +109,82 @@ export const settings = pgTable(
   ],
 )
 
+export const drinkTypes = pgTable('drink_types', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull().unique(),
+  isArchived: boolean('is_archived').default(false).notNull(),
+  ...timestamps(),
+})
+
+export const drinkOptionGroups = pgTable('drink_option_groups', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull().unique(),
+  isArchived: boolean('is_archived').default(false).notNull(),
+  ...timestamps(),
+})
+
+export const drinkOptionValues = pgTable(
+  'drink_option_values',
+  {
+    id: serial('id').primaryKey(),
+    groupId: integer('group_id')
+      .references(() => drinkOptionGroups.id, { onDelete: 'cascade' })
+      .notNull(),
+    name: text('name').notNull(),
+    isArchived: boolean('is_archived').default(false).notNull(),
+    ...timestamps(),
+  },
+  (table) => [
+    uniqueIndex('drink_option_values_group_name_idx').on(
+      table.groupId,
+      table.name,
+    ),
+    index('drink_option_values_group_id_idx').on(table.groupId),
+  ],
+)
+
+export const drinkTypeOptionGroups = pgTable(
+  'drink_type_option_groups',
+  {
+    id: serial('id').primaryKey(),
+    drinkTypeId: integer('drink_type_id')
+      .references(() => drinkTypes.id, { onDelete: 'cascade' })
+      .notNull(),
+    optionGroupId: integer('option_group_id')
+      .references(() => drinkOptionGroups.id, { onDelete: 'cascade' })
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex('drink_type_option_groups_type_group_idx').on(
+      table.drinkTypeId,
+      table.optionGroupId,
+    ),
+    index('drink_type_option_groups_group_id_idx').on(table.optionGroupId),
+  ],
+)
+
+export const drinkOptionGroupsRelations = relations(
+  drinkOptionGroups,
+  ({ many }) => ({
+    values: many(drinkOptionValues),
+    drinkTypeLinks: many(drinkTypeOptionGroups),
+  }),
+)
+
+export const drinkTypeOptionGroupsRelations = relations(
+  drinkTypeOptionGroups,
+  ({ one }) => ({
+    drinkType: one(drinkTypes, {
+      fields: [drinkTypeOptionGroups.drinkTypeId],
+      references: [drinkTypes.id],
+    }),
+    optionGroup: one(drinkOptionGroups, {
+      fields: [drinkTypeOptionGroups.optionGroupId],
+      references: [drinkOptionGroups.id],
+    }),
+  }),
+)
+
 export const aiUsage = pgTable(
   'ai_usage',
   {
@@ -516,6 +592,40 @@ export const brewingMethods = pgTable('brewing_methods', {
   ...timestamps(),
 })
 
+export const brewingMethodDrinkTypes = pgTable(
+  'brewing_method_drink_types',
+  {
+    id: serial('id').primaryKey(),
+    brewingMethodId: integer('brewing_method_id')
+      .references(() => brewingMethods.id, { onDelete: 'cascade' })
+      .notNull(),
+    drinkTypeId: integer('drink_type_id')
+      .references(() => drinkTypes.id, { onDelete: 'cascade' })
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex('brewing_method_drink_types_method_type_idx').on(
+      table.brewingMethodId,
+      table.drinkTypeId,
+    ),
+    index('brewing_method_drink_types_drink_type_id_idx').on(table.drinkTypeId),
+  ],
+)
+
+export const brewingMethodDrinkTypesRelations = relations(
+  brewingMethodDrinkTypes,
+  ({ one }) => ({
+    brewingMethod: one(brewingMethods, {
+      fields: [brewingMethodDrinkTypes.brewingMethodId],
+      references: [brewingMethods.id],
+    }),
+    drinkType: one(drinkTypes, {
+      fields: [brewingMethodDrinkTypes.drinkTypeId],
+      references: [drinkTypes.id],
+    }),
+  }),
+)
+
 const shotContextColumns = () => ({
   brewingMethodId: integer('brewing_method_id')
     .references(() => brewingMethods.id, { onDelete: 'restrict' })
@@ -538,6 +648,10 @@ const shotParameterColumns = (dosePrecision = 6) => ({
   grindSetting: text('grind_setting'),
   yieldGrams: decimal('yield_grams', { precision: 6, scale: 2 }),
   shotTimeSeconds: decimal('shot_time_seconds', { precision: 8, scale: 2 }),
+  targetTimeSeconds: decimal('target_time_seconds', {
+    precision: 8,
+    scale: 2,
+  }),
   brewTemperatureCelsius: decimal('brew_temperature_celsius', {
     precision: 4,
     scale: 1,
@@ -589,6 +703,7 @@ export const recipes = pgTable(
         and (${table.brewWaterGrams} is null or ${table.brewWaterGrams} >= 0)
         and (${table.yieldGrams} is null or ${table.yieldGrams} >= 0)
         and (${table.shotTimeSeconds} is null or ${table.shotTimeSeconds} >= 0)
+        and (${table.targetTimeSeconds} is null or ${table.targetTimeSeconds} >= 0)
         and (${table.brewTemperatureCelsius} is null or ${table.brewTemperatureCelsius} >= 0)
         and (${table.preinfusionTimeSeconds} is null or ${table.preinfusionTimeSeconds} >= 0)
         and (${table.preinfusionPressureBar} is null or ${table.preinfusionPressureBar} >= 0)
@@ -627,7 +742,6 @@ export const recipesRelations = relations(recipes, ({ one, many }) => ({
     relationName: 'recipeBasket',
   }),
   accessoryGearLinks: many(recipeAccessoryGear),
-  shots: many(shots),
 }))
 
 export const coffeeShops = pgTable(
@@ -697,7 +811,7 @@ export const shots = pgTable(
     id: serial('id').primaryKey(),
     brewedAt: timestamp('brewed_at').defaultNow().notNull(),
     ...shotContextColumns(),
-    recipeId: integer('recipe_id').references(() => recipes.id, {
+    drinkTypeId: integer('drink_type_id').references(() => drinkTypes.id, {
       onDelete: 'set null',
     }),
     ...shotParameterColumns(),
@@ -739,6 +853,7 @@ export const shots = pgTable(
         and (${table.brewWaterGrams} is null or ${table.brewWaterGrams} >= 0)
         and (${table.yieldGrams} is null or ${table.yieldGrams} >= 0)
         and (${table.shotTimeSeconds} is null or ${table.shotTimeSeconds} >= 0)
+        and (${table.targetTimeSeconds} is null or ${table.targetTimeSeconds} >= 0)
         and (${table.brewTemperatureCelsius} is null or ${table.brewTemperatureCelsius} >= 0)
         and (${table.preinfusionTimeSeconds} is null or ${table.preinfusionTimeSeconds} >= 0)
         and (${table.preinfusionPressureBar} is null or ${table.preinfusionPressureBar} >= 0)
@@ -751,7 +866,7 @@ export const shots = pgTable(
     index('brews_brewed_at_idx').on(table.brewedAt),
     index('brews_brewing_method_id_idx').on(table.brewingMethodId),
     index('brews_bean_id_idx').on(table.beanId),
-    index('brews_recipe_id_idx').on(table.recipeId),
+    index('brews_drink_type_id_idx').on(table.drinkTypeId),
     index('brews_machine_id_idx').on(table.machineId),
     index('brews_grinder_id_idx').on(table.grinderId),
     index('brews_basket_id_idx').on(table.basketId),
@@ -759,13 +874,13 @@ export const shots = pgTable(
 )
 
 export const shotsRelations = relations(shots, ({ one, many }) => ({
-  recipe: one(recipes, {
-    fields: [shots.recipeId],
-    references: [recipes.id],
-  }),
   brewingMethod: one(brewingMethods, {
     fields: [shots.brewingMethodId],
     references: [brewingMethods.id],
+  }),
+  drinkType: one(drinkTypes, {
+    fields: [shots.drinkTypeId],
+    references: [drinkTypes.id],
   }),
   bean: one(beans, {
     fields: [shots.beanId],
@@ -789,7 +904,42 @@ export const shotsRelations = relations(shots, ({ one, many }) => ({
   accessoryGearLinks: many(shotAccessoryGear),
   tasteTags: many(shotTasteTags),
   images: many(shotImages),
+  drinkOptions: many(shotDrinkOptions),
 }))
+
+export const shotDrinkOptions = pgTable(
+  'brew_drink_options',
+  {
+    id: serial('id').primaryKey(),
+    shotId: integer('brew_id')
+      .references(() => shots.id, { onDelete: 'cascade' })
+      .notNull(),
+    optionValueId: integer('option_value_id')
+      .references(() => drinkOptionValues.id, { onDelete: 'restrict' })
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex('brew_drink_options_brew_value_idx').on(
+      table.shotId,
+      table.optionValueId,
+    ),
+    index('brew_drink_options_value_id_idx').on(table.optionValueId),
+  ],
+)
+
+export const shotDrinkOptionsRelations = relations(
+  shotDrinkOptions,
+  ({ one }) => ({
+    shot: one(shots, {
+      fields: [shotDrinkOptions.shotId],
+      references: [shots.id],
+    }),
+    optionValue: one(drinkOptionValues, {
+      fields: [shotDrinkOptions.optionValueId],
+      references: [drinkOptionValues.id],
+    }),
+  }),
+)
 
 export const recipeAccessoryGear = pgTable(
   'recipe_accessory_gear',
@@ -862,6 +1012,7 @@ export const shotAccessoryGearRelations = relations(
 export const brewingMethodsRelations = relations(
   brewingMethods,
   ({ many }) => ({
+    drinkTypeLinks: many(brewingMethodDrinkTypes),
     recipes: many(recipes),
     shots: many(shots),
   }),
@@ -955,8 +1106,9 @@ export const cafeVisits = pgTable(
     beanId: integer('bean_id').references(() => beans.id, {
       onDelete: 'set null',
     }),
-    drinkName: text('drink_name'),
-    drinkType: text('drink_type'),
+    drinkTypeId: integer('drink_type_id').references(() => drinkTypes.id, {
+      onDelete: 'set null',
+    }),
     price: decimal('price', { precision: 6, scale: 2 }),
     currency: text('currency').default('EUR'),
     rating: integer('rating'),
@@ -974,6 +1126,7 @@ export const cafeVisits = pgTable(
     index('cafe_visits_visited_at_idx').on(table.visitedAt),
     index('cafe_visits_coffee_shop_id_idx').on(table.coffeeShopId),
     index('cafe_visits_bean_id_idx').on(table.beanId),
+    index('cafe_visits_drink_type_id_idx').on(table.drinkTypeId),
   ],
 )
 
@@ -986,9 +1139,67 @@ export const cafeVisitsRelations = relations(cafeVisits, ({ one, many }) => ({
     fields: [cafeVisits.beanId],
     references: [beans.id],
   }),
+  drinkType: one(drinkTypes, {
+    fields: [cafeVisits.drinkTypeId],
+    references: [drinkTypes.id],
+  }),
   tasteTags: many(cafeVisitTasteTags),
   images: many(cafeVisitImages),
+  drinkOptions: many(cafeVisitDrinkOptions),
 }))
+
+export const cafeVisitDrinkOptions = pgTable(
+  'cafe_visit_drink_options',
+  {
+    id: serial('id').primaryKey(),
+    cafeVisitId: integer('cafe_visit_id')
+      .references(() => cafeVisits.id, { onDelete: 'cascade' })
+      .notNull(),
+    optionValueId: integer('option_value_id')
+      .references(() => drinkOptionValues.id, { onDelete: 'restrict' })
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex('cafe_visit_drink_options_visit_value_idx').on(
+      table.cafeVisitId,
+      table.optionValueId,
+    ),
+    index('cafe_visit_drink_options_value_id_idx').on(table.optionValueId),
+  ],
+)
+
+export const cafeVisitDrinkOptionsRelations = relations(
+  cafeVisitDrinkOptions,
+  ({ one }) => ({
+    cafeVisit: one(cafeVisits, {
+      fields: [cafeVisitDrinkOptions.cafeVisitId],
+      references: [cafeVisits.id],
+    }),
+    optionValue: one(drinkOptionValues, {
+      fields: [cafeVisitDrinkOptions.optionValueId],
+      references: [drinkOptionValues.id],
+    }),
+  }),
+)
+
+export const drinkTypesRelations = relations(drinkTypes, ({ many }) => ({
+  brewingMethodLinks: many(brewingMethodDrinkTypes),
+  optionGroupLinks: many(drinkTypeOptionGroups),
+  shots: many(shots),
+  cafeVisits: many(cafeVisits),
+}))
+
+export const drinkOptionValuesRelations = relations(
+  drinkOptionValues,
+  ({ one, many }) => ({
+    group: one(drinkOptionGroups, {
+      fields: [drinkOptionValues.groupId],
+      references: [drinkOptionGroups.id],
+    }),
+    shotLinks: many(shotDrinkOptions),
+    cafeVisitLinks: many(cafeVisitDrinkOptions),
+  }),
+)
 
 export const cafeVisitImages = pgTable(
   'cafe_visit_images',

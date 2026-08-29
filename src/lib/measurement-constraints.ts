@@ -17,6 +17,11 @@ export const DECIMAL_CONSTRAINTS = {
     maximum: 9_999.99,
     fractionDigits: 2,
   },
+  targetTimeSeconds: {
+    label: 'Target time',
+    maximum: 9_999.99,
+    fractionDigits: 2,
+  },
   brewTemperatureCelsius: {
     label: 'Water temperature',
     maximum: 999.9,

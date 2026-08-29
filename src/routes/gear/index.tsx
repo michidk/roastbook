@@ -259,7 +259,7 @@ function GearCard({
       params={{ gearId: String(item.id) }}
       className={interactiveCardLinkClassName}
     >
-      <Card className="h-full overflow-hidden transition-colors group-hover:bg-muted/50">
+      <Card className="h-full overflow-hidden pt-0 transition-colors group-hover:bg-muted/50">
         {thumbnail && (
           <div className="aspect-[4/3] overflow-hidden">
             <ImageWithFallback

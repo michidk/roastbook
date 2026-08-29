@@ -38,7 +38,7 @@ desktop where you dig through the numbers afterwards.
   paper filter position per brew — plus documented machine-level OPV, factory
   pre-infusion, flow limit, and volumetric defaults on your gear.
 - **Numbers that answer questions.** A year-long coffee activity calendar and
-  filterable statistics connect brew quality to beans, methods, recipes, taste,
+  filterable statistics connect brew quality to beans, methods, taste,
   consistency, timing, gear, and cost, while parameter charts show what a change
   to grind, dose, or pressure actually did.
 - **Mobile and desktop, both first-class.** Large touch targets and compact cards
@@ -49,8 +49,8 @@ desktop where you dig through the numbers afterwards.
   anything is saved.
 - **Yours, end to end.** Self-hosted on your own PostgreSQL and your own storage,
   behind your own auth proxy. No accounts, no telemetry, no upsell.
-- **A journal, not just a log.** Beans, roasters, gear, recipes, brewing methods,
-  and café visits are linked, so every brew carries its whole story.
+- **A journal, not just a log.** Beans, roasters, gear, recipe templates,
+  brewing methods, and café visits keep every brew’s full story structured.
 - **Deploys in one command.** Docker Compose for a home server, a Helm chart for
   a cluster.
 
@@ -83,9 +83,12 @@ an assistant log this morning's espresso for you.
 
 ## Features
 
-- Log brews with recipe, dose, yield, time, equipment, overall and sensory
-  ratings, and flavor notes; create recipes from scratch, duplicate variants,
-  or reuse a brew’s values in a new or existing recipe.
+- Log brews with dose, yield, time, equipment, overall and sensory ratings, and
+  flavor notes. Load a recipe as editable template values, create recipes from
+  scratch, duplicate variants, or reuse a brew’s values in a new or existing
+  recipe. Brews keep their own snapshot and are never linked back to the
+  template. A recipe can set a target brew time, which the brew timer then
+  counts against.
 - Tailor the taste profile in settings: switch the overall rating, each sensory
   factor, flavor tags, and tasting notes on or off. Disabled inputs disappear
   from rating forms and from every place they were shown.
@@ -96,10 +99,13 @@ an assistant log this morning's espresso for you.
   equipment into reusable gear sets that fill new brew and recipe equipment
   fields in one tap.
 - Track café visits and explore visited locations on a map.
+- Configure drink and milk types in Settings, assign drink types to brewing
+  methods to keep new-brew choices relevant, then record the finished drink
+  and its applicable milk choice on both brews and café visits.
 - Keep a Places list of saved cafés, from favorites to a want-to-visit
   wishlist.
 - Review filterable brew and café trends, quality, consistency, taste, rhythm,
-  exploration, recipe performance, gear usage, and costs.
+  exploration, gear usage, and costs.
 - Scan labels and research beans, roasters, and machine settings with AI, with
   local request logs and token-cost estimates.
 - Search beans, cafés, and gear directly; jump to any page; start a new brew,

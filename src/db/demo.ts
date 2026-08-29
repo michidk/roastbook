@@ -70,6 +70,26 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
 
   const methods = await database.query.brewingMethods.findMany()
   const methodId = new Map(methods.map((method) => [method.name, method.id]))
+  const drinkTypes = await database.query.drinkTypes.findMany()
+  const drinkTypeId = new Map(
+    drinkTypes.map((drinkType) => [drinkType.name, drinkType.id]),
+  )
+  const brewingMethodDrinkTypeValues = DEFAULT_BREWING_METHODS.flatMap(
+    (method) =>
+      method.drinkTypeNames.flatMap((drinkTypeName) => {
+        const brewingMethodId = methodId.get(method.name)
+        const selectedDrinkTypeId = drinkTypeId.get(drinkTypeName)
+        return brewingMethodId && selectedDrinkTypeId
+          ? [{ brewingMethodId, drinkTypeId: selectedDrinkTypeId }]
+          : []
+      }),
+  )
+  if (brewingMethodDrinkTypeValues.length > 0) {
+    await database
+      .insert(schema.brewingMethodDrinkTypes)
+      .values(brewingMethodDrinkTypeValues)
+      .onConflictDoNothing()
+  }
 
   const roasters = await database
     .insert(schema.roasters)
@@ -264,6 +284,7 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
       doseGrams,
       yieldGrams,
       shotTimeSeconds: method === 'Espresso' ? '30' : '180',
+      targetTimeSeconds: method === 'Espresso' ? '30' : '180',
       brewTemperatureCelsius: method === 'Espresso' ? '93.0' : '95.0',
     })),
   )
@@ -483,6 +504,7 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
             yieldGrams: brewYield?.toFixed(1) ?? null,
             grindSetting: String(grind),
             shotTimeSeconds: String(brewTime),
+            targetTimeSeconds: isEspresso ? '30' : '180',
             brewTemperatureCelsius: String(temperature),
             rating,
             extractionBalance,
@@ -581,6 +603,10 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
       },
     ])
     .returning()
+  const configuredDrinkTypes = await database.query.drinkTypes.findMany()
+  const drinkTypeIds = new Map(
+    configuredDrinkTypes.map((drinkType) => [drinkType.name, drinkType.id]),
+  )
   await database.insert(schema.cafeVisits).values(
     Array.from({ length: 12 }, (_, index) => ({
       coffeeShopId: required(shops[index % shops.length], 'Coffee shop missing')
@@ -589,8 +615,12 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
         index % 3 === 0
           ? required(activeBeans[index % activeBeans.length], 'Bean missing').id
           : null,
-      drinkName: ['Flat White', 'Espresso', 'Filter', 'Cappuccino'][index % 4],
-      drinkType: ['milk', 'espresso', 'filter', 'milk'][index % 4],
+      drinkTypeId: required(
+        drinkTypeIds.get(
+          ['Flat White', 'Espresso', 'Filter', 'Cappuccino'][index % 4] ?? '',
+        ),
+        'Drink type missing',
+      ),
       price: (3.5 + (index % 4) * 0.5).toFixed(2),
       currency: 'EUR',
       rating: 3 + (index % 3),

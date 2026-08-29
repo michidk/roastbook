@@ -9,6 +9,7 @@ export const SHOT_PARAMETER_KEYS = [
   'grindSetting',
   'yieldGrams',
   'shotTimeSeconds',
+  'targetTimeSeconds',
   'brewTemperatureCelsius',
   'preinfusionTimeSeconds',
   'preinfusionPressureBar',
@@ -34,6 +35,7 @@ export const SHOT_PARAMETER_META = {
   grindSetting: { label: 'Grind setting', group: 'Extraction' },
   yieldGrams: { label: 'Yield', group: 'Extraction' },
   shotTimeSeconds: { label: 'Brew time', group: 'Extraction' },
+  targetTimeSeconds: { label: 'Target time', group: 'Extraction' },
   brewTemperatureCelsius: { label: 'Brew temperature', group: 'Extraction' },
   preinfusionTimeSeconds: { label: 'Pre-infusion time', group: 'Preparation' },
   preinfusionPressureBar: {
@@ -93,6 +95,7 @@ export type ShotParameterValues = {
   readonly grindSetting: string | null
   readonly yieldGrams: string | null
   readonly shotTimeSeconds: string | null
+  readonly targetTimeSeconds: string | null
   readonly brewTemperatureCelsius: string | null
   readonly preinfusionTimeSeconds: string | null
   readonly preinfusionPressureBar: string | null

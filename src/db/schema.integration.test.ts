@@ -50,8 +50,7 @@ databaseDescribe('PostgreSQL schema', () => {
           'recipe_accessory_gear_recipe_gear_idx',
           'bean_images_one_thumbnail_idx',
           'ai_request_logs_created_at_idx',
-          'roasters_name_idx',
-          'brews_recipe_id_idx'
+          'roasters_name_idx'
         )
     `
 
@@ -61,7 +60,6 @@ databaseDescribe('PostgreSQL schema', () => {
       'bean_images_one_thumbnail_idx',
       'brew_accessory_gear_brew_gear_idx',
       'brew_taste_tags_brew_tag_idx',
-      'brews_recipe_id_idx',
       'recipe_accessory_gear_recipe_gear_idx',
       'roasters_name_idx',
     ])
@@ -364,32 +362,19 @@ databaseDescribe('PostgreSQL schema', () => {
     )
   })
 
-  test('records brew time and clears deleted recipe attribution', async () => {
+  test('records brew time independently of recipe templates', async () => {
     await database().begin(async (transaction) => {
       const [method] = await transaction<[{ id: number }]>`
         insert into brewing_methods (name)
         values (${`stats-method-${crypto.randomUUID()}`}) returning id
       `
-      const [recipe] = await transaction<[{ id: number }]>`
-        insert into recipes (name, brewing_method_id)
-        values (${`stats-recipe-${crypto.randomUUID()}`}, ${method.id}) returning id
-      `
-      const [shot] = await transaction<
-        [{ id: number; brewed_at: Date; recipe_id: number | null }]
-      >`
-        insert into brews (brewing_method_id, recipe_id)
-        values (${method.id}, ${recipe.id})
-        returning id, brewed_at, recipe_id
+      const [shot] = await transaction<[{ id: number; brewed_at: Date }]>`
+        insert into brews (brewing_method_id)
+        values (${method.id})
+        returning id, brewed_at
       `
 
       expect(shot.brewed_at).toBeInstanceOf(Date)
-      expect(shot.recipe_id).toBe(recipe.id)
-
-      await transaction`delete from recipes where id = ${recipe.id}`
-      const [updated] = await transaction<[{ recipe_id: number | null }]>`
-        select recipe_id from brews where id = ${shot.id}
-      `
-      expect(updated.recipe_id).toBeNull()
 
       await transaction`delete from brews where id = ${shot.id}`
       await transaction`delete from brewing_methods where id = ${method.id}`

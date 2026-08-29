@@ -51,7 +51,7 @@ export function ExtractionBalanceField({
       </div>
 
       {readOnly ? (
-        <BalanceReadout value={value} label={selectedLabel} />
+        <ExtractionBalanceReadout value={value} label={selectedLabel} />
       ) : (
         <BalancePicker
           value={value}
@@ -63,17 +63,21 @@ export function ExtractionBalanceField({
   )
 }
 
-function BalanceReadout({
+/**
+ * The non-interactive rendering of the balance axis. Rooted in a `span` so it
+ * can also illustrate the axis inside a button, such as the settings picker.
+ */
+export function ExtractionBalanceReadout({
   value,
-  label,
+  label = extractionBalanceLabel(value),
 }: {
   readonly value: number
-  readonly label: string | null
+  readonly label?: string | null
 }) {
   return (
-    <div className="flex items-center gap-2">
+    <span className="flex flex-wrap items-center gap-2">
       <Citrus aria-hidden className="size-4 shrink-0 text-link" />
-      <div
+      <span
         role="img"
         aria-label={`${EXTRACTION_BALANCE_META.label}: ${label}`}
         className="flex items-center gap-1"
@@ -88,10 +92,10 @@ function BalanceReadout({
             )}
           />
         ))}
-      </div>
+      </span>
       <Leaf aria-hidden className="size-4 shrink-0 text-link" />
-      <span className="ml-1 text-sm font-semibold">{label}</span>
-    </div>
+      <span className="text-sm font-semibold">{label}</span>
+    </span>
   )
 }
 

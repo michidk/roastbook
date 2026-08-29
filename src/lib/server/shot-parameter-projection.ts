@@ -34,6 +34,9 @@ export function projectShotParameters(
     shotTimeSeconds: enabled.has('shotTimeSeconds')
       ? (data.shotTimeSeconds ?? null)
       : null,
+    targetTimeSeconds: enabled.has('targetTimeSeconds')
+      ? (data.targetTimeSeconds ?? null)
+      : null,
     brewTemperatureCelsius: enabled.has('brewTemperatureCelsius')
       ? (data.brewTemperatureCelsius ?? null)
       : null,

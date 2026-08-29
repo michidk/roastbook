@@ -6,6 +6,7 @@ export const SHOT_RECOMMENDATION_PARAMETER_KEYS = [
   'grindSetting',
   'yieldGrams',
   'shotTimeSeconds',
+  'targetTimeSeconds',
   'brewTemperatureCelsius',
   'preinfusionTimeSeconds',
   'preinfusionPressureBar',

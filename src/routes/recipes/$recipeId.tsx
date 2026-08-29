@@ -185,7 +185,7 @@ function RecipeDetailPage() {
               </Button>
               <DeleteConfirmation
                 title="Delete this recipe?"
-                description="This recipe will be removed permanently. Existing brews are not affected."
+                description="This template will be removed permanently. Existing brews keep their copied values and are not affected."
                 onConfirm={async () => {
                   await deleteRecipe({ data: recipe.id })
                   await router.invalidate()
@@ -257,6 +257,10 @@ function RecipeSummary({
     enabled.has('shotTimeSeconds') && [
       'Brew time',
       recipe.shotTimeSeconds && `${formatNumber(recipe.shotTimeSeconds)} s`,
+    ],
+    enabled.has('targetTimeSeconds') && [
+      'Target time',
+      recipe.targetTimeSeconds && `${formatNumber(recipe.targetTimeSeconds)} s`,
     ],
     enabled.has('grindSetting') && ['Grind setting', recipe.grindSetting],
     enabled.has('brewTemperatureCelsius') && [

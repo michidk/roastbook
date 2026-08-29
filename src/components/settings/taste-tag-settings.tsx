@@ -67,7 +67,7 @@ export function TasteTagSettings({
         </DialogTrigger>
       </div>
 
-      <DialogContent>
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Manage taste tags</DialogTitle>
           <DialogDescription>

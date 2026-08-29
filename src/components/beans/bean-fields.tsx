@@ -3,6 +3,7 @@ import type { BeanFormValues } from '@/components/beans/bean-form-values'
 import { DateField } from '@/components/form/date-field'
 import {
   CurrencyField,
+  CurrencyInputField,
   InputField,
   SelectField,
   TextareaField,
@@ -75,15 +76,16 @@ export function BeanFields({
             min="0"
             step="50"
             unit="g"
+            unitPlacement="inline"
             placeholder="e.g., 250"
             value={values.weight}
             onChange={(value) => onChange('weight', value)}
           />
           <div className="flex gap-2">
-            <InputField
+            <CurrencyInputField
               id={id('price')}
               label="Price"
-              type="number"
+              currency={values.priceCurrency}
               min="0"
               step="1"
               placeholder="e.g., 15.00"

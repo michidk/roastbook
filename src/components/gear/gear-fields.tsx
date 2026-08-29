@@ -1,6 +1,7 @@
 import { DateField } from '@/components/form/date-field'
 import {
   CurrencyField,
+  CurrencyInputField,
   InputField,
   SelectField,
   TextareaField,
@@ -92,10 +93,10 @@ export function GearFields({
             value={values.purchaseDate}
             onChange={(value) => onChange('purchaseDate', value)}
           />
-          <InputField
+          <CurrencyInputField
             id={id('purchasePrice')}
             label="Price"
-            type="number"
+            currency={values.priceCurrency}
             placeholder="e.g., 599.00"
             value={values.purchasePrice}
             onChange={(value) => onChange('purchasePrice', value)}

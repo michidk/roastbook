@@ -30,7 +30,6 @@ type RecommendationSetup = {
 }
 
 const recommendationShotRelations = {
-  recipe: { columns: { id: true, name: true } },
   tasteTags: { with: { tasteTag: true } },
   accessoryGearLinks: { columns: { gearId: true } },
 } as const

@@ -3,6 +3,7 @@ import { type SyntheticEvent, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { BeanCard } from '@/components/beans/bean-card'
 import { BeanPicker } from '@/components/beans/bean-picker'
+import { DrinkSelectionFields } from '@/components/drinks/drink-selection-fields'
 import { CreatableCombobox } from '@/components/form/creatable-combobox'
 import { DateTimeField } from '@/components/form/date-field'
 import { TextareaField } from '@/components/form/form-field'
@@ -34,6 +35,11 @@ import {
 } from '@/hooks/use-local-date-time-input'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes'
+import {
+  type DrinkConfiguration,
+  drinkConfigurationForBrewingMethod,
+  drinkSelectionForConfiguration,
+} from '@/lib/drink-options'
 import { focusFirstInvalidControl } from '@/lib/form-validation'
 import { getLastBeanIdForBrewingMethod } from '@/lib/new-shot-defaults'
 import {
@@ -47,7 +53,7 @@ import type { getGearSets } from '@/lib/server/gear-sets'
 import type { getRecipes } from '@/lib/server/recipes'
 import {
   createShot,
-  createShotWithRecipe,
+  createShotAndSaveRecipe,
   getLastShotForBeanAndMethod,
 } from '@/lib/server/shots'
 import type {
@@ -68,6 +74,7 @@ type NewShotFormData = {
   readonly methods: Awaited<ReturnType<typeof getBrewingMethods>>
   readonly recipes: Awaited<ReturnType<typeof getRecipes>>
   readonly tasteTags: Awaited<ReturnType<typeof getTasteTags>>
+  readonly drinks: DrinkConfiguration
   readonly beanSuggestions: Awaited<ReturnType<typeof getBeanSuggestions>>
   readonly brewingMethodSuggestions: Awaited<
     ReturnType<typeof getBrewingMethodSuggestions>
@@ -106,6 +113,7 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
     methods,
     recipes,
     tasteTags,
+    drinks,
     beanSuggestions,
     brewingMethodSuggestions,
     lastBeansByBrewingMethod,
@@ -128,7 +136,7 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
       ),
     }
   })
-  const [recipeId, setRecipeId] = useState('')
+  const [loadedRecipeId, setLoadedRecipeId] = useState('')
   const [gearSetId, setGearSetId] = useState('')
   const [brewedAt, setBrewedAt] = useLocalDateTimeInput(defaultBrewedAt)
   const latestBrewedAt = useCurrentLocalDateTimeLimit()
@@ -158,8 +166,12 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
   const selectedMethod = methods.find(
     (method) => String(method.id) === values.brewingMethodId,
   )
+  const availableDrinks = drinkConfigurationForBrewingMethod(
+    drinks,
+    selectedMethod,
+  )
   const selectedRecipe = recipes.find(
-    (recipe) => String(recipe.id) === recipeId,
+    (recipe) => String(recipe.id) === loadedRecipeId,
   )
   const hasShotTimer =
     selectedMethod?.timerEnabled === true &&
@@ -192,20 +204,30 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
     if (brewingMethodId === values.brewingMethodId) return
     setIsDirty(true)
     setTimerKey((current) => current + 1)
-    setRecipeId('')
-    setValues((current) => ({
-      ...current,
-      brewingMethodId,
-      beanId: getLastBeanIdForBrewingMethod(
-        lastBeansByBrewingMethod,
+    setLoadedRecipeId('')
+    const method = methods.find((item) => String(item.id) === brewingMethodId)
+    const methodDrinks = drinkConfigurationForBrewingMethod(drinks, method)
+    setValues((current) => {
+      const drinkSelection = drinkSelectionForConfiguration(
+        methodDrinks,
+        current,
+      )
+      return {
+        ...current,
+        ...drinkSelection,
         brewingMethodId,
-      ),
-      shotTimeSeconds: '',
-    }))
+        beanId: getLastBeanIdForBrewingMethod(
+          lastBeansByBrewingMethod,
+          brewingMethodId,
+        ),
+        shotTimeSeconds: '',
+        targetTimeSeconds: '',
+      }
+    })
   }
 
   const loadRecipe = (id: string) => {
-    setRecipeId(id)
+    setLoadedRecipeId(id)
     const recipe = recipes.find((item) => String(item.id) === id)
     if (!recipe) return
     setIsDirty(true)
@@ -237,12 +259,16 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
         toast.info('No previous brew found for these beans and method')
         return
       }
-      setValues((current) => ({
-        ...shotFormValuesFrom(shot),
-        beanId: current.beanId,
-        ...currentTastingValues(current),
-      }))
-      setRecipeId('')
+      setValues((current) => {
+        const loaded = shotFormValuesFrom(shot)
+        return {
+          ...loaded,
+          ...drinkSelectionForConfiguration(availableDrinks, loaded),
+          beanId: current.beanId,
+          ...currentTastingValues(current),
+        }
+      })
+      setLoadedRecipeId('')
       setIsDirty(true)
       setTimerKey((current) => current + 1)
       toast.success('Loaded the last brew for these beans and method')
@@ -264,10 +290,7 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
       timerValue === undefined
         ? values
         : { ...values, shotTimeSeconds: timerValue }
-    const data = newShotPayload(submittedValues, selectedTags, {
-      brewedAt,
-      recipeId,
-    })
+    const data = newShotPayload(submittedValues, selectedTags, { brewedAt })
     const errors = getShotUpdateErrors({ id: 1, ...data })
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) {
@@ -278,7 +301,7 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
     setIsSubmitting(true)
     try {
       if (targetRecipe) {
-        await createShotWithRecipe({
+        await createShotAndSaveRecipe({
           data: {
             shot: data,
             target:
@@ -364,14 +387,14 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
           {selectedMethod ? (
             <CreatableCombobox
               id="shot-recipe"
-              label="Load from recipe"
-              value={recipeId}
+              label="Load recipe template"
+              value={loadedRecipeId}
               items={availableRecipes}
               suggestions={availableRecipes.slice(0, 5)}
               getKey={({ id }) => id}
               getLabel={({ name }) => name}
               onChange={loadRecipe}
-              placeholder="Choose a recipe"
+              placeholder="Choose a recipe template"
               searchPlaceholder="Search recipes…"
               emptyMessage="No recipes saved for this method."
             />
@@ -393,6 +416,19 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
             max={latestBrewedAt}
             error={fieldErrors.brewedAt}
             required
+          />
+        </FormSection>
+        <FormSection
+          title="Drink"
+          description="Choose the finished drink and any options configured for it."
+        >
+          <DrinkSelectionFields
+            configuration={availableDrinks}
+            values={values}
+            onChange={(next) => {
+              set('drinkTypeId', next.drinkTypeId)
+              set('drinkOptionValueIds', next.drinkOptionValueIds)
+            }}
           />
         </FormSection>
         <FormSection title="Beans">
@@ -506,6 +542,7 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
             key={timerKey}
             ref={timerRef}
             value={values.shotTimeSeconds}
+            targetSeconds={Number(values.targetTimeSeconds) || null}
             onCommit={(value) => set('shotTimeSeconds', value)}
           />
         ) : null}
@@ -529,8 +566,8 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
           title="Save brew into a recipe"
           description="Save the brew and store its final bean, equipment, and brewing values in a new or existing recipe."
           availableRecipes={availableRecipes}
-          currentRecipeId={selectedRecipe?.id}
-          currentRecipeHint="loaded"
+          defaultRecipeId={selectedRecipe?.id}
+          defaultRecipeHint="loaded"
           nameLabel="New recipe name"
           submitLabel="Save brew and recipe"
           isSubmitting={isSubmitting}

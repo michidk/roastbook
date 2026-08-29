@@ -19,6 +19,7 @@ export function shotParameterPayload(values: ShotFormValues) {
     grindSetting: values.grindSetting || null,
     yieldGrams: values.yieldGrams || null,
     shotTimeSeconds: values.shotTimeSeconds || null,
+    targetTimeSeconds: values.targetTimeSeconds || null,
     brewTemperatureCelsius: values.brewTemperatureCelsius || null,
     preinfusionTimeSeconds: values.preinfusionTimeSeconds || null,
     preinfusionPressureBar: values.preinfusionPressureBar || null,
@@ -34,18 +35,27 @@ export function shotParameterPayload(values: ShotFormValues) {
   }
 }
 
+export function shotDrinkPayload(values: ShotFormValues) {
+  return {
+    drinkTypeId: values.drinkTypeId ? Number(values.drinkTypeId) : null,
+    drinkOptionValueIds: Object.values(values.drinkOptionValueIds)
+      .filter(Boolean)
+      .map(Number),
+  }
+}
+
 export function newShotPayload(
   values: ShotFormValues,
   tasteTagIds: readonly number[],
-  options?: { readonly brewedAt?: string; readonly recipeId?: string },
+  options?: { readonly brewedAt?: string },
 ) {
   const brewedAt = options?.brewedAt
     ? localDateTimeInputToDate(options.brewedAt)
     : null
   return {
     ...shotParameterPayload(values),
+    ...shotDrinkPayload(values),
     brewedAt: brewedAt ?? undefined,
-    recipeId: options?.recipeId ? Number(options.recipeId) : null,
     rating: toNullableRating(values.rating),
     extractionBalance: toNullableRating(values.extractionBalance),
     ...shotSensoryPayload(values),

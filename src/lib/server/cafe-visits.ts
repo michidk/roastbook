@@ -2,7 +2,13 @@ import { createServerFn } from '@tanstack/react-start'
 import { count, desc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
-import { beans, cafeVisits, cafeVisitTasteTags, coffeeShops } from '@/db/schema'
+import {
+  beans,
+  cafeVisits,
+  cafeVisitTasteTags,
+  coffeeShops,
+  drinkTypes,
+} from '@/db/schema'
 import {
   escapedContainsPattern,
   resolvePagination,
@@ -10,6 +16,10 @@ import {
 import { expectReturnedRow } from '@/lib/domain-errors'
 import { DECIMAL_CONSTRAINTS } from '@/lib/measurement-constraints'
 import { toDisplayableDatabaseError } from '@/lib/server/database-error.server'
+import {
+  assertDrinkSelection,
+  replaceCafeVisitDrinkOptions,
+} from '@/lib/server/drink-options.server'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
 import {
   boundedDecimalStringSchema,
@@ -19,7 +29,6 @@ import {
   optionalNullablePositiveIdSchema,
   optionalNullableRatingSchema,
   positiveIdSchema,
-  shortTextSchema,
 } from '@/lib/server-validation'
 import {
   assertValidUpdate,
@@ -29,8 +38,8 @@ import {
 const cafeVisitSchema = z.object({
   coffeeShopId: optionalNullablePositiveIdSchema,
   beanId: optionalNullablePositiveIdSchema,
-  drinkName: shortTextSchema.optional(),
-  drinkType: shortTextSchema.optional(),
+  drinkTypeId: optionalNullablePositiveIdSchema,
+  drinkOptionValueIds: z.array(positiveIdSchema).max(20).optional(),
   price: boundedDecimalStringSchema(
     DECIMAL_CONSTRAINTS.cafeVisitPrice.maximum,
     DECIMAL_CONSTRAINTS.cafeVisitPrice.fractionDigits,
@@ -44,8 +53,7 @@ const cafeVisitSchema = z.object({
 
 const cafeVisitUpdateSchema = cafeVisitSchema.partial().extend({
   id: positiveIdSchema,
-  drinkName: shortTextSchema.nullable().optional(),
-  drinkType: shortTextSchema.nullable().optional(),
+  drinkTypeId: optionalNullablePositiveIdSchema,
   price: boundedDecimalStringSchema(
     DECIMAL_CONSTRAINTS.cafeVisitPrice.maximum,
     DECIMAL_CONSTRAINTS.cafeVisitPrice.fractionDigits,
@@ -65,6 +73,8 @@ const cafeVisitListSchema = z.object({
 const cafeVisitRelations = {
   coffeeShop: true,
   bean: true,
+  drinkType: true,
+  drinkOptions: { with: { optionValue: { with: { group: true } } } },
   tasteTags: {
     with: {
       tasteTag: true,
@@ -78,7 +88,7 @@ export const getCafeVisitPage = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     const pattern = escapedContainsPattern(data.query)
     const where = data.query
-      ? sql`lower(coalesce(${cafeVisits.drinkName}, '')) like lower(${pattern}) escape '\\'
+      ? sql`exists (select 1 from ${drinkTypes} where ${drinkTypes.id} = ${cafeVisits.drinkTypeId} and ${drinkTypes.name} ilike ${pattern} escape '\\')
           or exists (select 1 from ${coffeeShops} where ${coffeeShops.id} = ${cafeVisits.coffeeShopId} and ${coffeeShops.name} ilike ${pattern} escape '\\')
           or exists (select 1 from ${beans} where ${beans.id} = ${cafeVisits.beanId} and ${beans.name} ilike ${pattern} escape '\\')`
       : undefined
@@ -101,6 +111,7 @@ export const getCafeVisitPage = createServerFn({ method: 'GET' })
       with: {
         coffeeShop: true,
         bean: true,
+        drinkType: true,
         tasteTags: { with: { tasteTag: true } },
       },
     })
@@ -124,9 +135,16 @@ export const createCafeVisit = createServerFn({ method: 'POST' })
   .validator(cafeVisitSchema)
   .handler(async ({ data }) =>
     db.transaction(async (tx) => {
-      const { tasteTagIds, ...visitData } = data
+      const { tasteTagIds, drinkOptionValueIds = [], ...visitData } = data
+      await assertDrinkSelection(tx, visitData.drinkTypeId, drinkOptionValueIds)
       const [visit] = await tx.insert(cafeVisits).values(visitData).returning()
       const persistedVisit = expectReturnedRow(visit, 'Visit')
+
+      await replaceCafeVisitDrinkOptions(
+        tx,
+        persistedVisit.id,
+        drinkOptionValueIds,
+      )
 
       if (tasteTagIds && tasteTagIds.length > 0) {
         await tx.insert(cafeVisitTasteTags).values(
@@ -149,13 +167,18 @@ export const updateCafeVisit = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) =>
     db.transaction(async (tx) => {
-      const { id, tasteTagIds, ...values } = data
+      const { id, tasteTagIds, drinkOptionValueIds, ...values } = data
+      await assertDrinkSelection(tx, values.drinkTypeId, drinkOptionValueIds)
       const [visit] = await tx
         .update(cafeVisits)
         .set({ ...values, updatedAt: new Date() })
         .where(eq(cafeVisits.id, id))
         .returning()
       const persistedVisit = expectReturnedRow(visit, 'Visit')
+
+      if (drinkOptionValueIds !== undefined) {
+        await replaceCafeVisitDrinkOptions(tx, id, drinkOptionValueIds)
+      }
 
       if (tasteTagIds !== undefined) {
         await tx

@@ -101,27 +101,3 @@ export const CURRENCIES = CURRENCY_VALUES.map((value) => ({
   value,
   label: value,
 }))
-
-const DRINK_TYPES = [
-  'Espresso',
-  'Doppio',
-  'Ristretto',
-  'Lungo',
-  'Americano',
-  'Latte',
-  'Cappuccino',
-  'Flat White',
-  'Cortado',
-  'Macchiato',
-  'Mocha',
-  'Pour Over',
-  'Filter',
-  'Cold Brew',
-  'Iced Coffee',
-  'Other',
-] as const
-
-export const DRINK_TYPE_OPTIONS = DRINK_TYPES.map((type) => ({
-  value: type,
-  label: type,
-}))

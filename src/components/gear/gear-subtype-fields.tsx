@@ -47,6 +47,7 @@ export function GearSubtypeFields({
           min="0"
           step="0.5"
           unit="g"
+          unitPlacement="inline"
           value={values.nominalDoseGrams}
           onChange={(value) => onChange('nominalDoseGrams', value)}
         />
@@ -90,10 +91,12 @@ export function GearSubtypeFields({
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
         <InputField
           id="machine-opv"
-          label="Brew pressure / OPV (bar)"
+          label="Brew pressure / OPV"
           type="number"
           min="0"
           step="0.5"
+          unit="bar"
+          unitPlacement="inline"
           value={values.brewPressureOpvBar}
           onChange={(value) => onChange('brewPressureOpvBar', value)}
         />
@@ -113,45 +116,55 @@ export function GearSubtypeFields({
         />
         <InputField
           id="machine-preinfusion-time"
-          label="Default pre-infusion time (s)"
+          label="Default pre-infusion time"
           type="number"
           min="0"
           step="1"
+          unit="s"
+          unitPlacement="inline"
           value={values.defaultPreinfusionTimeSeconds}
           onChange={(value) => onChange('defaultPreinfusionTimeSeconds', value)}
         />
         <InputField
           id="machine-preinfusion-pressure"
-          label="Default pre-infusion pressure (bar)"
+          label="Default pre-infusion pressure"
           type="number"
           min="0"
           step="0.5"
+          unit="bar"
+          unitPlacement="inline"
           value={values.defaultPreinfusionPressureBar}
           onChange={(value) => onChange('defaultPreinfusionPressureBar', value)}
         />
         <InputField
           id="machine-flow-limit"
-          label="Default flow limit (mL/s)"
+          label="Default flow limit"
           type="number"
           min="0"
           step="0.5"
+          unit="mL/s"
+          unitPlacement="inline"
           value={values.defaultFlowLimitMlPerSecond}
           onChange={(value) => onChange('defaultFlowLimitMlPerSecond', value)}
         />
         <InputField
           id="machine-temperature-offset"
-          label="Temperature offset (°C)"
+          label="Temperature offset"
           type="number"
           step="0.5"
+          unit="°C"
+          unitPlacement="inline"
           value={values.temperatureOffsetCelsius}
           onChange={(value) => onChange('temperatureOffsetCelsius', value)}
         />
         <InputField
           id="machine-shot-volume"
-          label="Volumetric shot volume (mL)"
+          label="Volumetric shot volume"
           type="number"
           min="0"
           step="5"
+          unit="mL"
+          unitPlacement="inline"
           value={values.volumetricShotVolumeMl}
           onChange={(value) => onChange('volumetricShotVolumeMl', value)}
         />
@@ -164,19 +177,23 @@ export function GearSubtypeFields({
         />
         <InputField
           id="machine-steam-temperature"
-          label="Steam temperature (°C)"
+          label="Steam temperature"
           type="number"
           min="0"
           step="1"
+          unit="°C"
+          unitPlacement="inline"
           value={values.steamTemperatureCelsius}
           onChange={(value) => onChange('steamTemperatureCelsius', value)}
         />
         <InputField
           id="machine-steam-pressure"
-          label="Steam pressure (bar)"
+          label="Steam pressure"
           type="number"
           min="0"
           step="0.1"
+          unit="bar"
+          unitPlacement="inline"
           value={values.steamPressureBar}
           onChange={(value) => onChange('steamPressureBar', value)}
         />

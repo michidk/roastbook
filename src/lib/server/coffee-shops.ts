@@ -208,7 +208,7 @@ export const getCoffeeShop = createServerFn({ method: 'GET' })
       where: eq(coffeeShops.id, id),
       with: {
         images: true,
-        cafeVisits: true,
+        cafeVisits: { with: { drinkType: true } },
       },
     }),
   )

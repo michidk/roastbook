@@ -23,32 +23,17 @@ export type TasteProfileField = (typeof TASTE_PROFILE_FIELDS)[number]
 export type TasteProfileConfig = Readonly<Record<TasteProfileField, boolean>>
 
 /**
- * How the sensory part of the profile is captured. `detailed` rates each
- * factor on its own; `simple` collapses them into one sour-to-bitter axis.
- * The two are mutually exclusive so a brew's history stays comparable.
+ * The rating scales, in the order the settings panel offers them. Every scale
+ * is independent: an installation can ask for the overall score, the
+ * sour-to-bitter axis, any of the individual factors, or any mix of them.
  */
-export const TASTE_PROFILE_MODES = ['detailed', 'simple'] as const
+export const TASTE_PROFILE_SCALE_FIELDS = [
+  'overallRating',
+  'extractionBalance',
+  ...SHOT_SENSORY_RATING_KEYS,
+] as const
 
-export type TasteProfileMode = (typeof TASTE_PROFILE_MODES)[number]
-
-export const TASTE_PROFILE_MODE_OPTIONS = [
-  {
-    value: 'detailed',
-    label: 'Detailed factors',
-    description: 'Rate bitterness, acidity, sweetness, body, and astringency.',
-  },
-  {
-    value: 'simple',
-    label: 'Simple balance',
-    description: 'Place the brew once on a sour-to-bitter scale.',
-  },
-] as const satisfies readonly {
-  readonly value: TasteProfileMode
-  readonly label: string
-  readonly description: string
-}[]
-
-/** The fields a fresh installation starts with: detailed mode, everything on. */
+/** The fields a fresh installation starts with: the individual factors. */
 export const DEFAULT_TASTE_PROFILE_FIELDS = TASTE_PROFILE_FIELDS.filter(
   (field) => field !== 'extractionBalance',
 )
@@ -61,7 +46,7 @@ export const TASTE_PROFILE_FIELD_META = {
   },
   extractionBalance: {
     label: EXTRACTION_BALANCE_META.label,
-    description: 'One sour-to-bitter scale in place of individual factors.',
+    description: 'Where the brew landed on a single sour-to-bitter axis.',
   },
   bitterness: {
     label: SHOT_SENSORY_RATING_META.bitterness.label,
@@ -96,9 +81,6 @@ export const TASTE_PROFILE_FIELD_META = {
   { readonly label: string; readonly description: string }
 >
 
-/** Sensory factors, kept apart so the settings panel can group them. */
-export const TASTE_PROFILE_SENSORY_FIELDS = SHOT_SENSORY_RATING_KEYS
-
 export const DEFAULT_TASTE_PROFILE_CONFIG: TasteProfileConfig =
   tasteProfileConfigFrom(DEFAULT_TASTE_PROFILE_FIELDS)
 
@@ -132,28 +114,4 @@ export function hasEnabledTasteProfileField(
   config: TasteProfileConfig,
 ): boolean {
   return TASTE_PROFILE_FIELDS.some((field) => config[field])
-}
-
-export function tasteProfileMode(config: TasteProfileConfig): TasteProfileMode {
-  return config.extractionBalance ? 'simple' : 'detailed'
-}
-
-/**
- * Switches modes without losing the other toggles. Leaving detailed mode keeps
- * the balance axis on, and entering it turns every factor back on, so the new
- * mode always has something to capture.
- */
-export function withTasteProfileMode(
-  config: TasteProfileConfig,
-  mode: TasteProfileMode,
-): TasteProfileConfig {
-  if (mode === tasteProfileMode(config)) return config
-  const sensory = Object.fromEntries(
-    SHOT_SENSORY_RATING_KEYS.map((key) => [key, mode === 'detailed']),
-  )
-  return {
-    ...config,
-    ...sensory,
-    extractionBalance: mode === 'simple',
-  } as TasteProfileConfig
 }

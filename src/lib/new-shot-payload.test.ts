@@ -13,6 +13,25 @@ describe('new brew payload', () => {
     expect(newShotPayload({ ...values, rating: 4 }, []).rating).toBe(4)
   })
 
+  test('copies recipe values without persisting template attribution', () => {
+    const payload = newShotPayload(
+      {
+        ...EMPTY_SHOT_FORM_VALUES,
+        brewingMethodId: '1',
+        doseGrams: '18.00',
+        targetTimeSeconds: '30.00',
+      },
+      [],
+    )
+
+    expect(payload).toMatchObject({
+      brewingMethodId: 1,
+      doseGrams: '18.00',
+      targetTimeSeconds: '30.00',
+    })
+    expect(payload).not.toHaveProperty('recipeId')
+  })
+
   test('normalizes cleared sensory intensities to null', () => {
     const values = {
       ...EMPTY_SHOT_FORM_VALUES,

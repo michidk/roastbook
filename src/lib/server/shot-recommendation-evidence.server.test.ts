@@ -86,7 +86,7 @@ describe('AI brew recommendation context', () => {
     })
   })
 
-  test('keeps the focused brew recipe, parameters, gear IDs, and full tasting outcome', () => {
+  test('keeps the focused brew parameters, gear IDs, and full tasting outcome', () => {
     const brewedAt = new Date('2026-08-28T08:30:00.000Z')
     const evidence = recommendationShotEvidence(
       {
@@ -94,7 +94,7 @@ describe('AI brew recommendation context', () => {
         brewedAt,
         brewingMethodId: 3,
         beanId: 12,
-        recipeId: 7,
+        drinkTypeId: null,
         machineId: 4,
         doseGrams: '18.00',
         brewWaterGrams: null,
@@ -103,6 +103,7 @@ describe('AI brew recommendation context', () => {
         grindSetting: '2.5',
         yieldGrams: '40.00',
         shotTimeSeconds: '29.00',
+        targetTimeSeconds: '30.00',
         brewTemperatureCelsius: '93.0',
         preinfusionTimeSeconds: '5.00',
         preinfusionPressureBar: '3.00',
@@ -124,7 +125,6 @@ describe('AI brew recommendation context', () => {
         notes: 'Sweet, with a bright finish',
         createdAt: brewedAt,
         updatedAt: brewedAt,
-        recipe: { id: 7, name: 'Bright espresso' },
         accessoryGearLinks: [{ gearId: 8 }, { gearId: 9 }],
         tasteTags: [
           {
@@ -145,6 +145,7 @@ describe('AI brew recommendation context', () => {
         'grindSetting',
         'yieldGrams',
         'shotTimeSeconds',
+        'targetTimeSeconds',
         'basketId',
         'accessoryGearIds',
       ],
@@ -153,7 +154,6 @@ describe('AI brew recommendation context', () => {
     expect(evidence).toMatchObject({
       id: 42,
       brewedAt,
-      recipe: { id: 7, name: 'Bright espresso' },
       parameters: {
         machineId: 4,
         doseGrams: '18.00',
@@ -161,6 +161,7 @@ describe('AI brew recommendation context', () => {
         grindSetting: '2.5',
         yieldGrams: '40.00',
         shotTimeSeconds: '29.00',
+        targetTimeSeconds: '30.00',
         basketId: 6,
         accessoryGearIds: [8, 9],
       },

@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as VisitsIndexRouteImport } from './routes/visits/index'
 import { Route as ShotsIndexRouteImport } from './routes/shots/index'
 import { Route as ShopsIndexRouteImport } from './routes/shops/index'
+import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as RoastersIndexRouteImport } from './routes/roasters/index'
 import { Route as RecipesIndexRouteImport } from './routes/recipes/index'
 import { Route as PlacesIndexRouteImport } from './routes/places/index'
@@ -30,6 +31,13 @@ import { Route as ShotsNewRouteImport } from './routes/shots/new'
 import { Route as ShotsShotIdRouteImport } from './routes/shots/$shotId'
 import { Route as ShopsNewRouteImport } from './routes/shops/new'
 import { Route as ShopsCoffeeShopIdRouteImport } from './routes/shops/$coffeeShopId'
+import { Route as SettingsTasteProfileRouteImport } from './routes/settings/taste-profile'
+import { Route as SettingsStorageRouteImport } from './routes/settings/storage'
+import { Route as SettingsMapRouteImport } from './routes/settings/map'
+import { Route as SettingsDrinksRouteImport } from './routes/settings/drinks'
+import { Route as SettingsAppearanceRouteImport } from './routes/settings/appearance'
+import { Route as SettingsAiRouteImport } from './routes/settings/ai'
+import { Route as SettingsAboutRouteImport } from './routes/settings/about'
 import { Route as RoastersNewRouteImport } from './routes/roasters/new'
 import { Route as RoastersRoasterIdRouteImport } from './routes/roasters/$roasterId'
 import { Route as RecipesNewRouteImport } from './routes/recipes/new'
@@ -77,6 +85,11 @@ const ShopsIndexRoute = ShopsIndexRouteImport.update({
   id: '/shops/',
   path: '/shops/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const RoastersIndexRoute = RoastersIndexRouteImport.update({
   id: '/roasters/',
@@ -152,6 +165,41 @@ const ShopsCoffeeShopIdRoute = ShopsCoffeeShopIdRouteImport.update({
   id: '/shops/$coffeeShopId',
   path: '/shops/$coffeeShopId',
   getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsTasteProfileRoute = SettingsTasteProfileRouteImport.update({
+  id: '/taste-profile',
+  path: '/taste-profile',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsStorageRoute = SettingsStorageRouteImport.update({
+  id: '/storage',
+  path: '/storage',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsMapRoute = SettingsMapRouteImport.update({
+  id: '/map',
+  path: '/map',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsDrinksRoute = SettingsDrinksRouteImport.update({
+  id: '/drinks',
+  path: '/drinks',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsAppearanceRoute = SettingsAppearanceRouteImport.update({
+  id: '/appearance',
+  path: '/appearance',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsAiRoute = SettingsAiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsAboutRoute = SettingsAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const RoastersNewRoute = RoastersNewRouteImport.update({
   id: '/roasters/new',
@@ -242,7 +290,7 @@ const ApiHealthRoute = ApiHealthRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/settings': typeof SettingsRoute
+  '/settings': typeof SettingsRouteWithChildren
   '/stats': typeof StatsRoute
   '/api/health': typeof ApiHealthRoute
   '/beans/$beanId': typeof BeansBeanIdRoute
@@ -261,6 +309,13 @@ export interface FileRoutesByFullPath {
   '/recipes/new': typeof RecipesNewRoute
   '/roasters/$roasterId': typeof RoastersRoasterIdRoute
   '/roasters/new': typeof RoastersNewRoute
+  '/settings/about': typeof SettingsAboutRoute
+  '/settings/ai': typeof SettingsAiRoute
+  '/settings/appearance': typeof SettingsAppearanceRoute
+  '/settings/drinks': typeof SettingsDrinksRoute
+  '/settings/map': typeof SettingsMapRoute
+  '/settings/storage': typeof SettingsStorageRoute
+  '/settings/taste-profile': typeof SettingsTasteProfileRoute
   '/shops/$coffeeShopId': typeof ShopsCoffeeShopIdRoute
   '/shops/new': typeof ShopsNewRoute
   '/shots/$shotId': typeof ShotsShotIdRoute
@@ -276,13 +331,13 @@ export interface FileRoutesByFullPath {
   '/places/': typeof PlacesIndexRoute
   '/recipes/': typeof RecipesIndexRoute
   '/roasters/': typeof RoastersIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/shops/': typeof ShopsIndexRoute
   '/shots/': typeof ShotsIndexRoute
   '/visits/': typeof VisitsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/settings': typeof SettingsRoute
   '/stats': typeof StatsRoute
   '/api/health': typeof ApiHealthRoute
   '/beans/$beanId': typeof BeansBeanIdRoute
@@ -301,6 +356,13 @@ export interface FileRoutesByTo {
   '/recipes/new': typeof RecipesNewRoute
   '/roasters/$roasterId': typeof RoastersRoasterIdRoute
   '/roasters/new': typeof RoastersNewRoute
+  '/settings/about': typeof SettingsAboutRoute
+  '/settings/ai': typeof SettingsAiRoute
+  '/settings/appearance': typeof SettingsAppearanceRoute
+  '/settings/drinks': typeof SettingsDrinksRoute
+  '/settings/map': typeof SettingsMapRoute
+  '/settings/storage': typeof SettingsStorageRoute
+  '/settings/taste-profile': typeof SettingsTasteProfileRoute
   '/shops/$coffeeShopId': typeof ShopsCoffeeShopIdRoute
   '/shops/new': typeof ShopsNewRoute
   '/shots/$shotId': typeof ShotsShotIdRoute
@@ -316,6 +378,7 @@ export interface FileRoutesByTo {
   '/places': typeof PlacesIndexRoute
   '/recipes': typeof RecipesIndexRoute
   '/roasters': typeof RoastersIndexRoute
+  '/settings': typeof SettingsIndexRoute
   '/shops': typeof ShopsIndexRoute
   '/shots': typeof ShotsIndexRoute
   '/visits': typeof VisitsIndexRoute
@@ -323,7 +386,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/settings': typeof SettingsRoute
+  '/settings': typeof SettingsRouteWithChildren
   '/stats': typeof StatsRoute
   '/api/health': typeof ApiHealthRoute
   '/beans/$beanId': typeof BeansBeanIdRoute
@@ -342,6 +405,13 @@ export interface FileRoutesById {
   '/recipes/new': typeof RecipesNewRoute
   '/roasters/$roasterId': typeof RoastersRoasterIdRoute
   '/roasters/new': typeof RoastersNewRoute
+  '/settings/about': typeof SettingsAboutRoute
+  '/settings/ai': typeof SettingsAiRoute
+  '/settings/appearance': typeof SettingsAppearanceRoute
+  '/settings/drinks': typeof SettingsDrinksRoute
+  '/settings/map': typeof SettingsMapRoute
+  '/settings/storage': typeof SettingsStorageRoute
+  '/settings/taste-profile': typeof SettingsTasteProfileRoute
   '/shops/$coffeeShopId': typeof ShopsCoffeeShopIdRoute
   '/shops/new': typeof ShopsNewRoute
   '/shots/$shotId': typeof ShotsShotIdRoute
@@ -357,6 +427,7 @@ export interface FileRoutesById {
   '/places/': typeof PlacesIndexRoute
   '/recipes/': typeof RecipesIndexRoute
   '/roasters/': typeof RoastersIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/shops/': typeof ShopsIndexRoute
   '/shots/': typeof ShotsIndexRoute
   '/visits/': typeof VisitsIndexRoute
@@ -384,6 +455,13 @@ export interface FileRouteTypes {
     | '/recipes/new'
     | '/roasters/$roasterId'
     | '/roasters/new'
+    | '/settings/about'
+    | '/settings/ai'
+    | '/settings/appearance'
+    | '/settings/drinks'
+    | '/settings/map'
+    | '/settings/storage'
+    | '/settings/taste-profile'
     | '/shops/$coffeeShopId'
     | '/shops/new'
     | '/shots/$shotId'
@@ -399,13 +477,13 @@ export interface FileRouteTypes {
     | '/places/'
     | '/recipes/'
     | '/roasters/'
+    | '/settings/'
     | '/shops/'
     | '/shots/'
     | '/visits/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/settings'
     | '/stats'
     | '/api/health'
     | '/beans/$beanId'
@@ -424,6 +502,13 @@ export interface FileRouteTypes {
     | '/recipes/new'
     | '/roasters/$roasterId'
     | '/roasters/new'
+    | '/settings/about'
+    | '/settings/ai'
+    | '/settings/appearance'
+    | '/settings/drinks'
+    | '/settings/map'
+    | '/settings/storage'
+    | '/settings/taste-profile'
     | '/shops/$coffeeShopId'
     | '/shops/new'
     | '/shots/$shotId'
@@ -439,6 +524,7 @@ export interface FileRouteTypes {
     | '/places'
     | '/recipes'
     | '/roasters'
+    | '/settings'
     | '/shops'
     | '/shots'
     | '/visits'
@@ -464,6 +550,13 @@ export interface FileRouteTypes {
     | '/recipes/new'
     | '/roasters/$roasterId'
     | '/roasters/new'
+    | '/settings/about'
+    | '/settings/ai'
+    | '/settings/appearance'
+    | '/settings/drinks'
+    | '/settings/map'
+    | '/settings/storage'
+    | '/settings/taste-profile'
     | '/shops/$coffeeShopId'
     | '/shops/new'
     | '/shots/$shotId'
@@ -479,6 +572,7 @@ export interface FileRouteTypes {
     | '/places/'
     | '/recipes/'
     | '/roasters/'
+    | '/settings/'
     | '/shops/'
     | '/shots/'
     | '/visits/'
@@ -486,7 +580,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  SettingsRoute: typeof SettingsRoute
+  SettingsRoute: typeof SettingsRouteWithChildren
   StatsRoute: typeof StatsRoute
   ApiHealthRoute: typeof ApiHealthRoute
   BeansBeanIdRoute: typeof BeansBeanIdRoute
@@ -568,6 +662,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/shops/'
       preLoaderRoute: typeof ShopsIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/roasters/': {
       id: '/roasters/'
@@ -673,6 +774,55 @@ declare module '@tanstack/react-router' {
       fullPath: '/shops/$coffeeShopId'
       preLoaderRoute: typeof ShopsCoffeeShopIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/settings/taste-profile': {
+      id: '/settings/taste-profile'
+      path: '/taste-profile'
+      fullPath: '/settings/taste-profile'
+      preLoaderRoute: typeof SettingsTasteProfileRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/storage': {
+      id: '/settings/storage'
+      path: '/storage'
+      fullPath: '/settings/storage'
+      preLoaderRoute: typeof SettingsStorageRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/map': {
+      id: '/settings/map'
+      path: '/map'
+      fullPath: '/settings/map'
+      preLoaderRoute: typeof SettingsMapRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/drinks': {
+      id: '/settings/drinks'
+      path: '/drinks'
+      fullPath: '/settings/drinks'
+      preLoaderRoute: typeof SettingsDrinksRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/appearance': {
+      id: '/settings/appearance'
+      path: '/appearance'
+      fullPath: '/settings/appearance'
+      preLoaderRoute: typeof SettingsAppearanceRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/ai': {
+      id: '/settings/ai'
+      path: '/ai'
+      fullPath: '/settings/ai'
+      preLoaderRoute: typeof SettingsAiRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/about': {
+      id: '/settings/about'
+      path: '/about'
+      fullPath: '/settings/about'
+      preLoaderRoute: typeof SettingsAboutRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/roasters/new': {
       id: '/roasters/new'
@@ -796,9 +946,35 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface SettingsRouteChildren {
+  SettingsAboutRoute: typeof SettingsAboutRoute
+  SettingsAiRoute: typeof SettingsAiRoute
+  SettingsAppearanceRoute: typeof SettingsAppearanceRoute
+  SettingsDrinksRoute: typeof SettingsDrinksRoute
+  SettingsMapRoute: typeof SettingsMapRoute
+  SettingsStorageRoute: typeof SettingsStorageRoute
+  SettingsTasteProfileRoute: typeof SettingsTasteProfileRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
+}
+
+const SettingsRouteChildren: SettingsRouteChildren = {
+  SettingsAboutRoute: SettingsAboutRoute,
+  SettingsAiRoute: SettingsAiRoute,
+  SettingsAppearanceRoute: SettingsAppearanceRoute,
+  SettingsDrinksRoute: SettingsDrinksRoute,
+  SettingsMapRoute: SettingsMapRoute,
+  SettingsStorageRoute: SettingsStorageRoute,
+  SettingsTasteProfileRoute: SettingsTasteProfileRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
+}
+
+const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
+  SettingsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  SettingsRoute: SettingsRoute,
+  SettingsRoute: SettingsRouteWithChildren,
   StatsRoute: StatsRoute,
   ApiHealthRoute: ApiHealthRoute,
   BeansBeanIdRoute: BeansBeanIdRoute,

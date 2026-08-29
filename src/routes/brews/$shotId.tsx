@@ -35,6 +35,7 @@ import { parseIdParam } from '@/lib/route-params'
 import { searchValidator } from '@/lib/search-params'
 import { getActiveBeans } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
+import { getDrinkConfiguration } from '@/lib/server/drink-options'
 import { getGear } from '@/lib/server/gear'
 import { getRecipeOptions, saveShotAsRecipe } from '@/lib/server/recipes'
 import { checkShotRecommendationEnabled } from '@/lib/server/shot-recommendations'
@@ -61,11 +62,13 @@ export const Route = createFileRoute('/brews/$shotId')({
             getTasteTags(),
             getGear(),
             getBrewingMethods(),
-          ]).then(([beans, tasteTags, gear, methods]) => ({
+            getDrinkConfiguration(),
+          ]).then(([beans, tasteTags, gear, methods, drinks]) => ({
             beans,
             tasteTags,
             gear,
             methods,
+            drinks,
           }))
         : null,
       checkShotRecommendationEnabled(),
@@ -185,6 +188,13 @@ function ShotDetailPage() {
     shot.shotTimeSeconds !== null
       ? { label: 'Time', value: `${formatNumber(shot.shotTimeSeconds)} s` }
       : null,
+    methodParameters.includes('targetTimeSeconds') &&
+    shot.targetTimeSeconds !== null
+      ? {
+          label: 'Target time',
+          value: `${formatNumber(shot.targetTimeSeconds)} s`,
+        }
+      : null,
   ].filter((field) => field !== null)
   const extractionDetails = [
     methodParameters.includes('grindSetting') && shot.grindSetting?.trim()
@@ -203,6 +213,13 @@ function ShotDetailPage() {
           value: `${formatNumber(shot.brewPressureBar)} bar`,
         }
       : null,
+  ].filter((field) => field !== null)
+  const drinkDetails = [
+    shot.drinkType ? { label: 'Drink type', value: shot.drinkType.name } : null,
+    ...shot.drinkOptions.map((link) => ({
+      label: link.optionValue.group.name,
+      value: link.optionValue.name,
+    })),
   ].filter((field) => field !== null)
   const hasRating = tasteProfile.overallRating && Boolean(shot.rating)
   const hasTasteTags = tasteProfile.flavorTags && shot.tasteTags.length > 0
@@ -253,8 +270,6 @@ function ShotDetailPage() {
                   title="Save shot values to a recipe"
                   description="Save this brew’s method, equipment, and recipe values for reuse."
                   availableRecipes={availableRecipes}
-                  currentRecipeId={shot.recipe?.id}
-                  currentRecipeHint="used for this shot"
                   nameLabel="Recipe name"
                   submitLabel="Create recipe"
                   updateSubmitLabel="Update recipe"
@@ -283,19 +298,6 @@ function ShotDetailPage() {
         }
       />
 
-      {shot.recipe ? (
-        <p className="-mt-4 text-sm text-muted-foreground">
-          Brewed from{' '}
-          <Link
-            to="/recipes/$recipeId"
-            params={{ recipeId: String(shot.recipe.id) }}
-            className="inline-flex min-h-11 items-center rounded-md font-semibold text-link hover:underline [@media(hover:hover)_and_(pointer:fine)]:min-h-0"
-          >
-            {shot.recipe.name}
-          </Link>
-        </p>
-      ) : null}
-
       {isEditing && editData ? (
         <ShotEditForm
           shot={shot}
@@ -305,6 +307,21 @@ function ShotDetailPage() {
         />
       ) : (
         <>
+          {drinkDetails.length > 0 ? (
+            <Card>
+              <CardHeader>
+                <CardTitle as="h2">Drink</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                  <ShotDataFields
+                    fields={drinkDetails}
+                    valueClassName="font-medium"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
           {(extractionMetrics.length > 0 || extractionDetails.length > 0) && (
             <Card>
               <CardHeader>

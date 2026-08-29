@@ -38,6 +38,7 @@ import {
 import { getActiveBeans } from '@/lib/server/beans'
 import { createCafeVisit } from '@/lib/server/cafe-visits'
 import { getCoffeeShops } from '@/lib/server/coffee-shops'
+import { getDrinkConfiguration } from '@/lib/server/drink-options'
 import { getTasteTags } from '@/lib/server/taste-tags'
 import { getCafeVisitUpdateErrors } from '@/lib/update-validation'
 
@@ -49,15 +50,17 @@ const parseNewVisitSearch = (input: unknown) => {
 export const Route = createFileRoute('/visits/new')({
   validateSearch: searchValidator(parseNewVisitSearch),
   loader: async () => {
-    const [coffeeShops, tasteTags, beans] = await Promise.all([
+    const [coffeeShops, tasteTags, beans, drinks] = await Promise.all([
       getCoffeeShops(),
       getTasteTags(),
       getActiveBeans(),
+      getDrinkConfiguration(),
     ])
     return {
       coffeeShops,
       tasteTags,
       beans,
+      drinks,
       defaultVisitedAt: new Date().toISOString(),
     }
   },
@@ -70,7 +73,7 @@ export const Route = createFileRoute('/visits/new')({
 
 function NewVisitPage() {
   const { defaultCurrency } = useAppSettings()
-  const { coffeeShops, tasteTags, beans, defaultVisitedAt } =
+  const { coffeeShops, tasteTags, beans, drinks, defaultVisitedAt } =
     Route.useLoaderData()
   const search = Route.useSearch()
   const navigate = useNavigate()
@@ -93,8 +96,8 @@ function NewVisitPage() {
   const form = useFormState({
     coffeeShopId: initialCoffeeShopId,
     beanId: '',
-    drinkName: '',
-    drinkType: '',
+    drinkTypeId: '',
+    drinkOptionValueIds: {},
     price: '',
     currency: 'EUR',
     rating: 0,
@@ -166,7 +169,7 @@ function NewVisitPage() {
         <FormErrorSummary errors={fieldErrors} />
         <VisitFields
           values={form.values}
-          choices={{ coffeeShops, beans, tasteTags }}
+          choices={{ coffeeShops, beans, tasteTags, drinks }}
           visitedAt={{
             value: visitedAt,
             max: latestVisitedAt,

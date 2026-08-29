@@ -20,8 +20,8 @@ import { Separator } from '@/components/ui/separator'
 import { StarRating } from '@/components/ui/star-rating'
 import { CafeVisitList } from '@/components/visits/cafe-visit-list'
 import { VisitEditForm } from '@/components/visits/visit-edit-form'
+import { useCurrencyFormatter } from '@/hooks/use-currency-formatter'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
-import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { parseEditModeSearch } from '@/lib/edit-mode'
 import { parseIdParam } from '@/lib/route-params'
@@ -29,6 +29,7 @@ import { searchValidator } from '@/lib/search-params'
 import { getActiveBeans } from '@/lib/server/beans'
 import { deleteCafeVisit, getCafeVisit } from '@/lib/server/cafe-visits'
 import { getCoffeeShop, getCoffeeShops } from '@/lib/server/coffee-shops'
+import { getDrinkConfiguration } from '@/lib/server/drink-options'
 import { getTasteTags } from '@/lib/server/taste-tags'
 import { isNegativeTasteTag } from '@/lib/taste-tags'
 import { cn } from '@/lib/utils'
@@ -38,20 +39,23 @@ export const Route = createFileRoute('/visits/$visitId')({
   loader: async ({ params }) => {
     const visitId = parseIdParam(params.visitId)
     const visit = await getCafeVisit({ data: visitId })
-    const [coffeeShops, tasteTags, beans, visitCoffeeShop] = await Promise.all([
-      getCoffeeShops(),
-      getTasteTags(),
-      getActiveBeans(),
-      visit?.coffeeShopId
-        ? getCoffeeShop({ data: visit.coffeeShopId })
-        : Promise.resolve(null),
-    ])
+    const [coffeeShops, tasteTags, beans, drinks, visitCoffeeShop] =
+      await Promise.all([
+        getCoffeeShops(),
+        getTasteTags(),
+        getActiveBeans(),
+        getDrinkConfiguration(),
+        visit?.coffeeShopId
+          ? getCoffeeShop({ data: visit.coffeeShopId })
+          : Promise.resolve(null),
+      ])
 
     return {
       visit,
       coffeeShops,
       tasteTags,
       beans,
+      drinks,
       cafeVisitHistory: visitCoffeeShop?.cafeVisits ?? [],
     }
   },
@@ -64,9 +68,9 @@ export const Route = createFileRoute('/visits/$visitId')({
 
 function VisitDetailPage() {
   const formatDateTime = useDateTimeFormatter()
-  const formatNumber = useNumberFormatter()
+  const formatCurrency = useCurrencyFormatter()
   const tasteProfile = useTasteProfile()
-  const { visit, coffeeShops, tasteTags, beans, cafeVisitHistory } =
+  const { visit, coffeeShops, tasteTags, beans, drinks, cafeVisitHistory } =
     Route.useLoaderData()
   const { edit: isEditing = false } = Route.useSearch()
   const navigate = useNavigate({ from: '/visits/$visitId' })
@@ -118,8 +122,26 @@ function VisitDetailPage() {
       <PageHeader
         size="compact"
         eyebrow="Café visit"
-        title={visit.drinkName || 'Coffee'}
-        description={formatDateTime(visit.visitedAt)}
+        title={visit.drinkType?.name || 'Coffee'}
+        description={
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span>{formatDateTime(visit.visitedAt)}</span>
+            {tasteProfile.overallRating && visit.rating ? (
+              <>
+                <span aria-hidden className="text-border">
+                  •
+                </span>
+                <StarRating
+                  value={visit.rating}
+                  readOnly
+                  variant="compact"
+                  sizeClassName="size-4"
+                  ariaLabel="Visit rating"
+                />
+              </>
+            ) : null}
+          </span>
+        }
         leading={
           <Button variant="outline" size="icon" asChild>
             <Link to="/visits" aria-label="Back to visits">
@@ -129,13 +151,6 @@ function VisitDetailPage() {
         }
         actions={
           <>
-            {tasteProfile.overallRating && visit.rating ? (
-              <StarRating
-                value={visit.rating}
-                readOnly
-                sizeClassName="size-4"
-              />
-            ) : null}
             {!isEditing ? (
               <Button variant="outline" size="sm" asChild>
                 <Link
@@ -164,6 +179,7 @@ function VisitDetailPage() {
           coffeeShops={coffeeShops}
           beans={beans}
           tasteTags={tasteTags}
+          drinks={drinks}
           onCancel={handleCancel}
           onSaved={handleSaved}
         />
@@ -181,16 +197,20 @@ function VisitDetailPage() {
                 <CardTitle>Details</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Type</p>
-                    <p className="font-medium">{visit.drinkType || '-'}</p>
-                  </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {visit.drinkOptions.map((link) => (
+                    <div key={link.id}>
+                      <p className="text-sm text-muted-foreground">
+                        {link.optionValue.group.name}
+                      </p>
+                      <p className="font-medium">{link.optionValue.name}</p>
+                    </div>
+                  ))}
                   <div>
                     <p className="text-sm text-muted-foreground">Price</p>
                     <p className="font-medium">
                       {visit.price
-                        ? `${formatNumber(visit.price)} ${visit.currency || 'EUR'}`
+                        ? formatCurrency(visit.price, visit.currency || 'EUR')
                         : '-'}
                     </p>
                   </div>

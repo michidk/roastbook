@@ -9,12 +9,15 @@ import { BrewingMethodForm } from '@/components/brewing-methods/brewing-method-f
 import { FormPageHeader } from '@/components/form/form-shell'
 import { Page } from '@/components/page-layout'
 import { Button } from '@/components/ui/button'
+import { getDrinkConfiguration } from '@/lib/server/drink-options'
 
 export const Route = createFileRoute('/brewing-methods/new')({
+  loader: () => getDrinkConfiguration(),
   component: NewBrewingMethodPage,
 })
 
 function NewBrewingMethodPage() {
+  const drinks = Route.useLoaderData()
   const navigate = useNavigate()
   const router = useRouter()
 
@@ -32,6 +35,7 @@ function NewBrewingMethodPage() {
         }
       />
       <BrewingMethodForm
+        drinkTypes={drinks.drinkTypes}
         onCreated={async (method) => {
           await router.invalidate()
           await navigate({

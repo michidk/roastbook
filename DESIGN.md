@@ -251,6 +251,10 @@ decimal-point and decimal-comma values. Expose spinbutton value semantics and
 bounds on the text control, give the attached buttons accessible increment
 descriptions, and retain coarse-pointer targets.
 
+Display known measurement units inside the numeric control and omit the same
+unit from its label. Price inputs use the selected currency symbol as an inline
+prefix or suffix that follows the configured number layout.
+
 Coordinates use the same localized parsing but remain plain decimal text fields
 without stepper controls. Regional settings also define a consistent numeric
 calendar-date layout for every displayed date; native date-control values remain
@@ -266,7 +270,8 @@ mobile targets and update the same labeled picker as manual selection.
 
 The More menu links to a Brewing methods page. Each method has a name,
 description, and grouped toggle matrix for its shot fields. A recipe is a
-reusable value snapshot belonging to exactly one method.
+reusable value snapshot belonging to exactly one method. Loading one copies its
+values into the brew form; the saved brew does not retain a recipe link.
 
 Cover seeded, custom, editing, saving, blocked deletion, empty parameters,
 loaded recipe, and loaded history states. Toggles expose pressed state,

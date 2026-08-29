@@ -15,7 +15,6 @@ import {
   beans,
   brewingMethods,
   gear,
-  recipes,
   roasters,
   settings,
   shotAccessoryGear,
@@ -202,7 +201,6 @@ export async function loadDetailedStats(filter: StatsFilter) {
       processUsage,
       roastLevelUsage,
       roastAgeUsage,
-      recipePerformance,
       homeSpend,
       availableMethods,
       availableBeans,
@@ -506,21 +504,6 @@ export async function loadDetailedStats(filter: StatsFilter) {
 
       db
         .select({
-          recipeId: recipes.id,
-          recipeName: recipes.name,
-          count: shotCountSql,
-          avgRating: averageShotRatingSql,
-        })
-        .from(shots)
-        .innerJoin(recipes, eq(shots.recipeId, recipes.id))
-        .where(currentWhere)
-        .groupBy(recipes.id, recipes.name)
-        .having(sql`count(*) >= 3`)
-        .orderBy(sql`avg(${shots.rating}) desc nulls last`, desc(sql`count(*)`))
-        .limit(6),
-
-      db
-        .select({
           currency: beans.priceCurrency,
           total: sql<
             string | number
@@ -711,7 +694,6 @@ export async function loadDetailedStats(filter: StatsFilter) {
           roastLevelUsage.filter((row) => row.name !== null),
         ),
         roastAge: normalizeRatingAverages(roastAgeUsage),
-        recipes: normalizeRatingAverages(recipePerformance),
       },
       cost: {
         home: homeSpend.map((row) => ({

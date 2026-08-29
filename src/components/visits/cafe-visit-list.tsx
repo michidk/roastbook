@@ -5,7 +5,7 @@ import { useTasteProfile } from '@/hooks/use-taste-profile'
 
 export type CafeVisitListItem = {
   readonly id: number
-  readonly drinkName: string | null
+  readonly drinkType: { readonly name: string } | null
   readonly rating: number | null
   readonly visitedAt: Date | string
 }
@@ -43,7 +43,7 @@ export function CafeVisitList({
         >
           <span className="flex min-w-0 items-center gap-2">
             <span className="truncate font-medium">
-              {visit.drinkName || 'Coffee'}
+              {visit.drinkType?.name || 'Coffee'}
             </span>
             {showRating && visit.rating ? (
               <StarRating

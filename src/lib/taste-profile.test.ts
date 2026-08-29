@@ -6,9 +6,8 @@ import {
   enabledTasteProfileFields,
   hasEnabledTasteProfileField,
   isTasteProfileField,
+  TASTE_PROFILE_SCALE_FIELDS,
   tasteProfileConfigFrom,
-  tasteProfileMode,
-  withTasteProfileMode,
 } from '@/lib/taste-profile'
 
 describe('tasteProfileConfigFrom', () => {
@@ -50,48 +49,36 @@ describe('DEFAULT_TASTE_PROFILE_CONFIG', () => {
     expect(hasEnabledTasteProfileField(DEFAULT_TASTE_PROFILE_CONFIG)).toBe(true)
   })
 
-  test('starts in detailed mode with the balance axis off', () => {
-    expect(tasteProfileMode(DEFAULT_TASTE_PROFILE_CONFIG)).toBe('detailed')
+  test('starts with the individual factors and the balance axis off', () => {
     expect(DEFAULT_TASTE_PROFILE_CONFIG.extractionBalance).toBe(false)
     expect(DEFAULT_TASTE_PROFILE_FIELDS).not.toContain('extractionBalance')
+    expect(enabledSensoryRatingKeys(DEFAULT_TASTE_PROFILE_CONFIG)).toEqual([
+      'bitterness',
+      'acidity',
+      'sweetness',
+      'body',
+      'astringency',
+    ])
   })
 })
 
-describe('taste profile modes', () => {
-  test('reports simple mode only when the balance axis is enabled', () => {
-    expect(
-      tasteProfileMode(tasteProfileConfigFrom(['extractionBalance'])),
-    ).toBe('simple')
-    expect(tasteProfileMode(tasteProfileConfigFrom(['bitterness']))).toBe(
-      'detailed',
-    )
-    expect(tasteProfileMode(tasteProfileConfigFrom([]))).toBe('detailed')
+describe('TASTE_PROFILE_SCALE_FIELDS', () => {
+  test('offers every scale and no free-text field', () => {
+    expect([...TASTE_PROFILE_SCALE_FIELDS]).toEqual([
+      'overallRating',
+      'extractionBalance',
+      'bitterness',
+      'acidity',
+      'sweetness',
+      'body',
+      'astringency',
+    ])
   })
 
-  test('switching to simple drops every sensory factor', () => {
-    const simple = withTasteProfileMode(DEFAULT_TASTE_PROFILE_CONFIG, 'simple')
-    expect(enabledSensoryRatingKeys(simple)).toEqual([])
-    expect(simple.extractionBalance).toBe(true)
-  })
-
-  test('switching to detailed restores every sensory factor', () => {
-    const simple = withTasteProfileMode(DEFAULT_TASTE_PROFILE_CONFIG, 'simple')
-    const detailed = withTasteProfileMode(simple, 'detailed')
-    expect(detailed).toEqual(DEFAULT_TASTE_PROFILE_CONFIG)
-    expect(detailed.extractionBalance).toBe(false)
-  })
-
-  test('keeps the unrelated toggles across a mode switch', () => {
-    const config = tasteProfileConfigFrom(['bitterness', 'notes'])
-    const simple = withTasteProfileMode(config, 'simple')
-    expect(simple.notes).toBe(true)
-    expect(simple.overallRating).toBe(false)
-    expect(simple.flavorTags).toBe(false)
-  })
-
-  test('is a no-op when the mode already matches', () => {
-    const config = tasteProfileConfigFrom(['bitterness'])
-    expect(withTasteProfileMode(config, 'detailed')).toBe(config)
+  test('lets the balance axis and the individual factors run together', () => {
+    const config = tasteProfileConfigFrom(['extractionBalance', 'bitterness'])
+    expect(config.extractionBalance).toBe(true)
+    expect(enabledSensoryRatingKeys(config)).toEqual(['bitterness'])
   })
 })
 

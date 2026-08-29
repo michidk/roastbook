@@ -401,9 +401,9 @@ function CoffeeShopReadOnlyContent({ coffeeShop }: { coffeeShop: CoffeeShop }) {
       : null
   const drinkCounts = new Map<string, number>()
   for (const visit of sortedVisits) {
-    const drinkName = visit.drinkName?.trim()
-    if (drinkName) {
-      drinkCounts.set(drinkName, (drinkCounts.get(drinkName) ?? 0) + 1)
+    const drinkType = visit.drinkType?.name.trim()
+    if (drinkType) {
+      drinkCounts.set(drinkType, (drinkCounts.get(drinkType) ?? 0) + 1)
     }
   }
   let favoriteDrink: { name: string; count: number } | null = null
@@ -449,7 +449,7 @@ function CoffeeShopReadOnlyContent({ coffeeShop }: { coffeeShop: CoffeeShop }) {
           <MetricCard
             label="Last visit"
             value={formatDate(lastVisit.visitedAt)}
-            detail={lastVisit.drinkName || 'Coffee'}
+            detail={lastVisit.drinkType?.name || 'Coffee'}
             icon={CalendarDays}
           />
         </div>

@@ -16,7 +16,6 @@ import { db } from '@/db'
 import {
   beans,
   brewingMethods,
-  recipes,
   shotAccessoryGear,
   shots,
   shotTasteTags,
@@ -29,6 +28,11 @@ import {
   replaceShotAccessoryGear,
   withAccessoryGearIds,
 } from '@/lib/server/accessory-gear.server'
+import {
+  assertDrinkSelection,
+  assertDrinkTypeAvailableForBrewingMethod,
+  replaceShotDrinkOptions,
+} from '@/lib/server/drink-options.server'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
 import { readTasteProfile } from '@/lib/server/settings.server'
 import {
@@ -67,7 +71,7 @@ const relatedShotListSchema = shotListSchema.omit({ beanId: true }).extend({
   entityId: positiveIdSchema,
 })
 
-const createShotWithRecipeSchema = z.object({
+const createShotAndSaveRecipeSchema = z.object({
   shot: shotCreateSchema,
   target: recipeTargetSchema,
 })
@@ -95,22 +99,6 @@ async function getBrewingMethod(tx: ShotTransaction, brewingMethodId: number) {
   return method
 }
 
-async function assertRecipeMatchesMethod(
-  tx: ShotTransaction,
-  recipeId: number | null | undefined,
-  brewingMethodId: number,
-) {
-  if (!recipeId) return
-  const recipe = await tx.query.recipes.findFirst({
-    columns: { brewingMethodId: true },
-    where: eq(recipes.id, recipeId),
-  })
-  if (!recipe) throw new ShotInputError('Recipe not found')
-  if (recipe.brewingMethodId !== brewingMethodId) {
-    throw new ShotInputError('Recipe does not use the selected brewing method')
-  }
-}
-
 function getShotValues(
   data: ShotCreateCandidate,
   enabledParameters: readonly string[],
@@ -118,8 +106,8 @@ function getShotValues(
   return {
     brewingMethodId: data.brewingMethodId,
     brewedAt: data.brewedAt,
-    recipeId: data.recipeId ?? null,
     beanId: data.beanId ?? null,
+    drinkTypeId: data.drinkTypeId ?? null,
     ...projectShotParameters(data, enabledParameters),
     rating: data.rating ?? null,
     extractionBalance: data.extractionBalance ?? null,
@@ -134,11 +122,12 @@ function getShotValues(
 
 const shotRelations = {
   bean: true,
-  recipe: true,
   machine: true,
   grinder: true,
   basket: true,
   brewingMethod: true,
+  drinkType: true,
+  drinkOptions: { with: { optionValue: { with: { group: true } } } },
   accessoryGearLinks: { columns: { gearId: true } },
   tasteTags: { with: { tasteTag: true } },
   images: true,
@@ -205,7 +194,6 @@ async function loadShotPage(
     with: {
       bean: { columns: { id: true, name: true }, with: { images: true } },
       brewingMethod: { columns: { id: true, name: true } },
-      recipe: { columns: { id: true, name: true } },
     },
   })
 
@@ -367,7 +355,6 @@ export const getShotGroups = createServerFn({ method: 'GET' })
             rating: true,
           },
           with: {
-            recipe: { columns: { id: true, name: true } },
             bean: {
               columns: { id: true, name: true },
               with: { images: true },
@@ -399,12 +386,23 @@ async function createShotInTransaction(
   data: ShotCreateCandidate,
 ) {
   const method = await getBrewingMethod(tx, data.brewingMethodId)
-  await assertRecipeMatchesMethod(tx, data.recipeId, data.brewingMethodId)
+  await assertDrinkTypeAvailableForBrewingMethod(
+    tx,
+    data.brewingMethodId,
+    data.drinkTypeId,
+  )
+  await assertDrinkSelection(tx, data.drinkTypeId, data.drinkOptionValueIds)
   const [shot] = await tx
     .insert(shots)
     .values(getShotValues(data, method.enabledParameters))
     .returning()
   const persistedShot = expectReturnedRow(shot, 'Shot')
+
+  await replaceShotDrinkOptions(
+    tx,
+    persistedShot.id,
+    data.drinkOptionValueIds ?? [],
+  )
 
   await replaceShotAccessoryGear(
     tx,
@@ -435,9 +433,9 @@ export const createShot = createServerFn({ method: 'POST' })
     db.transaction((tx) => createShotInTransaction(tx, data)),
   )
 
-export const createShotWithRecipe = createServerFn({ method: 'POST' })
+export const createShotAndSaveRecipe = createServerFn({ method: 'POST' })
   .validator((input: unknown) => {
-    const data = createShotWithRecipeSchema.parse(input)
+    const data = createShotAndSaveRecipeSchema.parse(input)
     return { ...data, shot: validateShotCreate(data.shot) }
   })
   .handler(async ({ data }) =>
@@ -461,7 +459,22 @@ export const updateShot = createServerFn({ method: 'POST' })
   .handler(async ({ data }) =>
     db.transaction(async (tx) => {
       const method = await getBrewingMethod(tx, data.brewingMethodId)
-      await assertRecipeMatchesMethod(tx, data.recipeId, data.brewingMethodId)
+      const existingShot = await tx.query.shots.findFirst({
+        columns: { brewingMethodId: true, drinkTypeId: true },
+        where: eq(shots.id, data.id),
+      })
+      if (
+        existingShot &&
+        (existingShot.brewingMethodId !== data.brewingMethodId ||
+          existingShot.drinkTypeId !== data.drinkTypeId)
+      ) {
+        await assertDrinkTypeAvailableForBrewingMethod(
+          tx,
+          data.brewingMethodId,
+          data.drinkTypeId,
+        )
+      }
+      await assertDrinkSelection(tx, data.drinkTypeId, data.drinkOptionValueIds)
       const { id, tasteTagIds } = data
       const [shot] = await tx
         .update(shots)
@@ -472,6 +485,10 @@ export const updateShot = createServerFn({ method: 'POST' })
         .where(eq(shots.id, id))
         .returning()
       const persistedShot = expectReturnedRow(shot, 'Shot')
+
+      if (data.drinkOptionValueIds !== undefined) {
+        await replaceShotDrinkOptions(tx, id, data.drinkOptionValueIds)
+      }
 
       await replaceShotAccessoryGear(
         tx,
@@ -515,6 +532,7 @@ export const getLastShotForBeanAndMethod = createServerFn({ method: 'GET' })
       with: {
         brewingMethod: true,
         accessoryGearLinks: { columns: { gearId: true } },
+        drinkOptions: { with: { optionValue: true } },
       },
     })
     return shot ? withAccessoryGearIds(shot) : undefined

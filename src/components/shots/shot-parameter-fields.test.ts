@@ -22,6 +22,7 @@ function shotParameters(
     grindSetting: null,
     yieldGrams: null,
     shotTimeSeconds: null,
+    targetTimeSeconds: null,
     brewTemperatureCelsius: null,
     preinfusionTimeSeconds: null,
     preinfusionPressureBar: null,

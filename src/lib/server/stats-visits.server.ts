@@ -4,6 +4,7 @@ import {
   cafeVisits,
   cafeVisitTasteTags,
   coffeeShops,
+  drinkTypes as drinkTypesTable,
   tasteTags,
 } from '@/db/schema'
 import {
@@ -119,13 +120,17 @@ export async function getVisitsAndPlacesStats({
 
     db
       .select({
-        name: cafeVisits.drinkType,
+        name: drinkTypesTable.name,
         count: sql<number>`count(*)::int`,
         avgRating: averageVisitRatingSql,
       })
       .from(cafeVisits)
-      .where(and(currentWhere, isNotNull(cafeVisits.drinkType)))
-      .groupBy(cafeVisits.drinkType)
+      .innerJoin(
+        drinkTypesTable,
+        eq(drinkTypesTable.id, cafeVisits.drinkTypeId),
+      )
+      .where(and(currentWhere, isNotNull(cafeVisits.drinkTypeId)))
+      .groupBy(drinkTypesTable.name)
       .orderBy(desc(sql`count(*)`))
       .limit(6),
 

@@ -232,22 +232,6 @@ function ShotsPage() {
       cell: (shot) => shot.brewingMethod.name,
     },
     {
-      key: 'recipe',
-      header: 'Recipe',
-      cell: (shot) =>
-        shot.recipe ? (
-          <Link
-            to="/recipes/$recipeId"
-            params={{ recipeId: String(shot.recipe.id) }}
-            className="inline-flex min-h-11 items-center rounded-sm text-link underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-          >
-            {shot.recipe.name}
-          </Link>
-        ) : (
-          '—'
-        ),
-    },
-    {
       key: 'dose',
       header: 'Dose',
       align: 'right',

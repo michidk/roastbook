@@ -1,6 +1,7 @@
 import { type SyntheticEvent, useState } from 'react'
 import { toast } from 'sonner'
 import { BeanPicker } from '@/components/beans/bean-picker'
+import { DrinkSelectionFields } from '@/components/drinks/drink-selection-fields'
 import { DateTimeField } from '@/components/form/date-field'
 import { SelectField } from '@/components/form/form-field'
 import {
@@ -20,8 +21,13 @@ import {
   useLocalDateTimeInput,
 } from '@/hooks/use-local-date-time-input'
 import { localDateTimeInputToDate } from '@/lib/date-input'
+import {
+  type DrinkConfiguration,
+  drinkConfigurationForBrewingMethod,
+  drinkSelectionForConfiguration,
+} from '@/lib/drink-options'
 import { focusFirstInvalidControl } from '@/lib/form-validation'
-import { shotParameterPayload } from '@/lib/new-shot-payload'
+import { shotDrinkPayload, shotParameterPayload } from '@/lib/new-shot-payload'
 import type { getActiveBeans } from '@/lib/server/beans'
 import type { getBrewingMethods } from '@/lib/server/brewing-methods'
 import type { getGear } from '@/lib/server/gear'
@@ -38,6 +44,7 @@ export type ShotEditData = {
   readonly tasteTags: Awaited<ReturnType<typeof getTasteTags>>
   readonly gear: Awaited<ReturnType<typeof getGear>>
   readonly methods: Awaited<ReturnType<typeof getBrewingMethods>>
+  readonly drinks: DrinkConfiguration
 }
 
 type ShotEditFormProps = {
@@ -84,11 +91,8 @@ export function ShotEditForm({
     const data = {
       id: shot.id,
       ...shotParameterPayload(values),
+      ...shotDrinkPayload(values),
       brewedAt: localDateTimeInputToDate(brewedAt) ?? shot.brewedAt,
-      recipeId:
-        shot.recipe?.brewingMethodId === Number(values.brewingMethodId)
-          ? shot.recipeId
-          : null,
       rating: values.rating || null,
       extractionBalance: values.extractionBalance || null,
       ...shotSensoryPayload(values),
@@ -122,6 +126,25 @@ export function ShotEditForm({
   const selectedMethod = editData.methods.find(
     (method) => String(method.id) === values.brewingMethodId,
   )
+  const methodDrinks = drinkConfigurationForBrewingMethod(
+    editData.drinks,
+    selectedMethod,
+  )
+  const savedDrinkType = editData.drinks.drinkTypes.find(
+    (drinkType) => drinkType.id === shot.drinkTypeId,
+  )
+  const isSavedMethodAndDrink =
+    values.brewingMethodId === String(shot.brewingMethodId) &&
+    values.drinkTypeId === String(shot.drinkTypeId ?? '')
+  const availableDrinks =
+    isSavedMethodAndDrink &&
+    savedDrinkType &&
+    !methodDrinks.drinkTypes.some((type) => type.id === savedDrinkType.id)
+      ? {
+          ...methodDrinks,
+          drinkTypes: [savedDrinkType, ...methodDrinks.drinkTypes],
+        }
+      : methodDrinks
   const methodOptions = editData.methods.map((method) => ({
     value: String(method.id),
     label: method.name,
@@ -161,7 +184,20 @@ export function ShotEditForm({
           label="Method"
           value={values.brewingMethodId}
           options={methodOptions}
-          onChange={(value) => set('brewingMethodId', value)}
+          onChange={(brewingMethodId) => {
+            const method = editData.methods.find(
+              (item) => String(item.id) === brewingMethodId,
+            )
+            const configuration = drinkConfigurationForBrewingMethod(
+              editData.drinks,
+              method,
+            )
+            setValues((current) => ({
+              ...current,
+              ...drinkSelectionForConfiguration(configuration, current),
+              brewingMethodId,
+            }))
+          }}
           required
           error={fieldErrors.brewingMethodId}
         />
@@ -173,6 +209,16 @@ export function ShotEditForm({
           max={latestBrewedAt}
           error={fieldErrors.brewedAt}
           required
+        />
+      </FormSection>
+      <FormSection title="Drink">
+        <DrinkSelectionFields
+          configuration={availableDrinks}
+          values={values}
+          onChange={(next) => {
+            set('drinkTypeId', next.drinkTypeId)
+            set('drinkOptionValueIds', next.drinkOptionValueIds)
+          }}
         />
       </FormSection>
       <ShotParameterFields

@@ -66,10 +66,6 @@ export async function saveShotToRecipeInTransaction(
     recipe.id,
     projectAccessoryGearIds(shotValues, shot.brewingMethod.enabledParameters),
   )
-  await tx
-    .update(shots)
-    .set({ recipeId: recipe.id, updatedAt: new Date() })
-    .where(eq(shots.id, shot.id))
 
   return recipe
 }

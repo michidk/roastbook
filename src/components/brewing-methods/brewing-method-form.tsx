@@ -1,24 +1,25 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { BrewingMethodDrinkTypesField } from '@/components/brewing-methods/brewing-method-drink-types-field'
 import { InputField, TextareaField } from '@/components/form/form-field'
 import { EntityForm, FormSection } from '@/components/form/form-shell'
+import type { DrinkTypeOption } from '@/lib/drink-options'
 import { createBrewingMethod } from '@/lib/server/brewing-methods'
 
 type BrewingMethodFormProps = {
+  readonly drinkTypes: readonly DrinkTypeOption[]
   readonly onCreated: (method: { readonly id: number }) => void
   readonly onCancel: () => void
 }
 
-/**
- * Creates a method with just a name and description. The logging fields it
- * records are configured afterwards on the method's own page.
- */
 export function BrewingMethodForm({
+  drinkTypes,
   onCreated,
   onCancel,
 }: BrewingMethodFormProps) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [drinkTypeIds, setDrinkTypeIds] = useState<readonly number[]>([])
   const [isCreating, setIsCreating] = useState(false)
 
   const handleSubmit = async () => {
@@ -26,7 +27,13 @@ export function BrewingMethodForm({
     setIsCreating(true)
     try {
       const method = await createBrewingMethod({
-        data: { name, description, enabledParameters: [], timerEnabled: false },
+        data: {
+          name,
+          description,
+          enabledParameters: [],
+          timerEnabled: false,
+          drinkTypeIds,
+        },
       })
       if (!method) throw new Error('Could not create brewing method')
       toast.success('Brewing method created')
@@ -72,6 +79,16 @@ export function BrewingMethodForm({
           onChange={setDescription}
           placeholder="How this method brews coffee"
           rows={2}
+        />
+      </FormSection>
+      <FormSection
+        title="Available drink types"
+        description="Choose types to limit the new-brew list for this method. Leave all unselected to allow every active type."
+      >
+        <BrewingMethodDrinkTypesField
+          drinkTypes={drinkTypes}
+          value={drinkTypeIds}
+          onChange={setDrinkTypeIds}
         />
       </FormSection>
     </EntityForm>

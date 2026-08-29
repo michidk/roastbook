@@ -1,0 +1,1 @@
+-- Reserved custom migration. Idempotent defaults are applied in 0040.

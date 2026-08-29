@@ -23,6 +23,7 @@ type NumberInputProps = Omit<
   showStepper?: boolean
   unit?: string
   unitPosition?: 'prefix' | 'suffix'
+  unitPlacement?: 'edge' | 'inline'
 }
 
 function finiteNumber(value: string | number | undefined) {
@@ -45,6 +46,7 @@ export function NumberInput({
   showStepper = true,
   unit,
   unitPosition = 'suffix',
+  unitPlacement = 'edge',
   ...props
 }: NumberInputProps) {
   const { numberFormat } = useAppSettings()
@@ -62,6 +64,11 @@ export function NumberInput({
     maximum !== undefined &&
     numericValue >= maximum
   const formattedValue = formatNumber(value, numberFormat)
+  const formattedPlaceholder = formatNumberPlaceholder(
+    placeholder,
+    numberFormat,
+  )
+  const inlineReferenceValue = formattedValue || formattedPlaceholder || ''
   const valueWithUnit = unit
     ? unitPosition === 'prefix'
       ? `${unit} ${formattedValue}`
@@ -106,7 +113,7 @@ export function NumberInput({
       role={showStepper ? 'spinbutton' : undefined}
       inputMode="decimal"
       value={formattedValue}
-      placeholder={formatNumberPlaceholder(placeholder, numberFormat)}
+      placeholder={formattedPlaceholder}
       disabled={disabled}
       aria-describedby={
         [ariaDescribedBy, !showStepper && unit ? unitDescriptionId : undefined]
@@ -117,11 +124,15 @@ export function NumberInput({
         showStepper
           ? cn(
               'relative min-w-0 flex-1 rounded-none border-x-0 text-center tabular-nums focus-visible:z-20',
-              unit && (unitPosition === 'prefix' ? 'pl-12' : 'pr-12'),
+              unit &&
+                unitPlacement === 'edge' &&
+                (unitPosition === 'prefix' ? 'pl-12' : 'pr-12'),
             )
           : cn(
               'tabular-nums',
-              unit && (unitPosition === 'prefix' ? 'pl-12' : 'pr-12'),
+              unit &&
+                unitPlacement === 'edge' &&
+                (unitPosition === 'prefix' ? 'pl-12' : 'pr-12'),
               !unit && className,
             )
       }
@@ -150,12 +161,32 @@ export function NumberInput({
         id={!showStepper ? unitDescriptionId : undefined}
         aria-hidden={showStepper ? true : undefined}
         className={cn(
-          'pointer-events-none absolute inset-y-0 z-20 flex items-center text-sm text-muted-foreground',
-          unitPosition === 'prefix' ? 'left-3' : 'right-3',
+          'pointer-events-none absolute inset-y-0 z-20 flex items-center text-muted-foreground',
+          unitPlacement === 'inline'
+            ? 'inset-x-0 justify-center text-base md:text-sm'
+            : unitPosition === 'prefix'
+              ? 'left-3 text-sm'
+              : 'right-3 text-sm',
           disabled && 'opacity-60',
         )}
       >
-        {unit}
+        {unitPlacement === 'inline' ? (
+          <span className="relative invisible tabular-nums">
+            {inlineReferenceValue}
+            <span
+              className={cn(
+                'visible absolute top-1/2 -translate-y-1/2 text-sm text-muted-foreground',
+                unitPosition === 'prefix'
+                  ? 'right-full mr-1'
+                  : 'left-full ml-1',
+              )}
+            >
+              {unit}
+            </span>
+          </span>
+        ) : (
+          unit
+        )}
       </span>
     </div>
   ) : (

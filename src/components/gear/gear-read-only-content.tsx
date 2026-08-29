@@ -4,6 +4,7 @@ import {
   type ShotsTableServerPagination,
 } from '@/components/shots/shots-table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useCurrencyFormatter } from '@/hooks/use-currency-formatter'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import type { getGearById } from '@/lib/server/gear'
@@ -118,7 +119,7 @@ export function GearReadOnlyContent({
   shotsPagination: ShotsTableServerPagination
 }) {
   const formatDate = useDateFormatter()
-  const formatNumber = useNumberFormatter()
+  const formatCurrency = useCurrencyFormatter()
 
   return (
     <>
@@ -154,8 +155,10 @@ export function GearReadOnlyContent({
               <div>
                 <p className="text-sm text-muted-foreground">Price</p>
                 <p className="font-medium">
-                  {formatNumber(gear.purchasePrice)}{' '}
-                  {gear.priceCurrency || 'EUR'}
+                  {formatCurrency(
+                    gear.purchasePrice,
+                    gear.priceCurrency || 'EUR',
+                  )}
                 </p>
               </div>
             )}

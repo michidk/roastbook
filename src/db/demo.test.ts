@@ -96,4 +96,45 @@ describe('demo database', () => {
       expect(Object.values(brew).every((value) => value !== null)).toBe(true)
     }
   })
+
+  test('includes configurable drink types and milk choices', async () => {
+    const milk = await database.query.drinkOptionGroups.findFirst({
+      where: (group, { eq }) => eq(group.name, 'Milk'),
+      with: { values: true, drinkTypeLinks: { with: { drinkType: true } } },
+    })
+    const visits = await database.query.cafeVisits.findMany({
+      with: { drinkType: true },
+    })
+
+    expect(milk?.values).toHaveLength(7)
+    expect(
+      milk?.drinkTypeLinks.map((link) => link.drinkType.name).sort(),
+    ).toEqual([
+      'Cappuccino',
+      'Cortado',
+      'Flat White',
+      'Latte',
+      'Macchiato',
+      'Mocha',
+    ])
+    expect(visits.every((visit) => visit.drinkType !== null)).toBe(true)
+  })
+
+  test('assigns drink types to the default brewing methods', async () => {
+    const espresso = await database.query.brewingMethods.findFirst({
+      where: (method, { eq }) => eq(method.name, 'Espresso'),
+      with: { drinkTypeLinks: { with: { drinkType: true } } },
+    })
+    const coldBrew = await database.query.brewingMethods.findFirst({
+      where: (method, { eq }) => eq(method.name, 'Cold brew'),
+      with: { drinkTypeLinks: { with: { drinkType: true } } },
+    })
+
+    expect(
+      espresso?.drinkTypeLinks.map((link) => link.drinkType.name),
+    ).toContain('Latte')
+    expect(
+      coldBrew?.drinkTypeLinks.map((link) => link.drinkType.name).sort(),
+    ).toEqual(['Cold Brew', 'Other'])
+  })
 })

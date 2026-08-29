@@ -29,6 +29,7 @@ import {
   ProgressLabel,
   ProgressValue,
 } from '@/components/ui/progress'
+import { useCurrencyFormatter } from '@/hooks/use-currency-formatter'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
@@ -318,6 +319,7 @@ export function BeanReadOnlyContent({
   onImagesChange: () => void
 }) {
   const formatDate = useDateFormatter()
+  const formatCurrency = useCurrencyFormatter()
   const formatNumber = useNumberFormatter()
   const showFlavorTags = useTasteProfile().flavorTags
   const showTasteProfile = showFlavorTags && topTasteTags.length > 0
@@ -341,7 +343,7 @@ export function BeanReadOnlyContent({
                 <div>
                   <p className="text-sm text-muted-foreground">Price</p>
                   <p className="font-medium">
-                    {formatNumber(bean.price)} {bean.priceCurrency || 'EUR'}
+                    {formatCurrency(bean.price, bean.priceCurrency || 'EUR')}
                   </p>
                 </div>
               )}

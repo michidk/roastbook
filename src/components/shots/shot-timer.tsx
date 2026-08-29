@@ -10,7 +10,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 
-const TARGET_SECONDS = 30
+/** Ring scale used while the brew has no target time of its own. */
+const FALLBACK_TARGET_SECONDS = 30
 
 export type ShotTimerHandle = {
   readonly getValue: () => string
@@ -18,11 +19,13 @@ export type ShotTimerHandle = {
 
 type ShotTimerProps = {
   readonly value: string
+  /** Target brew time in seconds, when the brew or its recipe defines one. */
+  readonly targetSeconds?: number | null
   readonly onCommit: (value: string) => void
 }
 
 export const ShotTimer = forwardRef<ShotTimerHandle, ShotTimerProps>(
-  function ShotTimer({ value, onCommit }, ref) {
+  function ShotTimer({ value, targetSeconds, onCommit }, ref) {
     const formatNumber = useNumberFormatter()
     const [displayValue, setDisplayValue] = useState(value)
     const [running, setRunning] = useState(false)
@@ -58,10 +61,12 @@ export const ShotTimer = forwardRef<ShotTimerHandle, ShotTimerProps>(
     const canonicalValue = displayValue || '0.0'
     const formattedValue = formatNumber(canonicalValue)
     const seconds = Number(canonicalValue) || 0
-    const progress = Math.min(seconds / TARGET_SECONDS, 1)
-    const isOverTarget = seconds >= TARGET_SECONDS
-    const overtimeProgress =
-      (Math.max(seconds - TARGET_SECONDS, 0) % TARGET_SECONDS) / TARGET_SECONDS
+    const hasTarget =
+      targetSeconds !== null && targetSeconds !== undefined && targetSeconds > 0
+    const target = hasTarget ? targetSeconds : FALLBACK_TARGET_SECONDS
+    const progress = Math.min(seconds / target, 1)
+    const isOverTarget = seconds >= target
+    const overtimeProgress = Math.min(Math.max(seconds - target, 0) / target, 1)
     const radius = 88
     const circumference = 2 * Math.PI * radius
     const strokeOffset = circumference * (1 - progress)
@@ -94,7 +99,11 @@ export const ShotTimer = forwardRef<ShotTimerHandle, ShotTimerProps>(
       <div className="flex flex-col items-center rounded-3xl bg-coffee p-6 text-coffee-foreground shadow-coffee-strong">
         <div
           role="timer"
-          aria-label={`${formattedValue} seconds`}
+          aria-label={
+            hasTarget
+              ? `${formattedValue} of ${formatNumber(target)} seconds`
+              : `${formattedValue} seconds`
+          }
           className="relative flex h-48 w-48 items-center justify-center rounded-full"
         >
           <svg
@@ -128,7 +137,7 @@ export const ShotTimer = forwardRef<ShotTimerHandle, ShotTimerProps>(
                 cy="96"
                 r={radius}
                 fill="none"
-                stroke="var(--coffee-foreground)"
+                stroke="var(--destructive)"
                 strokeWidth="4"
                 strokeLinecap="round"
                 strokeDasharray={circumference}
@@ -151,6 +160,11 @@ export const ShotTimer = forwardRef<ShotTimerHandle, ShotTimerProps>(
                   ? 'Paused'
                   : 'Ready'}
             </span>
+            {hasTarget ? (
+              <span className="text-[10px] font-medium tabular-nums text-coffee-foreground/70">
+                Target {formatNumber(target)} s
+              </span>
+            ) : null}
           </div>
         </div>
         <p className="sr-only" aria-live="polite">
@@ -162,10 +176,15 @@ export const ShotTimer = forwardRef<ShotTimerHandle, ShotTimerProps>(
             size="icon"
             onClick={reset}
             aria-label="Reset timer"
+            className="hover:border-primary hover:bg-primary/90"
           >
             <RotateCcw className="h-5 w-5" />
           </Button>
-          <Button type="button" onClick={toggle} className="rounded-full px-7">
+          <Button
+            type="button"
+            onClick={toggle}
+            className="h-14 w-40 rounded-full hover:border-primary hover:bg-primary/90 [@media(hover:hover)_and_(pointer:fine)]:h-14"
+          >
             {running ? <Pause /> : <Play />}
             {running ? 'Pause' : 'Start'}
           </Button>

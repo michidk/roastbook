@@ -34,10 +34,6 @@ type Shot = {
     id: number
     name: string
   }
-  recipe: {
-    id: number
-    name: string
-  } | null
   bean: {
     id: number
     name: string
@@ -246,7 +242,6 @@ export function ShotsTable({
                   <th className="h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground">
                     Method
                   </th>
-                  <TableHead>Recipe</TableHead>
                   <SortableTableHead
                     label="Dose"
                     align="right"
@@ -355,11 +350,6 @@ function MobileShotCard({
                 {shot.brewingMethod.name}
               </p>
             )}
-            {shot.recipe ? (
-              <p className="truncate text-sm text-muted-foreground">
-                Recipe: {shot.recipe.name}
-              </p>
-            ) : null}
             <p className="text-sm text-muted-foreground">
               {formatShotSummary(shot, formatNumber)}
             </p>
@@ -419,19 +409,6 @@ function ShotRow({
         </TableCell>
       )}
       <TableCell>{shot.brewingMethod.name}</TableCell>
-      <TableCell>
-        {shot.recipe ? (
-          <Link
-            to="/recipes/$recipeId"
-            params={{ recipeId: String(shot.recipe.id) }}
-            className="relative z-10 inline-flex rounded-sm text-link underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {shot.recipe.name}
-          </Link>
-        ) : (
-          '-'
-        )}
-      </TableCell>
       <TableCell className="text-right">
         {shot.doseGrams ? `${formatNumber(shot.doseGrams)} g` : '-'}
       </TableCell>

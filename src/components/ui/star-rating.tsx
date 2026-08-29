@@ -44,7 +44,7 @@ function StarRating({
     }
 
     return (
-      <div
+      <span
         role="img"
         aria-label={`${ariaLabel}: ${value} out of ${max}`}
         className={cn('flex items-center gap-1', className)}
@@ -63,7 +63,7 @@ function StarRating({
             />
           ),
         )}
-      </div>
+      </span>
     )
   }
 

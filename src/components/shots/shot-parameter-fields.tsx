@@ -20,6 +20,8 @@ import { EMPTY_SHOT_SENSORY_RATINGS } from '@/lib/shot-sensory'
 export type ShotFormValues = {
   brewingMethodId: string
   beanId: string
+  drinkTypeId: string
+  drinkOptionValueIds: Readonly<Record<string, string>>
   machineId: string
   doseGrams: string
   brewWaterGrams: string
@@ -28,6 +30,7 @@ export type ShotFormValues = {
   grindSetting: string
   yieldGrams: string
   shotTimeSeconds: string
+  targetTimeSeconds: string
   brewTemperatureCelsius: string
   preinfusionTimeSeconds: string
   preinfusionPressureBar: string
@@ -54,6 +57,8 @@ export const EMPTY_SHOT_FORM_VALUES: ShotFormValues = {
   ...EMPTY_SHOT_SENSORY_RATINGS,
   brewingMethodId: '',
   beanId: '',
+  drinkTypeId: '',
+  drinkOptionValueIds: {},
   machineId: '',
   doseGrams: '',
   brewWaterGrams: '',
@@ -62,6 +67,7 @@ export const EMPTY_SHOT_FORM_VALUES: ShotFormValues = {
   grindSetting: '',
   yieldGrams: '',
   shotTimeSeconds: '',
+  targetTimeSeconds: '',
   brewTemperatureCelsius: '',
   preinfusionTimeSeconds: '',
   preinfusionPressureBar: '',
@@ -83,6 +89,11 @@ type ShotParameterSource = Omit<
   ShotParameterValues,
   'ratioBasis' | 'paperFilterPosition' | 'distributionMethod'
 > & {
+  readonly drinkTypeId?: number | null
+  readonly drinkOptions?: readonly {
+    readonly optionValueId: number
+    readonly optionValue: { readonly groupId: number }
+  }[]
   readonly ratioBasis: string | null
   readonly paperFilterPosition: string | null
   readonly distributionMethod: string | null
@@ -95,6 +106,13 @@ export function shotFormValuesFrom(
     ...EMPTY_SHOT_FORM_VALUES,
     brewingMethodId: String(source.brewingMethodId),
     beanId: source.beanId ? String(source.beanId) : '',
+    drinkTypeId: source.drinkTypeId ? String(source.drinkTypeId) : '',
+    drinkOptionValueIds: Object.fromEntries(
+      (source.drinkOptions ?? []).map((link) => [
+        String(link.optionValue.groupId),
+        String(link.optionValueId),
+      ]),
+    ),
     machineId: source.machineId ? String(source.machineId) : '',
     doseGrams: source.doseGrams ?? '',
     brewWaterGrams: source.brewWaterGrams ?? '',
@@ -106,6 +124,7 @@ export function shotFormValuesFrom(
     grindSetting: source.grindSetting ?? '',
     yieldGrams: source.yieldGrams ?? '',
     shotTimeSeconds: source.shotTimeSeconds ?? '',
+    targetTimeSeconds: source.targetTimeSeconds ?? '',
     brewTemperatureCelsius: source.brewTemperatureCelsius ?? '',
     preinfusionTimeSeconds: source.preinfusionTimeSeconds ?? '',
     preinfusionPressureBar: source.preinfusionPressureBar ?? '',
@@ -142,6 +161,7 @@ const RECIPE_FORM_KEYS = [
   'grindSetting',
   'yieldGrams',
   'shotTimeSeconds',
+  'targetTimeSeconds',
   'brewTemperatureCelsius',
   'preinfusionTimeSeconds',
   'preinfusionPressureBar',
@@ -277,6 +297,7 @@ export function ShotParameterFields({
     show('ratioBasis') ||
     show('grindSetting') ||
     show('shotTimeSeconds') ||
+    show('targetTimeSeconds') ||
     show('brewTemperatureCelsius') ||
     show('brewPressureBar') ||
     show('flowRateMlPerSecond')
@@ -377,14 +398,16 @@ export function ShotParameterFields({
 
       {hasExtraction ? (
         <FormSection title="Extraction">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
             {show('doseGrams') ? (
               <InputField
                 id="dose"
-                label="Dose (g)"
+                label="Dose"
                 type="number"
                 min="0"
                 step="0.5"
+                unit="g"
+                unitPlacement="inline"
                 value={values.doseGrams}
                 onChange={(value) => onChange('doseGrams', value)}
                 error={errors.doseGrams}
@@ -393,10 +416,12 @@ export function ShotParameterFields({
             {show('brewWaterGrams') ? (
               <InputField
                 id="brew-water"
-                label="Brew water (g)"
+                label="Brew water"
                 type="number"
                 min="0"
                 step="10"
+                unit="g"
+                unitPlacement="inline"
                 value={values.brewWaterGrams}
                 onChange={(value) => onChange('brewWaterGrams', value)}
               />
@@ -404,10 +429,12 @@ export function ShotParameterFields({
             {show('yieldGrams') ? (
               <InputField
                 id="yield"
-                label="Yield (g)"
+                label="Yield"
                 type="number"
                 min="0"
                 step="1"
+                unit="g"
+                unitPlacement="inline"
                 value={values.yieldGrams}
                 onChange={(value) => onChange('yieldGrams', value)}
                 error={errors.yieldGrams}
@@ -440,22 +467,40 @@ export function ShotParameterFields({
             {show('shotTimeSeconds') ? (
               <InputField
                 id="shot-time"
-                label="Brew time (s)"
+                label="Brew time"
                 type="number"
                 min="0"
                 step="1"
+                unit="s"
+                unitPlacement="inline"
                 value={values.shotTimeSeconds}
                 onChange={(value) => onChange('shotTimeSeconds', value)}
                 error={errors.shotTimeSeconds}
               />
             ) : null}
-            {show('brewTemperatureCelsius') ? (
+            {show('targetTimeSeconds') ? (
               <InputField
-                id="temperature"
-                label="Temperature (°C)"
+                id="target-time"
+                label="Target time"
                 type="number"
                 min="0"
                 step="1"
+                unit="s"
+                unitPlacement="inline"
+                value={values.targetTimeSeconds}
+                onChange={(value) => onChange('targetTimeSeconds', value)}
+                error={errors.targetTimeSeconds}
+              />
+            ) : null}
+            {show('brewTemperatureCelsius') ? (
+              <InputField
+                id="temperature"
+                label="Temperature"
+                type="number"
+                min="0"
+                step="1"
+                unit="°C"
+                unitPlacement="inline"
                 value={values.brewTemperatureCelsius}
                 onChange={(value) => onChange('brewTemperatureCelsius', value)}
                 error={errors.brewTemperatureCelsius}
@@ -464,10 +509,12 @@ export function ShotParameterFields({
             {show('brewPressureBar') ? (
               <InputField
                 id="brew-pressure"
-                label="Brew pressure (bar)"
+                label="Brew pressure"
                 type="number"
                 min="0"
                 step="0.5"
+                unit="bar"
+                unitPlacement="inline"
                 value={values.brewPressureBar}
                 onChange={(value) => onChange('brewPressureBar', value)}
                 error={errors.brewPressureBar}
@@ -476,10 +523,12 @@ export function ShotParameterFields({
             {show('flowRateMlPerSecond') ? (
               <InputField
                 id="flow-rate"
-                label="Flow rate (mL/s)"
+                label="Flow rate"
                 type="number"
                 min="0"
                 step="0.5"
+                unit="mL/s"
+                unitPlacement="inline"
                 value={values.flowRateMlPerSecond}
                 onChange={(value) => onChange('flowRateMlPerSecond', value)}
               />
@@ -496,14 +545,16 @@ export function ShotParameterFields({
       show('distributionMethod') ||
       show('tampForceKg') ? (
         <FormSection title="Brewing method">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
             {show('preinfusionTimeSeconds') ? (
               <InputField
                 id="preinfusion-time"
-                label="Pre-infusion time (s)"
+                label="Pre-infusion time"
                 type="number"
                 min="0"
                 step="1"
+                unit="s"
+                unitPlacement="inline"
                 value={values.preinfusionTimeSeconds}
                 onChange={(value) => onChange('preinfusionTimeSeconds', value)}
               />
@@ -511,10 +562,12 @@ export function ShotParameterFields({
             {show('preinfusionPressureBar') ? (
               <InputField
                 id="preinfusion-pressure"
-                label="Pre-infusion pressure (bar)"
+                label="Pre-infusion pressure"
                 type="number"
                 min="0"
                 step="0.5"
+                unit="bar"
+                unitPlacement="inline"
                 value={values.preinfusionPressureBar}
                 onChange={(value) => onChange('preinfusionPressureBar', value)}
               />
@@ -522,10 +575,12 @@ export function ShotParameterFields({
             {show('bloomTimeSeconds') ? (
               <InputField
                 id="bloom-time"
-                label="Bloom time (s)"
+                label="Bloom time"
                 type="number"
                 min="0"
                 step="5"
+                unit="s"
+                unitPlacement="inline"
                 value={values.bloomTimeSeconds}
                 onChange={(value) => onChange('bloomTimeSeconds', value)}
               />
@@ -566,10 +621,12 @@ export function ShotParameterFields({
             {show('tampForceKg') ? (
               <InputField
                 id="tamp-force"
-                label="Tamp force (kg)"
+                label="Tamp force"
                 type="number"
                 min="0"
                 step="1"
+                unit="kg"
+                unitPlacement="inline"
                 value={values.tampForceKg}
                 onChange={(value) => onChange('tampForceKg', value)}
               />

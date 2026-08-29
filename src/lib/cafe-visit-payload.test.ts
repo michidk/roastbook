@@ -6,8 +6,8 @@ import {
 
 const emptyValues = {
   beanId: '',
-  drinkName: '',
-  drinkType: '',
+  drinkTypeId: '',
+  drinkOptionValueIds: {},
   price: '',
   currency: '',
   notes: '   ',
@@ -17,8 +17,8 @@ describe('café visit payloads', () => {
   test('omits blank create values', () => {
     expect(cafeVisitCreatePayload(emptyValues)).toEqual({
       beanId: undefined,
-      drinkName: undefined,
-      drinkType: undefined,
+      drinkTypeId: undefined,
+      drinkOptionValueIds: [],
       price: undefined,
       currency: undefined,
       notes: undefined,
@@ -28,8 +28,8 @@ describe('café visit payloads', () => {
   test('clears blank update values', () => {
     expect(cafeVisitUpdatePayload(emptyValues)).toEqual({
       beanId: null,
-      drinkName: null,
-      drinkType: null,
+      drinkTypeId: null,
+      drinkOptionValueIds: [],
       price: null,
       currency: null,
       notes: null,

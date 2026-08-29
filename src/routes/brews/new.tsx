@@ -10,6 +10,7 @@ import { NewShotForm } from '@/components/shots/new-shot-form'
 import { Button } from '@/components/ui/button'
 import { getActiveBeans } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
+import { getDrinkConfiguration } from '@/lib/server/drink-options'
 import { getGear } from '@/lib/server/gear'
 import { getGearSets } from '@/lib/server/gear-sets'
 import { getRecipes } from '@/lib/server/recipes'
@@ -34,6 +35,7 @@ export const Route = createFileRoute('/brews/new')({
       gear,
       gearSets,
       recommendation,
+      drinks,
     ] = await Promise.all([
       getActiveBeans(),
       getBrewingMethods(),
@@ -45,6 +47,7 @@ export const Route = createFileRoute('/brews/new')({
       getGear(),
       getGearSets(),
       checkShotRecommendationEnabled(),
+      getDrinkConfiguration(),
     ])
     return {
       beans,
@@ -57,6 +60,7 @@ export const Route = createFileRoute('/brews/new')({
       gear,
       gearSets,
       recommendationEnabled: recommendation.enabled,
+      drinks,
       defaultBrewedAt: new Date().toISOString(),
     }
   },

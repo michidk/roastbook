@@ -3,7 +3,6 @@ import type {
   beans,
   gear,
   machineSettings,
-  recipes,
   roasters,
   shots,
   tasteTags,
@@ -41,7 +40,6 @@ type GearEvidenceSource = Pick<
 }
 
 type ShotEvidenceSource = typeof shots.$inferSelect & {
-  readonly recipe: Pick<typeof recipes.$inferSelect, 'id' | 'name'> | null
   readonly accessoryGearLinks: readonly { readonly gearId: number }[]
   readonly tasteTags: readonly {
     readonly tasteTag: Pick<
@@ -119,6 +117,7 @@ function shotParameters(
     grindSetting: shot.grindSetting,
     yieldGrams: shot.yieldGrams,
     shotTimeSeconds: shot.shotTimeSeconds,
+    targetTimeSeconds: shot.targetTimeSeconds,
     brewTemperatureCelsius: shot.brewTemperatureCelsius,
     preinfusionTimeSeconds: shot.preinfusionTimeSeconds,
     preinfusionPressureBar: shot.preinfusionPressureBar,
@@ -162,7 +161,6 @@ export function recommendationShotEvidence(
   return {
     id: shot.id,
     brewedAt: shot.brewedAt,
-    recipe: shot.recipe ? { id: shot.recipe.id, name: shot.recipe.name } : null,
     parameters: shotParameters(shot, accessoryGearIds, enabledParameters),
     achievedRatio: achievedRatio(shot),
     overallRating: shot.rating,

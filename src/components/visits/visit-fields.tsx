@@ -1,15 +1,12 @@
 import { BeanPicker } from '@/components/beans/bean-picker'
 import { CoffeeShopPicker } from '@/components/coffee-shops/coffee-shop-picker'
+import { DrinkSelectionFields } from '@/components/drinks/drink-selection-fields'
 import { DateTimeField } from '@/components/form/date-field'
-import {
-  CurrencyField,
-  InputField,
-  SelectField,
-} from '@/components/form/form-field'
+import { CurrencyField, CurrencyInputField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
 import { TastingFields } from '@/components/form/tasting-fields'
 import type { CafeVisitFormValues } from '@/lib/cafe-visit-payload'
-import { DRINK_TYPE_OPTIONS } from '@/lib/constants'
+import type { DrinkConfiguration } from '@/lib/drink-options'
 import type { getActiveBeans } from '@/lib/server/beans'
 import type { getCoffeeShops } from '@/lib/server/coffee-shops'
 import type { getTasteTags } from '@/lib/server/taste-tags'
@@ -25,6 +22,7 @@ type VisitFieldsProps = {
     readonly coffeeShops: Awaited<ReturnType<typeof getCoffeeShops>>
     readonly beans: Awaited<ReturnType<typeof getActiveBeans>>
     readonly tasteTags: Awaited<ReturnType<typeof getTasteTags>>
+    readonly drinks: DrinkConfiguration
   }
   readonly visitedAt: {
     readonly value: string
@@ -83,39 +81,34 @@ export function VisitFields({
       </FormSection>
 
       <FormSection title="Drink">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <InputField
-            id="drinkName"
-            label="Drink name"
-            placeholder="e.g., House Blend Latte"
-            value={values.drinkName}
-            onChange={(value) => onFieldChange('drinkName', value)}
+        <div className="space-y-4">
+          <DrinkSelectionFields
+            configuration={choices.drinks}
+            values={values}
+            onChange={(next) => {
+              onFieldChange('drinkTypeId', next.drinkTypeId)
+              onFieldChange('drinkOptionValueIds', next.drinkOptionValueIds)
+            }}
           />
-          <SelectField
-            id="drinkType"
-            label="Type"
-            placeholder="Select type"
-            value={values.drinkType}
-            onChange={(value) => onFieldChange('drinkType', value)}
-            options={DRINK_TYPE_OPTIONS}
-          />
-          <InputField
-            id="price"
-            label="Price"
-            type="number"
-            min="0"
-            step="0.5"
-            placeholder="4.50"
-            value={values.price}
-            onChange={(value) => onFieldChange('price', value)}
-            error={errors.price}
-          />
-          <CurrencyField
-            id="currency"
-            value={values.currency}
-            onChange={(value) => onFieldChange('currency', value)}
-            error={errors.currency}
-          />
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(7rem,0.5fr)] gap-4">
+            <CurrencyInputField
+              id="price"
+              label="Price"
+              currency={values.currency}
+              min="0"
+              step="0.5"
+              placeholder="4.50"
+              value={values.price}
+              onChange={(value) => onFieldChange('price', value)}
+              error={errors.price}
+            />
+            <CurrencyField
+              id="currency"
+              value={values.currency}
+              onChange={(value) => onFieldChange('currency', value)}
+              error={errors.currency}
+            />
+          </div>
         </div>
       </FormSection>
 

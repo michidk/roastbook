@@ -103,10 +103,11 @@ const nullableShotDecimal = boundedDecimalStringSchema(
   .optional()
 
 export const shotCreateSchema = z.object({
-  recipeId: optionalNullablePositiveIdSchema,
   brewingMethodId: positiveIdSchema,
   brewedAt: notFutureDateSchema.optional(),
   beanId: optionalNullablePositiveIdSchema,
+  drinkTypeId: optionalNullablePositiveIdSchema,
+  drinkOptionValueIds: z.array(positiveIdSchema).max(20).optional(),
   machineId: optionalNullablePositiveIdSchema,
   doseGrams: boundedDecimalStringSchema(
     DECIMAL_CONSTRAINTS.doseGrams.maximum,
@@ -132,6 +133,12 @@ export const shotCreateSchema = z.object({
   shotTimeSeconds: boundedDecimalStringSchema(
     DECIMAL_CONSTRAINTS.shotTimeSeconds.maximum,
     DECIMAL_CONSTRAINTS.shotTimeSeconds.fractionDigits,
+  )
+    .nullable()
+    .optional(),
+  targetTimeSeconds: boundedDecimalStringSchema(
+    DECIMAL_CONSTRAINTS.targetTimeSeconds.maximum,
+    DECIMAL_CONSTRAINTS.targetTimeSeconds.fractionDigits,
   )
     .nullable()
     .optional(),

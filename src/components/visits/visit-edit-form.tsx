@@ -9,6 +9,7 @@ import {
 } from '@/hooks/use-local-date-time-input'
 import { cafeVisitUpdatePayload } from '@/lib/cafe-visit-payload'
 import { localDateTimeInputToDate } from '@/lib/date-input'
+import type { DrinkConfiguration } from '@/lib/drink-options'
 import { focusFirstInvalidControl } from '@/lib/form-validation'
 import { toNullableRating, toRatingInput } from '@/lib/rating'
 import type { getActiveBeans } from '@/lib/server/beans'
@@ -24,6 +25,7 @@ type VisitEditFormProps = {
   readonly coffeeShops: Awaited<ReturnType<typeof getCoffeeShops>>
   readonly beans: Awaited<ReturnType<typeof getActiveBeans>>
   readonly tasteTags: Awaited<ReturnType<typeof getTasteTags>>
+  readonly drinks: DrinkConfiguration
   readonly onCancel: () => void
   readonly onSaved: () => Promise<void>
 }
@@ -33,6 +35,7 @@ export function VisitEditForm({
   coffeeShops,
   beans,
   tasteTags,
+  drinks,
   onCancel,
   onSaved,
 }: VisitEditFormProps) {
@@ -48,8 +51,13 @@ export function VisitEditForm({
   const form = useFormState(() => ({
     coffeeShopId: visit.coffeeShopId ? String(visit.coffeeShopId) : '',
     beanId: visit.beanId ? String(visit.beanId) : '',
-    drinkName: visit.drinkName ?? '',
-    drinkType: visit.drinkType ?? '',
+    drinkTypeId: visit.drinkTypeId ? String(visit.drinkTypeId) : '',
+    drinkOptionValueIds: Object.fromEntries(
+      visit.drinkOptions.map((link) => [
+        String(link.optionValue.groupId),
+        String(link.optionValueId),
+      ]),
+    ),
     price: visit.price ?? '',
     currency: visit.currency ?? 'EUR',
     rating: toRatingInput(visit.rating),
@@ -106,7 +114,7 @@ export function VisitEditForm({
       <FormErrorSummary errors={fieldErrors} />
       <VisitFields
         values={form.values}
-        choices={{ coffeeShops, beans, tasteTags }}
+        choices={{ coffeeShops, beans, tasteTags, drinks }}
         visitedAt={{
           value: visitedAt,
           max: latestVisitedAt,

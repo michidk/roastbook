@@ -26,7 +26,6 @@ import {
   ExplorationCard,
   GearUsageCard,
   MethodMixCard,
-  RecipePerformanceCard,
 } from './stats-exploration'
 import type { DetailedStats } from './stats-types'
 import { StatsVisitsCard } from './stats-visits-card'
@@ -264,7 +263,6 @@ export function StatsSections({ stats }: { readonly stats: DetailedStats }) {
           ) : null}
 
           <ExplorationCard exploration={stats.exploration} />
-          <RecipePerformanceCard recipes={stats.exploration.recipes} />
         </>
       ) : null}
 

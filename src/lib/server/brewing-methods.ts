@@ -1,8 +1,14 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, asc, count, eq, ilike, ne, or, sql } from 'drizzle-orm'
+import { and, asc, count, eq, ilike, inArray, ne, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
-import { brewingMethods, recipes, shots } from '@/db/schema'
+import {
+  brewingMethodDrinkTypes,
+  brewingMethods,
+  drinkTypes,
+  recipes,
+  shots,
+} from '@/db/schema'
 import {
   hasOnlyShotParameterKeys,
   normalizeShotParameterKeys,
@@ -28,6 +34,7 @@ const brewingMethodWriteSchema = z.object({
   description: notesSchema.nullable(),
   enabledParameters: z.array(z.string().max(100)).max(50),
   timerEnabled: z.boolean(),
+  drinkTypeIds: z.array(positiveIdSchema).max(100).default([]),
 })
 
 const brewingMethodUpdateSchema = brewingMethodWriteSchema.extend({
@@ -53,6 +60,55 @@ function normalizeBrewingMethodWrite(
     description: data.description?.trim() || null,
     enabledParameters: [...normalizeShotParameterKeys(data.enabledParameters)],
     timerEnabled: data.timerEnabled,
+    drinkTypeIds: [...new Set(data.drinkTypeIds)],
+  }
+}
+
+type BrewingMethodTransaction = Parameters<
+  Parameters<typeof db.transaction>[0]
+>[0]
+
+async function replaceBrewingMethodDrinkTypes(
+  tx: BrewingMethodTransaction,
+  brewingMethodId: number,
+  drinkTypeIds: readonly number[],
+) {
+  if (drinkTypeIds.length > 0) {
+    const activeTypes = await tx
+      .select({ id: drinkTypes.id })
+      .from(drinkTypes)
+      .where(
+        and(
+          inArray(drinkTypes.id, drinkTypeIds),
+          eq(drinkTypes.isArchived, false),
+        ),
+      )
+    if (activeTypes.length !== drinkTypeIds.length) {
+      throw new BrewingMethodInputError('Choose only active drink types')
+    }
+  }
+
+  await tx
+    .delete(brewingMethodDrinkTypes)
+    .where(eq(brewingMethodDrinkTypes.brewingMethodId, brewingMethodId))
+  if (drinkTypeIds.length > 0) {
+    await tx.insert(brewingMethodDrinkTypes).values(
+      drinkTypeIds.map((drinkTypeId) => ({
+        brewingMethodId,
+        drinkTypeId,
+      })),
+    )
+  }
+}
+
+function withDrinkTypeIds<
+  Method extends {
+    readonly drinkTypeLinks: readonly { readonly drinkTypeId: number }[]
+  },
+>({ drinkTypeLinks, ...method }: Method) {
+  return {
+    ...method,
+    drinkTypeIds: drinkTypeLinks.map((link) => link.drinkTypeId),
   }
 }
 
@@ -63,10 +119,13 @@ const brewingMethodListSchema = z.object({
 })
 
 export const getBrewingMethods = createServerFn({ method: 'GET' }).handler(
-  async () =>
-    db.query.brewingMethods.findMany({
+  async () => {
+    const methods = await db.query.brewingMethods.findMany({
       orderBy: [asc(brewingMethods.id)],
-    }),
+      with: { drinkTypeLinks: true },
+    })
+    return methods.map(withDrinkTypeIds)
+  },
 )
 
 export const getBrewingMethodPage = createServerFn({ method: 'GET' })
@@ -110,59 +169,77 @@ export const getBrewingMethodPage = createServerFn({ method: 'GET' })
 
 export const getBrewingMethod = createServerFn({ method: 'GET' })
   .validator(positiveIdSchema)
-  .handler(async ({ data: id }) =>
-    db.query.brewingMethods.findFirst({
+  .handler(async ({ data: id }) => {
+    const method = await db.query.brewingMethods.findFirst({
       where: eq(brewingMethods.id, id),
-    }),
-  )
+      with: { drinkTypeLinks: true },
+    })
+    return method ? withDrinkTypeIds(method) : undefined
+  })
 
 export const createBrewingMethod = createServerFn({ method: 'POST' })
   .validator((input: unknown) =>
     normalizeBrewingMethodWrite(brewingMethodWriteSchema.parse(input)),
   )
-  .handler(async ({ data }) => {
-    const duplicate = await db.query.brewingMethods.findFirst({
-      where: sql`lower(${brewingMethods.name}) = lower(${data.name})`,
-    })
-    if (duplicate) {
-      throw new BrewingMethodInputError(
-        'A brewing method with this name already exists',
-      )
-    }
-    const [method] = await db.insert(brewingMethods).values(data).returning()
-    return expectReturnedRow(method, 'Brewing method')
-  })
+  .handler(async ({ data }) =>
+    db.transaction(async (tx) => {
+      const duplicate = await tx.query.brewingMethods.findFirst({
+        where: sql`lower(${brewingMethods.name}) = lower(${data.name})`,
+      })
+      if (duplicate) {
+        throw new BrewingMethodInputError(
+          'A brewing method with this name already exists',
+        )
+      }
+      const { drinkTypeIds, ...methodValues } = data
+      const [method] = await tx
+        .insert(brewingMethods)
+        .values(methodValues)
+        .returning()
+      const savedMethod = expectReturnedRow(method, 'Brewing method')
+      await replaceBrewingMethodDrinkTypes(tx, savedMethod.id, drinkTypeIds)
+      return { ...savedMethod, drinkTypeIds }
+    }),
+  )
 
 export const updateBrewingMethod = createServerFn({ method: 'POST' })
   .validator((input: unknown) => {
     const data = brewingMethodUpdateSchema.parse(input)
     return { id: data.id, ...normalizeBrewingMethodWrite(data) }
   })
-  .handler(async ({ data }) => {
-    const duplicate = await db.query.brewingMethods.findFirst({
-      where: and(
-        ne(brewingMethods.id, data.id),
-        sql`lower(${brewingMethods.name}) = lower(${data.name})`,
-      ),
-    })
-    if (duplicate) {
-      throw new BrewingMethodInputError(
-        'A brewing method with this name already exists',
-      )
-    }
-    const [method] = await db
-      .update(brewingMethods)
-      .set({
-        name: data.name,
-        description: data.description,
-        enabledParameters: [...data.enabledParameters],
-        timerEnabled: data.timerEnabled,
-        updatedAt: new Date(),
+  .handler(async ({ data }) =>
+    db.transaction(async (tx) => {
+      const duplicate = await tx.query.brewingMethods.findFirst({
+        where: and(
+          ne(brewingMethods.id, data.id),
+          sql`lower(${brewingMethods.name}) = lower(${data.name})`,
+        ),
       })
-      .where(eq(brewingMethods.id, data.id))
-      .returning()
-    return expectReturnedRow(method, 'Brewing method')
-  })
+      if (duplicate) {
+        throw new BrewingMethodInputError(
+          'A brewing method with this name already exists',
+        )
+      }
+      const [method] = await tx
+        .update(brewingMethods)
+        .set({
+          name: data.name,
+          description: data.description,
+          enabledParameters: [...data.enabledParameters],
+          timerEnabled: data.timerEnabled,
+          updatedAt: new Date(),
+        })
+        .where(eq(brewingMethods.id, data.id))
+        .returning()
+      const savedMethod = expectReturnedRow(method, 'Brewing method')
+      await replaceBrewingMethodDrinkTypes(
+        tx,
+        savedMethod.id,
+        data.drinkTypeIds,
+      )
+      return { ...savedMethod, drinkTypeIds: data.drinkTypeIds }
+    }),
+  )
 
 export const deleteBrewingMethod = createServerFn({ method: 'POST' })
   .validator(positiveIdSchema)

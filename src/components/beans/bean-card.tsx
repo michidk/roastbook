@@ -59,7 +59,7 @@ export function BeanCard({
       to="/beans/$beanId"
       params={{ beanId: String(bean.id) }}
       aria-label={`View ${bean.name}${remainingLabel ? `, estimated ${remainingLabel}` : ''}`}
-      className={cn(interactiveCardLinkClassName, 'h-auto')}
+      className={cn(interactiveCardLinkClassName, 'h-auto hover:translate-y-0')}
     >
       <Card
         size="sm"

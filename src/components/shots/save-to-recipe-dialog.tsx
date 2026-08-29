@@ -28,10 +28,10 @@ type SaveToRecipeDialogProps = {
     readonly id: number
     readonly name: string
   }[]
-  /** Recipe already tied to the brew; preselected and marked in the options. */
-  readonly currentRecipeId?: number
-  /** Marker shown after the current recipe's name, e.g. "loaded". */
-  readonly currentRecipeHint: string
+  /** Transient template to preselect, such as the recipe loaded into a draft. */
+  readonly defaultRecipeId?: number
+  /** Marker shown after the default recipe's name, e.g. "loaded". */
+  readonly defaultRecipeHint?: string
   readonly nameLabel: string
   readonly submitLabel: string
   /** Label while an existing recipe is targeted; defaults to `submitLabel`. */
@@ -41,8 +41,8 @@ type SaveToRecipeDialogProps = {
   readonly onSubmit: (target: SaveToRecipeTarget) => Promise<boolean>
 }
 
-const targetFor = (currentRecipeId: number | undefined) =>
-  currentRecipeId === undefined ? 'new' : String(currentRecipeId)
+const targetFor = (defaultRecipeId: number | undefined) =>
+  defaultRecipeId === undefined ? 'new' : String(defaultRecipeId)
 
 /**
  * Dialog that saves a brew's values into a new recipe or replaces an
@@ -55,8 +55,8 @@ export function SaveToRecipeDialog({
   title,
   description,
   availableRecipes,
-  currentRecipeId,
-  currentRecipeHint,
+  defaultRecipeId,
+  defaultRecipeHint,
   nameLabel,
   submitLabel,
   updateSubmitLabel,
@@ -65,15 +65,16 @@ export function SaveToRecipeDialog({
 }: SaveToRecipeDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [recipeTarget, setRecipeTarget] = useState(() =>
-    targetFor(currentRecipeId),
+    targetFor(defaultRecipeId),
   )
   const [recipeName, setRecipeName] = useState('')
-  const [lastRecipeId, setLastRecipeId] = useState(currentRecipeId)
-  if (lastRecipeId !== currentRecipeId) {
-    // The brew's recipe changed (a recipe was loaded or saved), so retarget
-    // the dialog at it and drop a stale new-recipe name.
-    setLastRecipeId(currentRecipeId)
-    setRecipeTarget(targetFor(currentRecipeId))
+  const [lastDefaultRecipeId, setLastDefaultRecipeId] =
+    useState(defaultRecipeId)
+  if (lastDefaultRecipeId !== defaultRecipeId) {
+    // The draft loaded a different template, so retarget the dialog and drop
+    // a stale new-recipe name without implying a persisted relationship.
+    setLastDefaultRecipeId(defaultRecipeId)
+    setRecipeTarget(targetFor(defaultRecipeId))
     setRecipeName('')
   }
 
@@ -121,8 +122,8 @@ export function SaveToRecipeDialog({
                 ...availableRecipes.map((recipe) => ({
                   value: String(recipe.id),
                   label:
-                    recipe.id === currentRecipeId
-                      ? `${recipe.name} (${currentRecipeHint})`
+                    recipe.id === defaultRecipeId && defaultRecipeHint
+                      ? `${recipe.name} (${defaultRecipeHint})`
                       : recipe.name,
                 })),
               ]}

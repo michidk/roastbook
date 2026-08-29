@@ -1,5 +1,4 @@
-import { Link } from '@tanstack/react-router'
-import { BookOpen, CircleDollarSign, Compass, Wrench } from 'lucide-react'
+import { CircleDollarSign, Compass, Wrench } from 'lucide-react'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -9,6 +8,7 @@ import {
 } from '@/components/ui/chart'
 import { Progress } from '@/components/ui/progress'
 import { StarRating } from '@/components/ui/star-rating'
+import { useCurrencyFormatter } from '@/hooks/use-currency-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { gearChartConfig } from './stats-chart-config'
@@ -144,51 +144,6 @@ export function ExplorationCard({
   )
 }
 
-export function RecipePerformanceCard({
-  recipes,
-}: {
-  readonly recipes: DetailedStats['exploration']['recipes']
-}) {
-  const formatNumber = useNumberFormatter()
-  const showRatings = useTasteProfile().overallRating
-  if (recipes.length === 0) return null
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <BookOpen className="h-5 w-5" />
-          Recipe performance
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Recipes appear after at least three attributed brews.
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {recipes.map((recipe, index) => (
-          <div key={recipe.recipeId} className="flex items-center gap-3">
-            <span className="w-6 text-sm font-medium text-muted-foreground">
-              #{index + 1}
-            </span>
-            <Link
-              to="/recipes/$recipeId"
-              params={{ recipeId: String(recipe.recipeId) }}
-              className="inline-flex min-h-11 min-w-0 flex-1 items-center truncate rounded-md font-medium hover:underline [@media(hover:hover)_and_(pointer:fine)]:min-h-0"
-            >
-              {recipe.recipeName}
-            </Link>
-            {showRatings && recipe.avgRating !== null ? (
-              <StarRating value={recipe.avgRating} variant="compact" />
-            ) : null}
-            <span className="text-sm text-muted-foreground">
-              {formatNumber(recipe.count)} brews
-            </span>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
-  )
-}
-
 type GearItem = DetailedStats['gear']['brewers'][number]
 
 export function GearUsageCard({
@@ -248,6 +203,7 @@ export function GearUsageCard({
 }
 
 export function CostCard({ stats }: { readonly stats: DetailedStats }) {
+  const formatCurrency = useCurrencyFormatter()
   const formatNumber = useNumberFormatter()
   const home = stats.cost.home
   const cafe = stats.visits.spend
@@ -280,10 +236,10 @@ export function CostCard({ stats }: { readonly stats: DetailedStats }) {
                   className="rounded-2xl bg-secondary/70 p-4"
                 >
                   <p className="text-2xl font-bold tabular-nums">
-                    {item.currency} {formatNumber(item.total.toFixed(2))}
+                    {formatCurrency(item.total.toFixed(2), item.currency)}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {item.currency} {formatNumber(item.average.toFixed(2))} per
+                    {formatCurrency(item.average.toFixed(2), item.currency)} per
                     covered brew · {formatNumber(item.count)} brews
                   </p>
                 </div>
@@ -305,10 +261,10 @@ export function CostCard({ stats }: { readonly stats: DetailedStats }) {
                   className="rounded-2xl bg-secondary/70 p-4"
                 >
                   <p className="text-2xl font-bold tabular-nums">
-                    {item.currency} {formatNumber(item.total.toFixed(2))}
+                    {formatCurrency(item.total.toFixed(2), item.currency)}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {item.currency} {formatNumber(item.average.toFixed(2))} per
+                    {formatCurrency(item.average.toFixed(2), item.currency)} per
                     priced visit · {formatNumber(item.count)} visits
                   </p>
                 </div>

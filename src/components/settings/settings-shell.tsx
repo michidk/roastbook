@@ -1,3 +1,4 @@
+import { Link, useLocation } from '@tanstack/react-router'
 import {
   type ComponentType,
   type ReactNode,
@@ -5,11 +6,13 @@ import {
   useId,
   useState,
 } from 'react'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 
-export type SettingsSection<SectionId extends string = string> = {
-  readonly id: SectionId
+export type SettingsSection = {
+  /** The section's route, which doubles as its tab value. */
+  readonly to: string
   readonly label: string
   readonly icon: ComponentType<{
     readonly className?: string
@@ -17,17 +20,32 @@ export type SettingsSection<SectionId extends string = string> = {
   }>
 }
 
-export function SettingsShell<SectionId extends string>({
+/**
+ * The deepest section route matching the current URL. `/settings` is the
+ * General index route, so it only wins when no nested section matches.
+ */
+function activeSectionPath(
+  sections: readonly SettingsSection[],
+  pathname: string,
+): string {
+  const nested = sections
+    .filter((section) => section.to !== '/settings')
+    .find(
+      (section) =>
+        pathname === section.to || pathname.startsWith(`${section.to}/`),
+    )
+  return nested?.to ?? '/settings'
+}
+
+export function SettingsShell({
   sections,
-  activeSection,
-  onSectionChange,
   children,
 }: {
-  readonly sections: readonly SettingsSection<SectionId>[]
-  readonly activeSection: SectionId
-  readonly onSectionChange: (section: SectionId) => void
+  readonly sections: readonly SettingsSection[]
   readonly children: ReactNode
 }) {
+  const { pathname } = useLocation()
+  const activeSection = activeSectionPath(sections, pathname)
   const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>(
     'horizontal',
   )
@@ -46,38 +64,42 @@ export function SettingsShell<SectionId extends string>({
     <Tabs
       value={activeSection}
       orientation={orientation}
-      onValueChange={(value) => {
-        if (sections.some((section) => section.id === value)) {
-          onSectionChange(value as SectionId)
-        }
-      }}
       className="w-[calc(100vw-2rem)] min-w-0 max-w-full flex-col gap-0 overflow-hidden rounded-2xl border border-border bg-card shadow-coffee md:w-[calc(100vw-4rem)] lg:grid lg:min-h-[620px] lg:w-full lg:grid-cols-[15rem_minmax(0,1fr)]"
     >
       <aside className="border-b border-border bg-secondary/45 p-3 lg:border-r lg:border-b-0 lg:p-5">
         <p className="hidden px-3 pb-3 text-xs font-bold tracking-[0.14em] text-muted-foreground uppercase lg:block">
           Settings
         </p>
-        <TabsList
-          aria-label="Settings sections"
-          className="h-auto w-full flex-row justify-start gap-1 overflow-x-auto rounded-none bg-transparent p-0 pb-1 lg:flex-col lg:overflow-visible lg:pb-0"
+        <ScrollArea
+          type="always"
+          orientation="horizontal"
+          className="w-full pb-3 lg:overflow-visible lg:pb-0 [&_[data-slot=scroll-area-scrollbar]]:lg:hidden"
+          viewportClassName="lg:overflow-visible!"
         >
-          {sections.map((section) => {
-            const Icon = section.icon
+          <TabsList
+            aria-label="Settings sections"
+            className="h-auto w-max min-w-full flex-row justify-start gap-1 rounded-none bg-transparent p-0 lg:w-full lg:flex-col"
+          >
+            {sections.map((section) => {
+              const Icon = section.icon
 
-            return (
-              <TabsTrigger
-                key={section.id}
-                value={section.id}
-                className={cn(
-                  'min-h-11 shrink-0 flex-none justify-start gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold text-muted-foreground shadow-none after:hidden hover:bg-secondary hover:text-foreground data-active:bg-accent data-active:text-accent-foreground data-active:!shadow-none lg:w-full',
-                )}
-              >
-                <Icon className="size-4.5" aria-hidden={true} />
-                <span>{section.label}</span>
-              </TabsTrigger>
-            )
-          })}
-        </TabsList>
+              return (
+                <TabsTrigger
+                  key={section.to}
+                  value={section.to}
+                  render={<Link to={section.to} />}
+                  nativeButton={false}
+                  className={cn(
+                    'min-h-11 shrink-0 flex-none justify-start gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold text-muted-foreground no-underline shadow-none after:hidden hover:bg-secondary hover:text-foreground data-active:bg-accent data-active:text-accent-foreground data-active:!shadow-none lg:w-full',
+                  )}
+                >
+                  <Icon className="size-4.5" aria-hidden={true} />
+                  <span>{section.label}</span>
+                </TabsTrigger>
+              )
+            })}
+          </TabsList>
+        </ScrollArea>
       </aside>
 
       <TabsContent

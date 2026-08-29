@@ -83,29 +83,7 @@ export function ShotSensoryRatingFields({
             </div>
 
             {readOnly ? (
-              <div
-                role="img"
-                aria-label={`${meta.label}: ${value} out of 5`}
-                className="flex items-center gap-1"
-              >
-                {Array.from({ length: 5 }, (_, index) => index + 1).map(
-                  (level) => (
-                    <Icon
-                      key={level}
-                      aria-hidden
-                      className={cn(
-                        'size-4',
-                        level <= value
-                          ? 'fill-link/20 text-link'
-                          : 'text-muted-foreground/35',
-                      )}
-                    />
-                  ),
-                )}
-                <span className="ml-1 text-sm font-semibold tabular-nums">
-                  {value}/5
-                </span>
-              </div>
+              <ShotSensoryRatingReadout ratingKey={key} value={value} />
             ) : (
               <fieldset className="min-w-0 border-0 p-0">
                 <legend className="sr-only">{meta.label} intensity</legend>
@@ -152,5 +130,42 @@ export function ShotSensoryRatingFields({
         )
       })}
     </div>
+  )
+}
+
+/**
+ * The non-interactive rendering of one sensory factor. Rooted in a `span` so it
+ * can also illustrate the factor inside a button, such as the settings picker.
+ */
+export function ShotSensoryRatingReadout({
+  ratingKey,
+  value,
+}: {
+  readonly ratingKey: ShotSensoryRatingKey
+  readonly value: number
+}) {
+  const meta = SHOT_SENSORY_RATING_META[ratingKey]
+  const Icon = ICONS[ratingKey]
+
+  return (
+    <span
+      role="img"
+      aria-label={`${meta.label}: ${value} out of 5`}
+      className="flex items-center gap-1"
+    >
+      {Array.from({ length: 5 }, (_, index) => index + 1).map((level) => (
+        <Icon
+          key={level}
+          aria-hidden
+          className={cn(
+            'size-4',
+            level <= value
+              ? 'fill-link/20 text-link'
+              : 'text-muted-foreground/35',
+          )}
+        />
+      ))}
+      <span className="ml-1 text-sm font-semibold tabular-nums">{value}/5</span>
+    </span>
   )
 }

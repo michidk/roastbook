@@ -12,7 +12,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { useAppSettings } from '@/hooks/use-app-settings'
 import { CURRENCIES } from '@/lib/constants'
+import { getCurrencyAffix } from '@/lib/currency-format'
 import { cn, normalizeUrl } from '@/lib/utils'
 
 interface FormFieldBaseProps {
@@ -66,6 +68,7 @@ interface InputFieldProps extends FormFieldBaseProps {
   showStepper?: boolean
   unit?: string
   unitPosition?: 'prefix' | 'suffix'
+  unitPlacement?: 'edge' | 'inline'
   autoFocus?: boolean
 }
 
@@ -87,6 +90,7 @@ export function InputField({
   showStepper,
   unit,
   unitPosition,
+  unitPlacement,
   autoFocus,
 }: InputFieldProps) {
   return (
@@ -111,6 +115,7 @@ export function InputField({
           showStepper={showStepper}
           unit={unit}
           unitPosition={unitPosition}
+          unitPlacement={unitPlacement}
           autoFocus={autoFocus}
           aria-invalid={Boolean(error)}
           aria-describedby={describedBy(id, error)}
@@ -139,6 +144,25 @@ export function InputField({
         />
       )}
     </FieldShell>
+  )
+}
+
+type CurrencyInputFieldProps = Omit<
+  InputFieldProps,
+  'type' | 'unit' | 'unitPosition' | 'unitPlacement'
+> & {
+  currency: string
+}
+
+export function CurrencyInputField({
+  currency,
+  ...props
+}: CurrencyInputFieldProps) {
+  const { numberFormat } = useAppSettings()
+  const affix = getCurrencyAffix(currency, numberFormat)
+
+  return (
+    <InputField {...props} {...affix} type="number" unitPlacement="inline" />
   )
 }
 

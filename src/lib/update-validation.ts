@@ -12,6 +12,8 @@ export type ShotUpdateCandidate = ShotParameterInput & {
   readonly id: number
   readonly brewingMethodId: number
   readonly beanId?: number | null
+  readonly drinkTypeId?: number | null
+  readonly drinkOptionValueIds?: readonly number[]
   readonly ratioBasis?: 'target_yield' | 'brew_water' | null
   readonly paperFilterPosition?: 'none' | 'top' | 'bottom' | 'both' | null
   readonly rating?: number | null
@@ -30,8 +32,8 @@ export type CafeVisitUpdateCandidate = {
   readonly id: number
   readonly coffeeShopId?: number | null
   readonly beanId?: number | null
-  readonly drinkName?: string | null
-  readonly drinkType?: string | null
+  readonly drinkTypeId?: number | null
+  readonly drinkOptionValueIds?: readonly number[]
   readonly price?: string | null
   readonly currency?: string | null
   readonly rating?: number | null
@@ -47,6 +49,7 @@ const SHOT_DECIMAL_RULES = [
   ['brewTemperatureCelsius', DECIMAL_CONSTRAINTS.brewTemperatureCelsius],
   ['brewPressureBar', DECIMAL_CONSTRAINTS.brewPressureBar],
   ['shotTimeSeconds', DECIMAL_CONSTRAINTS.shotTimeSeconds],
+  ['targetTimeSeconds', DECIMAL_CONSTRAINTS.targetTimeSeconds],
 ] as const satisfies readonly (readonly [
   keyof ShotParameterInput,
   DecimalConstraint,

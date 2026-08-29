@@ -2,10 +2,12 @@ import { useRouter } from '@tanstack/react-router'
 import { Save, Timer } from 'lucide-react'
 import { type SyntheticEvent, useState } from 'react'
 import { toast } from 'sonner'
+import { BrewingMethodDrinkTypesField } from '@/components/brewing-methods/brewing-method-drink-types-field'
 import { InputField, TextareaField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
 import { Button } from '@/components/ui/button'
 import { Toggle } from '@/components/ui/toggle'
+import type { DrinkTypeOption } from '@/lib/drink-options'
 import {
   type getBrewingMethod,
   updateBrewingMethod,
@@ -21,8 +23,10 @@ type BrewingMethod = NonNullable<Awaited<ReturnType<typeof getBrewingMethod>>>
 
 export function BrewingMethodEditor({
   method,
+  drinkTypes,
 }: {
   readonly method: BrewingMethod
+  readonly drinkTypes: readonly DrinkTypeOption[]
 }) {
   const router = useRouter()
   const [name, setName] = useState(method.name)
@@ -33,6 +37,9 @@ export function BrewingMethodEditor({
     SHOT_PARAMETER_KEYS.filter((key) => method.enabledParameters.includes(key)),
   )
   const [timerEnabled, setTimerEnabled] = useState(method.timerEnabled)
+  const [drinkTypeIds, setDrinkTypeIds] = useState<readonly number[]>(
+    method.drinkTypeIds,
+  )
   const [isSaving, setIsSaving] = useState(false)
 
   const toggle = (key: ShotParameterKey, pressed: boolean) => {
@@ -53,6 +60,7 @@ export function BrewingMethodEditor({
           description,
           enabledParameters,
           timerEnabled,
+          drinkTypeIds,
         },
       })
       await router.invalidate()
@@ -84,6 +92,17 @@ export function BrewingMethodEditor({
           value={description}
           onChange={setDescription}
           rows={3}
+        />
+      </FormSection>
+
+      <FormSection
+        title="Available drink types"
+        description="Choose types to limit the new-brew list for this method. Leave all unselected to allow every active type."
+      >
+        <BrewingMethodDrinkTypesField
+          drinkTypes={drinkTypes}
+          value={drinkTypeIds}
+          onChange={setDrinkTypeIds}
         />
       </FormSection>
 
