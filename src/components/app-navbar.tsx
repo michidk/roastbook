@@ -225,7 +225,7 @@ export function AppNavbar({ demoMode = false }: { demoMode?: boolean }) {
 
       <header className="sticky top-0 z-50 hidden w-full border-b border-border bg-card lg:block">
         <div className="mx-auto flex h-[68px] max-w-7xl items-center gap-6 px-6">
-          <BrandLink />
+          <BrandLink homePath={demoMode ? '/demo' : '/'} />
 
           <nav
             aria-label="Main navigation"
@@ -248,7 +248,7 @@ export function AppNavbar({ demoMode = false }: { demoMode?: boolean }) {
           five-target maximum. */}
       <header className="sticky top-0 z-50 w-full border-b border-border bg-card lg:hidden">
         <div className="flex h-14 items-center px-4">
-          <BrandLink />
+          <BrandLink homePath={demoMode ? '/demo' : '/'} />
           <div className="ml-auto">
             <ThemeToggle />
           </div>

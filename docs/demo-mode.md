@@ -37,7 +37,9 @@ The enforcement boundary is server-side request middleware. With demo mode
 enabled, only GET and HEAD requests proceed; writes, uploads, settings changes,
 AI actions, and other POST endpoints fail with a read-only error. The UI also
 shows a persistent banner, prevents form submissions, and disables its global
-create controls. The bean-package seed images are emitted as static assets
+create controls. The demo edition serves a public project landing page at `/`
+and the read-only journal dashboard at `/demo`; standard builds continue to use
+`/` for the dashboard. The bean-package seed images are emitted as static assets
 during the demo build. All demo business and product records are fictional.
 Roasters and cafés have no website URLs, and five bundled abstract favicon
 marks are reused across them without making network requests.

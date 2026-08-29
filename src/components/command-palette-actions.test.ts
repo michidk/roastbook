@@ -52,6 +52,9 @@ describe('command palette actions', () => {
 
     expect(groups.map((group) => group.label)).toEqual(['Go to', 'Appearance'])
     expect(flatten(groups).some((action) => action.kind === 'theme')).toBe(true)
+    expect(
+      flatten(groups).find((action) => action.label === 'Dashboard'),
+    ).toMatchObject({ kind: 'navigate', to: '/demo' })
   })
 
   it('has unique action values', () => {

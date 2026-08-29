@@ -81,10 +81,16 @@ export function isNavItemActive(pathname: string, item: NavItem) {
   return pathname === item.url || pathname.startsWith(`${item.url}/`)
 }
 
-export function BrandLink({ className }: { readonly className?: string }) {
+export function BrandLink({
+  className,
+  homePath = '/',
+}: {
+  readonly className?: string
+  readonly homePath?: '/' | '/demo'
+}) {
   return (
     <Link
-      to="/"
+      to={homePath}
       aria-label="Roastbook home"
       className={cn('flex min-h-11 shrink-0 items-center gap-2', className)}
     >
