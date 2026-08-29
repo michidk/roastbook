@@ -3,11 +3,8 @@ import { useMemo } from 'react'
 import { ImageWithFallback } from '@/components/image-with-fallback'
 import { PaginationControls } from '@/components/pagination-controls'
 import { SortableTableHead } from '@/components/sortable-table-head'
-import {
-  Card,
-  CardContent,
-  interactiveCardLinkClassName,
-} from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { StarRating } from '@/components/ui/star-rating'
 import {
   Table,
@@ -280,6 +277,9 @@ export function ShotsTable({
                       onSort={() => handleSort('rating')}
                     />
                   )}
+                  <TableHead className="w-px">
+                    <span className="sr-only">Brew actions</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -324,58 +324,57 @@ function MobileShotCard({
 
   return (
     <li className="list-none">
-      <Link
-        to="/brews/$shotId"
-        params={{ shotId: String(shot.id) }}
-        aria-label={`View brew from ${shotDate}`}
-        className={interactiveCardLinkClassName}
-      >
-        <Card
-          size="sm"
-          className="gap-0 border border-border py-0 transition-colors group-hover:bg-accent/40"
-        >
-          <CardContent className="flex items-center gap-3 p-3 sm:p-4">
-            {!hideBean && beanThumb && (
-              <ImageWithFallback
-                src={beanThumb}
-                alt=""
-                className="h-11 w-11 shrink-0 rounded-xl object-cover"
-              />
-            )}
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-2">
-                <p className="font-display text-base font-bold text-foreground">
-                  {shotDate}
-                </p>
-                {hasRating && shot.rating ? (
-                  <StarRating
-                    value={shot.rating}
-                    readOnly
-                    variant="compact"
-                    sizeClassName="size-3.5"
-                    className="shrink-0"
-                    ariaLabel="Brew rating"
-                  />
-                ) : null}
-              </div>
-              {!hideBean && (
-                <p className="truncate text-sm text-muted-foreground">
-                  {shot.bean?.name ?? 'No bean recorded'} ·{' '}
-                  {shot.brewingMethod.name}
-                </p>
-              )}
-              {shot.recipe ? (
-                <p className="truncate text-sm text-muted-foreground">
-                  Recipe: {shot.recipe.name}
-                </p>
-              ) : null}
-              <p className="text-sm text-muted-foreground">
-                {formatShotSummary(shot, formatNumber)}
+      <Card size="sm" className="gap-0 border border-border py-0">
+        <CardContent className="flex items-center gap-3 p-3 sm:p-4">
+          {!hideBean && beanThumb && (
+            <ImageWithFallback
+              src={beanThumb}
+              alt=""
+              className="h-11 w-11 shrink-0 rounded-xl object-cover"
+            />
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-display text-base font-bold text-foreground">
+                {shotDate}
               </p>
+              {hasRating && shot.rating ? (
+                <StarRating
+                  value={shot.rating}
+                  readOnly
+                  variant="compact"
+                  sizeClassName="size-3.5"
+                  className="shrink-0"
+                  ariaLabel="Brew rating"
+                />
+              ) : null}
             </div>
-          </CardContent>
-        </Card>
-      </Link>
+            {!hideBean && (
+              <p className="truncate text-sm text-muted-foreground">
+                {shot.bean?.name ?? 'No bean recorded'} ·{' '}
+                {shot.brewingMethod.name}
+              </p>
+            )}
+            {shot.recipe ? (
+              <p className="truncate text-sm text-muted-foreground">
+                Recipe: {shot.recipe.name}
+              </p>
+            ) : null}
+            <p className="text-sm text-muted-foreground">
+              {formatShotSummary(shot, formatNumber)}
+            </p>
+          </div>
+          <Button asChild variant="outline" size="xs">
+            <Link
+              to="/brews/$shotId"
+              params={{ shotId: String(shot.id) }}
+              aria-label={`Open brew from ${shotDate}`}
+            >
+              Open
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
     </li>
   )
 }
@@ -395,27 +394,15 @@ function ShotRow({
   const shotDate = formatDate(shot.brewedAt)
 
   return (
-    <TableRow className="relative cursor-pointer focus-within:bg-muted/50">
-      <TableCell className="font-medium">
-        <Link
-          to="/brews/$shotId"
-          params={{ shotId: String(shot.id) }}
-          className="peer absolute inset-0 z-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-          aria-label={`View brew from ${shotDate}`}
-        >
-          <span className="sr-only">View brew from {shotDate}</span>
-        </Link>
-        <span className="pointer-events-none relative text-link underline-offset-4 peer-hover:underline peer-focus-within:underline">
-          {shotDate}
-        </span>
-      </TableCell>
+    <TableRow className="focus-within:bg-muted/50">
+      <TableCell className="font-medium">{shotDate}</TableCell>
       {!hideBean && (
         <TableCell>
           {shot.bean ? (
             <Link
               to="/beans/$beanId"
               params={{ beanId: String(shot.bean.id) }}
-              className="relative z-10 flex w-fit items-center gap-2 rounded-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="inline-flex min-h-11 w-fit items-center gap-2 rounded-sm text-link underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               {beanThumb && (
                 <ImageWithFallback
@@ -469,6 +456,17 @@ function ShotRow({
           )}
         </TableCell>
       )}
+      <TableCell className="w-px text-right">
+        <Button asChild variant="outline" size="xs">
+          <Link
+            to="/brews/$shotId"
+            params={{ shotId: String(shot.id) }}
+            aria-label={`Open brew from ${shotDate}`}
+          >
+            Open
+          </Link>
+        </Button>
+      </TableCell>
     </TableRow>
   )
 }

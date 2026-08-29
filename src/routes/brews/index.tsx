@@ -176,12 +176,29 @@ function ShotsPage() {
       page: 1,
     })
 
-  const getEntry = (shot: Shot): CollectionEntry => ({
-    id: shot.id,
-    title: formatDate(shot.brewedAt),
-    to: '/brews/$shotId',
-    params: { shotId: String(shot.id) },
-  })
+  const getEntry = (shot: Shot): CollectionEntry => {
+    const shotDate = formatDate(shot.brewedAt)
+    const params = { shotId: String(shot.id) }
+
+    return {
+      id: shot.id,
+      title: shotDate,
+      linkTitle: false,
+      to: '/brews/$shotId',
+      params,
+      action: (
+        <Button asChild variant="outline" size="xs">
+          <Link
+            to="/brews/$shotId"
+            params={params}
+            aria-label={`Open brew from ${shotDate}`}
+          >
+            Open
+          </Link>
+        </Button>
+      ),
+    }
+  }
 
   const columns: readonly CollectionColumn<Shot>[] = [
     {
@@ -465,6 +482,7 @@ function ShotsPage() {
             columns={columns}
             titleHeader="Date"
             titleSortKey="date"
+            tableActionPlacement="after-title"
             sort={{
               key: search.sort,
               direction: search.direction,
