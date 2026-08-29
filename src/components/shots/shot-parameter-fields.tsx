@@ -68,8 +68,8 @@ export const EMPTY_SHOT_FORM_VALUES: ShotFormValues = {
   brewPressureBar: '',
   flowRateMlPerSecond: '',
   basketId: '',
-  usesPuckScreen: null,
-  paperFilterPosition: '',
+  usesPuckScreen: false,
+  paperFilterPosition: 'none',
   distributionMethod: '',
   tampForceKg: '',
   accessoryGearIds: [],
@@ -488,7 +488,7 @@ export function ShotParameterFields({
       show('paperFilterPosition') ||
       show('distributionMethod') ||
       show('tampForceKg') ? (
-        <FormSection title="Technique">
+        <FormSection title="Brewing method">
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
             {show('preinfusionTimeSeconds') ? (
               <InputField
@@ -571,27 +571,16 @@ export function ShotParameterFields({
           {show('usesPuckScreen') ? (
             <fieldset className="space-y-2">
               <legend className="text-sm font-medium">Puck screen</legend>
-              <div className="flex flex-wrap gap-2">
-                {(
-                  [
-                    { label: 'Not recorded', value: null },
-                    { label: 'No', value: false },
-                    { label: 'Yes', value: true },
-                  ] as const
-                ).map((option) => (
-                  <Toggle
-                    key={option.label}
-                    variant="outline"
-                    className="min-h-11 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:shadow-sm hover:aria-pressed:bg-primary/90 hover:aria-pressed:text-primary-foreground"
-                    pressed={values.usesPuckScreen === option.value}
-                    onPressedChange={() =>
-                      onChange('usesPuckScreen', option.value)
-                    }
-                  >
-                    {option.label}
-                  </Toggle>
-                ))}
-              </div>
+              <Toggle
+                variant="outline"
+                className="min-h-11 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:shadow-sm hover:aria-pressed:bg-primary/90 hover:aria-pressed:text-primary-foreground"
+                pressed={values.usesPuckScreen === true}
+                onPressedChange={(pressed) =>
+                  onChange('usesPuckScreen', pressed)
+                }
+              >
+                Yes
+              </Toggle>
             </fieldset>
           ) : null}
         </FormSection>

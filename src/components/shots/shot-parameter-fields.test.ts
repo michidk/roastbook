@@ -38,6 +38,13 @@ function shotParameters(
 }
 
 describe('shot form values', () => {
+  test('defaults paper filters and puck screens to no', () => {
+    expect(EMPTY_SHOT_FORM_VALUES).toMatchObject({
+      paperFilterPosition: 'none',
+      usesPuckScreen: false,
+    })
+  })
+
   test('offers machines with built-in grinders in both equipment selectors', () => {
     const machineWithGrinder = {
       id: 2,
