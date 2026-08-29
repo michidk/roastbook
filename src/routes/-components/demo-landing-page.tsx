@@ -11,6 +11,7 @@ import {
   Plus,
   Search,
   Sparkles,
+  Star,
   WandSparkles,
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -68,7 +69,7 @@ const previewBrews = [
 
 export function DemoLandingPage() {
   return (
-    <div className="mx-auto flex min-h-[100dvh] w-full max-w-7xl flex-col px-4 sm:px-6 lg:px-8">
+    <div className="mx-auto flex min-h-[100dvh] w-full max-w-7xl flex-col overflow-x-clip px-4 sm:px-6 lg:px-8">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:rounded-md focus:border focus:bg-background focus:px-4 focus:py-2"
@@ -106,7 +107,7 @@ function LandingHeader() {
             className="size-full object-cover"
           />
         </span>
-        <span className="font-display text-xl font-extrabold tracking-tight">
+        <span className="hidden font-display text-xl font-extrabold tracking-tight min-[360px]:inline">
           Roastbook
         </span>
       </Link>
@@ -115,15 +116,17 @@ function LandingHeader() {
           href="https://github.com/michidk/roastbook"
           target="_blank"
           rel="noreferrer"
-          className="hidden min-h-11 items-center gap-2 rounded-full px-3 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground sm:flex"
+          aria-label="View Roastbook on GitHub"
+          className="flex min-h-11 items-center gap-2 rounded-full border border-border bg-card px-3 text-sm font-bold text-foreground shadow-coffee transition-colors hover:bg-accent"
         >
           <Github className="size-4" aria-hidden="true" />
-          GitHub
+          <span className="hidden md:inline">GitHub</span>
         </a>
         <ThemeToggle />
         <Button asChild size="sm">
           <Link to="/overview">
-            Explore demo
+            <span className="hidden min-[400px]:inline">Explore demo</span>
+            <span className="min-[400px]:hidden">Demo</span>
             <ArrowRight aria-hidden="true" />
           </Link>
         </Button>
@@ -147,7 +150,7 @@ function LandingHero() {
           Roastbook turns a label photo into structured coffee details, then
           uses your own brew history to suggest what to change next.
         </p>
-        <div className="mt-8 flex flex-col gap-3 min-[420px]:flex-row">
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
           <Button asChild size="lg">
             <Link to="/overview">
               Explore the live demo
@@ -156,17 +159,18 @@ function LandingHero() {
           </Button>
           <Button asChild size="lg" variant="outline">
             <a
-              href="https://github.com/michidk/roastbook#quick-start-with-docker-compose"
+              href="https://github.com/michidk/roastbook"
               target="_blank"
               rel="noreferrer"
             >
-              Self-host Roastbook
+              <Github aria-hidden="true" />
+              Star Roastbook on GitHub
             </a>
           </Button>
         </div>
         <p className="mt-4 text-sm font-medium text-muted-foreground">
-          The demo uses fictional sample data and is read-only. No account
-          needed.
+          The demo is read-only and needs no account. Roastbook is open source
+          and ready to self-host.
         </p>
       </div>
       <ProductPreview />
@@ -370,9 +374,10 @@ function LandingFooter() {
         href="https://github.com/michidk/roastbook"
         target="_blank"
         rel="noreferrer"
-        className="font-bold text-link hover:underline"
+        className="inline-flex min-h-11 items-center gap-2 self-start rounded-full border border-border bg-card px-4 font-bold text-foreground shadow-coffee transition-colors hover:bg-accent sm:self-auto"
       >
-        View the source on GitHub
+        <Star className="size-4 fill-current" aria-hidden="true" />
+        Star us on GitHub
       </a>
     </footer>
   )
