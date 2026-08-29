@@ -7,6 +7,7 @@ import { CreatableCombobox } from '@/components/form/creatable-combobox'
 import { DateTimeField } from '@/components/form/date-field'
 import { TextareaField } from '@/components/form/form-field'
 import { FormErrorSummary, FormSection } from '@/components/form/form-shell'
+import { GearSetPicker } from '@/components/gear-sets/gear-set-picker'
 import { AiRecommendationDialog } from '@/components/shots/ai-recommendation-dialog'
 import { ExtractionBalanceField } from '@/components/shots/extraction-balance-field'
 import {
@@ -375,21 +376,6 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
               emptyMessage="No recipes saved for this method."
             />
           ) : null}
-          {selectedMethod && gearSets.length > 0 ? (
-            <CreatableCombobox
-              id="shot-gear-set"
-              label="Load gear set"
-              value={gearSetId}
-              items={gearSets}
-              suggestions={gearSets.slice(0, 5)}
-              getKey={({ id }) => id}
-              getLabel={({ name }) => name}
-              onChange={loadGearSet}
-              placeholder="Choose a gear set"
-              searchPlaceholder="Search gear sets…"
-              emptyMessage="No gear sets found."
-            />
-          ) : null}
           <DateTimeField
             id="brewed-at"
             label="Brewed at"
@@ -435,6 +421,16 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
           values={values}
           gear={gearOptions}
           enabledParameters={selectedMethod?.enabledParameters ?? []}
+          equipmentPresetField={
+            selectedMethod && gearSets.length > 0 ? (
+              <GearSetPicker
+                id="shot-gear-set"
+                value={gearSetId}
+                gearSets={gearSets}
+                onChange={loadGearSet}
+              />
+            ) : undefined
+          }
           useEquipmentSetupDefaults
           errors={fieldErrors}
           onChange={set}

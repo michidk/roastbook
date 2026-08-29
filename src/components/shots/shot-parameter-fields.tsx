@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { CreatableCombobox } from '@/components/form/creatable-combobox'
 import { InputField, SelectField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
@@ -243,6 +244,7 @@ type ShotParameterFieldsProps = {
   readonly values: ShotFormValues
   readonly gear: readonly GearOption[]
   readonly enabledParameters: readonly string[]
+  readonly equipmentPresetField?: ReactNode
   readonly useEquipmentSetupDefaults?: boolean
   readonly errors?: Readonly<Record<string, string>>
   readonly onChange: <Key extends keyof ShotFormValues>(
@@ -255,12 +257,19 @@ export function ShotParameterFields({
   values,
   gear,
   enabledParameters,
+  equipmentPresetField,
   useEquipmentSetupDefaults = false,
   errors = {},
   onChange,
 }: ShotParameterFieldsProps) {
   const show = (key: ShotParameterKey) => enabledParameters.includes(key)
   const { brewers, grinders, baskets, accessories } = gearByEquipmentRole(gear)
+  const hasEquipment =
+    Boolean(equipmentPresetField) ||
+    show('machineId') ||
+    show('grinderId') ||
+    show('basketId') ||
+    show('accessoryGearIds')
   const hasExtraction =
     show('doseGrams') ||
     show('brewWaterGrams') ||
@@ -274,11 +283,9 @@ export function ShotParameterFields({
 
   return (
     <>
-      {show('machineId') ||
-      show('grinderId') ||
-      show('basketId') ||
-      show('accessoryGearIds') ? (
+      {hasEquipment ? (
         <FormSection title="Equipment">
+          {equipmentPresetField}
           <div className="grid gap-4 sm:grid-cols-2">
             {show('machineId') ? (
               <CreatableCombobox

@@ -93,7 +93,8 @@ an assistant log this morning's espresso for you.
   one sour-to-bitter scale — sour points at under-extraction and bitter at
   over-extraction, the usual first dial-in move.
 - Catalog beans, roasters, brewing methods, coffee shops, and gear, and group
-  equipment into reusable gear sets that fill a new brew's gear in one tap.
+  equipment into reusable gear sets that fill new brew and recipe equipment
+  fields in one tap.
 - Track café visits and explore visited locations on a map.
 - Keep a Places list of saved cafés, from favorites to a want-to-visit
   wishlist.

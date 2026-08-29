@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { BeanPicker } from '@/components/beans/bean-picker'
 import { InputField, SelectField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
@@ -16,6 +17,7 @@ type RecipeFieldsProps = {
   readonly beans: Awaited<ReturnType<typeof getActiveBeans>>
   readonly methods: Awaited<ReturnType<typeof getBrewingMethods>>
   readonly gear: Awaited<ReturnType<typeof getGear>>
+  readonly equipmentPresetField?: ReactNode
   readonly errors?: Readonly<Record<string, string>>
   readonly onNameChange: (name: string) => void
   readonly onChange: <Key extends keyof ShotFormValues>(
@@ -30,6 +32,7 @@ export function RecipeFields({
   beans,
   methods,
   gear,
+  equipmentPresetField,
   errors = {},
   onNameChange,
   onChange,
@@ -86,6 +89,7 @@ export function RecipeFields({
             values={values}
             gear={availableGearForShot(values, gear)}
             enabledParameters={selectedMethod.enabledParameters}
+            equipmentPresetField={equipmentPresetField}
             errors={errors}
             onChange={onChange}
           />

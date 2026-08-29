@@ -14,15 +14,17 @@ import { Button } from '@/components/ui/button'
 import { getActiveBeans } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getGear } from '@/lib/server/gear'
+import { getGearSets } from '@/lib/server/gear-sets'
 
 export const Route = createFileRoute('/recipes/new')({
   loader: async () => {
-    const [beans, methods, gear] = await Promise.all([
+    const [beans, methods, gear, gearSets] = await Promise.all([
       getActiveBeans(),
       getBrewingMethods(),
       getGear(),
+      getGearSets(),
     ])
-    return { beans, methods, gear }
+    return { beans, methods, gear, gearSets }
   },
   component: NewRecipePage,
   pendingComponent: DetailPending,
@@ -32,7 +34,7 @@ export const Route = createFileRoute('/recipes/new')({
 })
 
 function NewRecipePage() {
-  const { beans, methods, gear } = Route.useLoaderData()
+  const { beans, methods, gear, gearSets } = Route.useLoaderData()
   const navigate = useNavigate()
   const router = useRouter()
 
@@ -53,6 +55,7 @@ function NewRecipePage() {
         beans={beans}
         methods={methods}
         gear={gear}
+        gearSets={gearSets}
         onCreated={async (recipe) => {
           await router.invalidate()
           await navigate({
