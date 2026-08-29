@@ -16,6 +16,7 @@ import {
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { LandingProductShowcases } from '@/routes/-components/landing-product-showcases'
 
 const aiFeatures = [
   {
@@ -40,22 +41,22 @@ const aiFeatures = [
 
 const previewBeans = [
   {
-    name: 'Worka Sakaro',
-    roaster: 'Friedhats',
-    detail: 'Ethiopia · Natural',
-    gradient: 'from-[#8f452d] via-[#bd7552] to-[#e7b978]',
+    name: 'Moonrise Lot 17',
+    roaster: 'Ember Atlas',
+    detail: 'Luma Highlands · Washed',
+    image: '/media/demo/kraft-orange.thumb.webp',
   },
   {
-    name: 'La Muralla',
-    roaster: 'Manhattan',
-    detail: 'Colombia · Washed',
-    gradient: 'from-[#435641] via-[#788a64] to-[#d0b77d]',
+    name: 'Coral Ridge Honey',
+    roaster: 'Quiet Current',
+    detail: 'San Aurelio · Natural',
+    image: '/media/demo/forest-botanical.thumb.webp',
   },
   {
-    name: 'Finca El Paraíso',
-    roaster: 'Dak',
-    detail: 'Colombia · Anaerobic',
-    gradient: 'from-[#633d58] via-[#a46677] to-[#e1ad8c]',
+    name: 'Glasshouse Bloom',
+    roaster: 'Juniper & Coil',
+    detail: 'Verdant Reach · Washed',
+    image: '/media/demo/cobalt-sunburst.thumb.webp',
   },
 ] as const
 
@@ -80,6 +81,7 @@ export function DemoLandingPage() {
         <LandingHero />
         <LandingFeatures />
         <LandingBeanShowcase />
+        <LandingProductShowcases />
         <LandingCta />
       </main>
       <LandingFooter />
@@ -304,10 +306,17 @@ function BeanPreviewCard({
   readonly scanned: boolean
 }) {
   return (
-    <div
-      className={`relative flex aspect-[0.72] min-w-0 flex-col overflow-hidden rounded-xl bg-gradient-to-br ${bean.gradient} p-2.5 text-white shadow-sm sm:rounded-2xl sm:p-4`}
-    >
-      <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-black/80" />
+    <div className="relative flex aspect-[0.72] min-w-0 flex-col overflow-hidden rounded-xl bg-coffee p-2.5 text-white shadow-sm sm:rounded-2xl sm:p-4">
+      <img
+        src={bean.image}
+        alt=""
+        width={1200}
+        height={1200}
+        loading="lazy"
+        decoding="async"
+        className="absolute inset-0 size-full object-cover"
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/5 to-black/90" />
       <span className="relative w-fit rounded-full border border-white/50 bg-black/40 px-2 py-1 text-[8px] font-bold tracking-wide uppercase backdrop-blur-sm sm:text-[10px]">
         {scanned ? 'AI scanned' : 'Active'}
       </span>
