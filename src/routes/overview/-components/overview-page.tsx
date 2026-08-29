@@ -11,9 +11,9 @@ import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { getDailyHeadline } from '@/lib/daily-headline'
 import { smallThumbnailUrl } from '@/lib/image-url'
-import type { DashboardData } from '@/modules/dashboard/lib/dashboard-data'
+import type { OverviewData } from '@/routes/overview/-lib/overview-data'
 
-export function DashboardPage({ stats, recentShots }: DashboardData) {
+export function OverviewPage({ stats, recentShots }: OverviewData) {
   const formatDate = useDateFormatter()
   const formatNumber = useNumberFormatter()
   const showRating = useTasteProfile().overallRating

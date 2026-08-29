@@ -65,7 +65,7 @@ export const Route = createFileRoute('/gear-sets/')({
   component: GearSetsPage,
   pendingComponent: ListPending,
   errorComponent: ({ error }) => (
-    <RouteError error={error} backTo="/" backLabel="Go to dashboard" />
+    <RouteError error={error} backTo="/overview" backLabel="Go to overview" />
   ),
 })
 

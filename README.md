@@ -7,7 +7,7 @@
 home for your coffee brews, beans, recipes, café visits, roasters, brewing
 methods, and gear — and it fills itself in for you.
 
-**[Try the read-only demo](https://roastbook.vercel.app/demo)** — it runs entirely
+**[Try the read-only demo](https://roastbook.vercel.app/)** — it runs entirely
 from bundled sample data and requires no account or database.
 
 Photograph a bag and Roastbook reads the label: origin, region, farm, variety,

@@ -22,9 +22,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { DEMO_MODE } from '@/lib/build-mode'
 import { getErrorDisplayState } from '@/lib/error-display'
 import { usePreferencesStore } from '@/lib/preferences-store'
 import { getAppSettings } from '@/lib/server/app-settings'
+import { cn } from '@/lib/utils'
 
 export const Route = createRootRoute({
   loader: () => getAppSettings(),
@@ -66,16 +68,25 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   const settings = Route.useLoaderData()
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  })
+  const isDemoLandingPage = DEMO_MODE && pathname === '/'
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      className={isDemoLandingPage ? 'document-scroll' : undefined}
+      suppressHydrationWarning
+    >
       <head>
         <HeadContent />
       </head>
       <body
-        className={
-          settings.backgroundTextureEnabled ? undefined : 'texture-disabled'
-        }
+        className={cn(
+          settings?.backgroundTextureEnabled === false && 'texture-disabled',
+          isDemoLandingPage && 'document-scroll',
+        )}
       >
         <SettingsHydrator />
         {children}

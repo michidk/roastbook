@@ -38,19 +38,18 @@ export type CommandActionGroup = {
   readonly items: readonly CommandAction[]
 }
 
-const dashboardNavItem = (demoMode: boolean): NavItem => ({
-  title: 'Dashboard',
-  url: demoMode ? '/demo' : '/',
+const overviewNavItem: NavItem = {
+  title: 'Overview',
+  url: '/overview',
   icon: LayoutDashboard,
-})
+}
 
 /**
  * Terms that should find a destination even though its label does not contain
  * them — synonyms, unaccented spellings, and the internal route vocabulary.
  */
 const NAVIGATE_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
-  '/': ['home', 'start', 'overview', 'today'],
-  '/demo': ['home', 'start', 'overview', 'today'],
+  '/overview': ['home', 'start', 'dashboard', 'today'],
   '/brews': ['shots', 'espresso', 'log', 'journal'],
   '/beans': ['coffee', 'bags', 'rotation'],
   '/visits': ['cafe visits', 'cafes', 'map', 'out'],
@@ -116,11 +115,9 @@ export function buildCommandGroups({
 } = {}): readonly CommandActionGroup[] {
   const navigate: CommandActionGroup = {
     label: 'Go to',
-    items: [
-      dashboardNavItem(demoMode),
-      ...primaryNavItems,
-      ...moreNavItems,
-    ].map(toNavigateAction),
+    items: [overviewNavItem, ...primaryNavItems, ...moreNavItems].map(
+      toNavigateAction,
+    ),
   }
   const appearance: CommandActionGroup = {
     label: 'Appearance',

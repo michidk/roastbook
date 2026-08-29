@@ -389,6 +389,18 @@
     overflow: hidden;
   }
 
+  html.document-scroll {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  html.document-scroll body,
+  html.document-scroll #app {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+
   body {
     @apply bg-background text-foreground;
     margin: 0;

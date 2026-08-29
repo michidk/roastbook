@@ -57,7 +57,7 @@ export const Route = createFileRoute('/settings')({
   component: SettingsPage,
   pendingComponent: RoutePending,
   errorComponent: ({ error }) => (
-    <RouteError error={error} backTo="/" backLabel="Go to dashboard" />
+    <RouteError error={error} backTo="/overview" backLabel="Go to overview" />
   ),
 })
 

@@ -82,7 +82,7 @@ export function DemoLandingPage() {
           </a>
           <ThemeToggle />
           <Button asChild size="sm">
-            <Link to="/demo">
+            <Link to="/overview">
               Explore demo
               <ArrowRight aria-hidden="true" />
             </Link>
@@ -106,7 +106,7 @@ export function DemoLandingPage() {
             </p>
             <div className="mt-8 flex flex-col gap-3 min-[420px]:flex-row">
               <Button asChild size="lg">
-                <Link to="/demo">
+                <Link to="/overview">
                   Explore the live demo
                   <ArrowRight aria-hidden="true" />
                 </Link>
@@ -179,7 +179,7 @@ export function DemoLandingPage() {
             size="lg"
             className="mt-7 border-card bg-card text-foreground hover:border-accent hover:bg-accent lg:mt-0"
           >
-            <Link to="/demo">
+            <Link to="/overview">
               Open Roastbook
               <ArrowRight aria-hidden="true" />
             </Link>
