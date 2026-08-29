@@ -67,7 +67,7 @@ export function getProcessMethodLabel(value: string): string {
 
 const GEAR_TYPE_LABELS_BY_VALUE = {
   espresso_machine: 'Espresso Machine',
-  espresso_machine_with_grinder: 'Espresso Machine with Built-in Grinder',
+  espresso_machine_with_grinder: 'Espresso Machine w/ Grinder',
   brewer: 'Brewer',
   grinder: 'Grinder',
   kettle: 'Kettle',
