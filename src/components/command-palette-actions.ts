@@ -38,9 +38,9 @@ export type CommandActionGroup = {
   readonly items: readonly CommandAction[]
 }
 
-const dashboardNavItem: NavItem = {
-  title: 'Dashboard',
-  url: '/',
+const overviewNavItem: NavItem = {
+  title: 'Overview',
+  url: '/overview',
   icon: LayoutDashboard,
 }
 
@@ -49,7 +49,7 @@ const dashboardNavItem: NavItem = {
  * them — synonyms, unaccented spellings, and the internal route vocabulary.
  */
 const NAVIGATE_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
-  '/': ['home', 'start', 'overview', 'today'],
+  '/overview': ['home', 'start', 'dashboard', 'today'],
   '/brews': ['shots', 'espresso', 'log', 'journal'],
   '/beans': ['coffee', 'bags', 'rotation'],
   '/visits': ['cafe visits', 'cafes', 'map', 'out'],
@@ -115,7 +115,7 @@ export function buildCommandGroups({
 } = {}): readonly CommandActionGroup[] {
   const navigate: CommandActionGroup = {
     label: 'Go to',
-    items: [dashboardNavItem, ...primaryNavItems, ...moreNavItems].map(
+    items: [overviewNavItem, ...primaryNavItems, ...moreNavItems].map(
       toNavigateAction,
     ),
   }

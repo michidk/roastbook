@@ -18,6 +18,7 @@ import { Route as ShopsIndexRouteImport } from './routes/shops/index'
 import { Route as RoastersIndexRouteImport } from './routes/roasters/index'
 import { Route as RecipesIndexRouteImport } from './routes/recipes/index'
 import { Route as PlacesIndexRouteImport } from './routes/places/index'
+import { Route as OverviewIndexRouteImport } from './routes/overview/index'
 import { Route as GearIndexRouteImport } from './routes/gear/index'
 import { Route as GearSetsIndexRouteImport } from './routes/gear-sets/index'
 import { Route as BrewsIndexRouteImport } from './routes/brews/index'
@@ -90,6 +91,11 @@ const RecipesIndexRoute = RecipesIndexRouteImport.update({
 const PlacesIndexRoute = PlacesIndexRouteImport.update({
   id: '/places/',
   path: '/places/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OverviewIndexRoute = OverviewIndexRouteImport.update({
+  id: '/overview/',
+  path: '/overview/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GearIndexRoute = GearIndexRouteImport.update({
@@ -266,6 +272,7 @@ export interface FileRoutesByFullPath {
   '/brews/': typeof BrewsIndexRoute
   '/gear-sets/': typeof GearSetsIndexRoute
   '/gear/': typeof GearIndexRoute
+  '/overview/': typeof OverviewIndexRoute
   '/places/': typeof PlacesIndexRoute
   '/recipes/': typeof RecipesIndexRoute
   '/roasters/': typeof RoastersIndexRoute
@@ -305,6 +312,7 @@ export interface FileRoutesByTo {
   '/brews': typeof BrewsIndexRoute
   '/gear-sets': typeof GearSetsIndexRoute
   '/gear': typeof GearIndexRoute
+  '/overview': typeof OverviewIndexRoute
   '/places': typeof PlacesIndexRoute
   '/recipes': typeof RecipesIndexRoute
   '/roasters': typeof RoastersIndexRoute
@@ -345,6 +353,7 @@ export interface FileRoutesById {
   '/brews/': typeof BrewsIndexRoute
   '/gear-sets/': typeof GearSetsIndexRoute
   '/gear/': typeof GearIndexRoute
+  '/overview/': typeof OverviewIndexRoute
   '/places/': typeof PlacesIndexRoute
   '/recipes/': typeof RecipesIndexRoute
   '/roasters/': typeof RoastersIndexRoute
@@ -386,6 +395,7 @@ export interface FileRouteTypes {
     | '/brews/'
     | '/gear-sets/'
     | '/gear/'
+    | '/overview/'
     | '/places/'
     | '/recipes/'
     | '/roasters/'
@@ -425,6 +435,7 @@ export interface FileRouteTypes {
     | '/brews'
     | '/gear-sets'
     | '/gear'
+    | '/overview'
     | '/places'
     | '/recipes'
     | '/roasters'
@@ -464,6 +475,7 @@ export interface FileRouteTypes {
     | '/brews/'
     | '/gear-sets/'
     | '/gear/'
+    | '/overview/'
     | '/places/'
     | '/recipes/'
     | '/roasters/'
@@ -504,6 +516,7 @@ export interface RootRouteChildren {
   BrewsIndexRoute: typeof BrewsIndexRoute
   GearSetsIndexRoute: typeof GearSetsIndexRoute
   GearIndexRoute: typeof GearIndexRoute
+  OverviewIndexRoute: typeof OverviewIndexRoute
   PlacesIndexRoute: typeof PlacesIndexRoute
   RecipesIndexRoute: typeof RecipesIndexRoute
   RoastersIndexRoute: typeof RoastersIndexRoute
@@ -575,6 +588,13 @@ declare module '@tanstack/react-router' {
       path: '/places'
       fullPath: '/places/'
       preLoaderRoute: typeof PlacesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/overview/': {
+      id: '/overview/'
+      path: '/overview'
+      fullPath: '/overview/'
+      preLoaderRoute: typeof OverviewIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gear/': {
@@ -808,6 +828,7 @@ const rootRouteChildren: RootRouteChildren = {
   BrewsIndexRoute: BrewsIndexRoute,
   GearSetsIndexRoute: GearSetsIndexRoute,
   GearIndexRoute: GearIndexRoute,
+  OverviewIndexRoute: OverviewIndexRoute,
   PlacesIndexRoute: PlacesIndexRoute,
   RecipesIndexRoute: RecipesIndexRoute,
   RoastersIndexRoute: RoastersIndexRoute,

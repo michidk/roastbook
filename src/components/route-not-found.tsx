@@ -24,9 +24,9 @@ export function RouteNotFound() {
           </p>
           <div className="flex gap-2 justify-center">
             <Button asChild>
-              <Link to="/">
+              <Link to="/overview">
                 <Home className="mr-2 h-4 w-4" />
-                Go to dashboard
+                Go to overview
               </Link>
             </Button>
           </div>

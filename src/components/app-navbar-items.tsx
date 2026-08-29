@@ -84,7 +84,7 @@ export function isNavItemActive(pathname: string, item: NavItem) {
 export function BrandLink({ className }: { readonly className?: string }) {
   return (
     <Link
-      to="/"
+      to="/overview"
       aria-label="Roastbook home"
       className={cn('flex min-h-11 shrink-0 items-center gap-2', className)}
     >

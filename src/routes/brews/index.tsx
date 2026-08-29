@@ -131,7 +131,7 @@ export const Route = createFileRoute('/brews/')({
   component: ShotsPage,
   pendingComponent: ListPending,
   errorComponent: ({ error }) => (
-    <RouteError error={error} backTo="/" backLabel="Go to dashboard" />
+    <RouteError error={error} backTo="/overview" backLabel="Go to overview" />
   ),
 })
 

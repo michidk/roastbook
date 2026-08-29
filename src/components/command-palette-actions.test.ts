@@ -26,12 +26,12 @@ function findAction(label: string): CommandAction {
 }
 
 describe('command palette actions', () => {
-  it('reaches the dashboard and every navbar destination', () => {
+  it('reaches the overview and every navbar destination', () => {
     const targets = flatten(buildCommandGroups())
       .filter((action) => action.kind === 'navigate')
       .map((action) => action.to)
 
-    expect(targets).toContain('/')
+    expect(targets).toContain('/overview')
     for (const item of [...primaryNavItems, ...moreNavItems]) {
       expect(targets).toContain(item.url)
     }
@@ -52,6 +52,9 @@ describe('command palette actions', () => {
 
     expect(groups.map((group) => group.label)).toEqual(['Go to', 'Appearance'])
     expect(flatten(groups).some((action) => action.kind === 'theme')).toBe(true)
+    expect(
+      flatten(groups).find((action) => action.label === 'Overview'),
+    ).toMatchObject({ kind: 'navigate', to: '/overview' })
   })
 
   it('has unique action values', () => {

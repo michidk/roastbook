@@ -38,7 +38,7 @@ export const Route = createFileRoute('/stats')({
   staleTime: 15_000,
   pendingComponent: RoutePending,
   errorComponent: ({ error }) => (
-    <RouteError error={error} backTo="/" backLabel="Go to dashboard" />
+    <RouteError error={error} backTo="/overview" backLabel="Go to overview" />
   ),
   component: StatsPage,
 })
