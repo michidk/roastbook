@@ -63,7 +63,7 @@ describe('brew recommendation evidence', () => {
       exactGear: {
         machineOrBrewer: {
           name: 'Test machine',
-          machineSettings: { brewPressureOpvBar: '9.00' },
+          currentOwnerSettings: { brewPressureBar: '9.00' },
         },
         grinder: { name: 'Test grinder', model: 'G1' },
       },
@@ -90,7 +90,7 @@ describe('brew recommendation evidence', () => {
     expect(prompt).toContain('chronologically by brewedAt')
     expect(prompt).toContain('"focusedShot"')
     expect(prompt).toContain('"origin": "Ethiopia"')
-    expect(prompt).toContain('"machineSettings"')
+    expect(prompt).toContain('"currentOwnerSettings"')
     expect(prompt).toContain('"tastingNotes": "Sweet and bright"')
   })
 

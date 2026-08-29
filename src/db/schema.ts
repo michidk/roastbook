@@ -376,39 +376,127 @@ export const gear = pgTable(
   ],
 )
 
-export const machineSettings = pgTable(
-  'machine_settings',
+export const espressoMachineDetails = pgTable(
+  'espresso_machine_details',
   {
     gearId: integer('gear_id')
       .primaryKey()
       .references(() => gear.id, { onDelete: 'cascade' }),
-    brewPressureOpvBar: decimal('brew_pressure_opv_bar', {
-      precision: 4,
-      scale: 2,
-    }),
-    supportsPreinfusion: boolean('supports_preinfusion'),
-    defaultPreinfusionEnabled: boolean('default_preinfusion_enabled'),
-    defaultPreinfusionTimeSeconds: decimal('default_preinfusion_time_seconds', {
+    portafilterDiameterMm: decimal('portafilter_diameter_mm', {
       precision: 5,
       scale: 2,
     }),
-    defaultPreinfusionPressureBar: decimal('default_preinfusion_pressure_bar', {
+    heatingArchitecture: text('heating_architecture'),
+    temperatureControl: text('temperature_control'),
+    pressureControl: text('pressure_control'),
+    flowControl: text('flow_control'),
+    preinfusionControl: text('preinfusion_control'),
+    shotStopModes: text('shot_stop_modes').array(),
+    steamSystem: text('steam_system'),
+    simultaneousBrewAndSteam: boolean('simultaneous_brew_and_steam'),
+    groupCount: integer('group_count'),
+    pumpType: text('pump_type'),
+    waterSourceModes: text('water_source_modes').array(),
+    brewPressureMinimumBar: decimal('brew_pressure_minimum_bar', {
       precision: 4,
       scale: 2,
     }),
-    defaultFlowLimitMlPerSecond: decimal('default_flow_limit_ml_per_second', {
+    brewPressureMaximumBar: decimal('brew_pressure_maximum_bar', {
       precision: 4,
       scale: 2,
     }),
-    temperatureOffsetCelsius: decimal('temperature_offset_celsius', {
+    brewTemperatureMinimumCelsius: decimal('brew_temperature_minimum_celsius', {
       precision: 4,
       scale: 1,
     }),
-    volumetricShotVolumeMl: decimal('volumetric_shot_volume_ml', {
+    brewTemperatureMaximumCelsius: decimal('brew_temperature_maximum_celsius', {
+      precision: 4,
+      scale: 1,
+    }),
+  },
+  (table) => [
+    check(
+      'espresso_machine_details_heating_architecture_check',
+      sql`${table.heatingArchitecture} in ('single_boiler', 'heat_exchanger', 'dual_boiler', 'multi_boiler', 'single_thermoblock', 'dual_thermoblock', 'hybrid', 'manual', 'other')`,
+    ),
+    check(
+      'espresso_machine_details_temperature_control_check',
+      sql`${table.temperatureControl} in ('none', 'fixed', 'adjustable', 'programmable')`,
+    ),
+    check(
+      'espresso_machine_details_pressure_control_check',
+      sql`${table.pressureControl} in ('fixed', 'adjustable_opv', 'manual', 'programmable')`,
+    ),
+    check(
+      'espresso_machine_details_flow_control_check',
+      sql`${table.flowControl} in ('none', 'manual', 'programmable')`,
+    ),
+    check(
+      'espresso_machine_details_preinfusion_control_check',
+      sql`${table.preinfusionControl} in ('none', 'supported', 'fixed', 'adjustable', 'programmable')`,
+    ),
+    check(
+      'espresso_machine_details_shot_stop_modes_check',
+      sql`${table.shotStopModes} <@ ARRAY['manual', 'weight', 'time', 'volume']::text[]`,
+    ),
+    check(
+      'espresso_machine_details_steam_system_check',
+      sql`${table.steamSystem} in ('none', 'shared_heater', 'dedicated_heater')`,
+    ),
+    check(
+      'espresso_machine_details_pump_type_check',
+      sql`${table.pumpType} in ('vibration', 'rotary', 'gear', 'peristaltic', 'manual', 'other')`,
+    ),
+    check(
+      'espresso_machine_details_water_source_modes_check',
+      sql`${table.waterSourceModes} <@ ARRAY['reservoir', 'plumbed']::text[]`,
+    ),
+    check(
+      'espresso_machine_details_measurements_check',
+      sql`(${table.portafilterDiameterMm} is null or ${table.portafilterDiameterMm} > 0)
+        and (${table.groupCount} is null or ${table.groupCount} > 0)
+        and (${table.brewPressureMinimumBar} is null or ${table.brewPressureMinimumBar} >= 0)
+        and (${table.brewPressureMaximumBar} is null or ${table.brewPressureMaximumBar} >= 0)
+        and (${table.brewPressureMinimumBar} is null or ${table.brewPressureMaximumBar} is null or ${table.brewPressureMinimumBar} <= ${table.brewPressureMaximumBar})
+        and (${table.brewTemperatureMinimumCelsius} is null or ${table.brewTemperatureMaximumCelsius} is null or ${table.brewTemperatureMinimumCelsius} <= ${table.brewTemperatureMaximumCelsius})`,
+    ),
+  ],
+)
+
+export const espressoMachineSettingRevisions = pgTable(
+  'espresso_machine_setting_revisions',
+  {
+    id: serial('id').primaryKey(),
+    gearId: integer('gear_id')
+      .references(() => gear.id, { onDelete: 'cascade' })
+      .notNull(),
+    kind: text('kind').notNull(),
+    brewPressureBar: decimal('brew_pressure_bar', {
+      precision: 4,
+      scale: 2,
+    }),
+    preinfusionEnabled: boolean('preinfusion_enabled'),
+    preinfusionTimeSeconds: decimal('preinfusion_time_seconds', {
+      precision: 5,
+      scale: 2,
+    }),
+    preinfusionPressureBar: decimal('preinfusion_pressure_bar', {
+      precision: 4,
+      scale: 2,
+    }),
+    flowLimitMlPerSecond: decimal('flow_limit_ml_per_second', {
+      precision: 4,
+      scale: 2,
+    }),
+    brewTemperatureOffsetCelsius: decimal('brew_temperature_offset_celsius', {
+      precision: 4,
+      scale: 1,
+    }),
+    programmedVolumeMl: decimal('programmed_volume_ml', {
       precision: 6,
       scale: 2,
     }),
-    autoStopMode: text('auto_stop_mode'),
+    defaultStopMode: text('default_stop_mode'),
     steamTemperatureCelsius: decimal('steam_temperature_celsius', {
       precision: 4,
       scale: 1,
@@ -417,21 +505,221 @@ export const machineSettings = pgTable(
       precision: 4,
       scale: 2,
     }),
+    effectiveFrom: timestamp('effective_from').defaultNow().notNull(),
+    supersededAt: timestamp('superseded_at'),
+    createdAt: createdAt(),
   },
   (table) => [
     check(
-      'machine_settings_auto_stop_mode_check',
-      sql`${table.autoStopMode} in ('manual', 'weight', 'time', 'volume')`,
+      'espresso_machine_setting_revisions_kind_check',
+      sql`${table.kind} in ('factory', 'owner')`,
     ),
     check(
-      'machine_settings_measurements_nonnegative',
-      sql`(${table.brewPressureOpvBar} is null or ${table.brewPressureOpvBar} >= 0)
-        and (${table.defaultPreinfusionTimeSeconds} is null or ${table.defaultPreinfusionTimeSeconds} >= 0)
-        and (${table.defaultPreinfusionPressureBar} is null or ${table.defaultPreinfusionPressureBar} >= 0)
-        and (${table.defaultFlowLimitMlPerSecond} is null or ${table.defaultFlowLimitMlPerSecond} >= 0)
-        and (${table.volumetricShotVolumeMl} is null or ${table.volumetricShotVolumeMl} >= 0)
+      'espresso_machine_setting_revisions_stop_mode_check',
+      sql`${table.defaultStopMode} in ('manual', 'weight', 'time', 'volume')`,
+    ),
+    check(
+      'espresso_machine_setting_revisions_measurements_check',
+      sql`(${table.brewPressureBar} is null or ${table.brewPressureBar} >= 0)
+        and (${table.preinfusionTimeSeconds} is null or ${table.preinfusionTimeSeconds} >= 0)
+        and (${table.preinfusionPressureBar} is null or ${table.preinfusionPressureBar} >= 0)
+        and (${table.flowLimitMlPerSecond} is null or ${table.flowLimitMlPerSecond} >= 0)
+        and (${table.programmedVolumeMl} is null or ${table.programmedVolumeMl} >= 0)
         and (${table.steamTemperatureCelsius} is null or ${table.steamTemperatureCelsius} >= 0)
         and (${table.steamPressureBar} is null or ${table.steamPressureBar} >= 0)`,
+    ),
+    uniqueIndex('espresso_machine_setting_revisions_current_kind_idx')
+      .on(table.gearId, table.kind)
+      .where(sql`${table.supersededAt} is null`),
+    index('espresso_machine_setting_revisions_gear_id_idx').on(
+      table.gearId,
+      table.effectiveFrom,
+    ),
+  ],
+)
+
+export const grinderDetails = pgTable(
+  'grinder_details',
+  {
+    gearId: integer('gear_id')
+      .primaryKey()
+      .references(() => gear.id, { onDelete: 'cascade' }),
+    burrMechanism: text('burr_mechanism'),
+    burrDiameterMm: decimal('burr_diameter_mm', { precision: 5, scale: 2 }),
+    adjustmentType: text('adjustment_type'),
+    brewRange: text('brew_range').array(),
+    beanFeed: text('bean_feed'),
+    doseControlModes: text('dose_control_modes').array(),
+    burrMaterial: text('burr_material'),
+  },
+  (table) => [
+    check(
+      'grinder_details_burr_mechanism_check',
+      sql`${table.burrMechanism} in ('conical', 'flat', 'ghost', 'roller', 'blade', 'other')`,
+    ),
+    check(
+      'grinder_details_adjustment_type_check',
+      sql`${table.adjustmentType} in ('fixed', 'stepped', 'stepless')`,
+    ),
+    check(
+      'grinder_details_brew_range_check',
+      sql`${table.brewRange} <@ ARRAY['espresso', 'filter']::text[]`,
+    ),
+    check(
+      'grinder_details_bean_feed_check',
+      sql`${table.beanFeed} in ('single_dose', 'hopper', 'both')`,
+    ),
+    check(
+      'grinder_details_dose_control_modes_check',
+      sql`${table.doseControlModes} <@ ARRAY['manual', 'time', 'weight']::text[]`,
+    ),
+    check(
+      'grinder_details_burr_material_check',
+      sql`${table.burrMaterial} in ('steel', 'ceramic', 'other')`,
+    ),
+    check(
+      'grinder_details_burr_diameter_check',
+      sql`${table.burrDiameterMm} is null or ${table.burrDiameterMm} > 0`,
+    ),
+  ],
+)
+
+export const brewerDetails = pgTable(
+  'brewer_details',
+  {
+    gearId: integer('gear_id')
+      .primaryKey()
+      .references(() => gear.id, { onDelete: 'cascade' }),
+    mechanism: text('mechanism'),
+    capacityMl: decimal('capacity_ml', { precision: 7, scale: 2 }),
+    filterFormat: text('filter_format'),
+    flowControl: text('flow_control'),
+  },
+  (table) => [
+    check(
+      'brewer_details_mechanism_check',
+      sql`${table.mechanism} in ('percolation', 'immersion', 'hybrid', 'press', 'vacuum', 'other')`,
+    ),
+    check(
+      'brewer_details_flow_control_check',
+      sql`${table.flowControl} in ('fixed', 'manual_valve', 'programmable')`,
+    ),
+    check(
+      'brewer_details_capacity_check',
+      sql`${table.capacityMl} is null or ${table.capacityMl} > 0`,
+    ),
+  ],
+)
+
+export const kettleDetails = pgTable(
+  'kettle_details',
+  {
+    gearId: integer('gear_id')
+      .primaryKey()
+      .references(() => gear.id, { onDelete: 'cascade' }),
+    capacityMl: decimal('capacity_ml', { precision: 7, scale: 2 }),
+    spoutType: text('spout_type'),
+    temperatureControl: text('temperature_control'),
+    minimumTemperatureCelsius: decimal('minimum_temperature_celsius', {
+      precision: 4,
+      scale: 1,
+    }),
+    maximumTemperatureCelsius: decimal('maximum_temperature_celsius', {
+      precision: 4,
+      scale: 1,
+    }),
+    supportsTemperatureHold: boolean('supports_temperature_hold'),
+  },
+  (table) => [
+    check(
+      'kettle_details_spout_type_check',
+      sql`${table.spoutType} in ('gooseneck', 'standard', 'other')`,
+    ),
+    check(
+      'kettle_details_temperature_control_check',
+      sql`${table.temperatureControl} in ('none', 'fixed', 'adjustable')`,
+    ),
+    check(
+      'kettle_details_measurements_check',
+      sql`(${table.capacityMl} is null or ${table.capacityMl} > 0)
+        and (${table.minimumTemperatureCelsius} is null or ${table.minimumTemperatureCelsius} >= 0)
+        and (${table.maximumTemperatureCelsius} is null or ${table.maximumTemperatureCelsius} >= 0)
+        and (${table.minimumTemperatureCelsius} is null or ${table.maximumTemperatureCelsius} is null or ${table.minimumTemperatureCelsius} <= ${table.maximumTemperatureCelsius})`,
+    ),
+  ],
+)
+
+export const scaleDetails = pgTable(
+  'scale_details',
+  {
+    gearId: integer('gear_id')
+      .primaryKey()
+      .references(() => gear.id, { onDelete: 'cascade' }),
+    resolutionGrams: decimal('resolution_grams', { precision: 7, scale: 3 }),
+    capacityGrams: decimal('capacity_grams', { precision: 9, scale: 2 }),
+    hasTimer: boolean('has_timer'),
+    supportsAutoTare: boolean('supports_auto_tare'),
+    supportsAutoTimer: boolean('supports_auto_timer'),
+    hasFlowRateDisplay: boolean('has_flow_rate_display'),
+  },
+  (table) => [
+    check(
+      'scale_details_measurements_check',
+      sql`(${table.resolutionGrams} is null or ${table.resolutionGrams} > 0)
+        and (${table.capacityGrams} is null or ${table.capacityGrams} > 0)`,
+    ),
+  ],
+)
+
+export const tamperDetails = pgTable(
+  'tamper_details',
+  {
+    gearId: integer('gear_id')
+      .primaryKey()
+      .references(() => gear.id, { onDelete: 'cascade' }),
+    diameterMm: decimal('diameter_mm', { precision: 5, scale: 2 }),
+    forceControl: text('force_control'),
+    baseShape: text('base_shape'),
+    selfLeveling: boolean('self_leveling'),
+  },
+  (table) => [
+    check(
+      'tamper_details_force_control_check',
+      sql`${table.forceControl} in ('none', 'fixed', 'adjustable')`,
+    ),
+    check(
+      'tamper_details_base_shape_check',
+      sql`${table.baseShape} in ('flat', 'convex', 'rippled', 'other')`,
+    ),
+    check(
+      'tamper_details_diameter_check',
+      sql`${table.diameterMm} is null or ${table.diameterMm} > 0`,
+    ),
+  ],
+)
+
+export const wdtDetails = pgTable(
+  'wdt_details',
+  {
+    gearId: integer('gear_id')
+      .primaryKey()
+      .references(() => gear.id, { onDelete: 'cascade' }),
+    needleDiameterMm: decimal('needle_diameter_mm', {
+      precision: 5,
+      scale: 3,
+    }),
+    needleCount: integer('needle_count'),
+    depthControl: text('depth_control'),
+  },
+  (table) => [
+    check(
+      'wdt_details_depth_control_check',
+      sql`${table.depthControl} in ('none', 'fixed', 'adjustable')`,
+    ),
+    check(
+      'wdt_details_measurements_check',
+      sql`(${table.needleDiameterMm} is null or ${table.needleDiameterMm} > 0)
+        and (${table.needleCount} is null or ${table.needleCount} > 0)`,
     ),
   ],
 )
@@ -446,33 +734,142 @@ export const basketDetails = pgTable(
       precision: 5,
       scale: 2,
     }),
+    diameterMm: decimal('diameter_mm', { precision: 5, scale: 2 }),
+    isPressurized: boolean('is_pressurized'),
+    doseMinimumGrams: decimal('dose_minimum_grams', {
+      precision: 5,
+      scale: 2,
+    }),
+    doseMaximumGrams: decimal('dose_maximum_grams', {
+      precision: 5,
+      scale: 2,
+    }),
+    kind: text('kind'),
   },
   (table) => [
     check(
-      'basket_details_dose_nonnegative',
-      sql`${table.nominalDoseGrams} >= 0`,
+      'basket_details_kind_check',
+      sql`${table.kind} in ('single', 'double', 'triple', 'other')`,
+    ),
+    check(
+      'basket_details_measurements_check',
+      sql`(${table.nominalDoseGrams} is null or ${table.nominalDoseGrams} >= 0)
+        and (${table.diameterMm} is null or ${table.diameterMm} > 0)
+        and (${table.doseMinimumGrams} is null or ${table.doseMinimumGrams} > 0)
+        and (${table.doseMaximumGrams} is null or ${table.doseMaximumGrams} > 0)
+        and (${table.doseMinimumGrams} is null or ${table.doseMaximumGrams} is null or ${table.doseMinimumGrams} <= ${table.doseMaximumGrams})`,
+    ),
+  ],
+)
+
+export const gearPropertyEvidence = pgTable(
+  'gear_property_evidence',
+  {
+    id: serial('id').primaryKey(),
+    gearId: integer('gear_id')
+      .references(() => gear.id, { onDelete: 'cascade' })
+      .notNull(),
+    propertyKey: text('property_key').notNull(),
+    valueJson: jsonb('value_json').$type<JsonValue>().notNull(),
+    sourceUrl: text('source_url').notNull(),
+    sourceTitle: text('source_title'),
+    sourceKind: text('source_kind').notNull(),
+    rawValue: text('raw_value'),
+    rawUnit: text('raw_unit'),
+    retrievedAt: timestamp('retrieved_at').defaultNow().notNull(),
+    acceptedAt: timestamp('accepted_at').defaultNow().notNull(),
+  },
+  (table) => [
+    check(
+      'gear_property_evidence_source_kind_check',
+      sql`${table.sourceKind} in ('manual', 'manufacturer', 'specialist', 'retailer', 'community')`,
+    ),
+    index('gear_property_evidence_gear_property_idx').on(
+      table.gearId,
+      table.propertyKey,
     ),
   ],
 )
 
 export const gearRelations = relations(gear, ({ one, many }) => ({
   images: many(gearImages),
-  machineSettings: one(machineSettings),
+  espressoMachineDetails: one(espressoMachineDetails),
+  machineSettingRevisions: many(espressoMachineSettingRevisions),
+  grinderDetails: one(grinderDetails),
+  brewerDetails: one(brewerDetails),
+  kettleDetails: one(kettleDetails),
+  scaleDetails: one(scaleDetails),
+  tamperDetails: one(tamperDetails),
+  wdtDetails: one(wdtDetails),
   basketDetails: one(basketDetails),
+  propertyEvidence: many(gearPropertyEvidence),
   shots: many(shots, { relationName: 'shotMachine' }),
   shotAccessoryLinks: many(shotAccessoryGear),
   recipeAccessoryLinks: many(recipeAccessoryGear),
 }))
 
-export const machineSettingsRelations = relations(
-  machineSettings,
+export const espressoMachineDetailsRelations = relations(
+  espressoMachineDetails,
   ({ one }) => ({
     gear: one(gear, {
-      fields: [machineSettings.gearId],
+      fields: [espressoMachineDetails.gearId],
       references: [gear.id],
     }),
   }),
 )
+
+export const espressoMachineSettingRevisionsRelations = relations(
+  espressoMachineSettingRevisions,
+  ({ one, many }) => ({
+    gear: one(gear, {
+      fields: [espressoMachineSettingRevisions.gearId],
+      references: [gear.id],
+    }),
+    shots: many(shots),
+  }),
+)
+
+export const grinderDetailsRelations = relations(grinderDetails, ({ one }) => ({
+  gear: one(gear, {
+    fields: [grinderDetails.gearId],
+    references: [gear.id],
+  }),
+}))
+
+export const brewerDetailsRelations = relations(brewerDetails, ({ one }) => ({
+  gear: one(gear, {
+    fields: [brewerDetails.gearId],
+    references: [gear.id],
+  }),
+}))
+
+export const kettleDetailsRelations = relations(kettleDetails, ({ one }) => ({
+  gear: one(gear, {
+    fields: [kettleDetails.gearId],
+    references: [gear.id],
+  }),
+}))
+
+export const scaleDetailsRelations = relations(scaleDetails, ({ one }) => ({
+  gear: one(gear, {
+    fields: [scaleDetails.gearId],
+    references: [gear.id],
+  }),
+}))
+
+export const tamperDetailsRelations = relations(tamperDetails, ({ one }) => ({
+  gear: one(gear, {
+    fields: [tamperDetails.gearId],
+    references: [gear.id],
+  }),
+}))
+
+export const wdtDetailsRelations = relations(wdtDetails, ({ one }) => ({
+  gear: one(gear, {
+    fields: [wdtDetails.gearId],
+    references: [gear.id],
+  }),
+}))
 
 export const basketDetailsRelations = relations(basketDetails, ({ one }) => ({
   gear: one(gear, {
@@ -480,6 +877,16 @@ export const basketDetailsRelations = relations(basketDetails, ({ one }) => ({
     references: [gear.id],
   }),
 }))
+
+export const gearPropertyEvidenceRelations = relations(
+  gearPropertyEvidence,
+  ({ one }) => ({
+    gear: one(gear, {
+      fields: [gearPropertyEvidence.gearId],
+      references: [gear.id],
+    }),
+  }),
+)
 
 export const gearSets = pgTable(
   'gear_sets',
@@ -814,6 +1221,10 @@ export const shots = pgTable(
     drinkTypeId: integer('drink_type_id').references(() => drinkTypes.id, {
       onDelete: 'set null',
     }),
+    machineSettingRevisionId: integer('machine_setting_revision_id').references(
+      () => espressoMachineSettingRevisions.id,
+      { onDelete: 'set null' },
+    ),
     ...shotParameterColumns(),
     rating: integer('rating'),
     extractionBalance: integer('extraction_balance'),
@@ -867,6 +1278,9 @@ export const shots = pgTable(
     index('brews_brewing_method_id_idx').on(table.brewingMethodId),
     index('brews_bean_id_idx').on(table.beanId),
     index('brews_drink_type_id_idx').on(table.drinkTypeId),
+    index('brews_machine_setting_revision_id_idx').on(
+      table.machineSettingRevisionId,
+    ),
     index('brews_machine_id_idx').on(table.machineId),
     index('brews_grinder_id_idx').on(table.grinderId),
     index('brews_basket_id_idx').on(table.basketId),
@@ -874,6 +1288,10 @@ export const shots = pgTable(
 )
 
 export const shotsRelations = relations(shots, ({ one, many }) => ({
+  machineSettingRevision: one(espressoMachineSettingRevisions, {
+    fields: [shots.machineSettingRevisionId],
+    references: [espressoMachineSettingRevisions.id],
+  }),
   brewingMethod: one(brewingMethods, {
     fields: [shots.brewingMethodId],
     references: [brewingMethods.id],

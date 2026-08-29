@@ -30,6 +30,7 @@ import {
   assertDrinkTypeAvailableForBrewingMethod,
   replaceShotDrinkOptions,
 } from '@/lib/server/drink-options.server'
+import { findCurrentOwnerMachineSettingRevisionId } from '@/lib/server/gear-properties.server'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
 import { readTasteProfile } from '@/lib/server/settings.server'
 import type {
@@ -96,6 +97,7 @@ function getShotValues(
 
 const shotRelations = {
   bean: true,
+  machineSettingRevision: true,
   machine: true,
   grinder: true,
   basket: true,
@@ -351,9 +353,12 @@ async function createShotInTransaction(
     data.drinkTypeId,
   )
   await assertDrinkSelection(tx, data.drinkTypeId, data.drinkOptionValueIds)
+  const values = getShotValues(data, method.enabledParameters)
+  const machineSettingRevisionId =
+    await findCurrentOwnerMachineSettingRevisionId(tx, values.machineId)
   const [shot] = await tx
     .insert(shots)
-    .values(getShotValues(data, method.enabledParameters))
+    .values({ ...values, machineSettingRevisionId })
     .returning()
   const persistedShot = expectReturnedRow(shot, 'Shot')
 
@@ -400,13 +405,17 @@ export function updateShotOperation(
   return db.transaction(async (tx) => {
     const method = await getBrewingMethod(tx, data.brewingMethodId)
     const existingShot = await tx.query.shots.findFirst({
-      columns: { brewingMethodId: true, drinkTypeId: true },
+      columns: {
+        brewingMethodId: true,
+        drinkTypeId: true,
+        machineId: true,
+      },
       where: eq(shots.id, data.id),
     })
+    if (!existingShot) throw new ShotInputError('Brew not found')
     if (
-      existingShot &&
-      (existingShot.brewingMethodId !== data.brewingMethodId ||
-        existingShot.drinkTypeId !== data.drinkTypeId)
+      existingShot.brewingMethodId !== data.brewingMethodId ||
+      existingShot.drinkTypeId !== data.drinkTypeId
     ) {
       await assertDrinkTypeAvailableForBrewingMethod(
         tx,
@@ -416,10 +425,16 @@ export function updateShotOperation(
     }
     await assertDrinkSelection(tx, data.drinkTypeId, data.drinkOptionValueIds)
     const { id, tasteTagIds } = data
+    const values = getShotValues(data, method.enabledParameters)
+    const machineChanged = existingShot.machineId !== values.machineId
+    const machineSettingRevisionId = machineChanged
+      ? await findCurrentOwnerMachineSettingRevisionId(tx, values.machineId)
+      : undefined
     const [shot] = await tx
       .update(shots)
       .set({
-        ...getShotValues(data, method.enabledParameters),
+        ...values,
+        ...(machineChanged ? { machineSettingRevisionId } : undefined),
         updatedAt: new Date(),
       })
       .where(eq(shots.id, id))

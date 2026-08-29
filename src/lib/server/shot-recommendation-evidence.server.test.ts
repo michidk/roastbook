@@ -39,18 +39,22 @@ describe('AI brew recommendation context', () => {
       notes: 'Jasmine and peach',
     })
     const machineSettings = {
+      id: 14,
       gearId: 4,
-      brewPressureOpvBar: '9.00',
-      supportsPreinfusion: true,
-      defaultPreinfusionEnabled: true,
-      defaultPreinfusionTimeSeconds: '5.00',
-      defaultPreinfusionPressureBar: '3.00',
-      defaultFlowLimitMlPerSecond: '2.00',
-      temperatureOffsetCelsius: '1.0',
-      volumetricShotVolumeMl: '36.00',
-      autoStopMode: 'weight',
+      kind: 'owner',
+      brewPressureBar: '9.00',
+      preinfusionEnabled: true,
+      preinfusionTimeSeconds: '5.00',
+      preinfusionPressureBar: '3.00',
+      flowLimitMlPerSecond: '2.00',
+      brewTemperatureOffsetCelsius: '1.0',
+      programmedVolumeMl: '36.00',
+      defaultStopMode: 'weight',
       steamTemperatureCelsius: '130.0',
       steamPressureBar: '1.50',
+      effectiveFrom: roastDate,
+      supersededAt: null,
+      createdAt: roastDate,
     }
     const machine = recommendationGearEvidence(4, {
       id: 4,
@@ -59,7 +63,14 @@ describe('AI brew recommendation context', () => {
       model: 'One',
       type: 'espresso_machine',
       notes: 'Pressure-profile mode enabled',
-      machineSettings,
+      espressoMachineDetails: null,
+      machineSettingRevisions: [machineSettings],
+      grinderDetails: null,
+      brewerDetails: null,
+      kettleDetails: null,
+      scaleDetails: null,
+      tamperDetails: null,
+      wdtDetails: null,
       basketDetails: null,
     })
 
@@ -82,7 +93,7 @@ describe('AI brew recommendation context', () => {
       brand: 'Acme',
       model: 'One',
       notes: 'Pressure-profile mode enabled',
-      machineSettings,
+      currentOwnerSettings: machineSettings,
     })
   })
 
@@ -95,6 +106,7 @@ describe('AI brew recommendation context', () => {
         brewingMethodId: 3,
         beanId: 12,
         drinkTypeId: null,
+        machineSettingRevisionId: 14,
         machineId: 4,
         doseGrams: '18.00',
         brewWaterGrams: null,
@@ -125,6 +137,24 @@ describe('AI brew recommendation context', () => {
         notes: 'Sweet, with a bright finish',
         createdAt: brewedAt,
         updatedAt: brewedAt,
+        machineSettingRevision: {
+          id: 14,
+          gearId: 4,
+          kind: 'owner',
+          brewPressureBar: '9.00',
+          preinfusionEnabled: true,
+          preinfusionTimeSeconds: '5.00',
+          preinfusionPressureBar: '3.00',
+          flowLimitMlPerSecond: '2.00',
+          brewTemperatureOffsetCelsius: null,
+          programmedVolumeMl: null,
+          defaultStopMode: null,
+          steamTemperatureCelsius: null,
+          steamPressureBar: null,
+          effectiveFrom: brewedAt,
+          supersededAt: null,
+          createdAt: brewedAt,
+        },
         accessoryGearLinks: [{ gearId: 8 }, { gearId: 9 }],
         tasteTags: [
           {
@@ -154,6 +184,10 @@ describe('AI brew recommendation context', () => {
     expect(evidence).toMatchObject({
       id: 42,
       brewedAt,
+      machineSettingRevision: {
+        id: 14,
+        brewPressureBar: '9.00',
+      },
       parameters: {
         machineId: 4,
         doseGrams: '18.00',

@@ -1,7 +1,12 @@
 import { createServerFn } from '@tanstack/react-start'
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
 import { db } from '@/db'
-import { brewingMethods, gear, shots } from '@/db/schema'
+import {
+  brewingMethods,
+  espressoMachineSettingRevisions,
+  gear,
+  shots,
+} from '@/db/schema'
 import {
   isResearchEnabled,
   recommendShotFromHistory,
@@ -33,9 +38,24 @@ type RecommendationSetup = {
 }
 
 const recommendationShotRelations = {
+  machineSettingRevision: true,
   tasteTags: { with: { tasteTag: true } },
   accessoryGearLinks: { columns: { gearId: true } },
 } as const
+
+const recommendationGearRelations = {
+  espressoMachineDetails: true as const,
+  machineSettingRevisions: {
+    orderBy: [desc(espressoMachineSettingRevisions.effectiveFrom)],
+  },
+  grinderDetails: true as const,
+  brewerDetails: true as const,
+  kettleDetails: true as const,
+  scaleDetails: true as const,
+  tamperDetails: true as const,
+  wdtDetails: true as const,
+  basketDetails: true as const,
+}
 
 class ShotRecommendationError extends Error {
   constructor(message: string) {
@@ -225,7 +245,7 @@ export const getShotRecommendation = createServerFn({ method: 'POST' })
           ? Promise.resolve([])
           : db.query.gear.findMany({
               where: inArray(gear.id, gearIds),
-              with: { machineSettings: true, basketDetails: true },
+              with: recommendationGearRelations,
             }),
       ])
     if (!bean || !brewingMethod) {

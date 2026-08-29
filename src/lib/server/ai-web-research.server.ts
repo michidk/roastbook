@@ -6,7 +6,8 @@ import {
 } from '@/lib/server/ai-request-logs.server'
 import {
   BEAN_INFO_FIELDS,
-  MACHINE_SETTINGS_FIELDS,
+  MACHINE_RESEARCH_FIELDS,
+  normalizeMachineResearchResult,
   ROASTER_INFO_FIELDS,
 } from '@/lib/server/ai-research-fields.server'
 import {
@@ -22,7 +23,7 @@ import {
 } from '@/lib/structured-research'
 import type {
   ExtractedBeanInfo,
-  ExtractedMachineSettings,
+  ExtractedMachineResearch,
   ExtractedRoasterInfo,
 } from '@/modules/ai/read-models'
 
@@ -156,30 +157,35 @@ export async function researchRoasterFromWeb(
   })
 }
 
-export async function researchMachineSettingsFromWeb(
+export async function researchMachineFromWeb(
   brand: string,
   model: string,
   knownContext?: Readonly<Record<string, unknown>>,
-): Promise<ExtractedMachineSettings> {
-  return researchStructuredDataFromWeb({
+): Promise<ExtractedMachineResearch> {
+  const research = await researchStructuredDataFromWeb({
     subject: 'espresso machine',
-    searchQuery: `"${brand} ${model}" manual specifications pre-infusion volumetric steam pressure`,
+    searchQuery: `"${brand} ${model}" exact model manual specifications portafilter heating pressure pre-infusion dosing steam`,
     role: 'You are a coffee equipment expert',
-    task: "First verify the exact espresso machine identity and model number. Then research every requested capability and factory default with targeted, model-specific searches. Use the machine's documented terminology and translate it to the requested fields when the mapping is clear.",
-    fields: MACHINE_SETTINGS_FIELDS,
+    task: "First verify the exact espresso machine identity, region, and model number. Then research every requested capability and factory default with targeted, model-specific searches. Use the machine's documented terminology and translate it to the requested fields only when the mapping is unambiguous. Return claim-level evidence for every property.",
+    fields: MACHINE_RESEARCH_FIELDS,
     evidenceRules: [
-      'Use manufacturer documentation, manuals, product pages, or reputable specialist sources.',
+      'Every returned specification or factory setting must have at least one matching evidence entry whose propertyKey is its exact nested path.',
       'Start with the manufacturer manual and support documentation, then use reputable technical reviews to fill documented gaps.',
+      'Classify exact-model manuals and support documents as manual, official product/specification pages as manufacturer, reputable technical reviews as specialist, stores as retailer, and forums or owner posts as community.',
+      'A claim requires manual, manufacturer, or reputable specialist evidence. Retailer and community pages may corroborate a claim but cannot be its only source.',
       'Search the exact model number together with relevant terms for each field, including pre-infusion, low-pressure extraction, volumetric dosing, shot programming, OPV, steam pressure, temperature settings, and flow control.',
       'Do not infer a value from a similar machine or a different model revision.',
       'Capabilities may be derived from clearly documented behavior: for example, automatic low-pressure extraction means pre-infusion is supported, and programmable volumetric shot buttons mean the auto-stop mode is volume.',
       'Numerical values must be explicitly documented for this model; convert compatible units when necessary and return only the requested unit.',
       'Never use the advertised maximum pump rating as brew pressure, an OPV setting, pre-infusion pressure, or steam pressure. A statement such as “15 bar pump” supports none of those fields.',
       'Steam pressure requires a documented steam-boiler or steam-circuit operating pressure. Omit it for thermocoil and thermoblock machines unless that exact operating pressure is documented.',
-      'Omit model-dependent and user-configured values unless a factory default is explicitly documented.',
+      'Omit model-dependent and user-configured values unless a factory default is explicitly documented. Never return an owner setting, recipe target, or observed brew value.',
+      'When a source value is converted, preserve its original text and unit in rawValue and rawUnit.',
     ],
     knownContext,
-    logLabel: 'machine-settings',
+    logLabel: 'machine',
     logContext: { brand, model },
   })
+
+  return normalizeMachineResearchResult(research)
 }
