@@ -184,6 +184,7 @@ running.
 
 - [Development and testing](docs/development.md)
 - [Configuration reference](docs/configuration.md)
+- [Gear property model](docs/gear-property-model.md)
 - [Read-only demo mode](docs/demo-mode.md)
 - [Docker, Helm, and security boundary](docs/deployment.md)
 - [Design system and layout contract](DESIGN.md)
