@@ -2,7 +2,10 @@ import { createServerFn } from '@tanstack/react-start'
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
 import { db } from '@/db'
 import { brewingMethods, gear, shots } from '@/db/schema'
-import { isResearchEnabled, recommendShotFromHistory } from '@/lib/ai'
+import {
+  isResearchEnabled,
+  recommendShotFromHistory,
+} from '@/lib/server/ai-operations.server'
 import { withResourceLimits } from '@/lib/server/resource-limits.server'
 import {
   recommendationBeanEvidence,

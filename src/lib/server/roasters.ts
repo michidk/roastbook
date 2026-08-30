@@ -4,15 +4,14 @@ import { z } from 'zod'
 import { db } from '@/db'
 import { beans, roasters } from '@/db/schema'
 import {
-  type ExtractedRoasterInfo,
-  isResearchEnabled,
-  researchRoasterFromWeb,
-} from '@/lib/ai'
-import {
   escapedContainsPattern,
   resolvePagination,
 } from '@/lib/collection-query'
 import { expectReturnedRow } from '@/lib/domain-errors'
+import {
+  isResearchEnabled,
+  researchRoasterFromWeb,
+} from '@/lib/server/ai-operations.server'
 import {
   deleteWebsiteFaviconBestEffort,
   refreshWebsiteFaviconBestEffort,
@@ -25,6 +24,7 @@ import {
   positiveIdSchema,
   shortTextSchema,
 } from '@/lib/server-validation'
+import type { ExtractedRoasterInfo } from '@/modules/ai/read-models'
 
 const roasterCreateSchema = z.object({
   name: nameSchema,

@@ -5,7 +5,7 @@ import {
   buildSelectableDiffs,
   type SelectableDiffDefinition,
 } from '@/hooks/use-selectable-diffs'
-import type { ExtractedMachineSettings } from '@/lib/ai'
+import type { ExtractedMachineSettings } from '@/modules/ai/read-models'
 
 type MachineSettingKey = keyof ExtractedMachineSettings
 

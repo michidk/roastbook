@@ -6,7 +6,7 @@ import {
   availableGearForShot,
   type GearOption,
   gearByEquipmentRole,
-} from '@/components/shots/shot-parameter-fields'
+} from '@/modules/brews/shot-form-values'
 import type { GearSetFormValues } from './gear-set-form-values'
 
 type GearSetFieldsProps = {

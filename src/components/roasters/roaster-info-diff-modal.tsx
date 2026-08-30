@@ -5,7 +5,7 @@ import {
   buildSelectableDiffs,
   type SelectableDiffDefinition,
 } from '@/hooks/use-selectable-diffs'
-import type { ExtractedRoasterInfo } from '@/lib/ai'
+import type { ExtractedRoasterInfo } from '@/modules/ai/read-models'
 
 type RoasterFieldKey = keyof ExtractedRoasterInfo
 

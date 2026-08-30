@@ -3,11 +3,6 @@ import { toast } from 'sonner'
 import { EntityForm } from '@/components/form/form-shell'
 import { GearSetPicker } from '@/components/gear-sets/gear-set-picker'
 import { RecipeFields } from '@/components/recipes/recipe-fields'
-import {
-  EMPTY_SHOT_FORM_VALUES,
-  type ShotFormValues,
-  shotFormValuesWithGearSet,
-} from '@/components/shots/shot-parameter-fields'
 import { useFormSubmission } from '@/hooks/use-form-submission'
 import { getErrorMessage } from '@/lib/error-message'
 import { shotParameterPayload } from '@/lib/new-shot-payload'
@@ -17,6 +12,11 @@ import type { getGear } from '@/lib/server/gear'
 import type { getGearSets } from '@/lib/server/gear-sets'
 import { createRecipe } from '@/lib/server/recipes'
 import { getShotUpdateErrors } from '@/lib/update-validation'
+import {
+  EMPTY_SHOT_FORM_VALUES,
+  type ShotFormValues,
+  shotFormValuesWithGearSet,
+} from '@/modules/brews/shot-form-values'
 
 type RecipeFormProps = {
   readonly beans: Awaited<ReturnType<typeof getActiveBeans>>

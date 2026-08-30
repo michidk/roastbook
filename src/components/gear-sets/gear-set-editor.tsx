@@ -6,11 +6,11 @@ import {
   gearSetFormValuesFrom,
   gearSetWritePayload,
 } from '@/components/gear-sets/gear-set-form-values'
-import type { GearOption } from '@/components/shots/shot-parameter-fields'
 import { Button } from '@/components/ui/button'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
 import { type getGearSetById, updateGearSet } from '@/lib/server/gear-sets'
+import type { GearOption } from '@/modules/brews/shot-form-values'
 
 type GearSet = NonNullable<Awaited<ReturnType<typeof getGearSetById>>>
 

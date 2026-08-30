@@ -4,18 +4,17 @@ import { z } from 'zod'
 import { db } from '@/db'
 import { beans, shots } from '@/db/schema'
 import {
-  type ExtractedBeanInfo,
-  extractBeanInfoFromImage,
-  isResearchEnabled,
-  isVisionEnabled,
-  researchBeanFromWeb,
-} from '@/lib/ai'
-import {
   escapedContainsPattern,
   resolvePagination,
 } from '@/lib/collection-query'
 import { BEAN_TYPE_VALUES, ROAST_LEVEL_VALUES } from '@/lib/domain-contracts'
 import { expectReturnedRow } from '@/lib/domain-errors'
+import {
+  extractBeanInfoFromImage,
+  isResearchEnabled,
+  isVisionEnabled,
+  researchBeanFromWeb,
+} from '@/lib/server/ai-operations.server'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
 import { withResourceLimits } from '@/lib/server/resource-limits.server'
 import {
@@ -31,6 +30,7 @@ import {
   shortTextSchema,
 } from '@/lib/server-validation'
 import { createAiImage, validateImageBuffer } from '@/lib/thumbnail-image'
+import type { ExtractedBeanInfo } from '@/modules/ai/read-models'
 
 const beanTypeSchema = z.enum(BEAN_TYPE_VALUES)
 const roastLevelSchema = z.enum(ROAST_LEVEL_VALUES)

@@ -5,10 +5,10 @@ import {
   EMPTY_GEAR_SET_FORM_VALUES,
   gearSetWritePayload,
 } from '@/components/gear-sets/gear-set-form-values'
-import type { GearOption } from '@/components/shots/shot-parameter-fields'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
 import { createGearSet } from '@/lib/server/gear-sets'
+import type { GearOption } from '@/modules/brews/shot-form-values'
 
 type GearSetFormProps = {
   readonly gear: readonly GearOption[]

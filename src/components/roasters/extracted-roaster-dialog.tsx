@@ -12,8 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import type { ExtractedBeanInfo } from '@/lib/ai'
 import { findRoasterByName } from '@/lib/roaster-match'
+import type { ExtractedBeanInfo } from '@/modules/ai/read-models'
 
 export function roasterDetailsFromExtraction(
   extracted: ExtractedBeanInfo,

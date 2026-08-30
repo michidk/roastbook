@@ -1,12 +1,12 @@
 import { describe, expect, test } from 'bun:test'
+import { DISTRIBUTION_METHOD_OPTIONS } from '@/lib/shot-parameters'
 import {
   EMPTY_SHOT_FORM_VALUES,
   gearByEquipmentRole,
   shotFormValuesFrom,
   shotFormValuesWithGearSet,
   shotFormValuesWithRecipe,
-} from '@/components/shots/shot-parameter-fields'
-import { DISTRIBUTION_METHOD_OPTIONS } from '@/lib/shot-parameters'
+} from '@/modules/brews/shot-form-values'
 
 function shotParameters(
   distributionMethod: string | null,

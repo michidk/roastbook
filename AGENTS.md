@@ -31,6 +31,9 @@ work as shipped.
   instead of recreating their behavior in route components.
 - Reusable page, form, dialog, and entity components live in
   `src/components/`.
+- Reusable client-side feature contracts and pure feature logic live in
+  `src/modules/<feature>/` after they have at least two consumers. Modules may
+  import shared `src/lib/` primitives, but never routes or server modules.
 - Server-side domain operations live in `src/lib/server/`. There, files with a
   `.server.ts` suffix are internal server modules; unsuffixed files export
   `createServerFn` boundaries.

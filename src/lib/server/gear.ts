@@ -4,11 +4,6 @@ import { z } from 'zod'
 import { db } from '@/db'
 import { basketDetails, gear, machineSettings } from '@/db/schema'
 import {
-  type ExtractedMachineSettings,
-  isResearchEnabled,
-  researchMachineSettingsFromWeb,
-} from '@/lib/ai'
-import {
   escapedContainsPattern,
   resolvePagination,
 } from '@/lib/collection-query'
@@ -16,6 +11,10 @@ import { isEspressoMachineGearType } from '@/lib/constants'
 import { AUTO_STOP_MODE_VALUES, GEAR_TYPE_VALUES } from '@/lib/domain-contracts'
 import { expectReturnedRow } from '@/lib/domain-errors'
 import { gearName } from '@/lib/gear-name'
+import {
+  isResearchEnabled,
+  researchMachineSettingsFromWeb,
+} from '@/lib/server/ai-operations.server'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
 import { withResourceLimits } from '@/lib/server/resource-limits.server'
 import {
@@ -25,6 +24,7 @@ import {
   notesSchema,
   positiveIdSchema,
 } from '@/lib/server-validation'
+import type { ExtractedMachineSettings } from '@/modules/ai/read-models'
 
 const nullableDecimal = boundedDecimalStringSchema(99_999, 2).nullable()
 const nullableUrl = z.union([z.url().max(2_048), z.literal('')]).nullable()

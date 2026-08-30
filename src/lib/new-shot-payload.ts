@@ -1,4 +1,3 @@
-import type { ShotFormValues } from '@/components/shots/shot-parameter-fields'
 import { localDateTimeInputToDate } from '@/lib/date-input'
 import { toNullableRating } from '@/lib/rating'
 import {
@@ -6,6 +5,7 @@ import {
   type ShotRecommendationRequest,
 } from '@/lib/shot-recommendation'
 import { shotSensoryPayload } from '@/lib/shot-sensory'
+import type { ShotFormValues } from '@/modules/brews/shot-form-values'
 
 export function shotParameterPayload(values: ShotFormValues) {
   return {

@@ -17,10 +17,10 @@ import {
   type SelectableDiffDefinition,
   useSelectableDiffs,
 } from '@/hooks/use-selectable-diffs'
-import type { ExtractedBeanInfo } from '@/lib/ai'
 import type { BeanType, RoastLevel } from '@/lib/constants'
 import type { ExtractedRoasterAction } from '@/lib/roaster-match'
 import { cn } from '@/lib/utils'
+import type { ExtractedBeanInfo } from '@/modules/ai/read-models'
 
 type BeanDiffKey =
   | 'name'

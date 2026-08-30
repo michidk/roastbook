@@ -15,15 +15,7 @@ import {
   SaveToRecipeDialog,
   type SaveToRecipeTarget,
 } from '@/components/shots/save-to-recipe-dialog'
-import {
-  availableGearForShot,
-  EMPTY_SHOT_FORM_VALUES,
-  type ShotFormValues,
-  ShotParameterFields,
-  shotFormValuesFrom,
-  shotFormValuesWithGearSet,
-  shotFormValuesWithRecipe,
-} from '@/components/shots/shot-parameter-fields'
+import { ShotParameterFields } from '@/components/shots/shot-parameter-fields'
 import { ShotSensoryRatingFields } from '@/components/shots/shot-sensory-ratings'
 import { ShotTimer, type ShotTimerHandle } from '@/components/shots/shot-timer'
 import { TasteTagSelector } from '@/components/shots/taste-tag-selector'
@@ -68,6 +60,14 @@ import {
 } from '@/lib/taste-profile'
 import { isLegacySensoryTasteTag } from '@/lib/taste-tags'
 import { getShotUpdateErrors } from '@/lib/update-validation'
+import {
+  availableGearForShot,
+  EMPTY_SHOT_FORM_VALUES,
+  type ShotFormValues,
+  shotFormValuesFrom,
+  shotFormValuesWithGearSet,
+  shotFormValuesWithRecipe,
+} from '@/modules/brews/shot-form-values'
 
 type NewShotFormData = {
   readonly beans: Awaited<ReturnType<typeof getActiveBeans>>

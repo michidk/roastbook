@@ -10,12 +10,7 @@ import {
   FormSection,
 } from '@/components/form/form-shell'
 import { TastingFields } from '@/components/form/tasting-fields'
-import {
-  availableGearForShot,
-  type ShotFormValues,
-  ShotParameterFields,
-  shotFormValuesFrom,
-} from '@/components/shots/shot-parameter-fields'
+import { ShotParameterFields } from '@/components/shots/shot-parameter-fields'
 import {
   useCurrentLocalDateTimeLimit,
   useLocalDateTimeInput,
@@ -36,6 +31,11 @@ import type { getTasteTags } from '@/lib/server/taste-tags'
 import { shotSensoryPayload } from '@/lib/shot-sensory'
 import { isLegacySensoryTasteTag } from '@/lib/taste-tags'
 import { getShotUpdateErrors } from '@/lib/update-validation'
+import {
+  availableGearForShot,
+  type ShotFormValues,
+  shotFormValuesFrom,
+} from '@/modules/brews/shot-form-values'
 
 type Shot = NonNullable<Awaited<ReturnType<typeof getShot>>>
 

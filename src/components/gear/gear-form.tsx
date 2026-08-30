@@ -15,7 +15,6 @@ import { useAppSettings } from '@/hooks/use-app-settings'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
 import { useImageUpload } from '@/hooks/use-image-upload'
-import type { ExtractedMachineSettings } from '@/lib/ai'
 import { getErrorMessage } from '@/lib/error-message'
 import type { ImageFile } from '@/lib/image-file'
 import {
@@ -27,6 +26,7 @@ import {
   type EntityImageUploadFailure,
   uploadEntityImages,
 } from '@/lib/upload-entity-images'
+import type { ExtractedMachineSettings } from '@/modules/ai/read-models'
 
 type CreatedGear = Awaited<ReturnType<typeof createGear>>
 

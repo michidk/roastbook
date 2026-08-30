@@ -1,16 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { shots } from '@/db/schema'
-
-export const SHOT_SORT_VALUES = [
-  'date',
-  'bean',
-  'dose',
-  'yield',
-  'time',
-  'rating',
-] as const
-
-export type ShotSortKey = (typeof SHOT_SORT_VALUES)[number]
+import type { ShotSortKey } from '@/modules/brews/read-models'
 
 export function shotSortExpression(sort: ShotSortKey) {
   switch (sort) {

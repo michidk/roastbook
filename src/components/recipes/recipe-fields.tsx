@@ -2,14 +2,14 @@ import type { ReactNode } from 'react'
 import { BeanPicker } from '@/components/beans/bean-picker'
 import { InputField, SelectField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
-import {
-  availableGearForShot,
-  type ShotFormValues,
-  ShotParameterFields,
-} from '@/components/shots/shot-parameter-fields'
+import { ShotParameterFields } from '@/components/shots/shot-parameter-fields'
 import type { getActiveBeans } from '@/lib/server/beans'
 import type { getBrewingMethods } from '@/lib/server/brewing-methods'
 import type { getGear } from '@/lib/server/gear'
+import {
+  availableGearForShot,
+  type ShotFormValues,
+} from '@/modules/brews/shot-form-values'
 
 type RecipeFieldsProps = {
   readonly name: string

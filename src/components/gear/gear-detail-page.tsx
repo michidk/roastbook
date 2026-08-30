@@ -14,7 +14,6 @@ import { MachineSettingsDiffModal } from '@/components/gear/machine-settings-dif
 import { Page } from '@/components/page-layout'
 import type { ShotsTableServerPagination } from '@/components/shots/shots-table'
 import { Button } from '@/components/ui/button'
-import type { ExtractedMachineSettings } from '@/lib/ai'
 import { getErrorMessage } from '@/lib/error-message'
 import {
   deleteGear,
@@ -23,6 +22,7 @@ import {
   updateGear,
 } from '@/lib/server/gear'
 import type { getGearShotPage } from '@/lib/server/shots'
+import type { ExtractedMachineSettings } from '@/modules/ai/read-models'
 
 type Gear = Awaited<ReturnType<typeof getGearById>>
 type Shots = Awaited<ReturnType<typeof getGearShotPage>>['items']

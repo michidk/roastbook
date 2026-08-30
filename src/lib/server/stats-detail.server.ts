@@ -1,28 +1,8 @@
-import {
-  and,
-  desc,
-  eq,
-  gte,
-  inArray,
-  isNotNull,
-  notInArray,
-  or,
-  type SQL,
-  sql,
-} from 'drizzle-orm'
+import { and, desc, eq, isNotNull, type SQL, sql } from 'drizzle-orm'
 import { db } from '@/db'
-import {
-  beans,
-  brewingMethods,
-  gear,
-  roasters,
-  settings,
-  shotAccessoryGear,
-  shots,
-  shotTasteTags,
-  tasteTags,
-} from '@/db/schema'
+import { beans, brewingMethods, settings, shots } from '@/db/schema'
 import { toDisplayableDatabaseError } from '@/lib/server/database-error.server'
+import { loadStatsExploration } from '@/lib/server/stats-exploration.server'
 import {
   localDate,
   localDateKey,
@@ -38,7 +18,8 @@ import {
   resolveStatsRange,
   type StatsFilter,
 } from '@/lib/stats-filters'
-import { normalizeRatingAverages, toNullableNumber } from '@/lib/stats-number'
+import { toNullableNumber } from '@/lib/stats-number'
+import type { DetailedStats } from '@/modules/stats/read-models'
 
 const shotCountSql = sql<number>`count(*)::int`
 const averageShotRatingSql = sql<
@@ -73,58 +54,12 @@ function shotCondition({
   return condition
 }
 
-function getGearUsage(
-  role: 'brewer' | 'grinder' | 'accessory',
-  where: SQL<unknown>,
-) {
-  const joinCondition =
-    role === 'grinder'
-      ? eq(shots.grinderId, gear.id)
-      : role === 'brewer'
-        ? eq(shots.machineId, gear.id)
-        : or(
-            eq(shots.basketId, gear.id),
-            sql`exists (
-              select 1 from ${shotAccessoryGear}
-              where ${shotAccessoryGear.shotId} = ${shots.id}
-                and ${shotAccessoryGear.gearId} = ${gear.id}
-            )`,
-          )
-  if (!joinCondition) throw new Error('Could not build gear usage join')
-  const roleCondition =
-    role === 'grinder'
-      ? inArray(gear.type, ['grinder', 'espresso_machine_with_grinder'])
-      : role === 'brewer'
-        ? inArray(gear.type, [
-            'brewer',
-            'espresso_machine',
-            'espresso_machine_with_grinder',
-          ])
-        : notInArray(gear.type, [
-            'brewer',
-            'grinder',
-            'espresso_machine',
-            'espresso_machine_with_grinder',
-          ])
-
-  return db
-    .select({
-      gearId: gear.id,
-      gearName: gear.name,
-      gearType: gear.type,
-      shotCount: sql<number>`count(distinct ${shots.id})::int`,
-    })
-    .from(gear)
-    .innerJoin(shots, joinCondition)
-    .where(and(where, roleCondition))
-    .groupBy(gear.id, gear.name, gear.type)
-    .orderBy(desc(sql`count(distinct ${shots.id})`), gear.name)
-    .limit(6)
-}
-
-export async function loadDetailedStats(filter: StatsFilter) {
+export async function loadDetailedStats(
+  filter: StatsFilter,
+  options: { readonly now?: Date } = {},
+): Promise<DetailedStats> {
   try {
-    const now = new Date()
+    const now = options.now ?? new Date()
     const installationSettings = await db.query.settings.findFirst({
       columns: { timeZone: true },
       where: eq(settings.id, 1),
@@ -169,17 +104,10 @@ export async function loadDetailedStats(filter: StatsFilter) {
       range.bucket,
     )
     const shotDateKey = localDateKey(shots.brewedAt, timeZone)
-    const roasterName = sql<
-      string | null
-    >`coalesce(${roasters.name}, ${beans.roaster})`
-    const roastAgeDays = sql<number>`(${localDate(shots.brewedAt, timeZone)} - date(${beans.roastDate}))`
-    const roastAgeBucket = sql<string>`case
-        when ${roastAgeDays} < 7 then '0–6 days'
-        when ${roastAgeDays} < 15 then '7–14 days'
-        when ${roastAgeDays} < 31 then '15–30 days'
-        else '31+ days'
-      end`
-
+    const explorationPromise = loadStatsExploration({
+      where: currentWhere,
+      timeZone,
+    })
     const [
       summaryRows,
       previousSummaryRows,
@@ -252,41 +180,11 @@ export async function loadDetailedStats(filter: StatsFilter) {
             .where(previousWhere)
         : Promise.resolve([]),
 
-      db
-        .select({
-          beanId: beans.id,
-          beanName: beans.name,
-          shotCount: shotCountSql,
-        })
-        .from(shots)
-        .innerJoin(beans, eq(shots.beanId, beans.id))
-        .where(currentWhere)
-        .groupBy(beans.id, beans.name)
-        .orderBy(desc(sql`count(*)`), beans.name)
-        .limit(5),
-
-      db
-        .select({
-          beanId: beans.id,
-          beanName: beans.name,
-          shotCount: shotCountSql,
-          avgRating: averageShotRatingSql,
-        })
-        .from(shots)
-        .innerJoin(beans, eq(shots.beanId, beans.id))
-        .where(and(currentWhere, isNotNull(shots.rating)))
-        .groupBy(beans.id, beans.name)
-        .having(sql`count(*) >= 3`)
-        .orderBy(
-          desc(sql`avg(${shots.rating})`),
-          desc(sql`count(*)`),
-          beans.name,
-        )
-        .limit(5),
-
-      getGearUsage('brewer', currentWhere),
-      getGearUsage('grinder', currentWhere),
-      getGearUsage('accessory', currentWhere),
+      explorationPromise.then(({ beans }) => beans.topByShots),
+      explorationPromise.then(({ beans }) => beans.topByRating),
+      explorationPromise.then(({ gear }) => gear.brewers),
+      explorationPromise.then(({ gear }) => gear.grinders),
+      explorationPromise.then(({ gear }) => gear.accessories),
 
       db
         .select({
@@ -301,42 +199,8 @@ export async function loadDetailedStats(filter: StatsFilter) {
         .groupBy(sql`1`)
         .orderBy(sql`1`),
 
-      db
-        .select({
-          methodId: brewingMethods.id,
-          methodName: brewingMethods.name,
-          shotCount: shotCountSql,
-          avgRating: averageShotRatingSql,
-        })
-        .from(shots)
-        .innerJoin(brewingMethods, eq(shots.brewingMethodId, brewingMethods.id))
-        .where(currentWhere)
-        .groupBy(brewingMethods.id, brewingMethods.name)
-        .orderBy(desc(sql`count(*)`), brewingMethods.name),
-
-      db
-        .select({
-          id: tasteTags.id,
-          name: tasteTags.name,
-          category: tasteTags.category,
-          count: sql<number>`count(distinct ${shots.id})::int`,
-          avgRating: averageShotRatingSql,
-          extractionAxis: tasteTags.extractionAxis,
-          strengthAxis: tasteTags.strengthAxis,
-        })
-        .from(shotTasteTags)
-        .innerJoin(shots, eq(shotTasteTags.shotId, shots.id))
-        .innerJoin(tasteTags, eq(shotTasteTags.tasteTagId, tasteTags.id))
-        .where(currentWhere)
-        .groupBy(
-          tasteTags.id,
-          tasteTags.name,
-          tasteTags.category,
-          tasteTags.extractionAxis,
-          tasteTags.strengthAxis,
-        )
-        .orderBy(desc(sql`count(distinct ${shots.id})`), tasteTags.name)
-        .limit(12),
+      explorationPromise.then(({ methods }) => methods),
+      explorationPromise.then(({ tasteProfile }) => tasteProfile),
 
       db
         .select({
@@ -428,79 +292,11 @@ export async function loadDetailedStats(filter: StatsFilter) {
         .groupBy(sql`1`)
         .orderBy(sql`1`),
 
-      db
-        .select({
-          name: roasterName,
-          count: shotCountSql,
-          avgRating: averageShotRatingSql,
-        })
-        .from(shots)
-        .innerJoin(beans, eq(shots.beanId, beans.id))
-        .leftJoin(roasters, eq(beans.roasterId, roasters.id))
-        .where(and(currentWhere, isNotNull(roasterName)))
-        .groupBy(roasterName)
-        .orderBy(desc(sql`count(*)`))
-        .limit(6),
-
-      db
-        .select({
-          name: beans.origin,
-          count: shotCountSql,
-          avgRating: averageShotRatingSql,
-        })
-        .from(shots)
-        .innerJoin(beans, eq(shots.beanId, beans.id))
-        .where(and(currentWhere, isNotNull(beans.origin)))
-        .groupBy(beans.origin)
-        .orderBy(desc(sql`count(*)`))
-        .limit(6),
-
-      db
-        .select({
-          name: beans.process,
-          count: shotCountSql,
-          avgRating: averageShotRatingSql,
-        })
-        .from(shots)
-        .innerJoin(beans, eq(shots.beanId, beans.id))
-        .where(and(currentWhere, isNotNull(beans.process)))
-        .groupBy(beans.process)
-        .orderBy(desc(sql`count(*)`))
-        .limit(6),
-
-      db
-        .select({
-          name: beans.roastLevel,
-          count: shotCountSql,
-          avgRating: averageShotRatingSql,
-        })
-        .from(shots)
-        .innerJoin(beans, eq(shots.beanId, beans.id))
-        .where(and(currentWhere, isNotNull(beans.roastLevel)))
-        .groupBy(beans.roastLevel)
-        .orderBy(desc(sql`count(*)`)),
-
-      db
-        .select({
-          name: roastAgeBucket,
-          count: shotCountSql,
-          avgRating: averageShotRatingSql,
-          sort: sql<number>`min(${roastAgeDays})::int`,
-        })
-        .from(shots)
-        .innerJoin(beans, eq(shots.beanId, beans.id))
-        .where(
-          and(
-            currentWhere,
-            isNotNull(beans.roastDate),
-            gte(
-              localDate(shots.brewedAt, timeZone),
-              sql`date(${beans.roastDate})`,
-            ),
-          ),
-        )
-        .groupBy(sql`1`)
-        .orderBy(sql`3`),
+      explorationPromise.then(({ exploration }) => exploration.roasters),
+      explorationPromise.then(({ exploration }) => exploration.origins),
+      explorationPromise.then(({ exploration }) => exploration.processes),
+      explorationPromise.then(({ exploration }) => exploration.roastLevels),
+      explorationPromise.then(({ exploration }) => exploration.roastAge),
 
       db
         .select({
@@ -527,19 +323,8 @@ export async function loadDetailedStats(filter: StatsFilter) {
         .groupBy(beans.priceCurrency)
         .orderBy(beans.priceCurrency),
 
-      db
-        .select({ id: brewingMethods.id, name: brewingMethods.name })
-        .from(brewingMethods)
-        .orderBy(brewingMethods.name),
-
-      db
-        .select({
-          id: beans.id,
-          name: beans.name,
-          isArchived: beans.isArchived,
-        })
-        .from(beans)
-        .orderBy(beans.name),
+      explorationPromise.then(({ available }) => available.methods),
+      explorationPromise.then(({ available }) => available.beans),
 
       getVisitsAndPlacesStats({ range, timeZone, now }),
     ])
@@ -583,7 +368,7 @@ export async function loadDetailedStats(filter: StatsFilter) {
           : null,
         uniqueBeansUsed: summary?.uniqueBeans ?? 0,
         topByShots: topBeansByShots,
-        topByRating: normalizeRatingAverages(topBeansByRating),
+        topByRating: topBeansByRating,
       },
       brewing: {
         avgDose: toNullableNumber(summary?.avgDose),
@@ -663,12 +448,8 @@ export async function loadDetailedStats(filter: StatsFilter) {
           (date) => ({ date, count: 0 }),
         ),
       },
-      methods: normalizeRatingAverages(methodUsage),
-      tasteProfile: normalizeRatingAverages(tasteProfile).map((row) => ({
-        ...row,
-        extractionAxis: toNullableNumber(row.extractionAxis),
-        strengthAxis: toNullableNumber(row.strengthAxis),
-      })),
+      methods: methodUsage,
+      tasteProfile,
       dialIn: dialInRows.map((row) => ({
         ...row,
         rating: row.rating ?? 0,
@@ -681,19 +462,11 @@ export async function loadDetailedStats(filter: StatsFilter) {
         streaks: calculateStreaks(activityDates, today),
       },
       exploration: {
-        roasters: normalizeRatingAverages(
-          roasterUsage.filter((row) => row.name !== null),
-        ),
-        origins: normalizeRatingAverages(
-          originUsage.filter((row) => row.name !== null),
-        ),
-        processes: normalizeRatingAverages(
-          processUsage.filter((row) => row.name !== null),
-        ),
-        roastLevels: normalizeRatingAverages(
-          roastLevelUsage.filter((row) => row.name !== null),
-        ),
-        roastAge: normalizeRatingAverages(roastAgeUsage),
+        roasters: roasterUsage,
+        origins: originUsage,
+        processes: processUsage,
+        roastLevels: roastLevelUsage,
+        roastAge: roastAgeUsage,
       },
       cost: {
         home: homeSpend.map((row) => ({

@@ -5,12 +5,12 @@ import { AiActionHelp } from '@/components/ai-action-help'
 import type { RoasterFormValues } from '@/components/roasters/roaster-form-values'
 import { RoasterInfoDiffModal } from '@/components/roasters/roaster-info-diff-modal'
 import { Button } from '@/components/ui/button'
-import type { ExtractedRoasterInfo } from '@/lib/ai'
 import { getErrorMessage } from '@/lib/error-message'
 import {
   checkRoasterResearchEnabled,
   researchRoasterInfo,
 } from '@/lib/server/roasters'
+import type { ExtractedRoasterInfo } from '@/modules/ai/read-models'
 
 export function RoasterResearchAction({
   currentData,

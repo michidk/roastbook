@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { MACHINE_SETTINGS_FIELDS } from '@/lib/ai'
+import { MACHINE_SETTINGS_FIELDS } from '@/lib/server/ai-operations.server'
 import { parseStructuredResearchResult } from '@/lib/structured-research'
 
 describe('machine research validation', () => {

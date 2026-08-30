@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { EMPTY_SHOT_FORM_VALUES } from '@/components/shots/shot-parameter-fields'
 import { newShotRecommendationRequest } from '@/lib/new-shot-payload'
+import { EMPTY_SHOT_FORM_VALUES } from '@/modules/brews/shot-form-values'
 
 describe('new brew recommendation request', () => {
   test('keeps enabled current values and excludes stale hidden values', () => {
