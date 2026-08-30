@@ -10,7 +10,6 @@ import {
   type SQL,
   sql,
 } from 'drizzle-orm'
-import { z } from 'zod'
 import { db } from '@/db'
 import {
   beans,
@@ -22,7 +21,6 @@ import {
 } from '@/db/schema'
 import { resolvePagination } from '@/lib/collection-query'
 import { expectReturnedRow } from '@/lib/domain-errors'
-import { recipeTargetSchema } from '@/lib/recipe-target'
 import {
   replaceShotAccessoryGear,
   withAccessoryGearIds,
@@ -34,48 +32,29 @@ import {
 } from '@/lib/server/drink-options.server'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
 import { readTasteProfile } from '@/lib/server/settings.server'
+import type {
+  CreateShotAndSaveRecipeInput,
+  RelatedShotListInput,
+  ShotGroupListInput,
+  ShotListInput,
+} from '@/lib/server/shot-list-contract.server'
 import {
   projectAccessoryGearIds,
   projectShotParameters,
 } from '@/lib/server/shot-parameter-projection'
 import { saveShotToRecipeInTransaction } from '@/lib/server/shot-recipes.server'
 import { shotSortExpression } from '@/lib/server/shot-sort.server'
-import {
-  positiveIdSchema,
+import type {
   shotCreateSchema,
-  type shotUpdateSchema,
+  shotUpdateSchema,
 } from '@/lib/server-validation'
 import { LEGACY_SENSORY_TASTE_TAG_NAMES } from '@/lib/taste-tags'
-import { SHOT_SORT_VALUES, type ShotSortKey } from '@/modules/brews/read-models'
+import type { ShotSortKey } from '@/modules/brews/read-models'
 
 type ShotCreateCandidate = ReturnType<typeof shotCreateSchema.parse>
 const SHOTS_PAGE_SIZE = 25
 const SHOT_GROUPS_PAGE_SIZE = 8
 const BEAN_SHOT_CHART_LIMIT = 100
-
-const shotListSchema = z.object({
-  page: z.number().int().min(1).max(100_000).default(1),
-  sort: z.enum(SHOT_SORT_VALUES).default('date'),
-  direction: z.enum(['asc', 'desc']).default('desc'),
-  methodId: positiveIdSchema.optional(),
-  rating: z.number().int().min(0).max(5).optional(),
-  beanId: z.number().int().min(0).max(100_000).optional(),
-})
-
-const relatedShotListSchema = shotListSchema.omit({ beanId: true }).extend({
-  entityId: positiveIdSchema,
-})
-
-const createShotAndSaveRecipeSchema = z.object({
-  shot: shotCreateSchema,
-  target: recipeTargetSchema,
-})
-
-const shotGroupListSchema = shotListSchema.pick({
-  page: true,
-  methodId: true,
-  rating: true,
-})
 
 class ShotInputError extends Error {
   constructor(message: string) {
@@ -159,10 +138,7 @@ async function ratingAwareScope(
   return { rating: undefined, sort: sort === 'rating' ? 'date' : sort }
 }
 
-async function loadShotPage(
-  data: Omit<z.infer<typeof shotListSchema>, 'beanId'>,
-  scope?: SQL,
-) {
+async function loadShotPage(data: Omit<ShotListInput, 'beanId'>, scope?: SQL) {
   const scoped = await ratingAwareScope(data.rating, data.sort)
   const filters = shotFilterCondition(data.methodId, scoped.rating)
   const where = scope && filters ? and(scope, filters) : (scope ?? filters)
@@ -195,9 +171,7 @@ async function loadShotPage(
   return { items, ...pagination }
 }
 
-export async function getShotPageOperation(
-  data: z.infer<typeof shotListSchema>,
-) {
+export async function getShotPageOperation(data: ShotListInput) {
   const [page, scopeLabel] = await Promise.all([
     loadShotPage(data, shotBeanCondition(data.beanId)),
     data.beanId === undefined
@@ -215,15 +189,11 @@ export async function getShotPageOperation(
   return { ...page, scopeLabel }
 }
 
-export function getBeanShotPageOperation(
-  data: z.infer<typeof relatedShotListSchema>,
-) {
+export function getBeanShotPageOperation(data: RelatedShotListInput) {
   return loadShotPage(data, eq(shots.beanId, data.entityId))
 }
 
-export function getGearShotPageOperation(
-  data: z.infer<typeof relatedShotListSchema>,
-) {
+export function getGearShotPageOperation(data: RelatedShotListInput) {
   return loadShotPage(
     data,
     or(
@@ -290,9 +260,7 @@ export async function getBeanShotAnalyticsOperation(beanId: number) {
   }
 }
 
-export async function getShotGroupsOperation(
-  data: z.infer<typeof shotGroupListSchema>,
-) {
+export async function getShotGroupsOperation(data: ShotGroupListInput) {
   const { rating } = await ratingAwareScope(data.rating, 'date')
   const where = shotFilterCondition(data.methodId, rating)
   const groupKey = sql<number>`coalesce(${shots.beanId}, 0)`
@@ -417,7 +385,7 @@ export function createShotOperation(data: ShotCreateCandidate) {
 }
 
 export function createShotAndSaveRecipeOperation(
-  data: z.infer<typeof createShotAndSaveRecipeSchema>,
+  data: CreateShotAndSaveRecipeInput,
 ) {
   return db.transaction(async (tx) => {
     const shot = await createShotInTransaction(tx, data.shot)

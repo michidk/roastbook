@@ -1,6 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import { recipeTargetSchema } from '@/lib/recipe-target'
+import {
+  createShotAndSaveRecipeSchema,
+  relatedShotListSchema,
+  shotGroupListSchema,
+  shotListSchema,
+} from '@/lib/server/shot-list-contract.server'
 import {
   createShotAndSaveRecipeOperation,
   createShotOperation,
@@ -20,31 +25,6 @@ import {
   shotUpdateSchema,
 } from '@/lib/server-validation'
 import { assertValidUpdate, getShotUpdateErrors } from '@/lib/update-validation'
-import { SHOT_SORT_VALUES } from '@/modules/brews/read-models'
-
-const shotListSchema = z.object({
-  page: z.number().int().min(1).max(100_000).default(1),
-  sort: z.enum(SHOT_SORT_VALUES).default('date'),
-  direction: z.enum(['asc', 'desc']).default('desc'),
-  methodId: positiveIdSchema.optional(),
-  rating: z.number().int().min(0).max(5).optional(),
-  beanId: z.number().int().min(0).max(100_000).optional(),
-})
-
-const relatedShotListSchema = shotListSchema.omit({ beanId: true }).extend({
-  entityId: positiveIdSchema,
-})
-
-const shotGroupListSchema = shotListSchema.pick({
-  page: true,
-  methodId: true,
-  rating: true,
-})
-
-const createShotAndSaveRecipeSchema = z.object({
-  shot: shotCreateSchema,
-  target: recipeTargetSchema,
-})
 
 const lastShotSchema = z.object({
   beanId: positiveIdSchema,

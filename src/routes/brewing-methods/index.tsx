@@ -10,11 +10,11 @@ import {
   type CollectionEntry,
   CollectionList,
 } from '@/components/collection/collection-list'
+import { CollectionResults } from '@/components/collection/collection-results'
 import { CollectionViewToggle } from '@/components/collection/collection-view-toggle'
 import { CollectionToolbar } from '@/components/collection-toolbar'
 import { EmptyState } from '@/components/empty-state'
 import { Page, PageHeader } from '@/components/page-layout'
-import { PaginationControls } from '@/components/pagination-controls'
 import { RouteError } from '@/components/route-error'
 import { ListPending } from '@/components/route-pending'
 import { Badge } from '@/components/ui/badge'
@@ -160,11 +160,13 @@ function BrewingMethodsPage() {
             }
           />
 
-          {pageData.totalItems === 0 ? (
-            <p className="py-4 text-sm text-muted-foreground">
-              No brewing methods match “{search.query}”.
-            </p>
-          ) : (
+          <CollectionResults
+            totalItems={pageData.totalItems}
+            emptyMessage={<>No brewing methods match “{search.query}”.</>}
+            page={pageData.page}
+            totalPages={pageData.totalPages}
+            onPageChange={(page) => updateSearch({ page })}
+          >
             <CollectionList
               view={view}
               items={pageData.items}
@@ -172,15 +174,7 @@ function BrewingMethodsPage() {
               columns={columns}
               titleHeader="Method"
             />
-          )}
-
-          {pageData.totalPages > 1 && (
-            <PaginationControls
-              page={pageData.page}
-              totalPages={pageData.totalPages}
-              onPageChange={(page) => updateSearch({ page })}
-            />
-          )}
+          </CollectionResults>
         </div>
       )}
     </Page>
