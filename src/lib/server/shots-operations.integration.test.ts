@@ -46,8 +46,8 @@ integrationDescribe('brew operations contract', () => {
 
     expect(created).toMatchObject({
       brewingMethodId,
-      doseGrams: '18.000000',
-      yieldGrams: '36.000000',
+      doseGrams: '18.00',
+      yieldGrams: '36.00',
       brewPressureBar: null,
       notes: 'Initial contract brew',
     })
@@ -62,8 +62,8 @@ integrationDescribe('brew operations contract', () => {
 
     expect(updated).toMatchObject({
       id: created.id,
-      doseGrams: '19.000000',
-      yieldGrams: '38.000000',
+      doseGrams: '19.00',
+      yieldGrams: '38.00',
       notes: 'Updated contract brew',
     })
   })

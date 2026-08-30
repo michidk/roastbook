@@ -18,7 +18,7 @@ if (missingEnvironmentVariables.length > 0) {
 }
 
 const result = Bun.spawnSync(['bun', 'test', 'integration'], {
-  env: process.env,
+  env: { ...process.env, SSR: 'true' },
   stdout: 'inherit',
   stderr: 'inherit',
 })
