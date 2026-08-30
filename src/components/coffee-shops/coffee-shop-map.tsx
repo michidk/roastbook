@@ -79,14 +79,23 @@ export function CoffeeShopMap({
         >
           OpenStreetMap contributors
         </a>
-        {' · © '}
+        {' · '}
         <a
           className="underline underline-offset-2 hover:text-foreground"
-          href="https://carto.com/attributions"
+          href="https://openfreemap.org"
           target="_blank"
           rel="noopener noreferrer"
         >
-          CARTO
+          OpenFreeMap
+        </a>
+        {' · © '}
+        <a
+          className="underline underline-offset-2 hover:text-foreground"
+          href="https://openmaptiles.org"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          OpenMapTiles
         </a>
         .
       </p>

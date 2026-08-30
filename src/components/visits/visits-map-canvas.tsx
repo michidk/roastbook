@@ -8,7 +8,7 @@ import {
   syncVisitsMapMarkerSelection,
 } from './visits-map-marker'
 import { VisitsMapStatus } from './visits-map-status'
-import { VISITS_BASEMAP_STYLE } from './visits-map-style'
+import { loadVisitsBasemapStyle } from './visits-map-style'
 import type { SavedMapPlace } from './visits-map-utils'
 import { positionSelectedMapPlace } from './visits-map-viewport'
 
@@ -108,7 +108,10 @@ export function VisitsMapCanvas({
         handleMapError(error)
       }
       try {
-        const maplibregl = await import('maplibre-gl')
+        const [maplibregl, basemapStyle] = await Promise.all([
+          import('maplibre-gl'),
+          loadVisitsBasemapStyle(),
+        ])
         if (disposed) return
         const firstPlace = initialPlaceRef.current
         const center: [number, number] = initialLocation
@@ -118,7 +121,7 @@ export function VisitsMapCanvas({
             : [10, 48]
         const map = new maplibregl.Map({
           container,
-          style: VISITS_BASEMAP_STYLE,
+          style: basemapStyle,
           center,
           zoom: initialLocation || firstPlace ? 13 : 3,
           attributionControl: false,

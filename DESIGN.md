@@ -204,8 +204,8 @@ summary or text equivalent accompanies every chart and map.
 
 The `/visits` route uses a quiet MapLibre surface with a label-free light
 basemap. It shows only saved cafés, restrained zoom controls, a React-rendered
-café inspector, and concise OpenStreetMap/CARTO attribution. The `/places`
-route remains the focused café-management list.
+café inspector, and concise OpenStreetMap/OpenFreeMap/OpenMapTiles attribution.
+The `/places` route remains the focused café-management list.
 
 Saved cafés use a compact filled dot. Favorites use a larger double-ring dot.
 Want-to-visit cafés keep the saved marker shape and identify the planning state
