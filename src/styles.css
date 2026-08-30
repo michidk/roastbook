@@ -213,34 +213,19 @@
   border-left-color: var(--popover);
 }
 
-.roastbook-visits-map .maplibregl-canvas {
-  filter: sepia(0.1) saturate(0.66) brightness(1.02) contrast(0.96);
+.roastbook-map-frame:fullscreen {
+  width: 100vw;
+  height: 100dvh;
+  border-radius: 0;
+  background: var(--card);
 }
 
-.dark .roastbook-visits-map .maplibregl-canvas {
-  filter: sepia(0.12) saturate(0.58) brightness(0.62) contrast(0.9);
+.roastbook-map-fullscreen-attribution {
+  display: none;
 }
 
-.roastbook-visits-map .maplibregl-ctrl-group {
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: color-mix(in srgb, var(--card) 94%, transparent);
-  box-shadow: none;
-}
-
-.roastbook-visits-map .maplibregl-ctrl-group button {
-  background-color: transparent;
-  opacity: 0.72;
-  transition:
-    background-color 150ms ease-out,
-    opacity 150ms ease-out;
-}
-
-.roastbook-visits-map .maplibregl-ctrl-group button:hover,
-.roastbook-visits-map .maplibregl-ctrl-group button:focus-visible {
-  background-color: var(--secondary);
-  opacity: 1;
+.roastbook-map-frame:fullscreen .roastbook-map-fullscreen-attribution {
+  display: block;
 }
 
 .roastbook-visits-map-marker {
@@ -272,6 +257,45 @@
   border-radius: 999px;
   outline: 3px solid color-mix(in srgb, var(--ring) 55%, transparent);
   outline-offset: 2px;
+}
+
+.roastbook-visits-map-cluster {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 3px solid var(--card);
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 800;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--primary) 55%, transparent),
+    var(--control-shadow);
+  transition: transform 150ms ease-out;
+}
+
+.roastbook-visits-map-cluster:hover,
+.roastbook-visits-map-cluster:focus-visible {
+  transform: scale(1.08);
+}
+
+.roastbook-visits-map-cluster:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--ring) 55%, transparent);
+  outline-offset: 3px;
+}
+
+.roastbook-visits-map-user-location {
+  width: 18px;
+  height: 18px;
+  border: 3px solid var(--card);
+  border-radius: 999px;
+  background: #2684ff;
+  box-shadow:
+    0 0 0 5px rgb(38 132 255 / 22%),
+    var(--control-shadow);
 }
 
 .roastbook-visits-map-marker-pin {
@@ -328,13 +352,6 @@
   .roastbook-visits-map-inspector {
     opacity: 0;
     transform: translateY(8px);
-  }
-}
-
-@media (max-width: 639px), (pointer: coarse) {
-  .maplibregl-map .maplibregl-ctrl-group button {
-    width: 44px;
-    height: 44px;
   }
 }
 

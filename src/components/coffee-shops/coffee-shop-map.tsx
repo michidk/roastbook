@@ -1,6 +1,7 @@
 import { MapPin } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { EmptyState } from '@/components/empty-state'
+import { VisitsMapAttribution } from '@/components/visits/visits-map-attribution'
 import { VisitsMapCanvas } from '@/components/visits/visits-map-canvas'
 import { VisitsMapPlaceCard } from '@/components/visits/visits-map-place-card'
 import {
@@ -69,36 +70,7 @@ export function CoffeeShopMap({
           />
         )}
       </div>
-      <p className="border-t border-border bg-card px-4 py-3 text-xs text-muted-foreground">
-        ©{' '}
-        <a
-          className="underline underline-offset-2 hover:text-foreground"
-          href="https://www.openstreetmap.org/copyright"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          OpenStreetMap contributors
-        </a>
-        {' · '}
-        <a
-          className="underline underline-offset-2 hover:text-foreground"
-          href="https://openfreemap.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          OpenFreeMap
-        </a>
-        {' · © '}
-        <a
-          className="underline underline-offset-2 hover:text-foreground"
-          href="https://openmaptiles.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          OpenMapTiles
-        </a>
-        .
-      </p>
+      <VisitsMapAttribution />
     </div>
   )
 }

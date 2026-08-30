@@ -202,16 +202,24 @@ summary or text equivalent accompanies every chart and map.
 
 ### Saved café map
 
-The `/visits` route uses a quiet MapLibre surface with a label-free light
-basemap. It shows only saved cafés, restrained zoom controls, a React-rendered
-café inspector, and concise OpenStreetMap/OpenFreeMap/OpenMapTiles attribution.
-The `/places` route remains the focused café-management list.
+The `/visits` route uses a quiet MapLibre surface with label-free OpenFreeMap
+basemaps: Positron in light mode and Dark in dark mode. It shows only saved
+cafés, Roastbook-styled zoom, location, and fullscreen controls, a
+React-rendered café inspector, and concise
+OpenStreetMap/OpenFreeMap/OpenMapTiles attribution. Controls prevent pointer
+and wheel events from leaking into the map. The `/places` route remains the
+focused café-management list.
 
 Saved cafés use a compact filled dot. Favorites use a larger double-ring dot.
 Want-to-visit cafés keep the saved marker shape and identify the planning state
 in accessible marker names and the café inspector.
 Shape, size, state, and accessible naming carry meaning without decorative cup
 or heart glyphs.
+
+Cluster nearby cafés at lower zoom levels. Clusters are named buttons that zoom
+to their contents; individual café buttons return as the cluster expands.
+Location is requested only after the user activates the location control and a
+live message reports success, denial, or failure.
 
 Support loading, ready, selected, empty, and unavailable states. Every visible
 marker is a named button. Arrow keys move through markers in the viewport, and
