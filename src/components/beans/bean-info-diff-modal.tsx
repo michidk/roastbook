@@ -1,5 +1,5 @@
 import { ArrowRight, Check, Store } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import type { BeanFormValues } from '@/components/beans/bean-form-values'
 import { Button } from '@/components/ui/button'
 import {
@@ -11,50 +11,58 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  buildSelectableDiffs,
+  type SelectableDiff,
+  type SelectableDiffDefinition,
+  useSelectableDiffs,
+} from '@/hooks/use-selectable-diffs'
 import type { ExtractedBeanInfo } from '@/lib/ai'
 import type { BeanType, RoastLevel } from '@/lib/constants'
 import type { ExtractedRoasterAction } from '@/lib/roaster-match'
 import { cn } from '@/lib/utils'
 
-interface FieldDef {
-  key: keyof ExtractedBeanInfo
-  label: string
-  formKey: string
-  transform?: (value: string) => string
+type BeanDiffKey =
+  | 'name'
+  | 'type'
+  | 'origin'
+  | 'region'
+  | 'farm'
+  | 'variety'
+  | 'process'
+  | 'roastLevel'
+  | 'roastDate'
+  | 'notes'
+
+interface FieldDef extends SelectableDiffDefinition<BeanDiffKey> {
+  sourceKey: keyof ExtractedBeanInfo
 }
 
 const FIELD_DEFINITIONS: FieldDef[] = [
-  { key: 'name', label: 'Name', formKey: 'name' },
-  { key: 'type', label: 'Type', formKey: 'type' },
-  { key: 'origin', label: 'Country', formKey: 'origin' },
-  { key: 'region', label: 'Region', formKey: 'region' },
-  { key: 'farm', label: 'Farm/Producer', formKey: 'farm' },
-  { key: 'variety', label: 'Variety', formKey: 'variety' },
+  { key: 'name', sourceKey: 'name', label: 'Name' },
+  { key: 'type', sourceKey: 'type', label: 'Type' },
+  { key: 'origin', sourceKey: 'origin', label: 'Country' },
+  { key: 'region', sourceKey: 'region', label: 'Region' },
+  { key: 'farm', sourceKey: 'farm', label: 'Farm/Producer' },
+  { key: 'variety', sourceKey: 'variety', label: 'Variety' },
   {
     key: 'process',
+    sourceKey: 'process',
     label: 'Process',
-    formKey: 'process',
-    transform: (v) => v.replace(/_/g, ' '),
+    format: (v) => v.replace(/_/g, ' '),
   },
   {
     key: 'roastLevel',
+    sourceKey: 'roastLevel',
     label: 'Roast Level',
-    formKey: 'roastLevel',
-    transform: (v) => v.replace(/_/g, ' '),
+    format: (v) => v.replace(/_/g, ' '),
   },
-  { key: 'roastDate', label: 'Roast Date', formKey: 'roastDate' },
-  { key: 'notes', label: 'Notes', formKey: 'notes' },
+  { key: 'roastDate', sourceKey: 'roastDate', label: 'Roast Date' },
+  { key: 'notes', sourceKey: 'notes', label: 'Notes' },
 ]
 
 export type BeanFormData = BeanFormValues
 type Mutable<T> = { -readonly [Key in keyof T]: T[Key] }
-
-interface FieldDiff {
-  field: FieldDef
-  currentValue: string
-  suggestedValue: string
-  hasConflict: boolean
-}
 
 interface BeanInfoDiffModalProps {
   open: boolean
@@ -77,76 +85,32 @@ export function BeanInfoDiffModal({
   roasterAction,
   source,
 }: BeanInfoDiffModalProps) {
-  const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set())
-
-  const diffs = useMemo(() => {
-    const result: FieldDiff[] = []
-
-    for (const field of FIELD_DEFINITIONS) {
-      const suggestedValue = suggestedData[field.key]
-      if (!suggestedValue) continue
-
-      const currentValue = currentData[
-        field.formKey as keyof BeanFormData
-      ] as string
-      const suggested = String(suggestedValue)
-
-      if (currentValue !== suggested) {
-        result.push({
-          field,
-          currentValue: currentValue || '',
-          suggestedValue: suggested,
-          hasConflict: !!currentValue && currentValue !== suggested,
-        })
-      }
-    }
-
-    return result
-  }, [currentData, suggestedData])
-
-  useEffect(() => {
-    if (!open) return
-    const initial = new Set<string>()
-    for (const diff of diffs) {
-      if (!diff.hasConflict) {
-        initial.add(diff.field.formKey)
-      }
-    }
-    setSelectedFields(initial)
-  }, [diffs, open])
-
-  const toggleField = (formKey: string) => {
-    setSelectedFields((prev) => {
-      const next = new Set(prev)
-      if (next.has(formKey)) {
-        next.delete(formKey)
-      } else {
-        next.add(formKey)
-      }
-      return next
-    })
-  }
-
-  const selectAll = () => {
-    setSelectedFields(new Set(diffs.map((d) => d.field.formKey)))
-  }
-
-  const selectNone = () => {
-    setSelectedFields(new Set())
-  }
+  const diffs = useMemo(
+    () =>
+      buildSelectableDiffs(FIELD_DEFINITIONS, (field) => {
+        const suggestedValue = suggestedData[field.sourceKey]
+        if (!suggestedValue) return undefined
+        return {
+          currentValue: currentData[field.key],
+          suggestedValue,
+        }
+      }),
+    [currentData, suggestedData],
+  )
+  const { selectedKeys, toggle, selectAll, clearAll, conflictCount } =
+    useSelectableDiffs(open, diffs)
 
   const handleApply = () => {
     const updates: Partial<Mutable<BeanFormData>> = {}
 
     for (const diff of diffs) {
-      if (selectedFields.has(diff.field.formKey)) {
-        if (diff.field.formKey === 'roastLevel') {
+      if (selectedKeys.has(diff.key)) {
+        if (diff.key === 'roastLevel') {
           updates.roastLevel = diff.suggestedValue as RoastLevel
-        } else if (diff.field.formKey === 'type') {
+        } else if (diff.key === 'type') {
           updates.type = diff.suggestedValue as BeanType
         } else {
-          ;(updates as Record<string, string>)[diff.field.formKey] =
-            diff.suggestedValue
+          ;(updates as Record<string, string>)[diff.key] = diff.suggestedValue
         }
       }
     }
@@ -162,7 +126,6 @@ export function BeanInfoDiffModal({
     }
   }
 
-  const conflictCount = diffs.filter((d) => d.hasConflict).length
   const newFieldCount = diffs.filter((d) => !d.hasConflict).length
   const roasterName = suggestedData.roaster?.trim()
 
@@ -225,10 +188,10 @@ export function BeanInfoDiffModal({
           <div className="space-y-2">
             {diffs.map((diff) => (
               <DiffRow
-                key={diff.field.formKey}
+                key={diff.key}
                 diff={diff}
-                selected={selectedFields.has(diff.field.formKey)}
-                onToggle={() => toggleField(diff.field.formKey)}
+                selected={selectedKeys.has(diff.key)}
+                onToggle={() => toggle(diff.key)}
               />
             ))}
             {roasterName ? (
@@ -265,7 +228,7 @@ export function BeanInfoDiffModal({
             <Button variant="ghost" size="sm" onClick={selectAll}>
               Select all
             </Button>
-            <Button variant="ghost" size="sm" onClick={selectNone}>
+            <Button variant="ghost" size="sm" onClick={clearAll}>
               Select none
             </Button>
           </div>
@@ -275,13 +238,9 @@ export function BeanInfoDiffModal({
             </Button>
             <Button
               onClick={handleApply}
-              disabled={selectedFields.size === 0 && !roasterName}
+              disabled={selectedKeys.size === 0 && !roasterName}
             >
-              {applyButtonLabel(
-                selectedFields.size,
-                roasterName,
-                roasterAction,
-              )}
+              {applyButtonLabel(selectedKeys.size, roasterName, roasterAction)}
             </Button>
           </div>
         </DialogFooter>
@@ -312,22 +271,23 @@ function applyButtonLabel(
 }
 
 interface DiffRowProps {
-  diff: FieldDiff
+  diff: SelectableDiff<BeanDiffKey>
   selected: boolean
   onToggle: () => void
 }
 
 function DiffRow({ diff, selected, onToggle }: DiffRowProps) {
-  const displayCurrent = diff.field.transform
-    ? diff.field.transform(diff.currentValue)
+  const displayCurrent = diff.format
+    ? diff.format(diff.currentValue)
     : diff.currentValue
-  const displaySuggested = diff.field.transform
-    ? diff.field.transform(diff.suggestedValue)
+  const displaySuggested = diff.format
+    ? diff.format(diff.suggestedValue)
     : diff.suggestedValue
 
   return (
     <button
       type="button"
+      aria-pressed={selected}
       onClick={onToggle}
       className={cn(
         'w-full text-left p-3 rounded-lg border transition-colors',
@@ -350,7 +310,7 @@ function DiffRow({ diff, selected, onToggle }: DiffRowProps) {
 
         <div className="flex-1 min-w-0 space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">{diff.field.label}</span>
+            <span className="text-sm font-medium">{diff.label}</span>
             {diff.hasConflict && (
               <span className="rounded bg-primary/15 px-1.5 py-0.5 text-xs text-link">
                 has value

@@ -1,7 +1,7 @@
 'use client'
 
 import { CalendarIcon } from 'lucide-react'
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { describedBy, FieldShell } from '@/components/form/form-field'
 import { Calendar } from '@/components/ui/calendar'
 import {
@@ -37,6 +37,57 @@ interface DateFieldBaseProps {
   autoFocus?: boolean
 }
 
+type DatePopoverFieldProps = DateFieldBaseProps & {
+  readonly open: boolean
+  readonly onOpenChange: (open: boolean) => void
+  readonly hasValue: boolean
+  readonly displayValue: string
+  readonly children: ReactNode
+}
+
+function DatePopoverField({
+  label,
+  id,
+  required,
+  className,
+  disabled,
+  error,
+  autoFocus,
+  open,
+  onOpenChange,
+  hasValue,
+  displayValue,
+  children,
+}: DatePopoverFieldProps) {
+  return (
+    <FieldShell
+      label={label}
+      id={id}
+      required={required}
+      className={className}
+      error={error}
+    >
+      <Popover open={open} onOpenChange={onOpenChange}>
+        <PopoverTrigger
+          id={id}
+          type="button"
+          disabled={disabled}
+          autoFocus={autoFocus}
+          aria-invalid={Boolean(error)}
+          aria-describedby={describedBy(id, error)}
+          className={TRIGGER_CLASS_NAME}
+        >
+          <span className={cn(!hasValue && 'text-muted-foreground')}>
+            {displayValue}
+          </span>
+          <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
+        </PopoverTrigger>
+        <PopoverContent>{children}</PopoverContent>
+      </Popover>
+    </FieldShell>
+  )
+}
+
 interface DateFieldProps extends DateFieldBaseProps {
   value: string
   onChange: (value: string) => void
@@ -65,41 +116,31 @@ export function DateField({
   const maxDate = max ? localDateInputToDate(max) : null
 
   return (
-    <FieldShell
+    <DatePopoverField
       label={label}
       id={id}
       required={required}
       className={className}
+      disabled={disabled}
       error={error}
+      autoFocus={autoFocus}
+      open={open}
+      onOpenChange={setOpen}
+      hasValue={Boolean(selectedDate)}
+      displayValue={
+        selectedDate ? formatDate(selectedDate, dateFormat) : placeholder
+      }
     >
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger
-          id={id}
-          type="button"
-          disabled={disabled}
-          autoFocus={autoFocus}
-          aria-invalid={Boolean(error)}
-          aria-describedby={describedBy(id, error)}
-          className={TRIGGER_CLASS_NAME}
-        >
-          <span className={cn(!selectedDate && 'text-muted-foreground')}>
-            {selectedDate ? formatDate(selectedDate, dateFormat) : placeholder}
-          </span>
-          <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
-        </PopoverTrigger>
-        <PopoverContent>
-          <Calendar
-            selected={selectedDate}
-            onSelect={(date) => {
-              onChange(toLocalDateInput(date))
-              setOpen(false)
-            }}
-            minDate={minDate}
-            maxDate={maxDate}
-          />
-        </PopoverContent>
-      </Popover>
-    </FieldShell>
+      <Calendar
+        selected={selectedDate}
+        onSelect={(date) => {
+          onChange(toLocalDateInput(date))
+          setOpen(false)
+        }}
+        minDate={minDate}
+        maxDate={maxDate}
+      />
+    </DatePopoverField>
   )
 }
 
@@ -145,66 +186,56 @@ export function DateTimeField({
   }
 
   return (
-    <FieldShell
+    <DatePopoverField
       label={label}
       id={id}
       required={required}
       className={className}
+      disabled={disabled}
       error={error}
+      autoFocus={autoFocus}
+      open={open}
+      onOpenChange={setOpen}
+      hasValue={Boolean(selectedDate)}
+      displayValue={
+        selectedDate
+          ? `${formatDate(selectedDate, dateFormat)}, ${pad(hour)}:${pad(minute)}`
+          : placeholder
+      }
     >
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger
-          id={id}
-          type="button"
-          disabled={disabled}
-          autoFocus={autoFocus}
-          aria-invalid={Boolean(error)}
-          aria-describedby={describedBy(id, error)}
-          className={TRIGGER_CLASS_NAME}
-        >
-          <span className={cn(!selectedDate && 'text-muted-foreground')}>
-            {selectedDate
-              ? `${formatDate(selectedDate, dateFormat)}, ${pad(hour)}:${pad(minute)}`
-              : placeholder}
-          </span>
-          <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
-        </PopoverTrigger>
-        <PopoverContent>
-          <Calendar
-            selected={localDateInputToDate(datePart)}
-            onSelect={(date) => {
-              commit(toLocalDateInput(date), hour, minute)
-            }}
-            minDate={minDate}
-            maxDate={maxDate}
-          />
-          <div className="mt-3 flex items-center justify-center gap-2 border-t border-border pt-3">
-            <input
-              type="number"
-              inputMode="numeric"
-              min={0}
-              max={23}
-              value={hour}
-              disabled={!datePart}
-              onChange={(e) => commit(datePart, Number(e.target.value), minute)}
-              aria-label="Hour"
-              className="h-9 w-14 rounded-lg border border-input bg-card/75 text-center text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/45"
-            />
-            <span className="text-muted-foreground">:</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={0}
-              max={59}
-              value={minute}
-              disabled={!datePart}
-              onChange={(e) => commit(datePart, hour, Number(e.target.value))}
-              aria-label="Minute"
-              className="h-9 w-14 rounded-lg border border-input bg-card/75 text-center text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/45"
-            />
-          </div>
-        </PopoverContent>
-      </Popover>
-    </FieldShell>
+      <Calendar
+        selected={localDateInputToDate(datePart)}
+        onSelect={(date) => {
+          commit(toLocalDateInput(date), hour, minute)
+        }}
+        minDate={minDate}
+        maxDate={maxDate}
+      />
+      <div className="mt-3 flex items-center justify-center gap-2 border-t border-border pt-3">
+        <input
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={23}
+          value={hour}
+          disabled={!datePart}
+          onChange={(e) => commit(datePart, Number(e.target.value), minute)}
+          aria-label="Hour"
+          className="h-9 w-14 rounded-lg border border-input bg-card/75 text-center text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/45"
+        />
+        <span className="text-muted-foreground">:</span>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={59}
+          value={minute}
+          disabled={!datePart}
+          onChange={(e) => commit(datePart, hour, Number(e.target.value))}
+          aria-label="Minute"
+          className="h-9 w-14 rounded-lg border border-input bg-card/75 text-center text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/45"
+        />
+      </div>
+    </DatePopoverField>
   )
 }

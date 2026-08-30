@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { AccessoryGearPicker } from '@/components/form/accessory-gear-picker'
 import { CreatableCombobox } from '@/components/form/creatable-combobox'
 import { InputField, SelectField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
@@ -370,28 +371,11 @@ export function ShotParameterFields({
             ) : null}
           </div>
           {show('accessoryGearIds') ? (
-            <div className="flex flex-wrap gap-2">
-              {accessories.map((item) => (
-                <Toggle
-                  key={item.id}
-                  variant="outline"
-                  className="min-h-11"
-                  pressed={values.accessoryGearIds.includes(item.id)}
-                  onPressedChange={(pressed) =>
-                    onChange(
-                      'accessoryGearIds',
-                      pressed
-                        ? [...values.accessoryGearIds, item.id]
-                        : values.accessoryGearIds.filter(
-                            (id) => id !== item.id,
-                          ),
-                    )
-                  }
-                >
-                  {item.name}
-                </Toggle>
-              ))}
-            </div>
+            <AccessoryGearPicker
+              items={accessories}
+              value={values.accessoryGearIds}
+              onChange={(value) => onChange('accessoryGearIds', value)}
+            />
           ) : null}
         </FormSection>
       ) : null}

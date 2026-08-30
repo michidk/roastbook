@@ -37,11 +37,52 @@ const recipeUpdateSchema = shotUpdateSchema
   })
   .extend({ name: nameSchema })
 const recipeCreateSchema = recipeUpdateSchema.omit({ id: true })
+type RecipeUpdateInput = z.infer<typeof recipeUpdateSchema>
+type RecipeCreateInput = z.infer<typeof recipeCreateSchema>
+type RecipeInput = RecipeUpdateInput | RecipeCreateInput
+type RecipeTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 class RecipeInputError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'RecipeInputError'
+  }
+}
+
+function validateRecipeInput<Output extends RecipeInput>(
+  schema: { readonly parse: (input: unknown) => Output },
+  input: unknown,
+): Output {
+  const data = schema.parse(input)
+  assertValidUpdate(getShotUpdateErrors(data))
+  return data
+}
+
+async function getBrewingMethod(
+  tx: RecipeTransaction,
+  brewingMethodId: number,
+) {
+  const method = await tx.query.brewingMethods.findFirst({
+    where: eq(brewingMethods.id, brewingMethodId),
+  })
+  if (!method) throw new RecipeInputError('Brewing method not found')
+  return method
+}
+
+function projectRecipeWrite(
+  data: RecipeCreateInput,
+  enabledParameters: readonly string[],
+) {
+  const { name, brewingMethodId, beanId, ...parameters } = data
+  return {
+    values: {
+      name,
+      brewingMethodId,
+      beanId,
+      ...projectShotParameters(parameters, enabledParameters),
+      updatedAt: new Date(),
+    },
+    accessoryGearIds: projectAccessoryGearIds(parameters, enabledParameters),
   }
 }
 
@@ -148,71 +189,38 @@ export const getRecipe = createServerFn({ method: 'GET' })
  */
 
 export const updateRecipe = createServerFn({ method: 'POST' })
-  .validator((input: unknown) => {
-    const data = recipeUpdateSchema.parse(input)
-    assertValidUpdate(getShotUpdateErrors(data))
-    return data
-  })
+  .validator((input: unknown) => validateRecipeInput(recipeUpdateSchema, input))
   .handler(async ({ data }) =>
     db.transaction(async (tx) => {
-      const method = await tx.query.brewingMethods.findFirst({
-        where: (brewingMethods, { eq }) =>
-          eq(brewingMethods.id, data.brewingMethodId),
-      })
-      if (!method) throw new RecipeInputError('Brewing method not found')
-
-      const { id, name, brewingMethodId, beanId, ...parameters } = data
+      const method = await getBrewingMethod(tx, data.brewingMethodId)
+      const { id, ...input } = data
+      const projected = projectRecipeWrite(input, method.enabledParameters)
       const [recipe] = await tx
         .update(recipes)
-        .set({
-          name,
-          brewingMethodId,
-          beanId,
-          ...projectShotParameters(parameters, method.enabledParameters),
-          updatedAt: new Date(),
-        })
+        .set(projected.values)
         .where(eq(recipes.id, id))
         .returning()
       const persistedRecipe = expectReturnedRow(recipe, 'Recipe')
-      await replaceRecipeAccessoryGear(
-        tx,
-        id,
-        projectAccessoryGearIds(parameters, method.enabledParameters),
-      )
+      await replaceRecipeAccessoryGear(tx, id, projected.accessoryGearIds)
       return persistedRecipe
     }),
   )
 
 export const createRecipe = createServerFn({ method: 'POST' })
-  .validator((input: unknown) => {
-    const data = recipeCreateSchema.parse(input)
-    assertValidUpdate(getShotUpdateErrors(data))
-    return data
-  })
+  .validator((input: unknown) => validateRecipeInput(recipeCreateSchema, input))
   .handler(async ({ data }) =>
     db.transaction(async (tx) => {
-      const method = await tx.query.brewingMethods.findFirst({
-        where: (brewingMethods, { eq }) =>
-          eq(brewingMethods.id, data.brewingMethodId),
-      })
-      if (!method) throw new RecipeInputError('Brewing method not found')
-
-      const { name, brewingMethodId, beanId, ...parameters } = data
+      const method = await getBrewingMethod(tx, data.brewingMethodId)
+      const projected = projectRecipeWrite(data, method.enabledParameters)
       const [recipe] = await tx
         .insert(recipes)
-        .values({
-          name,
-          brewingMethodId,
-          beanId,
-          ...projectShotParameters(parameters, method.enabledParameters),
-          updatedAt: new Date(),
-        })
+        .values(projected.values)
         .returning()
       const persistedRecipe = expectReturnedRow(recipe, 'Recipe')
       await replaceRecipeAccessoryGear(
         tx,
         persistedRecipe.id,
-        projectAccessoryGearIds(parameters, method.enabledParameters),
+        projected.accessoryGearIds,
       )
       return persistedRecipe
     }),

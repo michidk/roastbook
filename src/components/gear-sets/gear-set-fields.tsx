@@ -1,3 +1,4 @@
+import { AccessoryGearPicker } from '@/components/form/accessory-gear-picker'
 import { CreatableCombobox } from '@/components/form/creatable-combobox'
 import { InputField, TextareaField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
@@ -6,7 +7,6 @@ import {
   type GearOption,
   gearByEquipmentRole,
 } from '@/components/shots/shot-parameter-fields'
-import { Toggle } from '@/components/ui/toggle'
 import type { GearSetFormValues } from './gear-set-form-values'
 
 type GearSetFieldsProps = {
@@ -91,33 +91,12 @@ export function GearSetFields({
             emptyMessage="No baskets found."
           />
         </div>
-        {accessories.length > 0 ? (
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-medium">Accessories</legend>
-            <div className="flex flex-wrap gap-2">
-              {accessories.map((item) => (
-                <Toggle
-                  key={item.id}
-                  variant="outline"
-                  className="min-h-11"
-                  pressed={values.accessoryGearIds.includes(item.id)}
-                  onPressedChange={(pressed) =>
-                    onChange(
-                      'accessoryGearIds',
-                      pressed
-                        ? [...values.accessoryGearIds, item.id]
-                        : values.accessoryGearIds.filter(
-                            (id) => id !== item.id,
-                          ),
-                    )
-                  }
-                >
-                  {item.name}
-                </Toggle>
-              ))}
-            </div>
-          </fieldset>
-        ) : null}
+        <AccessoryGearPicker
+          items={accessories}
+          value={values.accessoryGearIds}
+          onChange={(value) => onChange('accessoryGearIds', value)}
+          label="Accessories"
+        />
       </FormSection>
     </>
   )
