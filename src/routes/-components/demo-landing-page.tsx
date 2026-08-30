@@ -92,13 +92,13 @@ export function DemoLandingPage() {
 
 function LandingHeader() {
   return (
-    <header className="flex h-20 items-center justify-between border-b border-border/70">
+    <header className="flex h-16 items-center justify-between border-b border-border/70 sm:h-20">
       <Link
         to="/"
         aria-label="Roastbook home"
         className="flex min-h-11 items-center gap-2.5"
       >
-        <span className="flex size-10 overflow-hidden rounded-xl">
+        <span className="flex size-9 overflow-hidden rounded-xl sm:size-10">
           <img
             src="/navbar-logo.png"
             alt=""
@@ -107,7 +107,7 @@ function LandingHeader() {
             className="size-full object-cover"
           />
         </span>
-        <span className="hidden font-display text-xl font-extrabold tracking-tight min-[360px]:inline">
+        <span className="font-display text-lg font-extrabold tracking-tight sm:text-xl">
           Roastbook
         </span>
       </Link>
@@ -117,16 +117,18 @@ function LandingHeader() {
           target="_blank"
           rel="noreferrer"
           aria-label="View Roastbook on GitHub"
-          className="flex min-h-11 items-center gap-2 rounded-full border border-border bg-card px-3 text-sm font-bold text-foreground shadow-coffee transition-colors hover:bg-accent"
+          className="hidden min-h-11 items-center gap-2 rounded-full border border-border bg-card px-3 text-sm font-bold text-foreground shadow-coffee transition-colors hover:bg-accent sm:flex"
         >
           <Github className="size-4" aria-hidden="true" />
           <span className="hidden md:inline">GitHub</span>
         </a>
-        <ThemeToggle />
+        <div className="hidden sm:block">
+          <ThemeToggle />
+        </div>
         <Button asChild size="sm">
           <Link to="/overview">
-            <span className="hidden min-[400px]:inline">Explore demo</span>
-            <span className="min-[400px]:hidden">Demo</span>
+            <span className="hidden min-[360px]:inline">Explore demo</span>
+            <span className="min-[360px]:hidden">Demo</span>
             <ArrowRight aria-hidden="true" />
           </Link>
         </Button>
