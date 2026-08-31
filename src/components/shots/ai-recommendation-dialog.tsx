@@ -7,7 +7,6 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { useState } from 'react'
-import { AiActionHelp } from '@/components/ai-action-help'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,6 +19,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { getErrorMessage } from '@/lib/error-message'
 import { getShotRecommendation } from '@/lib/server/shot-recommendations'
@@ -80,30 +84,39 @@ export function AiRecommendationDialog({
     : !request
       ? 'Choose beans and a brewing method first'
       : undefined
+  const helpText = isFocusedShot
+    ? 'Assesses this brew and suggests the next adjustment. Uses its beans, method, exact gear, parameters, tasting result, and matching history.'
+    : 'Suggests the next controlled brew adjustment. Uses the selected beans, method, exact gear, current parameters when entered, and matching brew history.'
 
   return (
     <>
-      <div className={`flex items-center gap-1 ${className ?? ''}`}>
-        <Button
-          type="button"
-          variant="outline"
-          size={size}
-          className={className ? 'min-w-0 flex-1' : undefined}
-          disabled={!enabled || !request}
-          title={buttonTitle}
-          onClick={() => {
-            setOpen(true)
-            void loadRecommendation()
-          }}
-        >
-          <Sparkles />
-          AI Recommendation
-        </Button>
-        <AiActionHelp>
-          {isFocusedShot
-            ? 'Assesses this brew and suggests the next adjustment. Uses its beans, method, exact gear, parameters, tasting result, and matching history.'
-            : 'Suggests the next controlled brew adjustment. Uses the selected beans, method, exact gear, current parameters when entered, and matching brew history.'}
-        </AiActionHelp>
+      <div className={`flex items-center ${className ?? ''}`}>
+        <Tooltip>
+          <TooltipTrigger>
+            <Button
+              type="button"
+              variant="outline"
+              size={size}
+              className={className ? 'min-w-0 flex-1' : undefined}
+              disabled={!enabled || !request}
+              title={buttonTitle}
+              onClick={() => {
+                setOpen(true)
+                void loadRecommendation()
+              }}
+            >
+              <Sparkles />
+              AI Recommendation
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent
+            side="bottom"
+            sideOffset={6}
+            className="w-72 items-start rounded-lg border border-border bg-popover p-3 text-sm leading-relaxed text-muted-foreground shadow-coffee [&>svg]:hidden"
+          >
+            {helpText}
+          </TooltipContent>
+        </Tooltip>
       </div>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-2xl">
