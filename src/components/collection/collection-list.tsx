@@ -51,8 +51,6 @@ export type CollectionMedia =
 export type CollectionEntry = {
   readonly id: string | number
   readonly title: string
-  /** Set to false when an explicit action owns table-row navigation. */
-  readonly linkTitle?: boolean
   readonly titlePrefix?: ReactNode
   readonly subtitle?: ReactNode
   readonly meta?: ReactNode
@@ -61,8 +59,6 @@ export type CollectionEntry = {
   readonly flags?: ReactNode
   /** Badge or value pinned to the trailing edge of the card. */
   readonly trailing?: ReactNode
-  /** Record action rendered separately from the navigation link. */
-  readonly action?: ReactNode
   readonly to: string
   readonly params?: Record<string, string>
   readonly highlight?: boolean
@@ -93,8 +89,6 @@ type CollectionListProps<TItem> = {
   readonly titleHeader?: string
   readonly titleSortKey?: string
   readonly sort?: CollectionSort
-  /** Where a table renders `entry.action`; cards keep their trailing overlay. */
-  readonly tableActionPlacement?: 'after-title' | 'end'
 }
 
 const toneClassName: Record<CollectionMediaTone, string> = {
@@ -175,7 +169,6 @@ function CollectionCard({ entry }: { readonly entry: CollectionEntry }) {
         className={cn(
           interactiveCardLinkClassName,
           'flex items-center gap-3 p-3 hover:translate-y-0 motion-reduce:hover:translate-y-0 sm:p-4',
-          entry.action && 'pr-14',
         )}
       >
         <CollectionMediaFigure media={media} size="md" />
@@ -206,11 +199,6 @@ function CollectionCard({ entry }: { readonly entry: CollectionEntry }) {
           className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-1"
         />
       </Link>
-      {entry.action ? (
-        <span className="absolute top-1/2 right-1 -translate-y-1/2">
-          {entry.action}
-        </span>
-      ) : null}
     </Card>
   )
 }
@@ -222,17 +210,13 @@ function CollectionTitleCell({ entry }: { readonly entry: CollectionEntry }) {
     <TableCell className="font-display font-bold text-foreground">
       <span className="flex items-center gap-2">
         <CollectionMediaFigure media={media} size="sm" />
-        {entry.linkTitle === false ? (
-          <span>{entry.title}</span>
-        ) : (
-          <Link
-            to={entry.to}
-            params={entry.params}
-            className="inline-flex min-h-11 items-center rounded-sm text-link underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-          >
-            {entry.title}
-          </Link>
-        )}
+        <Link
+          to={entry.to}
+          params={entry.params}
+          className="inline-flex min-h-11 items-center rounded-sm text-link underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          {entry.title}
+        </Link>
         {entry.flags}
       </span>
     </TableCell>
@@ -253,12 +237,8 @@ export function CollectionList<TItem>({
   titleHeader = 'Name',
   titleSortKey,
   sort,
-  tableActionPlacement = 'end',
 }: CollectionListProps<TItem>) {
   const entries = items.map((item) => ({ item, entry: getEntry(item) }))
-  const hasActions = entries.some(({ entry }) => entry.action)
-  const actionsAfterTitle = hasActions && tableActionPlacement === 'after-title'
-  const actionsAtEnd = hasActions && !actionsAfterTitle
 
   if (view === 'cards') {
     return (
@@ -288,11 +268,6 @@ export function CollectionList<TItem>({
               ) : (
                 <TableHead>{titleHeader}</TableHead>
               )}
-              {actionsAfterTitle ? (
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              ) : null}
               {columns.map((column) =>
                 column.sortKey && sort ? (
                   <SortableTableHead
@@ -314,20 +289,12 @@ export function CollectionList<TItem>({
                   </TableHead>
                 ),
               )}
-              {actionsAtEnd ? (
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              ) : null}
             </TableRow>
           </TableHeader>
           <TableBody>
             {entries.map(({ item, entry }) => (
               <TableRow key={entry.id}>
                 <CollectionTitleCell entry={entry} />
-                {actionsAfterTitle ? (
-                  <TableCell className="w-0">{entry.action}</TableCell>
-                ) : null}
                 {columns.map((column) => (
                   <TableCell
                     key={column.key}
@@ -340,11 +307,6 @@ export function CollectionList<TItem>({
                     {column.cell(item)}
                   </TableCell>
                 ))}
-                {actionsAtEnd ? (
-                  <TableCell className="w-0 text-right">
-                    {entry.action}
-                  </TableCell>
-                ) : null}
               </TableRow>
             ))}
           </TableBody>

@@ -1,16 +1,15 @@
 import { Link } from '@tanstack/react-router'
+import { ChevronRight } from 'lucide-react'
 import { useMemo } from 'react'
 import { ImageWithFallback } from '@/components/image-with-fallback'
 import { PaginationControls } from '@/components/pagination-controls'
 import { SortableTableHead } from '@/components/sortable-table-head'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, interactiveCardLinkClassName } from '@/components/ui/card'
 import { StarRating } from '@/components/ui/star-rating'
 import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
@@ -22,6 +21,7 @@ import {
 } from '@/hooks/use-sortable-pagination'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { thumbnailUrl } from '@/lib/image-url'
+import { cn } from '@/lib/utils'
 
 type Shot = {
   id: number
@@ -272,9 +272,6 @@ export function ShotsTable({
                       onSort={() => handleSort('rating')}
                     />
                   )}
-                  <TableHead className="w-px">
-                    <span className="sr-only">Brew actions</span>
-                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -319,8 +316,19 @@ function MobileShotCard({
 
   return (
     <li className="list-none">
-      <Card size="sm" className="gap-0 border border-border py-0">
-        <CardContent className="flex items-center gap-3 p-3 sm:p-4">
+      <Card
+        size="sm"
+        className="gap-0 border border-border py-0 transition-transform duration-200 hover:-translate-y-0.5 motion-reduce:hover:translate-y-0"
+      >
+        <Link
+          to="/brews/$shotId"
+          params={{ shotId: String(shot.id) }}
+          aria-label={`Open brew from ${shotDate}`}
+          className={cn(
+            interactiveCardLinkClassName,
+            'flex items-center gap-3 p-3 hover:translate-y-0 motion-reduce:hover:translate-y-0 sm:p-4',
+          )}
+        >
           {!hideBean && beanThumb && (
             <ImageWithFallback
               src={beanThumb}
@@ -354,16 +362,11 @@ function MobileShotCard({
               {formatShotSummary(shot, formatNumber)}
             </p>
           </div>
-          <Button asChild variant="outline" size="xs">
-            <Link
-              to="/brews/$shotId"
-              params={{ shotId: String(shot.id) }}
-              aria-label={`Open brew from ${shotDate}`}
-            >
-              Open
-            </Link>
-          </Button>
-        </CardContent>
+          <ChevronRight
+            aria-hidden
+            className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-1"
+          />
+        </Link>
       </Card>
     </li>
   )
@@ -385,7 +388,15 @@ function ShotRow({
 
   return (
     <TableRow className="focus-within:bg-muted/50">
-      <TableCell className="font-medium">{shotDate}</TableCell>
+      <TableCell className="font-medium">
+        <Link
+          to="/brews/$shotId"
+          params={{ shotId: String(shot.id) }}
+          className="inline-flex min-h-11 items-center rounded-sm text-link underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          {shotDate}
+        </Link>
+      </TableCell>
       {!hideBean && (
         <TableCell>
           {shot.bean ? (
@@ -433,17 +444,6 @@ function ShotRow({
           )}
         </TableCell>
       )}
-      <TableCell className="w-px text-right">
-        <Button asChild variant="outline" size="xs">
-          <Link
-            to="/brews/$shotId"
-            params={{ shotId: String(shot.id) }}
-            aria-label={`Open brew from ${shotDate}`}
-          >
-            Open
-          </Link>
-        </Button>
-      </TableCell>
     </TableRow>
   )
 }
