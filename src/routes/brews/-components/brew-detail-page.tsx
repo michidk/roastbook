@@ -4,7 +4,7 @@ import {
   useNavigate,
   useRouter,
 } from '@tanstack/react-router'
-import { ArrowLeft, Pencil } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { DeleteConfirmation } from '@/components/delete-confirmation'
@@ -194,6 +194,11 @@ export function BrewDetailPage() {
     <Page width="form">
       <PageHeader
         size="compact"
+        className={
+          isEditing
+            ? 'relative pr-14 sm:pr-0 [&>div:last-child]:absolute [&>div:last-child]:top-0 [&>div:last-child]:right-0 sm:[&>div:last-child]:static'
+            : undefined
+        }
         title={shot.bean?.name || 'Unknown beans'}
         description={
           <time dateTime={new Date(shot.brewedAt).toISOString()}>
@@ -245,6 +250,16 @@ export function BrewDetailPage() {
               title="Delete this brew?"
               description="This action cannot be undone."
               onConfirm={handleDelete}
+              trigger={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="border border-destructive/20 bg-destructive/5 text-destructive-text hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive-text"
+                  aria-label="Delete brew"
+                >
+                  <Trash2 aria-hidden />
+                </Button>
+              }
             />
           </>
         }
