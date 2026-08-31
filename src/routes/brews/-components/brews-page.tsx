@@ -9,10 +9,7 @@ import { EmptyState } from '@/components/empty-state'
 import { ImageWithFallback } from '@/components/image-with-fallback'
 import { Page, PageHeader } from '@/components/page-layout'
 import { PaginationControls } from '@/components/pagination-controls'
-import {
-  BrewCollectionFilters,
-  BrewCollectionToolbar,
-} from '@/components/shots/brew-collection-toolbar'
+import { BrewCollectionFilters } from '@/components/shots/brew-collection-toolbar'
 import { ShotsViewToggle } from '@/components/shots/shots-overview'
 import { ShotsTable } from '@/components/shots/shots-table'
 import { Button } from '@/components/ui/button'
@@ -213,33 +210,38 @@ export function BrewsPage({
               />
             )}
             {(totalItems > 0 || hasActiveFilters) && (
-              <BrewCollectionFilters
-                methodId={search.methodId ? String(search.methodId) : ''}
-                rating={
-                  search.rating !== undefined ? String(search.rating) : ''
-                }
-                methods={data.methods}
-                resultLabel={resultLabel}
-                onMethodChange={(value) =>
-                  updateSearch({
-                    methodId: value ? Number(value) : undefined,
-                    page: 1,
-                  })
-                }
-                onRatingChange={(value) =>
-                  updateSearch({
-                    rating: value ? Number(value) : undefined,
-                    page: 1,
-                  })
-                }
-                onClearFilters={() =>
-                  updateSearch({
-                    methodId: undefined,
-                    rating: undefined,
-                    page: 1,
-                  })
-                }
-              />
+              <>
+                <p className="text-sm text-muted-foreground" aria-live="polite">
+                  {resultLabel}
+                </p>
+                <BrewCollectionFilters
+                  methodId={search.methodId ? String(search.methodId) : ''}
+                  rating={
+                    search.rating !== undefined ? String(search.rating) : ''
+                  }
+                  methods={data.methods}
+                  resultLabel={resultLabel}
+                  onMethodChange={(value) =>
+                    updateSearch({
+                      methodId: value ? Number(value) : undefined,
+                      page: 1,
+                    })
+                  }
+                  onRatingChange={(value) =>
+                    updateSearch({
+                      rating: value ? Number(value) : undefined,
+                      page: 1,
+                    })
+                  }
+                  onClearFilters={() =>
+                    updateSearch({
+                      methodId: undefined,
+                      rating: undefined,
+                      page: 1,
+                    })
+                  }
+                />
+              </>
             )}
             <Button asChild>
               <Link to="/brews/new">
@@ -250,14 +252,6 @@ export function BrewsPage({
           </>
         }
       />
-
-      {totalItems > 0 || hasActiveFilters ? (
-        <BrewCollectionToolbar
-          methodId={search.methodId ? String(search.methodId) : ''}
-          rating={search.rating !== undefined ? String(search.rating) : ''}
-          resultLabel={resultLabel}
-        />
-      ) : null}
 
       {totalItems === 0 && !hasActiveFilters ? (
         <EmptyState
