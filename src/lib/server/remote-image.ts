@@ -9,12 +9,38 @@ import { MAX_IMAGE_BYTES } from '@/lib/server-validation'
 const MAX_REDIRECTS = 4
 const REQUEST_TIMEOUT_MS = 15_000
 const IMAGE_MIME_TYPES = new Set<string>(IMAGE_MIME_TYPE_VALUES)
+const IMAGE_EXTENSION_BY_MIME_TYPE: Readonly<Record<string, string>> = {
+  'image/avif': 'avif',
+  'image/gif': 'gif',
+  'image/heic': 'heic',
+  'image/heif': 'heif',
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+}
 
 class RemoteImageError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'RemoteImageError'
   }
+}
+
+export function remoteImageFilename(url: URL, mimeType: string): string {
+  let decodedPath = url.pathname
+  try {
+    decodedPath = decodeURIComponent(url.pathname)
+  } catch {
+    // Keep the URL-encoded path when a remote server uses malformed escapes.
+  }
+
+  const pathName = basename(decodedPath)
+  const extension = IMAGE_EXTENSION_BY_MIME_TYPE[mimeType]
+  if (!extension) return 'picture'
+
+  const stem = pathName.replace(/\.[^.]*$/, '') || 'picture'
+  const filename = `${stem}.${extension}`
+  return filename.length <= 255 ? filename : `picture.${extension}`
 }
 
 async function readLimitedBody(response: Response): Promise<Buffer> {
@@ -88,20 +114,9 @@ async function downloadImage(value: string) {
     }
 
     const content = await readLimitedBody(response)
-    let decodedPath = url.pathname
-    try {
-      decodedPath = decodeURIComponent(url.pathname)
-    } catch {
-      // Keep the URL-encoded path when a remote server uses malformed escapes.
-    }
-    const pathName = basename(decodedPath)
-    const filename =
-      pathName.includes('.') && pathName.length <= 255
-        ? pathName
-        : `picture.${mimeType.split('/')[1]}`
     return {
       base64: content.toString('base64'),
-      filename,
+      filename: remoteImageFilename(url, mimeType),
       mimeType,
       sizeBytes: content.byteLength,
     }
