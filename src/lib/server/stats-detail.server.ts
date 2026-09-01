@@ -74,16 +74,9 @@ export async function loadDetailedStats(
       method: filter.method,
       bean: filter.bean,
     })
-    const activityCalendarStartDate = new Date(`${today}T00:00:00Z`)
-    activityCalendarStartDate.setUTCDate(
-      activityCalendarStartDate.getUTCDate() - 364,
-    )
-    const activityCalendarStart = activityCalendarStartDate
-      .toISOString()
-      .slice(0, 10)
     const activityCalendarWhere = shotCondition({
       timeZone,
-      start: activityCalendarStart,
+      start: null,
       end: today,
       method: filter.method,
       bean: filter.bean,
@@ -438,15 +431,8 @@ export async function loadDetailedStats(
         }),
       ),
       activityCalendar: {
-        start: activityCalendarStart,
         end: today,
-        days: fillBucketSeries(
-          activityCalendarDates,
-          activityCalendarStart,
-          today,
-          'day',
-          (date) => ({ date, count: 0 }),
-        ),
+        days: activityCalendarDates,
       },
       methods: methodUsage,
       tasteProfile,

@@ -94,7 +94,6 @@ export type DetailedStats = {
     readonly highRated: number
   }[]
   readonly activityCalendar: {
-    readonly start: string
     readonly end: string
     readonly days: readonly { readonly date: string; readonly count: number }[]
   }

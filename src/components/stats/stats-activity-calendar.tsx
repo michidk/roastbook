@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
@@ -24,6 +25,34 @@ const DAY_LABELS = [
 
 function activityLevel(count: number): number {
   return Math.min(count, 4)
+}
+
+export function availableYears(
+  days: readonly ActivityDay[],
+  end: string,
+): number[] {
+  const years = new Set(days.map((day) => Number(day.date.slice(0, 4))))
+  years.add(Number(end.slice(0, 4)))
+  return [...years].sort((first, second) => second - first)
+}
+
+export function buildYearDays(
+  year: number,
+  end: string,
+  counts: ReadonlyMap<string, number>,
+): ActivityDay[] {
+  const lastDate = end < `${year}-12-31` ? end : `${year}-12-31`
+  const cursor = new Date(Date.UTC(year, 0, 1))
+  const days: ActivityDay[] = []
+  for (
+    let date = cursor.toISOString().slice(0, 10);
+    date <= lastDate;
+    cursor.setUTCDate(cursor.getUTCDate() + 1),
+      date = cursor.toISOString().slice(0, 10)
+  ) {
+    days.push({ date, count: counts.get(date) ?? 0 })
+  }
+  return days
 }
 
 function buildWeeks(days: readonly ActivityDay[]): CalendarCell[][] {
@@ -74,20 +103,29 @@ export function StatsActivityCalendar({
   const formatDate = useDateFormatter()
   const formatNumber = useNumberFormatter()
   const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const weeks = buildWeeks(activity.days)
+  const years = availableYears(activity.days, activity.end)
+  const [selectedYear, setSelectedYear] = useState(years[0])
+  const year =
+    selectedYear !== undefined && years.includes(selectedYear)
+      ? selectedYear
+      : (years[0] ?? Number(activity.end.slice(0, 4)))
+  const counts = new Map(activity.days.map((day) => [day.date, day.count]))
+  const days = buildYearDays(year, activity.end, counts)
+  const weeks = buildWeeks(days)
   const months = monthLabels(weeks)
-  const total = activity.days.reduce((sum, day) => sum + day.count, 0)
-  const activeDays = activity.days.filter((day) => day.count > 0).length
-  const busiest = activity.days.reduce<ActivityDay | null>(
-    (highest, day) => (!highest || day.count > highest.count ? day : highest),
+  const total = days.reduce((sum, day) => sum + day.count, 0)
+  const activeDays = days.filter((day) => day.count > 0).length
+  const busiest = days.reduce<ActivityDay | null>(
+    (highest, day) =>
+      day.count > 0 && (!highest || day.count > highest.count) ? day : highest,
     null,
   )
   const summary =
     total === 0
-      ? 'No brews recorded in the last 12 months.'
+      ? `No brews recorded in ${year}.`
       : `${countLabel(total, formatNumber)} across ${formatNumber(activeDays)} ${
           activeDays === 1 ? 'day' : 'days'
-        }. ${
+        } in ${year}. ${
           busiest
             ? `Busiest day: ${formatDate(busiest.date)} with ${countLabel(
                 busiest.count,
@@ -100,26 +138,42 @@ export function StatsActivityCalendar({
     const container = scrollContainerRef.current
     if (!container) return
 
-    let hasAlignedToLatest = false
-    const alignToLatest = () => {
-      if (
-        !hasAlignedToLatest &&
-        container.scrollWidth > container.clientWidth
-      ) {
-        container.scrollLeft = container.scrollWidth
-        hasAlignedToLatest = true
+    let hasAligned = false
+    const align = () => {
+      if (!hasAligned && container.scrollWidth > container.clientWidth) {
+        container.scrollLeft =
+          year === Number(activity.end.slice(0, 4)) ? container.scrollWidth : 0
+        hasAligned = true
       }
     }
-    alignToLatest()
-    const observer = new ResizeObserver(alignToLatest)
+    align()
+    const observer = new ResizeObserver(align)
     observer.observe(container)
     return () => observer.disconnect()
-  }, [])
+  }, [year, activity.end])
 
   return (
     <Card className="w-full min-w-0 max-w-full">
       <CardHeader>
-        <CardTitle>Coffee activity</CardTitle>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <CardTitle>Coffee activity</CardTitle>
+          {years.length > 1 ? (
+            <div className="flex flex-wrap justify-end gap-1">
+              {years.map((option) => (
+                <Button
+                  key={option}
+                  type="button"
+                  size="xs"
+                  variant={option === year ? 'secondary' : 'ghost'}
+                  aria-pressed={option === year}
+                  onClick={() => setSelectedYear(option)}
+                >
+                  {option}
+                </Button>
+              ))}
+            </div>
+          ) : null}
+        </div>
         <p className="text-sm text-muted-foreground">
           {summary} Darker tiles mean more brews that day.
         </p>
@@ -130,7 +184,12 @@ export function StatsActivityCalendar({
           className="w-full max-w-full overflow-x-auto pb-2"
         >
           <div className="w-max">
-            <div className="ml-8 grid h-5 grid-cols-[repeat(53,var(--activity-tile))] gap-[3px] text-xs text-muted-foreground [--activity-tile:0.625rem] sm:gap-1 sm:[--activity-tile:0.75rem]">
+            <div
+              className="ml-8 grid h-5 gap-[3px] text-xs text-muted-foreground [--activity-tile:0.625rem] sm:gap-1 sm:[--activity-tile:0.75rem]"
+              style={{
+                gridTemplateColumns: `repeat(${weeks.length}, var(--activity-tile))`,
+              }}
+            >
               {months.map((month) => (
                 <span
                   key={`${month.weekIndex}-${month.label}`}
@@ -156,9 +215,12 @@ export function StatsActivityCalendar({
                 ))}
               </div>
               <div
-                className="grid grid-flow-col grid-cols-[repeat(53,var(--activity-tile))] grid-rows-[repeat(7,var(--activity-tile))] gap-[3px] [--activity-tile:0.625rem] sm:gap-1 sm:[--activity-tile:0.75rem]"
+                className="grid grid-flow-col grid-rows-[repeat(7,var(--activity-tile))] gap-[3px] [--activity-tile:0.625rem] sm:gap-1 sm:[--activity-tile:0.75rem]"
+                style={{
+                  gridTemplateColumns: `repeat(${weeks.length}, var(--activity-tile))`,
+                }}
                 role="img"
-                aria-label={`Coffee activity from ${formatDate(activity.start)} to ${formatDate(activity.end)}. ${summary}`}
+                aria-label={`Coffee activity in ${year}. ${summary}`}
               >
                 {weeks.flatMap((week, weekIndex) =>
                   week.map((day, dayIndex) =>
