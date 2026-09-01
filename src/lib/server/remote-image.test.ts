@@ -16,6 +16,12 @@ describe('remoteImageFilename', () => {
     expect(remoteImageFilename(url, 'image/webp')).toBe('My Coffee.webp')
   })
 
+  test('uses the final path segment when the URL has a trailing slash', () => {
+    const url = new URL('https://example.com/catalog/My%20Coffee.jpeg/')
+
+    expect(remoteImageFilename(url, 'image/webp')).toBe('My Coffee.webp')
+  })
+
   test('falls back when the resulting filename is too long', () => {
     const url = new URL(`https://example.com/${'a'.repeat(252)}.png`)
 

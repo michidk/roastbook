@@ -1,4 +1,3 @@
-import { basename } from 'node:path'
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { IMAGE_MIME_TYPE_VALUES } from '@/lib/domain-contracts'
@@ -34,7 +33,7 @@ export function remoteImageFilename(url: URL, mimeType: string): string {
     // Keep the URL-encoded path when a remote server uses malformed escapes.
   }
 
-  const pathName = basename(decodedPath)
+  const pathName = decodedPath.split('/').filter(Boolean).at(-1) ?? ''
   const extension = IMAGE_EXTENSION_BY_MIME_TYPE[mimeType]
   if (!extension) return 'picture'
 
