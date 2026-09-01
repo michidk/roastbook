@@ -55,16 +55,6 @@ export const Route = createFileRoute('/visits/')({
 
 type Visit = Awaited<ReturnType<typeof getCafeVisitPage>>['items'][number]
 
-function SectionHeading({ title, count }: { title: string; count: number }) {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <h2 className="font-display text-lg font-bold tracking-tight text-foreground">
-        {title} · {count}
-      </h2>
-    </div>
-  )
-}
-
 function VisitsPage() {
   const visitPage = Route.useLoaderData()
   const search = Route.useSearch()
@@ -85,59 +75,66 @@ function VisitsPage() {
         title="Café visits"
         description="Remember the coffees and cafés you experience."
         help="Café visits capture what you ordered, where you went, what it cost, and how it tasted. Use them as a personal history of coffee experiences away from home."
+      />
+
+      <CollectionToolbar
+        value={search.query}
+        onValueChange={(query) =>
+          updateSearch({ query, page: 1 }, { replace: true })
+        }
+        placeholder="Search visits…"
+        ariaLabel="Search visits"
+        resultLabel={`${visitPage.totalItems} ${visitPage.totalItems === 1 ? 'visit' : 'visits'}`}
         actions={
           <Button asChild>
             <Link to="/visits/new" search={{ coffeeShopId: undefined }}>
-              <Plus className="h-4 w-4" />
+              <Plus aria-hidden className="h-4 w-4" />
               Log a visit
+            </Link>
+          </Button>
+        }
+        mobileSearchActions={
+          <Button asChild size="icon">
+            <Link
+              to="/visits/new"
+              search={{ coffeeShopId: undefined }}
+              aria-label="Log a visit"
+            >
+              <Plus aria-hidden />
             </Link>
           </Button>
         }
       />
 
-      <section className="space-y-3">
-        <SectionHeading title="Visit history" count={visitPage.totalItems} />
-
-        <CollectionToolbar
-          value={search.query}
-          onValueChange={(query) =>
-            updateSearch({ query, page: 1 }, { replace: true })
-          }
-          placeholder="Search visits…"
-          ariaLabel="Search visits"
-          resultLabel={`${visitPage.totalItems} ${visitPage.totalItems === 1 ? 'visit' : 'visits'}`}
+      {visitPage.totalItems === 0 && !search.query ? (
+        <EmptyState
+          icon={UtensilsCrossed}
+          title="No visits logged yet"
+          description="Log your first visit to start your café experience history."
+          actionLabel="Log a visit"
+          actionHref="/visits/new"
+          actionSearch={{ coffeeShopId: undefined }}
         />
-
-        {visitPage.totalItems === 0 && !search.query ? (
-          <EmptyState
-            icon={UtensilsCrossed}
-            title="No visits logged yet"
-            description="Log your first visit to start your café experience history."
-            actionLabel="Log a visit"
-            actionHref="/visits/new"
-            actionSearch={{ coffeeShopId: undefined }}
-          />
-        ) : visitPage.totalItems === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No visits match “{search.query}”.
-          </p>
-        ) : (
-          <>
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {visits.map((visit) => (
-                <VisitCard key={visit.id} visit={visit} />
-              ))}
-            </div>
-            {visitPage.totalPages > 1 && (
-              <PaginationControls
-                page={visitPage.page}
-                totalPages={visitPage.totalPages}
-                onPageChange={(page) => updateSearch({ page })}
-              />
-            )}
-          </>
-        )}
-      </section>
+      ) : visitPage.totalItems === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No visits match “{search.query}”.
+        </p>
+      ) : (
+        <div className="space-y-4">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {visits.map((visit) => (
+              <VisitCard key={visit.id} visit={visit} />
+            ))}
+          </div>
+          {visitPage.totalPages > 1 && (
+            <PaginationControls
+              page={visitPage.page}
+              totalPages={visitPage.totalPages}
+              onPageChange={(page) => updateSearch({ page })}
+            />
+          )}
+        </div>
+      )}
     </Page>
   )
 }

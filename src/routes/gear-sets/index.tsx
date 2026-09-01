@@ -101,11 +101,43 @@ function GearSetsPage() {
         title="Gear sets"
         description="Save equipment combinations you regularly brew with."
         help="Gear sets group equipment you use together, such as your home, work, or travel setup. Load a set into a new brew to fill its equipment with one tap."
+      />
+
+      <CollectionToolbar
+        value={search.query}
+        onValueChange={(query) =>
+          updateSearch({ query, page: 1 }, { replace: true })
+        }
+        placeholder="Search gear sets…"
+        ariaLabel="Search gear sets"
+        resultLabel={`${pageData.totalItems} ${pageData.totalItems === 1 ? 'gear set' : 'gear sets'}`}
+        filters={(idSuffix) => (
+          <CollectionSortControl
+            id={`gear-set-sort${idSuffix}`}
+            options={SORT_OPTIONS}
+            sort={search.sort}
+            direction={search.direction}
+            onSortChange={handleSortChange}
+            onDirectionToggle={() =>
+              updateSearch({
+                direction: search.direction === 'asc' ? 'desc' : 'asc',
+                page: 1,
+              })
+            }
+          />
+        )}
         actions={
           <Button asChild>
             <Link to="/gear-sets/new">
-              <Plus className="h-4 w-4" />
+              <Plus aria-hidden className="h-4 w-4" />
               Add gear set
+            </Link>
+          </Button>
+        }
+        mobileSearchActions={
+          <Button asChild size="icon">
+            <Link to="/gear-sets/new" aria-label="Add gear set">
+              <Plus aria-hidden />
             </Link>
           </Button>
         }
@@ -121,31 +153,6 @@ function GearSetsPage() {
         />
       ) : (
         <div className="space-y-4">
-          <CollectionToolbar
-            value={search.query}
-            onValueChange={(query) =>
-              updateSearch({ query, page: 1 }, { replace: true })
-            }
-            placeholder="Search gear sets…"
-            ariaLabel="Search gear sets"
-            resultLabel={`${pageData.totalItems} ${pageData.totalItems === 1 ? 'gear set' : 'gear sets'}`}
-            filters={(idSuffix) => (
-              <CollectionSortControl
-                id={`gear-set-sort${idSuffix}`}
-                options={SORT_OPTIONS}
-                sort={search.sort}
-                direction={search.direction}
-                onSortChange={handleSortChange}
-                onDirectionToggle={() =>
-                  updateSearch({
-                    direction: search.direction === 'asc' ? 'desc' : 'asc',
-                    page: 1,
-                  })
-                }
-              />
-            )}
-          />
-
           {pageData.totalItems === 0 ? (
             <p className="py-4 text-sm text-muted-foreground">
               No gear sets match “{search.query}”.

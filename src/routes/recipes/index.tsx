@@ -192,10 +192,34 @@ function RecipesPage() {
         title="Recipes"
         description="Save brew settings you want to use again."
         help="Recipes are reusable starting points for a brewing method. Save measurements, temperatures, timings, beans, and equipment, then load them when creating a new brew."
+      />
+
+      <CollectionToolbar
+        value={search.query}
+        onValueChange={(query) => updateSearch({ query, page: 1 })}
+        placeholder="Search recipes…"
+        ariaLabel="Search recipes"
+        resultLabel={`${pageData.totalItems} ${pageData.totalItems === 1 ? 'recipe' : 'recipes'}`}
         actions={
-          <Button asChild>
-            <Link to="/recipes/new">
-              <Plus aria-hidden="true" /> New recipe
+          <>
+            <CollectionViewToggle
+              value={view}
+              onValueChange={setView}
+              disabled={!isReady}
+              label="Recipe list view"
+            />
+            <Button asChild>
+              <Link to="/recipes/new">
+                <Plus aria-hidden className="h-4 w-4" />
+                New recipe
+              </Link>
+            </Button>
+          </>
+        }
+        mobileSearchActions={
+          <Button asChild size="icon">
+            <Link to="/recipes/new" aria-label="New recipe">
+              <Plus aria-hidden />
             </Link>
           </Button>
         }
@@ -210,45 +234,27 @@ function RecipesPage() {
           actionHref="/brews"
         />
       ) : (
-        <div className="space-y-4">
-          <CollectionToolbar
-            value={search.query}
-            onValueChange={(query) => updateSearch({ query, page: 1 })}
-            placeholder="Search recipes…"
-            ariaLabel="Search recipes"
-            resultLabel={`${pageData.totalItems} ${pageData.totalItems === 1 ? 'recipe' : 'recipes'}`}
-            actions={
-              <CollectionViewToggle
-                value={view}
-                onValueChange={setView}
-                disabled={!isReady}
-                label="Recipe list view"
-              />
-            }
+        <CollectionResults
+          totalItems={pageData.totalItems}
+          emptyMessage={<>No recipes match “{search.query}”.</>}
+          page={pageData.page}
+          totalPages={pageData.totalPages}
+          onPageChange={(page) => updateSearch({ page })}
+        >
+          <CollectionList
+            view={view}
+            items={pageData.items}
+            getEntry={toEntry}
+            columns={columns}
+            titleHeader="Recipe"
+            titleSortKey="name"
+            sort={{
+              key: search.sort,
+              direction: search.direction,
+              onSort: handleSort,
+            }}
           />
-
-          <CollectionResults
-            totalItems={pageData.totalItems}
-            emptyMessage={<>No recipes match “{search.query}”.</>}
-            page={pageData.page}
-            totalPages={pageData.totalPages}
-            onPageChange={(page) => updateSearch({ page })}
-          >
-            <CollectionList
-              view={view}
-              items={pageData.items}
-              getEntry={toEntry}
-              columns={columns}
-              titleHeader="Recipe"
-              titleSortKey="name"
-              sort={{
-                key: search.sort,
-                direction: search.direction,
-                onSort: handleSort,
-              }}
-            />
-          </CollectionResults>
-        </div>
+        </CollectionResults>
       )}
     </Page>
   )
