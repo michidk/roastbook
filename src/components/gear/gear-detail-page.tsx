@@ -8,12 +8,23 @@ import { GearEditForm } from '@/components/gear/gear-edit-form'
 import {
   gearFormValuesFrom,
   gearUpdatePayload,
+  mergeGearPropertyEvidence,
 } from '@/components/gear/gear-form-values'
 import { GearReadOnlyContent } from '@/components/gear/gear-read-only-content'
-import { MachineSettingsDiffModal } from '@/components/gear/machine-settings-diff-modal'
+import { MachineResearchDiffModal } from '@/components/gear/machine-settings-diff-modal'
 import { Page } from '@/components/page-layout'
 import type { ShotsTableServerPagination } from '@/components/shots/shots-table'
 import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/dialog'
 import { getErrorMessage } from '@/lib/error-message'
 import {
   deleteGear,
@@ -22,7 +33,7 @@ import {
   updateGear,
 } from '@/lib/server/gear'
 import type { getGearShotPage } from '@/lib/server/shots'
-import type { ExtractedMachineSettings } from '@/modules/ai/read-models'
+import type { ExtractedMachineResearch } from '@/modules/ai/read-models'
 
 type Gear = Awaited<ReturnType<typeof getGearById>>
 type Shots = Awaited<ReturnType<typeof getGearShotPage>>['items']
@@ -47,8 +58,9 @@ export function GearDetailPage({
   const [isSaving, setIsSaving] = useState(false)
   const [isResearching, setIsResearching] = useState(false)
   const [researchModalOpen, setResearchModalOpen] = useState(false)
-  const [researchedSettings, setResearchedSettings] =
-    useState<ExtractedMachineSettings | null>(null)
+  const [typeChangeDialogOpen, setTypeChangeDialogOpen] = useState(false)
+  const [researchedMachine, setResearchedMachine] =
+    useState<ExtractedMachineResearch | null>(null)
   const [formData, setFormData] = useState(() => gearFormValuesFrom(gear))
 
   if (!gear) {
@@ -91,7 +103,7 @@ export function GearDetailPage({
         toast.error('No documented machine settings found')
         return
       }
-      setResearchedSettings(result)
+      setResearchedMachine(result)
       setResearchModalOpen(true)
     } catch (error) {
       toast.error(getErrorMessage(error, 'Research failed'))
@@ -100,13 +112,15 @@ export function GearDetailPage({
     }
   }
 
-  const handleSave = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+  const saveGear = async (confirmTypeChange: boolean) => {
     if (!formData.brand.trim() || !formData.model.trim() || !formData.type)
       return
     setIsSaving(true)
     try {
-      await updateGear({ data: gearUpdatePayload(gear.id, formData) })
+      await updateGear({
+        data: gearUpdatePayload(gear.id, formData, confirmTypeChange),
+      })
+      setFormData((current) => ({ ...current, propertyEvidence: [] }))
       await onFinishEditing()
       await invalidateDetail()
     } catch (error) {
@@ -114,6 +128,15 @@ export function GearDetailPage({
     } finally {
       setIsSaving(false)
     }
+  }
+
+  const handleSave = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (formData.type && formData.type !== gear.type) {
+      setTypeChangeDialogOpen(true)
+      return
+    }
+    await saveGear(false)
   }
 
   const handleToggleArchive = async () => {
@@ -180,18 +203,52 @@ export function GearDetailPage({
           />
         </>
       )}
-      {researchedSettings ? (
-        <MachineSettingsDiffModal
+      {researchedMachine ? (
+        <MachineResearchDiffModal
           open={researchModalOpen}
           onOpenChange={setResearchModalOpen}
           currentData={formData}
-          suggestedData={researchedSettings}
-          onApply={(updates) => {
-            setFormData((current) => ({ ...current, ...updates }))
-            toast.success(`Applied ${Object.keys(updates).length} changes`)
+          suggestedData={researchedMachine}
+          onApply={({ values, evidence }) => {
+            setFormData((current) => ({
+              ...current,
+              ...values,
+              propertyEvidence: mergeGearPropertyEvidence(
+                current.propertyEvidence,
+                evidence,
+              ),
+            }))
+            toast.success(
+              `Applied ${Object.keys(values).length} sourced values`,
+            )
           }}
         />
       ) : null}
+      <AlertDialog
+        open={typeChangeDialogOpen}
+        onOpenChange={setTypeChangeDialogOpen}
+      >
+        <AlertDialogContent showCloseButton={false}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Change equipment type?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Incompatible structured properties will be removed when this item
+              changes from {gear.type.replaceAll('_', ' ')} to{' '}
+              {formData.type.replaceAll('_', ' ')}. Historical machine-setting
+              revisions referenced by existing brews remain intact.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isSaving}
+              onClick={() => void saveGear(true)}
+            >
+              {isSaving ? 'Changing…' : 'Change type'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Page>
   )
 }

@@ -13,10 +13,9 @@ from bundled sample data and requires no account or database.
 Photograph a bag and Roastbook reads the label: origin, region, farm, variety,
 process, roast level, roast date, tasting notes. Type a roaster's name and it
 researches the website, location, and background. Add an espresso machine and it
-looks up the documented factory defaults — brew pressure and OPV, pre-infusion
-time and pressure, flow limit, volumetric dose, steam pressure — from manuals and
-manufacturer documentation, so your brew log starts from real numbers instead of
-guesses.
+looks up documented capabilities and factory defaults from exact-model manuals
+and manufacturer sources. Every accepted value keeps its source, and factory
+facts stay separate from your current setup.
 
 Logging coffee should take seconds, not minutes. Roastbook is built so the
 tedious part — transcribing labels, hunting down specs, remembering what changed
@@ -35,8 +34,8 @@ desktop where you dig through the numbers afterwards.
   takes three numbers.
 - **Serious when you want to be.** Pre-infusion time and pressure, brew pressure,
   flow rate, brew temperature, grind setting, tamp force, basket, puck screen, and
-  paper filter position per brew — plus documented machine-level OPV, factory
-  pre-infusion, flow limit, and volumetric defaults on your gear.
+  paper filter position per brew — plus typed capabilities for each equipment
+  type and revisioned espresso-machine settings that preserve old brew context.
 - **Numbers that answer questions.** A year-long coffee activity calendar and
   filterable statistics connect brew quality to beans, methods, taste,
   consistency, timing, gear, and cost, while parameter charts show what a change
@@ -63,9 +62,9 @@ Set `OPENAI_API_KEY` and these turn on — everything else works without it:
   the roaster's own sources.
 - **Roaster research.** Resolve official website, Instagram, location, and a
   factual profile.
-- **Machine research.** Pull documented factory espresso settings for your
-  specific model, with strict rules against inferring values from similar
-  machines.
+- **Machine research.** Pull sourced capabilities and factory espresso settings
+  for your specific model, with strict rules against weak evidence, pump-rating
+  guesses, or values from similar machines.
 - **Brew recommendations.** Compare a new-brew draft or one specific logged brew
   with up to 50 brews for the same bean, method, and exact gear setup, then get
   an evidence-grounded opinion and a small adjustment for the next brew.
@@ -95,9 +94,9 @@ an assistant log this morning's espresso for you.
 - Or pick the simple taste profile, which replaces the individual factors with
   one sour-to-bitter scale — sour points at under-extraction and bitter at
   over-extraction, the usual first dial-in move.
-- Catalog beans, roasters, brewing methods, coffee shops, and gear, and group
-  equipment into reusable gear sets that fill new brew and recipe equipment
-  fields in one tap.
+- Catalog beans, roasters, brewing methods, coffee shops, and typed gear details,
+  and group equipment into reusable gear sets that fill new brew and recipe
+  equipment fields in one tap.
 - Track café visits and explore visited locations on a map.
 - Configure drink and milk types in Settings, assign drink types to brewing
   methods to keep new-brew choices relevant, then record the finished drink
@@ -105,9 +104,9 @@ an assistant log this morning's espresso for you.
 - Keep a Places list of saved cafés, from favorites to a want-to-visit
   wishlist.
 - Review filterable brew and café trends, quality, consistency, taste, rhythm,
-  exploration, gear usage, and costs.
-- Scan labels and research beans, roasters, and machine settings with AI, with
-  local request logs and token-cost estimates.
+  exploration, recipe performance, gear usage, and costs.
+- Scan labels and research beans, roasters, and sourced machine properties with
+  AI, with local request logs and token-cost estimates.
 - Search beans, cafés, and gear directly; jump to any page; start a new brew,
   bean, or visit; and switch theme from the command palette (`⌘K` or
   `Ctrl+K`).

@@ -50,7 +50,10 @@ databaseDescribe('PostgreSQL schema', () => {
           'recipe_accessory_gear_recipe_gear_idx',
           'bean_images_one_thumbnail_idx',
           'ai_request_logs_created_at_idx',
-          'roasters_name_idx'
+          'roasters_name_idx',
+          'brews_machine_setting_revision_id_idx',
+          'espresso_machine_setting_revisions_current_kind_idx',
+          'gear_property_evidence_gear_property_idx'
         )
     `
 
@@ -60,6 +63,9 @@ databaseDescribe('PostgreSQL schema', () => {
       'bean_images_one_thumbnail_idx',
       'brew_accessory_gear_brew_gear_idx',
       'brew_taste_tags_brew_tag_idx',
+      'brews_machine_setting_revision_id_idx',
+      'espresso_machine_setting_revisions_current_kind_idx',
+      'gear_property_evidence_gear_property_idx',
       'recipe_accessory_gear_recipe_gear_idx',
       'roasters_name_idx',
     ])
@@ -379,6 +385,84 @@ databaseDescribe('PostgreSQL schema', () => {
       await transaction`delete from brews where id = ${shot.id}`
       await transaction`delete from brewing_methods where id = ${method.id}`
     })
+  })
+
+  test('keeps historical machine-setting revisions linked to old brews', async () => {
+    await database().begin(async (transaction) => {
+      const [machine] = await transaction<[{ id: number }]>`
+        insert into gear (name, type)
+        values (${`revision-machine-${crypto.randomUUID()}`}, 'espresso_machine')
+        returning id
+      `
+      const [method] = await transaction<[{ id: number }]>`
+        insert into brewing_methods (name)
+        values (${`revision-method-${crypto.randomUUID()}`}) returning id
+      `
+      const [firstRevision] = await transaction<[{ id: number }]>`
+        insert into espresso_machine_setting_revisions (
+          gear_id,
+          kind,
+          brew_pressure_bar
+        ) values (${machine.id}, 'owner', 9) returning id
+      `
+      const [brew] = await transaction<[{ id: number }]>`
+        insert into brews (
+          brewing_method_id,
+          machine_id,
+          machine_setting_revision_id
+        ) values (${method.id}, ${machine.id}, ${firstRevision.id}) returning id
+      `
+
+      await transaction`
+        update espresso_machine_setting_revisions
+        set superseded_at = now()
+        where id = ${firstRevision.id}
+      `
+      const [secondRevision] = await transaction<[{ id: number }]>`
+        insert into espresso_machine_setting_revisions (
+          gear_id,
+          kind,
+          brew_pressure_bar
+        ) values (${machine.id}, 'owner', 8.5) returning id
+      `
+      const [recorded] = await transaction<
+        [{ machine_setting_revision_id: number | null }]
+      >`
+        select machine_setting_revision_id
+        from brews where id = ${brew.id}
+      `
+
+      expect(secondRevision.id).not.toBe(firstRevision.id)
+      expect(recorded.machine_setting_revision_id).toBe(firstRevision.id)
+
+      await transaction`delete from brews where id = ${brew.id}`
+      await transaction`delete from gear where id = ${machine.id}`
+      await transaction`delete from brewing_methods where id = ${method.id}`
+    })
+  })
+
+  test('allows only one current machine-setting revision per kind', async () => {
+    await expectPostgresError(
+      () =>
+        database().begin(async (transaction) => {
+          const [machine] = await transaction<[{ id: number }]>`
+            insert into gear (name, type)
+            values (${`unique-revision-${crypto.randomUUID()}`}, 'espresso_machine')
+            returning id
+          `
+          await transaction`
+            insert into espresso_machine_setting_revisions (
+              gear_id,
+              kind,
+              brew_pressure_bar
+            ) values
+              (${machine.id}, 'owner', 9),
+              (${machine.id}, 'owner', 8.5)
+          `
+        }),
+      '23505',
+      'espresso_machine_setting_revisions_current_kind_idx',
+    )
   })
 
   test('removes accessory gear links with deleted gear', async () => {

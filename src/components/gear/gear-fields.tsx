@@ -7,7 +7,10 @@ import {
   TextareaField,
 } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
-import type { GearFormValues } from '@/components/gear/gear-form-values'
+import type {
+  GearFormValues,
+  GearSubtypeFormValues,
+} from '@/components/gear/gear-form-values'
 import { GearSubtypeFields } from '@/components/gear/gear-subtype-fields'
 import { GEAR_TYPES, type GearType } from '@/lib/constants'
 
@@ -34,6 +37,10 @@ export function GearFields({
   idPrefix = 'gear',
 }: GearFieldsProps) {
   const id = (field: string) => `${idPrefix}-${field}`
+  const changeSubtypeValue = <Key extends keyof GearSubtypeFormValues>(
+    key: Key,
+    value: GearSubtypeFormValues[Key],
+  ) => onChange(key, value as GearFormValues[Key])
 
   return (
     <>
@@ -78,7 +85,8 @@ export function GearFields({
       <GearSubtypeFields
         type={values.type}
         values={values}
-        onChange={onChange}
+        onChange={changeSubtypeValue}
+        idPrefix={idPrefix}
         research={{
           ...research,
           disabled: !values.brand.trim() || !values.model.trim(),

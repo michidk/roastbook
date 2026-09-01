@@ -2,19 +2,38 @@ import { createServerFn } from '@tanstack/react-start'
 import { and, asc, count, desc, eq, ilike, or } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
-import { basketDetails, gear, machineSettings } from '@/db/schema'
+import {
+  espressoMachineSettingRevisions,
+  gear,
+  gearPropertyEvidence,
+} from '@/db/schema'
 import {
   escapedContainsPattern,
   resolvePagination,
 } from '@/lib/collection-query'
-import { isEspressoMachineGearType } from '@/lib/constants'
-import { AUTO_STOP_MODE_VALUES, GEAR_TYPE_VALUES } from '@/lib/domain-contracts'
-import { expectReturnedRow } from '@/lib/domain-errors'
+import { GEAR_TYPE_VALUES } from '@/lib/domain-contracts'
+import { DomainError, expectReturnedRow } from '@/lib/domain-errors'
 import { gearName } from '@/lib/gear-name'
 import {
+  basketDetailsSchema,
+  brewerDetailsSchema,
+  espressoMachineDetailsSchema,
+  espressoMachineSettingsSchema,
+  gearPropertyEvidenceSchema,
+  grinderDetailsSchema,
+  kettleDetailsSchema,
+  scaleDetailsSchema,
+  tamperDetailsSchema,
+  wdtDetailsSchema,
+} from '@/lib/gear-property-schemas'
+import {
   isResearchEnabled,
-  researchMachineSettingsFromWeb,
+  researchMachineFromWeb,
 } from '@/lib/server/ai-operations.server'
+import {
+  type GearPropertyPayload,
+  syncGearProperties,
+} from '@/lib/server/gear-properties.server'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
 import { withResourceLimits } from '@/lib/server/resource-limits.server'
 import {
@@ -24,28 +43,9 @@ import {
   notesSchema,
   positiveIdSchema,
 } from '@/lib/server-validation'
-import type { ExtractedMachineSettings } from '@/modules/ai/read-models'
+import type { ExtractedMachineResearch } from '@/modules/ai/read-models'
 
-const nullableDecimal = boundedDecimalStringSchema(99_999, 2).nullable()
 const nullableUrl = z.union([z.url().max(2_048), z.literal('')]).nullable()
-
-const machineSettingsSchema = z.object({
-  brewPressureOpvBar: nullableDecimal,
-  supportsPreinfusion: z.boolean().nullable(),
-  defaultPreinfusionEnabled: z.boolean().nullable(),
-  defaultPreinfusionTimeSeconds: nullableDecimal,
-  defaultPreinfusionPressureBar: nullableDecimal,
-  defaultFlowLimitMlPerSecond: nullableDecimal,
-  temperatureOffsetCelsius: boundedDecimalStringSchema(999.9, 1).nullable(),
-  volumetricShotVolumeMl: nullableDecimal,
-  autoStopMode: z.enum(AUTO_STOP_MODE_VALUES).nullable(),
-  steamTemperatureCelsius: boundedDecimalStringSchema(999.9, 1).nullable(),
-  steamPressureBar: nullableDecimal,
-})
-
-const basketDetailsSchema = z.object({
-  nominalDoseGrams: boundedDecimalStringSchema(999.99, 2).nullable(),
-})
 
 const gearCreateSchema = z.object({
   brand: nameSchema,
@@ -60,12 +60,22 @@ const gearCreateSchema = z.object({
   productUrl: nullableUrl.optional(),
   notes: notesSchema.nullable().optional(),
   isArchived: z.boolean().optional(),
-  machineSettings: machineSettingsSchema.nullable().optional(),
+  espressoMachineDetails: espressoMachineDetailsSchema.nullable().optional(),
+  ownerMachineSettings: espressoMachineSettingsSchema.nullable().optional(),
+  factoryMachineSettings: espressoMachineSettingsSchema.nullable().optional(),
+  grinderDetails: grinderDetailsSchema.nullable().optional(),
+  brewerDetails: brewerDetailsSchema.nullable().optional(),
+  kettleDetails: kettleDetailsSchema.nullable().optional(),
+  scaleDetails: scaleDetailsSchema.nullable().optional(),
+  tamperDetails: tamperDetailsSchema.nullable().optional(),
+  wdtDetails: wdtDetailsSchema.nullable().optional(),
   basketDetails: basketDetailsSchema.nullable().optional(),
+  propertyEvidence: z.array(gearPropertyEvidenceSchema).max(100).optional(),
 })
 
 const gearUpdateSchema = gearCreateSchema.partial().extend({
   id: positiveIdSchema,
+  confirmTypeChange: z.boolean().optional(),
 })
 
 const researchMachineSettingsSchema = z.object({
@@ -84,34 +94,55 @@ const researchMachineSettingsSchema = z.object({
 type GearValues = z.infer<typeof gearCreateSchema>
 
 const gearRelations = {
-  images: true,
-  machineSettings: true,
-  basketDetails: true,
-} as const
+  images: true as const,
+  espressoMachineDetails: true as const,
+  machineSettingRevisions: {
+    orderBy: [desc(espressoMachineSettingRevisions.effectiveFrom)],
+  },
+  grinderDetails: true as const,
+  brewerDetails: true as const,
+  kettleDetails: true as const,
+  scaleDetails: true as const,
+  tamperDetails: true as const,
+  wdtDetails: true as const,
+  basketDetails: true as const,
+  propertyEvidence: {
+    orderBy: [desc(gearPropertyEvidence.acceptedAt)],
+  },
+}
 
 function toGearUpdateRow(data: Partial<GearValues>) {
   const {
-    machineSettings: _machineSettings,
+    espressoMachineDetails: _espressoMachineDetails,
+    ownerMachineSettings: _ownerMachineSettings,
+    factoryMachineSettings: _factoryMachineSettings,
+    grinderDetails: _grinderDetails,
+    brewerDetails: _brewerDetails,
+    kettleDetails: _kettleDetails,
+    scaleDetails: _scaleDetails,
+    tamperDetails: _tamperDetails,
+    wdtDetails: _wdtDetails,
     basketDetails: _basketDetails,
+    propertyEvidence: _propertyEvidence,
     ...values
   } = data
   return values
 }
 
-async function replaceSubtype(
-  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
-  gearId: number,
-  data: Pick<GearValues, 'type' | 'machineSettings' | 'basketDetails'>,
-) {
-  await tx.delete(machineSettings).where(eq(machineSettings.gearId, gearId))
-  await tx.delete(basketDetails).where(eq(basketDetails.gearId, gearId))
-
-  if (isEspressoMachineGearType(data.type) && data.machineSettings) {
-    await tx.insert(machineSettings).values({ gearId, ...data.machineSettings })
-  }
-  if (data.type === 'basket' && data.basketDetails) {
-    await tx.insert(basketDetails).values({ gearId, ...data.basketDetails })
-  }
+function hasPropertyPayload(data: Partial<GearValues>) {
+  return [
+    data.espressoMachineDetails,
+    data.ownerMachineSettings,
+    data.factoryMachineSettings,
+    data.grinderDetails,
+    data.brewerDetails,
+    data.kettleDetails,
+    data.scaleDetails,
+    data.tamperDetails,
+    data.wdtDetails,
+    data.basketDetails,
+    data.propertyEvidence,
+  ].some((value) => value !== undefined)
 }
 
 export const getGear = createServerFn({ method: 'GET' }).handler(async () =>
@@ -200,17 +231,17 @@ export const createGear = createServerFn({ method: 'POST' })
   .validator(gearCreateSchema)
   .handler(async ({ data }) =>
     db.transaction(async (tx) => {
-      const {
-        machineSettings: _machineSettings,
-        basketDetails: _basketDetails,
-        ...gearValues
-      } = data
+      const { type, ...values } = data
       const [item] = await tx
         .insert(gear)
-        .values({ ...gearValues, name: gearName(data.brand, data.model) })
+        .values({
+          ...toGearUpdateRow(values),
+          type,
+          name: gearName(data.brand, data.model),
+        })
         .returning()
       const persistedItem = expectReturnedRow(item, 'Gear')
-      await replaceSubtype(tx, persistedItem.id, data)
+      await syncGearProperties(tx, persistedItem.id, type, data, false)
       return persistedItem
     }),
   )
@@ -219,17 +250,26 @@ export const updateGear = createServerFn({ method: 'POST' })
   .validator(gearUpdateSchema)
   .handler(async ({ data }) =>
     db.transaction(async (tx) => {
-      const { id, ...values } = data
+      const { id, confirmTypeChange, ...values } = data
+      const current = await tx.query.gear.findFirst({
+        where: eq(gear.id, id),
+        columns: { brand: true, model: true, type: true },
+      })
+      if (!current) throw new DomainError('not_found', 'Gear not found')
+      const typeChanged =
+        values.type !== undefined && values.type !== current.type
+      if (typeChanged && !confirmTypeChange) {
+        throw new DomainError(
+          'validation',
+          'Confirm the gear type change before removing incompatible details',
+        )
+      }
       let derivedName: string | undefined
       if (values.brand !== undefined || values.model !== undefined) {
-        const current = await tx.query.gear.findFirst({
-          where: eq(gear.id, id),
-          columns: { brand: true, model: true },
-        })
         derivedName =
           gearName(
-            values.brand ?? current?.brand,
-            values.model ?? current?.model,
+            values.brand ?? current.brand,
+            values.model ?? current.model,
           ) || undefined
       }
       const [item] = await tx
@@ -242,15 +282,14 @@ export const updateGear = createServerFn({ method: 'POST' })
         .where(eq(gear.id, id))
         .returning()
       const persistedItem = expectReturnedRow(item, 'Gear')
-      if (
-        values.type !== undefined ||
-        values.machineSettings !== undefined ||
-        values.basketDetails !== undefined
-      ) {
-        await replaceSubtype(tx, id, {
-          ...values,
-          type: values.type ?? persistedItem.type,
-        })
+      if (typeChanged || hasPropertyPayload(values)) {
+        await syncGearProperties(
+          tx,
+          id,
+          persistedItem.type,
+          values as GearPropertyPayload,
+          typeChanged,
+        )
       }
       return persistedItem
     }),
@@ -266,12 +305,12 @@ export const checkGearResearchEnabled = createServerFn({
 
 export const researchMachineSettings = createServerFn({ method: 'POST' })
   .validator(researchMachineSettingsSchema)
-  .handler(async ({ data }): Promise<ExtractedMachineSettings> => {
+  .handler(async ({ data }): Promise<ExtractedMachineResearch> => {
     if (!isResearchEnabled()) {
       throw new Error('OpenAI research is not configured')
     }
 
     return withResourceLimits('machine-web-research', () =>
-      researchMachineSettingsFromWeb(data.brand, data.model, data.knownContext),
+      researchMachineFromWeb(data.brand, data.model, data.knownContext),
     )
   })

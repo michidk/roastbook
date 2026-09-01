@@ -9,8 +9,9 @@ import { GearFields } from '@/components/gear/gear-fields'
 import {
   createEmptyGearFormValues,
   gearCreatePayload,
+  mergeGearPropertyEvidence,
 } from '@/components/gear/gear-form-values'
-import { MachineSettingsDiffModal } from '@/components/gear/machine-settings-diff-modal'
+import { MachineResearchDiffModal } from '@/components/gear/machine-settings-diff-modal'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
@@ -26,7 +27,7 @@ import {
   type EntityImageUploadFailure,
   uploadEntityImages,
 } from '@/lib/upload-entity-images'
-import type { ExtractedMachineSettings } from '@/modules/ai/read-models'
+import type { ExtractedMachineResearch } from '@/modules/ai/read-models'
 
 type CreatedGear = Awaited<ReturnType<typeof createGear>>
 
@@ -45,8 +46,8 @@ export function GearForm({
   const [researchEnabled, setResearchEnabled] = useState(false)
   const [isResearching, setIsResearching] = useState(false)
   const [researchModalOpen, setResearchModalOpen] = useState(false)
-  const [researchedSettings, setResearchedSettings] =
-    useState<ExtractedMachineSettings | null>(null)
+  const [researchedMachine, setResearchedMachine] =
+    useState<ExtractedMachineResearch | null>(null)
   const [createdGear, setCreatedGear] = useState<CreatedGear | null>(null)
   const [uploadFailures, setUploadFailures] = useState<
     readonly EntityImageUploadFailure[]
@@ -101,7 +102,7 @@ export function GearForm({
         toast.error('No documented machine settings found')
         return
       }
-      setResearchedSettings(result)
+      setResearchedMachine(result)
       setResearchModalOpen(true)
     } catch (error) {
       toast.error(getErrorMessage(error, 'Research failed'))
@@ -211,15 +212,23 @@ export function GearForm({
         }}
       />
 
-      {researchedSettings ? (
-        <MachineSettingsDiffModal
+      {researchedMachine ? (
+        <MachineResearchDiffModal
           open={researchModalOpen}
           onOpenChange={setResearchModalOpen}
           currentData={form.values}
-          suggestedData={researchedSettings}
-          onApply={(updates) => {
-            form.patch(updates)
-            toast.success(`Applied ${Object.keys(updates).length} changes`)
+          suggestedData={researchedMachine}
+          onApply={({ values, evidence }) => {
+            form.patch({
+              ...values,
+              propertyEvidence: mergeGearPropertyEvidence(
+                form.values.propertyEvidence,
+                evidence,
+              ),
+            })
+            toast.success(
+              `Applied ${Object.keys(values).length} sourced values`,
+            )
           }}
         />
       ) : null}

@@ -266,6 +266,141 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
       })),
     )
     .returning()
+  const gearId = new Map(gear.map((item) => [item.model, item.id]))
+  const machineId = required(gearId.get('Aurora One'), 'Machine missing')
+
+  await database.insert(schema.espressoMachineDetails).values({
+    gearId: machineId,
+    portafilterDiameterMm: '58.00',
+    heatingArchitecture: 'dual_boiler',
+    temperatureControl: 'programmable',
+    pressureControl: 'adjustable_opv',
+    flowControl: 'programmable',
+    preinfusionControl: 'programmable',
+    shotStopModes: ['manual', 'weight'],
+    steamSystem: 'dedicated_heater',
+    simultaneousBrewAndSteam: true,
+    groupCount: 1,
+    pumpType: 'rotary',
+    waterSourceModes: ['reservoir', 'plumbed'],
+    brewPressureMinimumBar: '3.00',
+    brewPressureMaximumBar: '12.00',
+    brewTemperatureMinimumCelsius: '85.0',
+    brewTemperatureMaximumCelsius: '99.0',
+  })
+  const machineSettingRevisions = await database
+    .insert(schema.espressoMachineSettingRevisions)
+    .values([
+      {
+        gearId: machineId,
+        kind: 'factory',
+        brewPressureBar: '9.00',
+        preinfusionEnabled: true,
+        preinfusionTimeSeconds: '5.00',
+        preinfusionPressureBar: '3.00',
+        defaultStopMode: 'manual',
+        steamTemperatureCelsius: '130.0',
+        steamPressureBar: '1.50',
+        effectiveFrom: daysAgo(120),
+      },
+      {
+        gearId: machineId,
+        kind: 'owner',
+        brewPressureBar: '9.00',
+        preinfusionEnabled: true,
+        preinfusionTimeSeconds: '6.00',
+        preinfusionPressureBar: '3.00',
+        flowLimitMlPerSecond: '2.00',
+        defaultStopMode: 'weight',
+        steamTemperatureCelsius: '132.0',
+        steamPressureBar: '1.60',
+        effectiveFrom: daysAgo(90),
+      },
+    ])
+    .returning()
+  const ownerMachineSettingRevisionId = required(
+    machineSettingRevisions.find((revision) => revision.kind === 'owner')?.id,
+    'Owner machine setting revision missing',
+  )
+
+  await database.insert(schema.grinderDetails).values([
+    {
+      gearId: required(gearId.get('Orbit Mill'), 'Orbit grinder missing'),
+      burrMechanism: 'flat',
+      burrDiameterMm: '64.00',
+      adjustmentType: 'stepless',
+      brewRange: ['espresso'],
+      beanFeed: 'single_dose',
+      doseControlModes: ['manual'],
+      burrMaterial: 'steel',
+    },
+    {
+      gearId: required(gearId.get('Cinder Hand Mill'), 'Hand grinder missing'),
+      burrMechanism: 'conical',
+      burrDiameterMm: '48.00',
+      adjustmentType: 'stepped',
+      brewRange: ['espresso', 'filter'],
+      beanFeed: 'single_dose',
+      doseControlModes: ['manual'],
+      burrMaterial: 'steel',
+    },
+  ])
+  await database.insert(schema.brewerDetails).values([
+    {
+      gearId: required(gearId.get('V60 02'), 'V60 brewer missing'),
+      mechanism: 'percolation',
+      capacityMl: '600.00',
+      filterFormat: '02',
+      flowControl: 'fixed',
+    },
+    {
+      gearId: required(gearId.get('Clear'), 'AeroPress brewer missing'),
+      mechanism: 'press',
+      capacityMl: '296.00',
+      filterFormat: 'AeroPress',
+      flowControl: 'fixed',
+    },
+  ])
+  await database.insert(schema.kettleDetails).values({
+    gearId: required(gearId.get('Stagg EKG'), 'Kettle missing'),
+    capacityMl: '900.00',
+    spoutType: 'gooseneck',
+    temperatureControl: 'adjustable',
+    minimumTemperatureCelsius: '40.0',
+    maximumTemperatureCelsius: '100.0',
+    supportsTemperatureHold: true,
+  })
+  await database.insert(schema.scaleDetails).values({
+    gearId: required(gearId.get('Mica Scale'), 'Scale missing'),
+    resolutionGrams: '0.100',
+    capacityGrams: '2000.00',
+    hasTimer: true,
+    supportsAutoTare: true,
+    supportsAutoTimer: true,
+    hasFlowRateDisplay: true,
+  })
+  await database.insert(schema.tamperDetails).values({
+    gearId: required(gearId.get('Presswell 58.5'), 'Tamper missing'),
+    diameterMm: '58.50',
+    forceControl: 'adjustable',
+    baseShape: 'flat',
+    selfLeveling: true,
+  })
+  await database.insert(schema.wdtDetails).values({
+    gearId: required(gearId.get('Needle Nine WDT'), 'WDT missing'),
+    needleDiameterMm: '0.350',
+    needleCount: 9,
+    depthControl: 'adjustable',
+  })
+  await database.insert(schema.basketDetails).values({
+    gearId: required(gearId.get('High Flow 18g'), 'Basket missing'),
+    nominalDoseGrams: '18.00',
+    diameterMm: '58.00',
+    isPressurized: false,
+    doseMinimumGrams: '17.00',
+    doseMaximumGrams: '19.00',
+    kind: 'double',
+  })
   const beanId = new Map(beans.map((bean) => [bean.name, bean.id]))
   const recipes = [
     ['Daily Espresso', 'Espresso', 'Moonrise Lot 17', '18.0', '40.0'],
@@ -290,7 +425,6 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
   )
 
   const activeBeans = beans.slice(0, 4)
-  const gearId = new Map(gear.map((item) => [item.model, item.id]))
   const insertedGearSets = await database
     .insert(schema.gearSets)
     .values([
@@ -489,6 +623,9 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
           return {
             beanId: required(activeBeans[beanIndex], 'Bean missing').id,
             machineId: required(gearId.get(brewer), 'Brewer missing'),
+            machineSettingRevisionId: isEspresso
+              ? ownerMachineSettingRevisionId
+              : null,
             grinderId: required(gearId.get(grinder), 'Grinder missing'),
             basketId: isEspresso
               ? required(gearId.get('High Flow 18g'), 'Basket missing')

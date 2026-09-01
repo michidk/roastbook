@@ -34,37 +34,93 @@ describe('gear form payloads', () => {
       model: 'Zero',
       type: 'grinder',
       priceCurrency: undefined,
-      machineSettings: null,
+      espressoMachineDetails: null,
+      ownerMachineSettings: null,
       basketDetails: null,
+      grinderDetails: {
+        burrMechanism: null,
+        brewRange: null,
+      },
     })
   })
 
-  test('maps machine settings consistently for create and update', () => {
+  test('separates capabilities, owner settings, and factory defaults', () => {
     const values = {
       ...createEmptyGearFormValues(),
       brand: 'Arc',
       model: 'One',
       type: 'espresso_machine' as const,
-      supportsPreinfusion: 'true',
-      autoStopMode: 'volume',
-      brewPressureOpvBar: '9.00',
+      machinePreinfusionControl: 'programmable',
+      machineShotStopModes: ['manual', 'volume'],
+      ownerPreinfusionEnabled: 'false',
+      ownerPreinfusionTimeSeconds: '0',
+      ownerBrewPressureBar: '9.00',
+      factoryPreinfusionEnabled: 'true',
+      factoryDefaultStopMode: 'volume',
     }
 
-    expect(gearCreatePayload(values).machineSettings).toMatchObject({
-      supportsPreinfusion: true,
-      autoStopMode: 'volume',
-      brewPressureOpvBar: '9.00',
+    const payload = gearCreatePayload(values)
+    expect(payload.espressoMachineDetails).toMatchObject({
+      preinfusionControl: 'programmable',
+      shotStopModes: ['manual', 'volume'],
     })
-    expect(gearUpdatePayload(8, values)).toMatchObject({
-      id: 8,
-      machineSettings: {
-        supportsPreinfusion: true,
-        autoStopMode: 'volume',
-      },
+    expect(payload.ownerMachineSettings).toMatchObject({
+      preinfusionEnabled: false,
+      preinfusionTimeSeconds: '0',
+      brewPressureBar: '9.00',
+    })
+    expect(payload.factoryMachineSettings).toMatchObject({
+      preinfusionEnabled: true,
+      defaultStopMode: 'volume',
     })
   })
 
-  test('round-trips persisted form values', () => {
+  test('preserves unknown separately from known none and false', () => {
+    const unknown = gearCreatePayload({
+      ...createEmptyGearFormValues(),
+      brand: 'Arc',
+      model: 'One',
+      type: 'espresso_machine',
+    })
+    const knownNone = gearCreatePayload({
+      ...createEmptyGearFormValues(),
+      brand: 'Arc',
+      model: 'One',
+      type: 'espresso_machine',
+      machineFlowControl: 'none',
+      machineShotStopModes: [],
+      machineSimultaneousBrewAndSteam: 'false',
+    })
+
+    expect(unknown.espressoMachineDetails).toMatchObject({
+      flowControl: null,
+      shotStopModes: null,
+      simultaneousBrewAndSteam: null,
+    })
+    expect(knownNone.espressoMachineDetails).toMatchObject({
+      flowControl: 'none',
+      shotStopModes: [],
+      simultaneousBrewAndSteam: false,
+    })
+  })
+
+  test('keeps every blank tamper property nullable', () => {
+    const payload = gearCreatePayload({
+      ...createEmptyGearFormValues(),
+      brand: 'Pullman',
+      model: 'BigStep',
+      type: 'tamper',
+    })
+
+    expect(payload.tamperDetails).toEqual({
+      diameterMm: null,
+      forceControl: null,
+      baseShape: null,
+      selfLeveling: null,
+    })
+  })
+
+  test('round-trips current setting revisions and subtype values', () => {
     const values = gearFormValuesFrom({
       brand: null,
       model: 'One',
@@ -75,24 +131,87 @@ describe('gear form payloads', () => {
       manualUrl: null,
       productUrl: null,
       notes: null,
-      machineSettings: {
-        brewPressureOpvBar: null,
-        supportsPreinfusion: false,
-        defaultPreinfusionEnabled: null,
-        defaultPreinfusionTimeSeconds: null,
-        defaultPreinfusionPressureBar: null,
-        defaultFlowLimitMlPerSecond: null,
-        temperatureOffsetCelsius: null,
-        volumetricShotVolumeMl: null,
-        autoStopMode: null,
-        steamTemperatureCelsius: null,
-        steamPressureBar: null,
+      espressoMachineDetails: {
+        portafilterDiameterMm: '58.00',
+        heatingArchitecture: null,
+        temperatureControl: null,
+        pressureControl: null,
+        flowControl: null,
+        preinfusionControl: 'none',
+        shotStopModes: [],
+        steamSystem: null,
+        simultaneousBrewAndSteam: false,
+        groupCount: null,
+        pumpType: null,
+        waterSourceModes: null,
+        brewPressureMinimumBar: null,
+        brewPressureMaximumBar: null,
+        brewTemperatureMinimumCelsius: null,
+        brewTemperatureMaximumCelsius: null,
       },
-      basketDetails: null,
+      machineSettingRevisions: [
+        {
+          kind: 'owner',
+          supersededAt: new Date('2026-08-01T00:00:00.000Z'),
+          brewPressureBar: '10.00',
+          preinfusionEnabled: true,
+          preinfusionTimeSeconds: null,
+          preinfusionPressureBar: null,
+          flowLimitMlPerSecond: null,
+          brewTemperatureOffsetCelsius: null,
+          programmedVolumeMl: null,
+          defaultStopMode: null,
+          steamTemperatureCelsius: null,
+          steamPressureBar: null,
+        },
+        {
+          kind: 'owner',
+          supersededAt: null,
+          brewPressureBar: '9.00',
+          preinfusionEnabled: false,
+          preinfusionTimeSeconds: null,
+          preinfusionPressureBar: null,
+          flowLimitMlPerSecond: null,
+          brewTemperatureOffsetCelsius: '-1.0',
+          programmedVolumeMl: null,
+          defaultStopMode: null,
+          steamTemperatureCelsius: null,
+          steamPressureBar: null,
+        },
+      ],
     })
 
     expect(values.purchaseDate).toBe('2026-08-14')
-    expect(values.supportsPreinfusion).toBe('false')
-    expect(values.defaultPreinfusionEnabled).toBe('')
+    expect(values.machineShotStopModes).toEqual([])
+    expect(values.machineSimultaneousBrewAndSteam).toBe('false')
+    expect(values.ownerBrewPressureBar).toBe('9.00')
+    expect(values.ownerPreinfusionEnabled).toBe('false')
+    expect(values.ownerBrewTemperatureOffsetCelsius).toBe('-1.0')
+  })
+
+  test('combined machines own both machine and grinder details', () => {
+    const payload = gearCreatePayload({
+      ...createEmptyGearFormValues(),
+      brand: 'Sage',
+      model: 'Barista',
+      type: 'espresso_machine_with_grinder',
+      machinePortafilterDiameterMm: '54',
+      grinderBurrMechanism: 'conical',
+    })
+
+    expect(payload.espressoMachineDetails?.portafilterDiameterMm).toBe('54')
+    expect(payload.grinderDetails?.burrMechanism).toBe('conical')
+  })
+
+  test('adds explicit confirmation only for a confirmed type change', () => {
+    const values = {
+      ...createEmptyGearFormValues(),
+      brand: 'Arc',
+      model: 'One',
+      type: 'scale' as const,
+    }
+
+    expect(gearUpdatePayload(8, values).confirmTypeChange).toBeUndefined()
+    expect(gearUpdatePayload(8, values, true).confirmTypeChange).toBe(true)
   })
 })

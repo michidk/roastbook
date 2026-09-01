@@ -2,13 +2,29 @@ import { z } from 'zod'
 import {
   AUTO_STOP_MODE_VALUES,
   BEAN_TYPE_VALUES,
+  GEAR_PROPERTY_SOURCE_KIND_VALUES,
+  MACHINE_FLOW_CONTROL_VALUES,
+  MACHINE_HEATING_ARCHITECTURE_VALUES,
+  MACHINE_PREINFUSION_CONTROL_VALUES,
+  MACHINE_PRESSURE_CONTROL_VALUES,
+  MACHINE_PUMP_TYPE_VALUES,
+  MACHINE_STEAM_SYSTEM_VALUES,
+  MACHINE_TEMPERATURE_CONTROL_VALUES,
+  MACHINE_WATER_SOURCE_VALUES,
   PROCESS_METHOD_VALUES,
   ROAST_LEVEL_VALUES,
 } from '@/lib/domain-contracts'
 import {
   buildStructuredResearchPrompt,
   defineStructuredResearchFields,
+  parseStructuredResearchResult,
+  type StructuredResearchResult,
 } from '@/lib/structured-research'
+import {
+  type ExtractedMachineResearch,
+  MACHINE_RESEARCH_PROPERTY_KEYS,
+  type MachineResearchEvidence,
+} from '@/modules/ai/read-models'
 
 const aiText = z.string().trim().min(1).max(500)
 
@@ -201,86 +217,247 @@ const aiDecimal = z
 const aiDecimalAtMost = (maximum: number) =>
   aiDecimal.refine((value) => Number(value) <= maximum)
 
-export const MACHINE_SETTINGS_FIELDS = defineStructuredResearchFields({
-  brewPressureOpvBar: {
+const aiPositiveDecimal = aiDecimal.refine((value) => Number(value) > 0)
+const aiPositiveDecimalAtMost = (maximum: number) =>
+  aiPositiveDecimal.refine((value) => Number(value) <= maximum)
+const aiSignedDecimal = z
+  .union([
+    z.number().finite(),
+    z
+      .string()
+      .trim()
+      .regex(/^-?\d+(?:\.\d+)?$/),
+  ])
+  .transform(String)
+const aiSignedDecimalAtMost = (maximum: number) =>
+  aiSignedDecimal.refine((value) => Math.abs(Number(value)) <= maximum)
+
+function optionalResearchValue<TSchema extends z.ZodType>(schema: TSchema) {
+  return schema.optional().catch(undefined)
+}
+
+function uniqueEnumSet<const TValues extends readonly string[]>(
+  values: TValues,
+) {
+  return z
+    .array(z.enum(values))
+    .max(values.length)
+    .refine(
+      (items) => new Set(items).size === items.length,
+      'Each value may appear only once',
+    )
+}
+
+const machineSpecificationsResearchSchema = z.object({
+  portafilterDiameterMm: optionalResearchValue(aiPositiveDecimalAtMost(999.99)),
+  heatingArchitecture: optionalResearchValue(
+    z.enum(MACHINE_HEATING_ARCHITECTURE_VALUES),
+  ),
+  temperatureControl: optionalResearchValue(
+    z.enum(MACHINE_TEMPERATURE_CONTROL_VALUES),
+  ),
+  pressureControl: optionalResearchValue(
+    z.enum(MACHINE_PRESSURE_CONTROL_VALUES),
+  ),
+  flowControl: optionalResearchValue(z.enum(MACHINE_FLOW_CONTROL_VALUES)),
+  preinfusionControl: optionalResearchValue(
+    z.enum(MACHINE_PREINFUSION_CONTROL_VALUES),
+  ),
+  shotStopModes: optionalResearchValue(uniqueEnumSet(AUTO_STOP_MODE_VALUES)),
+  steamSystem: optionalResearchValue(z.enum(MACHINE_STEAM_SYSTEM_VALUES)),
+  simultaneousBrewAndSteam: optionalResearchValue(z.boolean()),
+  groupCount: optionalResearchValue(z.number().int().positive().max(100)),
+  pumpType: optionalResearchValue(z.enum(MACHINE_PUMP_TYPE_VALUES)),
+  waterSourceModes: optionalResearchValue(
+    uniqueEnumSet(MACHINE_WATER_SOURCE_VALUES),
+  ),
+  brewPressureMinimumBar: optionalResearchValue(aiDecimalAtMost(12)),
+  brewPressureMaximumBar: optionalResearchValue(aiDecimalAtMost(12)),
+  brewTemperatureMinimumCelsius: optionalResearchValue(
+    aiSignedDecimalAtMost(999.9),
+  ),
+  brewTemperatureMaximumCelsius: optionalResearchValue(
+    aiSignedDecimalAtMost(999.9),
+  ),
+})
+
+const machineFactorySettingsResearchSchema = z.object({
+  brewPressureBar: optionalResearchValue(aiDecimalAtMost(12)),
+  preinfusionEnabled: optionalResearchValue(z.boolean()),
+  preinfusionTimeSeconds: optionalResearchValue(aiDecimal),
+  preinfusionPressureBar: optionalResearchValue(aiDecimalAtMost(9)),
+  flowLimitMlPerSecond: optionalResearchValue(aiDecimal),
+  brewTemperatureOffsetCelsius: optionalResearchValue(
+    aiSignedDecimalAtMost(999.9),
+  ),
+  programmedVolumeMl: optionalResearchValue(aiPositiveDecimal),
+  defaultStopMode: optionalResearchValue(z.enum(AUTO_STOP_MODE_VALUES)),
+  steamTemperatureCelsius: optionalResearchValue(aiPositiveDecimal),
+  steamPressureBar: optionalResearchValue(aiDecimalAtMost(3.5)),
+})
+
+const machineResearchEvidenceSchema = z.object({
+  propertyKey: z.enum(MACHINE_RESEARCH_PROPERTY_KEYS),
+  sourceUrl: z
+    .url()
+    .max(2_048)
+    .refine(
+      (value) => value.startsWith('https://') || value.startsWith('http://'),
+    ),
+  sourceTitle: z.string().trim().min(1).max(500).optional(),
+  sourceKind: z.enum(GEAR_PROPERTY_SOURCE_KIND_VALUES),
+  rawValue: z.string().trim().min(1).max(500).optional(),
+  rawUnit: z.string().trim().min(1).max(50).optional(),
+})
+
+const MACHINE_SPECIFICATION_CONTRACT = `Use only these specification keys: portafilterDiameterMm (positive mm), heatingArchitecture (${MACHINE_HEATING_ARCHITECTURE_VALUES.join(', ')}), temperatureControl (${MACHINE_TEMPERATURE_CONTROL_VALUES.join(', ')}), pressureControl (${MACHINE_PRESSURE_CONTROL_VALUES.join(', ')}), flowControl (${MACHINE_FLOW_CONTROL_VALUES.join(', ')}), preinfusionControl (${MACHINE_PREINFUSION_CONTROL_VALUES.join(', ')}), shotStopModes (array containing ${AUTO_STOP_MODE_VALUES.join(', ')}), steamSystem (${MACHINE_STEAM_SYSTEM_VALUES.join(', ')}), simultaneousBrewAndSteam (boolean), groupCount (positive integer), pumpType (${MACHINE_PUMP_TYPE_VALUES.join(', ')}), waterSourceModes (array containing ${MACHINE_WATER_SOURCE_VALUES.join(', ')}), brewPressureMinimumBar, brewPressureMaximumBar, brewTemperatureMinimumCelsius, and brewTemperatureMaximumCelsius. Omit every unknown key.`
+
+const MACHINE_FACTORY_CONTRACT = `Use only these documented factory-default keys: brewPressureBar, preinfusionEnabled, preinfusionTimeSeconds, preinfusionPressureBar, flowLimitMlPerSecond, brewTemperatureOffsetCelsius (signed), programmedVolumeMl, defaultStopMode (${AUTO_STOP_MODE_VALUES.join(', ')}), steamTemperatureCelsius, and steamPressureBar. These are factory defaults only, never an owner's current settings. Omit every unknown key.`
+
+export const MACHINE_RESEARCH_FIELDS = defineStructuredResearchFields({
+  specifications: {
+    description: MACHINE_SPECIFICATION_CONTRACT,
+    jsonType: 'object',
+    schema: machineSpecificationsResearchSchema,
+    examples: [
+      {
+        portafilterDiameterMm: 58,
+        heatingArchitecture: 'dual_boiler',
+        preinfusionControl: 'programmable',
+        shotStopModes: ['manual', 'volume'],
+      },
+    ],
+  },
+  factorySettings: {
+    description: MACHINE_FACTORY_CONTRACT,
+    jsonType: 'object',
+    schema: machineFactorySettingsResearchSchema,
+    examples: [
+      {
+        brewPressureBar: 9,
+        preinfusionEnabled: true,
+        preinfusionTimeSeconds: 5,
+        defaultStopMode: 'volume',
+      },
+    ],
+  },
+  evidence: {
     description:
-      'The documented operating brew pressure or factory OPV setting in bar. This is not the pump’s advertised maximum pressure.',
-    jsonType: 'number',
-    format: 'non-negative decimal number without a unit',
-    schema: aiDecimalAtMost(12),
-    examples: [9, 10.5],
-  },
-  supportsPreinfusion: {
-    description: 'Whether the machine supports pre-infusion.',
-    jsonType: 'boolean',
-    schema: z.boolean(),
-    examples: [true, false],
-  },
-  defaultPreinfusionEnabled: {
-    description:
-      'Whether pre-infusion happens automatically during the standard factory shot workflow. Return true when normal shots begin with pre-infusion without the user enabling it first.',
-    jsonType: 'boolean',
-    schema: z.boolean(),
-    examples: [true, false],
-  },
-  defaultPreinfusionTimeSeconds: {
-    description: 'The factory default pre-infusion duration in seconds.',
-    jsonType: 'number',
-    format: 'non-negative decimal number without a unit',
-    schema: aiDecimal,
-    examples: [5, 8.5],
-  },
-  defaultPreinfusionPressureBar: {
-    description: 'The factory default pre-infusion pressure in bar.',
-    jsonType: 'number',
-    format: 'non-negative decimal number without a unit',
-    schema: aiDecimalAtMost(9),
-    examples: [2, 3.5],
-  },
-  defaultFlowLimitMlPerSecond: {
-    description: 'The factory default flow limit in milliliters per second.',
-    jsonType: 'number',
-    format: 'non-negative decimal number without a unit',
-    schema: aiDecimal,
-    examples: [2, 2.5],
-  },
-  temperatureOffsetCelsius: {
-    description:
-      'The documented factory temperature offset in degrees Celsius.',
-    jsonType: 'number',
-    format: 'non-negative decimal number without a unit',
-    schema: aiDecimal,
-    examples: [0, 2],
-  },
-  volumetricShotVolumeMl: {
-    description:
-      'The factory default single-shot volumetric dose in milliliters. When both single- and double-shot presets are documented, use the single-shot preset.',
-    jsonType: 'number',
-    format: 'non-negative decimal number without a unit',
-    schema: aiDecimal,
-    examples: [30, 60],
-  },
-  autoStopMode: {
-    description:
-      'The mechanism used to stop a shot. Map programmable volumetric dosing to "volume", an integrated scale target to "weight", a timer target to "time", and a required user stop to "manual".',
-    jsonType: 'string',
-    schema: z.enum(AUTO_STOP_MODE_VALUES),
-    options: AUTO_STOP_MODE_VALUES,
-    examples: ['volume', 'weight'],
-  },
-  steamTemperatureCelsius: {
-    description: 'The factory default steam temperature in degrees Celsius.',
-    jsonType: 'number',
-    format: 'non-negative decimal number without a unit',
-    schema: aiDecimal,
-    examples: [130, 135.5],
-  },
-  steamPressureBar: {
-    description:
-      'The documented steam-boiler or steam-circuit operating pressure in bar. This is not pump pressure.',
-    jsonType: 'number',
-    format: 'non-negative decimal number without a unit',
-    schema: aiDecimalAtMost(3.5),
-    examples: [1.2, 2],
+      'One evidence object for every returned claim. propertyKey must be the exact nested path, such as specifications.portafilterDiameterMm or factorySettings.brewPressureBar. Include sourceUrl, sourceKind, and the source title/raw value/unit when available.',
+    jsonType: 'array',
+    schema: z.array(machineResearchEvidenceSchema).max(100),
+    examples: [
+      [
+        {
+          propertyKey: 'specifications.portafilterDiameterMm',
+          sourceUrl: 'https://example.com/exact-model-manual.pdf',
+          sourceTitle: 'Exact model instruction manual',
+          sourceKind: 'manual',
+          rawValue: '58 mm',
+          rawUnit: 'mm',
+        },
+      ],
+    ],
   },
 })
+
+type ParsedMachineResearch = StructuredResearchResult<
+  typeof MACHINE_RESEARCH_FIELDS
+>
+
+const STRONG_MACHINE_RESEARCH_SOURCES = new Set<
+  MachineResearchEvidence['sourceKind']
+>(['manual', 'manufacturer', 'specialist'])
+
+function invalidMachineRangePaths(
+  research: ParsedMachineResearch,
+): Set<string> {
+  const invalid = new Set<string>()
+  const specifications = research.specifications
+  if (!specifications) return invalid
+
+  if (
+    specifications.brewPressureMinimumBar !== undefined &&
+    specifications.brewPressureMaximumBar !== undefined &&
+    Number(specifications.brewPressureMinimumBar) >
+      Number(specifications.brewPressureMaximumBar)
+  ) {
+    invalid.add('specifications.brewPressureMinimumBar')
+    invalid.add('specifications.brewPressureMaximumBar')
+  }
+  if (
+    specifications.brewTemperatureMinimumCelsius !== undefined &&
+    specifications.brewTemperatureMaximumCelsius !== undefined &&
+    Number(specifications.brewTemperatureMinimumCelsius) >
+      Number(specifications.brewTemperatureMaximumCelsius)
+  ) {
+    invalid.add('specifications.brewTemperatureMinimumCelsius')
+    invalid.add('specifications.brewTemperatureMaximumCelsius')
+  }
+  return invalid
+}
+
+export function normalizeMachineResearchResult(
+  research: ParsedMachineResearch,
+): ExtractedMachineResearch {
+  const evidence = research.evidence ?? []
+  const strongEvidencePaths = new Set<string>(
+    evidence
+      .filter((item) => STRONG_MACHINE_RESEARCH_SOURCES.has(item.sourceKind))
+      .map((item) => item.propertyKey),
+  )
+  const rejectedPaths = invalidMachineRangePaths(research)
+  const acceptedPaths = new Set<string>()
+
+  const specifications = Object.fromEntries(
+    Object.entries(research.specifications ?? {}).filter(([key, value]) => {
+      const path = `specifications.${key}`
+      const accepted =
+        value !== undefined &&
+        strongEvidencePaths.has(path) &&
+        !rejectedPaths.has(path)
+      if (accepted) acceptedPaths.add(path)
+      return accepted
+    }),
+  )
+  const factorySettings = Object.fromEntries(
+    Object.entries(research.factorySettings ?? {}).filter(([key, value]) => {
+      const path = `factorySettings.${key}`
+      const accepted =
+        value !== undefined &&
+        strongEvidencePaths.has(path) &&
+        !rejectedPaths.has(path)
+      if (accepted) acceptedPaths.add(path)
+      return accepted
+    }),
+  )
+  const acceptedEvidence = evidence.filter((item) =>
+    acceptedPaths.has(item.propertyKey),
+  )
+
+  return {
+    ...(Object.keys(specifications).length > 0
+      ? {
+          specifications:
+            machineSpecificationsResearchSchema.parse(specifications),
+        }
+      : undefined),
+    ...(Object.keys(factorySettings).length > 0
+      ? {
+          factorySettings:
+            machineFactorySettingsResearchSchema.parse(factorySettings),
+        }
+      : undefined),
+    ...(acceptedEvidence.length > 0
+      ? { evidence: acceptedEvidence }
+      : undefined),
+  }
+}
+
+export function parseMachineResearchResult(
+  content: string,
+): ExtractedMachineResearch {
+  return normalizeMachineResearchResult(
+    parseStructuredResearchResult(content, MACHINE_RESEARCH_FIELDS),
+  )
+}

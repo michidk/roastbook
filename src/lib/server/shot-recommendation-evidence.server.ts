@@ -1,13 +1,21 @@
 import type {
   basketDetails,
   beans,
+  brewerDetails,
+  espressoMachineDetails,
+  espressoMachineSettingRevisions,
   gear,
-  machineSettings,
+  grinderDetails,
+  kettleDetails,
   roasters,
+  scaleDetails,
   shots,
+  tamperDetails,
   tasteTags,
+  wdtDetails,
 } from '@/db/schema'
 import { extractionBalanceLabel } from '@/lib/extraction-balance'
+import { currentMachineSettingRevision } from '@/lib/gear-properties'
 import {
   isShotParameterKey,
   type ShotParameterKey,
@@ -35,11 +43,23 @@ type GearEvidenceSource = Pick<
   typeof gear.$inferSelect,
   'id' | 'name' | 'brand' | 'model' | 'type' | 'notes'
 > & {
-  readonly machineSettings: typeof machineSettings.$inferSelect | null
+  readonly espressoMachineDetails:
+    | typeof espressoMachineDetails.$inferSelect
+    | null
+  readonly machineSettingRevisions: readonly (typeof espressoMachineSettingRevisions.$inferSelect)[]
+  readonly grinderDetails: typeof grinderDetails.$inferSelect | null
+  readonly brewerDetails: typeof brewerDetails.$inferSelect | null
+  readonly kettleDetails: typeof kettleDetails.$inferSelect | null
+  readonly scaleDetails: typeof scaleDetails.$inferSelect | null
+  readonly tamperDetails: typeof tamperDetails.$inferSelect | null
+  readonly wdtDetails: typeof wdtDetails.$inferSelect | null
   readonly basketDetails: typeof basketDetails.$inferSelect | null
 }
 
 type ShotEvidenceSource = typeof shots.$inferSelect & {
+  readonly machineSettingRevision:
+    | typeof espressoMachineSettingRevisions.$inferSelect
+    | null
   readonly accessoryGearLinks: readonly { readonly gearId: number }[]
   readonly tasteTags: readonly {
     readonly tasteTag: Pick<
@@ -91,6 +111,15 @@ export function recommendationGearEvidence(
 ) {
   if (!item) return { id, unavailable: true as const }
 
+  const currentOwnerSettings = currentMachineSettingRevision(
+    item.machineSettingRevisions,
+    'owner',
+  )
+  const factoryDefaults = currentMachineSettingRevision(
+    item.machineSettingRevisions,
+    'factory',
+  )
+
   return {
     id: item.id,
     name: item.name,
@@ -98,7 +127,15 @@ export function recommendationGearEvidence(
     model: item.model,
     type: item.type,
     notes: item.notes,
-    machineSettings: item.machineSettings,
+    espressoMachineDetails: item.espressoMachineDetails,
+    currentOwnerSettings,
+    factoryDefaults,
+    grinderDetails: item.grinderDetails,
+    brewerDetails: item.brewerDetails,
+    kettleDetails: item.kettleDetails,
+    scaleDetails: item.scaleDetails,
+    tamperDetails: item.tamperDetails,
+    wdtDetails: item.wdtDetails,
     basketDetails: item.basketDetails,
   }
 }
@@ -161,6 +198,7 @@ export function recommendationShotEvidence(
   return {
     id: shot.id,
     brewedAt: shot.brewedAt,
+    machineSettingRevision: shot.machineSettingRevision,
     parameters: shotParameters(shot, accessoryGearIds, enabledParameters),
     achievedRatio: achievedRatio(shot),
     overallRating: shot.rating,
