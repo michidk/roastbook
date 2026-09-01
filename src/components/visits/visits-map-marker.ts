@@ -1,16 +1,5 @@
-import type { Map as MapLibreMap } from 'maplibre-gl'
 import { getStoredFaviconUrl } from '@/lib/favicon'
 import { getMapMarkerVariant, type SavedMapPlace } from './visits-map-utils'
-
-export function getVisibleVisitsMapPlaceIds(
-  map: MapLibreMap,
-  places: readonly SavedMapPlace[],
-): readonly string[] {
-  const bounds = map.getBounds()
-  return places
-    .filter((place) => bounds.contains([place.longitude, place.latitude]))
-    .map((place) => place.id)
-}
 
 export function createVisitsMapMarkerElement(
   place: SavedMapPlace,

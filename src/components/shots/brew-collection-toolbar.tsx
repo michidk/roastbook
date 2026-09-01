@@ -1,7 +1,4 @@
-import {
-  CollectionFilterControls,
-  CollectionToolbar,
-} from '@/components/collection-toolbar'
+import { CollectionFilterControls } from '@/components/collection-toolbar'
 import { SelectField } from '@/components/form/form-field'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { activeFilterCount } from '@/lib/collection-toolbar-labels'
@@ -22,10 +19,6 @@ type BrewCollectionFiltersProps = BrewCollectionFilterStateProps & {
   readonly onMethodChange: (methodId: string) => void
   readonly onRatingChange: (rating: string) => void
   readonly onClearFilters: () => void
-}
-
-type BrewCollectionToolbarProps = BrewCollectionFilterStateProps & {
-  readonly resultLabel: string
 }
 
 const RATING_OPTIONS = [
@@ -78,23 +71,6 @@ export function BrewCollectionFilters({
             />
           ) : null}
         </div>
-      )}
-    />
-  )
-}
-
-export function BrewCollectionToolbar({
-  methodId,
-  rating,
-  resultLabel,
-}: BrewCollectionToolbarProps) {
-  const showRating = useTasteProfile().overallRating
-
-  return (
-    <CollectionToolbar
-      resultLabel={resultLabel}
-      filterCount={activeFilterCount(
-        showRating ? [methodId, rating] : [methodId],
       )}
     />
   )
