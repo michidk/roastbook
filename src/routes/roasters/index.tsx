@@ -159,13 +159,31 @@ function RoastersPage() {
         title="Roasters"
         description="Keep track of the coffee roasters you buy from."
         help="Roasters are the companies that roast your coffee. Save their details here to organize beans by roaster and quickly revisit their coffee offerings."
+      />
+
+      <CollectionToolbar
+        value={search.query}
+        onValueChange={(query) =>
+          updateSearch({ query, page: 1 }, { replace: true })
+        }
+        placeholder="Search roasters…"
+        ariaLabel="Search roasters"
+        resultLabel={`${pageData.totalItems} ${pageData.totalItems === 1 ? 'roaster' : 'roasters'}`}
         actions={
-          <Button asChild>
-            <Link to="/roasters/new">
-              <Plus className="h-4 w-4" />
-              Add roaster
-            </Link>
-          </Button>
+          <>
+            <CollectionViewToggle
+              value={view}
+              onValueChange={setView}
+              disabled={!isReady}
+              label="Roaster list view"
+            />
+            <Button asChild>
+              <Link to="/roasters/new">
+                <Plus aria-hidden className="h-4 w-4" />
+                Add roaster
+              </Link>
+            </Button>
+          </>
         }
       />
 
@@ -178,44 +196,26 @@ function RoastersPage() {
           actionHref="/roasters/new"
         />
       ) : (
-        <div className="space-y-4">
-          <CollectionToolbar
-            value={search.query}
-            onValueChange={(query) => updateSearch({ query, page: 1 })}
-            placeholder="Search roasters…"
-            ariaLabel="Search roasters"
-            resultLabel={`${pageData.totalItems} ${pageData.totalItems === 1 ? 'roaster' : 'roasters'}`}
-            actions={
-              <CollectionViewToggle
-                value={view}
-                onValueChange={setView}
-                disabled={!isReady}
-                label="Roaster list view"
-              />
-            }
+        <CollectionResults
+          totalItems={pageData.totalItems}
+          emptyMessage={<>No roasters match “{search.query}”.</>}
+          page={pageData.page}
+          totalPages={pageData.totalPages}
+          onPageChange={(page) => updateSearch({ page })}
+        >
+          <CollectionList
+            view={view}
+            items={pageData.items}
+            getEntry={toEntry}
+            columns={columns}
+            titleSortKey="name"
+            sort={{
+              key: search.sort,
+              direction: search.direction,
+              onSort: handleSort,
+            }}
           />
-
-          <CollectionResults
-            totalItems={pageData.totalItems}
-            emptyMessage={<>No roasters match “{search.query}”.</>}
-            page={pageData.page}
-            totalPages={pageData.totalPages}
-            onPageChange={(page) => updateSearch({ page })}
-          >
-            <CollectionList
-              view={view}
-              items={pageData.items}
-              getEntry={toEntry}
-              columns={columns}
-              titleSortKey="name"
-              sort={{
-                key: search.sort,
-                direction: search.direction,
-                onSort: handleSort,
-              }}
-            />
-          </CollectionResults>
-        </div>
+        </CollectionResults>
       )}
     </Page>
   )

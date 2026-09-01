@@ -196,7 +196,9 @@ function RecipesPage() {
 
       <CollectionToolbar
         value={search.query}
-        onValueChange={(query) => updateSearch({ query, page: 1 })}
+        onValueChange={(query) =>
+          updateSearch({ query, page: 1 }, { replace: true })
+        }
         placeholder="Search recipes…"
         ariaLabel="Search recipes"
         resultLabel={`${pageData.totalItems} ${pageData.totalItems === 1 ? 'recipe' : 'recipes'}`}
@@ -215,13 +217,6 @@ function RecipesPage() {
               </Link>
             </Button>
           </>
-        }
-        mobileSearchActions={
-          <Button asChild size="icon">
-            <Link to="/recipes/new" aria-label="New recipe">
-              <Plus aria-hidden />
-            </Link>
-          </Button>
         }
       />
 

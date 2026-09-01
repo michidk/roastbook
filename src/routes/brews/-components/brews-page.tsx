@@ -5,6 +5,7 @@ import {
   type CollectionEntry,
   CollectionList,
 } from '@/components/collection/collection-list'
+import { CollectionToolbar } from '@/components/collection-toolbar'
 import { EmptyState } from '@/components/empty-state'
 import { ImageWithFallback } from '@/components/image-with-fallback'
 import { Page, PageHeader } from '@/components/page-layout'
@@ -178,6 +179,10 @@ export function BrewsPage({
         title="Brews"
         description="Review every coffee you brew and how it turned out."
         help="Brews are individual coffee-making sessions. Log the beans, method, equipment, measurements, tasting notes, and rating so you can learn from each cup."
+      />
+
+      <CollectionToolbar
+        resultLabel={resultLabel}
         actions={
           <>
             {totalItems > 0 && (
@@ -193,42 +198,37 @@ export function BrewsPage({
               />
             )}
             {(totalItems > 0 || hasActiveFilters) && (
-              <>
-                <p className="text-sm text-muted-foreground" aria-live="polite">
-                  {resultLabel}
-                </p>
-                <BrewCollectionFilters
-                  methodId={search.methodId ? String(search.methodId) : ''}
-                  rating={
-                    search.rating !== undefined ? String(search.rating) : ''
-                  }
-                  methods={data.methods}
-                  resultLabel={resultLabel}
-                  onMethodChange={(value) =>
-                    updateSearch({
-                      methodId: value ? Number(value) : undefined,
-                      page: 1,
-                    })
-                  }
-                  onRatingChange={(value) =>
-                    updateSearch({
-                      rating: value ? Number(value) : undefined,
-                      page: 1,
-                    })
-                  }
-                  onClearFilters={() =>
-                    updateSearch({
-                      methodId: undefined,
-                      rating: undefined,
-                      page: 1,
-                    })
-                  }
-                />
-              </>
+              <BrewCollectionFilters
+                methodId={search.methodId ? String(search.methodId) : ''}
+                rating={
+                  search.rating !== undefined ? String(search.rating) : ''
+                }
+                methods={data.methods}
+                resultLabel={resultLabel}
+                onMethodChange={(value) =>
+                  updateSearch({
+                    methodId: value ? Number(value) : undefined,
+                    page: 1,
+                  })
+                }
+                onRatingChange={(value) =>
+                  updateSearch({
+                    rating: value ? Number(value) : undefined,
+                    page: 1,
+                  })
+                }
+                onClearFilters={() =>
+                  updateSearch({
+                    methodId: undefined,
+                    rating: undefined,
+                    page: 1,
+                  })
+                }
+              />
             )}
             <Button asChild>
               <Link to="/brews/new">
-                <Plus className="h-4 w-4" />
+                <Plus aria-hidden className="h-4 w-4" />
                 Log a brew
               </Link>
             </Button>

@@ -116,7 +116,7 @@ function VisitsPage() {
           actionSearch={{ coffeeShopId: undefined }}
         />
       ) : visitPage.totalItems === 0 ? (
-        <p className="text-sm text-muted-foreground">
+        <p className="py-4 text-sm text-muted-foreground">
           No visits match “{search.query}”.
         </p>
       ) : (

@@ -222,19 +222,13 @@ function PlacesPage() {
           </>
         }
         help="Cafés are coffee shops you want to remember. Save their location and details, mark favorites or places to visit, and connect them to your café visits."
-        actions={
-          <Button asChild>
-            <Link to="/places/new">
-              <Plus aria-hidden className="h-4 w-4" />
-              Add café
-            </Link>
-          </Button>
-        }
       />
 
       <CollectionToolbar
         value={search.query}
-        onValueChange={(query) => updateSearch({ query, page: 1 })}
+        onValueChange={(query) =>
+          updateSearch({ query, page: 1 }, { replace: true })
+        }
         placeholder="Search cafés…"
         ariaLabel="Search cafés"
         resultLabel={`${pageData.totalItems} ${pageData.totalItems === 1 ? 'café' : 'cafés'}`}
@@ -294,6 +288,12 @@ function PlacesPage() {
               <MapIcon aria-hidden />
               Map
             </Button>
+            <Button asChild>
+              <Link to="/places/new">
+                <Plus aria-hidden className="h-4 w-4" />
+                Add café
+              </Link>
+            </Button>
           </>
         }
       />
@@ -331,7 +331,7 @@ function PlacesPage() {
           actionSearch={{ list: 'all', page: 1, query: '' }}
         />
       ) : pageData.totalItems === 0 ? (
-        <p className="text-sm text-muted-foreground">
+        <p className="py-4 text-sm text-muted-foreground">
           No cafés match “{search.query}”.
         </p>
       ) : (

@@ -124,13 +124,31 @@ function BrewingMethodsPage() {
         title="Brewing methods"
         description="Define how you brew and which measurements you track."
         help="Brewing methods define workflows such as espresso, pour-over, or AeroPress and the parameters each one records. Every recipe and brew belongs to a method."
+      />
+
+      <CollectionToolbar
+        value={search.query}
+        onValueChange={(query) =>
+          updateSearch({ query, page: 1 }, { replace: true })
+        }
+        placeholder="Search brewing methods…"
+        ariaLabel="Search brewing methods"
+        resultLabel={`${pageData.totalItems} ${pageData.totalItems === 1 ? 'method' : 'methods'}`}
         actions={
-          <Button asChild>
-            <Link to="/brewing-methods/new">
-              <Plus aria-hidden className="h-4 w-4" />
-              Add method
-            </Link>
-          </Button>
+          <>
+            <CollectionViewToggle
+              value={view}
+              onValueChange={setView}
+              disabled={!isReady}
+              label="Brewing method list view"
+            />
+            <Button asChild>
+              <Link to="/brewing-methods/new">
+                <Plus aria-hidden className="h-4 w-4" />
+                Add method
+              </Link>
+            </Button>
+          </>
         }
       />
 
@@ -143,39 +161,21 @@ function BrewingMethodsPage() {
           actionHref="/brewing-methods/new"
         />
       ) : (
-        <div className="space-y-4">
-          <CollectionToolbar
-            value={search.query}
-            onValueChange={(query) => updateSearch({ query, page: 1 })}
-            placeholder="Search brewing methods…"
-            ariaLabel="Search brewing methods"
-            resultLabel={`${pageData.totalItems} ${pageData.totalItems === 1 ? 'method' : 'methods'}`}
-            actions={
-              <CollectionViewToggle
-                value={view}
-                onValueChange={setView}
-                disabled={!isReady}
-                label="Brewing method list view"
-              />
-            }
+        <CollectionResults
+          totalItems={pageData.totalItems}
+          emptyMessage={<>No brewing methods match “{search.query}”.</>}
+          page={pageData.page}
+          totalPages={pageData.totalPages}
+          onPageChange={(page) => updateSearch({ page })}
+        >
+          <CollectionList
+            view={view}
+            items={pageData.items}
+            getEntry={toEntry}
+            columns={columns}
+            titleHeader="Method"
           />
-
-          <CollectionResults
-            totalItems={pageData.totalItems}
-            emptyMessage={<>No brewing methods match “{search.query}”.</>}
-            page={pageData.page}
-            totalPages={pageData.totalPages}
-            onPageChange={(page) => updateSearch({ page })}
-          >
-            <CollectionList
-              view={view}
-              items={pageData.items}
-              getEntry={toEntry}
-              columns={columns}
-              titleHeader="Method"
-            />
-          </CollectionResults>
-        </div>
+        </CollectionResults>
       )}
     </Page>
   )

@@ -117,11 +117,47 @@ function GearPage() {
         title="Gear"
         description="Keep track of the equipment you use to brew."
         help="Gear includes brewers, espresso machines, grinders, baskets, and other equipment. Save it once, then attach it to brews directly or through a gear set."
+      />
+
+      <CollectionToolbar
+        value={search.query}
+        onValueChange={(query) =>
+          updateSearch(
+            { query, activePage: 1, archivedPage: 1 },
+            { replace: true },
+          )
+        }
+        placeholder="Search gear…"
+        ariaLabel="Search gear by name, brand, or model"
+        resultLabel={`${collection.totalItems} ${collection.totalItems === 1 ? 'gear item' : 'gear items'}`}
+        filters={(idSuffix) => (
+          <CollectionSortControl
+            id={`gear-sort${idSuffix}`}
+            options={SORT_OPTIONS}
+            sort={search.sort}
+            direction={search.direction}
+            onSortChange={handleSortChange}
+            onDirectionToggle={() =>
+              updateSearch({
+                direction: search.direction === 'asc' ? 'desc' : 'asc',
+                activePage: 1,
+                archivedPage: 1,
+              })
+            }
+          />
+        )}
         actions={
           <Button asChild>
             <Link to="/gear/new">
-              <Plus className="h-4 w-4" />
+              <Plus aria-hidden className="h-4 w-4" />
               Add gear
+            </Link>
+          </Button>
+        }
+        mobileSearchActions={
+          <Button asChild size="icon">
+            <Link to="/gear/new" aria-label="Add gear">
+              <Plus aria-hidden />
             </Link>
           </Button>
         }
@@ -137,35 +173,6 @@ function GearPage() {
         />
       ) : (
         <div className="space-y-4">
-          <CollectionToolbar
-            value={search.query}
-            onValueChange={(query) =>
-              updateSearch(
-                { query, activePage: 1, archivedPage: 1 },
-                { replace: true },
-              )
-            }
-            placeholder="Search gear…"
-            ariaLabel="Search gear by name, brand, or model"
-            resultLabel={`${collection.totalItems} ${collection.totalItems === 1 ? 'gear item' : 'gear items'}`}
-            filters={(idSuffix) => (
-              <CollectionSortControl
-                id={`gear-sort${idSuffix}`}
-                options={SORT_OPTIONS}
-                sort={search.sort}
-                direction={search.direction}
-                onSortChange={handleSortChange}
-                onDirectionToggle={() =>
-                  updateSearch({
-                    direction: search.direction === 'asc' ? 'desc' : 'asc',
-                    activePage: 1,
-                    archivedPage: 1,
-                  })
-                }
-              />
-            )}
-          />
-
           {collection.totalItems === 0 ? (
             <p className="py-4 text-sm text-muted-foreground">
               No gear matches “{search.query}”.

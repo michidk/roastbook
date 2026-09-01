@@ -174,7 +174,7 @@ function BeansPage() {
             </Collapsible>
           )}
           {collection.totalItems === 0 && search.query && (
-            <p className="text-sm text-muted-foreground">
+            <p className="py-4 text-sm text-muted-foreground">
               No beans match “{search.query}”.
             </p>
           )}
