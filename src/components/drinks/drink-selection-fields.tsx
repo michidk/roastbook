@@ -1,3 +1,4 @@
+import { DrinkTypePicker } from '@/components/drinks/drink-type-picker'
 import { SelectField } from '@/components/form/form-field'
 import {
   type DrinkConfiguration,
@@ -9,10 +10,15 @@ export function DrinkSelectionFields({
   configuration,
   values,
   onChange,
+  suggestions,
 }: {
   readonly configuration: DrinkConfiguration
   readonly values: DrinkSelectionValues
   readonly onChange: (values: DrinkSelectionValues) => void
+  readonly suggestions?: readonly {
+    readonly id: number
+    readonly name: string
+  }[]
 }) {
   const optionGroups = optionGroupsForDrinkType(
     configuration,
@@ -21,18 +27,14 @@ export function DrinkSelectionFields({
 
   return (
     <>
-      <SelectField
+      <DrinkTypePicker
         id="drinkType"
-        label="Drink type"
-        placeholder="Select type"
         value={values.drinkTypeId}
+        drinkTypes={configuration.drinkTypes}
+        suggestions={suggestions}
         onChange={(drinkTypeId) =>
           onChange({ drinkTypeId, drinkOptionValueIds: {} })
         }
-        options={configuration.drinkTypes.map((type) => ({
-          value: String(type.id),
-          label: type.name,
-        }))}
       />
       {optionGroups.map((group) => (
         <SelectField

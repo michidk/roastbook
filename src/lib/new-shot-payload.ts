@@ -44,6 +44,13 @@ export function shotDrinkPayload(values: ShotFormValues) {
   }
 }
 
+export function recipePayload(values: ShotFormValues) {
+  return {
+    ...shotParameterPayload(values),
+    drinkTypeId: values.drinkTypeId ? Number(values.drinkTypeId) : null,
+  }
+}
+
 export function newShotPayload(
   values: ShotFormValues,
   tasteTagIds: readonly number[],

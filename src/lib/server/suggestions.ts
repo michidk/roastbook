@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, asc, desc, eq, isNotNull, max } from 'drizzle-orm'
+import { and, asc, count, desc, eq, isNotNull, max } from 'drizzle-orm'
 import { db } from '@/db'
-import { beans, brewingMethods, shots } from '@/db/schema'
+import { beans, brewingMethods, drinkTypes, shots } from '@/db/schema'
 
 type Suggestion = {
   readonly id: number
@@ -67,6 +67,19 @@ export const getBrewingMethodSuggestions = createServerFn({
     .innerJoin(brewingMethods, eq(shots.brewingMethodId, brewingMethods.id))
     .groupBy(brewingMethods.id, brewingMethods.name)
     .orderBy(desc(lastUsedAt), desc(lastUsedShotId))
+    .limit(5),
+)
+
+export const getDrinkTypeSuggestions = createServerFn({
+  method: 'GET',
+}).handler(() =>
+  db
+    .select({ id: drinkTypes.id, name: drinkTypes.name, uses: count(shots.id) })
+    .from(shots)
+    .innerJoin(drinkTypes, eq(shots.drinkTypeId, drinkTypes.id))
+    .where(eq(drinkTypes.isArchived, false))
+    .groupBy(drinkTypes.id, drinkTypes.name)
+    .orderBy(desc(count(shots.id)), asc(drinkTypes.name))
     .limit(5),
 )
 

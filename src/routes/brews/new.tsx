@@ -18,6 +18,7 @@ import { checkShotRecommendationEnabled } from '@/lib/server/shot-recommendation
 import {
   getBeanSuggestions,
   getBrewingMethodSuggestions,
+  getDrinkTypeSuggestions,
   getLastBeansByBrewingMethod,
 } from '@/lib/server/suggestions'
 import { getTasteTags } from '@/lib/server/taste-tags'
@@ -36,6 +37,7 @@ export const Route = createFileRoute('/brews/new')({
       gearSets,
       recommendation,
       drinks,
+      drinkTypeSuggestions,
     ] = await Promise.all([
       getActiveBeans(),
       getBrewingMethods(),
@@ -48,6 +50,7 @@ export const Route = createFileRoute('/brews/new')({
       getGearSets(),
       checkShotRecommendationEnabled(),
       getDrinkConfiguration(),
+      getDrinkTypeSuggestions(),
     ])
     return {
       beans,
@@ -61,6 +64,7 @@ export const Route = createFileRoute('/brews/new')({
       gearSets,
       recommendationEnabled: recommendation.enabled,
       drinks,
+      drinkTypeSuggestions,
       defaultBrewedAt: new Date().toISOString(),
     }
   },

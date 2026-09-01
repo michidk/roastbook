@@ -32,6 +32,7 @@ export async function saveShotToRecipeInTransaction(
   const values = {
     brewingMethodId: shot.brewingMethodId,
     beanId: shot.beanId,
+    drinkTypeId: shot.drinkTypeId,
     ...projectShotParameters(shotValues, shot.brewingMethod.enabledParameters),
     updatedAt: new Date(),
   }

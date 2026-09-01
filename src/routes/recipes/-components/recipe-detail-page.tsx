@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useFormSubmission } from '@/hooks/use-form-submission'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { getErrorMessage } from '@/lib/error-message'
-import { shotParameterPayload } from '@/lib/new-shot-payload'
+import { recipePayload } from '@/lib/new-shot-payload'
 import type { getGear } from '@/lib/server/gear'
 import {
   deleteRecipe,
@@ -43,7 +43,8 @@ function createFormValues(recipe?: Recipe): ShotFormValues {
 }
 
 export function RecipeDetailPage() {
-  const { recipe, beans, methods, gear } = routeApi.useLoaderData()
+  const { recipe, beans, methods, gear, drinks, drinkTypeSuggestions } =
+    routeApi.useLoaderData()
   const { edit: isEditing = false } = routeApi.useSearch()
   const navigate = useNavigate({ from: '/recipes/$recipeId' })
   const router = useRouter()
@@ -60,7 +61,7 @@ export function RecipeDetailPage() {
   }, [recipe])
 
   const recipeUpdateData = () =>
-    recipe ? { id: recipe.id, name, ...shotParameterPayload(values) } : null
+    recipe ? { id: recipe.id, name, ...recipePayload(values) } : null
 
   const { isSubmitting: isSaving, handleSubmit: handleSave } =
     useFormSubmission({
@@ -200,6 +201,8 @@ export function RecipeDetailPage() {
             beans={beanOptions}
             methods={methods}
             gear={gear}
+            drinks={drinks}
+            drinkTypeSuggestions={drinkTypeSuggestions}
             errors={fieldErrors}
             onNameChange={setName}
             onChange={set}
@@ -296,6 +299,12 @@ function RecipeSummary({
           <div>
             <p className="text-sm text-muted-foreground">Beans</p>
             <p className="font-medium">{recipe.bean?.name ?? 'Any beans'}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Drink type</p>
+            <p className="font-medium">
+              {recipe.drinkType?.name ?? 'Any drink type'}
+            </p>
           </div>
         </CardContent>
       </Card>

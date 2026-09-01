@@ -51,6 +51,7 @@ import {
 import type {
   getBeanSuggestions,
   getBrewingMethodSuggestions,
+  getDrinkTypeSuggestions,
   getLastBeansByBrewingMethod,
 } from '@/lib/server/suggestions'
 import type { getTasteTags } from '@/lib/server/taste-tags'
@@ -78,6 +79,9 @@ type NewShotFormData = {
   readonly beanSuggestions: Awaited<ReturnType<typeof getBeanSuggestions>>
   readonly brewingMethodSuggestions: Awaited<
     ReturnType<typeof getBrewingMethodSuggestions>
+  >
+  readonly drinkTypeSuggestions: Awaited<
+    ReturnType<typeof getDrinkTypeSuggestions>
   >
   readonly lastBeansByBrewingMethod: Awaited<
     ReturnType<typeof getLastBeansByBrewingMethod>
@@ -116,6 +120,7 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
     drinks,
     beanSuggestions,
     brewingMethodSuggestions,
+    drinkTypeSuggestions,
     lastBeansByBrewingMethod,
     gear,
     gearSets,
@@ -419,19 +424,10 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
           />
         </FormSection>
         <FormSection
-          title="Drink"
-          description="Choose the finished drink and any options configured for it."
+          title="Beans and drink"
+          description="Choose the beans and finished drink for this brew."
+          contentClassName="grid gap-4 space-y-0 sm:grid-cols-2"
         >
-          <DrinkSelectionFields
-            configuration={availableDrinks}
-            values={values}
-            onChange={(next) => {
-              set('drinkTypeId', next.drinkTypeId)
-              set('drinkOptionValueIds', next.drinkOptionValueIds)
-            }}
-          />
-        </FormSection>
-        <FormSection title="Beans">
           <BeanPicker
             id="bean"
             label="Bean"
@@ -439,6 +435,19 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
             onChange={(beanId) => set('beanId', beanId ?? '')}
             beans={beanOptions}
             suggestions={beanSuggestions}
+          />
+          <DrinkSelectionFields
+            configuration={availableDrinks}
+            suggestions={drinkTypeSuggestions.filter((suggestion) =>
+              availableDrinks.drinkTypes.some(
+                (type) => type.id === suggestion.id,
+              ),
+            )}
+            values={values}
+            onChange={(next) => {
+              set('drinkTypeId', next.drinkTypeId)
+              set('drinkOptionValueIds', next.drinkOptionValueIds)
+            }}
           />
           {selectedBean ? (
             <Button

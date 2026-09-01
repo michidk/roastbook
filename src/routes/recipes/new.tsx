@@ -13,18 +13,23 @@ import { DetailPending } from '@/components/route-pending'
 import { Button } from '@/components/ui/button'
 import { getActiveBeans } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
+import { getDrinkConfiguration } from '@/lib/server/drink-options'
 import { getGear } from '@/lib/server/gear'
 import { getGearSets } from '@/lib/server/gear-sets'
+import { getDrinkTypeSuggestions } from '@/lib/server/suggestions'
 
 export const Route = createFileRoute('/recipes/new')({
   loader: async () => {
-    const [beans, methods, gear, gearSets] = await Promise.all([
-      getActiveBeans(),
-      getBrewingMethods(),
-      getGear(),
-      getGearSets(),
-    ])
-    return { beans, methods, gear, gearSets }
+    const [beans, methods, gear, gearSets, drinks, drinkTypeSuggestions] =
+      await Promise.all([
+        getActiveBeans(),
+        getBrewingMethods(),
+        getGear(),
+        getGearSets(),
+        getDrinkConfiguration(),
+        getDrinkTypeSuggestions(),
+      ])
+    return { beans, methods, gear, gearSets, drinks, drinkTypeSuggestions }
   },
   component: NewRecipePage,
   pendingComponent: DetailPending,
@@ -34,7 +39,8 @@ export const Route = createFileRoute('/recipes/new')({
 })
 
 function NewRecipePage() {
-  const { beans, methods, gear, gearSets } = Route.useLoaderData()
+  const { beans, methods, gear, gearSets, drinks, drinkTypeSuggestions } =
+    Route.useLoaderData()
   const navigate = useNavigate()
   const router = useRouter()
 
@@ -56,6 +62,8 @@ function NewRecipePage() {
         methods={methods}
         gear={gear}
         gearSets={gearSets}
+        drinks={drinks}
+        drinkTypeSuggestions={drinkTypeSuggestions}
         onCreated={async (recipe) => {
           await router.invalidate()
           await navigate({

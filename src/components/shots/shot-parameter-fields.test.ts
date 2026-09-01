@@ -100,6 +100,7 @@ describe('shot form values', () => {
     const recipe = {
       ...shotParameters(null),
       brewingMethodId: 2,
+      drinkTypeId: 6,
       doseGrams: '18',
       usesPuckScreen: false,
     }
@@ -107,6 +108,7 @@ describe('shot form values', () => {
     expect(shotFormValuesWithRecipe(current, recipe)).toEqual({
       ...current,
       brewingMethodId: '2',
+      drinkTypeId: '6',
       doseGrams: '18',
       usesPuckScreen: false,
     })

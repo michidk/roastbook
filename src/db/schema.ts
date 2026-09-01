@@ -1091,6 +1091,9 @@ export const recipes = pgTable(
   {
     id: serial('id').primaryKey(),
     name: text('name').notNull(),
+    drinkTypeId: integer('drink_type_id').references(() => drinkTypes.id, {
+      onDelete: 'set null',
+    }),
     ...shotContextColumns(),
     ...shotParameterColumns(5),
     ...timestamps(),
@@ -1121,6 +1124,7 @@ export const recipes = pgTable(
     ),
     index('recipes_brewing_method_id_idx').on(table.brewingMethodId),
     index('recipes_bean_id_idx').on(table.beanId),
+    index('recipes_drink_type_id_idx').on(table.drinkTypeId),
   ],
 )
 
@@ -1132,6 +1136,10 @@ export const recipesRelations = relations(recipes, ({ one, many }) => ({
   bean: one(beans, {
     fields: [recipes.beanId],
     references: [beans.id],
+  }),
+  drinkType: one(drinkTypes, {
+    fields: [recipes.drinkTypeId],
+    references: [drinkTypes.id],
   }),
   machine: one(gear, {
     fields: [recipes.machineId],

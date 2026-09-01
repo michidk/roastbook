@@ -5,9 +5,10 @@ import { GearSetPicker } from '@/components/gear-sets/gear-set-picker'
 import { RecipeFields } from '@/components/recipes/recipe-fields'
 import { useFormSubmission } from '@/hooks/use-form-submission'
 import { getErrorMessage } from '@/lib/error-message'
-import { shotParameterPayload } from '@/lib/new-shot-payload'
+import { recipePayload } from '@/lib/new-shot-payload'
 import type { getActiveBeans } from '@/lib/server/beans'
 import type { getBrewingMethods } from '@/lib/server/brewing-methods'
+import type { getDrinkConfiguration } from '@/lib/server/drink-options'
 import type { getGear } from '@/lib/server/gear'
 import type { getGearSets } from '@/lib/server/gear-sets'
 import { createRecipe } from '@/lib/server/recipes'
@@ -23,6 +24,11 @@ type RecipeFormProps = {
   readonly methods: Awaited<ReturnType<typeof getBrewingMethods>>
   readonly gear: Awaited<ReturnType<typeof getGear>>
   readonly gearSets: Awaited<ReturnType<typeof getGearSets>>
+  readonly drinks: Awaited<ReturnType<typeof getDrinkConfiguration>>
+  readonly drinkTypeSuggestions: readonly {
+    readonly id: number
+    readonly name: string
+  }[]
   readonly onCreated: (recipe: { readonly id: number }) => void | Promise<void>
   readonly onCancel: () => void
 }
@@ -32,6 +38,8 @@ export function RecipeForm({
   methods,
   gear,
   gearSets,
+  drinks,
+  drinkTypeSuggestions,
   onCreated,
   onCancel,
 }: RecipeFormProps) {
@@ -57,7 +65,7 @@ export function RecipeForm({
   const { isSubmitting, handleSubmit } = useFormSubmission({
     canSubmit: () => {
       const errors: Record<string, string> = {
-        ...getShotUpdateErrors(shotParameterPayload(values)),
+        ...getShotUpdateErrors(recipePayload(values)),
       }
       if (!name.trim()) errors.name = 'Enter a recipe name'
       setFieldErrors(errors)
@@ -69,7 +77,7 @@ export function RecipeForm({
     },
     submit: async () => {
       const recipe = await createRecipe({
-        data: { name, ...shotParameterPayload(values) },
+        data: { name, ...recipePayload(values) },
       })
       toast.success('Recipe created')
       await onCreated(recipe)
@@ -95,6 +103,8 @@ export function RecipeForm({
         beans={beans}
         methods={methods}
         gear={gear}
+        drinks={drinks}
+        drinkTypeSuggestions={drinkTypeSuggestions}
         equipmentPresetField={
           gearSets.length > 0 ? (
             <GearSetPicker

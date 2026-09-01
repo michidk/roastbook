@@ -11,6 +11,7 @@ import {
   replaceRecipeAccessoryGear,
   withAccessoryGearIds,
 } from '@/lib/server/accessory-gear.server'
+import { assertDrinkTypeAvailableForBrewingMethod } from '@/lib/server/drink-options.server'
 import {
   projectAccessoryGearIds,
   projectShotParameters,
@@ -73,12 +74,13 @@ function projectRecipeWrite(
   data: RecipeCreateInput,
   enabledParameters: readonly string[],
 ) {
-  const { name, brewingMethodId, beanId, ...parameters } = data
+  const { name, brewingMethodId, beanId, drinkTypeId, ...parameters } = data
   return {
     values: {
       name,
       brewingMethodId,
       beanId,
+      drinkTypeId,
       ...projectShotParameters(parameters, enabledParameters),
       updatedAt: new Date(),
     },
@@ -88,6 +90,7 @@ function projectRecipeWrite(
 
 const recipeRelations = {
   bean: { with: { images: true, roasterRef: true } },
+  drinkType: true,
   machine: true,
   grinder: true,
   basket: true,
@@ -193,6 +196,11 @@ export const updateRecipe = createServerFn({ method: 'POST' })
   .handler(async ({ data }) =>
     db.transaction(async (tx) => {
       const method = await getBrewingMethod(tx, data.brewingMethodId)
+      await assertDrinkTypeAvailableForBrewingMethod(
+        tx,
+        data.brewingMethodId,
+        data.drinkTypeId,
+      )
       const { id, ...input } = data
       const projected = projectRecipeWrite(input, method.enabledParameters)
       const [recipe] = await tx
@@ -211,6 +219,11 @@ export const createRecipe = createServerFn({ method: 'POST' })
   .handler(async ({ data }) =>
     db.transaction(async (tx) => {
       const method = await getBrewingMethod(tx, data.brewingMethodId)
+      await assertDrinkTypeAvailableForBrewingMethod(
+        tx,
+        data.brewingMethodId,
+        data.drinkTypeId,
+      )
       const projected = projectRecipeWrite(data, method.enabledParameters)
       const [recipe] = await tx
         .insert(recipes)

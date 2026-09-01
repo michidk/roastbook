@@ -144,6 +144,7 @@ export function shotFormValuesFrom(
 const RECIPE_FORM_KEYS = [
   'brewingMethodId',
   'beanId',
+  'drinkTypeId',
   'machineId',
   'doseGrams',
   'brewWaterGrams',

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { newShotPayload } from '@/lib/new-shot-payload'
+import { newShotPayload, recipePayload } from '@/lib/new-shot-payload'
 import { EMPTY_SHOT_FORM_VALUES } from '@/modules/brews/shot-form-values'
 
 describe('new brew payload', () => {
@@ -30,6 +30,21 @@ describe('new brew payload', () => {
       targetTimeSeconds: '30.00',
     })
     expect(payload).not.toHaveProperty('recipeId')
+  })
+
+  test('stores an optional drink type on a recipe without drink options', () => {
+    const values = {
+      ...EMPTY_SHOT_FORM_VALUES,
+      brewingMethodId: '1',
+      drinkTypeId: '4',
+      drinkOptionValueIds: { '2': '7' },
+    }
+
+    expect(recipePayload(values)).toMatchObject({
+      brewingMethodId: 1,
+      drinkTypeId: 4,
+    })
+    expect(recipePayload(values)).not.toHaveProperty('drinkOptionValueIds')
   })
 
   test('normalizes cleared sensory intensities to null', () => {
