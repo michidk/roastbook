@@ -23,12 +23,14 @@ type CollectionViews = Readonly<Partial<Record<CollectionKey, CollectionView>>>
 type PreferencesState = {
   readonly theme: ThemePreference
   readonly collectionViews: CollectionViews
+  readonly timerSoundsEnabled: boolean
   readonly hasHydrated: boolean
   readonly setTheme: (theme: ThemePreference) => void
   readonly setCollectionView: (
     collection: CollectionKey,
     view: CollectionView,
   ) => void
+  readonly setTimerSoundsEnabled: (enabled: boolean) => void
   readonly markHydrated: () => void
 }
 
@@ -53,32 +55,49 @@ function readCollectionViews(state: object): CollectionViews {
   return views
 }
 
+function readTimerSoundsEnabled(state: object): boolean {
+  const enabled = Reflect.get(state, 'timerSoundsEnabled')
+  return typeof enabled === 'boolean' ? enabled : true
+}
+
 export const usePreferencesStore = create<PreferencesState>()(
   persist(
     (set) => ({
       theme: 'system',
       collectionViews: {},
+      timerSoundsEnabled: true,
       hasHydrated: false,
       setTheme: (theme) => set({ theme }),
       setCollectionView: (collection, view) =>
         set((state) => ({
           collectionViews: { ...state.collectionViews, [collection]: view },
         })),
+      setTimerSoundsEnabled: (timerSoundsEnabled) =>
+        set({ timerSoundsEnabled }),
       markHydrated: () => set({ hasHydrated: true }),
     }),
     {
       // Keep the existing key so current theme choices survive this migration.
       name: 'roastbook-settings',
-      version: 5,
+      version: 6,
       skipHydration: true,
-      partialize: ({ theme, collectionViews }) => ({ theme, collectionViews }),
+      partialize: ({ theme, collectionViews, timerSoundsEnabled }) => ({
+        theme,
+        collectionViews,
+        timerSoundsEnabled,
+      }),
       migrate: (persistedState) => {
         if (typeof persistedState !== 'object' || persistedState === null) {
-          return { theme: 'system', collectionViews: {} }
+          return {
+            theme: 'system',
+            collectionViews: {},
+            timerSoundsEnabled: true,
+          }
         }
         return {
           theme: readTheme(persistedState) ?? 'system',
           collectionViews: readCollectionViews(persistedState),
+          timerSoundsEnabled: readTimerSoundsEnabled(persistedState),
         }
       },
       merge: (persistedState, currentState) => {
@@ -90,6 +109,7 @@ export const usePreferencesStore = create<PreferencesState>()(
           ...currentState,
           ...(theme ? { theme } : {}),
           collectionViews: readCollectionViews(persistedState),
+          timerSoundsEnabled: readTimerSoundsEnabled(persistedState),
         }
       },
     },

@@ -153,17 +153,11 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
   >({})
   const [isDirty, setIsDirty] = useState(false)
   const [timerKey, setTimerKey] = useState(0)
-  // Starts collapsed to keep the phone page short; desktops have room, so the
-  // section opens there after mount (matchMedia is unavailable during SSR).
-  const [isTasteProfileOpen, setIsTasteProfileOpen] = useState(false)
   const isInitializing = useRef(true)
   const timerRef = useRef<ShotTimerHandle>(null)
 
   useEffect(() => {
     isInitializing.current = false
-    if (window.matchMedia('(min-width: 1024px)').matches) {
-      setIsTasteProfileOpen(true)
-    }
   }, [])
 
   useUnsavedChanges(isDirty && !isSubmitting)
@@ -424,9 +418,8 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
           />
         </FormSection>
         <FormSection
-          title="Beans and drink"
-          description="Choose the beans and finished drink for this brew."
-          contentClassName="grid gap-4 space-y-0 sm:grid-cols-2"
+          title="Beans"
+          description="Choose the beans for this brew."
         >
           <BeanPicker
             id="bean"
@@ -435,19 +428,6 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
             onChange={(beanId) => set('beanId', beanId ?? '')}
             beans={beanOptions}
             suggestions={beanSuggestions}
-          />
-          <DrinkSelectionFields
-            configuration={availableDrinks}
-            suggestions={drinkTypeSuggestions.filter((suggestion) =>
-              availableDrinks.drinkTypes.some(
-                (type) => type.id === suggestion.id,
-              ),
-            )}
-            values={values}
-            onChange={(next) => {
-              set('drinkTypeId', next.drinkTypeId)
-              set('drinkOptionValueIds', next.drinkOptionValueIds)
-            }}
           />
           {selectedBean ? (
             <Button
@@ -461,6 +441,24 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
               {isLoadingLastShot ? 'Loading…' : 'Load last brew'}
             </Button>
           ) : null}
+        </FormSection>
+        <FormSection
+          title="Drink type"
+          description="Choose the finished drink for this brew."
+        >
+          <DrinkSelectionFields
+            configuration={availableDrinks}
+            suggestions={drinkTypeSuggestions.filter((suggestion) =>
+              availableDrinks.drinkTypes.some(
+                (type) => type.id === suggestion.id,
+              ),
+            )}
+            values={values}
+            onChange={(next) => {
+              set('drinkTypeId', next.drinkTypeId)
+              set('drinkOptionValueIds', next.drinkOptionValueIds)
+            }}
+          />
         </FormSection>
         <ShotParameterFields
           values={values}
@@ -480,67 +478,11 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
           errors={fieldErrors}
           onChange={set}
         />
-        {hasEnabledTasteProfileField(tasteProfile) ? (
-          <FormSection
-            title="Taste profile"
-            description="Rate the result once you have tasted it."
-            collapsible
-            open={isTasteProfileOpen}
-            onOpenChange={setIsTasteProfileOpen}
-          >
-            {tasteProfile.overallRating ||
-            showSensoryRatings ||
-            showExtractionBalance ? (
-              <div className="space-y-1">
-                {tasteProfile.overallRating ? (
-                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-                    <span className="text-sm font-medium">Overall rating</span>
-                    <StarRating
-                      value={values.rating}
-                      onChange={(rating) => set('rating', rating)}
-                      sizeClassName="size-5"
-                      ariaLabel="Brew rating"
-                    />
-                  </div>
-                ) : null}
-                <ShotSensoryRatingFields
-                  values={values}
-                  onChange={(key, value) => set(key, value)}
-                />
-                {showExtractionBalance ? (
-                  <div className="pt-1">
-                    <ExtractionBalanceField
-                      value={values.extractionBalance}
-                      onChange={(value) => set('extractionBalance', value)}
-                    />
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-            {tasteProfile.flavorTags ? (
-              <TasteTagSelector
-                label="Flavor tags"
-                tags={flavorTags}
-                selected={selectedTags}
-                onToggle={toggleTag}
-              />
-            ) : null}
-            {tasteProfile.notes ? (
-              <TextareaField
-                id="notes"
-                label="Tasting notes"
-                value={values.notes}
-                onChange={(value) => set('notes', value)}
-                placeholder="How was it?"
-              />
-            ) : null}
-          </FormSection>
-        ) : null}
       </div>
       {/* The height cap keeps the save buttons reachable on short windows:
           a pinned sidebar taller than the viewport never scrolls its tail
           into view, so it scrolls internally instead. */}
-      <aside className="space-y-4 lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto">
+      <aside className="order-2 space-y-4 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto">
         {selectedBean ? (
           <div className="hidden lg:block">
             <BeanCard bean={selectedBean} />
@@ -592,6 +534,61 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
           {isSubmitting ? 'Saving…' : 'Save brew'}
         </Button>
       </aside>
+      <div className="order-3 lg:col-start-1 lg:row-start-2">
+        {hasEnabledTasteProfileField(tasteProfile) ? (
+          <FormSection
+            title="Taste profile"
+            description="Rate the result once you have tasted it."
+          >
+            {tasteProfile.overallRating ||
+            showSensoryRatings ||
+            showExtractionBalance ? (
+              <div className="space-y-1">
+                {tasteProfile.overallRating ? (
+                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                    <span className="text-sm font-medium">Overall rating</span>
+                    <StarRating
+                      value={values.rating}
+                      onChange={(rating) => set('rating', rating)}
+                      sizeClassName="size-5"
+                      ariaLabel="Brew rating"
+                    />
+                  </div>
+                ) : null}
+                <ShotSensoryRatingFields
+                  values={values}
+                  onChange={(key, value) => set(key, value)}
+                />
+                {showExtractionBalance ? (
+                  <div className="pt-1">
+                    <ExtractionBalanceField
+                      value={values.extractionBalance}
+                      onChange={(value) => set('extractionBalance', value)}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            {tasteProfile.flavorTags ? (
+              <TasteTagSelector
+                label="Flavor tags"
+                tags={flavorTags}
+                selected={selectedTags}
+                onToggle={toggleTag}
+              />
+            ) : null}
+            {tasteProfile.notes ? (
+              <TextareaField
+                id="notes"
+                label="Tasting notes"
+                value={values.notes}
+                onChange={(value) => set('notes', value)}
+                placeholder="How was it?"
+              />
+            ) : null}
+          </FormSection>
+        ) : null}
+      </div>
     </form>
   )
 }

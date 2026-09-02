@@ -1,4 +1,4 @@
-import { Pause, Play, RotateCcw } from 'lucide-react'
+import { Pause, Play, RotateCcw, Volume2, VolumeX } from 'lucide-react'
 import {
   forwardRef,
   useCallback,
@@ -9,9 +9,25 @@ import {
 } from 'react'
 import { Button } from '@/components/ui/button'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { usePreferencesStore } from '@/lib/preferences-store'
 
 /** Ring scale used while the brew has no target time of its own. */
 const FALLBACK_TARGET_SECONDS = 30
+
+function playTimerTone(frequency: number, duration = 0.12) {
+  const AudioContextClass = window.AudioContext
+  const context = new AudioContextClass()
+  const oscillator = context.createOscillator()
+  const gain = context.createGain()
+  oscillator.frequency.value = frequency
+  gain.gain.setValueAtTime(0.08, context.currentTime)
+  gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + duration)
+  oscillator.connect(gain)
+  gain.connect(context.destination)
+  oscillator.start()
+  oscillator.stop(context.currentTime + duration)
+  oscillator.addEventListener('ended', () => void context.close())
+}
 
 export type ShotTimerHandle = {
   readonly getValue: () => string
@@ -30,9 +46,16 @@ export const ShotTimer = forwardRef<ShotTimerHandle, ShotTimerProps>(
     const [displayValue, setDisplayValue] = useState(value)
     const [running, setRunning] = useState(false)
     const [announcement, setAnnouncement] = useState('Timer ready')
+    const soundsEnabled = usePreferencesStore(
+      (state) => state.timerSoundsEnabled,
+    )
+    const setSoundsEnabled = usePreferencesStore(
+      (state) => state.setTimerSoundsEnabled,
+    )
     const timerStartedAt = useRef(0)
     const displayValueRef = useRef(displayValue)
     const runningRef = useRef(running)
+    const targetSoundPlayed = useRef(false)
     displayValueRef.current = displayValue
     runningRef.current = running
 
@@ -72,11 +95,20 @@ export const ShotTimer = forwardRef<ShotTimerHandle, ShotTimerProps>(
     const strokeOffset = circumference * (1 - progress)
     const overtimeStrokeOffset = circumference * (1 - overtimeProgress)
 
+    useEffect(() => {
+      if (!running || !soundsEnabled || !hasTarget || seconds < target) return
+      if (targetSoundPlayed.current) return
+      targetSoundPlayed.current = true
+      playTimerTone(880, 0.35)
+    }, [hasTarget, running, seconds, soundsEnabled, target])
+
     const reset = () => {
       setRunning(false)
       setDisplayValue('')
       onCommit('')
       setAnnouncement('Timer reset')
+      targetSoundPlayed.current = false
+      if (soundsEnabled) playTimerTone(330)
     }
 
     const toggle = () => {
@@ -86,6 +118,7 @@ export const ShotTimer = forwardRef<ShotTimerHandle, ShotTimerProps>(
         setDisplayValue(nextValue)
         onCommit(nextValue)
         setAnnouncement(`Timer paused at ${formatNumber(nextValue)} seconds`)
+        if (soundsEnabled) playTimerTone(440)
         return
       }
 
@@ -93,10 +126,29 @@ export const ShotTimer = forwardRef<ShotTimerHandle, ShotTimerProps>(
         performance.now() - (Number(displayValue) || 0) * 1000
       setRunning(true)
       setAnnouncement('Timer started')
+      targetSoundPlayed.current = seconds >= target
+      if (soundsEnabled) playTimerTone(660)
     }
 
     return (
-      <div className="flex flex-col items-center rounded-3xl bg-coffee p-6 text-coffee-foreground shadow-coffee-strong">
+      <div className="relative flex flex-col items-center rounded-3xl bg-coffee p-6 text-coffee-foreground shadow-coffee-strong">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={
+            soundsEnabled ? 'Mute timer sounds' : 'Enable timer sounds'
+          }
+          aria-pressed={soundsEnabled}
+          onClick={() => {
+            const next = !soundsEnabled
+            setSoundsEnabled(next)
+            if (next) playTimerTone(660)
+          }}
+          className="absolute right-4 top-4 text-coffee-foreground/75 hover:bg-coffee-foreground/10 hover:text-coffee-foreground"
+        >
+          {soundsEnabled ? <Volume2 /> : <VolumeX />}
+        </Button>
         <div
           role="timer"
           aria-label={
