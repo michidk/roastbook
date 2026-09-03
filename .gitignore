@@ -30,3 +30,6 @@ logs/
 .codacy/
 .vercel
 .demo-build
+
+# Serena MCP tool-local state
+.serena/
