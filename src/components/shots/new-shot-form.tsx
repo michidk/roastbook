@@ -351,10 +351,7 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
   )
   const showSensoryRatings = enabledSensoryRatingKeys(tasteProfile).length > 0
   const showExtractionBalance = tasteProfile.extractionBalance
-  const recommendationRequest = newShotRecommendationRequest(
-    values,
-    selectedMethod?.enabledParameters ?? [],
-  )
+  const recommendationRequest = newShotRecommendationRequest(values)
 
   return (
     <form

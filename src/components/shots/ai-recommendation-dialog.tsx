@@ -86,7 +86,7 @@ export function AiRecommendationDialog({
       : undefined
   const helpText = isFocusedShot
     ? 'Assesses this brew and suggests the next adjustment. Uses its beans, method, exact gear, parameters, tasting result, and matching history.'
-    : 'Suggests the next controlled brew adjustment. Uses the selected beans, method, exact gear, current parameters when entered, and matching brew history.'
+    : 'Suggests the next controlled brew adjustment from the latest completed brew for the selected beans and its history. Unsaved form values are not used.'
 
   return (
     <>
@@ -127,11 +127,7 @@ export function AiRecommendationDialog({
             <DialogDescription>
               {isFocusedShot
                 ? 'An assessment of this specific brew and a next-brew adjustment based on its beans, brewing method, exact gear, tasting result, and matching history.'
-                : request &&
-                    !isFocusedShotRecommendationRequest(request) &&
-                    request.currentDraft
-                  ? 'A next-brew adjustment based on the current setup and parameters, plus matching history for these beans.'
-                  : 'A next-brew adjustment based only on this bean, brewing method, exact gear setup, and its matching history.'}
+                : 'A next-brew adjustment based on the latest completed brew for these beans, its brewing method and exact gear setup, and matching history. Unsaved form values are not used.'}
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
