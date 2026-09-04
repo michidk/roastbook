@@ -99,7 +99,8 @@ the machine and on the desktop where you dig through the numbers afterwards.
   guesses, or values from similar machines.
 - **Brew recommendations** — compare a new-brew draft or one specific logged
   brew with up to 50 brews for the same bean, method, and exact gear setup, then
-  get an evidence-grounded opinion and a small adjustment for the next brew.
+  get a confidence-rated opinion that recognizes when recent brews are already
+  good, or proposes one explained adjustment or controlled experiment.
 - **Request debugging** — review lifetime token usage and estimated token cost,
   then inspect every raw AI input, response event, error, and unparsed output
   from Settings.

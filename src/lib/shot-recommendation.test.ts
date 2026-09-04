@@ -35,8 +35,20 @@ describe('brew recommendation evidence', () => {
       historyIncluded: 2,
       historyTruncated: false,
       shotsOldestToNewest: [
-        { id: 1, overallRating: 2, flavorTags: ['Salty'] },
-        { id: 2, overallRating: 4, flavorTags: ['Balanced'] },
+        {
+          id: 1,
+          brewedAt: '2026-08-20T08:30:00.000Z',
+          overallRating: 2,
+          sensory: { sweetness: 1 },
+          flavorTags: ['Salty'],
+        },
+        {
+          id: 2,
+          brewedAt: '2026-08-28T08:30:00.000Z',
+          overallRating: 4,
+          sensory: { sweetness: 4 },
+          flavorTags: ['Balanced'],
+        },
       ],
     })
 
@@ -45,7 +57,30 @@ describe('brew recommendation evidence', () => {
     expect(prompt).toContain('When changing yield, keep dose fixed')
     expect(prompt).toContain('by themselves they do not diagnose')
     expect(prompt).toContain('return no changes')
+    expect(prompt).toContain('dates and ratings of the most recent rated brews')
+    expect(prompt).toContain('sensory intensity ratings from sliders')
+    expect(prompt).toContain('must never outweigh or contradict the numeric')
+    expect(prompt).toContain('say plainly that the brew is good as it is')
+    expect(prompt).toContain('change is an experiment rather than a fix')
+    expect(prompt).toContain('Always return a confidence rating')
     expect(prompt.indexOf('"id": 1')).toBeLessThan(prompt.indexOf('"id": 2'))
+  })
+
+  test('requires a confidence rating on every recommendation', () => {
+    const recommendationWithoutConfidence = {
+      diagnosis: 'balanced',
+      headline: 'Repeat this brew',
+      summary: 'The recent brews show that this recipe is working well.',
+      historyInsight: 'Recent ratings are consistently high.',
+      changes: [],
+      keepConstant: [],
+      caveat: 'Taste remains subjective.',
+    }
+
+    expect(
+      shotRecommendationSchema.safeParse(recommendationWithoutConfidence)
+        .success,
+    ).toBe(false)
   })
 
   test('keeps a saved brew as the subject while injecting its full context', () => {
