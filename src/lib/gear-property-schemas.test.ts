@@ -123,6 +123,51 @@ describe('gear property validation', () => {
     ).toBe(false)
   })
 
+  test('requires an ordered numeric grinder setting range', () => {
+    const grinder = {
+      burrMechanism: null,
+      burrDiameterMm: null,
+      adjustmentType: null,
+      brewRange: null,
+      beanFeed: null,
+      doseControlModes: null,
+      burrMaterial: null,
+    }
+
+    expect(
+      grinderDetailsSchema.safeParse({
+        ...grinder,
+        grindSettingFormat: 'decimal',
+        grindSettingMinimum: '2.5',
+        grindSettingMaximum: '12',
+      }).success,
+    ).toBe(true)
+    expect(
+      grinderDetailsSchema.safeParse({
+        ...grinder,
+        grindSettingFormat: 'whole_number',
+        grindSettingMinimum: '12',
+        grindSettingMaximum: '2.5',
+      }).success,
+    ).toBe(false)
+    expect(
+      grinderDetailsSchema.safeParse({
+        ...grinder,
+        grindSettingFormat: 'whole_number',
+        grindSettingMinimum: '2.5',
+        grindSettingMaximum: '12',
+      }).success,
+    ).toBe(false)
+    expect(
+      grinderDetailsSchema.safeParse({
+        ...grinder,
+        grindSettingFormat: 'string',
+        grindSettingMinimum: '2',
+        grindSettingMaximum: '12',
+      }).success,
+    ).toBe(false)
+  })
+
   test('accepts sourced JSON claims only with web URLs', () => {
     const claim = {
       propertyKey: 'specifications.portafilterDiameterMm',

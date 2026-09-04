@@ -56,6 +56,18 @@ describe('server validation schemas', () => {
         ratioBasis: 'client-invented-value',
       }),
     ).toThrow()
+    expect(
+      shotCreateSchema.parse({
+        brewingMethodId: 1,
+        grindSetting: '2.500 clicks',
+      }).grindSetting,
+    ).toBe('2.500 clicks')
+    expect(() =>
+      shotCreateSchema.parse({
+        brewingMethodId: 1,
+        grindSetting: 'x'.repeat(501),
+      }),
+    ).toThrow()
   })
 
   test('rejects dates meaningfully in the future', () => {

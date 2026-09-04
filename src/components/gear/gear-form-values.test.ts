@@ -197,10 +197,16 @@ describe('gear form payloads', () => {
       type: 'espresso_machine_with_grinder',
       machinePortafilterDiameterMm: '54',
       grinderBurrMechanism: 'conical',
+      grinderGrindSettingFormat: 'decimal',
+      grinderGrindSettingMinimum: '2.5',
+      grinderGrindSettingMaximum: '12',
     })
 
     expect(payload.espressoMachineDetails?.portafilterDiameterMm).toBe('54')
     expect(payload.grinderDetails?.burrMechanism).toBe('conical')
+    expect(payload.grinderDetails?.grindSettingFormat).toBe('decimal')
+    expect(payload.grinderDetails?.grindSettingMinimum).toBe('2.5')
+    expect(payload.grinderDetails?.grindSettingMaximum).toBe('12')
   })
 
   test('adds explicit confirmation only for a confirmed type change', () => {

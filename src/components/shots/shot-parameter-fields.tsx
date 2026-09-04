@@ -41,6 +41,12 @@ export function ShotParameterFields({
 }: ShotParameterFieldsProps) {
   const show = (key: ShotParameterKey) => enabledParameters.includes(key)
   const { brewers, grinders, baskets, accessories } = gearByEquipmentRole(gear)
+  const selectedGrinder = grinders.find(
+    (grinder) => String(grinder.id) === values.grinderId,
+  )
+  const grindSettingFormat =
+    selectedGrinder?.grinderDetails?.grindSettingFormat ?? 'string'
+  const isNumericGrindSetting = grindSettingFormat !== 'string'
   const hasEquipment =
     Boolean(equipmentPresetField) ||
     show('machineId') ||
@@ -200,8 +206,20 @@ export function ShotParameterFields({
               <InputField
                 id="grind-setting"
                 label="Grind setting"
+                type={isNumericGrindSetting ? 'number' : 'text'}
+                inputMode={isNumericGrindSetting ? 'decimal' : 'text'}
+                min={
+                  selectedGrinder?.grinderDetails?.grindSettingMinimum ??
+                  undefined
+                }
+                max={
+                  selectedGrinder?.grinderDetails?.grindSettingMaximum ??
+                  undefined
+                }
+                step={grindSettingFormat === 'whole_number' ? '1' : '0.001'}
                 value={values.grindSetting}
                 onChange={(value) => onChange('grindSetting', value)}
+                error={errors.grindSetting}
               />
             ) : null}
             {show('shotTimeSeconds') ? (

@@ -63,6 +63,10 @@ describe('brew recommendation evidence', () => {
     expect(prompt).toContain('say plainly that the brew is good as it is')
     expect(prompt).toContain('change is an experiment rather than a fix')
     expect(prompt).toContain('Always return a confidence rating')
+    expect(prompt).toContain('grinderDetails.grindSettingFormat')
+    expect(prompt).toContain(
+      'recent comparable rated brews are consistently well balanced',
+    )
     expect(prompt.indexOf('"id": 1')).toBeLessThan(prompt.indexOf('"id": 2'))
   })
 

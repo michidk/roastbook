@@ -20,6 +20,7 @@ import {
   GRINDER_BURR_MATERIAL_OPTIONS,
   GRINDER_BURR_MECHANISM_OPTIONS,
   GRINDER_DOSE_CONTROL_MODE_OPTIONS,
+  GRINDER_GRIND_SETTING_FORMAT_OPTIONS,
   KETTLE_SPOUT_TYPE_OPTIONS,
   KETTLE_TEMPERATURE_CONTROL_OPTIONS,
   MACHINE_FLOW_CONTROL_OPTIONS,
@@ -544,6 +545,7 @@ function GrinderFields({
   readonly idPrefix: string
 }) {
   const id = (field: string) => `${idPrefix}-grinder-${field}`
+  const hasNumericGrindSettings = values.grinderGrindSettingFormat !== 'string'
   return (
     <>
       <FormSection
@@ -577,6 +579,47 @@ function GrinderFields({
             value={values.grinderAdjustmentType}
             onChange={(value) => onChange('grinderAdjustmentType', value)}
             options={GRINDER_ADJUSTMENT_TYPE_OPTIONS}
+          />
+          <SelectField
+            id={id('grind-setting-format')}
+            label="Grind setting format"
+            value={values.grinderGrindSettingFormat}
+            onChange={(value) => {
+              onChange('grinderGrindSettingFormat', value)
+              if (value === 'string') {
+                onChange('grinderGrindSettingMinimum', '')
+                onChange('grinderGrindSettingMaximum', '')
+              }
+            }}
+            options={GRINDER_GRIND_SETTING_FORMAT_OPTIONS}
+          />
+          <InputField
+            id={id('grind-setting-minimum')}
+            label="Minimum grind setting"
+            type="number"
+            min="0"
+            step={
+              values.grinderGrindSettingFormat === 'whole_number'
+                ? '1'
+                : '0.001'
+            }
+            value={values.grinderGrindSettingMinimum}
+            onChange={(value) => onChange('grinderGrindSettingMinimum', value)}
+            disabled={!hasNumericGrindSettings}
+          />
+          <InputField
+            id={id('grind-setting-maximum')}
+            label="Maximum grind setting"
+            type="number"
+            min="0"
+            step={
+              values.grinderGrindSettingFormat === 'whole_number'
+                ? '1'
+                : '0.001'
+            }
+            value={values.grinderGrindSettingMaximum}
+            onChange={(value) => onChange('grinderGrindSettingMaximum', value)}
+            disabled={!hasNumericGrindSettings}
           />
         </div>
         <NullableSetField

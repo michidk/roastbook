@@ -25,6 +25,7 @@ import {
   GRINDER_BURR_MATERIAL_OPTIONS,
   GRINDER_BURR_MECHANISM_OPTIONS,
   GRINDER_DOSE_CONTROL_MODE_OPTIONS,
+  GRINDER_GRIND_SETTING_FORMAT_OPTIONS,
   KETTLE_SPOUT_TYPE_OPTIONS,
   KETTLE_TEMPERATURE_CONTROL_OPTIONS,
   MACHINE_FLOW_CONTROL_OPTIONS,
@@ -265,6 +266,20 @@ function SubtypePropertyCards({ gear }: { readonly gear: Gear }) {
     value === null || value === undefined
       ? null
       : `${formatNumber(value)} ${unit}`
+  const grindSettingRange = (
+    minimum: string | null | undefined,
+    maximum: string | null | undefined,
+  ) => {
+    if (minimum === null || minimum === undefined) {
+      return maximum === null || maximum === undefined
+        ? null
+        : `Up to ${formatNumber(maximum)}`
+    }
+    if (maximum === null || maximum === undefined) {
+      return `At least ${formatNumber(minimum)}`
+    }
+    return `${formatNumber(minimum)}–${formatNumber(maximum)}`
+  }
   const grinder = gear.grinderDetails
   const brewer = gear.brewerDetails
   const kettle = gear.kettleDetails
@@ -295,6 +310,23 @@ function SubtypePropertyCards({ gear }: { readonly gear: Gear }) {
               GRINDER_ADJUSTMENT_TYPE_OPTIONS,
               grinder?.adjustmentType,
             ),
+          },
+          {
+            label: 'Grind setting format',
+            value: optionLabel(
+              GRINDER_GRIND_SETTING_FORMAT_OPTIONS,
+              grinder?.grindSettingFormat,
+            ),
+          },
+          {
+            label: 'Grind-setting range',
+            value:
+              grinder?.grindSettingFormat === 'string'
+                ? null
+                : grindSettingRange(
+                    grinder?.grindSettingMinimum,
+                    grinder?.grindSettingMaximum,
+                  ),
           },
           {
             label: 'Supported brew range',

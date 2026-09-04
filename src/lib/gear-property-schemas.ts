@@ -11,6 +11,7 @@ import {
   GRINDER_BURR_MATERIAL_VALUES,
   GRINDER_BURR_MECHANISM_VALUES,
   GRINDER_DOSE_CONTROL_MODE_VALUES,
+  GRINDER_GRIND_SETTING_FORMAT_VALUES,
   KETTLE_SPOUT_TYPE_VALUES,
   KETTLE_TEMPERATURE_CONTROL_VALUES,
   MACHINE_FLOW_CONTROL_VALUES,
@@ -131,15 +132,52 @@ export const espressoMachineSettingsSchema = z.object({
   steamPressureBar: nullableDecimal(99.99, 2),
 })
 
-export const grinderDetailsSchema = z.object({
-  burrMechanism: z.enum(GRINDER_BURR_MECHANISM_VALUES).nullable(),
-  burrDiameterMm: nullablePositiveDecimal(999.99, 2),
-  adjustmentType: z.enum(GRINDER_ADJUSTMENT_TYPE_VALUES).nullable(),
-  brewRange: nullableEnumSet(GRINDER_BREW_RANGE_VALUES),
-  beanFeed: z.enum(GRINDER_BEAN_FEED_VALUES).nullable(),
-  doseControlModes: nullableEnumSet(GRINDER_DOSE_CONTROL_MODE_VALUES),
-  burrMaterial: z.enum(GRINDER_BURR_MATERIAL_VALUES).nullable(),
-})
+export const grinderDetailsSchema = z
+  .object({
+    burrMechanism: z.enum(GRINDER_BURR_MECHANISM_VALUES).nullable(),
+    burrDiameterMm: nullablePositiveDecimal(999.99, 2),
+    adjustmentType: z.enum(GRINDER_ADJUSTMENT_TYPE_VALUES).nullable(),
+    grindSettingFormat: z
+      .enum(GRINDER_GRIND_SETTING_FORMAT_VALUES)
+      .default('string'),
+    grindSettingMinimum: nullableDecimal(9_999.999, 3),
+    grindSettingMaximum: nullableDecimal(9_999.999, 3),
+    brewRange: nullableEnumSet(GRINDER_BREW_RANGE_VALUES),
+    beanFeed: z.enum(GRINDER_BEAN_FEED_VALUES).nullable(),
+    doseControlModes: nullableEnumSet(GRINDER_DOSE_CONTROL_MODE_VALUES),
+    burrMaterial: z.enum(GRINDER_BURR_MATERIAL_VALUES).nullable(),
+  })
+  .superRefine((value, context) => {
+    if (
+      value.grindSettingMinimum !== null &&
+      value.grindSettingMaximum !== null &&
+      Number(value.grindSettingMinimum) > Number(value.grindSettingMaximum)
+    ) {
+      addRangeIssue(context, 'grindSettingMaximum', 'Maximum grind setting')
+    }
+    if (
+      value.grindSettingFormat === 'string' &&
+      (value.grindSettingMinimum !== null || value.grindSettingMaximum !== null)
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['grindSettingMinimum'],
+        message: 'Text grind settings cannot have a numeric range',
+      })
+    }
+    if (
+      value.grindSettingFormat === 'whole_number' &&
+      [value.grindSettingMinimum, value.grindSettingMaximum].some(
+        (setting) => setting !== null && !Number.isInteger(Number(setting)),
+      )
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['grindSettingMinimum'],
+        message: 'Whole-number grind settings require whole-number limits',
+      })
+    }
+  })
 
 export const brewerDetailsSchema = z.object({
   mechanism: z.enum(BREWER_MECHANISM_VALUES).nullable(),

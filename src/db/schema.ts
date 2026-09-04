@@ -547,6 +547,17 @@ export const grinderDetails = pgTable(
     burrMechanism: text('burr_mechanism'),
     burrDiameterMm: decimal('burr_diameter_mm', { precision: 5, scale: 2 }),
     adjustmentType: text('adjustment_type'),
+    grindSettingFormat: text('grind_setting_format')
+      .default('string')
+      .notNull(),
+    grindSettingMinimum: decimal('grind_setting_minimum', {
+      precision: 7,
+      scale: 3,
+    }),
+    grindSettingMaximum: decimal('grind_setting_maximum', {
+      precision: 7,
+      scale: 3,
+    }),
     brewRange: text('brew_range').array(),
     beanFeed: text('bean_feed'),
     doseControlModes: text('dose_control_modes').array(),
@@ -560,6 +571,10 @@ export const grinderDetails = pgTable(
     check(
       'grinder_details_adjustment_type_check',
       sql`${table.adjustmentType} in ('fixed', 'stepped', 'stepless')`,
+    ),
+    check(
+      'grinder_details_grind_setting_format_check',
+      sql`${table.grindSettingFormat} in ('whole_number', 'decimal', 'string')`,
     ),
     check(
       'grinder_details_brew_range_check',
@@ -580,6 +595,15 @@ export const grinderDetails = pgTable(
     check(
       'grinder_details_burr_diameter_check',
       sql`${table.burrDiameterMm} is null or ${table.burrDiameterMm} > 0`,
+    ),
+    check(
+      'grinder_details_grind_setting_range_check',
+      sql`(${table.grindSettingMinimum} is null or ${table.grindSettingMinimum} >= 0)
+        and (${table.grindSettingMaximum} is null or ${table.grindSettingMaximum} >= 0)
+        and (${table.grindSettingMinimum} is null or ${table.grindSettingMaximum} is null or ${table.grindSettingMinimum} <= ${table.grindSettingMaximum})
+        and (${table.grindSettingFormat} <> 'string' or (${table.grindSettingMinimum} is null and ${table.grindSettingMaximum} is null))
+        and (${table.grindSettingFormat} <> 'whole_number' or ${table.grindSettingMinimum} is null or trunc(${table.grindSettingMinimum}) = ${table.grindSettingMinimum})
+        and (${table.grindSettingFormat} <> 'whole_number' or ${table.grindSettingMaximum} is null or trunc(${table.grindSettingMaximum}) = ${table.grindSettingMaximum})`,
     ),
   ],
 )

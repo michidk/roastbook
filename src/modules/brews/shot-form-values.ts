@@ -213,6 +213,11 @@ export type GearOption = {
   readonly name: string
   readonly type: string
   readonly isArchived?: boolean
+  readonly grinderDetails?: {
+    readonly grindSettingFormat: string
+    readonly grindSettingMinimum: string | null
+    readonly grindSettingMaximum: string | null
+  } | null
 }
 
 export type EquipmentSelection = Pick<

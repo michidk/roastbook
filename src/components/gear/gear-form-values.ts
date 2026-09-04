@@ -15,6 +15,7 @@ import {
   GRINDER_BURR_MATERIAL_VALUES,
   GRINDER_BURR_MECHANISM_VALUES,
   GRINDER_DOSE_CONTROL_MODE_VALUES,
+  GRINDER_GRIND_SETTING_FORMAT_VALUES,
   KETTLE_SPOUT_TYPE_VALUES,
   KETTLE_TEMPERATURE_CONTROL_VALUES,
   MACHINE_FLOW_CONTROL_VALUES,
@@ -86,6 +87,9 @@ export type GearSubtypeFormValues = {
   readonly grinderBurrMechanism: string
   readonly grinderBurrDiameterMm: string
   readonly grinderAdjustmentType: string
+  readonly grinderGrindSettingFormat: string
+  readonly grinderGrindSettingMinimum: string
+  readonly grinderGrindSettingMaximum: string
   readonly grinderBrewRange: NullableStringSet
   readonly grinderBeanFeed: string
   readonly grinderDoseControlModes: NullableStringSet
@@ -174,6 +178,9 @@ export const EMPTY_GEAR_SUBTYPE_VALUES: GearSubtypeFormValues = {
   grinderBurrMechanism: '',
   grinderBurrDiameterMm: '',
   grinderAdjustmentType: '',
+  grinderGrindSettingFormat: 'string',
+  grinderGrindSettingMinimum: '',
+  grinderGrindSettingMaximum: '',
   grinderBrewRange: null,
   grinderBeanFeed: '',
   grinderDoseControlModes: null,
@@ -373,6 +380,9 @@ export function gearFormValuesFrom(
     grinderBurrMechanism: grinder?.burrMechanism ?? '',
     grinderBurrDiameterMm: valueForInput(grinder?.burrDiameterMm),
     grinderAdjustmentType: grinder?.adjustmentType ?? '',
+    grinderGrindSettingFormat: grinder?.grindSettingFormat ?? 'string',
+    grinderGrindSettingMinimum: valueForInput(grinder?.grindSettingMinimum),
+    grinderGrindSettingMaximum: valueForInput(grinder?.grindSettingMaximum),
     grinderBrewRange: setForInput(grinder?.brewRange),
     grinderBeanFeed: grinder?.beanFeed ?? '',
     grinderDoseControlModes: setForInput(grinder?.doseControlModes),
@@ -555,6 +565,13 @@ function subtypePayload(values: GearFormValues, type: GearType) {
             values.grinderAdjustmentType,
             GRINDER_ADJUSTMENT_TYPE_VALUES,
           ),
+          grindSettingFormat:
+            enumOrNull(
+              values.grinderGrindSettingFormat,
+              GRINDER_GRIND_SETTING_FORMAT_VALUES,
+            ) ?? 'string',
+          grindSettingMinimum: decimalOrNull(values.grinderGrindSettingMinimum),
+          grindSettingMaximum: decimalOrNull(values.grinderGrindSettingMaximum),
           brewRange: enumSetOrNull(
             values.grinderBrewRange,
             GRINDER_BREW_RANGE_VALUES,

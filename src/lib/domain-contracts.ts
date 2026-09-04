@@ -112,6 +112,12 @@ export const GRINDER_ADJUSTMENT_TYPE_VALUES = [
   'stepless',
 ] as const
 
+export const GRINDER_GRIND_SETTING_FORMAT_VALUES = [
+  'whole_number',
+  'decimal',
+  'string',
+] as const
+
 export const GRINDER_BREW_RANGE_VALUES = ['espresso', 'filter'] as const
 
 export const GRINDER_BEAN_FEED_VALUES = [

@@ -9,6 +9,7 @@ import {
   GRINDER_BURR_MATERIAL_VALUES,
   GRINDER_BURR_MECHANISM_VALUES,
   GRINDER_DOSE_CONTROL_MODE_VALUES,
+  GRINDER_GRIND_SETTING_FORMAT_VALUES,
   KETTLE_SPOUT_TYPE_VALUES,
   KETTLE_TEMPERATURE_CONTROL_VALUES,
   MACHINE_FLOW_CONTROL_VALUES,
@@ -144,6 +145,15 @@ export const GRINDER_BURR_MECHANISM_OPTIONS = optionsFromLabels(
 export const GRINDER_ADJUSTMENT_TYPE_OPTIONS = optionsFromLabels(
   GRINDER_ADJUSTMENT_TYPE_VALUES,
   { fixed: 'Fixed', stepped: 'Stepped', stepless: 'Stepless' },
+)
+
+export const GRINDER_GRIND_SETTING_FORMAT_OPTIONS = optionsFromLabels(
+  GRINDER_GRIND_SETTING_FORMAT_VALUES,
+  {
+    whole_number: 'Whole number',
+    decimal: 'Floating point',
+    string: 'Text',
+  },
 )
 
 export const GRINDER_BREW_RANGE_OPTIONS = optionsFromLabels(

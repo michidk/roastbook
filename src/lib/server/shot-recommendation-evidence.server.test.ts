@@ -73,6 +73,35 @@ describe('AI brew recommendation context', () => {
       wdtDetails: null,
       basketDetails: null,
     })
+    const grinder = recommendationGearEvidence(5, {
+      id: 5,
+      name: 'Test Grinder',
+      brand: 'Acme',
+      model: 'One',
+      type: 'grinder',
+      notes: 'Single-dose grinder',
+      espressoMachineDetails: null,
+      machineSettingRevisions: [],
+      grinderDetails: {
+        gearId: 5,
+        burrMechanism: 'conical',
+        burrDiameterMm: '64.00',
+        adjustmentType: 'stepless',
+        grindSettingFormat: 'decimal',
+        grindSettingMinimum: '2.500',
+        grindSettingMaximum: '12.000',
+        brewRange: ['espresso'],
+        beanFeed: 'single_dose',
+        doseControlModes: ['manual'],
+        burrMaterial: 'steel',
+      },
+      brewerDetails: null,
+      kettleDetails: null,
+      scaleDetails: null,
+      tamperDetails: null,
+      wdtDetails: null,
+      basketDetails: null,
+    })
 
     expect(bean).toEqual({
       id: 12,
@@ -90,10 +119,18 @@ describe('AI brew recommendation context', () => {
     })
     expect(machine).toMatchObject({
       id: 4,
+      currentOwnerSettings: machineSettings,
+    })
+    expect(grinder).toMatchObject({
+      id: 5,
       brand: 'Acme',
       model: 'One',
-      notes: 'Pressure-profile mode enabled',
-      currentOwnerSettings: machineSettings,
+      notes: 'Single-dose grinder',
+      grinderDetails: {
+        grindSettingFormat: 'decimal',
+        grindSettingMinimum: '2.500',
+        grindSettingMaximum: '12.000',
+      },
     })
   })
 
