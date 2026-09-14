@@ -41,6 +41,12 @@
 Roastbook is a self-hosted home for your brews, beans, recipes, café visits,
 roasters, brewing methods, and gear — and it fills itself in for you.
 
+<p align="center">
+  <img src=".github/images/overview-desktop.png"
+    alt="Roastbook overview with recent brews and quick actions"
+    width="1200">
+</p>
+
 - 📷 **Photograph a bag** and Roastbook reads the label: origin, region, farm,
   variety, process, roast level, roast date, tasting notes.
 - 🔎 **Type a roaster's name** and it researches the website, location, and
@@ -53,8 +59,23 @@ your current setup.
 
 Logging coffee should take seconds, not minutes. Log a brew with dose, yield,
 and time and you are done; the depth is there when you want it, not in your
-face when you don't. Roastbook runs equally well on the phone in your hand at
-the machine and on the desktop where you dig through the numbers afterwards.
+face when you don't.
+
+<p align="center">
+  <img src=".github/images/new-brew-desktop.png"
+    alt="Logging a new espresso brew with method suggestions, taste controls,
+    a selected coffee, and the brew timer"
+    width="1200">
+</p>
+
+Roastbook runs equally well on the phone in your hand at the machine and on the
+desktop where you dig through the numbers afterwards.
+
+<p align="center">
+  <img src=".github/images/overview-mobile.png"
+    alt="Roastbook overview on a mobile phone"
+    width="375">
+</p>
 
 ## ✨ Why Roastbook
 
@@ -147,6 +168,12 @@ as MIME type and byte count, not the image payload itself.
   methods to keep new-brew choices relevant, then record the finished drink and
   its applicable milk choice on both brews and café visits.
 - Keep a Places list of saved cafés, from favorites to a want-to-visit wishlist.
+
+<p align="center">
+  <img src=".github/images/beans-desktop.png"
+    alt="Roastbook bean collection with active coffee bags"
+    width="1200">
+</p>
 
 ### Insight
 
