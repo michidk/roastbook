@@ -31,7 +31,7 @@ export function AiSettings({ stats }: { stats: AiRequestStats }) {
     <>
       <SettingsPanelSection
         title="AI"
-        description="Review lifetime token usage and inspect raw extraction and research traffic."
+        description="Review lifetime token usage and diagnostic request metadata."
         action={<Bot className="h-5 w-5 text-link" aria-hidden="true" />}
       >
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -58,9 +58,9 @@ export function AiSettings({ stats }: { stats: AiRequestStats }) {
         </div>
         <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
-            Includes full prompts, images, provider events, and unparsed
-            responses. Cost uses provider totals or known standard token rates;
-            tool fees are excluded.
+            Prompt and response bodies are redacted by default. Cost uses
+            provider totals or known standard token rates; tool fees are
+            excluded.
           </p>
           <Button
             type="button"

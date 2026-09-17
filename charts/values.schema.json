@@ -434,14 +434,28 @@
         "existingSecretKey",
         "baseUrl",
         "visionModel",
-        "researchModel"
+        "researchModel",
+        "telemetryStorePayloads",
+        "telemetryRetentionDays",
+        "telemetryMaxPayloadBytes"
       ],
       "properties": {
         "existingSecret": { "type": "string" },
         "existingSecretKey": { "type": "string", "minLength": 1 },
         "baseUrl": { "type": "string" },
         "visionModel": { "type": "string", "minLength": 1 },
-        "researchModel": { "type": "string", "minLength": 1 }
+        "researchModel": { "type": "string", "minLength": 1 },
+        "telemetryStorePayloads": { "type": "boolean" },
+        "telemetryRetentionDays": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 30
+        },
+        "telemetryMaxPayloadBytes": {
+          "type": "integer",
+          "minimum": 1024,
+          "maximum": 1048576
+        }
       }
     },
     "hodor": {

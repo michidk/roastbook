@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import {
   assertPublicHttpUrl,
   isPrivateAddress,
+  resolvePublicHttpUrl,
 } from '@/lib/server/remote-url-policy.server'
 
 describe('remote URL policy', () => {
@@ -87,6 +88,21 @@ describe('remote URL policy', () => {
       async () => [{ address: '93.184.216.34' }],
     )
     expect(url.href).toBe('https://example.test/image.png')
+  })
+
+  test('returns the public addresses approved for the connection', async () => {
+    const resolved = await resolvePublicHttpUrl(
+      'https://example.test/image.png',
+      async () => [
+        { address: '93.184.216.34', family: 4 },
+        { address: '2606:4700:4700::1111', family: 6 },
+      ],
+    )
+
+    expect(resolved.addresses).toEqual([
+      { address: '93.184.216.34', family: 4 },
+      { address: '2606:4700:4700::1111', family: 6 },
+    ])
   })
 
   test('normalizes DNS resolution failures', async () => {

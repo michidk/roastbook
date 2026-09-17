@@ -59,16 +59,21 @@ proposed database-free architecture.
 | `OPENAI_BASE_URL` | OpenAI | No | Compatible API base URL |
 | `OPENAI_VISION_MODEL` | `gpt-4o` | No | Model used for image extraction |
 | `OPENAI_RESEARCH_MODEL` | `gpt-4o` | No | Research/recommendation model |
+| `AI_TELEMETRY_STORE_PAYLOADS` | `false` | No | Store detailed payloads |
+| `AI_TELEMETRY_RETENTION_DAYS` | `1` | No | Retention (1–30 days) |
+| `AI_TELEMETRY_MAX_PAYLOAD_BYTES` | `65536` | No | Cap (1 KiB–1 MiB) |
 
 Model values must be supported by the installed TanStack OpenAI adapter.
 Unsupported configured values fall back to the application defaults.
 
-Roastbook records raw AI inputs, normalized provider response events, errors,
-and token usage in PostgreSQL. These logs are available from the AI card at the
-bottom of Settings. Image-extraction logs retain the MIME type and byte count,
-not the base64 image payload. The logs can still contain private bean, roaster,
-gear, and brew details, so keep the database and Settings page behind the
-deployment's authentication boundary.
+Roastbook records AI request metadata, status, token usage, duration, and cost
+in PostgreSQL. Prompts, provider response events, outputs, and detailed errors
+are redacted by default. Set `AI_TELEMETRY_STORE_PAYLOADS=true` only during a
+short diagnostic window. Detailed payloads are capped and automatically
+scrubbed after the configured retention period; they can also be purged
+immediately from the AI request log in Settings. Detailed logs can contain
+private bean, roaster, gear, and brew data, so keep the database and Settings
+page behind the deployment's authentication boundary.
 
 ## Docker Compose authentication gate
 

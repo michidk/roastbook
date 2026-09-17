@@ -16,7 +16,31 @@ describe('server environment', () => {
       OPENAI_BASE_URL: 'https://api.openai.com/v1',
       OPENAI_VISION_MODEL: 'gpt-4o',
       OPENAI_RESEARCH_MODEL: 'gpt-4o',
+      AI_TELEMETRY_STORE_PAYLOADS: false,
+      AI_TELEMETRY_RETENTION_DAYS: 1,
+      AI_TELEMETRY_MAX_PAYLOAD_BYTES: 65_536,
     })
+  })
+
+  test('bounds detailed AI telemetry configuration', () => {
+    const environment = parseServerEnv({
+      DATABASE_URL: databaseUrl,
+      AI_TELEMETRY_STORE_PAYLOADS: 'true',
+      AI_TELEMETRY_RETENTION_DAYS: '7',
+      AI_TELEMETRY_MAX_PAYLOAD_BYTES: '32768',
+    })
+
+    expect(environment).toMatchObject({
+      AI_TELEMETRY_STORE_PAYLOADS: true,
+      AI_TELEMETRY_RETENTION_DAYS: 7,
+      AI_TELEMETRY_MAX_PAYLOAD_BYTES: 32_768,
+    })
+    expect(() =>
+      parseServerEnv({
+        DATABASE_URL: databaseUrl,
+        AI_TELEMETRY_RETENTION_DAYS: '31',
+      }),
+    ).toThrow('AI_TELEMETRY_RETENTION_DAYS')
   })
 
   test('treats empty optional values as unset', () => {

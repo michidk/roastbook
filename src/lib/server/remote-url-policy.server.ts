@@ -77,14 +77,21 @@ export function isPrivateAddress(address: string): boolean {
   return isNonPublicIpv6(normalized)
 }
 
-type ResolveHost = (hostname: string) => Promise<readonly { address: string }[]>
+export type ResolvedAddress = {
+  address: string
+  family?: number
+}
+
+export type ResolveHost = (
+  hostname: string,
+) => Promise<readonly ResolvedAddress[]>
 
 const resolveHost: ResolveHost = (hostname) => lookup(hostname, { all: true })
 
-export async function assertPublicHttpUrl(
+export async function resolvePublicHttpUrl(
   value: string,
   resolve: ResolveHost = resolveHost,
-): Promise<URL> {
+): Promise<{ url: URL; addresses: readonly ResolvedAddress[] }> {
   let url: URL
   try {
     url = new URL(value)
@@ -104,7 +111,7 @@ export async function assertPublicHttpUrl(
     throw new RemoteUrlPolicyError('That image host is not allowed')
   }
 
-  let addresses: readonly { address: string }[]
+  let addresses: readonly ResolvedAddress[]
   try {
     addresses = isIP(hostname)
       ? [{ address: hostname }]
@@ -119,5 +126,12 @@ export async function assertPublicHttpUrl(
     throw new RemoteUrlPolicyError('That image host is not allowed')
   }
 
-  return url
+  return { url, addresses }
+}
+
+export async function assertPublicHttpUrl(
+  value: string,
+  resolve: ResolveHost = resolveHost,
+): Promise<URL> {
+  return (await resolvePublicHttpUrl(value, resolve)).url
 }

@@ -1,5 +1,7 @@
-import { ChevronDown, Loader2, RefreshCw } from 'lucide-react'
+import { ChevronDown, Loader2, RefreshCw, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import { toast } from 'sonner'
+import { DeleteConfirmation } from '@/components/delete-confirmation'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -26,6 +28,7 @@ import {
   type AiRequestStatus,
   getAiRequestLog,
   getAiRequestLogs,
+  purgeAiRequestPayloads,
 } from '@/lib/server/ai-request-logs'
 
 const PAGE_SIZE = 20
@@ -300,15 +303,25 @@ export function AiRequestLogDialog({
     }
   }
 
+  const purgePayloads = async () => {
+    const purgedCount = await purgeAiRequestPayloads()
+    setPage(null)
+    await loadFirstPage()
+    toast.success(
+      purgedCount === 1
+        ? 'Purged raw payloads from 1 AI request'
+        : `Purged raw payloads from ${purgedCount} AI requests`,
+    )
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-5xl">
         <DialogHeader>
           <DialogTitle>AI request log</DialogTitle>
           <DialogDescription>
-            Inspect the raw application payload, response events, errors, and
-            token usage for every AI run. Image logs include metadata, not the
-            image data itself.
+            Review AI request status and token usage. Raw payloads are redacted
+            unless short-lived diagnostic storage is explicitly enabled.
           </DialogDescription>
         </DialogHeader>
         <DialogBody className="space-y-3">
@@ -369,7 +382,19 @@ export function AiRequestLogDialog({
             </div>
           ) : null}
         </DialogBody>
-        <DialogFooter showCloseButton />
+        <DialogFooter showCloseButton>
+          <DeleteConfirmation
+            title="Purge raw AI payloads"
+            description="Remove stored prompts, provider responses, and detailed errors now. Token and cost summaries will remain."
+            onConfirm={purgePayloads}
+            trigger={
+              <Button type="button" variant="destructive">
+                <Trash2 aria-hidden="true" />
+                Purge raw payloads
+              </Button>
+            }
+          />
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

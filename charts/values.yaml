@@ -163,6 +163,9 @@ openai:
   baseUrl: ""  # e.g., "https://openrouter.ai/api/v1" for OpenRouter
   visionModel: "gpt-4o"  # e.g., "openai/gpt-4o" for OpenRouter
   researchModel: "gpt-4o"
+  telemetryStorePayloads: false
+  telemetryRetentionDays: 1
+  telemetryMaxPayloadBytes: 65536
 
 hodor:
   enabled: true

@@ -83,6 +83,11 @@ to `api-key`. `openai.baseUrl`, `openai.visionModel`, and
 only take effect when `openai.existingSecret` is set, because the deployment
 template renders them inside that guard.
 
+Detailed AI prompts and responses are disabled by default. Set
+`openai.telemetryStorePayloads=true` only for short-lived diagnostics and tune
+the bounded retention and payload size with `telemetryRetentionDays` and
+`telemetryMaxPayloadBytes`.
+
 ## Migrations
 
 The migration Job is enabled by default. With hooks enabled, external databases

@@ -120,6 +120,12 @@ spec:
               value: {{ .Values.openai.researchModel | quote }}
             {{- end }}
             {{- end }}
+            - name: AI_TELEMETRY_STORE_PAYLOADS
+              value: {{ .Values.openai.telemetryStorePayloads | quote }}
+            - name: AI_TELEMETRY_RETENTION_DAYS
+              value: {{ .Values.openai.telemetryRetentionDays | quote }}
+            - name: AI_TELEMETRY_MAX_PAYLOAD_BYTES
+              value: {{ .Values.openai.telemetryMaxPayloadBytes | quote }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:

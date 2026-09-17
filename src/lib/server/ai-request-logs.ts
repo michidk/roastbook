@@ -4,6 +4,7 @@ import {
   loadAiRequestLog,
   loadAiRequestLogs,
   loadAiRequestStats,
+  purgeAiRequestLogPayloads,
 } from '@/lib/server/ai-request-logs.server'
 
 export type {
@@ -30,3 +31,7 @@ export const getAiRequestLogs = createServerFn({ method: 'GET' })
 export const getAiRequestLog = createServerFn({ method: 'GET' })
   .validator(z.number().int().positive())
   .handler(({ data: id }) => loadAiRequestLog(id))
+
+export const purgeAiRequestPayloads = createServerFn({
+  method: 'POST',
+}).handler(purgeAiRequestLogPayloads)

@@ -1,5 +1,5 @@
 import type { ChatMiddleware, StreamChunk, TokenUsage } from '@tanstack/ai'
-import { desc, eq, lt, sql } from 'drizzle-orm'
+import { and, desc, eq, lt, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { aiRequestLogs } from '@/db/schema'
 import { estimateTokenCostUsd } from '@/lib/ai-pricing'
@@ -8,7 +8,13 @@ import {
   addAiTokenUsage,
   EMPTY_AI_TOKEN_TOTALS,
 } from '@/lib/ai-token-usage'
-import { type JsonValue, toJsonValue } from '@/lib/json-value'
+import type { JsonValue } from '@/lib/json-value'
+import {
+  getAiTelemetryPolicy,
+  REDACTED_AI_PAYLOAD,
+  storedAiErrorMessage,
+  storedAiPayload,
+} from '@/lib/server/ai-request-log-policy.server'
 
 export type AiRequestStatus = 'in_progress' | 'succeeded' | 'failed' | 'aborted'
 
@@ -89,6 +95,43 @@ async function updateLogSafely(
   }
 }
 
+export async function scrubExpiredAiRequestPayloads({
+  force = false,
+  policy = getAiTelemetryPolicy(),
+  now = new Date(),
+}: {
+  force?: boolean
+  policy?: ReturnType<typeof getAiTelemetryPolicy>
+  now?: Date
+} = {}): Promise<number> {
+  const hasDetailedPayload = sql<boolean>`(
+    ${aiRequestLogs.requestPayload} <> ${JSON.stringify(REDACTED_AI_PAYLOAD)}::jsonb
+    or ${aiRequestLogs.responsePayload} is not null
+    or ${aiRequestLogs.errorMessage} is not null
+  )`
+  const retentionCutoff = new Date(
+    now.getTime() - policy.retentionDays * 24 * 60 * 60 * 1_000,
+  )
+  const rows = await db
+    .update(aiRequestLogs)
+    .set({
+      requestPayload: REDACTED_AI_PAYLOAD,
+      responsePayload: null,
+      errorMessage: null,
+    })
+    .where(
+      force || !policy.storePayloads
+        ? hasDetailedPayload
+        : and(lt(aiRequestLogs.createdAt, retentionCutoff), hasDetailedPayload),
+    )
+    .returning({ id: aiRequestLogs.id })
+  return rows.length
+}
+
+export async function purgeAiRequestLogPayloads(): Promise<number> {
+  return scrubExpiredAiRequestPayloads({ force: true })
+}
+
 export async function startAiRequestLog({
   requestType,
   model,
@@ -99,12 +142,14 @@ export async function startAiRequestLog({
   requestPayload: unknown
 }): Promise<number | undefined> {
   try {
+    await scrubExpiredAiRequestPayloads()
+    const policy = getAiTelemetryPolicy()
     const [entry] = await db
       .insert(aiRequestLogs)
       .values({
         requestType,
         model,
-        requestPayload: toJsonValue(requestPayload),
+        requestPayload: storedAiPayload(requestPayload, policy),
       })
       .returning({ id: aiRequestLogs.id })
     return entry?.id
@@ -127,9 +172,12 @@ export async function completeAiRequestLog({
   usage?: AiTokenTotals
   durationMs: number
 }) {
+  const policy = getAiTelemetryPolicy()
   await updateLogSafely(logId, {
     status: 'succeeded',
-    responsePayload: toJsonValue(responsePayload),
+    responsePayload: policy.storePayloads
+      ? storedAiPayload(responsePayload, policy)
+      : null,
     ...usageValues(model, usage),
     durationMs,
     completedAt: new Date(),
@@ -147,10 +195,13 @@ export async function failAiRequestLog({
   error: unknown
   durationMs: number
 }) {
+  const policy = getAiTelemetryPolicy()
   await updateLogSafely(logId, {
     status: 'failed',
-    responsePayload: toJsonValue({ error: errorPayload(error) }),
-    errorMessage: errorMessage(error),
+    responsePayload: policy.storePayloads
+      ? storedAiPayload({ error: errorPayload(error) }, policy)
+      : null,
+    errorMessage: storedAiErrorMessage(errorMessage(error), policy),
     ...usageValues(model, EMPTY_AI_TOKEN_TOTALS),
     durationMs,
     completedAt: new Date(),
@@ -180,13 +231,14 @@ export function createAiRequestLogMiddleware(
   logId: number | undefined,
   model: string,
 ): ChatMiddleware {
+  const policy = getAiTelemetryPolicy()
   const events: Array<StreamChunk> = []
   let usage = EMPTY_AI_TOKEN_TOTALS
 
   return {
     name: 'roastbook-ai-request-log',
     onChunk: (_context, chunk) => {
-      events.push(chunk)
+      if (policy.storePayloads) events.push(chunk)
     },
     onUsage: (_context, nextUsage) => {
       usage = addAiTokenUsage(usage, nextUsage)
@@ -195,12 +247,17 @@ export function createAiRequestLogMiddleware(
       const totals = usageForResponse(usage, info.usage)
       await updateLogSafely(logId, {
         status: 'succeeded',
-        responsePayload: toJsonValue({
-          content: info.content,
-          finishReason: info.finishReason,
-          events,
-          usage: totals,
-        }),
+        responsePayload: policy.storePayloads
+          ? storedAiPayload(
+              {
+                content: info.content,
+                finishReason: info.finishReason,
+                events,
+                usage: totals,
+              },
+              policy,
+            )
+          : null,
         ...usageValues(model, totals),
         durationMs: info.duration,
         completedAt: new Date(),
@@ -209,11 +266,12 @@ export function createAiRequestLogMiddleware(
     onAbort: async (_context, info) => {
       await updateLogSafely(logId, {
         status: 'aborted',
-        responsePayload: toJsonValue({
-          events,
-          reason: info.reason ?? null,
-        }),
-        errorMessage: info.reason ?? 'Request aborted',
+        responsePayload: policy.storePayloads
+          ? storedAiPayload({ events, reason: info.reason ?? null }, policy)
+          : null,
+        errorMessage: policy.storePayloads
+          ? storedAiErrorMessage(info.reason ?? 'Request aborted', policy)
+          : 'AI request aborted',
         ...usageValues(model, usage),
         durationMs: info.duration,
         completedAt: new Date(),
@@ -222,11 +280,10 @@ export function createAiRequestLogMiddleware(
     onError: async (_context, info) => {
       await updateLogSafely(logId, {
         status: 'failed',
-        responsePayload: toJsonValue({
-          events,
-          error: errorPayload(info.error),
-        }),
-        errorMessage: errorMessage(info.error),
+        responsePayload: policy.storePayloads
+          ? storedAiPayload({ events, error: errorPayload(info.error) }, policy)
+          : null,
+        errorMessage: storedAiErrorMessage(errorMessage(info.error), policy),
         ...usageValues(model, usage),
         durationMs: info.duration,
         completedAt: new Date(),
@@ -236,6 +293,7 @@ export function createAiRequestLogMiddleware(
 }
 
 export async function loadAiRequestStats(): Promise<AiRequestStats> {
+  await scrubExpiredAiRequestPayloads()
   const [stats] = await db
     .select({
       requestCount: sql<number>`count(*)::double precision`,
@@ -268,6 +326,7 @@ export async function loadAiRequestLogs({
   cursor?: number
   limit: number
 }): Promise<AiRequestLogPage> {
+  await scrubExpiredAiRequestPayloads()
   const rows = await db
     .select({
       id: aiRequestLogs.id,
@@ -304,6 +363,7 @@ export async function loadAiRequestLogs({
 }
 
 export async function loadAiRequestLog(id: number): Promise<AiRequestLogEntry> {
+  await scrubExpiredAiRequestPayloads()
   const entry = await db.query.aiRequestLogs.findFirst({
     where: eq(aiRequestLogs.id, id),
   })

@@ -5,6 +5,10 @@ import { createServerOnlyFn } from '@tanstack/react-start'
 import { z } from 'zod'
 
 const optionalString = z.string().trim().min(1).optional()
+const booleanString = z
+  .enum(['true', 'false'])
+  .default('false')
+  .transform((value) => value === 'true')
 
 const serverSchema = {
   DATABASE_URL: z.string().trim().min(1),
@@ -20,6 +24,19 @@ const serverSchema = {
   OPENAI_BASE_URL: z.url().default('https://api.openai.com/v1'),
   OPENAI_VISION_MODEL: z.string().trim().min(1).default('gpt-4o'),
   OPENAI_RESEARCH_MODEL: z.string().trim().min(1).default('gpt-4o'),
+  AI_TELEMETRY_STORE_PAYLOADS: booleanString,
+  AI_TELEMETRY_RETENTION_DAYS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(30)
+    .default(1),
+  AI_TELEMETRY_MAX_PAYLOAD_BYTES: z.coerce
+    .number()
+    .int()
+    .min(1_024)
+    .max(1_048_576)
+    .default(65_536),
 }
 
 const s3RequiredVariables = [
@@ -73,6 +90,12 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
       OPENAI_BASE_URL: runtimeEnvironment.OPENAI_BASE_URL,
       OPENAI_VISION_MODEL: runtimeEnvironment.OPENAI_VISION_MODEL,
       OPENAI_RESEARCH_MODEL: runtimeEnvironment.OPENAI_RESEARCH_MODEL,
+      AI_TELEMETRY_STORE_PAYLOADS:
+        runtimeEnvironment.AI_TELEMETRY_STORE_PAYLOADS,
+      AI_TELEMETRY_RETENTION_DAYS:
+        runtimeEnvironment.AI_TELEMETRY_RETENTION_DAYS,
+      AI_TELEMETRY_MAX_PAYLOAD_BYTES:
+        runtimeEnvironment.AI_TELEMETRY_MAX_PAYLOAD_BYTES,
     },
     emptyStringAsUndefined: true,
     isServer: true,
