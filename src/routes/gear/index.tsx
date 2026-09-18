@@ -267,15 +267,22 @@ function GearCard({
       className={interactiveCardLinkClassName}
     >
       <Card className="h-full overflow-hidden pt-0 transition-colors group-hover:bg-muted/50">
-        {thumbnail && (
-          <div className="aspect-[4/3] overflow-hidden">
-            <ImageWithFallback
-              src={imageUrl(thumbnail.storagePath)}
-              alt=""
-              className="h-full w-full object-cover"
-            />
-          </div>
-        )}
+        <div className="aspect-[4/3] overflow-hidden">
+          <ImageWithFallback
+            src={thumbnail ? imageUrl(thumbnail.storagePath) : undefined}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            width={640}
+            height={480}
+            className="h-full w-full object-cover"
+            fallback={
+              <div className="flex size-16 items-center justify-center rounded-full border border-border bg-card/70 text-muted-foreground shadow-sm">
+                <Cog aria-hidden className="size-8" strokeWidth={1.5} />
+              </div>
+            }
+          />
+        </div>
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-3">
             <CardTitle className="min-w-0 text-base">{item.name}</CardTitle>
