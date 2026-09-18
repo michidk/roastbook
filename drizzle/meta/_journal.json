@@ -330,6 +330,13 @@
       "when": 1789730628766,
       "tag": "0046_chief_ego",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1789742901700,
+      "tag": "0048_high_arachne",
+      "breakpoints": true
     }
   ]
 }

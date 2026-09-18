@@ -91,6 +91,10 @@ desktop where you dig through the numbers afterwards.
   filterable statistics connect brew quality to beans, methods, taste,
   consistency, timing, gear, and cost, while parameter charts show what a change
   to grind, dose, or pressure actually did.
+- 🫘 **One coffee, every bag.** Buying the same beans again adds a new bag to
+  the existing coffee profile. Roast date, starting weight, price, shop, shelf
+  state, and remaining-weight estimates stay bag-specific, while brew history
+  and AI recommendations learn across every purchase of that coffee.
 - 📱 **Mobile and desktop, both first-class.** Large touch targets and compact
   cards next to the machine; full data tables, charts, and maps at the desk,
   plus a <kbd>⌘</kbd> <kbd>K</kbd> command palette for jumping anywhere without
@@ -160,7 +164,8 @@ as MIME type and byte count, not the image payload itself.
 
 ### Your coffee world
 
-- Catalog beans, roasters, brewing methods, coffee shops, and typed gear
+- Catalog coffees with repeat-purchase bag history, roasters, brewing methods,
+  coffee shops, and typed gear
   details, and group equipment into reusable gear sets that fill new brew and
   recipe equipment fields in one tap.
 - Track café visits and explore visited locations on a map.

@@ -8,6 +8,9 @@ export function shotParameterPayload(values: ShotFormValues) {
   return {
     brewingMethodId: Number(values.brewingMethodId),
     beanId: values.beanId ? Number(values.beanId) : null,
+    beanPurchaseId: values.beanPurchaseId
+      ? Number(values.beanPurchaseId)
+      : null,
     machineId: values.machineId ? Number(values.machineId) : null,
     doseGrams: values.doseGrams || null,
     brewWaterGrams: values.brewWaterGrams || null,
@@ -42,8 +45,10 @@ export function shotDrinkPayload(values: ShotFormValues) {
 }
 
 export function recipePayload(values: ShotFormValues) {
+  const { beanPurchaseId: _beanPurchaseId, ...parameters } =
+    shotParameterPayload(values)
   return {
-    ...shotParameterPayload(values),
+    ...parameters,
     drinkTypeId: values.drinkTypeId ? Number(values.drinkTypeId) : null,
   }
 }
@@ -78,5 +83,8 @@ export function newShotRecommendationRequest(
   // The server resolves this request to the most recent completed brew for the bean.
   return {
     beanId: Number(values.beanId),
+    beanPurchaseId: values.beanPurchaseId
+      ? Number(values.beanPurchaseId)
+      : undefined,
   }
 }

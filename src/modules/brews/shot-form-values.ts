@@ -11,6 +11,7 @@ import { EMPTY_SHOT_SENSORY_RATINGS } from '@/lib/shot-sensory'
 export type ShotFormValues = {
   brewingMethodId: string
   beanId: string
+  beanPurchaseId: string
   drinkTypeId: string
   drinkOptionValueIds: Readonly<Record<string, string>>
   machineId: string
@@ -48,6 +49,7 @@ export const EMPTY_SHOT_FORM_VALUES: ShotFormValues = {
   ...EMPTY_SHOT_SENSORY_RATINGS,
   brewingMethodId: '',
   beanId: '',
+  beanPurchaseId: '',
   drinkTypeId: '',
   drinkOptionValueIds: {},
   machineId: '',
@@ -97,6 +99,7 @@ export function shotFormValuesFrom(
     ...EMPTY_SHOT_FORM_VALUES,
     brewingMethodId: String(source.brewingMethodId),
     beanId: source.beanId ? String(source.beanId) : '',
+    beanPurchaseId: source.beanPurchaseId ? String(source.beanPurchaseId) : '',
     drinkTypeId: source.drinkTypeId ? String(source.drinkTypeId) : '',
     drinkOptionValueIds: Object.fromEntries(
       (source.drinkOptions ?? []).map((link) => [

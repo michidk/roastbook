@@ -23,7 +23,7 @@ import {
 } from '@/lib/drink-options'
 import { focusFirstInvalidControl } from '@/lib/form-validation'
 import { shotDrinkPayload, shotParameterPayload } from '@/lib/new-shot-payload'
-import type { getActiveBeans } from '@/lib/server/beans'
+import type { getActiveBeanPurchases } from '@/lib/server/beans'
 import type { getBrewingMethods } from '@/lib/server/brewing-methods'
 import type { getGear } from '@/lib/server/gear'
 import { type getShot, updateShot } from '@/lib/server/shots'
@@ -40,7 +40,7 @@ import {
 type Shot = NonNullable<Awaited<ReturnType<typeof getShot>>>
 
 export type ShotEditData = {
-  readonly beans: Awaited<ReturnType<typeof getActiveBeans>>
+  readonly beans: Awaited<ReturnType<typeof getActiveBeanPurchases>>
   readonly tasteTags: Awaited<ReturnType<typeof getTasteTags>>
   readonly gear: Awaited<ReturnType<typeof getGear>>
   readonly methods: Awaited<ReturnType<typeof getBrewingMethods>>
@@ -119,10 +119,7 @@ export function ShotEditForm({
     }
   }
 
-  const beans =
-    shot.bean && !editData.beans.some((bean) => bean.id === shot.bean?.id)
-      ? [shot.bean, ...editData.beans]
-      : editData.beans
+  const beans = editData.beans
   const selectedMethod = editData.methods.find(
     (method) => String(method.id) === values.brewingMethodId,
   )
@@ -172,8 +169,17 @@ export function ShotEditForm({
         <BeanPicker
           id="edit-bean"
           label="Beans"
-          value={values.beanId}
-          onChange={(value) => set('beanId', value ?? '')}
+          value={values.beanPurchaseId}
+          onChange={(beanPurchaseId) => {
+            const selected = beans.find(
+              (bean) => String(bean.purchaseId) === beanPurchaseId,
+            )
+            setValues((current) => ({
+              ...current,
+              beanId: selected ? String(selected.id) : '',
+              beanPurchaseId: beanPurchaseId ?? '',
+            }))
+          }}
           beans={beans}
           autoFocus
         />

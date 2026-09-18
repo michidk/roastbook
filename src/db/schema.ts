@@ -4,6 +4,7 @@ import {
   check,
   decimal,
   doublePrecision,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -295,21 +296,10 @@ export const beans = pgTable(
     variety: text('variety'),
     process: text('process'),
     roastLevel: roastLevelEnum('roast_level'),
-    roastDate: timestamp('roast_date'),
-    weight: decimal('weight', { precision: 6, scale: 2 }),
-    price: decimal('price', { precision: 8, scale: 2 }),
-    priceCurrency: text('price_currency').default('EUR'),
-    shopUrl: text('shop_url'),
     notes: text('notes'),
-    ...archiveState(),
+    ...timestamps(),
   },
   (table) => [
-    check('beans_weight_nonnegative', sql`${table.weight} >= 0`),
-    check('beans_price_nonnegative', sql`${table.price} >= 0`),
-    check(
-      'beans_currency_check',
-      sql`${table.priceCurrency} in ('EUR', 'USD', 'GBP', 'CHF')`,
-    ),
     index('beans_created_at_idx').on(table.createdAt),
     index('beans_roaster_id_idx').on(table.roasterId),
   ],
@@ -321,8 +311,57 @@ export const beansRelations = relations(beans, ({ one, many }) => ({
     references: [roasters.id],
   }),
   images: many(beanImages),
+  purchases: many(beanPurchases),
   shots: many(shots),
 }))
+
+export const beanPurchases = pgTable(
+  'bean_purchases',
+  {
+    id: serial('id').primaryKey(),
+    beanId: integer('bean_id')
+      .references(() => beans.id, { onDelete: 'restrict' })
+      .notNull(),
+    purchasedAt: timestamp('purchased_at'),
+    roastDate: timestamp('roast_date'),
+    initialWeightGrams: decimal('initial_weight_grams', {
+      precision: 7,
+      scale: 2,
+    }),
+    price: decimal('price', { precision: 8, scale: 2 }),
+    priceCurrency: text('price_currency').default('EUR'),
+    shopUrl: text('shop_url'),
+    ...archiveState(),
+  },
+  (table) => [
+    check(
+      'bean_purchases_weight_nonnegative',
+      sql`${table.initialWeightGrams} >= 0`,
+    ),
+    check('bean_purchases_price_nonnegative', sql`${table.price} >= 0`),
+    check(
+      'bean_purchases_currency_check',
+      sql`${table.priceCurrency} in ('EUR', 'USD', 'GBP', 'CHF')`,
+    ),
+    index('bean_purchases_bean_id_idx').on(table.beanId),
+    index('bean_purchases_archive_created_idx').on(
+      table.isArchived,
+      table.createdAt,
+    ),
+    uniqueIndex('bean_purchases_id_bean_id_idx').on(table.id, table.beanId),
+  ],
+)
+
+export const beanPurchasesRelations = relations(
+  beanPurchases,
+  ({ one, many }) => ({
+    bean: one(beans, {
+      fields: [beanPurchases.beanId],
+      references: [beans.id],
+    }),
+    shots: many(shots, { relationName: 'shotBeanPurchase' }),
+  }),
+)
 
 export const beanImages = pgTable(
   'bean_images',
@@ -1250,6 +1289,7 @@ export const shots = pgTable(
     id: serial('id').primaryKey(),
     brewedAt: timestamp('brewed_at').defaultNow().notNull(),
     ...shotContextColumns(),
+    beanPurchaseId: integer('bean_purchase_id'),
     drinkTypeId: integer('drink_type_id').references(() => drinkTypes.id, {
       onDelete: 'set null',
     }),
@@ -1305,10 +1345,20 @@ export const shots = pgTable(
         and (${table.flowRateMlPerSecond} is null or ${table.flowRateMlPerSecond} >= 0)
         and (${table.tampForceKg} is null or ${table.tampForceKg} >= 0)`,
     ),
+    check(
+      'brews_purchase_requires_bean',
+      sql`${table.beanPurchaseId} is null or ${table.beanId} is not null`,
+    ),
+    foreignKey({
+      name: 'brews_purchase_bean_fk',
+      columns: [table.beanPurchaseId, table.beanId],
+      foreignColumns: [beanPurchases.id, beanPurchases.beanId],
+    }).onDelete('restrict'),
     index('brews_created_at_idx').on(table.createdAt),
     index('brews_brewed_at_idx').on(table.brewedAt),
     index('brews_brewing_method_id_idx').on(table.brewingMethodId),
     index('brews_bean_id_idx').on(table.beanId),
+    index('brews_bean_purchase_id_idx').on(table.beanPurchaseId),
     index('brews_drink_type_id_idx').on(table.drinkTypeId),
     index('brews_machine_setting_revision_id_idx').on(
       table.machineSettingRevisionId,
@@ -1335,6 +1385,11 @@ export const shotsRelations = relations(shots, ({ one, many }) => ({
   bean: one(beans, {
     fields: [shots.beanId],
     references: [beans.id],
+  }),
+  beanPurchase: one(beanPurchases, {
+    fields: [shots.beanPurchaseId],
+    references: [beanPurchases.id],
+    relationName: 'shotBeanPurchase',
   }),
   machine: one(gear, {
     fields: [shots.machineId],

@@ -89,7 +89,7 @@ function BeansPage() {
         }
         placeholder="Search beans…"
         ariaLabel="Search beans"
-        resultLabel={`${collection.totalItems} ${collection.totalItems === 1 ? 'bag' : 'bags'}`}
+        resultLabel={`${collection.totalItems} ${collection.totalItems === 1 ? 'coffee' : 'coffees'} · ${collection.totalBags} ${collection.totalBags === 1 ? 'bag' : 'bags'}`}
         actions={
           <Button asChild>
             <Link to="/beans/new">

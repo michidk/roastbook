@@ -1,6 +1,12 @@
 import { count, eq } from 'drizzle-orm'
 import { db } from '@/db'
-import { beans, cafeVisits, coffeeShops, settings, shots } from '@/db/schema'
+import {
+  beanPurchases,
+  cafeVisits,
+  coffeeShops,
+  settings,
+  shots,
+} from '@/db/schema'
 import { toDisplayableDatabaseError } from '@/lib/server/database-error.server'
 import { localDateRangeCondition } from '@/lib/server/stats-sql.server'
 import { dateKeyInTimeZone } from '@/lib/stats-filters'
@@ -25,8 +31,8 @@ export async function loadDashboardStats() {
       db.select({ count: count() }).from(shots),
       db
         .select({ count: count() })
-        .from(beans)
-        .where(eq(beans.isArchived, false)),
+        .from(beanPurchases)
+        .where(eq(beanPurchases.isArchived, false)),
       db
         .select({ count: count() })
         .from(shots)

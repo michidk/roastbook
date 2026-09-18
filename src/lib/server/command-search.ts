@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { asc, eq, ilike, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
-import { beans, coffeeShops, gear, roasters } from '@/db/schema'
+import { beanPurchases, beans, coffeeShops, gear, roasters } from '@/db/schema'
 import { escapedContainsPattern } from '@/lib/collection-query'
 import type {
   CommandEntitySearchResult,
@@ -62,7 +62,11 @@ export const searchCommandEntities = createServerFn({ method: 'GET' })
             ilike(beans.origin, beanPattern),
           ),
         )
-        .orderBy(asc(beans.isArchived), asc(beans.name), asc(beans.id))
+        .orderBy(
+          sql`not exists (select 1 from ${beanPurchases} where ${beanPurchases.beanId} = ${beans.id} and ${beanPurchases.isArchived} = false)`,
+          asc(beans.name),
+          asc(beans.id),
+        )
         .limit(COMMAND_SEARCH_RESULT_LIMIT),
       db
         .select({

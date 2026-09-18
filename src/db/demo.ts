@@ -157,21 +157,36 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
     .insert(schema.beans)
     .values(
       beanFixtures.map(
-        ([name, roaster, origin, region, process, roastLevel], index) => ({
+        ([name, roaster, origin, region, process, roastLevel]) => ({
           name,
           roasterId: roasterId.get(roaster),
           origin,
           region,
           process,
           roastLevel,
-          roastDate: daysAgo(7 + index * 4),
           notes:
             'A polished demo coffee with a clear, sweet specialty profile.',
-          isArchived: index === 4,
         }),
       ),
     )
     .returning()
+
+  const beanPurchases = await database
+    .insert(schema.beanPurchases)
+    .values(
+      beans.map((bean, index) => ({
+        beanId: bean.id,
+        roastDate: daysAgo(7 + index * 4),
+        initialWeightGrams: '250.00',
+        price: (14 + index * 1.75).toFixed(2),
+        priceCurrency: 'EUR',
+        isArchived: index === 4,
+      })),
+    )
+    .returning()
+  const purchaseIdByBeanId = new Map(
+    beanPurchases.map((purchase) => [purchase.beanId, purchase.id]),
+  )
 
   const packageNames = [
     'kraft-orange.webp',
@@ -620,8 +635,13 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
             tasteRatingHistory[index % tasteRatingHistory.length],
             'Taste rating history missing',
           )
+          const selectedBean = required(activeBeans[beanIndex], 'Bean missing')
           return {
-            beanId: required(activeBeans[beanIndex], 'Bean missing').id,
+            beanId: selectedBean.id,
+            beanPurchaseId: required(
+              purchaseIdByBeanId.get(selectedBean.id),
+              'Bean purchase missing',
+            ),
             machineId: required(gearId.get(brewer), 'Brewer missing'),
             machineSettingRevisionId: isEspresso
               ? ownerMachineSettingRevisionId

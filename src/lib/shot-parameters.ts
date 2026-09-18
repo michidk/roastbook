@@ -87,6 +87,7 @@ export function isDistributionMethod(
 export type ShotParameterValues = {
   readonly brewingMethodId: number
   readonly beanId: number | null
+  readonly beanPurchaseId?: number | null
   readonly machineId: number | null
   readonly doseGrams: string | null
   readonly brewWaterGrams: string | null

@@ -43,6 +43,7 @@ import { cn } from '@/lib/utils'
 
 type Bean = {
   id: number
+  purchaseId: number | null
   name: string
   type: BeanType | null
   isArchived: boolean
@@ -60,6 +61,18 @@ type Bean = {
   roastDate: Date | string | null
   notes: string | null
   images: EntityImage[]
+  purchases: Array<{
+    id: number
+    roastDate: Date | string | null
+    purchasedAt: Date | string | null
+    initialWeightGrams: string | null
+    price: string | null
+    priceCurrency: string | null
+    shopUrl: string | null
+    isArchived: boolean
+    createdAt: Date | string
+    shots: Array<{ doseGrams: string | null }>
+  }>
 }
 type WeightStats = {
   initialWeight: number
@@ -105,6 +118,7 @@ export function BeanDetailHeader({
   return (
     <PageHeader
       size="compact"
+      className="sm:flex-col sm:items-stretch lg:flex-row lg:items-center"
       title={isEditing ? formData.name || bean.name : bean.name}
       leading={
         <Button variant="outline" size="icon" asChild>
@@ -169,7 +183,14 @@ export function BeanDetailHeader({
             <>
               <AiRecommendationDialog
                 enabled={recommendationEnabled}
-                request={shotCount > 0 ? { beanId: bean.id } : null}
+                request={
+                  shotCount > 0
+                    ? {
+                        beanId: bean.id,
+                        beanPurchaseId: bean.purchaseId ?? undefined,
+                      }
+                    : null
+                }
                 size="sm"
               />
               <Button variant="outline" size="sm" asChild>
@@ -191,8 +212,8 @@ export function BeanDetailHeader({
             </>
           )}
           <DeleteConfirmation
-            title="Delete this bean?"
-            description="This will also remove it from any brew records. This action cannot be undone."
+            title="Remove this coffee?"
+            description="Unused coffees are deleted. If this coffee appears in brews, recipes, or café visits, its bags move to Past so your history stays intact."
             onConfirm={onDelete}
             trigger={
               <Button variant="ghost" size="icon-sm" aria-label="Delete bean">
@@ -244,6 +265,7 @@ export function BeanEditContent({
           onChange={set}
           roasters={roasters}
           idPrefix="bean-edit"
+          showPurchaseFields={false}
           basicAction={
             researchEnabled ? (
               <div className="flex items-center gap-1">
@@ -311,12 +333,14 @@ export function BeanReadOnlyContent({
   topTasteTags,
   weightStats,
   onImagesChange,
+  onTogglePurchase,
 }: {
   bean: Bean
   shotCount: number
   topTasteTags: readonly TopTasteTag[]
   weightStats: WeightStats | null
   onImagesChange: () => void
+  onTogglePurchase: (purchaseId: number, isArchived: boolean) => void
 }) {
   const formatDate = useDateFormatter()
   const formatCurrency = useCurrencyFormatter()
@@ -333,36 +357,78 @@ export function BeanReadOnlyContent({
       )}
     >
       <div className="space-y-4 md:space-y-6">
-        {(bean.price || bean.shopUrl) && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Purchase info</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
-              {bean.price && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Price</p>
-                  <p className="font-medium">
-                    {formatCurrency(bean.price, bean.priceCurrency || 'EUR')}
-                  </p>
+        <Card>
+          <CardHeader>
+            <CardTitle>Bags</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {bean.purchases.map((purchase) => {
+              const used = purchase.shots.reduce(
+                (total, shot) => total + Number(shot.doseGrams ?? 0),
+                0,
+              )
+              const initial = Number(purchase.initialWeightGrams ?? 0)
+              return (
+                <div
+                  key={purchase.id}
+                  className="grid gap-2 rounded-lg border p-3 sm:grid-cols-4"
+                >
+                  <div>
+                    <p className="text-xs text-muted-foreground">Roast date</p>
+                    <p className="font-medium">
+                      {purchase.roastDate
+                        ? formatDate(purchase.roastDate)
+                        : 'Unknown'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Remaining</p>
+                    <p className="font-medium">
+                      {initial > 0
+                        ? `${formatNumber(Math.max(0, initial - used).toFixed(0))} g`
+                        : 'Unknown'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Price</p>
+                    <p className="font-medium">
+                      {purchase.price
+                        ? formatCurrency(
+                            purchase.price,
+                            purchase.priceCurrency || 'EUR',
+                          )
+                        : '—'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 sm:justify-end">
+                    <Badge variant="secondary">
+                      {purchase.isArchived ? 'Past' : 'On shelf'}
+                    </Badge>
+                    {purchase.shopUrl ? (
+                      <a
+                        href={purchase.shopUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-link hover:underline"
+                      >
+                        Shop
+                      </a>
+                    ) : null}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        onTogglePurchase(purchase.id, !purchase.isArchived)
+                      }
+                    >
+                      {purchase.isArchived ? 'Put on shelf' : 'Move to Past'}
+                    </Button>
+                  </div>
                 </div>
-              )}
-              {bean.shopUrl && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Shop</p>
-                  <a
-                    href={bean.shopUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex min-h-11 items-center rounded-md font-medium text-link hover:underline [@media(hover:hover)_and_(pointer:fine)]:min-h-0"
-                  >
-                    Visit shop →
-                  </a>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+              )
+            })}
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader>
             <CardTitle>Origin</CardTitle>

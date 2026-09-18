@@ -1,6 +1,12 @@
 import { and, desc, eq, isNotNull, type SQL, sql } from 'drizzle-orm'
 import { db } from '@/db'
-import { beans, brewingMethods, settings, shots } from '@/db/schema'
+import {
+  beanPurchases,
+  beans,
+  brewingMethods,
+  settings,
+  shots,
+} from '@/db/schema'
 import { toDisplayableDatabaseError } from '@/lib/server/database-error.server'
 import { loadStatsExploration } from '@/lib/server/stats-exploration.server'
 import {
@@ -293,28 +299,29 @@ export async function loadDetailedStats(
 
       db
         .select({
-          currency: beans.priceCurrency,
+          currency: beanPurchases.priceCurrency,
           total: sql<
             string | number
-          >`round(sum((${beans.price}::numeric / nullif(${beans.weight}::numeric, 0)) * ${shots.doseGrams}::numeric), 2)`,
+          >`round(sum((${beanPurchases.price}::numeric / nullif(${beanPurchases.initialWeightGrams}::numeric, 0)) * ${shots.doseGrams}::numeric), 2)`,
           average: sql<
             string | number
-          >`round(avg((${beans.price}::numeric / nullif(${beans.weight}::numeric, 0)) * ${shots.doseGrams}::numeric), 2)`,
+          >`round(avg((${beanPurchases.price}::numeric / nullif(${beanPurchases.initialWeightGrams}::numeric, 0)) * ${shots.doseGrams}::numeric), 2)`,
           count: shotCountSql,
         })
         .from(shots)
         .innerJoin(beans, eq(shots.beanId, beans.id))
+        .innerJoin(beanPurchases, eq(shots.beanPurchaseId, beanPurchases.id))
         .where(
           and(
             currentWhere,
             isNotNull(shots.doseGrams),
-            isNotNull(beans.price),
-            isNotNull(beans.weight),
-            sql`${beans.weight}::numeric > 0`,
+            isNotNull(beanPurchases.price),
+            isNotNull(beanPurchases.initialWeightGrams),
+            sql`${beanPurchases.initialWeightGrams}::numeric > 0`,
           ),
         )
-        .groupBy(beans.priceCurrency)
-        .orderBy(beans.priceCurrency),
+        .groupBy(beanPurchases.priceCurrency)
+        .orderBy(beanPurchases.priceCurrency),
 
       explorationPromise.then(({ available }) => available.methods),
       explorationPromise.then(({ available }) => available.beans),

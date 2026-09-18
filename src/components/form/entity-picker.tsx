@@ -21,10 +21,11 @@ interface EntityCreateFormArgs {
 interface EntityPickerProps<T>
   extends Omit<
     CreatableComboboxProps<T>,
-    'onCreateRequest' | 'fallbackOption'
+    'onCreateRequest' | 'fallbackOption' | 'suggestions'
   > {
   dialogTitle: string
   dialogDescription?: string
+  suggestions?: readonly T[]
   renderCreateForm: (args: EntityCreateFormArgs) => ReactNode
 }
 
@@ -33,6 +34,10 @@ export function EntityPicker<T>({
   dialogDescription,
   renderCreateForm,
   onChange,
+  suggestions,
+  getKey,
+  getLabel,
+  getDescription,
   ...comboboxProps
 }: EntityPickerProps<T>) {
   const router = useRouter()
@@ -56,6 +61,14 @@ export function EntityPicker<T>({
     <>
       <CreatableCombobox
         {...comboboxProps}
+        getKey={getKey}
+        getLabel={getLabel}
+        getDescription={getDescription}
+        suggestions={suggestions?.map((item) => ({
+          id: getKey(item),
+          name: getLabel(item),
+          description: getDescription?.(item) ?? undefined,
+        }))}
         onChange={onChange}
         onCreateRequest={setPendingName}
         fallbackOption={justCreated}

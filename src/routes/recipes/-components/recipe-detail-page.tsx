@@ -97,10 +97,7 @@ export function RecipeDetailPage() {
     )
   }
 
-  const beanOptions =
-    recipe.bean && !beans.some((bean) => bean.id === recipe.bean?.id)
-      ? [recipe.bean, ...beans]
-      : beans
+  const beanOptions = beans
   const set = <Key extends keyof ShotFormValues>(
     key: Key,
     value: ShotFormValues[Key],

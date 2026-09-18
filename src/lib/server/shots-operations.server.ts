@@ -12,6 +12,7 @@ import {
 } from 'drizzle-orm'
 import { db } from '@/db'
 import {
+  beanPurchases,
   beans,
   brewingMethods,
   shotAccessoryGear,
@@ -77,11 +78,15 @@ async function getBrewingMethod(tx: ShotTransaction, brewingMethodId: number) {
 function getShotValues(
   data: ShotCreateCandidate,
   enabledParameters: readonly string[],
+  beanContext: {
+    readonly beanId: number | null
+    readonly beanPurchaseId: number | null
+  },
 ) {
   return {
     brewingMethodId: data.brewingMethodId,
     brewedAt: data.brewedAt,
-    beanId: data.beanId ?? null,
+    ...beanContext,
     drinkTypeId: data.drinkTypeId ?? null,
     ...projectShotParameters(data, enabledParameters),
     rating: data.rating ?? null,
@@ -93,6 +98,24 @@ function getShotValues(
     astringency: data.astringency ?? null,
     notes: data.notes ?? null,
   }
+}
+
+async function resolveShotBean(
+  tx: ShotTransaction,
+  data: Pick<ShotCreateCandidate, 'beanId' | 'beanPurchaseId'>,
+) {
+  if (!data.beanPurchaseId) {
+    return { beanId: data.beanId ?? null, beanPurchaseId: null }
+  }
+  const purchase = await tx.query.beanPurchases.findFirst({
+    where: eq(beanPurchases.id, data.beanPurchaseId),
+    columns: { id: true, beanId: true },
+  })
+  if (!purchase) throw new ShotInputError('Selected bag not found')
+  if (data.beanId && data.beanId !== purchase.beanId) {
+    throw new ShotInputError('Selected bag does not belong to these beans')
+  }
+  return { beanId: purchase.beanId, beanPurchaseId: purchase.id }
 }
 
 const shotRelations = {
@@ -353,7 +376,11 @@ async function createShotInTransaction(
     data.drinkTypeId,
   )
   await assertDrinkSelection(tx, data.drinkTypeId, data.drinkOptionValueIds)
-  const values = getShotValues(data, method.enabledParameters)
+  const values = getShotValues(
+    data,
+    method.enabledParameters,
+    await resolveShotBean(tx, data),
+  )
   const machineSettingRevisionId =
     await findCurrentOwnerMachineSettingRevisionId(tx, values.machineId)
   const [shot] = await tx
@@ -425,7 +452,11 @@ export function updateShotOperation(
     }
     await assertDrinkSelection(tx, data.drinkTypeId, data.drinkOptionValueIds)
     const { id, tasteTagIds } = data
-    const values = getShotValues(data, method.enabledParameters)
+    const values = getShotValues(
+      data,
+      method.enabledParameters,
+      await resolveShotBean(tx, data),
+    )
     const machineChanged = existingShot.machineId !== values.machineId
     const machineSettingRevisionId = machineChanged
       ? await findCurrentOwnerMachineSettingRevisionId(tx, values.machineId)

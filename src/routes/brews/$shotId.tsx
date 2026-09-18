@@ -4,7 +4,7 @@ import { DetailPending } from '@/components/route-pending'
 import { parseEditModeSearch } from '@/lib/edit-mode'
 import { parseIdParam } from '@/lib/route-params'
 import { searchValidator } from '@/lib/search-params'
-import { getActiveBeans } from '@/lib/server/beans'
+import { getActiveBeanPurchases } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getDrinkConfiguration } from '@/lib/server/drink-options'
 import { getGear } from '@/lib/server/gear'
@@ -24,7 +24,7 @@ export const Route = createFileRoute('/brews/$shotId')({
       getRecipeOptions(),
       deps.edit
         ? Promise.all([
-            getActiveBeans(),
+            getActiveBeanPurchases(),
             getTasteTags(),
             getGear(),
             getBrewingMethods(),

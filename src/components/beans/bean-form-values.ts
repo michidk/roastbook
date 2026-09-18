@@ -114,19 +114,12 @@ export function beanUpdatePayload(id: number, values: BeanFormValues) {
     name: values.name,
     type: values.type || null,
     roasterId: values.roasterId ? Number(values.roasterId) : null,
-    weight: blankToNull(values.weight),
-    price: blankToNull(values.price),
-    priceCurrency: isCurrency(values.priceCurrency)
-      ? values.priceCurrency
-      : null,
-    shopUrl: blankToNull(values.shopUrl),
     origin: blankToNull(values.origin),
     region: blankToNull(values.region),
     farm: blankToNull(values.farm),
     variety: blankToNull(values.variety),
     process: blankToNull(values.process),
     roastLevel: values.roastLevel || null,
-    roastDate: optionalDate(values.roastDate) ?? null,
     notes: blankToNull(values.notes),
   }
 }

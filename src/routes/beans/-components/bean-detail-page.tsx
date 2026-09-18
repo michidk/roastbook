@@ -1,6 +1,7 @@
 import { getRouteApi, useNavigate, useRouter } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { AddBeanPurchaseDialog } from '@/components/beans/add-bean-purchase-dialog'
 import {
   BeanDetailHeader,
   BeanEditContent,
@@ -33,6 +34,7 @@ import { getErrorMessage } from '@/lib/error-message'
 import { fetchImageAsBase64 } from '@/lib/image-base64'
 import { imageUrl } from '@/lib/image-url'
 import { getExtractedRoasterAction } from '@/lib/roaster-match'
+import { setBeanPurchaseArchived } from '@/lib/server/bean-purchases'
 import {
   deleteBean,
   extractBeanInfo,
@@ -95,9 +97,17 @@ export function BeanDetailPage() {
     setAvailableRoasters(roasters)
   }, [roasters])
 
+  const currentPurchase =
+    bean?.purchases.find((purchase) => !purchase.isArchived) ??
+    bean?.purchases[0]
   const weightStats = estimateRemainingBeanWeight(
-    bean?.weight,
-    shotAnalytics.usedWeightGrams,
+    currentPurchase?.initialWeightGrams ?? null,
+    String(
+      currentPurchase?.shots.reduce(
+        (total, shot) => total + Number(shot.doseGrams ?? 0),
+        0,
+      ) ?? 0,
+    ),
   )
 
   if (!bean) {
@@ -158,8 +168,8 @@ export function BeanDetailPage() {
               variety: formData.variety,
               process: formData.process,
               roastLevel: formData.roastLevel || undefined,
-              roastDate: formData.roastDate,
-              shopUrl: formData.shopUrl,
+              roastDate: formData.roastDate || undefined,
+              shopUrl: formData.shopUrl || undefined,
               notes: formData.notes,
             },
           },
@@ -218,11 +228,26 @@ export function BeanDetailPage() {
         }}
         onSave={handleSave}
         onDelete={async () => {
-          await deleteBean({ data: bean.id })
+          const result = await deleteBean({ data: bean.id })
           await router.invalidate()
-          await navigate({ to: '/beans' })
+          if (result.archived) {
+            toast.success(
+              'This coffee is in your history, so it was moved to Past',
+            )
+          } else {
+            await navigate({ to: '/beans' })
+          }
         }}
       />
+      {!isEditing ? (
+        <div className="flex justify-end">
+          <AddBeanPurchaseDialog
+            beanId={bean.id}
+            beanName={bean.name}
+            onCreated={() => router.invalidate()}
+          />
+        </div>
+      ) : null}
       {isEditing ? (
         <BeanEditContent
           bean={bean}
@@ -244,6 +269,17 @@ export function BeanDetailPage() {
           topTasteTags={shotAnalytics.topTasteTags}
           weightStats={weightStats}
           onImagesChange={() => router.invalidate()}
+          onTogglePurchase={(purchaseId, isArchived) => {
+            void setBeanPurchaseArchived({
+              data: { id: purchaseId, beanId: bean.id, isArchived },
+            })
+              .then(() => router.invalidate())
+              .catch((error) =>
+                toast.error(
+                  getErrorMessage(error, 'Could not update this bag'),
+                ),
+              )
+          }}
         />
       )}
       <ShotParameterCharts

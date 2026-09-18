@@ -12,10 +12,14 @@ interface BeanImage {
 
 interface BeanOption {
   id: number
+  purchaseId?: number | null
   name: string
   roaster?: string | null
   origin?: string | null
   images?: readonly BeanImage[]
+  roastDate?: Date | string | null
+  weight?: string | null
+  usedWeightGrams?: string | null
 }
 
 interface BeanPickerProps {
@@ -47,6 +51,14 @@ export function BeanPicker({
   autoFocus,
   createAsPast = false,
 }: BeanPickerProps) {
+  const hydratedSuggestions = suggestions?.map((suggestion) => {
+    const suggestionKey = suggestion.purchaseId ?? suggestion.id
+    return (
+      beans.find((bean) => (bean.purchaseId ?? bean.id) === suggestionKey) ??
+      suggestion
+    )
+  })
+
   return (
     <EntityPicker
       id={id}
@@ -54,11 +66,20 @@ export function BeanPicker({
       value={value}
       onChange={onChange}
       items={beans}
-      suggestions={suggestions}
-      getKey={(bean) => bean.id}
+      suggestions={hydratedSuggestions}
+      getKey={(bean) => bean.purchaseId ?? bean.id}
       getLabel={(bean) => bean.name}
       getDescription={(bean) =>
-        [bean.roaster, bean.origin].filter(Boolean).join(' · ') || null
+        [
+          bean.roaster,
+          bean.origin,
+          bean.roastDate
+            ? `Roasted ${new Date(bean.roastDate).toISOString().slice(0, 10)}`
+            : null,
+          remainingWeightLabel(bean),
+        ]
+          .filter(Boolean)
+          .join(' · ') || null
       }
       renderItemLeading={(bean) => (
         <BeanThumbnail bean={bean} className="size-10" />
@@ -91,6 +112,13 @@ export function BeanPicker({
       )}
     />
   )
+}
+
+function remainingWeightLabel(bean: BeanOption) {
+  const initial = Number(bean.weight)
+  if (!Number.isFinite(initial) || initial <= 0) return null
+  const used = Number(bean.usedWeightGrams ?? 0)
+  return `${Math.max(0, initial - (Number.isFinite(used) ? used : 0)).toFixed(0)} g left`
 }
 
 function BeanThumbnail({

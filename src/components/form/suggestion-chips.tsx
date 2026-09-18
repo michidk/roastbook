@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 export type PickerSuggestion = {
   readonly id: number | string
   readonly name: string
+  readonly description?: string
 }
 
 type SuggestionChipsProps = {
@@ -35,9 +36,16 @@ export function SuggestionChips({
               variant={isSelected ? 'primary' : 'secondary'}
               aria-pressed={isSelected}
               onClick={() => onChange(String(item.id))}
-              className="rounded-xl"
+              className="h-auto min-h-11 rounded-xl py-2 whitespace-normal [@media(hover:hover)_and_(pointer:fine)]:min-h-8"
             >
-              {item.name}
+              <span className="flex min-w-0 flex-col items-start gap-0.5">
+                <span>{item.name}</span>
+                {item.description ? (
+                  <span className="font-normal text-current/70">
+                    {item.description}
+                  </span>
+                ) : null}
+              </span>
             </Button>
           )
         })}
