@@ -250,7 +250,7 @@ export function AddBeanPurchaseDialog({
                     id="new-bag-currency"
                     value={currency}
                     onChange={setCurrency}
-                    className="w-28"
+                    className="w-28 [@media(hover:hover)_and_(pointer:fine)]:[&_[data-slot=select-trigger]]:h-9"
                   />
                 </div>
                 <InputField
