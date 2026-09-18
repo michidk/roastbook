@@ -30,6 +30,7 @@ type BeanFieldsProps = {
   readonly roasters: readonly RoasterOption[]
   readonly idPrefix?: string
   readonly basicAction?: ReactNode
+  readonly showPurchaseFields?: boolean
 }
 
 export function BeanFields({
@@ -38,6 +39,7 @@ export function BeanFields({
   roasters,
   idPrefix = 'bean',
   basicAction,
+  showPurchaseFields = true,
 }: BeanFieldsProps) {
   const id = (field: string) => `${idPrefix}-${field}`
 
@@ -69,45 +71,49 @@ export function BeanFields({
             onChange={(value) => onChange('type', value as BeanType | '')}
             options={BEAN_TYPES}
           />
-          <InputField
-            id={id('weight')}
-            label="Bag weight"
-            type="number"
-            min="0"
-            step="50"
-            unit="g"
-            unitPlacement="inline"
-            placeholder="e.g., 250"
-            value={values.weight}
-            onChange={(value) => onChange('weight', value)}
-          />
-          <div className="flex gap-2">
-            <CurrencyInputField
-              id={id('price')}
-              label="Price"
-              currency={values.priceCurrency}
-              min="0"
-              step="1"
-              placeholder="e.g., 15.00"
-              value={values.price}
-              onChange={(value) => onChange('price', value)}
-              className="flex-1"
-            />
-            <CurrencyField
-              id={id('priceCurrency')}
-              value={values.priceCurrency}
-              onChange={(value) => onChange('priceCurrency', value)}
-              className="w-28"
-            />
-          </div>
-          <InputField
-            id={id('shopUrl')}
-            label="Shop URL"
-            type="url"
-            placeholder="https://…"
-            value={values.shopUrl}
-            onChange={(value) => onChange('shopUrl', value)}
-          />
+          {showPurchaseFields ? (
+            <>
+              <InputField
+                id={id('weight')}
+                label="Bag weight"
+                type="number"
+                min="0"
+                step="50"
+                unit="g"
+                unitPlacement="inline"
+                placeholder="e.g., 250"
+                value={values.weight}
+                onChange={(value) => onChange('weight', value)}
+              />
+              <div className="flex gap-2">
+                <CurrencyInputField
+                  id={id('price')}
+                  label="Price"
+                  currency={values.priceCurrency}
+                  min="0"
+                  step="1"
+                  placeholder="e.g., 15.00"
+                  value={values.price}
+                  onChange={(value) => onChange('price', value)}
+                  className="flex-1"
+                />
+                <CurrencyField
+                  id={id('priceCurrency')}
+                  value={values.priceCurrency}
+                  onChange={(value) => onChange('priceCurrency', value)}
+                  className="w-28"
+                />
+              </div>
+              <InputField
+                id={id('shopUrl')}
+                label="Shop URL"
+                type="url"
+                placeholder="https://…"
+                value={values.shopUrl}
+                onChange={(value) => onChange('shopUrl', value)}
+              />
+            </>
+          ) : null}
         </div>
       </FormSection>
 
@@ -164,12 +170,14 @@ export function BeanFields({
             }
             options={ROAST_LEVELS}
           />
-          <DateField
-            id={id('roastDate')}
-            label="Roast date"
-            value={values.roastDate}
-            onChange={(value) => onChange('roastDate', value)}
-          />
+          {showPurchaseFields ? (
+            <DateField
+              id={id('roastDate')}
+              label="Roast date"
+              value={values.roastDate}
+              onChange={(value) => onChange('roastDate', value)}
+            />
+          ) : null}
         </div>
       </FormSection>
 

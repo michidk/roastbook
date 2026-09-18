@@ -185,6 +185,12 @@ The `/beans` collection uses compact portrait geometry: 288px on phones, 320px
 from `sm`, and 304px from `lg`. The selected-bean card in the brew form retains
 the taller reference geometry. Long names clamp to two lines.
 
+Bean pages represent a stable coffee profile. Acquisition details belong to
+bag records shown newest first: roast date, initial and remaining weight, price,
+shop, and On shelf/Past state. “Add another bag” is the repeat-purchase action;
+it must not create a duplicate profile. Brew pickers distinguish active bags by
+roast date and remaining weight while keeping the coffee name primary.
+
 ### Image with fallback
 
 Use a fixed-aspect wrapper, image, and token-driven fallback. Support thumbnail

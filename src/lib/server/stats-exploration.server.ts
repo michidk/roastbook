@@ -12,6 +12,7 @@ import {
 } from 'drizzle-orm'
 import { db } from '@/db'
 import {
+  beanPurchases,
   beans,
   brewingMethods,
   gear,
@@ -87,7 +88,7 @@ export async function loadStatsExploration({
   const roasterName = sql<
     string | null
   >`coalesce(${roasters.name}, ${beans.roaster})`
-  const roastAgeDays = sql<number>`(${localDate(shots.brewedAt, timeZone)} - date(${beans.roastDate}))`
+  const roastAgeDays = sql<number>`(${localDate(shots.brewedAt, timeZone)} - date(${beanPurchases.roastDate}))`
   const roastAgeBucket = sql<string>`case
       when ${roastAgeDays} < 7 then '0–6 days'
       when ${roastAgeDays} < 15 then '7–14 days'
@@ -232,13 +233,14 @@ export async function loadStatsExploration({
       })
       .from(shots)
       .innerJoin(beans, eq(shots.beanId, beans.id))
+      .innerJoin(beanPurchases, eq(shots.beanPurchaseId, beanPurchases.id))
       .where(
         and(
           where,
-          isNotNull(beans.roastDate),
+          isNotNull(beanPurchases.roastDate),
           gte(
             localDate(shots.brewedAt, timeZone),
-            sql`date(${beans.roastDate})`,
+            sql`date(${beanPurchases.roastDate})`,
           ),
         ),
       )
@@ -249,7 +251,11 @@ export async function loadStatsExploration({
       .from(brewingMethods)
       .orderBy(brewingMethods.name),
     db
-      .select({ id: beans.id, name: beans.name, isArchived: beans.isArchived })
+      .select({
+        id: beans.id,
+        name: beans.name,
+        isArchived: sql<boolean>`not exists (select 1 from ${beanPurchases} where ${beanPurchases.beanId} = ${beans.id} and ${beanPurchases.isArchived} = false)`,
+      })
       .from(beans)
       .orderBy(beans.name),
   ])

@@ -33,12 +33,15 @@ import {
   drinkSelectionForConfiguration,
 } from '@/lib/drink-options'
 import { focusFirstInvalidControl } from '@/lib/form-validation'
-import { getLastBeanIdForBrewingMethod } from '@/lib/new-shot-defaults'
+import {
+  getLastBeanIdForBrewingMethod,
+  getLastBeanPurchaseIdForBrewingMethod,
+} from '@/lib/new-shot-defaults'
 import {
   newShotPayload,
   newShotRecommendationRequest,
 } from '@/lib/new-shot-payload'
-import type { getActiveBeans } from '@/lib/server/beans'
+import type { getActiveBeanPurchases } from '@/lib/server/beans'
 import type { getBrewingMethods } from '@/lib/server/brewing-methods'
 import type { getGear } from '@/lib/server/gear'
 import type { getGearSets } from '@/lib/server/gear-sets'
@@ -71,7 +74,7 @@ import {
 } from '@/modules/brews/shot-form-values'
 
 type NewShotFormData = {
-  readonly beans: Awaited<ReturnType<typeof getActiveBeans>>
+  readonly beans: Awaited<ReturnType<typeof getActiveBeanPurchases>>
   readonly methods: Awaited<ReturnType<typeof getBrewingMethods>>
   readonly recipes: Awaited<ReturnType<typeof getRecipes>>
   readonly tasteTags: Awaited<ReturnType<typeof getTasteTags>>
@@ -136,6 +139,10 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
       ...EMPTY_SHOT_FORM_VALUES,
       brewingMethodId,
       beanId: getLastBeanIdForBrewingMethod(
+        lastBeansByBrewingMethod,
+        brewingMethodId,
+      ),
+      beanPurchaseId: getLastBeanPurchaseIdForBrewingMethod(
         lastBeansByBrewingMethod,
         brewingMethodId,
       ),
@@ -219,6 +226,10 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
           lastBeansByBrewingMethod,
           brewingMethodId,
         ),
+        beanPurchaseId: getLastBeanPurchaseIdForBrewingMethod(
+          lastBeansByBrewingMethod,
+          brewingMethodId,
+        ),
         shotTimeSeconds: '',
         targetTimeSeconds: '',
       }
@@ -231,7 +242,14 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
     if (!recipe) return
     setIsDirty(true)
     setTimerKey((current) => current + 1)
-    setValues((current) => shotFormValuesWithRecipe(current, recipe))
+    setValues((current) => {
+      const loaded = shotFormValuesWithRecipe(current, recipe)
+      const purchase = beans.find((bean) => String(bean.id) === loaded.beanId)
+      return {
+        ...loaded,
+        beanPurchaseId: purchase ? String(purchase.purchaseId) : '',
+      }
+    })
     toast.success(`Loaded ${recipe.name}`)
   }
 
@@ -334,13 +352,9 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
     return false
   }
 
-  const beanOptions =
-    selectedRecipe?.bean &&
-    !beans.some((bean) => bean.id === selectedRecipe.bean?.id)
-      ? [selectedRecipe.bean, ...beans]
-      : beans
+  const beanOptions = beans
   const selectedBean = beanOptions.find(
-    (bean) => String(bean.id) === values.beanId,
+    (bean) => String(bean.purchaseId) === values.beanPurchaseId,
   )
   const gearOptions = availableGearForShot(values, gear)
   const availableRecipes = recipes.filter(
@@ -414,6 +428,61 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
             required
           />
         </FormSection>
+        {hasEnabledTasteProfileField(tasteProfile) ? (
+          <FormSection
+            title="Taste profile"
+            description="Rate the result once you have tasted it."
+          >
+            {tasteProfile.overallRating ||
+            showSensoryRatings ||
+            showExtractionBalance ? (
+              <div className="space-y-1">
+                {tasteProfile.overallRating ? (
+                  <div className="space-y-1">
+                    <span className="block text-sm font-medium">
+                      Overall rating
+                    </span>
+                    <StarRating
+                      value={values.rating}
+                      onChange={(rating) => set('rating', rating)}
+                      sizeClassName="size-5"
+                      ariaLabel="Brew rating"
+                    />
+                  </div>
+                ) : null}
+                <ShotSensoryRatingFields
+                  values={values}
+                  onChange={(key, value) => set(key, value)}
+                />
+                {showExtractionBalance ? (
+                  <div className="pt-1">
+                    <ExtractionBalanceField
+                      value={values.extractionBalance}
+                      onChange={(value) => set('extractionBalance', value)}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            {tasteProfile.flavorTags ? (
+              <TasteTagSelector
+                label="Flavor tags"
+                tags={flavorTags}
+                selected={selectedTags}
+                onToggle={toggleTag}
+              />
+            ) : null}
+            {tasteProfile.notes ? (
+              <TextareaField
+                id="notes"
+                label="Tasting notes"
+                value={values.notes}
+                onChange={(value) => set('notes', value)}
+                placeholder="How was it?"
+              />
+            ) : null}
+          </FormSection>
+        ) : null}
         <FormSection
           title="Beans"
           description="Choose the beans for this brew."
@@ -421,8 +490,18 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
           <BeanPicker
             id="bean"
             label="Bean"
-            value={values.beanId}
-            onChange={(beanId) => set('beanId', beanId ?? '')}
+            value={values.beanPurchaseId}
+            onChange={(beanPurchaseId) => {
+              const selected = beanOptions.find(
+                (bean) => String(bean.purchaseId) === beanPurchaseId,
+              )
+              setValues((current) => ({
+                ...current,
+                beanId: selected ? String(selected.id) : '',
+                beanPurchaseId: beanPurchaseId ?? '',
+              }))
+              setIsDirty(true)
+            }}
             beans={beanOptions}
             suggestions={beanSuggestions}
           />
@@ -531,63 +610,6 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
           {isSubmitting ? 'Saving…' : 'Save brew'}
         </Button>
       </aside>
-      <div className="order-3 lg:col-start-1 lg:row-start-2">
-        {hasEnabledTasteProfileField(tasteProfile) ? (
-          <FormSection
-            title="Taste profile"
-            description="Rate the result once you have tasted it."
-          >
-            {tasteProfile.overallRating ||
-            showSensoryRatings ||
-            showExtractionBalance ? (
-              <div className="space-y-1">
-                {tasteProfile.overallRating ? (
-                  <div className="space-y-1">
-                    <span className="block text-sm font-medium">
-                      Overall rating
-                    </span>
-                    <StarRating
-                      value={values.rating}
-                      onChange={(rating) => set('rating', rating)}
-                      sizeClassName="size-5"
-                      ariaLabel="Brew rating"
-                    />
-                  </div>
-                ) : null}
-                <ShotSensoryRatingFields
-                  values={values}
-                  onChange={(key, value) => set(key, value)}
-                />
-                {showExtractionBalance ? (
-                  <div className="pt-1">
-                    <ExtractionBalanceField
-                      value={values.extractionBalance}
-                      onChange={(value) => set('extractionBalance', value)}
-                    />
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-            {tasteProfile.flavorTags ? (
-              <TasteTagSelector
-                label="Flavor tags"
-                tags={flavorTags}
-                selected={selectedTags}
-                onToggle={toggleTag}
-              />
-            ) : null}
-            {tasteProfile.notes ? (
-              <TextareaField
-                id="notes"
-                label="Tasting notes"
-                value={values.notes}
-                onChange={(value) => set('notes', value)}
-                placeholder="How was it?"
-              />
-            ) : null}
-          </FormSection>
-        ) : null}
-      </div>
     </form>
   )
 }

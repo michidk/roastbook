@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { db } from '@/db'
 import {
   beanImages,
+  beanPurchases,
   cafeVisitImages,
   coffeeShopImages,
   gearImages,
@@ -26,7 +27,12 @@ import {
 import { generateStoragePath, getStorage } from '@/lib/storage'
 import { createStoredImage, validateImageBuffer } from '@/lib/thumbnail-image'
 
-export type EntityType = 'beans' | 'gear' | 'coffee-shops' | 'shots' | 'visits'
+export type EntityType =
+  | 'bean-purchases'
+  | 'gear'
+  | 'coffee-shops'
+  | 'shots'
+  | 'visits'
 const MAX_IMAGES_PER_ENTITY = 20
 
 const entityImageIdSchema = z.object({
@@ -43,7 +49,7 @@ const storagePathTypeMap: Record<
   EntityType,
   'beans' | 'gear' | 'coffee-shops' | 'shots' | 'cafe-visits'
 > = {
-  beans: 'beans',
+  'bean-purchases': 'beans',
   gear: 'gear',
   'coffee-shops': 'coffee-shops',
   shots: 'shots',
@@ -55,8 +61,8 @@ async function getEntityImageCount(
   entityId: number,
 ): Promise<number> {
   switch (entityType) {
-    case 'beans':
-      return getBeanImageCount(entityId)
+    case 'bean-purchases':
+      return getBeanPurchaseImageCount(entityId)
     case 'gear':
       return getGearImageCount(entityId)
     case 'coffee-shops':
@@ -68,11 +74,11 @@ async function getEntityImageCount(
   }
 }
 
-async function getBeanImageCount(entityId: number): Promise<number> {
+async function getBeanPurchaseImageCount(entityId: number): Promise<number> {
   const [result] = await db
     .select({ value: count() })
     .from(beanImages)
-    .where(eq(beanImages.beanId, entityId))
+    .where(eq(beanImages.beanPurchaseId, entityId))
   return result?.value ?? 0
 }
 
@@ -150,10 +156,19 @@ export const uploadEntityImage = createServerFn({ method: 'POST' })
       let image: { id: number; storagePath: string }
 
       switch (data.entityType) {
-        case 'beans': {
+        case 'bean-purchases': {
+          const purchase = await db.query.beanPurchases.findFirst({
+            where: eq(beanPurchases.id, data.entityId),
+            columns: { beanId: true },
+          })
+          if (!purchase) throw new Error('Bag not found')
           const [result] = await db
             .insert(beanImages)
-            .values({ ...baseValues, beanId: data.entityId })
+            .values({
+              ...baseValues,
+              beanId: purchase.beanId,
+              beanPurchaseId: data.entityId,
+            })
             .returning()
           image = expectReturnedRow(result, 'Image')
           break
@@ -205,9 +220,11 @@ export const uploadEntityImage = createServerFn({ method: 'POST' })
 export const setImageAsThumbnail = createServerFn({ method: 'POST' })
   .validator(thumbnailImageIdSchema)
   .handler(async ({ data }) => {
-    const table = data.entityType === 'beans' ? beanImages : gearImages
+    const table = data.entityType === 'bean-purchases' ? beanImages : gearImages
     const foreignKey =
-      data.entityType === 'beans' ? beanImages.beanId : gearImages.gearId
+      data.entityType === 'bean-purchases'
+        ? beanImages.beanPurchaseId
+        : gearImages.gearId
 
     await db.transaction(async (tx) => {
       await tx
@@ -231,8 +248,8 @@ async function deleteImageRecord(
   imageId: number,
 ): Promise<{ storagePath: string } | undefined> {
   switch (entityType) {
-    case 'beans':
-      return deleteBeanImageRecord(tx, entityId, imageId)
+    case 'bean-purchases':
+      return deleteBeanPurchaseImageRecord(tx, entityId, imageId)
     case 'gear':
       return deleteGearImageRecord(tx, entityId, imageId)
     case 'coffee-shops':
@@ -244,14 +261,16 @@ async function deleteImageRecord(
   }
 }
 
-async function deleteBeanImageRecord(
+async function deleteBeanPurchaseImageRecord(
   tx: DatabaseTransaction,
   entityId: number,
   imageId: number,
 ) {
   const [image] = await tx
     .delete(beanImages)
-    .where(and(eq(beanImages.id, imageId), eq(beanImages.beanId, entityId)))
+    .where(
+      and(eq(beanImages.id, imageId), eq(beanImages.beanPurchaseId, entityId)),
+    )
     .returning({ storagePath: beanImages.storagePath })
   return image
 }

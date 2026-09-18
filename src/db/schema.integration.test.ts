@@ -37,6 +37,74 @@ afterAll(async () => {
 })
 
 databaseDescribe('PostgreSQL schema', () => {
+  test('keeps each brew on a bag belonging to its stable coffee', async () => {
+    const suffix = crypto.randomUUID()
+    const ids = await database().begin(async (transaction) => {
+      const [firstBean] = await transaction<[{ id: number }]>`
+        insert into beans (name) values (${`first-${suffix}`}) returning id
+      `
+      const [secondBean] = await transaction<[{ id: number }]>`
+        insert into beans (name) values (${`second-${suffix}`}) returning id
+      `
+      const [purchase] = await transaction<[{ id: number }]>`
+        insert into bean_purchases (bean_id, roast_date, initial_weight_grams)
+        values (${firstBean.id}, now(), 250) returning id
+      `
+      const [method] = await transaction<[{ id: number }]>`
+        insert into brewing_methods (name) values (${`method-${suffix}`}) returning id
+      `
+      await transaction`
+        insert into brews (
+          brewing_method_id,
+          bean_id,
+          bean_purchase_id,
+          dose_grams
+        ) values (${method.id}, ${firstBean.id}, ${purchase.id}, 18)
+      `
+      return {
+        firstBeanId: firstBean.id,
+        secondBeanId: secondBean.id,
+        purchaseId: purchase.id,
+        methodId: method.id,
+      }
+    })
+    try {
+      await expectPostgresError(
+        () =>
+          database()`
+            insert into brews (
+              brewing_method_id,
+              bean_id,
+              bean_purchase_id
+            ) values (${ids.methodId}, ${ids.secondBeanId}, ${ids.purchaseId})
+          `,
+        '23503',
+        'brews_purchase_bean_fk',
+      )
+      await expectPostgresError(
+        () =>
+          database()`
+            insert into bean_images (
+              bean_id,
+              bean_purchase_id,
+              storage_path
+            ) values (
+              ${ids.secondBeanId},
+              ${ids.purchaseId},
+              ${`beans/${ids.purchaseId}/mismatch.webp`}
+            )
+          `,
+        '23503',
+        'bean_images_purchase_bean_fk',
+      )
+    } finally {
+      await database()`delete from brews where brewing_method_id = ${ids.methodId}`
+      await database()`delete from brewing_methods where id = ${ids.methodId}`
+      await database()`delete from bean_purchases where id = ${ids.purchaseId}`
+      await database()`delete from beans where id in (${ids.firstBeanId}, ${ids.secondBeanId})`
+    }
+  })
+
   test('has applied the complete migration chain', async () => {
     const migrations = await database()<[{ count: number }]>`
       select count(*)::int as count from drizzle.__drizzle_migrations
@@ -288,17 +356,26 @@ databaseDescribe('PostgreSQL schema', () => {
         insert into beans (name) values (${`cascade-${crypto.randomUUID()}`})
         returning id
       `
+      const [purchase] = await transaction<[{ id: number }]>`
+        insert into bean_purchases (bean_id)
+        values (${bean.id}) returning id
+      `
       const [image] = await transaction<[{ id: number }]>`
-        insert into bean_images (bean_id, storage_path)
-        values (${bean.id}, ${`beans/${bean.id}/front.jpg`})
+        insert into bean_images (bean_id, bean_purchase_id, storage_path)
+        values (
+          ${bean.id},
+          ${purchase.id},
+          ${`beans/${purchase.id}/front.jpg`}
+        )
         returning id
       `
 
-      await transaction`delete from beans where id = ${bean.id}`
+      await transaction`delete from bean_purchases where id = ${purchase.id}`
       const remaining = await transaction<[{ count: number }]>`
         select count(*)::int as count from bean_images where id = ${image.id}
       `
       expect(remaining[0]?.count).toBe(0)
+      await transaction`delete from beans where id = ${bean.id}`
     })
   })
 
@@ -333,11 +410,30 @@ databaseDescribe('PostgreSQL schema', () => {
             insert into beans (name)
             values (${`thumbnail-${crypto.randomUUID()}`}) returning id
           `
+          const [purchase] = await transaction<[{ id: number }]>`
+            insert into bean_purchases (bean_id)
+            values (${bean.id}) returning id
+          `
           await transaction`
-            insert into bean_images (bean_id, storage_path, is_thumbnail)
+            insert into bean_images (
+              bean_id,
+              bean_purchase_id,
+              storage_path,
+              is_thumbnail
+            )
             values
-              (${bean.id}, ${`beans/${bean.id}/one.jpg`}, true),
-              (${bean.id}, ${`beans/${bean.id}/two.jpg`}, true)
+              (
+                ${bean.id},
+                ${purchase.id},
+                ${`beans/${purchase.id}/one.jpg`},
+                true
+              ),
+              (
+                ${bean.id},
+                ${purchase.id},
+                ${`beans/${purchase.id}/two.jpg`},
+                true
+              )
           `
         }),
       '23505',

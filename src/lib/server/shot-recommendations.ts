@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
 import { db } from '@/db'
 import {
+  beanPurchases,
   brewingMethods,
   espressoMachineSettingRevisions,
   gear,
@@ -29,6 +30,7 @@ const RECOMMENDATION_HISTORY_LIMIT = 50
 
 type RecommendationSetup = {
   readonly beanId: number
+  readonly beanPurchaseId: number | null
   readonly brewingMethodId: number
   readonly machineId: number | null
   readonly grinderId: number | null
@@ -77,6 +79,7 @@ async function resolveSetup(
       columns: {
         id: true,
         beanId: true,
+        beanPurchaseId: true,
         brewingMethodId: true,
         machineId: true,
         grinderId: true,
@@ -95,6 +98,7 @@ async function resolveSetup(
 
     return {
       beanId: focusedShot.beanId,
+      beanPurchaseId: focusedShot.beanPurchaseId,
       brewingMethodId: focusedShot.brewingMethodId,
       machineId: focusedShot.machineId,
       grinderId: focusedShot.grinderId,
@@ -109,6 +113,7 @@ async function resolveSetup(
   if (request.currentDraft && request.brewingMethodId) {
     return {
       beanId: request.beanId,
+      beanPurchaseId: request.beanPurchaseId ?? null,
       brewingMethodId: request.brewingMethodId,
       machineId: request.currentDraft.machineId,
       grinderId: request.currentDraft.grinderId,
@@ -130,6 +135,7 @@ async function resolveSetup(
     orderBy: [desc(shots.brewedAt), desc(shots.id)],
     columns: {
       beanId: true,
+      beanPurchaseId: true,
       brewingMethodId: true,
       machineId: true,
       grinderId: true,
@@ -147,6 +153,7 @@ async function resolveSetup(
 
   return {
     beanId: request.beanId,
+    beanPurchaseId: request.beanPurchaseId ?? latestShot.beanPurchaseId,
     brewingMethodId: latestShot.brewingMethodId,
     machineId: latestShot.machineId,
     grinderId: latestShot.grinderId,
@@ -225,12 +232,20 @@ export const getShotRecommendation = createServerFn({ method: 'POST' })
         .filter((id): id is number => id !== null)
         .concat(setup.accessoryGearIds),
     )
-    const [bean, brewingMethod, matchingHistory, selectedGear] =
+    const [bean, purchase, brewingMethod, matchingHistory, selectedGear] =
       await Promise.all([
         db.query.beans.findFirst({
           where: (beans, { eq }) => eq(beans.id, setup.beanId),
           with: { roasterRef: true },
         }),
+        setup.beanPurchaseId === null
+          ? Promise.resolve(null)
+          : db.query.beanPurchases.findFirst({
+              where: and(
+                eq(beanPurchases.id, setup.beanPurchaseId),
+                eq(beanPurchases.beanId, setup.beanId),
+              ),
+            }),
         db.query.brewingMethods.findFirst({
           where: eq(brewingMethods.id, setup.brewingMethodId),
         }),
@@ -275,7 +290,7 @@ export const getShotRecommendation = createServerFn({ method: 'POST' })
     }
 
     const context: ShotRecommendationContext = {
-      bean: recommendationBeanEvidence(bean),
+      bean: recommendationBeanEvidence(bean, purchase),
       brewingMethod: {
         id: brewingMethod.id,
         name: brewingMethod.name,

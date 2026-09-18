@@ -1,8 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
+import { and, count, desc, eq, exists, ilike, not, or } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
-import { beans, shots } from '@/db/schema'
+import { beanPurchases, beans, cafeVisits, recipes, shots } from '@/db/schema'
 import {
   escapedContainsPattern,
   resolvePagination,
@@ -15,6 +15,11 @@ import {
   isVisionEnabled,
   researchBeanFromWeb,
 } from '@/lib/server/ai-operations.server'
+import {
+  createBeanPurchaseOperation,
+  newestPurchase,
+  purchaseUsageById,
+} from '@/lib/server/bean-purchases.server'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
 import { withResourceLimits } from '@/lib/server/resource-limits.server'
 import {
@@ -46,12 +51,12 @@ const beanCreateSchema = z.object({
   variety: shortTextSchema.optional(),
   process: shortTextSchema.optional(),
   roastLevel: roastLevelSchema.optional(),
+  notes: notesSchema.optional(),
   roastDate: z.date().optional(),
   weight: decimalStringSchema.optional(),
   price: decimalStringSchema.optional(),
   priceCurrency: currencySchema.optional(),
   shopUrl: optionalUrlSchema,
-  notes: notesSchema.optional(),
   isArchived: z.boolean().optional(),
 })
 
@@ -66,16 +71,7 @@ const beanUpdateSchema = beanCreateSchema.partial().extend({
   variety: shortTextSchema.nullable().optional(),
   process: shortTextSchema.nullable().optional(),
   roastLevel: roastLevelSchema.nullable().optional(),
-  roastDate: z.date().nullable().optional(),
-  weight: decimalStringSchema.nullable().optional(),
-  price: decimalStringSchema.nullable().optional(),
-  priceCurrency: currencySchema.nullable().optional(),
-  shopUrl: z
-    .union([z.url().max(2_048), z.literal('')])
-    .nullable()
-    .optional(),
   notes: notesSchema.nullable().optional(),
-  isArchived: z.boolean().optional(),
 })
 
 const extractBeanInfoSchema = z.object({
@@ -111,14 +107,38 @@ const beanListSchema = z.object({
 })
 
 export const getBeans = createServerFn({ method: 'GET' }).handler(async () => {
-  return db.query.beans.findMany({
+  const rows = await db.query.beans.findMany({
     orderBy: [desc(beans.createdAt)],
     with: {
       images: true,
       roasterRef: true,
+      purchases: { orderBy: [desc(beanPurchases.createdAt)] },
     },
   })
+  return rows.map(flattenBeanPurchase)
 })
+
+function flattenBeanPurchase<
+  Bean extends {
+    readonly purchases: readonly (typeof beanPurchases.$inferSelect)[]
+  },
+>(bean: Bean) {
+  const { purchases, ...profile } = bean
+  const purchase =
+    newestPurchase(purchases.filter((item) => !item.isArchived)) ??
+    newestPurchase(purchases)
+  return {
+    ...profile,
+    purchaseId: purchase?.id ?? null,
+    roastDate: purchase?.roastDate ?? null,
+    weight: purchase?.initialWeightGrams ?? null,
+    price: purchase?.price ?? null,
+    priceCurrency: purchase?.priceCurrency ?? null,
+    shopUrl: purchase?.shopUrl ?? null,
+    isArchived:
+      purchases.length > 0 && purchases.every((item) => item.isArchived),
+  }
+}
 
 export const getBeanCollection = createServerFn({ method: 'GET' })
   .validator(beanListSchema)
@@ -139,9 +159,19 @@ export const getBeanCollection = createServerFn({ method: 'GET' })
       const pageSize = isArchived
         ? ARCHIVED_BEANS_PAGE_SIZE
         : ACTIVE_BEANS_PAGE_SIZE
-      const where = search
-        ? and(eq(beans.isArchived, isArchived), search)
-        : eq(beans.isArchived, isArchived)
+      const activePurchase = exists(
+        db
+          .select({ id: beanPurchases.id })
+          .from(beanPurchases)
+          .where(
+            and(
+              eq(beanPurchases.beanId, beans.id),
+              eq(beanPurchases.isArchived, false),
+            ),
+          ),
+      )
+      const archiveState = isArchived ? not(activePurchase) : activePurchase
+      const where = search ? and(archiveState, search) : archiveState
       const countRows = await db
         .select({ value: count() })
         .from(beans)
@@ -154,101 +184,216 @@ export const getBeanCollection = createServerFn({ method: 'GET' })
         orderBy: [desc(beans.createdAt), desc(beans.id)],
         limit: pageSize,
         offset: (page - 1) * pageSize,
-        with: { images: true, roasterRef: true },
+        with: {
+          images: true,
+          roasterRef: true,
+          purchases: { orderBy: [desc(beanPurchases.createdAt)] },
+        },
       })
       return { items, ...pagination }
     }
 
-    async function includeWeightUsage<Bean extends { readonly id: number }>(
-      items: readonly Bean[],
-    ) {
-      if (items.length === 0) return items
-      const usage = await db
-        .select({
-          beanId: shots.beanId,
-          usedWeightGrams: sql<string>`coalesce(sum(${shots.doseGrams}), 0)::text`,
-        })
-        .from(shots)
-        .where(
-          inArray(
-            shots.beanId,
-            items.map((bean) => bean.id),
-          ),
-        )
-        .groupBy(shots.beanId)
-      const usedWeightByBeanId = new Map(
-        usage.flatMap((row) =>
-          row.beanId === null ? [] : [[row.beanId, row.usedWeightGrams]],
-        ),
+    async function includeWeightUsage<
+      Bean extends {
+        readonly purchases: readonly (typeof beanPurchases.$inferSelect)[]
+      },
+    >(items: readonly Bean[]) {
+      const flattened = items.map(flattenBeanPurchase)
+      const usage = await purchaseUsageById(
+        flattened.flatMap((bean) => (bean.purchaseId ? [bean.purchaseId] : [])),
       )
       return items.map((bean) => ({
-        ...bean,
-        usedWeightGrams: usedWeightByBeanId.get(bean.id) ?? '0',
+        ...flattenBeanPurchase(bean),
+        usedWeightGrams:
+          usage.get(flattenBeanPurchase(bean).purchaseId ?? 0) ?? '0',
       }))
     }
 
-    const [activePage, archived] = await Promise.all([
+    const [activePage, archivedPage] = await Promise.all([
       loadArchiveState(false, data.activePage),
       loadArchiveState(true, data.archivedPage),
     ])
+    const [bagCount] = await db
+      .select({ value: count(beanPurchases.id) })
+      .from(beanPurchases)
+      .innerJoin(beans, eq(beanPurchases.beanId, beans.id))
+      .where(search)
     const active = {
       ...activePage,
       items: await includeWeightUsage(activePage.items),
+    }
+    const archived = {
+      ...archivedPage,
+      items: await includeWeightUsage(archivedPage.items),
     }
     return {
       active,
       archived,
       totalItems: active.totalItems + archived.totalItems,
+      totalBags: bagCount?.value ?? 0,
     }
   })
 
 export const getBean = createServerFn({ method: 'GET' })
   .validator(positiveIdSchema)
   .handler(async ({ data: id }) => {
-    return db.query.beans.findFirst({
-      where: eq(beans.id, id),
-      with: {
-        images: true,
-        roasterRef: true,
-      },
-    })
+    return db.query.beans
+      .findFirst({
+        where: eq(beans.id, id),
+        with: {
+          images: true,
+          roasterRef: true,
+          purchases: {
+            orderBy: [desc(beanPurchases.createdAt)],
+            with: { shots: { columns: { doseGrams: true } } },
+          },
+        },
+      })
+      .then((bean) =>
+        bean
+          ? { ...flattenBeanPurchase(bean), purchases: bean.purchases }
+          : undefined,
+      )
   })
 
 export const getActiveBeans = createServerFn({ method: 'GET' }).handler(
   async () => {
-    return db.query.beans.findMany({
-      where: eq(beans.isArchived, false),
+    const rows = await db.query.beans.findMany({
+      where: exists(
+        db
+          .select({ id: beanPurchases.id })
+          .from(beanPurchases)
+          .where(
+            and(
+              eq(beanPurchases.beanId, beans.id),
+              eq(beanPurchases.isArchived, false),
+            ),
+          ),
+      ),
       orderBy: [desc(beans.createdAt)],
       with: {
         images: true,
         roasterRef: true,
+        purchases: {
+          where: eq(beanPurchases.isArchived, false),
+          orderBy: [desc(beanPurchases.createdAt)],
+        },
       },
     })
+    return rows.map(flattenBeanPurchase)
+  },
+)
+
+export const getActiveBeanPurchases = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    const rows = await db.query.beanPurchases.findMany({
+      where: eq(beanPurchases.isArchived, false),
+      orderBy: [desc(beanPurchases.createdAt)],
+      with: {
+        images: true,
+        bean: { with: { roasterRef: true } },
+      },
+    })
+    const usage = await purchaseUsageById(rows.map((row) => row.id))
+    return rows.map((purchase) => ({
+      ...purchase.bean,
+      images: purchase.images,
+      purchaseId: purchase.id,
+      roastDate: purchase.roastDate,
+      weight: purchase.initialWeightGrams,
+      price: purchase.price,
+      priceCurrency: purchase.priceCurrency,
+      shopUrl: purchase.shopUrl,
+      isArchived: purchase.isArchived,
+      usedWeightGrams: usage.get(purchase.id) ?? '0',
+    }))
   },
 )
 
 export const createBean = createServerFn({ method: 'POST' })
   .validator(beanCreateSchema)
   .handler(async ({ data }) => {
-    const [bean] = await db.insert(beans).values(data).returning()
-    return expectReturnedRow(bean, 'Bean')
+    const {
+      roastDate,
+      weight,
+      price,
+      priceCurrency,
+      shopUrl,
+      isArchived,
+      ...profile
+    } = data
+    return db.transaction(async (tx) => {
+      const [bean] = await tx.insert(beans).values(profile).returning()
+      const savedBean = expectReturnedRow(bean, 'Bean')
+      const purchase = await createBeanPurchaseOperation(tx, savedBean.id, {
+        roastDate,
+        initialWeightGrams: weight,
+        price,
+        priceCurrency,
+        shopUrl,
+        isArchived,
+      })
+      return { ...savedBean, purchaseId: purchase.id }
+    })
   })
 
 export const updateBean = createServerFn({ method: 'POST' })
   .validator(beanUpdateSchema)
   .handler(async ({ data }) => {
-    const { id, ...values } = data
-    const [bean] = await db
-      .update(beans)
-      .set({ ...values, updatedAt: new Date() })
-      .where(eq(beans.id, id))
-      .returning()
-    return expectReturnedRow(bean, 'Bean')
+    const {
+      id,
+      roastDate: _roastDate,
+      weight: _weight,
+      price: _price,
+      priceCurrency: _priceCurrency,
+      shopUrl: _shopUrl,
+      isArchived,
+      ...values
+    } = data
+    return db.transaction(async (tx) => {
+      const [bean] = await tx
+        .update(beans)
+        .set({ ...values, updatedAt: new Date() })
+        .where(eq(beans.id, id))
+        .returning()
+      if (isArchived !== undefined) {
+        await tx
+          .update(beanPurchases)
+          .set({ isArchived, updatedAt: new Date() })
+          .where(eq(beanPurchases.beanId, id))
+      }
+      return expectReturnedRow(bean, 'Bean')
+    })
   })
 
 export const deleteBean = createServerFn({ method: 'POST' })
   .validator(positiveIdSchema)
-  .handler(async ({ data: id }) => deleteEntityWithMedia('beans', id))
+  .handler(async ({ data: id }) => {
+    const [brew, recipe, visit] = await Promise.all([
+      db.query.shots.findFirst({
+        where: eq(shots.beanId, id),
+        columns: { id: true },
+      }),
+      db.query.recipes.findFirst({
+        where: eq(recipes.beanId, id),
+        columns: { id: true },
+      }),
+      db.query.cafeVisits.findFirst({
+        where: eq(cafeVisits.beanId, id),
+        columns: { id: true },
+      }),
+    ])
+    if (brew || recipe || visit) {
+      await db
+        .update(beanPurchases)
+        .set({ isArchived: true, updatedAt: new Date() })
+        .where(eq(beanPurchases.beanId, id))
+      return { archived: true }
+    }
+    await db.delete(beanPurchases).where(eq(beanPurchases.beanId, id))
+    await deleteEntityWithMedia('beans', id)
+    return { archived: false }
+  })
 
 export const checkVisionEnabled = createServerFn({ method: 'GET' }).handler(
   async () => {

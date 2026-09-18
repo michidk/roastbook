@@ -1,10 +1,29 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, asc, count, desc, eq, isNotNull, max } from 'drizzle-orm'
+import { and, asc, count, desc, eq, exists, isNotNull, max } from 'drizzle-orm'
 import { db } from '@/db'
-import { beans, brewingMethods, drinkTypes, shots } from '@/db/schema'
+import {
+  beanPurchases,
+  beans,
+  brewingMethods,
+  drinkTypes,
+  shots,
+} from '@/db/schema'
+
+const hasActivePurchase = exists(
+  db
+    .select({ id: beanPurchases.id })
+    .from(beanPurchases)
+    .where(
+      and(
+        eq(beanPurchases.beanId, beans.id),
+        eq(beanPurchases.isArchived, false),
+      ),
+    ),
+)
 
 type Suggestion = {
   readonly id: number
+  readonly purchaseId?: number
   readonly name: string
 }
 
@@ -15,10 +34,14 @@ function mergeSuggestions(
   recentlyUsed: readonly Suggestion[],
   newest: readonly Suggestion[],
 ) {
-  const seen = new Set(recentlyUsed.map((suggestion) => suggestion.id))
+  const seen = new Set(
+    recentlyUsed.map((suggestion) => suggestion.purchaseId ?? suggestion.id),
+  )
   return [
     ...recentlyUsed,
-    ...newest.filter((suggestion) => !seen.has(suggestion.id)),
+    ...newest.filter(
+      (suggestion) => !seen.has(suggestion.purchaseId ?? suggestion.id),
+    ),
   ]
 }
 
@@ -37,18 +60,29 @@ export const getBeanSuggestions = createServerFn({ method: 'GET' }).handler(
   () =>
     loadSuggestions(
       db
-        .select({ id: beans.id, name: beans.name, lastUsedAt })
+        .select({
+          id: beans.id,
+          purchaseId: beanPurchases.id,
+          name: beans.name,
+          lastUsedAt,
+        })
         .from(shots)
         .innerJoin(beans, eq(shots.beanId, beans.id))
-        .where(eq(beans.isArchived, false))
-        .groupBy(beans.id, beans.name)
+        .innerJoin(beanPurchases, eq(shots.beanPurchaseId, beanPurchases.id))
+        .where(eq(beanPurchases.isArchived, false))
+        .groupBy(beans.id, beanPurchases.id, beans.name)
         .orderBy(desc(lastUsedAt))
         .limit(5),
       db
-        .select({ id: beans.id, name: beans.name })
-        .from(beans)
-        .where(eq(beans.isArchived, false))
-        .orderBy(desc(beans.createdAt))
+        .select({
+          id: beans.id,
+          purchaseId: beanPurchases.id,
+          name: beans.name,
+        })
+        .from(beanPurchases)
+        .innerJoin(beans, eq(beanPurchases.beanId, beans.id))
+        .where(eq(beanPurchases.isArchived, false))
+        .orderBy(desc(beanPurchases.createdAt))
         .limit(2),
     ),
 )
@@ -90,9 +124,10 @@ export const getLastBeansByBrewingMethod = createServerFn({
     .selectDistinctOn([shots.brewingMethodId], {
       brewingMethodId: shots.brewingMethodId,
       beanId: shots.beanId,
+      beanPurchaseId: shots.beanPurchaseId,
     })
     .from(shots)
     .innerJoin(beans, eq(shots.beanId, beans.id))
-    .where(and(isNotNull(shots.beanId), eq(beans.isArchived, false)))
+    .where(and(isNotNull(shots.beanId), hasActivePurchase))
     .orderBy(asc(shots.brewingMethodId), desc(shots.brewedAt), desc(shots.id)),
 )

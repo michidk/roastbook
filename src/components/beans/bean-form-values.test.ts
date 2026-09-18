@@ -6,7 +6,7 @@ import {
 } from '@/components/beans/bean-form-values'
 
 describe('bean form payloads', () => {
-  test('uses omitted values for creates and null values for updates', () => {
+  test('creates a first bag but keeps bag fields out of profile updates', () => {
     const values = createEmptyBeanFormValues('  House blend  ')
 
     expect(beanCreatePayload(values)).toMatchObject({
@@ -16,13 +16,13 @@ describe('bean form payloads', () => {
       roastDate: undefined,
       isArchived: false,
     })
-    expect(
-      beanUpdatePayload(4, { ...values, priceCurrency: 'BTC' }),
-    ).toMatchObject({
+    const update = beanUpdatePayload(4, {
+      ...values,
+      priceCurrency: 'BTC',
+    })
+    expect(update).toMatchObject({
       id: 4,
       type: null,
-      priceCurrency: null,
-      roastDate: null,
       origin: null,
       region: null,
       farm: null,
@@ -30,6 +30,8 @@ describe('bean form payloads', () => {
       process: null,
       notes: null,
     })
+    expect(update).not.toHaveProperty('priceCurrency')
+    expect(update).not.toHaveProperty('roastDate')
   })
 
   test('can create café beans directly in Past', () => {

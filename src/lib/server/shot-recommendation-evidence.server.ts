@@ -33,10 +33,10 @@ type BeanEvidenceSource = Pick<
   | 'variety'
   | 'process'
   | 'roastLevel'
-  | 'roastDate'
   | 'notes'
 > & {
   readonly roasterRef: Pick<typeof roasters.$inferSelect, 'name'> | null
+  readonly roastDate?: Date | null
 }
 
 type GearEvidenceSource = Pick<
@@ -56,7 +56,8 @@ type GearEvidenceSource = Pick<
   readonly basketDetails: typeof basketDetails.$inferSelect | null
 }
 
-type ShotEvidenceSource = typeof shots.$inferSelect & {
+type ShotEvidenceSource = Omit<typeof shots.$inferSelect, 'beanPurchaseId'> & {
+  readonly beanPurchaseId?: number | null
   readonly machineSettingRevision:
     | typeof espressoMachineSettingRevisions.$inferSelect
     | null
@@ -87,7 +88,10 @@ export function recommendationHistoryIds(
 }
 
 /** Brewing-relevant bean context shared by every recommendation mode. */
-export function recommendationBeanEvidence(bean: BeanEvidenceSource) {
+export function recommendationBeanEvidence(
+  bean: BeanEvidenceSource,
+  purchase?: { readonly id: number; readonly roastDate: Date | null } | null,
+) {
   return {
     id: bean.id,
     name: bean.name,
@@ -99,7 +103,8 @@ export function recommendationBeanEvidence(bean: BeanEvidenceSource) {
     variety: bean.variety,
     process: bean.process,
     roastLevel: bean.roastLevel,
-    roastDate: bean.roastDate,
+    ...(purchase ? { purchaseId: purchase.id } : undefined),
+    roastDate: purchase?.roastDate ?? bean.roastDate ?? null,
     notes: bean.notes,
   }
 }
@@ -194,13 +199,21 @@ export function recommendationShotEvidence(
   enabledParameters: readonly string[],
 ) {
   const accessoryGearIds = shot.accessoryGearLinks.map((link) => link.gearId)
+  const completeShot = {
+    ...shot,
+    beanPurchaseId: shot.beanPurchaseId ?? null,
+  }
 
   return {
     id: shot.id,
     brewedAt: shot.brewedAt,
     machineSettingRevision: shot.machineSettingRevision,
-    parameters: shotParameters(shot, accessoryGearIds, enabledParameters),
-    achievedRatio: achievedRatio(shot),
+    parameters: shotParameters(
+      completeShot,
+      accessoryGearIds,
+      enabledParameters,
+    ),
+    achievedRatio: achievedRatio(completeShot),
     overallRating: shot.rating,
     // Simple mode records only this axis; sour reads as under-extracted and
     // bitter as over-extracted.

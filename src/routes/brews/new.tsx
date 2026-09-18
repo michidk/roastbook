@@ -8,7 +8,7 @@ import { ArrowLeft } from 'lucide-react'
 import { Page, PageHeader } from '@/components/page-layout'
 import { NewShotForm } from '@/components/shots/new-shot-form'
 import { Button } from '@/components/ui/button'
-import { getActiveBeans } from '@/lib/server/beans'
+import { getActiveBeanPurchases } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getDrinkConfiguration } from '@/lib/server/drink-options'
 import { getGear } from '@/lib/server/gear'
@@ -39,7 +39,7 @@ export const Route = createFileRoute('/brews/new')({
       drinks,
       drinkTypeSuggestions,
     ] = await Promise.all([
-      getActiveBeans(),
+      getActiveBeanPurchases(),
       getBrewingMethods(),
       getRecipes(),
       getTasteTags(),

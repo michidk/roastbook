@@ -106,6 +106,7 @@ export const shotCreateSchema = z.object({
   brewingMethodId: positiveIdSchema,
   brewedAt: notFutureDateSchema.optional(),
   beanId: optionalNullablePositiveIdSchema,
+  beanPurchaseId: optionalNullablePositiveIdSchema,
   drinkTypeId: optionalNullablePositiveIdSchema,
   drinkOptionValueIds: z.array(positiveIdSchema).max(20).optional(),
   machineId: optionalNullablePositiveIdSchema,

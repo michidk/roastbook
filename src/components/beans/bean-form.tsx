@@ -168,7 +168,11 @@ export function BeanForm({
         data: beanCreatePayload(form.values, { isArchived }),
       })
 
-      const uploadResult = await uploadEntityImages('beans', bean.id, images)
+      const uploadResult = await uploadEntityImages(
+        'bean-purchases',
+        bean.purchaseId,
+        images,
+      )
       imageUpload.removeImages(uploadResult.uploaded)
       if (uploadResult.failures.length > 0) {
         setCreatedBean(bean)
@@ -185,7 +189,11 @@ export function BeanForm({
     if (!createdBean) return
     setIsRetryingPictures(true)
     try {
-      const result = await uploadEntityImages('beans', createdBean.id, pictures)
+      const result = await uploadEntityImages(
+        'bean-purchases',
+        createdBean.purchaseId,
+        pictures,
+      )
       imageUpload.removeImages(result.uploaded)
       setUploadFailures(result.failures)
       if (result.failures.length === 0) await onCreated(createdBean)
