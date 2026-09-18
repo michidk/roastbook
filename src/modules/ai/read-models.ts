@@ -27,6 +27,7 @@ export type ExtractedBeanInfo = Partial<{
   name: string
   roaster: string
   type: (typeof BEAN_TYPE_VALUES)[number]
+  weight: string
   origin: string
   region: string
   farm: string

@@ -1,0 +1,1 @@
+ALTER TYPE "public"."bean_type" ADD VALUE 'omni' BEFORE 'decaf';

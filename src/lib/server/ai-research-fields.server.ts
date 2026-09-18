@@ -27,6 +27,16 @@ import {
 } from '@/modules/ai/read-models'
 
 const aiText = z.string().trim().min(1).max(500)
+const aiBagWeightGrams = z
+  .union([
+    z.number().finite().positive(),
+    z
+      .string()
+      .trim()
+      .regex(/^\d+(?:\.\d{1,2})?$/),
+  ])
+  .transform(String)
+  .refine((value) => Number(value) > 0 && Number(value) <= 9_999.99)
 
 export const ROASTER_INFO_FIELDS = defineStructuredResearchFields({
   name: {
@@ -94,11 +104,12 @@ export const BEAN_INFO_FIELDS = defineStructuredResearchFields({
     examples: ['Square Mile Coffee Roasters', 'Onyx Coffee Lab'],
   },
   type: {
-    description: 'The intended brewing category for the coffee.',
+    description:
+      'The intended brewing category printed on or clearly indicated by the packaging. Use "omni" for an omni roast or coffee explicitly intended for both espresso and filter brewing.',
     jsonType: 'string',
     schema: z.enum(BEAN_TYPE_VALUES),
     options: BEAN_TYPE_VALUES,
-    examples: ['espresso', 'filter'],
+    examples: ['espresso', 'filter', 'omni'],
   },
   origin: {
     description: 'The country of origin.',
@@ -159,6 +170,14 @@ export const BEAN_INFO_FIELDS = defineStructuredResearchFields({
 
 export const BEAN_IMAGE_INFO_FIELDS = defineStructuredResearchFields({
   ...BEAN_INFO_FIELDS,
+  weight: {
+    description:
+      'The net weight of the coffee bag in grams. Convert kilograms or ounces to grams when needed.',
+    jsonType: 'string',
+    format: 'positive decimal grams without a unit, up to 9999.99',
+    schema: aiBagWeightGrams,
+    examples: ['250', '1000', '340.19'],
+  },
   roasterLocation: {
     description:
       'The roaster city and, when useful, state or region as printed on the packaging. Do not include the country.',

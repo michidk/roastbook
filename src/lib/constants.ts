@@ -24,6 +24,7 @@ export type RoastLevel = (typeof ROAST_LEVELS)[number]['value']
 const BEAN_TYPE_LABELS_BY_VALUE = {
   espresso: 'Espresso',
   filter: 'Filter',
+  omni: 'Omni (Espresso & Filter)',
   decaf: 'Decaf',
 } as const
 

@@ -1,4 +1,4 @@
-export const BEAN_TYPE_VALUES = ['espresso', 'filter', 'decaf'] as const
+export const BEAN_TYPE_VALUES = ['espresso', 'filter', 'omni', 'decaf'] as const
 
 export const ROAST_LEVEL_VALUES = [
   'light',

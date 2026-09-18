@@ -17,7 +17,11 @@ import {
   type SelectableDiffDefinition,
   useSelectableDiffs,
 } from '@/hooks/use-selectable-diffs'
-import type { BeanType, RoastLevel } from '@/lib/constants'
+import {
+  BEAN_TYPE_LABELS,
+  type BeanType,
+  type RoastLevel,
+} from '@/lib/constants'
 import type { ExtractedRoasterAction } from '@/lib/roaster-match'
 import { cn } from '@/lib/utils'
 import type { ExtractedBeanInfo } from '@/modules/ai/read-models'
@@ -25,6 +29,7 @@ import type { ExtractedBeanInfo } from '@/modules/ai/read-models'
 type BeanDiffKey =
   | 'name'
   | 'type'
+  | 'weight'
   | 'origin'
   | 'region'
   | 'farm'
@@ -40,7 +45,18 @@ interface FieldDef extends SelectableDiffDefinition<BeanDiffKey> {
 
 const FIELD_DEFINITIONS: FieldDef[] = [
   { key: 'name', sourceKey: 'name', label: 'Name' },
-  { key: 'type', sourceKey: 'type', label: 'Type' },
+  {
+    key: 'type',
+    sourceKey: 'type',
+    label: 'Type',
+    format: (value) => BEAN_TYPE_LABELS[value as BeanType] ?? value,
+  },
+  {
+    key: 'weight',
+    sourceKey: 'weight',
+    label: 'Bag weight',
+    format: (value) => `${value} g`,
+  },
   { key: 'origin', sourceKey: 'origin', label: 'Country' },
   { key: 'region', sourceKey: 'region', label: 'Region' },
   { key: 'farm', sourceKey: 'farm', label: 'Farm/Producer' },
