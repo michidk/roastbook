@@ -289,11 +289,15 @@ export const getActiveBeanPurchases = createServerFn({ method: 'GET' }).handler(
     const rows = await db.query.beanPurchases.findMany({
       where: eq(beanPurchases.isArchived, false),
       orderBy: [desc(beanPurchases.createdAt)],
-      with: { bean: { with: { images: true, roasterRef: true } } },
+      with: {
+        images: true,
+        bean: { with: { roasterRef: true } },
+      },
     })
     const usage = await purchaseUsageById(rows.map((row) => row.id))
     return rows.map((purchase) => ({
       ...purchase.bean,
+      images: purchase.images,
       purchaseId: purchase.id,
       roastDate: purchase.roastDate,
       weight: purchase.initialWeightGrams,

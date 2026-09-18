@@ -81,6 +81,22 @@ databaseDescribe('PostgreSQL schema', () => {
         '23503',
         'brews_purchase_bean_fk',
       )
+      await expectPostgresError(
+        () =>
+          database()`
+            insert into bean_images (
+              bean_id,
+              bean_purchase_id,
+              storage_path
+            ) values (
+              ${ids.secondBeanId},
+              ${ids.purchaseId},
+              ${`beans/${ids.purchaseId}/mismatch.webp`}
+            )
+          `,
+        '23503',
+        'bean_images_purchase_bean_fk',
+      )
     } finally {
       await database()`delete from brews where brewing_method_id = ${ids.methodId}`
       await database()`delete from brewing_methods where id = ${ids.methodId}`
@@ -340,17 +356,26 @@ databaseDescribe('PostgreSQL schema', () => {
         insert into beans (name) values (${`cascade-${crypto.randomUUID()}`})
         returning id
       `
+      const [purchase] = await transaction<[{ id: number }]>`
+        insert into bean_purchases (bean_id)
+        values (${bean.id}) returning id
+      `
       const [image] = await transaction<[{ id: number }]>`
-        insert into bean_images (bean_id, storage_path)
-        values (${bean.id}, ${`beans/${bean.id}/front.jpg`})
+        insert into bean_images (bean_id, bean_purchase_id, storage_path)
+        values (
+          ${bean.id},
+          ${purchase.id},
+          ${`beans/${purchase.id}/front.jpg`}
+        )
         returning id
       `
 
-      await transaction`delete from beans where id = ${bean.id}`
+      await transaction`delete from bean_purchases where id = ${purchase.id}`
       const remaining = await transaction<[{ count: number }]>`
         select count(*)::int as count from bean_images where id = ${image.id}
       `
       expect(remaining[0]?.count).toBe(0)
+      await transaction`delete from beans where id = ${bean.id}`
     })
   })
 
@@ -385,11 +410,30 @@ databaseDescribe('PostgreSQL schema', () => {
             insert into beans (name)
             values (${`thumbnail-${crypto.randomUUID()}`}) returning id
           `
+          const [purchase] = await transaction<[{ id: number }]>`
+            insert into bean_purchases (bean_id)
+            values (${bean.id}) returning id
+          `
           await transaction`
-            insert into bean_images (bean_id, storage_path, is_thumbnail)
+            insert into bean_images (
+              bean_id,
+              bean_purchase_id,
+              storage_path,
+              is_thumbnail
+            )
             values
-              (${bean.id}, ${`beans/${bean.id}/one.jpg`}, true),
-              (${bean.id}, ${`beans/${bean.id}/two.jpg`}, true)
+              (
+                ${bean.id},
+                ${purchase.id},
+                ${`beans/${purchase.id}/one.jpg`},
+                true
+              ),
+              (
+                ${bean.id},
+                ${purchase.id},
+                ${`beans/${purchase.id}/two.jpg`},
+                true
+              )
           `
         }),
       '23505',

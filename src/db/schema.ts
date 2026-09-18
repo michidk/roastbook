@@ -359,6 +359,7 @@ export const beanPurchasesRelations = relations(
       fields: [beanPurchases.beanId],
       references: [beans.id],
     }),
+    images: many(beanImages),
     shots: many(shots, { relationName: 'shotBeanPurchase' }),
   }),
 )
@@ -370,14 +371,21 @@ export const beanImages = pgTable(
     beanId: integer('bean_id')
       .references(() => beans.id, { onDelete: 'cascade' })
       .notNull(),
+    beanPurchaseId: integer('bean_purchase_id').notNull(),
     ...imageFile(),
     isThumbnail: boolean('is_thumbnail').default(false).notNull(),
     createdAt: createdAt(),
   },
   (table) => [
+    foreignKey({
+      name: 'bean_images_purchase_bean_fk',
+      columns: [table.beanPurchaseId, table.beanId],
+      foreignColumns: [beanPurchases.id, beanPurchases.beanId],
+    }).onDelete('cascade'),
     index('bean_images_bean_id_idx').on(table.beanId),
+    index('bean_images_bean_purchase_id_idx').on(table.beanPurchaseId),
     uniqueIndex('bean_images_one_thumbnail_idx')
-      .on(table.beanId)
+      .on(table.beanPurchaseId)
       .where(sql`${table.isThumbnail} = true`),
   ],
 )
@@ -386,6 +394,10 @@ export const beanImagesRelations = relations(beanImages, ({ one }) => ({
   bean: one(beans, {
     fields: [beanImages.beanId],
     references: [beans.id],
+  }),
+  purchase: one(beanPurchases, {
+    fields: [beanImages.beanPurchaseId],
+    references: [beanPurchases.id],
   }),
 }))
 

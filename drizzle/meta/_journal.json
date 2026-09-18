@@ -337,6 +337,13 @@
       "when": 1789742901700,
       "tag": "0048_high_arachne",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1789750210108,
+      "tag": "0049_great_rhino",
+      "breakpoints": true
     }
   ]
 }

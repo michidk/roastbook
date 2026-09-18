@@ -222,13 +222,13 @@ export const IMAGE_MIME_TYPE_VALUES = [
 ] as const
 
 export const ENTITY_TYPE_VALUES = [
-  'beans',
+  'bean-purchases',
   'gear',
   'coffee-shops',
   'shots',
   'visits',
 ] as const
 
-export const THUMBNAIL_ENTITY_TYPE_VALUES = ['beans', 'gear'] as const
+export const THUMBNAIL_ENTITY_TYPE_VALUES = ['bean-purchases', 'gear'] as const
 
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024

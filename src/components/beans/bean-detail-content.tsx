@@ -300,8 +300,8 @@ export function BeanEditContent({
       </div>
       <div className="space-y-4 md:space-y-6">
         <EntityImageGallery
-          entityType="beans"
-          entityId={bean.id}
+          entityType="bean-purchases"
+          entityId={bean.purchaseId ?? bean.purchases[0]?.id ?? bean.id}
           images={bean.images}
           onImagesChange={onImagesChange}
           editable
@@ -542,8 +542,8 @@ export function BeanReadOnlyContent({
           ) : null}
           {bean.images.length > 0 ? (
             <EntityImageGallery
-              entityType="beans"
-              entityId={bean.id}
+              entityType="bean-purchases"
+              entityId={bean.purchaseId ?? bean.purchases[0]?.id ?? bean.id}
               images={bean.images}
               onImagesChange={onImagesChange}
             />

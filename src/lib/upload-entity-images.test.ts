@@ -20,7 +20,7 @@ describe('entity image batches', () => {
       return { id: 1, storagePath: 'beans/1/first.png', url: '/first.png' }
     }
 
-    const result = await uploadEntityImagesWith(upload, 'beans', 1, [
+    const result = await uploadEntityImagesWith(upload, 'bean-purchases', 1, [
       first,
       second,
     ])

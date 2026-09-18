@@ -12,10 +12,10 @@ describe('entity image upload forms', () => {
     })
 
     const parsed = parseEntityImageUploadFormData(
-      createEntityImageUploadFormData('beans', 42, file),
+      createEntityImageUploadFormData('bean-purchases', 42, file),
     )
 
-    expect(parsed.entityType).toBe('beans')
+    expect(parsed.entityType).toBe('bean-purchases')
     expect(parsed.entityId).toBe(42)
     expect(parsed.filename).toBe(file.name)
     expect(parsed.mimeType).toBe('image/jpeg')

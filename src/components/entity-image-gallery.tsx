@@ -41,6 +41,7 @@ export interface EntityImage {
   readonly id: number
   readonly storagePath: string
   readonly isThumbnail: boolean
+  readonly beanPurchaseId?: number
 }
 
 interface EntityImageAction {
@@ -52,7 +53,7 @@ interface EntityImageAction {
 }
 
 interface EntityImageGalleryProps {
-  readonly entityType: 'beans' | 'gear'
+  readonly entityType: 'bean-purchases' | 'gear'
   readonly entityId: number
   readonly images: readonly EntityImage[]
   readonly onImagesChange: () => void | Promise<void>
@@ -128,12 +129,23 @@ export function EntityImageGallery({
     }
   }
 
-  const handleSetThumbnail = async (imageId: number) => {
+  const entityIdForImage = (image: EntityImage) =>
+    entityType === 'bean-purchases'
+      ? (image.beanPurchaseId ?? entityId)
+      : entityId
+
+  const handleSetThumbnail = async (image: EntityImage) => {
     setGalleryError(null)
-    setIsSettingThumbnail(imageId)
+    setIsSettingThumbnail(image.id)
     try {
       try {
-        await setImageAsThumbnail({ data: { entityType, entityId, imageId } })
+        await setImageAsThumbnail({
+          data: {
+            entityType,
+            entityId: entityIdForImage(image),
+            imageId: image.id,
+          },
+        })
       } catch (error) {
         setGalleryError(getErrorMessage(error, 'Failed to set thumbnail'))
         return
@@ -156,7 +168,11 @@ export function EntityImageGallery({
     try {
       try {
         await deleteEntityImage({
-          data: { entityType, entityId, imageId: image.id },
+          data: {
+            entityType,
+            entityId: entityIdForImage(image),
+            imageId: image.id,
+          },
         })
       } catch (error) {
         setGalleryError(getErrorMessage(error, 'Failed to delete image'))
@@ -174,7 +190,7 @@ export function EntityImageGallery({
     }
   }
 
-  const entityLabel = entityType === 'beans' ? 'Bean' : 'Gear'
+  const entityLabel = entityType === 'bean-purchases' ? 'Bag' : 'Gear'
   const lightboxImage =
     lightboxIndex === null ? undefined : images[lightboxIndex]
 
@@ -282,7 +298,7 @@ export function EntityImageGallery({
                       size="icon"
                       variant={image.isThumbnail ? 'default' : 'secondary'}
                       className="pointer-events-auto absolute left-1 top-1 size-7 after:absolute after:-inset-2 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary"
-                      onClick={() => handleSetThumbnail(image.id)}
+                      onClick={() => handleSetThumbnail(image)}
                       disabled={
                         isSettingThumbnail === image.id || image.isThumbnail
                       }
@@ -374,11 +390,11 @@ export function EntityImageGallery({
             }}
             onOpenFilePicker={openFilePicker}
             prompt={
-              entityType === 'beans'
-                ? 'Add bean pictures'
+              entityType === 'bean-purchases'
+                ? 'Add pictures for the current bag'
                 : 'Add equipment pictures'
             }
-            previewAltPrefix={entityType === 'beans' ? 'Bean' : 'Gear'}
+            previewAltPrefix={entityType === 'bean-purchases' ? 'Bag' : 'Gear'}
             isBusy={isUploading}
             statusText={isUploading ? 'Uploading pictures' : undefined}
             imageErrors={uploadFailures.map(({ image, error }) => ({

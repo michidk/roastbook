@@ -244,6 +244,7 @@ export function BeanDetailPage() {
           <AddBeanPurchaseDialog
             beanId={bean.id}
             beanName={bean.name}
+            visionEnabled={visionEnabled}
             onCreated={() => router.invalidate()}
           />
         </div>

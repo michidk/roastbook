@@ -198,6 +198,10 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
   await database.insert(schema.beanImages).values(
     beans.map((bean, index) => ({
       beanId: bean.id,
+      beanPurchaseId: required(
+        purchaseIdByBeanId.get(bean.id),
+        'Bean purchase missing',
+      ),
       storagePath: `demo/${packageNames[index % packageNames.length]}`,
       originalFilename: required(
         packageNames[index % packageNames.length],
