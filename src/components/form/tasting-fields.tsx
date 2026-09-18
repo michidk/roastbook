@@ -109,8 +109,10 @@ export function TastingFields({
         {showRating || showSensory || showBalance ? (
           <div className="space-y-1">
             {showRating ? (
-              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-                <span className="text-sm font-medium">Overall rating</span>
+              <div className="space-y-1">
+                <span className="block text-sm font-medium">
+                  Overall rating
+                </span>
                 <StarRating
                   value={rating.value}
                   onChange={rating.onChange}
