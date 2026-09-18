@@ -227,18 +227,27 @@ function usageValues(model: string, usage: AiTokenTotals) {
   }
 }
 
+export function retainTerminalAiEvent(
+  events: ReadonlyArray<StreamChunk>,
+  chunk: StreamChunk,
+): ReadonlyArray<StreamChunk> {
+  return chunk.type === 'RUN_FINISHED' || chunk.type === 'RUN_ERROR'
+    ? [chunk]
+    : events
+}
+
 export function createAiRequestLogMiddleware(
   logId: number | undefined,
   model: string,
 ): ChatMiddleware {
   const policy = getAiTelemetryPolicy()
-  const events: Array<StreamChunk> = []
+  let events: ReadonlyArray<StreamChunk> = []
   let usage = EMPTY_AI_TOKEN_TOTALS
 
   return {
     name: 'roastbook-ai-request-log',
     onChunk: (_context, chunk) => {
-      if (policy.storePayloads) events.push(chunk)
+      if (policy.storePayloads) events = retainTerminalAiEvent(events, chunk)
     },
     onUsage: (_context, nextUsage) => {
       usage = addAiTokenUsage(usage, nextUsage)
