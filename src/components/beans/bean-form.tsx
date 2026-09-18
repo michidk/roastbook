@@ -50,6 +50,7 @@ interface BeanFormProps {
   initialName?: string
   submitLabel?: string
   roasters?: readonly RoasterOption[]
+  isArchived?: boolean
 }
 
 export function BeanForm({
@@ -58,6 +59,7 @@ export function BeanForm({
   initialName = '',
   submitLabel = 'Add beans',
   roasters,
+  isArchived = false,
 }: BeanFormProps) {
   const { defaultCurrency } = useAppSettings()
   const [isExtracting, setIsExtracting] = useState(false)
@@ -163,7 +165,7 @@ export function BeanForm({
     canSubmit: () => Boolean(form.values.name.trim()),
     submit: async () => {
       const bean = await createBean({
-        data: beanCreatePayload(form.values),
+        data: beanCreatePayload(form.values, { isArchived }),
       })
 
       const uploadResult = await uploadEntityImages('beans', bean.id, images)

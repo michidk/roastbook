@@ -120,7 +120,7 @@ function BeansPage() {
           {collection.active.totalItems > 0 && (
             <section className="space-y-3">
               <h2 className="font-display text-lg font-bold tracking-tight text-foreground">
-                Active · {collection.active.totalItems}
+                On shelf · {collection.active.totalItems}
               </h2>
               <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
                 {activeBeans.map((bean) => (
@@ -145,7 +145,7 @@ function BeansPage() {
           {collection.active.totalItems === 0 &&
             collection.archived.totalItems > 0 && (
               <p className="text-sm text-muted-foreground">
-                No active beans. Check the archived section below.
+                Nothing on your shelf. Check Past below.
               </p>
             )}
 
@@ -153,7 +153,7 @@ function BeansPage() {
             <Collapsible className="space-y-4">
               <CollapsibleTrigger className="group -mx-2 flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 <ChevronDown className="h-4 w-4 transition-transform group-data-[open]:rotate-180" />
-                Archived ({collection.archived.totalItems})
+                Past ({collection.archived.totalItems})
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">

@@ -30,6 +30,7 @@ interface BeanPickerProps {
   disabled?: boolean
   className?: string
   autoFocus?: boolean
+  createAsPast?: boolean
 }
 
 export function BeanPicker({
@@ -44,6 +45,7 @@ export function BeanPicker({
   disabled,
   className,
   autoFocus,
+  createAsPast = false,
 }: BeanPickerProps) {
   return (
     <EntityPicker
@@ -74,10 +76,15 @@ export function BeanPicker({
       className={className}
       autoFocus={autoFocus}
       dialogTitle="Add beans"
-      dialogDescription="Create the bag of beans without leaving this form."
+      dialogDescription={
+        createAsPast
+          ? 'Create these beans in Past without adding them to your shelf.'
+          : 'Create the bag of beans without leaving this form.'
+      }
       renderCreateForm={({ initialName, onCreated, onCancel }) => (
         <BeanForm
           initialName={initialName}
+          isArchived={createAsPast}
           onCreated={(bean) => onCreated({ id: bean.id, name: bean.name })}
           onCancel={onCancel}
         />

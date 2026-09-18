@@ -52,6 +52,7 @@ const beanCreateSchema = z.object({
   priceCurrency: currencySchema.optional(),
   shopUrl: optionalUrlSchema,
   notes: notesSchema.optional(),
+  isArchived: z.boolean().optional(),
 })
 
 const beanUpdateSchema = beanCreateSchema.partial().extend({

@@ -29,7 +29,7 @@ export function StatsFilters({
   }))
   const beanOptions = available.beans.map((bean) => ({
     value: String(bean.id),
-    label: bean.isArchived ? `${bean.name} (archived)` : bean.name,
+    label: bean.isArchived ? `${bean.name} (past)` : bean.name,
   }))
   const isDefault =
     value.period === '30d' &&

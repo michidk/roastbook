@@ -14,6 +14,7 @@ describe('bean form payloads', () => {
       type: undefined,
       priceCurrency: 'EUR',
       roastDate: undefined,
+      isArchived: false,
     })
     expect(
       beanUpdatePayload(4, { ...values, priceCurrency: 'BTC' }),
@@ -29,6 +30,17 @@ describe('bean form payloads', () => {
       process: null,
       notes: null,
     })
+  })
+
+  test('can create café beans directly in Past', () => {
+    const payload = beanCreatePayload(
+      createEmptyBeanFormValues('Guest roast'),
+      {
+        isArchived: true,
+      },
+    )
+
+    expect(payload.isArchived).toBe(true)
   })
 
   test('converts relational IDs and dates once at the form boundary', () => {

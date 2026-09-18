@@ -26,7 +26,7 @@ import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { parseEditModeSearch } from '@/lib/edit-mode'
 import { parseIdParam } from '@/lib/route-params'
 import { searchValidator } from '@/lib/search-params'
-import { getActiveBeans } from '@/lib/server/beans'
+import { getBeans } from '@/lib/server/beans'
 import { deleteCafeVisit, getCafeVisit } from '@/lib/server/cafe-visits'
 import { getCoffeeShop, getCoffeeShops } from '@/lib/server/coffee-shops'
 import { getDrinkConfiguration } from '@/lib/server/drink-options'
@@ -43,7 +43,7 @@ export const Route = createFileRoute('/visits/$visitId')({
       await Promise.all([
         getCoffeeShops(),
         getTasteTags(),
-        getActiveBeans(),
+        getBeans(),
         getDrinkConfiguration(),
         visit?.coffeeShopId
           ? getCoffeeShop({ data: visit.coffeeShopId })

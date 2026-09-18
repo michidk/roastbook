@@ -138,17 +138,17 @@ export function BeanDetailHeader({
       }
       actions={
         <>
-          {bean.isArchived && <Badge variant="secondary">Archived</Badge>}
+          {bean.isArchived && <Badge variant="secondary">Past</Badge>}
           <Button variant="outline" size="sm" onClick={onToggleArchive}>
             {bean.isArchived ? (
               <>
                 <ArchiveRestore />
-                Unarchive
+                Put on shelf
               </>
             ) : (
               <>
                 <Archive />
-                Archive
+                Move to past
               </>
             )}
           </Button>

@@ -12,7 +12,7 @@ import { localDateTimeInputToDate } from '@/lib/date-input'
 import type { DrinkConfiguration } from '@/lib/drink-options'
 import { focusFirstInvalidControl } from '@/lib/form-validation'
 import { toNullableRating, toRatingInput } from '@/lib/rating'
-import type { getActiveBeans } from '@/lib/server/beans'
+import type { getBeans } from '@/lib/server/beans'
 import { type getCafeVisit, updateCafeVisit } from '@/lib/server/cafe-visits'
 import type { getCoffeeShops } from '@/lib/server/coffee-shops'
 import type { getTasteTags } from '@/lib/server/taste-tags'
@@ -23,7 +23,7 @@ type Visit = NonNullable<Awaited<ReturnType<typeof getCafeVisit>>>
 type VisitEditFormProps = {
   readonly visit: Visit
   readonly coffeeShops: Awaited<ReturnType<typeof getCoffeeShops>>
-  readonly beans: Awaited<ReturnType<typeof getActiveBeans>>
+  readonly beans: Awaited<ReturnType<typeof getBeans>>
   readonly tasteTags: Awaited<ReturnType<typeof getTasteTags>>
   readonly drinks: DrinkConfiguration
   readonly onCancel: () => void

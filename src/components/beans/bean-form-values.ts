@@ -82,7 +82,10 @@ function optionalDate(value: string): Date | undefined {
   return value ? new Date(value) : undefined
 }
 
-export function beanCreatePayload(values: BeanFormValues) {
+export function beanCreatePayload(
+  values: BeanFormValues,
+  options: { readonly isArchived?: boolean } = {},
+) {
   return {
     name: values.name,
     type: values.type || undefined,
@@ -101,6 +104,7 @@ export function beanCreatePayload(values: BeanFormValues) {
     roastLevel: values.roastLevel || undefined,
     roastDate: optionalDate(values.roastDate),
     notes: blankToUndefined(values.notes),
+    isArchived: options.isArchived ?? false,
   }
 }
 

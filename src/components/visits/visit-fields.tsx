@@ -7,7 +7,7 @@ import { FormSection } from '@/components/form/form-shell'
 import { TastingFields } from '@/components/form/tasting-fields'
 import type { CafeVisitFormValues } from '@/lib/cafe-visit-payload'
 import type { DrinkConfiguration } from '@/lib/drink-options'
-import type { getActiveBeans } from '@/lib/server/beans'
+import type { getBeans } from '@/lib/server/beans'
 import type { getCoffeeShops } from '@/lib/server/coffee-shops'
 import type { getTasteTags } from '@/lib/server/taste-tags'
 
@@ -20,7 +20,7 @@ type VisitFieldsProps = {
   readonly values: VisitFieldValues
   readonly choices: {
     readonly coffeeShops: Awaited<ReturnType<typeof getCoffeeShops>>
-    readonly beans: Awaited<ReturnType<typeof getActiveBeans>>
+    readonly beans: Awaited<ReturnType<typeof getBeans>>
     readonly tasteTags: Awaited<ReturnType<typeof getTasteTags>>
     readonly drinks: DrinkConfiguration
   }
@@ -68,6 +68,7 @@ export function VisitFields({
           value={values.beanId}
           onChange={(value) => onFieldChange('beanId', value)}
           beans={choices.beans}
+          createAsPast
         />
         <DateTimeField
           id="visitedAt"

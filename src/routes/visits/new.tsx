@@ -35,7 +35,7 @@ import {
   searchRecord,
   searchValidator,
 } from '@/lib/search-params'
-import { getActiveBeans } from '@/lib/server/beans'
+import { getBeans } from '@/lib/server/beans'
 import { createCafeVisit } from '@/lib/server/cafe-visits'
 import { getCoffeeShops } from '@/lib/server/coffee-shops'
 import { getDrinkConfiguration } from '@/lib/server/drink-options'
@@ -53,7 +53,7 @@ export const Route = createFileRoute('/visits/new')({
     const [coffeeShops, tasteTags, beans, drinks] = await Promise.all([
       getCoffeeShops(),
       getTasteTags(),
-      getActiveBeans(),
+      getBeans(),
       getDrinkConfiguration(),
     ])
     return {

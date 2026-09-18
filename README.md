@@ -171,7 +171,7 @@ as MIME type and byte count, not the image payload itself.
 
 <p align="center">
   <img src=".github/images/beans-desktop.png"
-    alt="Roastbook bean collection with active coffee bags"
+    alt="Roastbook bean collection with coffee bags on the shelf"
     width="1200">
 </p>
 
