@@ -204,7 +204,13 @@ export function BeanDetailHeader({
                 </Link>
               </Button>
               <Button size="sm" asChild>
-                <Link to="/brews/new" search={{ beanId: bean.id }}>
+                <Link
+                  to="/brews/new"
+                  search={{
+                    beanId: bean.id,
+                    beanPurchaseId: bean.purchaseId ?? undefined,
+                  }}
+                >
                   <Plus />
                   Log a brew
                 </Link>

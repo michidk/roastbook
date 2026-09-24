@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 
@@ -12,6 +14,11 @@ type TasteTagSelectorProps = {
   readonly tags: readonly TasteTag[]
   readonly selected: readonly number[]
   readonly onToggle: (id: number) => void
+  /**
+   * Tags to show before the list is expanded. Selected tags always stay
+   * visible. Omit to show every tag.
+   */
+  readonly featuredIds?: readonly number[]
 }
 
 export function TasteTagSelector({
@@ -19,13 +26,23 @@ export function TasteTagSelector({
   tags,
   selected,
   onToggle,
+  featuredIds,
 }: TasteTagSelectorProps) {
+  const [showAll, setShowAll] = useState(false)
   if (tags.length === 0) return null
+
+  const featured = featuredIds ? new Set(featuredIds) : null
+  const visibleTags =
+    featured && !showAll
+      ? tags.filter((tag) => featured.has(tag.id) || selected.includes(tag.id))
+      : tags
+  const canCollapse = featured !== null && featured.size < tags.length
+
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
       <div className="flex flex-wrap gap-1.5">
-        {tags.map((tag) => {
+        {visibleTags.map((tag) => {
           const isSelected = selected.includes(tag.id)
           return (
             <button
@@ -50,6 +67,18 @@ export function TasteTagSelector({
           )
         })}
       </div>
+      {canCollapse ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          aria-expanded={showAll}
+          onClick={() => setShowAll((current) => !current)}
+          className="-ml-2.5"
+        >
+          {showAll ? 'Show fewer tags' : `Show all ${tags.length} tags`}
+        </Button>
+      ) : null}
     </div>
   )
 }

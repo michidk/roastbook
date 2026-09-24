@@ -1,5 +1,15 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, asc, count, desc, eq, exists, isNotNull, max } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  exists,
+  isNotNull,
+  max,
+  notInArray,
+} from 'drizzle-orm'
 import { db } from '@/db'
 import {
   beanPurchases,
@@ -7,7 +17,13 @@ import {
   brewingMethods,
   drinkTypes,
   shots,
+  shotTasteTags,
+  tasteTags,
 } from '@/db/schema'
+import {
+  FREQUENT_TASTE_TAG_LIMIT,
+  LEGACY_SENSORY_TASTE_TAG_NAMES,
+} from '@/lib/taste-tags'
 
 const hasActivePurchase = exists(
   db
@@ -115,6 +131,20 @@ export const getDrinkTypeSuggestions = createServerFn({
     .groupBy(drinkTypes.id, drinkTypes.name)
     .orderBy(desc(count(shots.id)), asc(drinkTypes.name))
     .limit(5),
+)
+
+/** The most-used flavor tags, so the tag picker can lead with them. */
+export const getTasteTagSuggestions = createServerFn({
+  method: 'GET',
+}).handler(() =>
+  db
+    .select({ id: tasteTags.id, uses: count(shotTasteTags.id) })
+    .from(shotTasteTags)
+    .innerJoin(tasteTags, eq(shotTasteTags.tasteTagId, tasteTags.id))
+    .where(notInArray(tasteTags.name, [...LEGACY_SENSORY_TASTE_TAG_NAMES]))
+    .groupBy(tasteTags.id, tasteTags.name)
+    .orderBy(desc(count(shotTasteTags.id)), asc(tasteTags.name))
+    .limit(FREQUENT_TASTE_TAG_LIMIT),
 )
 
 export const getLastBeansByBrewingMethod = createServerFn({

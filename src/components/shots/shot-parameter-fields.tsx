@@ -22,6 +22,8 @@ type ShotParameterFieldsProps = {
   readonly gear: readonly GearOption[]
   readonly enabledParameters: readonly string[]
   readonly equipmentPresetField?: ReactNode
+  /** Rendered between the equipment and extraction sections. */
+  readonly beforeExtraction?: ReactNode
   readonly useEquipmentSetupDefaults?: boolean
   readonly errors?: Readonly<Record<string, string>>
   readonly onChange: <Key extends keyof ShotFormValues>(
@@ -35,6 +37,7 @@ export function ShotParameterFields({
   gear,
   enabledParameters,
   equipmentPresetField,
+  beforeExtraction,
   useEquipmentSetupDefaults = false,
   errors = {},
   onChange,
@@ -141,6 +144,8 @@ export function ShotParameterFields({
           ) : null}
         </FormSection>
       ) : null}
+
+      {beforeExtraction}
 
       {hasExtraction ? (
         <FormSection title="Extraction">
@@ -302,7 +307,7 @@ export function ShotParameterFields({
       show('paperFilterPosition') ||
       show('distributionMethod') ||
       show('tampForceKg') ? (
-        <FormSection title="Brewing method">
+        <FormSection title="Technique">
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
             {show('preinfusionTimeSeconds') ? (
               <InputField

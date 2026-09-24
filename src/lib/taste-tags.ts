@@ -1,5 +1,8 @@
 type TasteTagCategory = { readonly category: string | null }
 
+/** How many flavor tags the new-brew form shows before "Show all". */
+export const FREQUENT_TASTE_TAG_LIMIT = 12
+
 export const LEGACY_SENSORY_TASTE_TAG_NAMES = [
   'Bright',
   'Crisp',

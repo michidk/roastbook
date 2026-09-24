@@ -1,5 +1,11 @@
 import { History } from 'lucide-react'
-import { type SyntheticEvent, useEffect, useRef, useState } from 'react'
+import {
+  type ReactElement,
+  type SyntheticEvent,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import { toast } from 'sonner'
 import { BeanCard } from '@/components/beans/bean-card'
 import { BeanPicker } from '@/components/beans/bean-picker'
@@ -17,7 +23,11 @@ import {
 } from '@/components/shots/save-to-recipe-dialog'
 import { ShotParameterFields } from '@/components/shots/shot-parameter-fields'
 import { ShotSensoryRatingFields } from '@/components/shots/shot-sensory-ratings'
-import { ShotTimer, type ShotTimerHandle } from '@/components/shots/shot-timer'
+import {
+  ShotTimer,
+  ShotTimerStickyBar,
+  useShotTimer,
+} from '@/components/shots/shot-timer'
 import { TasteTagSelector } from '@/components/shots/taste-tag-selector'
 import { Button } from '@/components/ui/button'
 import { StarRating } from '@/components/ui/star-rating'
@@ -56,13 +66,17 @@ import type {
   getBrewingMethodSuggestions,
   getDrinkTypeSuggestions,
   getLastBeansByBrewingMethod,
+  getTasteTagSuggestions,
 } from '@/lib/server/suggestions'
 import type { getTasteTags } from '@/lib/server/taste-tags'
 import {
   enabledSensoryRatingKeys,
   hasEnabledTasteProfileField,
 } from '@/lib/taste-profile'
-import { isLegacySensoryTasteTag } from '@/lib/taste-tags'
+import {
+  FREQUENT_TASTE_TAG_LIMIT,
+  isLegacySensoryTasteTag,
+} from '@/lib/taste-tags'
 import { getShotUpdateErrors } from '@/lib/update-validation'
 import {
   availableGearForShot,
@@ -89,6 +103,9 @@ type NewShotFormData = {
   readonly lastBeansByBrewingMethod: Awaited<
     ReturnType<typeof getLastBeansByBrewingMethod>
   >
+  readonly tasteTagSuggestions: Awaited<
+    ReturnType<typeof getTasteTagSuggestions>
+  >
   readonly gear: Awaited<ReturnType<typeof getGear>>
   readonly gearSets: Awaited<ReturnType<typeof getGearSets>>
   readonly recommendationEnabled: boolean
@@ -97,8 +114,24 @@ type NewShotFormData = {
 
 type NewShotFormProps = {
   readonly data: NewShotFormData
+  /** Beans an entry point such as a bean page asked to preselect. */
+  readonly initialBean?: {
+    readonly beanId?: number
+    readonly beanPurchaseId?: number
+  }
   /** Called after the brew was created, before the form unmounts. */
   readonly onSaved: () => Promise<void>
+}
+
+function requestedBeanPurchase(
+  beans: NewShotFormData['beans'],
+  initialBean: NewShotFormProps['initialBean'],
+) {
+  if (!initialBean) return undefined
+  return (
+    beans.find((bean) => bean.purchaseId === initialBean.beanPurchaseId) ??
+    beans.find((bean) => bean.id === initialBean.beanId)
+  )
 }
 
 function currentTastingValues(current: ShotFormValues) {
@@ -114,7 +147,7 @@ function currentTastingValues(current: ShotFormValues) {
   }
 }
 
-export function NewShotForm({ data, onSaved }: NewShotFormProps) {
+export function NewShotForm({ data, initialBean, onSaved }: NewShotFormProps) {
   const {
     beans,
     methods,
@@ -125,6 +158,7 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
     brewingMethodSuggestions,
     drinkTypeSuggestions,
     lastBeansByBrewingMethod,
+    tasteTagSuggestions,
     gear,
     gearSets,
     recommendationEnabled,
@@ -135,17 +169,22 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
     const brewingMethodId = brewingMethodSuggestions[0]
       ? String(brewingMethodSuggestions[0].id)
       : ''
+    const requested = requestedBeanPurchase(beans, initialBean)
     return {
       ...EMPTY_SHOT_FORM_VALUES,
       brewingMethodId,
-      beanId: getLastBeanIdForBrewingMethod(
-        lastBeansByBrewingMethod,
-        brewingMethodId,
-      ),
-      beanPurchaseId: getLastBeanPurchaseIdForBrewingMethod(
-        lastBeansByBrewingMethod,
-        brewingMethodId,
-      ),
+      beanId: requested
+        ? String(requested.id)
+        : getLastBeanIdForBrewingMethod(
+            lastBeansByBrewingMethod,
+            brewingMethodId,
+          ),
+      beanPurchaseId: requested
+        ? String(requested.purchaseId)
+        : getLastBeanPurchaseIdForBrewingMethod(
+            lastBeansByBrewingMethod,
+            brewingMethodId,
+          ),
     }
   })
   const [loadedRecipeId, setLoadedRecipeId] = useState('')
@@ -160,8 +199,9 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
   >({})
   const [isDirty, setIsDirty] = useState(false)
   const [timerKey, setTimerKey] = useState(0)
+  const [inlineTimerVisible, setInlineTimerVisible] = useState(true)
   const isInitializing = useRef(true)
-  const timerRef = useRef<ShotTimerHandle>(null)
+  const inlineTimerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     isInitializing.current = false
@@ -182,6 +222,24 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
   const hasShotTimer =
     selectedMethod?.timerEnabled === true &&
     selectedMethod.enabledParameters.includes('shotTimeSeconds')
+  const timer = useShotTimer({
+    value: values.shotTimeSeconds,
+    targetSeconds: Number(values.targetTimeSeconds) || null,
+    onCommit: (value) => set('shotTimeSeconds', value),
+    resetKey: timerKey,
+  })
+
+  // The pinned readout only matters while the inline card is scrolled away.
+  useEffect(() => {
+    const element = inlineTimerRef.current
+    if (!element || !hasShotTimer) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setInlineTimerVisible(entry?.isIntersecting ?? true),
+      { threshold: 0.4 },
+    )
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [hasShotTimer])
 
   const set = <Key extends keyof ShotFormValues>(
     key: Key,
@@ -302,7 +360,7 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
     targetRecipe: SaveToRecipeTarget | null,
     formElement?: HTMLFormElement,
   ) => {
-    const timerValue = hasShotTimer ? timerRef.current?.getValue() : undefined
+    const timerValue = hasShotTimer ? timer.getValue() : undefined
     const submittedValues =
       timerValue === undefined
         ? values
@@ -363,15 +421,43 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
   const flavorTags = tasteTags.filter(
     (tag) => !isLegacySensoryTasteTag(tag) || selectedTags.includes(tag.id),
   )
+  const featuredTagIds = [
+    ...tasteTagSuggestions.map((suggestion) => suggestion.id),
+    ...flavorTags.map((tag) => tag.id),
+  ]
+    .filter((id, index, ids) => ids.indexOf(id) === index)
+    .slice(0, FREQUENT_TASTE_TAG_LIMIT)
   const showSensoryRatings = enabledSensoryRatingKeys(tasteProfile).length > 0
   const showExtractionBalance = tasteProfile.extractionBalance
   const recommendationRequest = newShotRecommendationRequest(values)
+  const canSave = Boolean(values.brewingMethodId) && !isSubmitting
+  const saveToRecipeDialog = (trigger: ReactElement) => (
+    <SaveToRecipeDialog
+      trigger={trigger}
+      triggerLabel="Save into recipe"
+      title="Save brew into a recipe"
+      description="Save the brew and store its final bean, equipment, and brewing values in a new or existing recipe."
+      availableRecipes={availableRecipes}
+      defaultRecipeId={selectedRecipe?.id}
+      defaultRecipeHint="loaded"
+      nameLabel="New recipe name"
+      submitLabel="Save brew and recipe"
+      isSubmitting={isSubmitting}
+      onSubmit={handleRecipeSubmit}
+    />
+  )
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="grid gap-5 lg:grid-cols-[1fr_320px] lg:items-start"
+      className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start"
     >
+      {hasShotTimer && timer.running && !inlineTimerVisible ? (
+        <ShotTimerStickyBar
+          timer={timer}
+          className="fixed inset-x-4 top-[calc(3.5rem+0.75rem)] z-40 lg:hidden"
+        />
+      ) : null}
       <div className="space-y-5">
         <FormErrorSummary errors={fieldErrors} />
         <FormSection
@@ -428,61 +514,6 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
             required
           />
         </FormSection>
-        {hasEnabledTasteProfileField(tasteProfile) ? (
-          <FormSection
-            title="Taste profile"
-            description="Rate the result once you have tasted it."
-          >
-            {tasteProfile.overallRating ||
-            showSensoryRatings ||
-            showExtractionBalance ? (
-              <div className="space-y-1">
-                {tasteProfile.overallRating ? (
-                  <div className="space-y-1">
-                    <span className="block text-sm font-medium">
-                      Overall rating
-                    </span>
-                    <StarRating
-                      value={values.rating}
-                      onChange={(rating) => set('rating', rating)}
-                      sizeClassName="size-5"
-                      ariaLabel="Brew rating"
-                    />
-                  </div>
-                ) : null}
-                <ShotSensoryRatingFields
-                  values={values}
-                  onChange={(key, value) => set(key, value)}
-                />
-                {showExtractionBalance ? (
-                  <div className="pt-1">
-                    <ExtractionBalanceField
-                      value={values.extractionBalance}
-                      onChange={(value) => set('extractionBalance', value)}
-                    />
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-            {tasteProfile.flavorTags ? (
-              <TasteTagSelector
-                label="Flavor tags"
-                tags={flavorTags}
-                selected={selectedTags}
-                onToggle={toggleTag}
-              />
-            ) : null}
-            {tasteProfile.notes ? (
-              <TextareaField
-                id="notes"
-                label="Tasting notes"
-                value={values.notes}
-                onChange={(value) => set('notes', value)}
-                placeholder="How was it?"
-              />
-            ) : null}
-          </FormSection>
-        ) : null}
         <FormSection
           title="Beans"
           description="Choose the beans for this brew."
@@ -550,10 +581,77 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
               />
             ) : undefined
           }
+          beforeExtraction={
+            hasShotTimer ? (
+              // Phones get the timer next to the brew-time field it fills
+              // in; desktop keeps it in the pinned sidebar instead.
+              <div ref={inlineTimerRef} className="lg:hidden">
+                <ShotTimer timer={timer} />
+              </div>
+            ) : undefined
+          }
           useEquipmentSetupDefaults
           errors={fieldErrors}
           onChange={set}
         />
+        {hasEnabledTasteProfileField(tasteProfile) ? (
+          <FormSection
+            title="Taste profile"
+            description="Rate the result once you have tasted it."
+            collapsible
+            defaultOpen={false}
+          >
+            {tasteProfile.overallRating ||
+            showSensoryRatings ||
+            showExtractionBalance ? (
+              <div className="space-y-1">
+                {tasteProfile.overallRating ? (
+                  <div className="space-y-1">
+                    <span className="block text-sm font-medium">
+                      Overall rating
+                    </span>
+                    <StarRating
+                      value={values.rating}
+                      onChange={(rating) => set('rating', rating)}
+                      sizeClassName="size-5"
+                      ariaLabel="Brew rating"
+                    />
+                  </div>
+                ) : null}
+                <ShotSensoryRatingFields
+                  values={values}
+                  onChange={(key, value) => set(key, value)}
+                />
+                {showExtractionBalance ? (
+                  <div className="pt-1">
+                    <ExtractionBalanceField
+                      value={values.extractionBalance}
+                      onChange={(value) => set('extractionBalance', value)}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            {tasteProfile.flavorTags ? (
+              <TasteTagSelector
+                label="Flavor tags"
+                tags={flavorTags}
+                selected={selectedTags}
+                onToggle={toggleTag}
+                featuredIds={featuredTagIds}
+              />
+            ) : null}
+            {tasteProfile.notes ? (
+              <TextareaField
+                id="notes"
+                label="Tasting notes"
+                value={values.notes}
+                onChange={(value) => set('notes', value)}
+                placeholder="How was it?"
+              />
+            ) : null}
+          </FormSection>
+        ) : null}
       </div>
       {/* The height cap keeps the save buttons reachable on short windows:
           a pinned sidebar taller than the viewport never scrolls its tail
@@ -565,51 +663,56 @@ export function NewShotForm({ data, onSaved }: NewShotFormProps) {
           </div>
         ) : null}
         {hasShotTimer ? (
-          <ShotTimer
-            key={timerKey}
-            ref={timerRef}
-            value={values.shotTimeSeconds}
-            targetSeconds={Number(values.targetTimeSeconds) || null}
-            onCommit={(value) => set('shotTimeSeconds', value)}
-          />
+          <ShotTimer timer={timer} className="hidden lg:flex" />
         ) : null}
         <AiRecommendationDialog
           enabled={recommendationEnabled}
           request={recommendationRequest}
           size="lg"
           className="w-full"
+          showDisabledReason
         />
-        <SaveToRecipeDialog
-          trigger={
+        <div className="hidden space-y-4 lg:block">
+          {saveToRecipeDialog(
             <Button
               type="button"
               variant="outline"
               size="lg"
               className="w-full"
-              disabled={!values.brewingMethodId || isSubmitting}
-            />
-          }
-          triggerLabel="Save into recipe"
-          title="Save brew into a recipe"
-          description="Save the brew and store its final bean, equipment, and brewing values in a new or existing recipe."
-          availableRecipes={availableRecipes}
-          defaultRecipeId={selectedRecipe?.id}
-          defaultRecipeHint="loaded"
-          nameLabel="New recipe name"
-          submitLabel="Save brew and recipe"
-          isSubmitting={isSubmitting}
-          onSubmit={handleRecipeSubmit}
-        />
+              disabled={!canSave}
+            />,
+          )}
+          <Button
+            type="submit"
+            size="lg"
+            disabled={!canSave}
+            aria-busy={isSubmitting}
+            className="w-full"
+          >
+            {isSubmitting ? 'Saving…' : 'Save brew'}
+          </Button>
+        </div>
+      </aside>
+      {/* Phones keep the save actions within thumb reach above the tab bar
+          instead of at the end of a page several screens tall. */}
+      <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 order-3 -mx-4 flex gap-2 border-t border-border bg-card/95 px-4 py-3 backdrop-blur md:-mx-8 md:px-8 lg:hidden">
+        {saveToRecipeDialog(
+          <Button
+            type="button"
+            variant="outline"
+            className="min-w-0 flex-1 px-3"
+            disabled={!canSave}
+          />,
+        )}
         <Button
           type="submit"
-          size="lg"
-          disabled={!values.brewingMethodId || isSubmitting}
+          disabled={!canSave}
           aria-busy={isSubmitting}
-          className="w-full"
+          className="min-w-0 flex-1 px-3"
         >
           {isSubmitting ? 'Saving…' : 'Save brew'}
         </Button>
-      </aside>
+      </div>
     </form>
   )
 }

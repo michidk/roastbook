@@ -50,11 +50,17 @@ export function AiRecommendationDialog({
   enabled,
   className,
   size = 'default',
+  showDisabledReason = false,
 }: {
   readonly request: ShotRecommendationRequest | null
   readonly enabled: boolean
   readonly className?: string
   readonly size?: 'sm' | 'default' | 'lg'
+  /**
+   * Print why the button is disabled under it. Hover titles never show on
+   * touch screens, so forms opt in to visible text.
+   */
+  readonly showDisabledReason?: boolean
 }) {
   const formatDate = useDateFormatter()
   const [open, setOpen] = useState(false)
@@ -88,9 +94,11 @@ export function AiRecommendationDialog({
     ? 'Assesses this brew and suggests the next adjustment. Uses its beans, method, exact gear, parameters, tasting result, and matching history.'
     : 'Suggests the next controlled brew adjustment from the latest completed brew for the selected beans and its history. Unsaved form values are not used.'
 
+  const visibleDisabledReason = showDisabledReason ? buttonTitle : undefined
+
   return (
     <>
-      <div className={`flex items-center ${className ?? ''}`}>
+      <div className={`flex flex-wrap items-center gap-1.5 ${className ?? ''}`}>
         <Tooltip>
           <TooltipTrigger>
             <Button
@@ -99,7 +107,7 @@ export function AiRecommendationDialog({
               size={size}
               className={className ? 'min-w-0 flex-1' : undefined}
               disabled={!enabled || !request}
-              title={buttonTitle}
+              title={visibleDisabledReason ? undefined : buttonTitle}
               onClick={() => {
                 setOpen(true)
                 void loadRecommendation()
@@ -117,6 +125,11 @@ export function AiRecommendationDialog({
             {helpText}
           </TooltipContent>
         </Tooltip>
+        {visibleDisabledReason ? (
+          <p className="basis-full text-center text-xs text-muted-foreground">
+            {visibleDisabledReason}
+          </p>
+        ) : null}
       </div>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-2xl">

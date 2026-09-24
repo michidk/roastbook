@@ -5,9 +5,11 @@ import {
   useRouter,
 } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
+import { toast } from 'sonner'
 import { Page, PageHeader } from '@/components/page-layout'
 import { NewShotForm } from '@/components/shots/new-shot-form'
 import { Button } from '@/components/ui/button'
+import { searchValidator } from '@/lib/search-params'
 import { getActiveBeanPurchases } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getDrinkConfiguration } from '@/lib/server/drink-options'
@@ -20,10 +22,13 @@ import {
   getBrewingMethodSuggestions,
   getDrinkTypeSuggestions,
   getLastBeansByBrewingMethod,
+  getTasteTagSuggestions,
 } from '@/lib/server/suggestions'
 import { getTasteTags } from '@/lib/server/taste-tags'
+import { parseNewBrewSearch } from '@/routes/brews/-lib/new-brew-search'
 
 export const Route = createFileRoute('/brews/new')({
+  validateSearch: searchValidator(parseNewBrewSearch),
   loader: async () => {
     const [
       beans,
@@ -38,6 +43,7 @@ export const Route = createFileRoute('/brews/new')({
       recommendation,
       drinks,
       drinkTypeSuggestions,
+      tasteTagSuggestions,
     ] = await Promise.all([
       getActiveBeanPurchases(),
       getBrewingMethods(),
@@ -51,6 +57,7 @@ export const Route = createFileRoute('/brews/new')({
       checkShotRecommendationEnabled(),
       getDrinkConfiguration(),
       getDrinkTypeSuggestions(),
+      getTasteTagSuggestions(),
     ])
     return {
       beans,
@@ -65,6 +72,7 @@ export const Route = createFileRoute('/brews/new')({
       recommendationEnabled: recommendation.enabled,
       drinks,
       drinkTypeSuggestions,
+      tasteTagSuggestions,
       defaultBrewedAt: new Date().toISOString(),
     }
   },
@@ -73,6 +81,7 @@ export const Route = createFileRoute('/brews/new')({
 
 function NewShotPage() {
   const data = Route.useLoaderData()
+  const search = Route.useSearch()
   const navigate = useNavigate()
   const router = useRouter()
 
@@ -90,9 +99,19 @@ function NewShotPage() {
       />
       <NewShotForm
         data={data}
+        initialBean={{
+          beanId: search.beanId,
+          beanPurchaseId: search.beanPurchaseId,
+        }}
         onSaved={async () => {
           await router.invalidate()
           await navigate({ to: '/brews' })
+          toast.success('Brew saved', {
+            action: {
+              label: 'Log another',
+              onClick: () => void navigate({ to: '/brews/new' }),
+            },
+          })
         }}
       />
     </Page>
