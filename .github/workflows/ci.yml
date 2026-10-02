@@ -90,8 +90,7 @@ jobs:
             --publish 9000:9000 \
             --env MINIO_ROOT_USER="$TEST_S3_ACCESS_KEY_ID" \
             --env MINIO_ROOT_PASSWORD="$TEST_S3_SECRET_ACCESS_KEY" \
-            quay.io/minio/minio@sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e \
-            server /data
+            docker.io/bitnamilegacy/minio@sha256:ba958aa5e12c8b1426dd95de61d8f1ed14741efa0ec730019ed57086930a4299
           for attempt in {1..30}; do
             if curl --fail --silent http://localhost:9000/minio/health/live; then
               exit 0
