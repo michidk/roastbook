@@ -109,7 +109,7 @@ function NewShotPage() {
           toast.success('Brew saved', {
             action: {
               label: 'Log another',
-              onClick: () => void navigate({ to: '/brews/new' }),
+              onClick: () => void navigate({ to: '/brews/new', search }),
             },
           })
         }}

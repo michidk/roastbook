@@ -43,10 +43,7 @@ import {
   drinkSelectionForConfiguration,
 } from '@/lib/drink-options'
 import { focusFirstInvalidControl } from '@/lib/form-validation'
-import {
-  getLastBeanIdForBrewingMethod,
-  getLastBeanPurchaseIdForBrewingMethod,
-} from '@/lib/new-shot-defaults'
+import { beanSelectionForBrewingMethod } from '@/lib/new-shot-defaults'
 import {
   newShotPayload,
   newShotRecommendationRequest,
@@ -123,15 +120,20 @@ type NewShotFormProps = {
   readonly onSaved: () => Promise<void>
 }
 
-function requestedBeanPurchase(
+function requestedBeanSelection(
   beans: NewShotFormData['beans'],
   initialBean: NewShotFormProps['initialBean'],
 ) {
   if (!initialBean) return undefined
-  return (
+  const requested =
     beans.find((bean) => bean.purchaseId === initialBean.beanPurchaseId) ??
     beans.find((bean) => bean.id === initialBean.beanId)
-  )
+  return requested
+    ? {
+        beanId: String(requested.id),
+        beanPurchaseId: String(requested.purchaseId),
+      }
+    : undefined
 }
 
 function currentTastingValues(current: ShotFormValues) {
@@ -169,24 +171,19 @@ export function NewShotForm({ data, initialBean, onSaved }: NewShotFormProps) {
     const brewingMethodId = brewingMethodSuggestions[0]
       ? String(brewingMethodSuggestions[0].id)
       : ''
-    const requested = requestedBeanPurchase(beans, initialBean)
     return {
       ...EMPTY_SHOT_FORM_VALUES,
       brewingMethodId,
-      beanId: requested
-        ? String(requested.id)
-        : getLastBeanIdForBrewingMethod(
-            lastBeansByBrewingMethod,
-            brewingMethodId,
-          ),
-      beanPurchaseId: requested
-        ? String(requested.purchaseId)
-        : getLastBeanPurchaseIdForBrewingMethod(
-            lastBeansByBrewingMethod,
-            brewingMethodId,
-          ),
+      ...beanSelectionForBrewingMethod(
+        lastBeansByBrewingMethod,
+        brewingMethodId,
+        requestedBeanSelection(beans, initialBean),
+      ),
     }
   })
+  const [hasChosenBean, setHasChosenBean] = useState(
+    () => requestedBeanSelection(beans, initialBean) !== undefined,
+  )
   const [loadedRecipeId, setLoadedRecipeId] = useState('')
   const [gearSetId, setGearSetId] = useState('')
   const [brewedAt, setBrewedAt] = useLocalDateTimeInput(defaultBrewedAt)
@@ -280,13 +277,12 @@ export function NewShotForm({ data, initialBean, onSaved }: NewShotFormProps) {
         ...current,
         ...drinkSelection,
         brewingMethodId,
-        beanId: getLastBeanIdForBrewingMethod(
+        ...beanSelectionForBrewingMethod(
           lastBeansByBrewingMethod,
           brewingMethodId,
-        ),
-        beanPurchaseId: getLastBeanPurchaseIdForBrewingMethod(
-          lastBeansByBrewingMethod,
-          brewingMethodId,
+          hasChosenBean
+            ? { beanId: current.beanId, beanPurchaseId: current.beanPurchaseId }
+            : undefined,
         ),
         shotTimeSeconds: '',
         targetTimeSeconds: '',
@@ -531,6 +527,7 @@ export function NewShotForm({ data, initialBean, onSaved }: NewShotFormProps) {
                 beanId: selected ? String(selected.id) : '',
                 beanPurchaseId: beanPurchaseId ?? '',
               }))
+              setHasChosenBean(Boolean(beanPurchaseId))
               setIsDirty(true)
             }}
             beans={beanOptions}

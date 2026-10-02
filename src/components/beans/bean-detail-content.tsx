@@ -203,18 +203,21 @@ export function BeanDetailHeader({
                   Edit
                 </Link>
               </Button>
-              <Button size="sm" asChild>
-                <Link
-                  to="/brews/new"
-                  search={{
-                    beanId: bean.id,
-                    beanPurchaseId: bean.purchaseId ?? undefined,
-                  }}
-                >
-                  <Plus />
-                  Log a brew
-                </Link>
-              </Button>
+              {/* The new brew form only offers bags on the shelf. */}
+              {!bean.isArchived && (
+                <Button size="sm" asChild>
+                  <Link
+                    to="/brews/new"
+                    search={{
+                      beanId: bean.id,
+                      beanPurchaseId: bean.purchaseId ?? undefined,
+                    }}
+                  >
+                    <Plus />
+                    Log a brew
+                  </Link>
+                </Button>
+              )}
             </>
           )}
           <DeleteConfirmation
