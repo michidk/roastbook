@@ -9,56 +9,56 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as StatsRouteImport } from './routes/stats'
-import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as VisitsIndexRouteImport } from './routes/visits/index'
-import { Route as ShotsIndexRouteImport } from './routes/shots/index'
-import { Route as ShopsIndexRouteImport } from './routes/shops/index'
-import { Route as SettingsIndexRouteImport } from './routes/settings/index'
-import { Route as RoastersIndexRouteImport } from './routes/roasters/index'
-import { Route as RecipesIndexRouteImport } from './routes/recipes/index'
-import { Route as PlacesIndexRouteImport } from './routes/places/index'
-import { Route as OverviewIndexRouteImport } from './routes/overview/index'
-import { Route as GearIndexRouteImport } from './routes/gear/index'
-import { Route as GearSetsIndexRouteImport } from './routes/gear-sets/index'
-import { Route as BrewsIndexRouteImport } from './routes/brews/index'
-import { Route as BrewingMethodsIndexRouteImport } from './routes/brewing-methods/index'
-import { Route as BeansIndexRouteImport } from './routes/beans/index'
-import { Route as VisitsNewRouteImport } from './routes/visits/new'
-import { Route as VisitsVisitIdRouteImport } from './routes/visits/$visitId'
-import { Route as ShotsNewRouteImport } from './routes/shots/new'
-import { Route as ShotsShotIdRouteImport } from './routes/shots/$shotId'
-import { Route as ShopsNewRouteImport } from './routes/shops/new'
-import { Route as ShopsCoffeeShopIdRouteImport } from './routes/shops/$coffeeShopId'
-import { Route as SettingsTasteProfileRouteImport } from './routes/settings/taste-profile'
-import { Route as SettingsStorageRouteImport } from './routes/settings/storage'
-import { Route as SettingsMapRouteImport } from './routes/settings/map'
-import { Route as SettingsDrinksRouteImport } from './routes/settings/drinks'
-import { Route as SettingsAppearanceRouteImport } from './routes/settings/appearance'
-import { Route as SettingsAiRouteImport } from './routes/settings/ai'
-import { Route as SettingsAboutRouteImport } from './routes/settings/about'
-import { Route as RoastersNewRouteImport } from './routes/roasters/new'
-import { Route as RoastersRoasterIdRouteImport } from './routes/roasters/$roasterId'
-import { Route as RecipesNewRouteImport } from './routes/recipes/new'
-import { Route as RecipesRecipeIdRouteImport } from './routes/recipes/$recipeId'
-import { Route as PlacesNewRouteImport } from './routes/places/new'
-import { Route as PlacesCoffeeShopIdRouteImport } from './routes/places/$coffeeShopId'
-import { Route as GearNewRouteImport } from './routes/gear/new'
-import { Route as GearGearIdRouteImport } from './routes/gear/$gearId'
-import { Route as GearSetsNewRouteImport } from './routes/gear-sets/new'
-import { Route as GearSetsGearSetIdRouteImport } from './routes/gear-sets/$gearSetId'
-import { Route as BrewsNewRouteImport } from './routes/brews/new'
-import { Route as BrewsShotIdRouteImport } from './routes/brews/$shotId'
-import { Route as BrewingMethodsNewRouteImport } from './routes/brewing-methods/new'
-import { Route as BrewingMethodsBrewingMethodIdRouteImport } from './routes/brewing-methods/$brewingMethodId'
-import { Route as BeansNewRouteImport } from './routes/beans/new'
-import { Route as BeansBeanIdRouteImport } from './routes/beans/$beanId'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as StatsRouteImport } from './routes/stats'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as BeansIndexRouteImport } from './routes/beans/index'
+import { Route as BeansBeanIdRouteImport } from './routes/beans/$beanId'
+import { Route as BeansNewRouteImport } from './routes/beans/new'
+import { Route as BrewingMethodsIndexRouteImport } from './routes/brewing-methods/index'
+import { Route as BrewingMethodsBrewingMethodIdRouteImport } from './routes/brewing-methods/$brewingMethodId'
+import { Route as BrewingMethodsNewRouteImport } from './routes/brewing-methods/new'
+import { Route as BrewsIndexRouteImport } from './routes/brews/index'
+import { Route as BrewsShotIdRouteImport } from './routes/brews/$shotId'
+import { Route as BrewsNewRouteImport } from './routes/brews/new'
+import { Route as GearSetsIndexRouteImport } from './routes/gear-sets/index'
+import { Route as GearSetsGearSetIdRouteImport } from './routes/gear-sets/$gearSetId'
+import { Route as GearSetsNewRouteImport } from './routes/gear-sets/new'
+import { Route as GearIndexRouteImport } from './routes/gear/index'
+import { Route as GearGearIdRouteImport } from './routes/gear/$gearId'
+import { Route as GearNewRouteImport } from './routes/gear/new'
+import { Route as OverviewIndexRouteImport } from './routes/overview/index'
+import { Route as PlacesIndexRouteImport } from './routes/places/index'
+import { Route as PlacesCoffeeShopIdRouteImport } from './routes/places/$coffeeShopId'
+import { Route as PlacesNewRouteImport } from './routes/places/new'
+import { Route as RecipesIndexRouteImport } from './routes/recipes/index'
+import { Route as RecipesRecipeIdRouteImport } from './routes/recipes/$recipeId'
+import { Route as RecipesNewRouteImport } from './routes/recipes/new'
+import { Route as RoastersIndexRouteImport } from './routes/roasters/index'
+import { Route as RoastersRoasterIdRouteImport } from './routes/roasters/$roasterId'
+import { Route as RoastersNewRouteImport } from './routes/roasters/new'
+import { Route as SettingsIndexRouteImport } from './routes/settings/index'
+import { Route as SettingsAboutRouteImport } from './routes/settings/about'
+import { Route as SettingsAiRouteImport } from './routes/settings/ai'
+import { Route as SettingsAppearanceRouteImport } from './routes/settings/appearance'
+import { Route as SettingsDrinksRouteImport } from './routes/settings/drinks'
+import { Route as SettingsMapRouteImport } from './routes/settings/map'
+import { Route as SettingsStorageRouteImport } from './routes/settings/storage'
+import { Route as SettingsTasteProfileRouteImport } from './routes/settings/taste-profile'
+import { Route as ShopsIndexRouteImport } from './routes/shops/index'
+import { Route as ShopsCoffeeShopIdRouteImport } from './routes/shops/$coffeeShopId'
+import { Route as ShopsNewRouteImport } from './routes/shops/new'
+import { Route as ShotsIndexRouteImport } from './routes/shots/index'
+import { Route as ShotsShotIdRouteImport } from './routes/shots/$shotId'
+import { Route as ShotsNewRouteImport } from './routes/shots/new'
+import { Route as VisitsIndexRouteImport } from './routes/visits/index'
+import { Route as VisitsVisitIdRouteImport } from './routes/visits/$visitId'
+import { Route as VisitsNewRouteImport } from './routes/visits/new'
 
-const StatsRoute = StatsRouteImport.update({
-  id: '/stats',
-  path: '/stats',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -66,69 +66,14 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const StatsRoute = StatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
   getParentRoute: () => rootRouteImport,
 } as any)
-const VisitsIndexRoute = VisitsIndexRouteImport.update({
-  id: '/visits/',
-  path: '/visits/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ShotsIndexRoute = ShotsIndexRouteImport.update({
-  id: '/shots/',
-  path: '/shots/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ShopsIndexRoute = ShopsIndexRouteImport.update({
-  id: '/shops/',
-  path: '/shops/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsIndexRoute = SettingsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const RoastersIndexRoute = RoastersIndexRouteImport.update({
-  id: '/roasters/',
-  path: '/roasters/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RecipesIndexRoute = RecipesIndexRouteImport.update({
-  id: '/recipes/',
-  path: '/recipes/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PlacesIndexRoute = PlacesIndexRouteImport.update({
-  id: '/places/',
-  path: '/places/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OverviewIndexRoute = OverviewIndexRouteImport.update({
-  id: '/overview/',
-  path: '/overview/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GearIndexRoute = GearIndexRouteImport.update({
-  id: '/gear/',
-  path: '/gear/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GearSetsIndexRoute = GearSetsIndexRouteImport.update({
-  id: '/gear-sets/',
-  path: '/gear-sets/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BrewsIndexRoute = BrewsIndexRouteImport.update({
-  id: '/brews/',
-  path: '/brews/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BrewingMethodsIndexRoute = BrewingMethodsIndexRouteImport.update({
-  id: '/brewing-methods/',
-  path: '/brewing-methods/',
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BeansIndexRoute = BeansIndexRouteImport.update({
@@ -136,134 +81,19 @@ const BeansIndexRoute = BeansIndexRouteImport.update({
   path: '/beans/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const VisitsNewRoute = VisitsNewRouteImport.update({
-  id: '/visits/new',
-  path: '/visits/new',
+const BeansBeanIdRoute = BeansBeanIdRouteImport.update({
+  id: '/beans/$beanId',
+  path: '/beans/$beanId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const VisitsVisitIdRoute = VisitsVisitIdRouteImport.update({
-  id: '/visits/$visitId',
-  path: '/visits/$visitId',
+const BeansNewRoute = BeansNewRouteImport.update({
+  id: '/beans/new',
+  path: '/beans/new',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ShotsNewRoute = ShotsNewRouteImport.update({
-  id: '/shots/new',
-  path: '/shots/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ShotsShotIdRoute = ShotsShotIdRouteImport.update({
-  id: '/shots/$shotId',
-  path: '/shots/$shotId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ShopsNewRoute = ShopsNewRouteImport.update({
-  id: '/shops/new',
-  path: '/shops/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ShopsCoffeeShopIdRoute = ShopsCoffeeShopIdRouteImport.update({
-  id: '/shops/$coffeeShopId',
-  path: '/shops/$coffeeShopId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsTasteProfileRoute = SettingsTasteProfileRouteImport.update({
-  id: '/taste-profile',
-  path: '/taste-profile',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const SettingsStorageRoute = SettingsStorageRouteImport.update({
-  id: '/storage',
-  path: '/storage',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const SettingsMapRoute = SettingsMapRouteImport.update({
-  id: '/map',
-  path: '/map',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const SettingsDrinksRoute = SettingsDrinksRouteImport.update({
-  id: '/drinks',
-  path: '/drinks',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const SettingsAppearanceRoute = SettingsAppearanceRouteImport.update({
-  id: '/appearance',
-  path: '/appearance',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const SettingsAiRoute = SettingsAiRouteImport.update({
-  id: '/ai',
-  path: '/ai',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const SettingsAboutRoute = SettingsAboutRouteImport.update({
-  id: '/about',
-  path: '/about',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const RoastersNewRoute = RoastersNewRouteImport.update({
-  id: '/roasters/new',
-  path: '/roasters/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RoastersRoasterIdRoute = RoastersRoasterIdRouteImport.update({
-  id: '/roasters/$roasterId',
-  path: '/roasters/$roasterId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RecipesNewRoute = RecipesNewRouteImport.update({
-  id: '/recipes/new',
-  path: '/recipes/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RecipesRecipeIdRoute = RecipesRecipeIdRouteImport.update({
-  id: '/recipes/$recipeId',
-  path: '/recipes/$recipeId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PlacesNewRoute = PlacesNewRouteImport.update({
-  id: '/places/new',
-  path: '/places/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PlacesCoffeeShopIdRoute = PlacesCoffeeShopIdRouteImport.update({
-  id: '/places/$coffeeShopId',
-  path: '/places/$coffeeShopId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GearNewRoute = GearNewRouteImport.update({
-  id: '/gear/new',
-  path: '/gear/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GearGearIdRoute = GearGearIdRouteImport.update({
-  id: '/gear/$gearId',
-  path: '/gear/$gearId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GearSetsNewRoute = GearSetsNewRouteImport.update({
-  id: '/gear-sets/new',
-  path: '/gear-sets/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GearSetsGearSetIdRoute = GearSetsGearSetIdRouteImport.update({
-  id: '/gear-sets/$gearSetId',
-  path: '/gear-sets/$gearSetId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BrewsNewRoute = BrewsNewRouteImport.update({
-  id: '/brews/new',
-  path: '/brews/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BrewsShotIdRoute = BrewsShotIdRouteImport.update({
-  id: '/brews/$shotId',
-  path: '/brews/$shotId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BrewingMethodsNewRoute = BrewingMethodsNewRouteImport.update({
-  id: '/brewing-methods/new',
-  path: '/brewing-methods/new',
+const BrewingMethodsIndexRoute = BrewingMethodsIndexRouteImport.update({
+  id: '/brewing-methods/',
+  path: '/brewing-methods/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BrewingMethodsBrewingMethodIdRoute =
@@ -272,19 +102,189 @@ const BrewingMethodsBrewingMethodIdRoute =
     path: '/brewing-methods/$brewingMethodId',
     getParentRoute: () => rootRouteImport,
   } as any)
-const BeansNewRoute = BeansNewRouteImport.update({
-  id: '/beans/new',
-  path: '/beans/new',
+const BrewingMethodsNewRoute = BrewingMethodsNewRouteImport.update({
+  id: '/brewing-methods/new',
+  path: '/brewing-methods/new',
   getParentRoute: () => rootRouteImport,
 } as any)
-const BeansBeanIdRoute = BeansBeanIdRouteImport.update({
-  id: '/beans/$beanId',
-  path: '/beans/$beanId',
+const BrewsIndexRoute = BrewsIndexRouteImport.update({
+  id: '/brews/',
+  path: '/brews/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiHealthRoute = ApiHealthRouteImport.update({
-  id: '/api/health',
-  path: '/api/health',
+const BrewsShotIdRoute = BrewsShotIdRouteImport.update({
+  id: '/brews/$shotId',
+  path: '/brews/$shotId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BrewsNewRoute = BrewsNewRouteImport.update({
+  id: '/brews/new',
+  path: '/brews/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GearSetsIndexRoute = GearSetsIndexRouteImport.update({
+  id: '/gear-sets/',
+  path: '/gear-sets/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GearSetsGearSetIdRoute = GearSetsGearSetIdRouteImport.update({
+  id: '/gear-sets/$gearSetId',
+  path: '/gear-sets/$gearSetId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GearSetsNewRoute = GearSetsNewRouteImport.update({
+  id: '/gear-sets/new',
+  path: '/gear-sets/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GearIndexRoute = GearIndexRouteImport.update({
+  id: '/gear/',
+  path: '/gear/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GearGearIdRoute = GearGearIdRouteImport.update({
+  id: '/gear/$gearId',
+  path: '/gear/$gearId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GearNewRoute = GearNewRouteImport.update({
+  id: '/gear/new',
+  path: '/gear/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OverviewIndexRoute = OverviewIndexRouteImport.update({
+  id: '/overview/',
+  path: '/overview/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlacesIndexRoute = PlacesIndexRouteImport.update({
+  id: '/places/',
+  path: '/places/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlacesCoffeeShopIdRoute = PlacesCoffeeShopIdRouteImport.update({
+  id: '/places/$coffeeShopId',
+  path: '/places/$coffeeShopId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlacesNewRoute = PlacesNewRouteImport.update({
+  id: '/places/new',
+  path: '/places/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecipesIndexRoute = RecipesIndexRouteImport.update({
+  id: '/recipes/',
+  path: '/recipes/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecipesRecipeIdRoute = RecipesRecipeIdRouteImport.update({
+  id: '/recipes/$recipeId',
+  path: '/recipes/$recipeId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecipesNewRoute = RecipesNewRouteImport.update({
+  id: '/recipes/new',
+  path: '/recipes/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RoastersIndexRoute = RoastersIndexRouteImport.update({
+  id: '/roasters/',
+  path: '/roasters/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RoastersRoasterIdRoute = RoastersRoasterIdRouteImport.update({
+  id: '/roasters/$roasterId',
+  path: '/roasters/$roasterId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RoastersNewRoute = RoastersNewRouteImport.update({
+  id: '/roasters/new',
+  path: '/roasters/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsAboutRoute = SettingsAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsAiRoute = SettingsAiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsAppearanceRoute = SettingsAppearanceRouteImport.update({
+  id: '/appearance',
+  path: '/appearance',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsDrinksRoute = SettingsDrinksRouteImport.update({
+  id: '/drinks',
+  path: '/drinks',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsMapRoute = SettingsMapRouteImport.update({
+  id: '/map',
+  path: '/map',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsStorageRoute = SettingsStorageRouteImport.update({
+  id: '/storage',
+  path: '/storage',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsTasteProfileRoute = SettingsTasteProfileRouteImport.update({
+  id: '/taste-profile',
+  path: '/taste-profile',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const ShopsIndexRoute = ShopsIndexRouteImport.update({
+  id: '/shops/',
+  path: '/shops/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopsCoffeeShopIdRoute = ShopsCoffeeShopIdRouteImport.update({
+  id: '/shops/$coffeeShopId',
+  path: '/shops/$coffeeShopId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopsNewRoute = ShopsNewRouteImport.update({
+  id: '/shops/new',
+  path: '/shops/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShotsIndexRoute = ShotsIndexRouteImport.update({
+  id: '/shots/',
+  path: '/shots/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShotsShotIdRoute = ShotsShotIdRouteImport.update({
+  id: '/shots/$shotId',
+  path: '/shots/$shotId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShotsNewRoute = ShotsNewRouteImport.update({
+  id: '/shots/new',
+  path: '/shots/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VisitsIndexRoute = VisitsIndexRouteImport.update({
+  id: '/visits/',
+  path: '/visits/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VisitsVisitIdRoute = VisitsVisitIdRouteImport.update({
+  id: '/visits/$visitId',
+  path: '/visits/$visitId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VisitsNewRoute = VisitsNewRouteImport.update({
+  id: '/visits/new',
+  path: '/visits/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -621,11 +621,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/stats': {
-      id: '/stats'
-      path: '/stats'
-      fullPath: '/stats'
-      preLoaderRoute: typeof StatsRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -635,95 +635,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/stats': {
+      id: '/stats'
+      path: '/stats'
+      fullPath: '/stats'
+      preLoaderRoute: typeof StatsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/visits/': {
-      id: '/visits/'
-      path: '/visits'
-      fullPath: '/visits/'
-      preLoaderRoute: typeof VisitsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/shots/': {
-      id: '/shots/'
-      path: '/shots'
-      fullPath: '/shots/'
-      preLoaderRoute: typeof ShotsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/shops/': {
-      id: '/shops/'
-      path: '/shops'
-      fullPath: '/shops/'
-      preLoaderRoute: typeof ShopsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings/': {
-      id: '/settings/'
-      path: '/'
-      fullPath: '/settings/'
-      preLoaderRoute: typeof SettingsIndexRouteImport
-      parentRoute: typeof SettingsRoute
-    }
-    '/roasters/': {
-      id: '/roasters/'
-      path: '/roasters'
-      fullPath: '/roasters/'
-      preLoaderRoute: typeof RoastersIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/recipes/': {
-      id: '/recipes/'
-      path: '/recipes'
-      fullPath: '/recipes/'
-      preLoaderRoute: typeof RecipesIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/places/': {
-      id: '/places/'
-      path: '/places'
-      fullPath: '/places/'
-      preLoaderRoute: typeof PlacesIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/overview/': {
-      id: '/overview/'
-      path: '/overview'
-      fullPath: '/overview/'
-      preLoaderRoute: typeof OverviewIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/gear/': {
-      id: '/gear/'
-      path: '/gear'
-      fullPath: '/gear/'
-      preLoaderRoute: typeof GearIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/gear-sets/': {
-      id: '/gear-sets/'
-      path: '/gear-sets'
-      fullPath: '/gear-sets/'
-      preLoaderRoute: typeof GearSetsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/brews/': {
-      id: '/brews/'
-      path: '/brews'
-      fullPath: '/brews/'
-      preLoaderRoute: typeof BrewsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/brewing-methods/': {
-      id: '/brewing-methods/'
-      path: '/brewing-methods'
-      fullPath: '/brewing-methods/'
-      preLoaderRoute: typeof BrewingMethodsIndexRouteImport
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/beans/': {
@@ -733,193 +656,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeansIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/visits/new': {
-      id: '/visits/new'
-      path: '/visits/new'
-      fullPath: '/visits/new'
-      preLoaderRoute: typeof VisitsNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/visits/$visitId': {
-      id: '/visits/$visitId'
-      path: '/visits/$visitId'
-      fullPath: '/visits/$visitId'
-      preLoaderRoute: typeof VisitsVisitIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/shots/new': {
-      id: '/shots/new'
-      path: '/shots/new'
-      fullPath: '/shots/new'
-      preLoaderRoute: typeof ShotsNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/shots/$shotId': {
-      id: '/shots/$shotId'
-      path: '/shots/$shotId'
-      fullPath: '/shots/$shotId'
-      preLoaderRoute: typeof ShotsShotIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/shops/new': {
-      id: '/shops/new'
-      path: '/shops/new'
-      fullPath: '/shops/new'
-      preLoaderRoute: typeof ShopsNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/shops/$coffeeShopId': {
-      id: '/shops/$coffeeShopId'
-      path: '/shops/$coffeeShopId'
-      fullPath: '/shops/$coffeeShopId'
-      preLoaderRoute: typeof ShopsCoffeeShopIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings/taste-profile': {
-      id: '/settings/taste-profile'
-      path: '/taste-profile'
-      fullPath: '/settings/taste-profile'
-      preLoaderRoute: typeof SettingsTasteProfileRouteImport
-      parentRoute: typeof SettingsRoute
-    }
-    '/settings/storage': {
-      id: '/settings/storage'
-      path: '/storage'
-      fullPath: '/settings/storage'
-      preLoaderRoute: typeof SettingsStorageRouteImport
-      parentRoute: typeof SettingsRoute
-    }
-    '/settings/map': {
-      id: '/settings/map'
-      path: '/map'
-      fullPath: '/settings/map'
-      preLoaderRoute: typeof SettingsMapRouteImport
-      parentRoute: typeof SettingsRoute
-    }
-    '/settings/drinks': {
-      id: '/settings/drinks'
-      path: '/drinks'
-      fullPath: '/settings/drinks'
-      preLoaderRoute: typeof SettingsDrinksRouteImport
-      parentRoute: typeof SettingsRoute
-    }
-    '/settings/appearance': {
-      id: '/settings/appearance'
-      path: '/appearance'
-      fullPath: '/settings/appearance'
-      preLoaderRoute: typeof SettingsAppearanceRouteImport
-      parentRoute: typeof SettingsRoute
-    }
-    '/settings/ai': {
-      id: '/settings/ai'
-      path: '/ai'
-      fullPath: '/settings/ai'
-      preLoaderRoute: typeof SettingsAiRouteImport
-      parentRoute: typeof SettingsRoute
-    }
-    '/settings/about': {
-      id: '/settings/about'
-      path: '/about'
-      fullPath: '/settings/about'
-      preLoaderRoute: typeof SettingsAboutRouteImport
-      parentRoute: typeof SettingsRoute
-    }
-    '/roasters/new': {
-      id: '/roasters/new'
-      path: '/roasters/new'
-      fullPath: '/roasters/new'
-      preLoaderRoute: typeof RoastersNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/roasters/$roasterId': {
-      id: '/roasters/$roasterId'
-      path: '/roasters/$roasterId'
-      fullPath: '/roasters/$roasterId'
-      preLoaderRoute: typeof RoastersRoasterIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/recipes/new': {
-      id: '/recipes/new'
-      path: '/recipes/new'
-      fullPath: '/recipes/new'
-      preLoaderRoute: typeof RecipesNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/recipes/$recipeId': {
-      id: '/recipes/$recipeId'
-      path: '/recipes/$recipeId'
-      fullPath: '/recipes/$recipeId'
-      preLoaderRoute: typeof RecipesRecipeIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/places/new': {
-      id: '/places/new'
-      path: '/places/new'
-      fullPath: '/places/new'
-      preLoaderRoute: typeof PlacesNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/places/$coffeeShopId': {
-      id: '/places/$coffeeShopId'
-      path: '/places/$coffeeShopId'
-      fullPath: '/places/$coffeeShopId'
-      preLoaderRoute: typeof PlacesCoffeeShopIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/gear/new': {
-      id: '/gear/new'
-      path: '/gear/new'
-      fullPath: '/gear/new'
-      preLoaderRoute: typeof GearNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/gear/$gearId': {
-      id: '/gear/$gearId'
-      path: '/gear/$gearId'
-      fullPath: '/gear/$gearId'
-      preLoaderRoute: typeof GearGearIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/gear-sets/new': {
-      id: '/gear-sets/new'
-      path: '/gear-sets/new'
-      fullPath: '/gear-sets/new'
-      preLoaderRoute: typeof GearSetsNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/gear-sets/$gearSetId': {
-      id: '/gear-sets/$gearSetId'
-      path: '/gear-sets/$gearSetId'
-      fullPath: '/gear-sets/$gearSetId'
-      preLoaderRoute: typeof GearSetsGearSetIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/brews/new': {
-      id: '/brews/new'
-      path: '/brews/new'
-      fullPath: '/brews/new'
-      preLoaderRoute: typeof BrewsNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/brews/$shotId': {
-      id: '/brews/$shotId'
-      path: '/brews/$shotId'
-      fullPath: '/brews/$shotId'
-      preLoaderRoute: typeof BrewsShotIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/brewing-methods/new': {
-      id: '/brewing-methods/new'
-      path: '/brewing-methods/new'
-      fullPath: '/brewing-methods/new'
-      preLoaderRoute: typeof BrewingMethodsNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/brewing-methods/$brewingMethodId': {
-      id: '/brewing-methods/$brewingMethodId'
-      path: '/brewing-methods/$brewingMethodId'
-      fullPath: '/brewing-methods/$brewingMethodId'
-      preLoaderRoute: typeof BrewingMethodsBrewingMethodIdRouteImport
+    '/beans/$beanId': {
+      id: '/beans/$beanId'
+      path: '/beans/$beanId'
+      fullPath: '/beans/$beanId'
+      preLoaderRoute: typeof BeansBeanIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/beans/new': {
@@ -929,18 +670,277 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeansNewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/beans/$beanId': {
-      id: '/beans/$beanId'
-      path: '/beans/$beanId'
-      fullPath: '/beans/$beanId'
-      preLoaderRoute: typeof BeansBeanIdRouteImport
+    '/brewing-methods/': {
+      id: '/brewing-methods/'
+      path: '/brewing-methods'
+      fullPath: '/brewing-methods/'
+      preLoaderRoute: typeof BrewingMethodsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/health': {
-      id: '/api/health'
-      path: '/api/health'
-      fullPath: '/api/health'
-      preLoaderRoute: typeof ApiHealthRouteImport
+    '/brewing-methods/$brewingMethodId': {
+      id: '/brewing-methods/$brewingMethodId'
+      path: '/brewing-methods/$brewingMethodId'
+      fullPath: '/brewing-methods/$brewingMethodId'
+      preLoaderRoute: typeof BrewingMethodsBrewingMethodIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/brewing-methods/new': {
+      id: '/brewing-methods/new'
+      path: '/brewing-methods/new'
+      fullPath: '/brewing-methods/new'
+      preLoaderRoute: typeof BrewingMethodsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/brews/': {
+      id: '/brews/'
+      path: '/brews'
+      fullPath: '/brews/'
+      preLoaderRoute: typeof BrewsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/brews/$shotId': {
+      id: '/brews/$shotId'
+      path: '/brews/$shotId'
+      fullPath: '/brews/$shotId'
+      preLoaderRoute: typeof BrewsShotIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/brews/new': {
+      id: '/brews/new'
+      path: '/brews/new'
+      fullPath: '/brews/new'
+      preLoaderRoute: typeof BrewsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gear-sets/': {
+      id: '/gear-sets/'
+      path: '/gear-sets'
+      fullPath: '/gear-sets/'
+      preLoaderRoute: typeof GearSetsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gear-sets/$gearSetId': {
+      id: '/gear-sets/$gearSetId'
+      path: '/gear-sets/$gearSetId'
+      fullPath: '/gear-sets/$gearSetId'
+      preLoaderRoute: typeof GearSetsGearSetIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gear-sets/new': {
+      id: '/gear-sets/new'
+      path: '/gear-sets/new'
+      fullPath: '/gear-sets/new'
+      preLoaderRoute: typeof GearSetsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gear/': {
+      id: '/gear/'
+      path: '/gear'
+      fullPath: '/gear/'
+      preLoaderRoute: typeof GearIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gear/$gearId': {
+      id: '/gear/$gearId'
+      path: '/gear/$gearId'
+      fullPath: '/gear/$gearId'
+      preLoaderRoute: typeof GearGearIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gear/new': {
+      id: '/gear/new'
+      path: '/gear/new'
+      fullPath: '/gear/new'
+      preLoaderRoute: typeof GearNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/overview/': {
+      id: '/overview/'
+      path: '/overview'
+      fullPath: '/overview/'
+      preLoaderRoute: typeof OverviewIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/places/': {
+      id: '/places/'
+      path: '/places'
+      fullPath: '/places/'
+      preLoaderRoute: typeof PlacesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/places/$coffeeShopId': {
+      id: '/places/$coffeeShopId'
+      path: '/places/$coffeeShopId'
+      fullPath: '/places/$coffeeShopId'
+      preLoaderRoute: typeof PlacesCoffeeShopIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/places/new': {
+      id: '/places/new'
+      path: '/places/new'
+      fullPath: '/places/new'
+      preLoaderRoute: typeof PlacesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recipes/': {
+      id: '/recipes/'
+      path: '/recipes'
+      fullPath: '/recipes/'
+      preLoaderRoute: typeof RecipesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recipes/$recipeId': {
+      id: '/recipes/$recipeId'
+      path: '/recipes/$recipeId'
+      fullPath: '/recipes/$recipeId'
+      preLoaderRoute: typeof RecipesRecipeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recipes/new': {
+      id: '/recipes/new'
+      path: '/recipes/new'
+      fullPath: '/recipes/new'
+      preLoaderRoute: typeof RecipesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/roasters/': {
+      id: '/roasters/'
+      path: '/roasters'
+      fullPath: '/roasters/'
+      preLoaderRoute: typeof RoastersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/roasters/$roasterId': {
+      id: '/roasters/$roasterId'
+      path: '/roasters/$roasterId'
+      fullPath: '/roasters/$roasterId'
+      preLoaderRoute: typeof RoastersRoasterIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/roasters/new': {
+      id: '/roasters/new'
+      path: '/roasters/new'
+      fullPath: '/roasters/new'
+      preLoaderRoute: typeof RoastersNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/about': {
+      id: '/settings/about'
+      path: '/about'
+      fullPath: '/settings/about'
+      preLoaderRoute: typeof SettingsAboutRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/ai': {
+      id: '/settings/ai'
+      path: '/ai'
+      fullPath: '/settings/ai'
+      preLoaderRoute: typeof SettingsAiRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/appearance': {
+      id: '/settings/appearance'
+      path: '/appearance'
+      fullPath: '/settings/appearance'
+      preLoaderRoute: typeof SettingsAppearanceRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/drinks': {
+      id: '/settings/drinks'
+      path: '/drinks'
+      fullPath: '/settings/drinks'
+      preLoaderRoute: typeof SettingsDrinksRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/map': {
+      id: '/settings/map'
+      path: '/map'
+      fullPath: '/settings/map'
+      preLoaderRoute: typeof SettingsMapRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/storage': {
+      id: '/settings/storage'
+      path: '/storage'
+      fullPath: '/settings/storage'
+      preLoaderRoute: typeof SettingsStorageRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/taste-profile': {
+      id: '/settings/taste-profile'
+      path: '/taste-profile'
+      fullPath: '/settings/taste-profile'
+      preLoaderRoute: typeof SettingsTasteProfileRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/shops/': {
+      id: '/shops/'
+      path: '/shops'
+      fullPath: '/shops/'
+      preLoaderRoute: typeof ShopsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shops/$coffeeShopId': {
+      id: '/shops/$coffeeShopId'
+      path: '/shops/$coffeeShopId'
+      fullPath: '/shops/$coffeeShopId'
+      preLoaderRoute: typeof ShopsCoffeeShopIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shops/new': {
+      id: '/shops/new'
+      path: '/shops/new'
+      fullPath: '/shops/new'
+      preLoaderRoute: typeof ShopsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shots/': {
+      id: '/shots/'
+      path: '/shots'
+      fullPath: '/shots/'
+      preLoaderRoute: typeof ShotsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shots/$shotId': {
+      id: '/shots/$shotId'
+      path: '/shots/$shotId'
+      fullPath: '/shots/$shotId'
+      preLoaderRoute: typeof ShotsShotIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shots/new': {
+      id: '/shots/new'
+      path: '/shots/new'
+      fullPath: '/shots/new'
+      preLoaderRoute: typeof ShotsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/visits/': {
+      id: '/visits/'
+      path: '/visits'
+      fullPath: '/visits/'
+      preLoaderRoute: typeof VisitsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/visits/$visitId': {
+      id: '/visits/$visitId'
+      path: '/visits/$visitId'
+      fullPath: '/visits/$visitId'
+      preLoaderRoute: typeof VisitsVisitIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/visits/new': {
+      id: '/visits/new'
+      path: '/visits/new'
+      fullPath: '/visits/new'
+      preLoaderRoute: typeof VisitsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
   }

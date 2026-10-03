@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getErrorDisplayState } from '@/lib/error-display'
 
 interface RouteErrorProps {
-  error: Error
+  error: unknown
   backTo?: string
   backLabel?: string
 }

@@ -13,8 +13,8 @@ const DEFAULT_ERROR_STATE: ErrorDisplayState = {
   message: 'Something went wrong while loading this page.',
 }
 
-export function getErrorDisplayState(error: Error): ErrorDisplayState {
-  const rawMessage = error.message || ''
+export function getErrorDisplayState(error: unknown): ErrorDisplayState {
+  const rawMessage = getRawErrorMessage(error)
   const lowerMessage = rawMessage.toLowerCase()
 
   if (rawMessage.startsWith(DB_UNAVAILABLE_PREFIX)) {

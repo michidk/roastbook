@@ -2,6 +2,16 @@ import { describe, expect, test } from 'bun:test'
 import { getErrorDisplayState, toDisplayableError } from '@/lib/error-display'
 
 describe('error display state', () => {
+  test('falls back to the default state for non-Error values', () => {
+    expect(getErrorDisplayState(undefined)).toEqual({
+      title: 'Failed to load',
+      message: 'Something went wrong while loading this page.',
+    })
+    expect(getErrorDisplayState('Database unavailable: down.').title).toBe(
+      'Database unavailable',
+    )
+  })
+
   test('unwraps displayable database-unavailable errors', () => {
     expect(
       getErrorDisplayState(

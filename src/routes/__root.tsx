@@ -141,7 +141,7 @@ function SettingsHydrator() {
   return null
 }
 
-function RootErrorComponent({ error }: { error: Error }) {
+function RootErrorComponent({ error }: { error: unknown }) {
   const router = useRouter()
   const errorState = getErrorDisplayState(error)
 

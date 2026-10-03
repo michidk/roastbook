@@ -9,12 +9,13 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 
 interface ErrorDetailsProps {
-  error: Error
+  error: unknown
 }
 
 export function ErrorDetails({ error }: ErrorDetailsProps) {
   const [copied, setCopied] = useState(false)
-  const details = error.stack || error.message
+  const details =
+    error instanceof Error ? error.stack || error.message : String(error ?? '')
 
   if (!details) return null
 
