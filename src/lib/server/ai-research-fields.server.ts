@@ -111,6 +111,13 @@ export const BEAN_INFO_FIELDS = defineStructuredResearchFields({
     options: BEAN_TYPE_VALUES,
     examples: ['espresso', 'filter', 'omni'],
   },
+  isDecaf: {
+    description:
+      'Whether the coffee is decaffeinated. Return true only when the packaging or listing clearly says decaf or decaffeinated, independent of the brewing category; omit the field otherwise.',
+    jsonType: 'boolean',
+    schema: z.boolean(),
+    examples: [true],
+  },
   origin: {
     description: 'The country of origin.',
     jsonType: 'string',

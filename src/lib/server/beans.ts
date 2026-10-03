@@ -43,6 +43,7 @@ const roastLevelSchema = z.enum(ROAST_LEVEL_VALUES)
 const beanCreateSchema = z.object({
   name: nameSchema,
   type: beanTypeSchema.optional(),
+  isDecaf: z.boolean().optional(),
   roaster: shortTextSchema.optional(),
   roasterId: optionalPositiveIdSchema,
   origin: shortTextSchema.optional(),
@@ -85,6 +86,7 @@ const researchBeanInfoSchema = z.object({
   knownContext: z
     .object({
       type: beanTypeSchema.optional(),
+      isDecaf: z.boolean().optional(),
       origin: shortTextSchema.optional(),
       region: shortTextSchema.optional(),
       farm: shortTextSchema.optional(),

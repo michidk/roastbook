@@ -27,6 +27,7 @@ type BeanEvidenceSource = Pick<
   | 'name'
   | 'roaster'
   | 'type'
+  | 'isDecaf'
   | 'origin'
   | 'region'
   | 'farm'
@@ -97,6 +98,7 @@ export function recommendationBeanEvidence(
     name: bean.name,
     roaster: bean.roasterRef?.name ?? bean.roaster,
     type: bean.type,
+    isDecaf: bean.isDecaf,
     origin: bean.origin,
     region: bean.region,
     farm: bean.farm,

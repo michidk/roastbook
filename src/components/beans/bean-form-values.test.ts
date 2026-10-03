@@ -64,4 +64,22 @@ describe('bean form payloads', () => {
 
     expect(payload.type).toBe('omni')
   })
+
+  test('keeps decaf independent of the brewing type', () => {
+    const values = {
+      ...createEmptyBeanFormValues('Decaf espresso'),
+      type: 'espresso' as const,
+      isDecaf: true,
+    }
+
+    expect(beanCreatePayload(values)).toMatchObject({
+      type: 'espresso',
+      isDecaf: true,
+    })
+    expect(beanUpdatePayload(7, values)).toMatchObject({
+      type: 'espresso',
+      isDecaf: true,
+    })
+    expect(createEmptyBeanFormValues().isDecaf).toBe(false)
+  })
 })

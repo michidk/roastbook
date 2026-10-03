@@ -29,6 +29,7 @@ import type { ExtractedBeanInfo } from '@/modules/ai/read-models'
 type BeanDiffKey =
   | 'name'
   | 'type'
+  | 'isDecaf'
   | 'weight'
   | 'origin'
   | 'region'
@@ -50,6 +51,12 @@ const FIELD_DEFINITIONS: FieldDef[] = [
     sourceKey: 'type',
     label: 'Type',
     format: (value) => BEAN_TYPE_LABELS[value as BeanType] ?? value,
+  },
+  {
+    key: 'isDecaf',
+    sourceKey: 'isDecaf',
+    label: 'Decaf',
+    format: (value) => (value === 'true' ? 'Yes' : value),
   },
   {
     key: 'weight',
@@ -106,8 +113,10 @@ export function BeanInfoDiffModal({
       buildSelectableDiffs(FIELD_DEFINITIONS, (field) => {
         const suggestedValue = suggestedData[field.sourceKey]
         if (!suggestedValue) return undefined
+        const currentValue = currentData[field.key]
         return {
-          currentValue: currentData[field.key],
+          // An unset decaf flag is empty, so the suggestion is not a conflict.
+          currentValue: currentValue === false ? '' : currentValue,
           suggestedValue,
         }
       }),
@@ -125,6 +134,8 @@ export function BeanInfoDiffModal({
           updates.roastLevel = diff.suggestedValue as RoastLevel
         } else if (diff.key === 'type') {
           updates.type = diff.suggestedValue as BeanType
+        } else if (diff.key === 'isDecaf') {
+          updates.isDecaf = diff.suggestedValue === 'true'
         } else {
           ;(updates as Record<string, string>)[diff.key] = diff.suggestedValue
         }

@@ -13,6 +13,8 @@ import {
   type RoasterOption,
   RoasterPicker,
 } from '@/components/roasters/roaster-picker'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import {
   BEAN_TYPES,
   type BeanType,
@@ -71,6 +73,17 @@ export function BeanFields({
             onChange={(value) => onChange('type', value as BeanType | '')}
             options={BEAN_TYPES}
           />
+          <div className="space-y-2">
+            <p className="text-sm leading-none font-medium">Caffeine</p>
+            <div className="flex h-11 items-center justify-between gap-4 rounded-lg border border-input px-3 [@media(hover:hover)_and_(pointer:fine)]:h-8">
+              <Label htmlFor={id('isDecaf')}>Decaf</Label>
+              <Switch
+                id={id('isDecaf')}
+                checked={values.isDecaf}
+                onCheckedChange={(checked) => onChange('isDecaf', checked)}
+              />
+            </div>
+          </div>
           {showPurchaseFields ? (
             <>
               <InputField

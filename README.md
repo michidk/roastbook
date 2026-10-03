@@ -48,7 +48,7 @@ roasters, brewing methods, and gear — and it fills itself in for you.
 </p>
 
 - 📷 **Photograph a bag** and Roastbook reads the label: origin, region, farm,
-  variety, process, roast level, roast date, tasting notes.
+  variety, process, roast level, decaf, roast date, tasting notes.
 - 🔎 **Type a roaster's name** and it researches the website, location, and
   background.
 - ⚙️ **Add an espresso machine** and it looks up documented capabilities and

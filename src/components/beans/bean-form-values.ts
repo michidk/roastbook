@@ -5,6 +5,7 @@ import { blankToNull, blankToUndefined } from '@/lib/form-value-normalization'
 export type BeanFormValues = {
   readonly name: string
   readonly type: BeanType | ''
+  readonly isDecaf: boolean
   readonly roasterId: string
   readonly weight: string
   readonly price: string
@@ -23,6 +24,7 @@ export type BeanFormValues = {
 type BeanFormValueSource = {
   readonly name: string | null
   readonly type: BeanType | null
+  readonly isDecaf: boolean
   readonly roasterId: number | null
   readonly weight: string | null
   readonly price: string | null
@@ -42,6 +44,7 @@ export function createEmptyBeanFormValues(initialName = ''): BeanFormValues {
   return {
     name: initialName,
     type: '',
+    isDecaf: false,
     roasterId: '',
     weight: '',
     price: '',
@@ -62,6 +65,7 @@ export function toBeanFormValues(bean: BeanFormValueSource): BeanFormValues {
   return {
     name: bean.name ?? '',
     type: bean.type ?? '',
+    isDecaf: bean.isDecaf,
     roasterId: bean.roasterId ? String(bean.roasterId) : '',
     weight: bean.weight ?? '',
     price: bean.price ?? '',
@@ -89,6 +93,7 @@ export function beanCreatePayload(
   return {
     name: values.name,
     type: values.type || undefined,
+    isDecaf: values.isDecaf,
     roasterId: values.roasterId ? Number(values.roasterId) : undefined,
     weight: blankToUndefined(values.weight),
     price: blankToUndefined(values.price),
@@ -113,6 +118,7 @@ export function beanUpdatePayload(id: number, values: BeanFormValues) {
     id,
     name: values.name,
     type: values.type || null,
+    isDecaf: values.isDecaf,
     roasterId: values.roasterId ? Number(values.roasterId) : null,
     origin: blankToNull(values.origin),
     region: blankToNull(values.region),

@@ -286,6 +286,7 @@ export const beans = pgTable(
     id: serial('id').primaryKey(),
     name: text('name').notNull(),
     type: beanTypeEnum('type'),
+    isDecaf: boolean('is_decaf').notNull().default(false),
     roaster: text('roaster'), // Legacy text field
     roasterId: integer('roaster_id').references(() => roasters.id, {
       onDelete: 'set null',

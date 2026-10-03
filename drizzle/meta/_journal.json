@@ -344,6 +344,13 @@
       "when": 1789750210108,
       "tag": "0049_great_rhino",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1790975174184,
+      "tag": "0050_bean_decaf_flag",
+      "breakpoints": true
     }
   ]
 }

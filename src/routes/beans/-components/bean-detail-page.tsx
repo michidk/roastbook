@@ -162,6 +162,7 @@ export function BeanDetailPage() {
             roasterName,
             knownContext: {
               type: formData.type || undefined,
+              isDecaf: formData.isDecaf || undefined,
               origin: formData.origin,
               region: formData.region,
               farm: formData.farm,

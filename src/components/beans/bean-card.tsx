@@ -124,6 +124,11 @@ export function BeanCard({
                   {BEAN_TYPE_LABELS[bean.type]}
                 </span>
               )}
+              {bean.isDecaf && (
+                <span className="flex min-h-9 items-center rounded-full border border-white/60 bg-black/65 px-3 py-1.5 text-xs font-bold tracking-[0.04em] text-white uppercase backdrop-blur-[2px]">
+                  Decaf
+                </span>
+              )}
               {roastLabel && (
                 <span className="flex min-h-9 items-center rounded-full border border-white/60 bg-black/65 px-3 py-1.5 text-xs font-bold tracking-[0.04em] text-white uppercase backdrop-blur-[2px]">
                   {roastLabel}

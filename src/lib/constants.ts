@@ -25,7 +25,6 @@ const BEAN_TYPE_LABELS_BY_VALUE = {
   espresso: 'Espresso',
   filter: 'Filter',
   omni: 'Omni (Espresso & Filter)',
-  decaf: 'Decaf',
 } as const
 
 export const BEAN_TYPES = BEAN_TYPE_VALUES.map((value) => ({

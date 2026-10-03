@@ -46,6 +46,7 @@ type Bean = {
   purchaseId: number | null
   name: string
   type: BeanType | null
+  isDecaf: boolean
   isArchived: boolean
   roaster: string | null
   roasterRef: { id: number; name: string } | null
@@ -460,11 +461,17 @@ export function BeanReadOnlyContent({
           <CardHeader>
             <CardTitle>Processing</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             <div>
               <p className="text-sm text-muted-foreground">Type</p>
               <p className="font-medium">
                 {bean.type ? BEAN_TYPE_LABELS[bean.type] : '-'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Caffeine</p>
+              <p className="font-medium">
+                {bean.isDecaf ? 'Decaf' : 'Regular'}
               </p>
             </div>
             <div>
