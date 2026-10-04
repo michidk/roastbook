@@ -21,6 +21,35 @@ type TasteTagSelectorProps = {
   readonly featuredIds?: readonly number[]
 }
 
+export function getVisibleTasteTags(
+  tags: readonly TasteTag[],
+  featuredIds: readonly number[] | undefined,
+  selectedIds: readonly number[],
+  showAll: boolean,
+) {
+  if (!featuredIds || showAll) return tags
+
+  const tagsById = new Map(tags.map((tag) => [tag.id, tag]))
+  const visibleIds = new Set<number>()
+  const visibleTags: TasteTag[] = []
+
+  for (const id of featuredIds) {
+    const tag = tagsById.get(id)
+    if (tag && !visibleIds.has(id)) {
+      visibleIds.add(id)
+      visibleTags.push(tag)
+    }
+  }
+
+  for (const tag of tags) {
+    if (selectedIds.includes(tag.id) && !visibleIds.has(tag.id)) {
+      visibleTags.push(tag)
+    }
+  }
+
+  return visibleTags
+}
+
 export function TasteTagSelector({
   label,
   tags,
@@ -32,10 +61,7 @@ export function TasteTagSelector({
   if (tags.length === 0) return null
 
   const featured = featuredIds ? new Set(featuredIds) : null
-  const visibleTags =
-    featured && !showAll
-      ? tags.filter((tag) => featured.has(tag.id) || selected.includes(tag.id))
-      : tags
+  const visibleTags = getVisibleTasteTags(tags, featuredIds, selected, showAll)
   const canCollapse = featured !== null && featured.size < tags.length
 
   return (
