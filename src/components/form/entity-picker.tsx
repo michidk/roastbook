@@ -26,6 +26,7 @@ interface EntityPickerProps<T>
   dialogTitle: string
   dialogDescription?: string
   suggestions?: readonly T[]
+  renderSuggestionLeading?: (item: T) => ReactNode
   renderCreateForm: (args: EntityCreateFormArgs) => ReactNode
 }
 
@@ -38,6 +39,7 @@ export function EntityPicker<T>({
   getKey,
   getLabel,
   getDescription,
+  renderSuggestionLeading,
   ...comboboxProps
 }: EntityPickerProps<T>) {
   const router = useRouter()
@@ -68,6 +70,7 @@ export function EntityPicker<T>({
           id: getKey(item),
           name: getLabel(item),
           description: getDescription?.(item) ?? undefined,
+          leading: renderSuggestionLeading?.(item),
         }))}
         onChange={onChange}
         onCreateRequest={setPendingName}

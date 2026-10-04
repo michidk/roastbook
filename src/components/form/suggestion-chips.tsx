@@ -1,9 +1,12 @@
+import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 export type PickerSuggestion = {
   readonly id: number | string
   readonly name: string
   readonly description?: string
+  readonly leading?: ReactNode
 }
 
 type SuggestionChipsProps = {
@@ -38,8 +41,13 @@ export function SuggestionChips({
               variant={isSelected ? 'primary' : 'secondary'}
               aria-pressed={isSelected}
               onClick={() => onChange(String(item.id))}
-              className="h-auto min-h-11 max-w-[85%] shrink-0 snap-start rounded-xl py-2 text-left whitespace-normal sm:max-w-none sm:shrink [@media(hover:hover)_and_(pointer:fine)]:min-h-8"
+              className={cn(
+                'h-auto min-h-11 max-w-[85%] shrink-0 snap-start rounded-xl py-2 text-left whitespace-normal sm:max-w-none sm:shrink [@media(hover:hover)_and_(pointer:fine)]:min-h-8',
+                item.leading &&
+                  'min-h-14 gap-2.5 pr-3 [@media(hover:hover)_and_(pointer:fine)]:min-h-14',
+              )}
             >
+              {item.leading}
               <span className="flex min-w-0 flex-col items-start gap-0.5">
                 <span>{item.name}</span>
                 {item.description ? (

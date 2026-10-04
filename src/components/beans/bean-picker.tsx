@@ -87,6 +87,9 @@ export function BeanPicker({
       renderSelectedLeading={(bean) => (
         <BeanThumbnail bean={bean} className="size-6" />
       )}
+      renderSuggestionLeading={(bean) => (
+        <BeanThumbnail bean={bean} className="size-10" />
+      )}
       placeholder={placeholder}
       searchPlaceholder="Search beans…"
       emptyMessage="No matching beans."
