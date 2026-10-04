@@ -1,7 +1,19 @@
 import { describe, expect, test } from 'bun:test'
-import { getImageUploadErrorMessage } from '@/lib/image-upload-error'
+import {
+  getImageUploadErrorMessage,
+  isImageUploadNetworkError,
+} from '@/lib/image-upload-error'
 
 describe('image upload errors', () => {
+  test('identifies browser fetch failures for transport fallback', () => {
+    expect(isImageUploadNetworkError(new TypeError('Failed to fetch'))).toBe(
+      true,
+    )
+    expect(isImageUploadNetworkError(new Error('Unsupported image type'))).toBe(
+      false,
+    )
+  })
+
   test('replaces an nginx 413 page with useful guidance', () => {
     const error = new Error(`
       <html>

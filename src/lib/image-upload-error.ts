@@ -45,6 +45,19 @@ function rawErrorMessage(error: unknown): string {
   return ''
 }
 
+export function isImageUploadNetworkError(error: unknown): boolean {
+  const details = `${errorStatus(error) ?? ''} ${rawErrorMessage(error)}`
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+
+  return (
+    details.includes('failed to fetch') ||
+    details.includes('networkerror') ||
+    details.includes('network error')
+  )
+}
+
 export function getImageUploadErrorMessage(
   error: unknown,
   fallback = DEFAULT_UPLOAD_ERROR,
@@ -88,11 +101,7 @@ export function getImageUploadErrorMessage(
     return 'The upload service is temporarily unavailable. Try again.'
   }
 
-  if (
-    details.includes('failed to fetch') ||
-    details.includes('networkerror') ||
-    details.includes('network error')
-  ) {
+  if (isImageUploadNetworkError(error)) {
     return 'Could not reach the upload service. Check your connection and try again.'
   }
 

@@ -29,4 +29,46 @@ describe('entity image batches', () => {
     expect(result.uploaded).toEqual([first])
     expect(result.failures.map(({ image }) => image)).toEqual([second])
   })
+
+  test('retries a browser transport failure with base64 JSON', async () => {
+    const picture = image('mobile.png')
+    const base64Calls: string[] = []
+
+    const result = await uploadEntityImagesWith(
+      async () => {
+        throw new TypeError('Failed to fetch')
+      },
+      'bean-purchases',
+      7,
+      [picture],
+      async ({ data }) => {
+        base64Calls.push(data.fileBase64)
+      },
+    )
+
+    expect(base64Calls).toEqual([picture.base64])
+    expect(result.uploaded).toEqual([picture])
+    expect(result.failures).toEqual([])
+  })
+
+  test('does not retry server rejections through the compatibility path', async () => {
+    const picture = image('invalid.png')
+    let base64Calls = 0
+
+    const result = await uploadEntityImagesWith(
+      async () => {
+        throw new Error('Unsupported image type')
+      },
+      'bean-purchases',
+      7,
+      [picture],
+      async () => {
+        base64Calls += 1
+      },
+    )
+
+    expect(base64Calls).toBe(0)
+    expect(result.uploaded).toEqual([])
+    expect(result.failures).toHaveLength(1)
+  })
 })

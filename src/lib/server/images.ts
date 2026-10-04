@@ -21,6 +21,10 @@ import {
 import { generateAndUploadThumbnail } from '@/lib/server/thumbnails.server'
 import {
   entityTypeSchema,
+  imageBase64Schema,
+  imageFilenameSchema,
+  imageMimeTypeSchema,
+  MAX_IMAGE_BYTES,
   positiveIdSchema,
   thumbnailEntityTypeSchema,
 } from '@/lib/server-validation'
@@ -34,6 +38,15 @@ export type EntityType =
   | 'shots'
   | 'visits'
 const MAX_IMAGES_PER_ENTITY = 20
+
+const uploadEntityImageBase64Schema = z.object({
+  entityType: entityTypeSchema,
+  entityId: positiveIdSchema,
+  fileBase64: imageBase64Schema,
+  filename: imageFilenameSchema,
+  mimeType: imageMimeTypeSchema,
+  sizeBytes: z.number().int().positive().max(MAX_IMAGE_BYTES),
+})
 
 const entityImageIdSchema = z.object({
   entityType: entityTypeSchema,
@@ -114,107 +127,132 @@ async function getVisitImageCount(entityId: number): Promise<number> {
   return result?.value ?? 0
 }
 
+type EntityImageData = {
+  entityType: EntityType
+  entityId: number
+  filename: string
+  mimeType: string
+  binaryData: Buffer
+}
+
+async function storeEntityImage(data: EntityImageData) {
+  if (
+    (await getEntityImageCount(data.entityType, data.entityId)) >=
+    MAX_IMAGES_PER_ENTITY
+  ) {
+    throw new Error(
+      `An entity can have at most ${MAX_IMAGES_PER_ENTITY} images`,
+    )
+  }
+
+  const storage = getStorage()
+  const storagePathType = storagePathTypeMap[data.entityType]
+  const storagePath = generateStoragePath(
+    storagePathType,
+    data.entityId,
+    'image.webp',
+  )
+
+  await validateImageBuffer(data.binaryData, data.mimeType)
+  const storedImage = await createStoredImage(data.binaryData)
+  const blob = new Blob([new Uint8Array(storedImage)], {
+    type: 'image/webp',
+  })
+
+  await storage.upload(blob, storagePath)
+
+  try {
+    await generateAndUploadThumbnail(storedImage, storagePath)
+
+    const baseValues = {
+      storagePath,
+      originalFilename: data.filename,
+      mimeType: 'image/webp',
+      sizeBytes: storedImage.byteLength,
+    }
+
+    let image: { id: number; storagePath: string }
+
+    switch (data.entityType) {
+      case 'bean-purchases': {
+        const purchase = await db.query.beanPurchases.findFirst({
+          where: eq(beanPurchases.id, data.entityId),
+          columns: { beanId: true },
+        })
+        if (!purchase) throw new Error('Bag not found')
+        const [result] = await db
+          .insert(beanImages)
+          .values({
+            ...baseValues,
+            beanId: purchase.beanId,
+            beanPurchaseId: data.entityId,
+          })
+          .returning()
+        image = expectReturnedRow(result, 'Image')
+        break
+      }
+      case 'gear': {
+        const [result] = await db
+          .insert(gearImages)
+          .values({ ...baseValues, gearId: data.entityId })
+          .returning()
+        image = expectReturnedRow(result, 'Image')
+        break
+      }
+      case 'coffee-shops': {
+        const [result] = await db
+          .insert(coffeeShopImages)
+          .values({ ...baseValues, coffeeShopId: data.entityId })
+          .returning()
+        image = expectReturnedRow(result, 'Image')
+        break
+      }
+      case 'shots': {
+        const [result] = await db
+          .insert(shotImages)
+          .values({ ...baseValues, shotId: data.entityId })
+          .returning()
+        image = expectReturnedRow(result, 'Image')
+        break
+      }
+      case 'visits': {
+        const [result] = await db
+          .insert(cafeVisitImages)
+          .values({ ...baseValues, cafeVisitId: data.entityId })
+          .returning()
+        image = expectReturnedRow(result, 'Image')
+        break
+      }
+    }
+
+    return {
+      ...image,
+      url: storage.getUrl(storagePath),
+    }
+  } catch (error) {
+    await cleanupUncommittedUpload(storagePath)
+    throw error
+  }
+}
+
 export const uploadEntityImage = createServerFn({ method: 'POST' })
   .validator(parseEntityImageUploadFormData)
   .handler(async ({ data }) => {
-    if (
-      (await getEntityImageCount(data.entityType, data.entityId)) >=
-      MAX_IMAGES_PER_ENTITY
-    ) {
-      throw new Error(
-        `An entity can have at most ${MAX_IMAGES_PER_ENTITY} images`,
-      )
-    }
-
-    const storage = getStorage()
-    const storagePathType = storagePathTypeMap[data.entityType]
-    const storagePath = generateStoragePath(
-      storagePathType,
-      data.entityId,
-      'image.webp',
-    )
-
-    const binaryData = Buffer.from(await data.file.arrayBuffer())
-    await validateImageBuffer(binaryData, data.mimeType)
-    const storedImage = await createStoredImage(binaryData)
-    const blob = new Blob([new Uint8Array(storedImage)], {
-      type: 'image/webp',
+    return storeEntityImage({
+      ...data,
+      binaryData: Buffer.from(await data.file.arrayBuffer()),
     })
+  })
 
-    await storage.upload(blob, storagePath)
-
-    try {
-      await generateAndUploadThumbnail(storedImage, storagePath)
-
-      const baseValues = {
-        storagePath,
-        originalFilename: data.filename,
-        mimeType: 'image/webp',
-        sizeBytes: storedImage.byteLength,
-      }
-
-      let image: { id: number; storagePath: string }
-
-      switch (data.entityType) {
-        case 'bean-purchases': {
-          const purchase = await db.query.beanPurchases.findFirst({
-            where: eq(beanPurchases.id, data.entityId),
-            columns: { beanId: true },
-          })
-          if (!purchase) throw new Error('Bag not found')
-          const [result] = await db
-            .insert(beanImages)
-            .values({
-              ...baseValues,
-              beanId: purchase.beanId,
-              beanPurchaseId: data.entityId,
-            })
-            .returning()
-          image = expectReturnedRow(result, 'Image')
-          break
-        }
-        case 'gear': {
-          const [result] = await db
-            .insert(gearImages)
-            .values({ ...baseValues, gearId: data.entityId })
-            .returning()
-          image = expectReturnedRow(result, 'Image')
-          break
-        }
-        case 'coffee-shops': {
-          const [result] = await db
-            .insert(coffeeShopImages)
-            .values({ ...baseValues, coffeeShopId: data.entityId })
-            .returning()
-          image = expectReturnedRow(result, 'Image')
-          break
-        }
-        case 'shots': {
-          const [result] = await db
-            .insert(shotImages)
-            .values({ ...baseValues, shotId: data.entityId })
-            .returning()
-          image = expectReturnedRow(result, 'Image')
-          break
-        }
-        case 'visits': {
-          const [result] = await db
-            .insert(cafeVisitImages)
-            .values({ ...baseValues, cafeVisitId: data.entityId })
-            .returning()
-          image = expectReturnedRow(result, 'Image')
-          break
-        }
-      }
-
-      return {
-        ...image,
-        url: storage.getUrl(storagePath),
-      }
-    } catch (error) {
-      await cleanupUncommittedUpload(storagePath)
-      throw error
+export const uploadEntityImageBase64 = createServerFn({ method: 'POST' })
+  .validator(uploadEntityImageBase64Schema)
+  .handler(async ({ data }) => {
+    const binaryData = Buffer.from(data.fileBase64, 'base64')
+    if (binaryData.byteLength !== data.sizeBytes) {
+      throw new Error('Image size does not match the uploaded data')
     }
+
+    return storeEntityImage({ ...data, binaryData })
   })
 
 export const setImageAsThumbnail = createServerFn({ method: 'POST' })
