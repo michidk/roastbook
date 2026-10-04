@@ -13,6 +13,13 @@ describe('default taste tags', () => {
     )
   })
 
+  test('marks burnt as a negative flavor-wheel defect', () => {
+    expect(TASTE_TAGS.find((tag) => tag.name === 'Burnt')).toMatchObject({
+      category: 'Defect',
+      hint: 'Flavor wheel: Roasted → Burnt. Ashy, acrid, smoky, or charred flavors.',
+    })
+  })
+
   test('preserves the Compass descriptor catalog and chart positions', () => {
     expect(TASTE_TAGS.find((tag) => tag.name === 'Overwhelming')).toMatchObject(
       {

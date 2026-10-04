@@ -351,6 +351,13 @@
       "when": 1790975174184,
       "tag": "0050_bean_decaf_flag",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1791116534588,
+      "tag": "0051_add-burnt-taste-tag",
+      "breakpoints": true
     }
   ]
 }

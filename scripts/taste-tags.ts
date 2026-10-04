@@ -94,6 +94,13 @@ const FLAVOR_WHEEL_TAGS = [
     strengthAxis: '0.75',
   },
   {
+    name: 'Burnt',
+    category: 'Defect',
+    hint: 'Flavor wheel: Roasted → Burnt. Ashy, acrid, smoky, or charred flavors.',
+    extractionAxis: '0.85',
+    strengthAxis: '0.85',
+  },
+  {
     name: 'Cereal',
     category: 'Flavor',
     hint: 'Flavor wheel: Roasted → Cereal. Grain, malt, or fresh-bread aromas.',
