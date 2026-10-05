@@ -23,7 +23,7 @@ export async function recommendShotFromHistory(
   }
 
   const systemPrompts = [
-    'You are a precise coffee dialing assistant. Base every claim on the supplied filtered brew evidence and return the requested structured recommendation.',
+    'You are a precise coffee dialing assistant. Ground claims about the user’s brews in the supplied filtered evidence, accounting for human recording errors and subjective taste-profile outliers. Clearly distinguish general, bean-appropriate starting heuristics from observed results. Return the requested structured recommendation.',
   ]
   const messages: Array<ModelMessage> = [
     { role: 'user', content: buildShotRecommendationPrompt(context) },

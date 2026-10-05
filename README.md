@@ -125,7 +125,10 @@ desktop where you dig through the numbers afterwards.
 - **Brew recommendations** — compare a new-brew draft or one specific logged
   brew with up to 50 brews for the same bean, method, and exact gear setup, then
   get a confidence-rated opinion that recognizes when recent brews are already
-  good, or proposes one explained adjustment or controlled experiment.
+  good, or proposes one explained adjustment or controlled experiment. The
+  prompt accounts for human entry errors and subjective taste-profile outliers,
+  and favors bean-appropriate classic starting recipes for unbrewed drafts
+  without reliable matching taste evidence.
 - **Request debugging** — review lifetime token usage and estimated token cost,
   then inspect every raw AI input, response event, error, and unparsed output
   from Settings.
