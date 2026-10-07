@@ -62,6 +62,10 @@ describe('brew recommendation evidence', () => {
     expect(prompt).toContain('must never outweigh or contradict the numeric')
     expect(prompt).toContain('say plainly that the brew is good as it is')
     expect(prompt).toContain('change is an experiment rather than a fix')
+    expect(prompt).toContain(
+      'repeated smaller changes to one parameter produced no meaningful change',
+    )
+    expect(prompt).toContain('why the larger step is a controlled experiment')
     expect(prompt).toContain('Always return a confidence rating')
     expect(prompt).toContain('grinderDetails.grindSettingFormat')
     expect(prompt).toContain(
