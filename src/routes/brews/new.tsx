@@ -17,6 +17,7 @@ import { getGear } from '@/lib/server/gear'
 import { getGearSets } from '@/lib/server/gear-sets'
 import { getRecipes } from '@/lib/server/recipes'
 import { checkShotRecommendationEnabled } from '@/lib/server/shot-recommendations'
+import { getShottimerSettings } from '@/lib/server/shottimer'
 import {
   getBeanSuggestions,
   getBrewingMethodSuggestions,
@@ -44,6 +45,7 @@ export const Route = createFileRoute('/brews/new')({
       drinks,
       drinkTypeSuggestions,
       tasteTagSuggestions,
+      shottimer,
     ] = await Promise.all([
       getActiveBeanPurchases(),
       getBrewingMethods(),
@@ -58,6 +60,7 @@ export const Route = createFileRoute('/brews/new')({
       getDrinkConfiguration(),
       getDrinkTypeSuggestions(),
       getTasteTagSuggestions(),
+      getShottimerSettings(),
     ])
     return {
       beans,
@@ -73,6 +76,7 @@ export const Route = createFileRoute('/brews/new')({
       drinks,
       drinkTypeSuggestions,
       tasteTagSuggestions,
+      shottimerEnabled: shottimer.enabled,
       defaultBrewedAt: new Date().toISOString(),
     }
   },

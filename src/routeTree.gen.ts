@@ -44,6 +44,7 @@ import { Route as SettingsAiRouteImport } from './routes/settings/ai'
 import { Route as SettingsAppearanceRouteImport } from './routes/settings/appearance'
 import { Route as SettingsDrinksRouteImport } from './routes/settings/drinks'
 import { Route as SettingsMapRouteImport } from './routes/settings/map'
+import { Route as SettingsShottimerRouteImport } from './routes/settings/shottimer'
 import { Route as SettingsStorageRouteImport } from './routes/settings/storage'
 import { Route as SettingsTasteProfileRouteImport } from './routes/settings/taste-profile'
 import { Route as ShopsIndexRouteImport } from './routes/shops/index'
@@ -55,6 +56,8 @@ import { Route as ShotsNewRouteImport } from './routes/shots/new'
 import { Route as VisitsIndexRouteImport } from './routes/visits/index'
 import { Route as VisitsVisitIdRouteImport } from './routes/visits/$visitId'
 import { Route as VisitsNewRouteImport } from './routes/visits/new'
+import { Route as ApiShottimerShotsRouteImport } from './routes/api/shottimer/shots'
+import { Route as ApiShottimerTargetRouteImport } from './routes/api/shottimer/target'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -232,6 +235,11 @@ const SettingsMapRoute = SettingsMapRouteImport.update({
   path: '/map',
   getParentRoute: () => SettingsRoute,
 } as any)
+const SettingsShottimerRoute = SettingsShottimerRouteImport.update({
+  id: '/shottimer',
+  path: '/shottimer',
+  getParentRoute: () => SettingsRoute,
+} as any)
 const SettingsStorageRoute = SettingsStorageRouteImport.update({
   id: '/storage',
   path: '/storage',
@@ -287,6 +295,16 @@ const VisitsNewRoute = VisitsNewRouteImport.update({
   path: '/visits/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiShottimerShotsRoute = ApiShottimerShotsRouteImport.update({
+  id: '/api/shottimer/shots',
+  path: '/api/shottimer/shots',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiShottimerTargetRoute = ApiShottimerTargetRouteImport.update({
+  id: '/api/shottimer/target',
+  path: '/api/shottimer/target',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -314,6 +332,7 @@ export interface FileRoutesByFullPath {
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/drinks': typeof SettingsDrinksRoute
   '/settings/map': typeof SettingsMapRoute
+  '/settings/shottimer': typeof SettingsShottimerRoute
   '/settings/storage': typeof SettingsStorageRoute
   '/settings/taste-profile': typeof SettingsTasteProfileRoute
   '/shops/$coffeeShopId': typeof ShopsCoffeeShopIdRoute
@@ -335,6 +354,8 @@ export interface FileRoutesByFullPath {
   '/shops/': typeof ShopsIndexRoute
   '/shots/': typeof ShotsIndexRoute
   '/visits/': typeof VisitsIndexRoute
+  '/api/shottimer/shots': typeof ApiShottimerShotsRoute
+  '/api/shottimer/target': typeof ApiShottimerTargetRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -361,6 +382,7 @@ export interface FileRoutesByTo {
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/drinks': typeof SettingsDrinksRoute
   '/settings/map': typeof SettingsMapRoute
+  '/settings/shottimer': typeof SettingsShottimerRoute
   '/settings/storage': typeof SettingsStorageRoute
   '/settings/taste-profile': typeof SettingsTasteProfileRoute
   '/shops/$coffeeShopId': typeof ShopsCoffeeShopIdRoute
@@ -382,6 +404,8 @@ export interface FileRoutesByTo {
   '/shops': typeof ShopsIndexRoute
   '/shots': typeof ShotsIndexRoute
   '/visits': typeof VisitsIndexRoute
+  '/api/shottimer/shots': typeof ApiShottimerShotsRoute
+  '/api/shottimer/target': typeof ApiShottimerTargetRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -410,6 +434,7 @@ export interface FileRoutesById {
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/drinks': typeof SettingsDrinksRoute
   '/settings/map': typeof SettingsMapRoute
+  '/settings/shottimer': typeof SettingsShottimerRoute
   '/settings/storage': typeof SettingsStorageRoute
   '/settings/taste-profile': typeof SettingsTasteProfileRoute
   '/shops/$coffeeShopId': typeof ShopsCoffeeShopIdRoute
@@ -431,6 +456,8 @@ export interface FileRoutesById {
   '/shops/': typeof ShopsIndexRoute
   '/shots/': typeof ShotsIndexRoute
   '/visits/': typeof VisitsIndexRoute
+  '/api/shottimer/shots': typeof ApiShottimerShotsRoute
+  '/api/shottimer/target': typeof ApiShottimerTargetRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -460,6 +487,7 @@ export interface FileRouteTypes {
     | '/settings/appearance'
     | '/settings/drinks'
     | '/settings/map'
+    | '/settings/shottimer'
     | '/settings/storage'
     | '/settings/taste-profile'
     | '/shops/$coffeeShopId'
@@ -481,6 +509,8 @@ export interface FileRouteTypes {
     | '/shops/'
     | '/shots/'
     | '/visits/'
+    | '/api/shottimer/shots'
+    | '/api/shottimer/target'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -507,6 +537,7 @@ export interface FileRouteTypes {
     | '/settings/appearance'
     | '/settings/drinks'
     | '/settings/map'
+    | '/settings/shottimer'
     | '/settings/storage'
     | '/settings/taste-profile'
     | '/shops/$coffeeShopId'
@@ -528,6 +559,8 @@ export interface FileRouteTypes {
     | '/shops'
     | '/shots'
     | '/visits'
+    | '/api/shottimer/shots'
+    | '/api/shottimer/target'
   id:
     | '__root__'
     | '/'
@@ -555,6 +588,7 @@ export interface FileRouteTypes {
     | '/settings/appearance'
     | '/settings/drinks'
     | '/settings/map'
+    | '/settings/shottimer'
     | '/settings/storage'
     | '/settings/taste-profile'
     | '/shops/$coffeeShopId'
@@ -576,6 +610,8 @@ export interface FileRouteTypes {
     | '/shops/'
     | '/shots/'
     | '/visits/'
+    | '/api/shottimer/shots'
+    | '/api/shottimer/target'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -617,6 +653,8 @@ export interface RootRouteChildren {
   ShopsIndexRoute: typeof ShopsIndexRoute
   ShotsIndexRoute: typeof ShotsIndexRoute
   VisitsIndexRoute: typeof VisitsIndexRoute
+  ApiShottimerShotsRoute: typeof ApiShottimerShotsRoute
+  ApiShottimerTargetRoute: typeof ApiShottimerTargetRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -866,6 +904,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsMapRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/settings/shottimer': {
+      id: '/settings/shottimer'
+      path: '/shottimer'
+      fullPath: '/settings/shottimer'
+      preLoaderRoute: typeof SettingsShottimerRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/settings/storage': {
       id: '/settings/storage'
       path: '/storage'
@@ -943,6 +988,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VisitsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/shottimer/shots': {
+      id: '/api/shottimer/shots'
+      path: '/api/shottimer/shots'
+      fullPath: '/api/shottimer/shots'
+      preLoaderRoute: typeof ApiShottimerShotsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/shottimer/target': {
+      id: '/api/shottimer/target'
+      path: '/api/shottimer/target'
+      fullPath: '/api/shottimer/target'
+      preLoaderRoute: typeof ApiShottimerTargetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -952,6 +1011,7 @@ interface SettingsRouteChildren {
   SettingsAppearanceRoute: typeof SettingsAppearanceRoute
   SettingsDrinksRoute: typeof SettingsDrinksRoute
   SettingsMapRoute: typeof SettingsMapRoute
+  SettingsShottimerRoute: typeof SettingsShottimerRoute
   SettingsStorageRoute: typeof SettingsStorageRoute
   SettingsTasteProfileRoute: typeof SettingsTasteProfileRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
@@ -963,6 +1023,7 @@ const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsAppearanceRoute: SettingsAppearanceRoute,
   SettingsDrinksRoute: SettingsDrinksRoute,
   SettingsMapRoute: SettingsMapRoute,
+  SettingsShottimerRoute: SettingsShottimerRoute,
   SettingsStorageRoute: SettingsStorageRoute,
   SettingsTasteProfileRoute: SettingsTasteProfileRoute,
   SettingsIndexRoute: SettingsIndexRoute,
@@ -1011,6 +1072,8 @@ const rootRouteChildren: RootRouteChildren = {
   ShopsIndexRoute: ShopsIndexRoute,
   ShotsIndexRoute: ShotsIndexRoute,
   VisitsIndexRoute: VisitsIndexRoute,
+  ApiShottimerShotsRoute: ApiShottimerShotsRoute,
+  ApiShottimerTargetRoute: ApiShottimerTargetRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -110,6 +110,22 @@ export const settings = pgTable(
   ],
 )
 
+// Singleton state for the optional shottimer hardware integration. Only a
+// SHA-256 hash of the device token is stored; the token is shown once.
+export const shottimer = pgTable(
+  'shottimer',
+  {
+    id: integer('id').primaryKey().default(1),
+    enabled: boolean('enabled').default(false).notNull(),
+    tokenHash: text('token_hash'),
+    latestShotSeconds: doublePrecision('latest_shot_seconds'),
+    latestShotAt: timestamp('latest_shot_at'),
+    targetTimeSeconds: doublePrecision('target_time_seconds'),
+    ...timestamps(),
+  },
+  (table) => [check('shottimer_singleton_check', sql`${table.id} = 1`)],
+)
+
 export const drinkTypes = pgTable('drink_types', {
   id: serial('id').primaryKey(),
   name: text('name').notNull().unique(),

@@ -7,6 +7,7 @@ import {
   Palette,
   SlidersHorizontal,
   Sparkles,
+  Timer,
 } from 'lucide-react'
 import type { SettingsSection } from '@/components/settings/settings-shell'
 
@@ -22,6 +23,7 @@ export const SETTINGS_SECTIONS = [
   { to: '/settings/drinks', label: 'Drinks', icon: Coffee },
   { to: '/settings/taste-profile', label: 'Taste profile', icon: Sparkles },
   { to: '/settings/ai', label: 'AI', icon: Bot },
+  { to: '/settings/shottimer', label: 'Shottimer', icon: Timer },
   { to: '/settings/storage', label: 'Storage', icon: HardDrive },
   { to: '/settings/about', label: 'About', icon: Info },
 ] as const satisfies readonly SettingsSection[]

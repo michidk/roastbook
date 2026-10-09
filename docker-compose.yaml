@@ -54,7 +54,7 @@ services:
       - uploads:/uploads
 
   hodor:
-    image: ${HODOR_IMAGE:-ghcr.io/michidk/hodor@sha256:7cdb5de7ee2c776ee6c2ae049e1b2050caa60288d7b3148e26117a5d6bba18b2}
+    image: ${HODOR_IMAGE:-ghcr.io/michidk/hodor@sha256:a3df75a6d24d4de620e3b48489b3dfa3d57e9c09ad52c812bf3bac49f3b45cde}
     restart: unless-stopped
     depends_on:
       - app
@@ -68,6 +68,8 @@ services:
       SESSION_TTL: ${HODOR_SESSION_TTL:-86400}
       SECURE_COOKIE: ${HODOR_SECURE_COOKIE:-false}
       LOG_FORMAT: ${HODOR_LOG_FORMAT:-compact}
+      # The shottimer device API authenticates with its own token.
+      BYPASS_PATHS: /api/shottimer/*
 
 volumes:
   postgres_data:
