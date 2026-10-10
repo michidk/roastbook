@@ -2,16 +2,16 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { db } from '@/db'
 import { shottimer } from '@/db/schema'
 import {
-  handleShottimerShotRequest,
-  handleShottimerTargetRequest,
-} from '@/lib/server/shottimer-api'
-import {
   dismissShottimerShot,
   loadPendingShottimerShot,
   regenerateShottimerToken,
   setShottimerEnabled,
   setShottimerTarget,
 } from '@/lib/server/shottimer.server'
+import {
+  handleShottimerShotRequest,
+  handleShottimerTargetRequest,
+} from '@/lib/server/shottimer-api'
 
 const integrationDescribe = process.env.TEST_DATABASE_URL
   ? describe
@@ -51,9 +51,7 @@ integrationDescribe('shottimer device API', () => {
 
     const replacement = await regenerateShottimerToken()
     expect((await postShot(token, { seconds: 27 })).status).toBe(401)
-    expect((await postShot(replacement, { seconds: 27.456 })).status).toBe(
-      204,
-    )
+    expect((await postShot(replacement, { seconds: 27.456 })).status).toBe(204)
   })
 
   test('offers the latest shot until it is dismissed', async () => {
