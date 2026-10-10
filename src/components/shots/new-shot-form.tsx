@@ -28,6 +28,7 @@ import {
   ShotTimerStickyBar,
   useShotTimer,
 } from '@/components/shots/shot-timer'
+import { ShottimerShotDialog } from '@/components/shots/shottimer-shot-dialog'
 import { TasteTagSelector } from '@/components/shots/taste-tag-selector'
 import { Button } from '@/components/ui/button'
 import { StarRating } from '@/components/ui/star-rating'
@@ -106,6 +107,7 @@ type NewShotFormData = {
   readonly gear: Awaited<ReturnType<typeof getGear>>
   readonly gearSets: Awaited<ReturnType<typeof getGearSets>>
   readonly recommendationEnabled: boolean
+  readonly shottimerEnabled: boolean
   readonly defaultBrewedAt: string
 }
 
@@ -164,6 +166,7 @@ export function NewShotForm({ data, initialBean, onSaved }: NewShotFormProps) {
     gear,
     gearSets,
     recommendationEnabled,
+    shottimerEnabled,
     defaultBrewedAt,
   } = data
   const tasteProfile = useTasteProfile()
@@ -448,6 +451,17 @@ export function NewShotForm({ data, initialBean, onSaved }: NewShotFormProps) {
       onSubmit={handleSubmit}
       className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start"
     >
+      {shottimerEnabled &&
+      selectedMethod?.enabledParameters.includes('shotTimeSeconds') ? (
+        <ShottimerShotDialog
+          targetTimeSeconds={values.targetTimeSeconds}
+          onAccept={(seconds) => {
+            set('shotTimeSeconds', seconds)
+            // Stops a running manual timer so it shows the accepted time.
+            setTimerKey((current) => current + 1)
+          }}
+        />
+      ) : null}
       {hasShotTimer && timer.running && !inlineTimerVisible ? (
         <ShotTimerStickyBar
           timer={timer}

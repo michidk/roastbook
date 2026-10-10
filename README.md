@@ -155,6 +155,9 @@ as MIME type and byte count, not the image payload itself.
   duplicate variants, or reuse a brew's values in a new or existing recipe.
   Brews keep their own snapshot and are never linked back to the template.
 - A recipe can set a target brew time, which the brew timer then counts against.
+- Optionally receive brew times from a Wi-Fi
+  [shottimer](https://github.com/michidk/shottimer) and share the target time
+  with it.
 
 ### Taste
 
@@ -287,6 +290,7 @@ running.
 | [Configuration reference](docs/configuration.md) | Every environment variable |
 | [Read-only demo mode](docs/demo-mode.md) | How the PGlite demo is built |
 | [Deployment](docs/deployment.md) | Docker, Helm, security boundary |
+| [Shottimer API](docs/shottimer.md) | Device integration endpoints |
 | [Design system](DESIGN.md) | Layout contract and UI conventions |
 | [Helm chart reference](charts/README.md) | Chart values and defaults |
 

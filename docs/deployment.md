@@ -20,6 +20,11 @@ bypassing that proxy.
 
 Reserved Hodor paths are `/_gate/login`, `/_gate/logout`, and `/_gate/health`.
 
+Compose and Helm configure Hodor to pass `/api/shottimer/*` through without a
+login. Those endpoints authenticate the device with their own bearer token and
+reject every request until the integration is enabled; see
+[Shottimer API](shottimer.md).
+
 ## Docker image
 
 Build and run the application directly when an external database and reverse
