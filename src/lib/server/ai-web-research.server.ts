@@ -90,7 +90,7 @@ async function researchStructuredDataFromWeb<
   const timeout = setTimeout(() => abortController.abort(), 60_000)
 
   try {
-    const content = await chat({
+    const { text: content } = await chat({
       adapter: createAiAdapter(config.researchModel, config),
       systemPrompts,
       messages,
