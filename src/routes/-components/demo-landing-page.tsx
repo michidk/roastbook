@@ -4,8 +4,8 @@ import {
   Bean,
   BookOpen,
   Camera,
+  CodeXml,
   Coffee,
-  Github,
   LockKeyhole,
   MapPin,
   Plus,
@@ -119,7 +119,7 @@ function LandingHeader() {
           aria-label="View Roastbook on GitHub"
           className="hidden min-h-11 items-center gap-2 rounded-full border border-border bg-card px-3 text-sm font-bold text-foreground shadow-coffee transition-colors hover:bg-accent sm:flex"
         >
-          <Github className="size-4" aria-hidden="true" />
+          <CodeXml className="size-4" aria-hidden="true" />
           <span className="hidden md:inline">GitHub</span>
         </a>
         <div className="hidden sm:block">
@@ -165,7 +165,7 @@ function LandingHero() {
               target="_blank"
               rel="noreferrer"
             >
-              <Github aria-hidden="true" />
+              <CodeXml aria-hidden="true" />
               Star Roastbook on GitHub
             </a>
           </Button>

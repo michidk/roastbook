@@ -1,4 +1,11 @@
-import { Bug, ExternalLink, Github, Info, Scale } from 'lucide-react'
+import {
+  Bug,
+  CodeXml,
+  ExternalLink,
+  Info,
+  type LucideIcon,
+  Scale,
+} from 'lucide-react'
 import { SettingsPanelSection } from '@/components/settings/settings-shell'
 
 const projectUrl = 'https://github.com/michidk/roastbook'
@@ -10,7 +17,7 @@ function AboutLink({
   description,
 }: {
   readonly href: string
-  readonly icon: typeof Github
+  readonly icon: LucideIcon
   readonly title: string
   readonly description: string
 }) {
@@ -60,7 +67,7 @@ export function AboutSettings() {
       <div className="grid gap-3">
         <AboutLink
           href={projectUrl}
-          icon={Github}
+          icon={CodeXml}
           title="View on GitHub"
           description="Explore the source, documentation, and releases"
         />
