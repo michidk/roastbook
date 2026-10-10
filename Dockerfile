@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # Build stage
-FROM oven/bun:1.4.2 AS builder
+FROM oven/bun:1.4.3 AS builder
 
 WORKDIR /app
 
@@ -21,7 +21,7 @@ COPY . .
 RUN ROASTBOOK_EDITION=${ROASTBOOK_EDITION} VITE_HEAD_HTML="${VITE_HEAD_HTML}" bun run build
 
 # Production stage
-FROM oven/bun:1.4.2-slim AS runner
+FROM oven/bun:1.4.3-slim AS runner
 
 WORKDIR /app
 
