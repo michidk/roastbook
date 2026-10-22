@@ -250,4 +250,4 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-export { ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent }
+export { ChartLegendContent, ChartTooltip, ChartTooltipContent }

@@ -3,7 +3,6 @@ export {
   recommendShotFromHistory,
 } from '@/lib/server/ai-brew-recommendation.server'
 export { extractBeanInfoFromImages } from '@/lib/server/ai-image-extraction.server'
-export { MACHINE_RESEARCH_FIELDS } from '@/lib/server/ai-research-fields.server'
 export {
   isResearchEnabled,
   isVisionEnabled,
