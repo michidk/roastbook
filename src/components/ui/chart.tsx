@@ -134,9 +134,4 @@ ${colorConfig
 }
 
 export type { ChartConfig }
-export {
-  ChartContainer,
-  ChartStyle,
-  ChartTooltip,
-  ChartTooltipContent,
-}
+export { ChartContainer, ChartStyle, ChartTooltip, ChartTooltipContent }
