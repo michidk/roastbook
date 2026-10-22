@@ -57,8 +57,8 @@ database-free architecture.
 | --- | --- | --- | --- |
 | `OPENAI_API_KEY` | — | No | Enables all optional AI features |
 | `OPENAI_BASE_URL` | OpenAI | No | Compatible API base URL |
-| `OPENAI_VISION_MODEL` | `gpt-5.1-codex` | No | Model used for image extraction |
-| `OPENAI_RESEARCH_MODEL` | `gpt-5.1-codex` | No | Research/recommendation model |
+| `OPENAI_VISION_MODEL` | `gpt-5.1-codex` | No | Image extraction model |
+| `OPENAI_RESEARCH_MODEL` | `gpt-5.1-codex` | No | Research model |
 | `AI_TELEMETRY_STORE_PAYLOADS` | `false` | No | Store detailed payloads |
 | `AI_TELEMETRY_RETENTION_DAYS` | `1` | No | Retention (1–30 days) |
 | `AI_TELEMETRY_MAX_PAYLOAD_BYTES` | `65536` | No | Cap (1 KiB–1 MiB) |
