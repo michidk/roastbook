@@ -23,7 +23,10 @@ export function getOpenAIConfig() {
     apiKey: environment.OPENAI_API_KEY,
     baseURL: environment.OPENAI_BASE_URL,
     visionModel: environment.OPENAI_VISION_MODEL,
-    researchModel: resolveModel(environment.OPENAI_RESEARCH_MODEL, 'gpt-5.1-codex'),
+    researchModel: resolveModel(
+      environment.OPENAI_RESEARCH_MODEL,
+      'gpt-5.1-codex',
+    ),
   }
 }
 
