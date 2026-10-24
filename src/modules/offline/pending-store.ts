@@ -1,6 +1,11 @@
 import { create } from 'zustand'
 import { getErrorMessage } from '@/lib/error-message'
 import {
+  getLocalEntity,
+  putLocalEntity,
+  removeLocalEntity,
+} from '@/modules/offline/local-data'
+import {
   deletePendingBrew,
   listPendingBrews,
   putPendingBrew,
@@ -51,6 +56,13 @@ export const usePendingBrewsStore = create<PendingBrewsState>((set) => ({
 
 export async function enqueuePendingBrew(item: PendingBrew): Promise<void> {
   await putPendingBrew(item)
+  await putLocalEntity({
+    entityType: 'brew',
+    localId: item.operationId,
+    data: item.payload,
+    syncState: 'pending',
+    updatedAt: item.createdAt,
+  }).catch(() => undefined)
   await usePendingBrewsStore.getState().refresh()
   requestPendingSync()
 }
@@ -60,6 +72,16 @@ export async function updateQueuedBrewPayload(
   payload: PendingBrewPayload,
 ): Promise<void> {
   await updatePendingBrew(operationId, { payload })
+  const localEntity = await getLocalEntity('brew', operationId).catch(
+    () => undefined,
+  )
+  if (localEntity) {
+    await putLocalEntity({
+      ...localEntity,
+      data: payload,
+      updatedAt: new Date().toISOString(),
+    }).catch(() => undefined)
+  }
   await usePendingBrewsStore.getState().refresh()
 }
 
@@ -70,6 +92,7 @@ export async function discardPendingBrew(operationId: string): Promise<void> {
     )
   }
   await deletePendingBrew(operationId)
+  await removeLocalEntity('brew', operationId).catch(() => undefined)
   await usePendingBrewsStore.getState().refresh()
 }
 
@@ -80,11 +103,4 @@ export async function retryPendingBrew(operationId: string): Promise<void> {
   })
   await usePendingBrewsStore.getState().refresh()
   requestPendingSync()
-}
-
-export async function markPendingBrew(
-  operationId: string,
-  changes: Partial<Pick<PendingBrew, 'status' | 'attempts' | 'lastError'>>,
-): Promise<void> {
-  await updatePendingBrew(operationId, changes)
 }

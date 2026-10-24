@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { useAppSettings } from '@/hooks/use-app-settings'
+import { useOnlineStatus } from '@/hooks/use-online-status'
 import {
   createShottimerToken,
   updateShottimerEnabled,
@@ -22,12 +23,17 @@ export function ShottimerSettings({
   readonly onSaved: () => void
 }) {
   const { demoMode } = useAppSettings()
+  const isOnline = useOnlineStatus()
   const [enabled, setEnabled] = useState(settings.enabled)
   const [isSaving, setIsSaving] = useState(false)
   const [token, setToken] = useState<string | null>(null)
   const [isCreatingToken, setIsCreatingToken] = useState(false)
 
   const saveEnabled = async (nextEnabled: boolean) => {
+    if (!isOnline) {
+      toast.error('Shottimer settings need a connection to save changes')
+      return
+    }
     setEnabled(nextEnabled)
     setIsSaving(true)
     try {
@@ -42,6 +48,10 @@ export function ShottimerSettings({
   }
 
   const createToken = async () => {
+    if (!isOnline) {
+      toast.error('Creating a shottimer token needs a connection')
+      return
+    }
     setIsCreatingToken(true)
     try {
       setToken(await createShottimerToken())
@@ -87,7 +97,7 @@ export function ShottimerSettings({
           <Switch
             id="shottimer-enabled"
             checked={enabled}
-            disabled={demoMode || isSaving}
+            disabled={demoMode || !isOnline || isSaving}
             onCheckedChange={(checked) => void saveEnabled(checked)}
           />
         </div>
@@ -132,7 +142,7 @@ export function ShottimerSettings({
           <Button
             type="button"
             variant="outline"
-            disabled={demoMode || isCreatingToken}
+            disabled={demoMode || !isOnline || isCreatingToken}
             onClick={() => void createToken()}
           >
             {isCreatingToken ? (

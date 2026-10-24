@@ -3,6 +3,7 @@ import type { ComponentType } from 'react'
 import { SettingsPanelSection } from '@/components/settings/settings-shell'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import type { getInternalStats } from '@/lib/server/internal-stats'
+import { formatBytes } from '@/lib/utils'
 
 type StorageStats = Awaited<ReturnType<typeof getInternalStats>>['storage']
 
@@ -46,19 +47,6 @@ function storageValue(value: number | null, formatNumber: NumberFormatter) {
 
 function storageDetail(available: boolean, detail: string) {
   return available ? detail : 'Configured storage is unavailable'
-}
-
-function formatBytes(bytes: number, formatNumber: NumberFormatter) {
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'] as const
-  if (bytes <= 0) return '0 B'
-
-  const unitIndex = Math.min(
-    Math.floor(Math.log(bytes) / Math.log(1024)),
-    units.length - 1,
-  )
-  const value = bytes / 1024 ** unitIndex
-  const precision = unitIndex === 0 || value >= 10 ? 0 : 1
-  return `${formatNumber(value.toFixed(precision))} ${units[unitIndex]}`
 }
 
 /** The live media usage settings section. */

@@ -81,6 +81,39 @@ integrationDescribe('brew operations contract', () => {
     })
   })
 
+  test('rejects an update based on a stale revision', async () => {
+    if (!brewingMethodId)
+      throw new Error('Contract brewing method was not created')
+
+    const created = await createShotOperation({
+      brewingMethodId,
+      doseGrams: '18.0',
+    })
+
+    await expect(
+      updateShotOperation({
+        id: created.id,
+        brewingMethodId,
+        doseGrams: '19.0',
+        baseUpdatedAt: '2000-01-01T00:00:00.000Z',
+      }),
+    ).rejects.toThrow('changed on the server')
+  })
+
+  test('treats a repeated idempotent delete as success', async () => {
+    if (!brewingMethodId)
+      throw new Error('Contract brewing method was not created')
+
+    const created = await createShotOperation({
+      brewingMethodId,
+      doseGrams: '18.0',
+    })
+    await deleteShotOperation({ id: created.id, idempotent: true })
+    await expect(
+      deleteShotOperation({ id: created.id, idempotent: true }),
+    ).resolves.toBeUndefined()
+  })
+
   test('rejects a brew whose brewing method does not exist', async () => {
     await expect(
       createShotOperation({ brewingMethodId: 2_147_483_647 }),
@@ -134,7 +167,7 @@ integrationDescribe('brew operations contract', () => {
       clientOperationId,
       doseGrams: '18.0',
     })
-    await deleteShotOperation(created.id)
+    await deleteShotOperation({ id: created.id })
 
     await expect(
       createShotOperation({

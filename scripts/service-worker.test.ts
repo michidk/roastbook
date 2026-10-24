@@ -3,6 +3,7 @@ import vm from 'node:vm'
 import {
   ASSET_LIST_PLACEHOLDER,
   BUILD_ID_PLACEHOLDER,
+  MAX_PRECACHE_ASSET_BYTES,
   PRECACHED_FILES,
   readServiceWorkerTemplate,
 } from './service-worker-build'
@@ -70,8 +71,10 @@ class MockCache {
     return [...this.entries.keys()]
   }
 
-  async delete(key: string): Promise<boolean> {
-    return this.entries.delete(absoluteUrl(key))
+  async delete(key: string | RequestLike | Request): Promise<boolean> {
+    return this.entries.delete(
+      absoluteUrl(typeof key === 'string' ? key : key.url),
+    )
   }
 }
 
@@ -97,10 +100,12 @@ async function createHarness(options: HarnessOptions = {}) {
     )
   const listeners = new Map<string, (event: unknown) => void>()
   const stores = new Map<string, MockCache>()
+  const assetResponses = new Map<string, Response>()
   let offline = false
   let failPrecache = options.failPrecacheUrl !== undefined
   let skipWaitingCalls = 0
   let claimCalls = 0
+  let unregisterCalls = 0
 
   const fetchImplementation = async (
     input: string | { url: string },
@@ -114,6 +119,9 @@ async function createHarness(options: HarnessOptions = {}) {
     ) {
       throw new TypeError('Failed to fetch')
     }
+    const overridden =
+      assetResponses.get(url) ?? assetResponses.get(new URL(url).pathname)
+    if (overridden) return overridden.clone()
     if (url.endsWith('/offline.html')) {
       return new Response('<title>Offline | Roastbook</title>', {
         headers: { 'content-type': 'text/html' },
@@ -122,6 +130,11 @@ async function createHarness(options: HarnessOptions = {}) {
     if (url.endsWith('/manifest.json')) {
       return new Response('{}', {
         headers: { 'content-type': 'application/json' },
+      })
+    }
+    if (url.endsWith('.svg')) {
+      return new Response('icon', {
+        headers: { 'content-type': 'image/svg+xml' },
       })
     }
     if (url.endsWith('.png') || url.endsWith('.ico')) {
@@ -133,6 +146,15 @@ async function createHarness(options: HarnessOptions = {}) {
       url.endsWith('/brews/pending')
     ) {
       return htmlResponse('app-document', url)
+    }
+    if (new URL(url).pathname.startsWith('/assets/')) {
+      const contentType = new URL(url).pathname.endsWith('.css')
+        ? 'text/css'
+        : 'text/javascript'
+      return new Response(`network:${url}`, {
+        status: 200,
+        headers: { 'content-type': contentType },
+      })
     }
     return new Response(`network:${url}`, { status: 200 })
   }
@@ -156,6 +178,12 @@ async function createHarness(options: HarnessOptions = {}) {
 
   const self = {
     location: { origin: ORIGIN },
+    registration: {
+      unregister() {
+        unregisterCalls += 1
+        return Promise.resolve(true)
+      },
+    },
     addEventListener(type: string, handler: (event: unknown) => void) {
       listeners.set(type, handler)
     },
@@ -226,6 +254,14 @@ async function createHarness(options: HarnessOptions = {}) {
     return name ? stores.get(name) : undefined
   }
 
+  function getAssetCache(): MockCache | undefined {
+    return stores.get('roastbook-assets')
+  }
+
+  function setAssetResponse(path: string, response: Response) {
+    assetResponses.set(path, response)
+  }
+
   function seedCache(name: string) {
     stores.set(name, new MockCache(fetchImplementation))
   }
@@ -240,12 +276,15 @@ async function createHarness(options: HarnessOptions = {}) {
     setPrecacheFailure: (value: boolean) => {
       failPrecache = value
     },
+    setAssetResponse,
     getPrecacheCache,
     getDocumentCache,
+    getAssetCache,
     seedCache,
     hasCache,
     getSkipWaitingCalls: () => skipWaitingCalls,
     getClaimCalls: () => claimCalls,
+    getUnregisterCalls: () => unregisterCalls,
   }
 }
 
@@ -348,6 +387,96 @@ describe('service worker', () => {
     expect(await (second as Response).text()).toBe(
       `network:${absoluteUrl('/assets/app-123.js')}`,
     )
+  })
+
+  test('uses the shared asset size limit', async () => {
+    const template = await readServiceWorkerTemplate()
+    expect(template).toContain(
+      `const MAX_ASSET_BYTES = ${MAX_PRECACHE_ASSET_BYTES}`,
+    )
+  })
+
+  test('does not cache an HTML login response under an asset URL', async () => {
+    const harness = await createHarness()
+    harness.setAssetResponse(
+      '/assets/login.js',
+      htmlResponse('login', absoluteUrl('/assets/login.js')),
+    )
+
+    const response = await harness.dispatch('fetch', {
+      request: request('/assets/login.js'),
+    })
+
+    expect(await (response as Response).text()).toBe('login')
+    expect((await harness.getAssetCache()?.keys()) ?? []).not.toContain(
+      absoluteUrl('/assets/login.js'),
+    )
+  })
+
+  test('does not cache an asset above the size limit', async () => {
+    const harness = await createHarness()
+    harness.setAssetResponse(
+      '/assets/large.js',
+      new Response('large', {
+        headers: {
+          'content-type': 'text/javascript',
+          'content-length': String(MAX_PRECACHE_ASSET_BYTES + 1),
+        },
+      }),
+    )
+
+    const response = await harness.dispatch('fetch', {
+      request: request('/assets/large.js'),
+    })
+
+    expect(await (response as Response).text()).toBe('large')
+    expect((await harness.getAssetCache()?.keys()) ?? []).not.toContain(
+      absoluteUrl('/assets/large.js'),
+    )
+  })
+
+  test('repairs a corrupt cached asset', async () => {
+    const harness = await createHarness()
+    harness.seedCache('roastbook-assets')
+    const cache = harness.getAssetCache()
+    if (!cache) throw new Error('Asset cache missing')
+    await cache.put(
+      new MockRequest('/assets/app-123.js'),
+      htmlResponse('login', absoluteUrl('/assets/app-123.js')),
+    )
+
+    const response = await harness.dispatch('fetch', {
+      request: request('/assets/app-123.js'),
+    })
+
+    expect(await (response as Response).text()).toBe(
+      `network:${absoluteUrl('/assets/app-123.js')}`,
+    )
+    const repaired = await cache.match(new MockRequest('/assets/app-123.js'))
+    expect(repaired?.headers.get('content-type')).toBe('text/javascript')
+  })
+
+  test('resets the shell caches without touching application data', async () => {
+    const harness = await createHarness()
+    harness.seedCache('roastbook-precache-test')
+    harness.seedCache('roastbook-documents-test')
+    harness.seedCache('roastbook-assets')
+    const messages: unknown[] = []
+
+    await harness.dispatch('message', {
+      data: { type: 'RESET_SHELL' },
+      source: {
+        postMessage(message: unknown) {
+          messages.push(message)
+        },
+      },
+    })
+
+    expect(harness.hasCache('roastbook-precache-test')).toBe(false)
+    expect(harness.hasCache('roastbook-documents-test')).toBe(false)
+    expect(harness.hasCache('roastbook-assets')).toBe(false)
+    expect(harness.getUnregisterCalls()).toBe(1)
+    expect(messages).toEqual([{ type: 'SHELL_RESET_COMPLETE' }])
   })
 
   test('leaves writes and protected requests alone', async () => {

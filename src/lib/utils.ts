@@ -72,3 +72,19 @@ export function formatDateTime(
   })
   return `${formatDate(value, format)}, ${time}`
 }
+
+export function formatBytes(
+  bytes: number,
+  formatNumber: (value: number | string, grouping?: boolean) => string,
+): string {
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'] as const
+  if (bytes <= 0) return '0 B'
+
+  const unitIndex = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    units.length - 1,
+  )
+  const value = bytes / 1024 ** unitIndex
+  const precision = unitIndex === 0 || value >= 10 ? 0 : 1
+  return `${formatNumber(value.toFixed(precision))} ${units[unitIndex]}`
+}

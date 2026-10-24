@@ -6,6 +6,7 @@ import { join } from 'node:path'
 export const SOURCE_SERVICE_WORKER = 'public/sw.js'
 export const BUILD_ID_PLACEHOLDER = '__BUILD_ID__'
 export const ASSET_LIST_PLACEHOLDER = '__PRECACHE_ASSETS__'
+export const MAX_PRECACHE_ASSET_BYTES = 2 * 1024 * 1024
 export const PRECACHED_FILES = [
   'offline.html',
   'manifest.json',

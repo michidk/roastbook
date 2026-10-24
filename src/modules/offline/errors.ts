@@ -1,6 +1,8 @@
 const NETWORK_ERROR_PATTERN =
   /\b(?:failed to fetch|fetch failed|networkerror|network error|load failed)\b/i
 
+const CONFLICT_ERROR_PATTERN = /\bchanged on the server\b|\bconflict\b/i
+
 const DEFINITIVE_SYNC_ERROR_PATTERNS = [
   /brewing method not found/i,
   /selected bag not found/i,
@@ -14,6 +16,8 @@ const DEFINITIVE_SYNC_ERROR_PATTERNS = [
   /is required/i,
   /cannot be/i,
   /between .* and/i,
+  /unsupported offline operation/i,
+  /image data is missing/i,
 ]
 
 function errorMessage(error: unknown): string {
@@ -26,6 +30,10 @@ function errorMessage(error: unknown): string {
 
 export function isNetworkError(error: unknown): boolean {
   return NETWORK_ERROR_PATTERN.test(errorMessage(error))
+}
+
+export function isConflictError(error: unknown): boolean {
+  return CONFLICT_ERROR_PATTERN.test(errorMessage(error))
 }
 
 /**

@@ -52,6 +52,7 @@ const entityImageIdSchema = z.object({
   entityType: entityTypeSchema,
   entityId: positiveIdSchema,
   imageId: positiveIdSchema,
+  idempotent: z.boolean().optional(),
 })
 
 const thumbnailImageIdSchema = entityImageIdSchema.extend({
@@ -130,12 +131,27 @@ async function getVisitImageCount(entityId: number): Promise<number> {
 type EntityImageData = {
   entityType: EntityType
   entityId: number
+  clientOperationId?: string
   filename: string
   mimeType: string
   binaryData: Buffer
 }
 
 async function storeEntityImage(data: EntityImageData) {
+  const storage = getStorage()
+
+  if (data.entityType === 'shots' && data.clientOperationId) {
+    const existing = await db.query.shotImages.findFirst({
+      where: eq(shotImages.clientOperationId, data.clientOperationId),
+    })
+    if (existing) {
+      return {
+        ...existing,
+        url: storage.getUrl(existing.storagePath),
+      }
+    }
+  }
+
   if (
     (await getEntityImageCount(data.entityType, data.entityId)) >=
     MAX_IMAGES_PER_ENTITY
@@ -145,7 +161,6 @@ async function storeEntityImage(data: EntityImageData) {
     )
   }
 
-  const storage = getStorage()
   const storagePathType = storagePathTypeMap[data.entityType]
   const storagePath = generateStoragePath(
     storagePathType,
@@ -210,7 +225,11 @@ async function storeEntityImage(data: EntityImageData) {
       case 'shots': {
         const [result] = await db
           .insert(shotImages)
-          .values({ ...baseValues, shotId: data.entityId })
+          .values({
+            ...baseValues,
+            shotId: data.entityId,
+            clientOperationId: data.clientOperationId ?? null,
+          })
           .returning()
         image = expectReturnedRow(result, 'Image')
         break
@@ -374,6 +393,7 @@ async function deleteVisitImageRecord(
 export const deleteEntityImage = createServerFn({ method: 'POST' })
   .validator(entityImageIdSchema)
   .handler(async ({ data }) => {
+    let deleted = false
     await db.transaction(async (tx) => {
       const image = await deleteImageRecord(
         tx,
@@ -381,9 +401,11 @@ export const deleteEntityImage = createServerFn({ method: 'POST' })
         data.entityId,
         data.imageId,
       )
+      if (!image && data.idempotent) return
       const persistedImage = expectReturnedRow(image, 'Image')
       await queueMediaCleanup(tx, [persistedImage.storagePath])
+      deleted = true
     })
 
-    await drainMediaCleanupQueue()
+    if (deleted) await drainMediaCleanupQueue()
   })

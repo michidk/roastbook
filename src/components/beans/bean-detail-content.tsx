@@ -246,6 +246,7 @@ export function BeanEditContent({
   roasters,
   researchEnabled,
   visionEnabled,
+  online,
   isResearching,
   extractingImageId,
   onResearch,
@@ -258,6 +259,7 @@ export function BeanEditContent({
   roasters: readonly RoasterOption[]
   researchEnabled: boolean
   visionEnabled: boolean
+  online: boolean
   isResearching: boolean
   extractingImageId: number | null
   onResearch: () => void
@@ -286,6 +288,7 @@ export function BeanEditContent({
                   size="sm"
                   onClick={onResearch}
                   disabled={
+                    !online ||
                     isResearching ||
                     extractingImageId !== null ||
                     !formData.name.trim()
@@ -322,7 +325,7 @@ export function BeanEditContent({
               ? {
                   label: 'Extract details with AI',
                   pendingImageId: extractingImageId,
-                  disabled: isResearching,
+                  disabled: isResearching || !online,
                   help: (
                     <AiActionHelp>
                       Reads coffee and roaster details from the packaging. Uses

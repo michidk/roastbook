@@ -23,6 +23,19 @@ describe('entity image upload forms', () => {
     expect(await parsed.file.arrayBuffer()).toHaveLength(bytes.byteLength)
   })
 
+  test('forwards a client operation ID for idempotent uploads', () => {
+    const clientOperationId = crypto.randomUUID()
+    const file = new File([new Uint8Array([1])], 'brew.jpg', {
+      type: 'image/jpeg',
+    })
+
+    const parsed = parseEntityImageUploadFormData(
+      createEntityImageUploadFormData('shots', 7, file, clientOperationId),
+    )
+
+    expect(parsed.clientOperationId).toBe(clientOperationId)
+  })
+
   test('rejects a form without an image file', () => {
     expect(() => parseEntityImageUploadFormData(new FormData())).toThrow(
       'Choose an image file to upload',

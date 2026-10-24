@@ -16,9 +16,10 @@ import {
   type TasteProfileConfig,
   type TasteProfileField,
 } from '@/lib/taste-profile'
+import { loadOfflineSettingsData } from '@/modules/offline/settings-cache'
 
 export const Route = createFileRoute('/settings/taste-profile')({
-  loader: () => getTasteTags(),
+  loader: () => loadOfflineSettingsData('taste-tags', () => getTasteTags()),
   component: TasteProfileSection,
 })
 

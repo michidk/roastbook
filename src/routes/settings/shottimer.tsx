@@ -1,9 +1,11 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { ShottimerSettings } from '@/components/settings/shottimer-settings'
 import { getShottimerSettings } from '@/lib/server/shottimer'
+import { loadOfflineSettingsData } from '@/modules/offline/settings-cache'
 
 export const Route = createFileRoute('/settings/shottimer')({
-  loader: () => getShottimerSettings(),
+  loader: () =>
+    loadOfflineSettingsData('shottimer', () => getShottimerSettings()),
   component: ShottimerSettingsSection,
 })
 

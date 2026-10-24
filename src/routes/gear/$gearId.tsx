@@ -3,6 +3,7 @@ import {
   stripSearchParams,
   useNavigate,
 } from '@tanstack/react-router'
+import { useEffect } from 'react'
 import { GearDetailPage } from '@/components/gear/gear-detail-page'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
@@ -19,6 +20,17 @@ import {
 import { checkGearResearchEnabled, getGearById } from '@/lib/server/gear'
 import { getGearShotPage } from '@/lib/server/shots'
 
+type GearDetailSearch = {
+  readonly brewPage: number
+  readonly brewSort: 'date' | 'bean' | 'dose' | 'yield' | 'time' | 'rating'
+  readonly brewDirection: 'asc' | 'desc'
+}
+
+type GearDetailData = Awaited<ReturnType<typeof loadGearDetail>>
+type GearDetailLoaderData = GearDetailData & {
+  readonly offlineSnapshotSavedAt?: string
+}
+
 const parseGearDetailSearch = (input: unknown) => {
   const search = searchRecord(input)
   return {
@@ -31,6 +43,22 @@ const parseGearDetailSearch = (input: unknown) => {
     brewDirection: searchEnum(search.brewDirection, ['asc', 'desc'], 'desc'),
     ...parseEditModeSearch(search),
   }
+}
+
+async function loadGearDetail(gearId: number, deps: GearDetailSearch) {
+  const [gear, shotPage, research] = await Promise.all([
+    getGearById({ data: gearId }),
+    getGearShotPage({
+      data: {
+        entityId: gearId,
+        page: deps.brewPage,
+        sort: deps.brewSort,
+        direction: deps.brewDirection,
+      },
+    }),
+    checkGearResearchEnabled(),
+  ])
+  return { gear, shotPage, researchEnabled: research.enabled }
 }
 
 export const Route = createFileRoute('/gear/$gearId')({
@@ -49,21 +77,32 @@ export const Route = createFileRoute('/gear/$gearId')({
     brewSort: search.brewSort,
     brewDirection: search.brewDirection,
   }),
-  loader: async ({ params, deps }) => {
+  loader: async ({ params, deps }): Promise<GearDetailLoaderData> => {
     const gearId = parseIdParam(params.gearId)
-    const [gear, shotPage, research] = await Promise.all([
-      getGearById({ data: gearId }),
-      getGearShotPage({
-        data: {
-          entityId: gearId,
-          page: deps.brewPage,
-          sort: deps.brewSort,
-          direction: deps.brewDirection,
-        },
-      }),
-      checkGearResearchEnabled(),
-    ])
-    return { gear, shotPage, researchEnabled: research.enabled }
+
+    try {
+      return await loadGearDetail(gearId, deps)
+    } catch (error) {
+      if (typeof window === 'undefined' || navigator.onLine) throw error
+
+      try {
+        const { readCachedEntityDetail } = await import(
+          '@/modules/offline/entity-detail-cache'
+        )
+        const cached = await readCachedEntityDetail<GearDetailData>(
+          'gear',
+          gearId,
+        )
+        if (cached) {
+          return { ...cached.data, offlineSnapshotSavedAt: cached.savedAt }
+        }
+      } catch {
+        // Fall through to the original loader error when the cache is
+        // unavailable or corrupt.
+      }
+
+      throw error
+    }
   },
   component: GearDetailRoute,
   pendingComponent: DetailPending,
@@ -73,9 +112,23 @@ export const Route = createFileRoute('/gear/$gearId')({
 })
 
 function GearDetailRoute() {
-  const { gear, shotPage, researchEnabled } = Route.useLoaderData()
+  const { gear, shotPage, researchEnabled, offlineSnapshotSavedAt } =
+    Route.useLoaderData()
   const search = Route.useSearch()
   const navigate = useNavigate({ from: '/gear/$gearId' })
+
+  useEffect(() => {
+    if (!gear || offlineSnapshotSavedAt) return
+    void import('@/modules/offline/entity-detail-cache')
+      .then(({ cacheEntityDetail }) =>
+        cacheEntityDetail('gear', gear.id, {
+          gear,
+          shotPage,
+          researchEnabled,
+        }),
+      )
+      .catch(() => undefined)
+  }, [gear, shotPage, researchEnabled, offlineSnapshotSavedAt])
 
   const updateShotSearch = (values: Partial<typeof search>) =>
     navigate({ search: (current) => ({ ...current, ...values }) })
@@ -112,6 +165,7 @@ function GearDetailRoute() {
       shotsPagination={shotsPagination}
       researchEnabled={researchEnabled}
       isEditing={search.edit ?? false}
+      offlineSnapshotSavedAt={offlineSnapshotSavedAt}
       onFinishEditing={() =>
         navigate({ search: (current) => ({ ...current, edit: undefined }) })
       }

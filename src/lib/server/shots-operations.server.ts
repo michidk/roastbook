@@ -561,10 +561,19 @@ export function updateShotOperation(
         brewingMethodId: true,
         drinkTypeId: true,
         machineId: true,
+        updatedAt: true,
       },
       where: eq(shots.id, data.id),
     })
     if (!existingShot) throw new ShotInputError('Brew not found')
+    if (
+      data.baseUpdatedAt &&
+      existingShot.updatedAt.toISOString() !== data.baseUpdatedAt
+    ) {
+      throw new ShotInputError(
+        'This brew changed on the server. Reload and try again.',
+      )
+    }
     if (
       existingShot.brewingMethodId !== data.brewingMethodId ||
       existingShot.drinkTypeId !== data.drinkTypeId
@@ -576,7 +585,7 @@ export function updateShotOperation(
       )
     }
     await assertDrinkSelection(tx, data.drinkTypeId, data.drinkOptionValueIds)
-    const { id, tasteTagIds } = data
+    const { id, tasteTagIds, baseUpdatedAt: _baseUpdatedAt } = data
     const values = getShotValues(
       data,
       method.enabledParameters,
@@ -622,8 +631,28 @@ export function updateShotOperation(
   })
 }
 
-export function deleteShotOperation(id: number) {
-  return deleteEntityWithMedia('shots', id)
+export async function deleteShotOperation(data: {
+  readonly id: number
+  readonly baseUpdatedAt?: string
+  readonly idempotent?: boolean
+}) {
+  const existing = await db.query.shots.findFirst({
+    columns: { id: true, updatedAt: true },
+    where: eq(shots.id, data.id),
+  })
+  if (!existing) {
+    if (data.idempotent) return
+    throw new ShotInputError('Brew not found')
+  }
+  if (
+    data.baseUpdatedAt &&
+    existing.updatedAt.toISOString() !== data.baseUpdatedAt
+  ) {
+    throw new ShotInputError(
+      'This brew changed on the server. Reload and try again.',
+    )
+  }
+  await deleteEntityWithMedia('shots', data.id)
 }
 
 export async function getLastShotForBeanAndMethodOperation(data: {

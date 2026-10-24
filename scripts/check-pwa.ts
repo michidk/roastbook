@@ -1,11 +1,12 @@
 import { existsSync } from 'node:fs'
-import { readFile } from 'node:fs/promises'
+import { readFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import sharp from 'sharp'
 import { z } from 'zod'
 import {
   BUILD_ID_PLACEHOLDER,
   createServiceWorkerBuildId,
+  MAX_PRECACHE_ASSET_BYTES,
   PRECACHED_FILES,
   readClientAssetNames,
   readServiceWorkerTemplate,
@@ -179,6 +180,15 @@ for (const directory of outputDirs) {
         await readClientAssetNames(directory),
       )
     : null
+
+  for (const asset of await readClientAssetNames(directory)) {
+    const assetPath = join(directory, 'assets', asset)
+    const size = (await stat(assetPath)).size
+    record(
+      size <= MAX_PRECACHE_ASSET_BYTES,
+      `${assetPath} is ${size} bytes, above the offline precache limit of ${MAX_PRECACHE_ASSET_BYTES}`,
+    )
+  }
 
   const builtManifestPath = join(directory, 'manifest.json')
   if (existsSync(builtManifestPath)) {

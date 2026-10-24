@@ -4,6 +4,7 @@ import { EntityForm } from '@/components/form/form-shell'
 import { GearSetPicker } from '@/components/gear-sets/gear-set-picker'
 import { RecipeFields } from '@/components/recipes/recipe-fields'
 import { useFormSubmission } from '@/hooks/use-form-submission'
+import { useOnlineStatus } from '@/hooks/use-online-status'
 import { getErrorMessage } from '@/lib/error-message'
 import { recipePayload } from '@/lib/new-shot-payload'
 import type { getActiveBeans } from '@/lib/server/beans'
@@ -19,6 +20,8 @@ import {
   type ShotFormValues,
   shotFormValuesWithGearSet,
 } from '@/modules/brews/shot-form-values'
+import { enqueueRecipeCreate } from '@/modules/offline/entity-operations'
+import { isNetworkError } from '@/modules/offline/errors'
 
 type RecipeFormProps = {
   readonly beans: Awaited<ReturnType<typeof getActiveBeans>>
@@ -31,6 +34,7 @@ type RecipeFormProps = {
     readonly name: string
   }[]
   readonly onCreated: (recipe: { readonly id: number }) => void | Promise<void>
+  readonly onQueued?: () => void | Promise<void>
   readonly onCancel: () => void
 }
 
@@ -42,6 +46,7 @@ export function RecipeForm({
   drinks,
   drinkTypeSuggestions,
   onCreated,
+  onQueued,
   onCancel,
 }: RecipeFormProps) {
   const [name, setName] = useState('')
@@ -49,6 +54,7 @@ export function RecipeForm({
   const [fieldErrors, setFieldErrors] = useState<
     Readonly<Record<string, string>>
   >({})
+  const isOnline = useOnlineStatus()
   const set = <Key extends keyof ShotFormValues>(
     key: Key,
     value: ShotFormValues[Key],
@@ -75,11 +81,32 @@ export function RecipeForm({
       )
     },
     submit: async () => {
-      const recipe = await createRecipe({
-        data: { name, ...recipePayload(values) },
-      })
-      toast.success('Recipe created')
-      await onCreated(recipe)
+      const payload = { name, ...recipePayload(values) }
+      const queueRecipe = async () => {
+        await enqueueRecipeCreate(payload, {
+          label: name.trim(),
+          detail: 'Recipe',
+        })
+        toast.success('Recipe saved on this device')
+        if (onQueued) await onQueued()
+      }
+
+      if (!isOnline) {
+        await queueRecipe()
+        return
+      }
+
+      try {
+        const recipe = await createRecipe({ data: payload })
+        toast.success('Recipe created')
+        await onCreated(recipe)
+      } catch (error) {
+        if (isNetworkError(error) || !navigator.onLine) {
+          await queueRecipe()
+          return
+        }
+        throw error
+      }
     },
     onError: (error) =>
       toast.error(getErrorMessage(error, 'Could not create recipe')),

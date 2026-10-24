@@ -20,6 +20,7 @@ import {
   updateShotOperation,
 } from '@/lib/server/shots-operations.server'
 import {
+  deleteRecordSchema,
   positiveIdSchema,
   shotCreateSchema,
   shotUpdateSchema,
@@ -81,7 +82,10 @@ export const updateShot = createServerFn({ method: 'POST' })
   .handler(({ data }) => updateShotOperation(data))
 
 export const deleteShot = createServerFn({ method: 'POST' })
-  .validator(positiveIdSchema)
+  .validator((input: unknown) => {
+    const data = deleteRecordSchema.parse(input)
+    return typeof data === 'number' ? { id: data } : data
+  })
   .handler(({ data }) => deleteShotOperation(data))
 
 export const getLastShotForBeanAndMethod = createServerFn({ method: 'GET' })

@@ -1,4 +1,5 @@
 import { Link, useLocation } from '@tanstack/react-router'
+import { CloudOff } from 'lucide-react'
 import {
   type ComponentType,
   type ReactNode,
@@ -8,6 +9,7 @@ import {
 } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useOnlineStatus } from '@/hooks/use-online-status'
 import { cn } from '@/lib/utils'
 
 export type SettingsSection = {
@@ -45,7 +47,12 @@ export function SettingsShell({
   readonly children: ReactNode
 }) {
   const { pathname } = useLocation()
+  const isOnline = useOnlineStatus()
   const activeSection = activeSectionPath(sections, pathname)
+  const disableServerControls =
+    !isOnline &&
+    pathname !== '/settings/appearance' &&
+    pathname !== '/settings/offline'
   const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>(
     'horizontal',
   )
@@ -106,9 +113,40 @@ export function SettingsShell({
         value={activeSection}
         className="min-w-0 bg-background/35 p-4 sm:p-6 lg:p-7"
       >
-        <div className="mx-auto max-w-3xl divide-y divide-border">
-          {children}
-        </div>
+        {!isOnline ? (
+          <div
+            role="status"
+            aria-live="polite"
+            className="mb-5 flex items-start gap-3 rounded-xl border border-border bg-secondary/45 p-3 text-sm"
+          >
+            <CloudOff
+              className="mt-0.5 size-5 shrink-0 text-link"
+              aria-hidden={true}
+            />
+            <div className="min-w-0 space-y-1">
+              <p className="font-semibold">You’re offline</p>
+              <p className="text-muted-foreground">
+                Server-backed settings are read-only. The browser theme and{' '}
+                <Link
+                  to="/settings/offline"
+                  className="font-semibold text-link underline underline-offset-2"
+                >
+                  offline data
+                </Link>{' '}
+                remain available.
+              </p>
+            </div>
+          </div>
+        ) : null}
+
+        <fieldset
+          disabled={disableServerControls}
+          className="m-0 min-w-0 border-0 p-0"
+        >
+          <div className="mx-auto max-w-3xl divide-y divide-border">
+            {children}
+          </div>
+        </fieldset>
       </TabsContent>
     </Tabs>
   )

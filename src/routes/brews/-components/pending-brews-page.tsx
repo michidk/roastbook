@@ -16,6 +16,7 @@ import {
 } from '@/modules/offline/pending-store'
 import { requestPendingSync } from '@/modules/offline/sync-trigger'
 import type { PendingBrew, PendingBrewStatus } from '@/modules/offline/types'
+import { PendingChanges } from '@/routes/brews/-components/pending-changes'
 
 const STATUS_LABELS: Record<PendingBrewStatus, string> = {
   pending: 'Waiting to sync',
@@ -265,23 +266,29 @@ export function PendingBrewsPage() {
   }
   if (items.length === 0) {
     return (
-      <EmptyState
-        icon={Coffee}
-        title="No pending brews"
-        description="Brews saved on this device appear here until they sync."
-        actionLabel="Log a brew"
-        actionHref="/brews/new"
-      />
+      <div className="space-y-6">
+        <PendingChanges isOnline={isOnline} isSyncing={isSyncing} />
+        <EmptyState
+          icon={Coffee}
+          title="No pending brews"
+          description="Brews saved on this device appear here until they sync."
+          actionLabel="Log a brew"
+          actionHref="/brews/new"
+        />
+      </div>
     )
   }
 
   return (
-    <PendingBrewsList
-      items={items}
-      isOnline={isOnline}
-      isSyncing={isSyncing}
-      loadError={loadError}
-      formatDateTime={formatDateTime}
-    />
+    <div className="space-y-6">
+      <PendingChanges isOnline={isOnline} isSyncing={isSyncing} />
+      <PendingBrewsList
+        items={items}
+        isOnline={isOnline}
+        isSyncing={isSyncing}
+        loadError={loadError}
+        formatDateTime={formatDateTime}
+      />
+    </div>
   )
 }

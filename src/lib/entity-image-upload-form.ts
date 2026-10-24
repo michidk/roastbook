@@ -11,10 +11,12 @@ export function createEntityImageUploadFormData(
   entityType: string,
   entityId: number,
   file: File,
+  clientOperationId?: string,
 ): FormData {
   const formData = new FormData()
   formData.set('entityType', entityType)
   formData.set('entityId', String(entityId))
+  if (clientOperationId) formData.set('clientOperationId', clientOperationId)
   formData.set('file', file, file.name)
   return formData
 }
@@ -22,10 +24,15 @@ export function createEntityImageUploadFormData(
 export function parseEntityImageUploadFormData(formData: FormData) {
   const file = formData.get('file')
   if (!(file instanceof File)) throw new Error('Choose an image file to upload')
+  const clientOperationId = formData.get('clientOperationId')
 
   return {
     entityType: entityTypeSchema.parse(formData.get('entityType')),
     entityId: positiveIdSchema.parse(Number(formData.get('entityId'))),
+    clientOperationId:
+      typeof clientOperationId === 'string' && clientOperationId
+        ? z.uuid().parse(clientOperationId)
+        : undefined,
     filename: imageFilenameSchema.parse(file.name),
     mimeType: imageMimeTypeSchema.parse(file.type),
     sizeBytes: z

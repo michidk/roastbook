@@ -194,7 +194,17 @@ export const shotUpdateSchema = shotCreateSchema
   .omit({ clientOperationId: true })
   .extend({
     id: positiveIdSchema,
+    baseUpdatedAt: z.string().datetime().optional(),
   })
+
+export const deleteRecordSchema = z.union([
+  positiveIdSchema,
+  z.object({
+    id: positiveIdSchema,
+    baseUpdatedAt: z.string().datetime().optional(),
+    idempotent: z.boolean().optional(),
+  }),
+])
 
 export const tasteTagCreateSchema = z.object({
   name: z.string().trim().min(1).max(50),

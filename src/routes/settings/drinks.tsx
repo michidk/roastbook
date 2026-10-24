@@ -15,9 +15,11 @@ import {
   getDrinkConfiguration,
   saveDrinkType,
 } from '@/lib/server/drink-options'
+import { loadOfflineSettingsData } from '@/modules/offline/settings-cache'
 
 export const Route = createFileRoute('/settings/drinks')({
-  loader: () => getDrinkConfiguration(),
+  loader: () =>
+    loadOfflineSettingsData('drinks', () => getDrinkConfiguration()),
   component: DrinkSettings,
 })
 

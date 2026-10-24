@@ -5,6 +5,7 @@ const ASSET_CACHE = 'roastbook-assets'
 const OFFLINE_URL = '/offline.html'
 const MAX_ASSET_ENTRIES = 100
 const MAX_DOCUMENT_ENTRIES = 20
+const MAX_ASSET_BYTES = 2097152
 const EXCLUDED_PATHS = new Set(['/sw.js'])
 const EXCLUDED_PREFIXES = ['/api/', '/_serverFn/', '/_gate/', '/media/']
 const PRECACHE_ASSETS = __PRECACHE_ASSETS__
@@ -66,22 +67,24 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') {
     self.skipWaiting()
+    return
+  }
+  if (event.data?.type === 'RESET_SHELL') {
+    event.waitUntil(
+      resetShell().then(() => {
+        event.source?.postMessage({ type: 'SHELL_RESET_COMPLETE' })
+      }),
+    )
   }
 })
 
 async function precache() {
   const cache = await caches.open(PRECACHE_CACHE)
-  await Promise.all(
-    PRECACHE_URLS.map((url) =>
-      cache.add(new Request(url, { cache: 'reload' })),
-    ),
-  )
+  await Promise.all(PRECACHE_URLS.map((url) => precacheStatic(cache, url)))
   // Client chunks are large and can change independently; a failed chunk
   // must not prevent the worker (and its offline page) from installing.
   const assetResults = await Promise.allSettled(
-    PRECACHE_ASSETS.map((url) =>
-      cache.add(new Request(url, { cache: 'reload' })),
-    ),
+    PRECACHE_ASSETS.map((url) => precacheStatic(cache, url)),
   )
   for (const [index, result] of assetResults.entries()) {
     if (result.status === 'rejected') {
@@ -93,6 +96,16 @@ async function precache() {
     }
   }
   await Promise.allSettled(DOCUMENT_PRECACHE_URLS.map(cacheDocument))
+}
+
+async function precacheStatic(cache, url) {
+  const request = new Request(url, { cache: 'reload' })
+  const response = await fetch(request)
+  const pathname = new URL(url, self.location.origin).pathname
+  if (!isCacheableStaticResponse(response, pathname)) {
+    throw new Error(`Refusing to precache an invalid response for ${url}`)
+  }
+  await cache.put(url, response)
 }
 
 async function cacheDocument(url) {
@@ -182,22 +195,30 @@ async function clearDocumentCaches() {
 
 async function cacheFirstPrecache(request) {
   const cache = await caches.open(PRECACHE_CACHE)
+  const pathname = new URL(request.url).pathname
   const cached = await cache.match(request, { ignoreSearch: true })
-  if (cached) return cached
+  if (cached) {
+    if (isCacheableStaticResponse(cached, pathname)) return cached
+    await cache.delete(request)
+  }
 
-  if (new URL(request.url).pathname.startsWith('/assets/')) {
+  if (pathname.startsWith('/assets/')) {
     return cacheFirstAsset(request)
   }
   return fetch(request)
 }
 
 async function cacheFirstAsset(request) {
+  const pathname = new URL(request.url).pathname
   const cache = await caches.open(ASSET_CACHE)
   const cached = await cache.match(request)
-  if (cached) return cached
+  if (cached) {
+    if (isCacheableStaticResponse(cached, pathname)) return cached
+    await cache.delete(request)
+  }
 
   const response = await fetch(request)
-  if (response.ok) {
+  if (isCacheableStaticResponse(response, pathname)) {
     try {
       await cache.put(request, response.clone())
       await trimCache(cache, MAX_ASSET_ENTRIES)
@@ -206,6 +227,64 @@ async function cacheFirstAsset(request) {
     }
   }
   return response
+}
+
+const STATIC_CONTENT_TYPES = {
+  '.css': ['text/css'],
+  '.html': ['text/html'],
+  '.ico': ['image/x-icon', 'image/vnd.microsoft.icon', 'image/png'],
+  '.js': ['text/javascript', 'application/javascript'],
+  '.json': ['application/json'],
+  '.mjs': ['text/javascript', 'application/javascript'],
+  '.otf': ['font/otf', 'application/font-sfnt'],
+  '.png': ['image/png'],
+  '.svg': ['image/svg+xml'],
+  '.ttf': ['font/ttf', 'application/font-sfnt'],
+  '.webp': ['image/webp'],
+  '.woff': ['font/woff', 'application/font-woff'],
+  '.woff2': ['font/woff2', 'application/font-woff2'],
+}
+
+function expectedContentTypes(pathname) {
+  const extension = pathname.slice(pathname.lastIndexOf('.')).toLowerCase()
+  return STATIC_CONTENT_TYPES[extension] ?? null
+}
+
+function declaredContentLength(response) {
+  const value = response.headers.get('content-length')
+  if (!value) return null
+  const length = Number(value)
+  return Number.isFinite(length) && length >= 0 ? length : null
+}
+
+function isCacheableStaticResponse(response, pathname) {
+  if (!response.ok || response.redirected) return false
+
+  const contentType = response.headers.get('content-type')?.toLowerCase()
+  if (!contentType) return false
+  if (contentType.includes('text/html')) return pathname.endsWith('.html')
+
+  const declaredLength = declaredContentLength(response)
+  if (declaredLength !== null && declaredLength > MAX_ASSET_BYTES) return false
+
+  const expected = expectedContentTypes(pathname)
+  if (!expected) return true
+  return expected.some((type) => contentType.includes(type))
+}
+
+async function resetShell() {
+  const keys = await caches.keys()
+  await Promise.all(
+    keys
+      .filter(
+        (key) =>
+          key === ASSET_CACHE ||
+          key.startsWith('roastbook-precache-') ||
+          key.startsWith('roastbook-documents-'),
+      )
+      .map((key) => caches.delete(key)),
+  )
+  await self.registration.unregister()
 }
 
 async function trimCache(cache, maxEntries) {

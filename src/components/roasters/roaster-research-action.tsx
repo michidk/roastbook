@@ -5,6 +5,7 @@ import { AiActionHelp } from '@/components/ai-action-help'
 import type { RoasterFormValues } from '@/components/roasters/roaster-form-values'
 import { RoasterInfoDiffModal } from '@/components/roasters/roaster-info-diff-modal'
 import { Button } from '@/components/ui/button'
+import { useOnlineStatus } from '@/hooks/use-online-status'
 import { getErrorMessage } from '@/lib/error-message'
 import {
   checkRoasterResearchEnabled,
@@ -26,6 +27,7 @@ export function RoasterResearchAction({
   const [modalOpen, setModalOpen] = useState(false)
   const [suggestedData, setSuggestedData] =
     useState<ExtractedRoasterInfo | null>(null)
+  const isOnline = useOnlineStatus()
 
   useEffect(() => {
     let active = true
@@ -44,6 +46,10 @@ export function RoasterResearchAction({
   if (!enabled) return null
 
   const handleResearch = async () => {
+    if (!isOnline) {
+      toast.error('Research needs a connection')
+      return
+    }
     const name = currentData.name.trim()
     if (!name && !currentData.website.trim()) {
       toast.error('Enter a roaster name or website first')
@@ -87,6 +93,7 @@ export function RoasterResearchAction({
           onClick={handleResearch}
           disabled={
             disabled ||
+            !isOnline ||
             isResearching ||
             (!currentData.name.trim() && !currentData.website.trim())
           }

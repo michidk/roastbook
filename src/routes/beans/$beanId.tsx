@@ -18,6 +18,17 @@ import { getRoasters } from '@/lib/server/roasters'
 import { getBeanShotAnalytics, getBeanShotPage } from '@/lib/server/shots'
 import { BeanDetailPage } from '@/routes/beans/-components/bean-detail-page'
 
+type BeanDetailSearch = {
+  readonly brewPage: number
+  readonly brewSort: 'date' | 'bean' | 'dose' | 'yield' | 'time' | 'rating'
+  readonly brewDirection: 'asc' | 'desc'
+}
+
+type BeanDetailData = Awaited<ReturnType<typeof loadBeanDetail>>
+type BeanDetailLoaderData = BeanDetailData & {
+  readonly offlineSnapshotSavedAt?: string
+}
+
 function parseBeanDetailSearch(input: unknown) {
   const search = searchRecord(input)
   return {
@@ -29,6 +40,39 @@ function parseBeanDetailSearch(input: unknown) {
       'date',
     ),
     brewDirection: searchEnum(search.brewDirection, ['asc', 'desc'], 'desc'),
+  }
+}
+
+async function loadBeanDetail(beanId: number, deps: BeanDetailSearch) {
+  const [
+    bean,
+    shotPage,
+    shotAnalytics,
+    roasters,
+    visionEnabled,
+    researchEnabled,
+  ] = await Promise.all([
+    getBean({ data: beanId }),
+    getBeanShotPage({
+      data: {
+        entityId: beanId,
+        page: deps.brewPage,
+        sort: deps.brewSort,
+        direction: deps.brewDirection,
+      },
+    }),
+    getBeanShotAnalytics({ data: beanId }),
+    getRoasters(),
+    checkVisionEnabled(),
+    checkResearchEnabled(),
+  ])
+  return {
+    bean,
+    shotPage,
+    shotAnalytics,
+    roasters,
+    visionEnabled: visionEnabled.enabled,
+    researchEnabled: researchEnabled.enabled,
   }
 }
 
@@ -48,37 +92,31 @@ export const Route = createFileRoute('/beans/$beanId')({
     brewSort: search.brewSort,
     brewDirection: search.brewDirection,
   }),
-  loader: async ({ params, deps }) => {
+  loader: async ({ params, deps }): Promise<BeanDetailLoaderData> => {
     const beanId = parseIdParam(params.beanId)
-    const [
-      bean,
-      shotPage,
-      shotAnalytics,
-      roasters,
-      visionEnabled,
-      researchEnabled,
-    ] = await Promise.all([
-      getBean({ data: beanId }),
-      getBeanShotPage({
-        data: {
-          entityId: beanId,
-          page: deps.brewPage,
-          sort: deps.brewSort,
-          direction: deps.brewDirection,
-        },
-      }),
-      getBeanShotAnalytics({ data: beanId }),
-      getRoasters(),
-      checkVisionEnabled(),
-      checkResearchEnabled(),
-    ])
-    return {
-      bean,
-      shotPage,
-      shotAnalytics,
-      roasters,
-      visionEnabled: visionEnabled.enabled,
-      researchEnabled: researchEnabled.enabled,
+
+    try {
+      return await loadBeanDetail(beanId, deps)
+    } catch (error) {
+      if (typeof window === 'undefined' || navigator.onLine) throw error
+
+      try {
+        const { readCachedEntityDetail } = await import(
+          '@/modules/offline/entity-detail-cache'
+        )
+        const cached = await readCachedEntityDetail<BeanDetailData>(
+          'bean',
+          beanId,
+        )
+        if (cached) {
+          return { ...cached.data, offlineSnapshotSavedAt: cached.savedAt }
+        }
+      } catch {
+        // Fall through to the original loader error when the cache is
+        // unavailable or corrupt.
+      }
+
+      throw error
     }
   },
   component: BeanDetailPage,

@@ -400,6 +400,20 @@
       "when": 1792777260656,
       "tag": "0057_client_operations_brew_id_idx",
       "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1792843418756,
+      "tag": "0058_recipe_client_operation_id",
+      "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1792844577215,
+      "tag": "0059_brew_images_client_operation_id",
+      "breakpoints": true
     }
   ]
 }

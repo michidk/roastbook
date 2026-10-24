@@ -15,8 +15,10 @@ import { RecipeFields } from '@/components/recipes/recipe-fields'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useFormSubmission } from '@/hooks/use-form-submission'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { useOnlineStatus } from '@/hooks/use-online-status'
 import { getErrorMessage } from '@/lib/error-message'
 import { recipePayload } from '@/lib/new-shot-payload'
 import type { getGear } from '@/lib/server/gear'
@@ -31,6 +33,11 @@ import {
   type ShotFormValues,
   shotFormValuesFrom,
 } from '@/modules/brews/shot-form-values'
+import {
+  enqueueEntityDelete,
+  enqueueEntityUpdate,
+} from '@/modules/offline/entity-operations'
+import { isNetworkError } from '@/modules/offline/errors'
 
 const routeApi = getRouteApi('/recipes/$recipeId')
 
@@ -43,11 +50,20 @@ function createFormValues(recipe?: Recipe): ShotFormValues {
 }
 
 export function RecipeDetailPage() {
-  const { recipe, beans, methods, gear, drinks, drinkTypeSuggestions } =
-    routeApi.useLoaderData()
+  const {
+    recipe,
+    beans,
+    methods,
+    gear,
+    drinks,
+    drinkTypeSuggestions,
+    offlineSnapshotSavedAt,
+  } = routeApi.useLoaderData()
   const { edit: isEditing = false } = routeApi.useSearch()
   const navigate = useNavigate({ from: '/recipes/$recipeId' })
   const router = useRouter()
+  const formatDateTime = useDateTimeFormatter()
+  const isOnline = useOnlineStatus()
   const [name, setName] = useState(recipe?.name ?? '')
   const [values, setValues] = useState(() => createFormValues(recipe))
   const [fieldErrors, setFieldErrors] = useState<
@@ -60,8 +76,44 @@ export function RecipeDetailPage() {
     setValues(createFormValues(recipe))
   }, [recipe])
 
+  useEffect(() => {
+    if (!recipe || offlineSnapshotSavedAt) return
+    void import('@/modules/offline/entity-detail-cache')
+      .then(({ cacheEntityDetail }) =>
+        cacheEntityDetail('recipe', recipe.id, {
+          recipe,
+          beans,
+          methods,
+          gear,
+          drinks,
+          drinkTypeSuggestions,
+        }),
+      )
+      .catch(() => undefined)
+  }, [
+    recipe,
+    beans,
+    methods,
+    gear,
+    drinks,
+    drinkTypeSuggestions,
+    offlineSnapshotSavedAt,
+  ])
+
+  const recipeBaseUpdatedAt = recipe
+    ? recipe.updatedAt instanceof Date
+      ? recipe.updatedAt.toISOString()
+      : new Date(recipe.updatedAt).toISOString()
+    : null
   const recipeUpdateData = () =>
-    recipe ? { id: recipe.id, name, ...recipePayload(values) } : null
+    recipe && recipeBaseUpdatedAt
+      ? {
+          id: recipe.id,
+          name,
+          ...recipePayload(values),
+          baseUpdatedAt: recipeBaseUpdatedAt,
+        }
+      : null
 
   const { isSubmitting: isSaving, handleSubmit: handleSave } =
     useFormSubmission({
@@ -74,14 +126,40 @@ export function RecipeDetailPage() {
       },
       submit: async () => {
         const data = recipeUpdateData()
-        if (!data) return
-        await updateRecipe({ data })
-        await navigate({
-          search: (current) => ({ ...current, edit: undefined }),
-          replace: true,
-        })
-        await router.invalidate()
-        toast.success('Recipe updated')
+        if (!data || !recipe || !recipeBaseUpdatedAt) return
+
+        const queueUpdate = async (baseRevision: string | null) => {
+          await enqueueEntityUpdate({
+            entityType: 'recipe',
+            entityId: recipe.id,
+            payload: { ...data, baseUpdatedAt: baseRevision ?? undefined },
+            details: { label: name.trim(), detail: 'Recipe' },
+            baseRevision,
+          })
+          toast.success('Recipe changes saved on this device')
+          await navigate({ to: '/brews/pending' })
+        }
+
+        if (!isOnline) {
+          await queueUpdate(recipeBaseUpdatedAt)
+          return
+        }
+
+        try {
+          await updateRecipe({ data })
+          await navigate({
+            search: (current) => ({ ...current, edit: undefined }),
+            replace: true,
+          })
+          await router.invalidate()
+          toast.success('Recipe updated')
+        } catch (error) {
+          if (isNetworkError(error) || !navigator.onLine) {
+            await queueUpdate(null)
+            return
+          }
+          throw error
+        }
       },
       onError: (error) =>
         toast.error(getErrorMessage(error, 'Could not update recipe')),
@@ -165,10 +243,52 @@ export function RecipeDetailPage() {
                 title="Delete this recipe?"
                 description="This template will be removed permanently. Existing brews keep their copied values and are not affected."
                 onConfirm={async () => {
-                  await deleteRecipe({ data: recipe.id })
-                  await router.invalidate()
-                  toast.success('Recipe deleted')
-                  await navigate({ to: '/recipes' })
+                  const removeCached = async () => {
+                    const { removeCachedEntityDetail } = await import(
+                      '@/modules/offline/entity-detail-cache'
+                    )
+                    await removeCachedEntityDetail('recipe', recipe.id).catch(
+                      () => undefined,
+                    )
+                  }
+                  const queueDelete = async (baseRevision: string | null) => {
+                    await enqueueEntityDelete({
+                      entityType: 'recipe',
+                      entityId: recipe.id,
+                      details: { label: recipe.name, detail: 'Recipe' },
+                      baseRevision,
+                    })
+                    toast.success('Recipe deletion saved on this device')
+                    await navigate({ to: '/brews/pending' })
+                  }
+
+                  if (!isOnline) {
+                    await queueDelete(recipeBaseUpdatedAt)
+                    return
+                  }
+
+                  try {
+                    await deleteRecipe({
+                      data: {
+                        id: recipe.id,
+                        baseUpdatedAt: recipeBaseUpdatedAt ?? undefined,
+                      },
+                    })
+                    await removeCached()
+                    await router.invalidate()
+                    toast.success('Recipe deleted')
+                    await navigate({ to: '/recipes' })
+                  } catch (error) {
+                    if (isNetworkError(error) || !navigator.onLine) {
+                      await queueDelete(null)
+                      return
+                    }
+                    toast.error(
+                      error instanceof Error
+                        ? error.message
+                        : 'Could not delete recipe',
+                    )
+                  }
                 }}
                 trigger={
                   <Button
@@ -185,6 +305,12 @@ export function RecipeDetailPage() {
           )
         }
       />
+
+      {offlineSnapshotSavedAt ? (
+        <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+          Showing a saved copy from {formatDateTime(offlineSnapshotSavedAt)}.
+        </p>
+      ) : null}
 
       {isEditing ? (
         <form

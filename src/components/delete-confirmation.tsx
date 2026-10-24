@@ -19,6 +19,8 @@ interface DeleteConfirmationProps {
   description: string
   onConfirm: () => void | Promise<void>
   trigger?: React.ReactNode
+  confirmLabel?: string
+  busyLabel?: string
 }
 
 export function DeleteConfirmation({
@@ -26,6 +28,8 @@ export function DeleteConfirmation({
   description,
   onConfirm,
   trigger,
+  confirmLabel = 'Delete',
+  busyLabel = 'Deleting…',
 }: DeleteConfirmationProps) {
   const [open, setOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -70,7 +74,7 @@ export function DeleteConfirmation({
             disabled={isDeleting}
             aria-busy={isDeleting}
           >
-            {isDeleting ? 'Deleting…' : 'Delete'}
+            {isDeleting ? busyLabel : confirmLabel}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

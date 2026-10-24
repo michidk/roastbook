@@ -1,0 +1,2 @@
+ALTER TABLE "brew_images" ADD COLUMN "client_operation_id" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "brew_images_client_operation_id_unique" ON "brew_images" USING btree ("client_operation_id");

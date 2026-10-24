@@ -2,6 +2,7 @@ import 'fake-indexeddb/auto'
 import { afterAll, beforeEach, describe, expect, test } from 'bun:test'
 import { newShotPayload } from '@/lib/new-shot-payload'
 import { EMPTY_SHOT_FORM_VALUES } from '@/modules/brews/shot-form-values'
+import { getLocalEntity } from '@/modules/offline/local-data'
 import {
   discardPendingBrew,
   enqueuePendingBrew,
@@ -89,6 +90,18 @@ describe('pending brew store', () => {
 
     expect(syncRequests).toBe(1)
     expect(usePendingBrewsStore.getState().items).toHaveLength(1)
+  })
+
+  test('creates a local entity for a queued brew', async () => {
+    const item = pendingBrew()
+    await enqueuePendingBrew(item)
+
+    expect(await getLocalEntity('brew', item.operationId)).toMatchObject({
+      localId: item.operationId,
+      data: item.payload,
+      syncState: 'pending',
+      serverId: null,
+    })
   })
 
   test('records a failed read and clears it after a successful refresh', async () => {

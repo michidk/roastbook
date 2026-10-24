@@ -28,6 +28,10 @@ export function useSettingMutation<Value>({
 
   const save = async (nextValue: Value) => {
     if (isSaving) return
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      toast.error('Settings need a connection to save changes')
+      return
+    }
     applyValue(nextValue)
     setIsSaving(true)
     try {

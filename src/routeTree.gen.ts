@@ -46,6 +46,7 @@ import { Route as SettingsAiRouteImport } from './routes/settings/ai'
 import { Route as SettingsAppearanceRouteImport } from './routes/settings/appearance'
 import { Route as SettingsDrinksRouteImport } from './routes/settings/drinks'
 import { Route as SettingsMapRouteImport } from './routes/settings/map'
+import { Route as SettingsOfflineRouteImport } from './routes/settings/offline'
 import { Route as SettingsShottimerRouteImport } from './routes/settings/shottimer'
 import { Route as SettingsStorageRouteImport } from './routes/settings/storage'
 import { Route as SettingsTasteProfileRouteImport } from './routes/settings/taste-profile'
@@ -247,6 +248,11 @@ const SettingsMapRoute = SettingsMapRouteImport.update({
   path: '/map',
   getParentRoute: () => SettingsRoute,
 } as any)
+const SettingsOfflineRoute = SettingsOfflineRouteImport.update({
+  id: '/offline',
+  path: '/offline',
+  getParentRoute: () => SettingsRoute,
+} as any)
 const SettingsShottimerRoute = SettingsShottimerRouteImport.update({
   id: '/shottimer',
   path: '/shottimer',
@@ -346,6 +352,7 @@ export interface FileRoutesByFullPath {
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/drinks': typeof SettingsDrinksRoute
   '/settings/map': typeof SettingsMapRoute
+  '/settings/offline': typeof SettingsOfflineRoute
   '/settings/shottimer': typeof SettingsShottimerRoute
   '/settings/storage': typeof SettingsStorageRoute
   '/settings/taste-profile': typeof SettingsTasteProfileRoute
@@ -398,6 +405,7 @@ export interface FileRoutesByTo {
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/drinks': typeof SettingsDrinksRoute
   '/settings/map': typeof SettingsMapRoute
+  '/settings/offline': typeof SettingsOfflineRoute
   '/settings/shottimer': typeof SettingsShottimerRoute
   '/settings/storage': typeof SettingsStorageRoute
   '/settings/taste-profile': typeof SettingsTasteProfileRoute
@@ -452,6 +460,7 @@ export interface FileRoutesById {
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/drinks': typeof SettingsDrinksRoute
   '/settings/map': typeof SettingsMapRoute
+  '/settings/offline': typeof SettingsOfflineRoute
   '/settings/shottimer': typeof SettingsShottimerRoute
   '/settings/storage': typeof SettingsStorageRoute
   '/settings/taste-profile': typeof SettingsTasteProfileRoute
@@ -507,6 +516,7 @@ export interface FileRouteTypes {
     | '/settings/appearance'
     | '/settings/drinks'
     | '/settings/map'
+    | '/settings/offline'
     | '/settings/shottimer'
     | '/settings/storage'
     | '/settings/taste-profile'
@@ -559,6 +569,7 @@ export interface FileRouteTypes {
     | '/settings/appearance'
     | '/settings/drinks'
     | '/settings/map'
+    | '/settings/offline'
     | '/settings/shottimer'
     | '/settings/storage'
     | '/settings/taste-profile'
@@ -612,6 +623,7 @@ export interface FileRouteTypes {
     | '/settings/appearance'
     | '/settings/drinks'
     | '/settings/map'
+    | '/settings/offline'
     | '/settings/shottimer'
     | '/settings/storage'
     | '/settings/taste-profile'
@@ -944,6 +956,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsMapRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/settings/offline': {
+      id: '/settings/offline'
+      path: '/offline'
+      fullPath: '/settings/offline'
+      preLoaderRoute: typeof SettingsOfflineRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/settings/shottimer': {
       id: '/settings/shottimer'
       path: '/shottimer'
@@ -1051,6 +1070,7 @@ interface SettingsRouteChildren {
   SettingsAppearanceRoute: typeof SettingsAppearanceRoute
   SettingsDrinksRoute: typeof SettingsDrinksRoute
   SettingsMapRoute: typeof SettingsMapRoute
+  SettingsOfflineRoute: typeof SettingsOfflineRoute
   SettingsShottimerRoute: typeof SettingsShottimerRoute
   SettingsStorageRoute: typeof SettingsStorageRoute
   SettingsTasteProfileRoute: typeof SettingsTasteProfileRoute
@@ -1063,6 +1083,7 @@ const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsAppearanceRoute: SettingsAppearanceRoute,
   SettingsDrinksRoute: SettingsDrinksRoute,
   SettingsMapRoute: SettingsMapRoute,
+  SettingsOfflineRoute: SettingsOfflineRoute,
   SettingsShottimerRoute: SettingsShottimerRoute,
   SettingsStorageRoute: SettingsStorageRoute,
   SettingsTasteProfileRoute: SettingsTasteProfileRoute,

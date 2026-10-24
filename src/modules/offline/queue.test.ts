@@ -2,7 +2,9 @@ import 'fake-indexeddb/auto'
 import { afterEach, describe, expect, test } from 'bun:test'
 import { newShotPayload } from '@/lib/new-shot-payload'
 import { EMPTY_SHOT_FORM_VALUES } from '@/modules/brews/shot-form-values'
+import { getOperation } from '@/modules/offline/operation-queue'
 import {
+  acknowledgePendingBrew,
   deletePendingBrew,
   getPendingBrew,
   listPendingBrews,
@@ -71,7 +73,24 @@ describe('offline queue storage', () => {
 
     await deletePendingBrew(first.operationId)
     expect(await getPendingBrew(first.operationId)).toBeUndefined()
+    expect(await getOperation(first.operationId)).toMatchObject({
+      status: 'cancelled',
+    })
     expect(await listPendingBrews()).toHaveLength(1)
+  })
+
+  test('acknowledges a synced brew and keeps the operation record', async () => {
+    const item = pendingBrew()
+    await putPendingBrew(item)
+
+    await acknowledgePendingBrew(item.operationId)
+
+    expect(await getPendingBrew(item.operationId)).toBeUndefined()
+    expect(await getOperation(item.operationId)).toMatchObject({
+      status: 'acknowledged',
+      entityType: 'brew',
+      operationType: 'create',
+    })
   })
 
   test('does not resurrect a brew deleted between update reads', async () => {

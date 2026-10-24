@@ -27,7 +27,9 @@ import type { RoasterOption } from '@/components/roasters/roaster-picker'
 import { ShotParameterCharts } from '@/components/shots/shot-parameter-charts'
 import { ShotsTable } from '@/components/shots/shots-table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useFormState } from '@/hooks/use-form-state'
+import { useOnlineStatus } from '@/hooks/use-online-status'
 import { estimateRemainingBeanWeight } from '@/lib/bean-weight'
 import { nextSortDirection } from '@/lib/collection-sort'
 import { getErrorMessage } from '@/lib/error-message'
@@ -53,11 +55,14 @@ export function BeanDetailPage() {
     roasters,
     visionEnabled,
     researchEnabled,
+    offlineSnapshotSavedAt,
   } = routeApi.useLoaderData()
   const search = routeApi.useSearch()
   const isEditing = search.edit ?? false
   const navigate = useNavigate({ from: '/beans/$beanId' })
   const router = useRouter()
+  const formatDateTime = useDateTimeFormatter()
+  const isOnline = useOnlineStatus()
   const [isSaving, setIsSaving] = useState(false)
   const [isResearching, setIsResearching] = useState(false)
   const updateSearch = (
@@ -96,6 +101,30 @@ export function BeanDetailPage() {
   useEffect(() => {
     setAvailableRoasters(roasters)
   }, [roasters])
+
+  useEffect(() => {
+    if (!bean || offlineSnapshotSavedAt) return
+    void import('@/modules/offline/entity-detail-cache')
+      .then(({ cacheEntityDetail }) =>
+        cacheEntityDetail('bean', bean.id, {
+          bean,
+          shotPage,
+          shotAnalytics,
+          roasters,
+          visionEnabled,
+          researchEnabled,
+        }),
+      )
+      .catch(() => undefined)
+  }, [
+    bean,
+    shotPage,
+    shotAnalytics,
+    roasters,
+    visionEnabled,
+    researchEnabled,
+    offlineSnapshotSavedAt,
+  ])
 
   const currentPurchase =
     bean?.purchases.find((purchase) => !purchase.isArchived) ??
@@ -147,6 +176,10 @@ export function BeanDetailPage() {
   }
 
   const handleResearchOnline = async () => {
+    if (!isOnline) {
+      toast.error('Research needs a connection')
+      return
+    }
     if (!formData.name.trim()) return toast.error('Enter a bean name first')
     setIsResearching(true)
     try {
@@ -185,6 +218,10 @@ export function BeanDetailPage() {
   }
 
   const handleExtractFromImage = async (image: EntityImage) => {
+    if (!isOnline) {
+      toast.error('Image extraction needs a connection')
+      return
+    }
     setExtractingImageId(image.id)
     try {
       const encodedImage = await fetchImageAsBase64(imageUrl(image.storagePath))
@@ -216,7 +253,7 @@ export function BeanDetailPage() {
         roasters={availableRoasters}
         isEditing={isEditing}
         isSaving={isSaving}
-        recommendationEnabled={researchEnabled}
+        recommendationEnabled={researchEnabled && isOnline}
         shotCount={shotAnalytics.totalShots}
         onToggleArchive={() => {
           void updateBean({
@@ -234,6 +271,14 @@ export function BeanDetailPage() {
         onSave={handleSave}
         onDelete={async () => {
           const result = await deleteBean({ data: bean.id })
+          if (!result.archived) {
+            const { removeCachedEntityDetail } = await import(
+              '@/modules/offline/entity-detail-cache'
+            )
+            await removeCachedEntityDetail('bean', bean.id).catch(
+              () => undefined,
+            )
+          }
           await router.invalidate()
           if (result.archived) {
             toast.success(
@@ -244,6 +289,11 @@ export function BeanDetailPage() {
           }
         }}
       />
+      {offlineSnapshotSavedAt ? (
+        <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+          Showing a saved copy from {formatDateTime(offlineSnapshotSavedAt)}.
+        </p>
+      ) : null}
       {!isEditing ? (
         <div className="flex justify-end">
           <BeanPurchaseDialog
@@ -263,6 +313,7 @@ export function BeanDetailPage() {
           roasters={availableRoasters}
           researchEnabled={researchEnabled}
           visionEnabled={visionEnabled}
+          online={isOnline}
           isResearching={isResearching}
           extractingImageId={extractingImageId}
           onResearch={handleResearchOnline}

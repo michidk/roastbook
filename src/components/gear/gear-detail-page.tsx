@@ -25,6 +25,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/dialog'
+import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
+import { useOnlineStatus } from '@/hooks/use-online-status'
 import { getErrorMessage } from '@/lib/error-message'
 import {
   deleteGear,
@@ -44,6 +46,7 @@ export function GearDetailPage({
   shotsPagination,
   researchEnabled,
   isEditing,
+  offlineSnapshotSavedAt,
   onFinishEditing,
 }: {
   gear: Gear
@@ -51,10 +54,13 @@ export function GearDetailPage({
   shotsPagination: ShotsTableServerPagination
   researchEnabled: boolean
   isEditing: boolean
+  offlineSnapshotSavedAt?: string
   onFinishEditing: () => void | Promise<void>
 }) {
   const navigate = useNavigate()
   const router = useRouter()
+  const formatDateTime = useDateTimeFormatter()
+  const isOnline = useOnlineStatus()
   const [isSaving, setIsSaving] = useState(false)
   const [isResearching, setIsResearching] = useState(false)
   const [researchModalOpen, setResearchModalOpen] = useState(false)
@@ -78,6 +84,10 @@ export function GearDetailPage({
   const resetForm = () => setFormData(gearFormValuesFrom(gear))
 
   const handleResearch = async () => {
+    if (!isOnline) {
+      toast.error('Research needs a connection')
+      return
+    }
     const brand = formData.brand.trim()
     const model = formData.model.trim()
     if (!brand || !model) {
@@ -164,10 +174,19 @@ export function GearDetailPage({
         }}
         onDelete={async () => {
           await deleteGear({ data: gear.id })
+          const { removeCachedEntityDetail } = await import(
+            '@/modules/offline/entity-detail-cache'
+          )
+          await removeCachedEntityDetail('gear', gear.id).catch(() => undefined)
           await router.invalidate()
           await navigate({ to: '/gear' })
         }}
       />
+      {offlineSnapshotSavedAt ? (
+        <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+          Showing a saved copy from {formatDateTime(offlineSnapshotSavedAt)}.
+        </p>
+      ) : null}
       {isEditing ? (
         <>
           <EntityImageGallery
@@ -181,7 +200,7 @@ export function GearDetailPage({
             formData={formData}
             setFormData={setFormData}
             onSubmit={handleSave}
-            researchEnabled={researchEnabled}
+            researchEnabled={researchEnabled && isOnline}
             isResearching={isResearching}
             onResearch={handleResearch}
           />

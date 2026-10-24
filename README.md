@@ -219,8 +219,9 @@ as MIME type and byte count, not the image payload itself.
 - Search beans, cafés, and gear directly; jump to any page; start a new brew,
   bean, or visit; and switch theme from the command palette (<kbd>⌘</kbd>
   <kbd>K</kbd> or <kbd>Ctrl</kbd> <kbd>K</kbd>).
-- Install Roastbook as a PWA on your phone or desktop. Log brews offline;
-  pending brews stay on the device and sync when you reconnect.
+- Install Roastbook as a PWA on your phone or desktop. Journal brews and
+  recipes, attach pictures, and review pending changes offline; everything
+  stays on the device and syncs when you reconnect.
 
 ### Self-hosting
 
@@ -313,7 +314,7 @@ running.
 | [Development and testing](docs/development.md) | Workflow, tests, tooling |
 | [Configuration reference](docs/configuration.md) | Every environment variable |
 | [Read-only demo mode](docs/demo-mode.md) | How the PGlite demo is built |
-| [Offline journaling](docs/offline.md) | Pending brews, sync, and offline behavior |
+| [Offline journaling](docs/offline.md) | Offline brew/recipe work, conflicts, and sync |
 | [Deployment](docs/deployment.md) | Docker, Helm, security boundary |
 | [Shottimer API](docs/shottimer.md) | Device integration endpoints |
 | [Design system](DESIGN.md) | Layout contract and UI conventions |

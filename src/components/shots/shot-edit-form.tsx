@@ -15,6 +15,7 @@ import {
   useCurrentLocalDateTimeLimit,
   useLocalDateTimeInput,
 } from '@/hooks/use-local-date-time-input'
+import { useOnlineStatus } from '@/hooks/use-online-status'
 import { localDateTimeInputToDate } from '@/lib/date-input'
 import {
   type DrinkConfiguration,
@@ -36,6 +37,8 @@ import {
   type ShotFormValues,
   shotFormValuesFrom,
 } from '@/modules/brews/shot-form-values'
+import { enqueueEntityUpdate } from '@/modules/offline/entity-operations'
+import { isNetworkError } from '@/modules/offline/errors'
 
 type Shot = NonNullable<Awaited<ReturnType<typeof getShot>>>
 
@@ -52,6 +55,7 @@ type ShotEditFormProps = {
   readonly editData: ShotEditData
   readonly onCancel: () => void
   readonly onSaved: () => Promise<void>
+  readonly onQueued?: () => Promise<void> | void
 }
 
 export function ShotEditForm({
@@ -59,7 +63,9 @@ export function ShotEditForm({
   editData,
   onCancel,
   onSaved,
+  onQueued,
 }: ShotEditFormProps) {
+  const isOnline = useOnlineStatus()
   const [values, setValues] = useState<ShotFormValues>(() => ({
     ...shotFormValuesFrom(shot),
     rating: shot.rating ?? 0,
@@ -88,6 +94,10 @@ export function ShotEditForm({
   const handleSave = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault()
     const formElement = event.currentTarget
+    const baseUpdatedAt =
+      shot.updatedAt instanceof Date
+        ? shot.updatedAt.toISOString()
+        : new Date(shot.updatedAt).toISOString()
     const data = {
       id: shot.id,
       ...shotParameterPayload(values),
@@ -98,6 +108,7 @@ export function ShotEditForm({
       ...shotSensoryPayload(values),
       notes: values.notes || null,
       tasteTagIds,
+      baseUpdatedAt,
     }
     const errors = getShotUpdateErrors(data)
     setFieldErrors(errors)
@@ -106,11 +117,45 @@ export function ShotEditForm({
       return
     }
 
+    const queueUpdate = async (baseRevision: string | null) => {
+      await enqueueEntityUpdate({
+        entityType: 'brew',
+        entityId: shot.id,
+        payload: { ...data, baseUpdatedAt: baseRevision ?? undefined },
+        details: {
+          label: shot.bean?.name ?? 'Brew',
+          detail: shot.brewingMethod.name,
+        },
+        baseRevision,
+      })
+      toast.success('Changes saved on this device')
+      if (onQueued) await onQueued()
+      else await onSaved()
+    }
+
     setIsSaving(true)
     try {
+      if (!isOnline) {
+        await queueUpdate(baseUpdatedAt)
+        return
+      }
+
       await updateShot({ data })
       await onSaved()
     } catch (error) {
+      if (isNetworkError(error) || !navigator.onLine) {
+        try {
+          await queueUpdate(null)
+          return
+        } catch (queueError) {
+          toast.error(
+            queueError instanceof Error
+              ? queueError.message
+              : 'Could not save these changes on this device',
+          )
+          return
+        }
+      }
       toast.error(
         error instanceof Error ? error.message : 'Failed to update brew',
       )

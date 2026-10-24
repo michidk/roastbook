@@ -5,6 +5,7 @@ import { SettingsPanelSection } from '@/components/settings/settings-shell'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { useAppSettings } from '@/hooks/use-app-settings'
+import { useOnlineStatus } from '@/hooks/use-online-status'
 import { useSettingMutation } from '@/hooks/use-setting-mutation'
 import {
   isThemePreference,
@@ -21,6 +22,7 @@ export function AppearanceSettings({
 }) {
   const savedSettings = useAppSettings()
   const demoMode = savedSettings.demoMode
+  const isOnline = useOnlineStatus()
   const savedBackgroundTextureEnabled = savedSettings.backgroundTextureEnabled
   const [backgroundTextureEnabled, setBackgroundTextureEnabled] = useState(
     savedBackgroundTextureEnabled,
@@ -85,7 +87,9 @@ export function AppearanceSettings({
           <Switch
             id="background-texture"
             checked={backgroundTextureEnabled}
-            disabled={demoMode || backgroundTextureMutation.isSaving}
+            disabled={
+              demoMode || !isOnline || backgroundTextureMutation.isSaving
+            }
             onCheckedChange={(checked) =>
               void backgroundTextureMutation.save(checked)
             }
