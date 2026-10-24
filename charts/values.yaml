@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   repository: ghcr.io/michidk/roastbook
   pullPolicy: IfNotPresent
-  tag: "@sha256:eb7c874cf959570f614f11d12dfcdd571ab1502db12b2ea321555275974c4177"
+  tag: "latest"
 
 imagePullSecrets: []
 nameOverride: ""
