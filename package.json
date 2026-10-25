@@ -45,7 +45,7 @@
     "@base-ui/react": "^1.5.0",
     "@t3-oss/env-core": "^0.13.11",
     "@tailwindcss/vite": "^4.1.18",
-    "@tanstack/ai": "^0.71.0",
+    "@tanstack/ai": "^1.0.0",
     "@tanstack/ai-openai": "^1.0.0",
     "@tanstack/react-devtools": "^0.10.7",
     "@tanstack/react-router": "^1.170.41",
