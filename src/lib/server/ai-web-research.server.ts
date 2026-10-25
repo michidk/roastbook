@@ -95,6 +95,7 @@ async function researchStructuredDataFromWeb<
       systemPrompts,
       messages,
       tools: [webSearchTool({ type: 'web_search' })],
+      threadId: crypto.randomUUID(),
       middleware: [
         createAiRequestLogMiddleware(requestLogId, config.researchModel),
       ],

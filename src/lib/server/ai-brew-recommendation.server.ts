@@ -56,6 +56,7 @@ export async function recommendShotFromHistory(
       messages,
       outputSchema: shotRecommendationSchema,
       abortController,
+      threadId: crypto.randomUUID(),
       middleware: [
         createAiRequestLogMiddleware(requestLogId, config.researchModel),
       ],
@@ -102,6 +103,7 @@ export async function answerShotRecommendationQuestion(
       messages,
       outputSchema: shotRecommendationAnswerWireSchema,
       abortController,
+      threadId: crypto.randomUUID(),
       middleware: [
         createAiRequestLogMiddleware(requestLogId, config.researchModel),
       ],
