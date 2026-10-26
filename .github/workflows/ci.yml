@@ -1,6 +1,7 @@
 # @orcastrate
 # template: projects/roastbook/ci
 # @end-orcastrate
+
 name: Checks and Build
 
 on:
