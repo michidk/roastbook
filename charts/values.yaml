@@ -177,7 +177,7 @@ hodor:
   existingSecretSecretKey: "secret"
   image:
     repository: ghcr.io/michidk/hodor
-    tag: "@sha256:7e799702b0869a9d8eb34f47c8f93e1bfaf7ef5cd650900a82e72b7fe844f384"
+    tag: "@sha256:133a617076bea11ea1b7e41a93145bfd2867516f4b865e37fa3bf41638a65cf7"
     digest: "sha256:a3df75a6d24d4de620e3b48489b3dfa3d57e9c09ad52c812bf3bac49f3b45cde"
     pullPolicy: IfNotPresent
   title: "Roastbook Login"
