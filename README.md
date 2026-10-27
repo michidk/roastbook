@@ -75,6 +75,8 @@ face when you don't.
 
 <p align="center">
   <img src=".github/images/new-brew-desktop.png"
+    alt="Logging a new espresso brew with method suggestions, taste controls,
+    a selected coffee, and the brew timer"
     width="900">
 </p>
 
