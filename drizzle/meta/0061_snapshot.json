@@ -1,6 +1,6 @@
 {
-  "id": "96f44bed-d9e6-4426-834f-7b40ce0d9407",
-  "prevId": "84dcee7a-0071-4d21-a898-09bd0de34c9b",
+  "id": "7e2ad2b2-e726-4447-81e4-37c4de567e54",
+  "prevId": "96f44bed-d9e6-4426-834f-7b40ce0d9407",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -82,6 +82,18 @@
         "estimated_cost_usd": {
           "name": "estimated_cost_usd",
           "type": "numeric(18, 10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "estimated_cost_source": {
+          "name": "estimated_cost_source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "estimated_cost_version": {
+          "name": "estimated_cost_version",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },

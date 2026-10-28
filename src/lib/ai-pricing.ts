@@ -1,40 +1,72 @@
 import type { TokenUsage } from '@tanstack/ai'
+import {
+  MODEL_PRICING_FALLBACK_MODELS,
+  MODEL_PRICING_SOURCE,
+  MODEL_PRICING_VERSION,
+  MODEL_TOKEN_RATES,
+  type ModelTokenRates,
+} from '@/lib/ai-model-pricing'
 
-type ModelTokenRates = {
-  readonly input: number
-  readonly cachedInput: number
-  readonly output: number
+export type TokenCostEstimate = {
+  readonly usd: number
+  readonly source:
+    | 'provider'
+    | typeof MODEL_PRICING_SOURCE
+    | 'models.dev-fallback'
+  readonly version: string | null
 }
 
-// OpenAI standard API prices in USD per one million tokens. Unknown or
-// custom-endpoint models still have their tokens tracked without attaching a
-// potentially misleading cost estimate.
-const MODEL_TOKEN_RATES: Readonly<Record<string, ModelTokenRates>> = {
-  'gpt-4o': { input: 2.5, cachedInput: 1.25, output: 10 },
-  'gpt-4o-mini': { input: 0.15, cachedInput: 0.075, output: 0.6 },
+function ratesForModel(model: string): ModelTokenRates | undefined {
+  // Responses can report a dated snapshot such as `gpt-5.1-2025-11-13`.
+  return (
+    MODEL_TOKEN_RATES[model] ??
+    MODEL_TOKEN_RATES[model.replace(/-\d{4}-\d{2}-\d{2}$/, '')]
+  )
 }
 
-export function estimateTokenCostUsd(
+export function estimateTokenCost(
   model: string,
   usage: TokenUsage,
-): number | null {
+): TokenCostEstimate | null {
   if (usage.cost !== undefined && Number.isFinite(usage.cost)) {
-    return Math.max(0, usage.cost)
+    return {
+      usd: Math.max(0, usage.cost),
+      source: 'provider',
+      version: null,
+    }
   }
 
-  const rates = MODEL_TOKEN_RATES[model]
+  const rates = ratesForModel(model)
   if (!rates) return null
 
+  const selected =
+    rates.longContext && usage.promptTokens > rates.longContext.thresholdTokens
+      ? rates.longContext
+      : rates
   const cachedTokens = Math.min(
     usage.promptTokens,
     usage.promptTokensDetails?.cachedTokens ?? 0,
   )
   const regularInputTokens = usage.promptTokens - cachedTokens
 
-  return (
-    (regularInputTokens * rates.input +
-      cachedTokens * rates.cachedInput +
-      usage.completionTokens * rates.output) /
-    1_000_000
-  )
+  return {
+    usd:
+      (regularInputTokens * selected.input +
+        cachedTokens * selected.cachedInput +
+        usage.completionTokens * selected.output) /
+      1_000_000,
+    source: MODEL_PRICING_FALLBACK_MODELS.has(
+      model.replace(/-\d{4}-\d{2}-\d{2}$/, ''),
+    )
+      ? 'models.dev-fallback'
+      : MODEL_PRICING_SOURCE,
+    version: MODEL_PRICING_VERSION,
+  }
+}
+
+export function estimateTokenCostUsd(
+  model: string,
+  usage: TokenUsage,
+): number | null {
+  return estimateTokenCost(model, usage)?.usd ?? null
 }
