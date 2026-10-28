@@ -108,6 +108,9 @@ desktop where you dig through the numbers afterwards.
   cards next to the machine; full data tables, charts, and maps at the desk,
   plus a <kbd>⌘</kbd> <kbd>K</kbd> command palette for jumping anywhere without
   the mouse.
+- 📴 **Offline journaling.** Install Roastbook as a PWA, keep brewing and recipe
+  work on the device without a connection, and sync it when you reconnect.
+  [See what works offline.](docs/offline.md)
 - 🤖 **AI-native, not AI-bolted-on.** Research and extraction are wired into the
   forms you already use and return typed, validated fields you confirm before
   anything is saved.

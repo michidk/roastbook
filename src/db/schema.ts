@@ -1187,6 +1187,9 @@ export const recipes = pgTable(
     id: serial('id').primaryKey(),
     name: text('name').notNull(),
     clientOperationId: text('client_operation_id'),
+    syncId: text('sync_id')
+      .default(sql`md5(random()::text || clock_timestamp()::text)`)
+      .notNull(),
     drinkTypeId: integer('drink_type_id').references(() => drinkTypes.id, {
       onDelete: 'set null',
     }),
@@ -1199,6 +1202,7 @@ export const recipes = pgTable(
     uniqueIndex('recipes_client_operation_id_unique').on(
       table.clientOperationId,
     ),
+    uniqueIndex('recipes_sync_id_unique').on(table.syncId),
     check(
       'recipes_ratio_basis_check',
       sql`${table.ratioBasis} in ('target_yield', 'brew_water')`,
@@ -1407,6 +1411,24 @@ export const shots = pgTable(
     index('brews_grinder_id_idx').on(table.grinderId),
     index('brews_basket_id_idx').on(table.basketId),
     uniqueIndex('brews_client_operation_id_unique').on(table.clientOperationId),
+  ],
+)
+
+export const replicationChanges = pgTable(
+  'replication_changes',
+  {
+    sequence: serial('sequence').primaryKey(),
+    entity: text('entity').notNull(),
+    documentId: text('document_id').notNull(),
+    document: jsonb('document').notNull(),
+    deleted: boolean('deleted').default(false).notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    index('replication_changes_entity_sequence_idx').on(
+      table.entity,
+      table.sequence,
+    ),
   ],
 )
 
