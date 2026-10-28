@@ -1,8 +1,8 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { providers as modelsDevProviders } from '@opencode-ai/models/snapshot'
 import { OPENAI_CHAT_MODELS } from '@tanstack/ai-openai'
 
-const CATALOG_URL = 'https://models.dev/api.json'
 const CATALOG_FILE = join(process.cwd(), 'scripts/ai-pricing.catalog.json')
 const OUTPUT_FILE = join(process.cwd(), 'src/lib/ai-model-pricing.ts')
 const CHAT_MODELS: readonly string[] = OPENAI_CHAT_MODELS
@@ -49,11 +49,7 @@ type Rates = {
   readonly longContext?: LongContextRates
 }
 
-type Provider = {
-  readonly models?: Readonly<Record<string, { readonly cost?: Cost }>>
-}
-
-type Catalog = Readonly<Record<string, Provider>>
+type Catalog = typeof modelsDevProviders
 
 function isRate(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
@@ -214,13 +210,8 @@ async function main(): Promise<void> {
     return
   }
 
-  const response = await fetch(CATALOG_URL)
-  if (!response.ok) {
-    throw new Error(`Could not fetch models.dev catalog (${response.status})`)
-  }
-  const catalog = (await response.json()) as Catalog
   const existing = await readExistingCatalog()
-  const rates = ratesFromModelsDev(catalog, existing)
+  const rates = ratesFromModelsDev(modelsDevProviders, existing)
   const sorted = Object.fromEntries(
     [...rates.entries()].sort(([left], [right]) =>
       left < right ? -1 : left > right ? 1 : 0,

@@ -72,6 +72,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.6.3",
     "@electric-sql/pglite": "0.5.11",
+    "@opencode-ai/models": "0.0.118",
     "@tanstack/devtools-vite": "0.8.5",
     "@tanstack/router-cli": "1.167.46",
     "@types/bun": "1.4.4",
