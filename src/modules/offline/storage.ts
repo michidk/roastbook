@@ -223,7 +223,11 @@ export async function clearOfflineCaches(): Promise<void> {
   const rxEntities = await rxDatabase.entities.find().exec()
   await Promise.all(
     rxEntities
-      .filter((entity) => entity.entityType !== 'settings')
+      .filter(
+        (entity) =>
+          entity.entityType !== 'settings' ||
+          entity.localId.startsWith('reference:'),
+      )
       .map((entity) => entity.remove()),
   )
   const database = await openOfflineDatabase()

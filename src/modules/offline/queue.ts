@@ -12,12 +12,7 @@ import {
   pendingBrewStatusToOperation,
   pendingBrewToOperation,
 } from './pending-brew-operation'
-import {
-  openOfflineDatabase,
-  REFERENCE_STORE,
-  requestToPromise,
-  transactionToPromise,
-} from './storage'
+import { getLocalEntity, putLocalEntity, removeLocalEntity } from './local-data'
 import type { CachedReferenceData, PendingBrew } from './types'
 
 export { resetOfflineDatabaseForTests } from './storage'
@@ -81,37 +76,33 @@ export async function writeCachedReferenceData<T>(
   version: number,
   data: T,
 ): Promise<void> {
-  const database = await openOfflineDatabase()
-  const transaction = database.transaction(REFERENCE_STORE, 'readwrite')
   const record: CachedReferenceData<T> = {
     version,
     savedAt: new Date().toISOString(),
     data,
   }
-  transaction.objectStore(REFERENCE_STORE).put(record, key)
-  await transactionToPromise(transaction)
+  await putLocalEntity({
+    entityType: 'settings',
+    localId: `reference:${key}`,
+    data: { record },
+    syncState: 'synced',
+    updatedAt: record.savedAt,
+  })
 }
 
 export async function readCachedReferenceData<T>(
   key: string,
   version: number,
 ): Promise<CachedReferenceData<T> | undefined> {
-  const database = await openOfflineDatabase()
-  const transaction = database.transaction(REFERENCE_STORE, 'readonly')
-  const store = transaction.objectStore(REFERENCE_STORE)
-  const record = (await requestToPromise(store.get(key))) as
-    | CachedReferenceData<T>
-    | undefined
-  await transactionToPromise(transaction)
+  const entity = await getLocalEntity<{ record: CachedReferenceData<T> }>(
+    'settings',
+    `reference:${key}`,
+  )
+  const record = entity?.data.record
 
   if (!record || record.version !== version) {
     if (record) {
-      const deleteTransaction = database.transaction(
-        REFERENCE_STORE,
-        'readwrite',
-      )
-      deleteTransaction.objectStore(REFERENCE_STORE).delete(key)
-      await transactionToPromise(deleteTransaction)
+      await removeLocalEntity('settings', `reference:${key}`)
     }
     return undefined
   }
