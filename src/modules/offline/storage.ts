@@ -216,6 +216,16 @@ export async function deleteOfflineDatabase(): Promise<void> {
  * operation log, including unsynced work and the last-sync marker.
  */
 export async function clearOfflineCaches(): Promise<void> {
+  const { getOfflineRxDatabase } = await import(
+    '@/modules/rxdb/offline-database'
+  )
+  const rxDatabase = await getOfflineRxDatabase()
+  const rxEntities = await rxDatabase.entities.find().exec()
+  await Promise.all(
+    rxEntities
+      .filter((entity) => entity.entityType !== 'settings')
+      .map((entity) => entity.remove()),
+  )
   const database = await openOfflineDatabase()
   const transaction = database.transaction(
     [LOCAL_ENTITIES_STORE, REFERENCE_STORE],
