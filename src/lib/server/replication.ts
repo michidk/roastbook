@@ -12,18 +12,28 @@ const ENTITY = 'recipes'
 const DEFAULT_BATCH_SIZE = 100
 const MAX_BATCH_SIZE = 500
 
-const recipeDocumentSchema = z.object({
-  id: z.string().min(1),
-  serverId: z.number().int().positive().nullable().optional(),
-  syncId: z.string().min(1),
-  name: z.string().min(1).max(200),
-  brewingMethodId: z.number().int().positive(),
-  beanId: z.number().int().positive().nullable(),
-  drinkTypeId: z.number().int().positive().nullable(),
-  revision: z.number().int().nonnegative(),
-  updatedAt: z.string().datetime(),
-  _deleted: z.boolean().default(false),
-})
+const recipeDocumentSchema = z
+  .object({
+    id: z.string().min(1),
+    serverId: z.number().int().positive().nullable().optional(),
+    syncId: z.string().min(1),
+    name: z.string().max(200),
+    brewingMethodId: z.number().int().positive(),
+    beanId: z.number().int().positive().nullable(),
+    drinkTypeId: z.number().int().positive().nullable(),
+    revision: z.number().int().nonnegative(),
+    updatedAt: z.string().datetime(),
+    _deleted: z.boolean().default(false),
+  })
+  .superRefine((document, context) => {
+    if (!document._deleted && document.name.length === 0) {
+      context.addIssue({
+        code: 'custom',
+        path: ['name'],
+        message: 'Recipe name is required',
+      })
+    }
+  })
 
 const pushRowSchema = z.object({
   assumedMasterState: recipeDocumentSchema.optional(),
