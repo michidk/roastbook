@@ -3,8 +3,10 @@ import type { LocalEntityRecord } from '@/modules/offline/local-data'
 import type { OfflineOperation } from '@/modules/offline/operations'
 import { pendingBrewToOperation } from '@/modules/offline/pending-brew-operation'
 import type { PendingBrew } from '@/modules/offline/types'
+import type { RecipeReplicationDocument } from '@/lib/replication-contracts'
 
 export type OfflineOperationDocument = OfflineOperation
+export type OfflineRecipeDocument = Omit<RecipeReplicationDocument, '_deleted'>
 export type OfflineEntityDocument = Omit<
   LocalEntityRecord,
   'key' | 'revision'
@@ -16,6 +18,7 @@ export type OfflineEntityDocument = Omit<
 type OfflineCollections = {
   operations: RxCollection<OfflineOperationDocument>
   entities: RxCollection<OfflineEntityDocument>
+  recipes: RxCollection<OfflineRecipeDocument>
 }
 
 export type OfflineRxDatabase = RxDatabase<OfflineCollections>
@@ -101,6 +104,34 @@ const entitySchema = {
   additionalProperties: false,
 } as const
 
+const recipeSchema = {
+  title: 'roastbook recipes',
+  version: 0,
+  primaryKey: 'id',
+  type: 'object',
+  properties: {
+    id: { type: 'string', maxLength: 100 },
+    serverId: { type: ['number', 'null'] },
+    syncId: { type: 'string', maxLength: 100 },
+    name: { type: 'string', maxLength: 200 },
+    brewingMethodId: { type: 'number' },
+    beanId: { type: ['number', 'null'] },
+    drinkTypeId: { type: ['number', 'null'] },
+    serverRevision: { type: 'number' },
+    updatedAt: { type: 'string', format: 'date-time' },
+  },
+  required: [
+    'id',
+    'syncId',
+    'name',
+    'brewingMethodId',
+    'serverRevision',
+    'updatedAt',
+  ],
+  indexes: ['updatedAt', 'syncId'],
+  additionalProperties: false,
+} as const
+
 let databasePromise: Promise<OfflineRxDatabase> | undefined
 
 async function migrateLegacyPendingBrews(
@@ -157,6 +188,7 @@ export async function getOfflineRxDatabase(): Promise<OfflineRxDatabase> {
         await database.addCollections({
           operations: { schema: operationSchema },
           entities: { schema: entitySchema },
+          recipes: { schema: recipeSchema },
         })
         await migrateLegacyPendingBrews(database)
         return database
