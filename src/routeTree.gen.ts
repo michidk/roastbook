@@ -59,6 +59,8 @@ import { Route as ShotsNewRouteImport } from './routes/shots/new'
 import { Route as VisitsIndexRouteImport } from './routes/visits/index'
 import { Route as VisitsVisitIdRouteImport } from './routes/visits/$visitId'
 import { Route as VisitsNewRouteImport } from './routes/visits/new'
+import { Route as ApiReplicationPullRouteImport } from './routes/api/replication/pull'
+import { Route as ApiReplicationPushRouteImport } from './routes/api/replication/push'
 import { Route as ApiShottimerShotsRouteImport } from './routes/api/shottimer/shots'
 import { Route as ApiShottimerTargetRouteImport } from './routes/api/shottimer/target'
 
@@ -313,6 +315,16 @@ const VisitsNewRoute = VisitsNewRouteImport.update({
   path: '/visits/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiReplicationPullRoute = ApiReplicationPullRouteImport.update({
+  id: '/api/replication/pull',
+  path: '/api/replication/pull',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiReplicationPushRoute = ApiReplicationPushRouteImport.update({
+  id: '/api/replication/push',
+  path: '/api/replication/push',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiShottimerShotsRoute = ApiShottimerShotsRouteImport.update({
   id: '/api/shottimer/shots',
   path: '/api/shottimer/shots',
@@ -375,6 +387,8 @@ export interface FileRoutesByFullPath {
   '/shops/': typeof ShopsIndexRoute
   '/shots/': typeof ShotsIndexRoute
   '/visits/': typeof VisitsIndexRoute
+  '/api/replication/pull': typeof ApiReplicationPullRoute
+  '/api/replication/push': typeof ApiReplicationPushRoute
   '/api/shottimer/shots': typeof ApiShottimerShotsRoute
   '/api/shottimer/target': typeof ApiShottimerTargetRoute
 }
@@ -428,6 +442,8 @@ export interface FileRoutesByTo {
   '/shops': typeof ShopsIndexRoute
   '/shots': typeof ShotsIndexRoute
   '/visits': typeof VisitsIndexRoute
+  '/api/replication/pull': typeof ApiReplicationPullRoute
+  '/api/replication/push': typeof ApiReplicationPushRoute
   '/api/shottimer/shots': typeof ApiShottimerShotsRoute
   '/api/shottimer/target': typeof ApiShottimerTargetRoute
 }
@@ -483,6 +499,8 @@ export interface FileRoutesById {
   '/shops/': typeof ShopsIndexRoute
   '/shots/': typeof ShotsIndexRoute
   '/visits/': typeof VisitsIndexRoute
+  '/api/replication/pull': typeof ApiReplicationPullRoute
+  '/api/replication/push': typeof ApiReplicationPushRoute
   '/api/shottimer/shots': typeof ApiShottimerShotsRoute
   '/api/shottimer/target': typeof ApiShottimerTargetRoute
 }
@@ -539,6 +557,8 @@ export interface FileRouteTypes {
     | '/shops/'
     | '/shots/'
     | '/visits/'
+    | '/api/replication/pull'
+    | '/api/replication/push'
     | '/api/shottimer/shots'
     | '/api/shottimer/target'
   fileRoutesByTo: FileRoutesByTo
@@ -592,6 +612,8 @@ export interface FileRouteTypes {
     | '/shops'
     | '/shots'
     | '/visits'
+    | '/api/replication/pull'
+    | '/api/replication/push'
     | '/api/shottimer/shots'
     | '/api/shottimer/target'
   id:
@@ -646,6 +668,8 @@ export interface FileRouteTypes {
     | '/shops/'
     | '/shots/'
     | '/visits/'
+    | '/api/replication/pull'
+    | '/api/replication/push'
     | '/api/shottimer/shots'
     | '/api/shottimer/target'
   fileRoutesById: FileRoutesById
@@ -691,6 +715,8 @@ export interface RootRouteChildren {
   ShopsIndexRoute: typeof ShopsIndexRoute
   ShotsIndexRoute: typeof ShotsIndexRoute
   VisitsIndexRoute: typeof VisitsIndexRoute
+  ApiReplicationPullRoute: typeof ApiReplicationPullRoute
+  ApiReplicationPushRoute: typeof ApiReplicationPushRoute
   ApiShottimerShotsRoute: typeof ApiShottimerShotsRoute
   ApiShottimerTargetRoute: typeof ApiShottimerTargetRoute
 }
@@ -1047,6 +1073,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VisitsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/replication/pull': {
+      id: '/api/replication/pull'
+      path: '/api/replication/pull'
+      fullPath: '/api/replication/pull'
+      preLoaderRoute: typeof ApiReplicationPullRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/replication/push': {
+      id: '/api/replication/push'
+      path: '/api/replication/push'
+      fullPath: '/api/replication/push'
+      preLoaderRoute: typeof ApiReplicationPushRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/shottimer/shots': {
       id: '/api/shottimer/shots'
       path: '/api/shottimer/shots'
@@ -1135,6 +1175,8 @@ const rootRouteChildren: RootRouteChildren = {
   ShopsIndexRoute: ShopsIndexRoute,
   ShotsIndexRoute: ShotsIndexRoute,
   VisitsIndexRoute: VisitsIndexRoute,
+  ApiReplicationPullRoute: ApiReplicationPullRoute,
+  ApiReplicationPushRoute: ApiReplicationPushRoute,
   ApiShottimerShotsRoute: ApiShottimerShotsRoute,
   ApiShottimerTargetRoute: ApiShottimerTargetRoute,
 }

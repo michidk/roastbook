@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { CloudOff, RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { OfflineRxdbManager } from '@/components/offline-rxdb-manager'
 import { OfflineSyncManager } from '@/components/offline-sync-manager'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { listOperations } from '@/modules/offline/operation-queue'
@@ -97,6 +98,7 @@ export function PendingSyncBanner() {
 export function OfflineStatus() {
   return (
     <>
+      <OfflineRxdbManager />
       <OfflineSyncManager />
       <PendingSyncBanner />
     </>

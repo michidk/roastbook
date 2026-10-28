@@ -17,6 +17,10 @@ import {
   assertDrinkTypeAvailableForBrewingMethod,
   replaceRecipeDrinkOptions,
 } from '@/lib/server/drink-options.server'
+import {
+  recordRecipeReplicationChange,
+  recordRecipeReplicationDeletion,
+} from '@/lib/server/replication'
 import { matchesRevision } from '@/lib/server/revision.server'
 import {
   projectAccessoryGearIds,
@@ -290,6 +294,7 @@ export const updateRecipe = createServerFn({ method: 'POST' })
         persistedRecipe.id,
         data.drinkOptionValueIds ?? [],
       )
+      await recordRecipeReplicationChange(tx, persistedRecipe)
       if (data.clientOperationId) {
         await tx
           .insert(clientOperations)
@@ -360,6 +365,7 @@ export const createRecipe = createServerFn({ method: 'POST' })
         persistedRecipe.id,
         data.drinkOptionValueIds ?? [],
       )
+      await recordRecipeReplicationChange(tx, persistedRecipe)
       if (data.clientOperationId) {
         await tx
           .insert(clientOperations)
@@ -391,6 +397,7 @@ export const duplicateRecipe = createServerFn({ method: 'POST' })
       const {
         id: _sourceId,
         clientOperationId: _sourceOperationId,
+        syncId: _sourceSyncId,
         createdAt: _sourceCreatedAt,
         updatedAt: _sourceUpdatedAt,
         ...recipeValues
@@ -414,6 +421,7 @@ export const duplicateRecipe = createServerFn({ method: 'POST' })
         persistedRecipe.id,
         drinkOptions.map(({ optionValueId }) => optionValueId),
       )
+      await recordRecipeReplicationChange(tx, persistedRecipe)
       return persistedRecipe
     }),
   )
@@ -440,6 +448,7 @@ export const saveShotAsRecipe = createServerFn({ method: 'POST' })
       }
 
       const recipe = await saveShotToRecipeInTransaction(tx, data.shotId, data)
+      await recordRecipeReplicationChange(tx, recipe)
       if (data.clientOperationId) {
         await tx
           .insert(clientOperations)
@@ -472,9 +481,12 @@ export const deleteRecipe = createServerFn({ method: 'POST' })
               : matchesRevision(recipes.updatedAt, data.baseUpdatedAt),
           ),
         )
-        .returning({ id: recipes.id })
+        .returning({ id: recipes.id, syncId: recipes.syncId })
 
-      if (recipe) return
+      if (recipe) {
+        await recordRecipeReplicationDeletion(tx, recipe.syncId)
+        return
+      }
       const existing = await tx.query.recipes.findFirst({
         columns: { id: true },
         where: eq(recipes.id, data.id),

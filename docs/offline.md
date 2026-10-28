@@ -186,3 +186,25 @@ and account actions remain online-only.
   reload or close and reopen the app, reconnect, and confirm exactly one server
   record with the expected values. Also exercise an interrupted sync, a
   conflict, and an expired session.
+
+## RxDB replication slice
+
+The first RxDB vertical slice synchronizes the recipe projection through a
+browser-only RxDB database backed by the open-source Dexie storage adapter.
+`@tanstack/rxdb-db-collection` mirrors that collection into TanStack DB for
+reactive client queries, while RxDB owns durable writes, replication metadata,
+retry, and multi-tab leadership.
+
+The replication endpoints are `/api/replication/pull` and
+`/api/replication/push`. Pull uses a monotonic PostgreSQL sequence checkpoint;
+push uses the recipe revision as the assumed master state and returns the
+current server document when a concurrent edit conflicts. Recipe writes made
+through the existing server functions append to the same change log in their
+transaction, so a second device can receive them without a separate worker.
+
+The existing operation log remains authoritative for the current brew and
+recipe offline forms while this slice is validated. Future entity migrations
+must choose one local write path per entity before removing the older queue.
+RxDB collection schema versions and migration strategies are independent of
+Drizzle migrations; a client schema change must bump its RxDB version and
+preserve or explicitly resolve pending local writes.
