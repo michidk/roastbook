@@ -2,7 +2,7 @@ import type { Collection, NonSingleResult, UtilsRecord } from '@tanstack/db'
 import { createCollection } from '@tanstack/db'
 import { rxdbCollectionOptions } from '@tanstack/rxdb-db-collection'
 import type { RxCollection, RxDatabase } from 'rxdb'
-import type { RecipeReplicationDocument } from './contracts'
+import type { RecipeReplicationDocument } from '@/lib/replication-contracts'
 
 export type OfflineRecipe = Omit<RecipeReplicationDocument, '_deleted'>
 type RecipeCollection = Collection<

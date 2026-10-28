@@ -1,5 +1,5 @@
 import { replicateRxCollection } from 'rxdb/plugins/replication'
-import type { ReplicationCheckpoint } from './contracts'
+import type { ReplicationCheckpoint } from '@/lib/replication-contracts'
 import type { OfflineRecipe } from './recipes'
 import { getRecipeDatabase } from './recipes'
 
@@ -8,7 +8,7 @@ type PullResult = {
   readonly checkpoint: ReplicationCheckpoint | undefined
 }
 
-let replicationStarted = false
+let replicationStartPromise: Promise<void> | undefined
 
 async function postJson<T>(url: string, body: unknown): Promise<T> {
   const response = await fetch(url, {
@@ -23,7 +23,14 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
 }
 
 export async function startRecipeReplication(): Promise<void> {
-  if (replicationStarted) return
+  replicationStartPromise ??= startReplication().catch((error: unknown) => {
+    replicationStartPromise = undefined
+    throw error
+  })
+  return replicationStartPromise
+}
+
+async function startReplication(): Promise<void> {
   const database = await getRecipeDatabase()
   replicateRxCollection<OfflineRecipe, ReplicationCheckpoint>({
     replicationIdentifier: 'roastbook-recipes-v1',
@@ -45,5 +52,4 @@ export async function startRecipeReplication(): Promise<void> {
       handler: (rows) => postJson('/api/replication/push', { rows }),
     },
   })
-  replicationStarted = true
 }

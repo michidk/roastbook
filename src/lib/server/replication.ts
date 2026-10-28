@@ -5,14 +5,13 @@ import { recipes, replicationChanges } from '@/db/schema'
 import type {
   RecipeReplicationDocument,
   ReplicationCheckpoint,
-} from '@/modules/rxdb/contracts'
-import { replicationCheckpointSchema } from '@/modules/rxdb/contracts'
+} from '@/lib/replication-contracts'
+import { replicationCheckpointSchema } from '@/lib/replication-contracts'
 
 const ENTITY = 'recipes'
 const DEFAULT_BATCH_SIZE = 100
 const MAX_BATCH_SIZE = 500
 
-const checkpointSchema = replicationCheckpointSchema
 const recipeDocumentSchema = z.object({
   id: z.string().min(1),
   serverId: z.number().int().positive().nullable().optional(),
@@ -142,7 +141,7 @@ export async function pullRecipes(input: unknown): Promise<{
 }> {
   const body = z
     .object({
-      checkpoint: checkpointSchema.optional(),
+      checkpoint: replicationCheckpointSchema.optional(),
       batchSize: z.number().int().positive().max(MAX_BATCH_SIZE).optional(),
     })
     .parse(input)
