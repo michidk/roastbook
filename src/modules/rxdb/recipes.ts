@@ -46,7 +46,7 @@ export type RecipeRxCollection = RxCollection<OfflineRecipe>
 export type RoastbookRxDatabase = RxDatabase<{ recipes: RecipeRxCollection }>
 
 export async function createRecipeDatabase(): Promise<RoastbookRxDatabase> {
-  if (typeof window === 'undefined') {
+  if (typeof indexedDB === 'undefined') {
     throw new Error('The Roastbook RxDB database is browser-only')
   }
 

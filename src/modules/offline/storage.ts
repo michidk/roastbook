@@ -190,6 +190,10 @@ export async function resetOfflineDatabaseForTests(): Promise<void> {
 
 /** Removes everything this browser stored for offline journaling. */
 export async function deleteOfflineDatabase(): Promise<void> {
+  await import('@/modules/rxdb/offline-database').then(
+    ({ resetOfflineRxDatabase }) =>
+      resetOfflineRxDatabase().catch(() => undefined),
+  )
   const database = await databasePromise?.catch(() => undefined)
   database?.close()
   databasePromise = undefined
