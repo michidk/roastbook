@@ -27,7 +27,7 @@ const recipeSchema = {
     brewingMethodId: { type: 'number' },
     beanId: { type: ['number', 'null'] },
     drinkTypeId: { type: ['number', 'null'] },
-    revision: { type: 'number' },
+    serverRevision: { type: 'number' },
     updatedAt: { type: 'string', format: 'date-time' },
   },
   required: [
@@ -35,7 +35,7 @@ const recipeSchema = {
     'syncId',
     'name',
     'brewingMethodId',
-    'revision',
+    'serverRevision',
     'updatedAt',
   ],
   indexes: ['updatedAt', 'syncId'],

@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 export const replicationCheckpointSchema = z.object({
   sequence: z.number().int().nonnegative(),
+  recipeId: z.number().int().positive().optional(),
 })
 
 export type ReplicationCheckpoint = z.infer<typeof replicationCheckpointSchema>
@@ -14,7 +15,7 @@ export type RecipeReplicationDocument = {
   brewingMethodId: number
   beanId: number | null
   drinkTypeId: number | null
-  revision: number
+  serverRevision: number
   updatedAt: string
   _deleted?: boolean
 }

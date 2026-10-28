@@ -21,7 +21,7 @@ const recipeDocumentSchema = z
     brewingMethodId: z.number().int().positive(),
     beanId: z.number().int().positive().nullable(),
     drinkTypeId: z.number().int().positive().nullable(),
-    revision: z.number().int().nonnegative(),
+    serverRevision: z.number().int().nonnegative(),
     updatedAt: z.string().datetime(),
     _deleted: z.boolean().default(false),
   })
@@ -63,7 +63,7 @@ function toDocument(row: RecipeRow): RecipeReplicationDocument {
     brewingMethodId: row.brewingMethodId,
     beanId: row.beanId,
     drinkTypeId: row.drinkTypeId,
-    revision: row.revision,
+    serverRevision: row.revision,
     updatedAt: row.updatedAt.toISOString(),
     _deleted: false,
   }
@@ -77,7 +77,7 @@ function deletedDocument(syncId: string): RecipeReplicationDocument {
     brewingMethodId: 1,
     beanId: null,
     drinkTypeId: null,
-    revision: 0,
+    serverRevision: 0,
     updatedAt: new Date(0).toISOString(),
     _deleted: true,
   }
@@ -103,7 +103,8 @@ function isAlreadyAppliedRecipe(
 ): boolean {
   return (
     hasSameRecipeContent(incoming, existing) &&
-    (!assumedMasterState || existing.revision > assumedMasterState.revision)
+    (!assumedMasterState ||
+      existing.revision > assumedMasterState.serverRevision)
   )
 }
 
@@ -159,11 +160,32 @@ export async function pullRecipes(input: unknown): Promise<{
 
   return db.transaction(
     async (tx) => {
-      if (!body.checkpoint) {
-        const rows = await tx.select().from(recipes).orderBy(asc(recipes.id))
+      if (!body.checkpoint || body.checkpoint.recipeId) {
+        const sequence =
+          body.checkpoint?.sequence ?? (await latestCheckpoint(tx)).sequence
+        const rows = body.checkpoint?.recipeId
+          ? await tx
+              .select()
+              .from(recipes)
+              .where(gt(recipes.id, body.checkpoint.recipeId))
+              .orderBy(asc(recipes.id))
+              .limit(batchSize)
+          : await tx
+              .select()
+              .from(recipes)
+              .orderBy(asc(recipes.id))
+              .limit(batchSize)
+        const lastRecipeId = rows.at(-1)?.id
+        const hasMore = rows.length === batchSize && lastRecipeId !== undefined
         return {
           documents: rows.map(toDocument),
-          checkpoint: await latestCheckpoint(tx),
+          checkpoint: hasMore
+            ? { sequence, recipeId: lastRecipeId }
+            : {
+                sequence: await latestCheckpoint(tx).then(
+                  ({ sequence: latest }) => latest,
+                ),
+              },
         }
       }
 
@@ -220,7 +242,7 @@ async function pushRecipe(
     if (!existing) return
     if (
       !row.assumedMasterState ||
-      existing.revision !== row.assumedMasterState.revision
+      existing.revision !== row.assumedMasterState.serverRevision
     ) {
       return toDocument(existing)
     }
@@ -254,7 +276,7 @@ async function pushRecipe(
 
   if (
     !row.assumedMasterState ||
-    existing.revision !== row.assumedMasterState.revision
+    existing.revision !== row.assumedMasterState.serverRevision
   ) {
     return toDocument(existing)
   }
