@@ -255,6 +255,8 @@ export const aiRequestLogs = pgTable(
       precision: 18,
       scale: 10,
     }),
+    estimatedCostSource: text('estimated_cost_source'),
+    estimatedCostVersion: text('estimated_cost_version'),
     durationMs: integer('duration_ms'),
     completedAt: timestamp('completed_at'),
     createdAt: createdAt(),

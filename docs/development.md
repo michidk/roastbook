@@ -86,6 +86,9 @@ the complete migration chain, and then runs all tests.
 
 ## Maintenance scripts
 
+- `bun run sync:ai-pricing` refreshes the committed AI pricing snapshot from
+  the packaged models.dev catalog. The application reads that snapshot at
+  runtime, so deployments do not depend on a live pricing request.
 - `bun run storage:backfill-thumbnails` (`scripts/backfill-thumbnails.ts`) is a
   one-shot backfill that generates missing standard and small thumbnails for
   existing images

@@ -16,8 +16,9 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "check": "bun run check:code && bun run check:docs",
-    "check:code": "biome check . && bun run check:boundaries",
+    "check:code": "biome check . && bun run check:boundaries && bun run check:ai-pricing",
     "check:boundaries": "bun run scripts/check-import-boundaries.ts",
+    "check:ai-pricing": "bun run scripts/sync-ai-pricing.ts --check",
     "check:docs": "markdownlint-cli2 \"README.md\" \"AGENTS.md\" \"DESIGN.md\" \"docs/**/*.md\" \"charts/**/*.md\"",
     "check:client-assets": "bun run scripts/check-client-assets.ts",
     "check:pwa": "bun run scripts/check-pwa.ts",
@@ -38,7 +39,8 @@
     "db:seed": "bun run scripts/seed.ts",
     "db:duplicate-roasters": "bun run scripts/find-duplicate-roasters.ts",
     "storage:orphans": "bun run scripts/report-media-orphans.ts",
-    "storage:backfill-thumbnails": "bun run scripts/backfill-thumbnails.ts"
+    "storage:backfill-thumbnails": "bun run scripts/backfill-thumbnails.ts",
+    "sync:ai-pricing": "bun run scripts/sync-ai-pricing.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1068.0",
@@ -70,6 +72,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.6.3",
     "@electric-sql/pglite": "0.5.11",
+    "@opencode-ai/models": "0.0.118",
     "@tanstack/devtools-vite": "0.8.5",
     "@tanstack/router-cli": "1.167.46",
     "@types/bun": "1.4.4",

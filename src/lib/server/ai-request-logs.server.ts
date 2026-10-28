@@ -2,7 +2,7 @@ import type { ChatMiddleware, StreamChunk, TokenUsage } from '@tanstack/ai'
 import { and, desc, eq, lt, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { aiRequestLogs } from '@/db/schema'
-import { estimateTokenCostUsd } from '@/lib/ai-pricing'
+import { estimateTokenCost } from '@/lib/ai-pricing'
 import {
   type AiTokenTotals,
   addAiTokenUsage,
@@ -30,6 +30,8 @@ export type AiRequestLogSummary = {
   completionTokens: number
   totalTokens: number
   estimatedCostUsd: string | null
+  estimatedCostSource: string | null
+  estimatedCostVersion: string | null
   durationMs: number | null
   completedAt: Date | null
   createdAt: Date
@@ -221,13 +223,16 @@ function usageForResponse(
 }
 
 function usageValues(model: string, usage: AiTokenTotals) {
-  const estimatedCost = estimateTokenCostUsd(model, usage)
+  const estimatedCost = estimateTokenCost(model, usage)
   return {
     promptTokens: usage.promptTokens,
     cachedPromptTokens: usage.promptTokensDetails?.cachedTokens ?? 0,
     completionTokens: usage.completionTokens,
     totalTokens: usage.totalTokens,
-    estimatedCostUsd: estimatedCost === null ? null : estimatedCost.toFixed(10),
+    estimatedCostUsd:
+      estimatedCost === null ? null : estimatedCost.usd.toFixed(10),
+    estimatedCostSource: estimatedCost?.source ?? null,
+    estimatedCostVersion: estimatedCost?.version ?? null,
   }
 }
 
@@ -352,6 +357,8 @@ export async function loadAiRequestLogs({
       completionTokens: aiRequestLogs.completionTokens,
       totalTokens: aiRequestLogs.totalTokens,
       estimatedCostUsd: aiRequestLogs.estimatedCostUsd,
+      estimatedCostSource: aiRequestLogs.estimatedCostSource,
+      estimatedCostVersion: aiRequestLogs.estimatedCostVersion,
       durationMs: aiRequestLogs.durationMs,
       completedAt: aiRequestLogs.completedAt,
       createdAt: aiRequestLogs.createdAt,
