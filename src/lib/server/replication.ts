@@ -87,6 +87,17 @@ function hasSameRecipeContent(
   )
 }
 
+function isAlreadyAppliedRecipe(
+  incoming: RecipeReplicationDocument,
+  existing: RecipeRow,
+  assumedMasterState: RecipeReplicationDocument | undefined,
+): boolean {
+  return (
+    hasSameRecipeContent(incoming, existing) &&
+    (!assumedMasterState || existing.revision > assumedMasterState.revision)
+  )
+}
+
 export async function recordRecipeReplicationChange(
   tx: ReplicationTransaction,
   row: RecipeRow,
@@ -228,11 +239,7 @@ async function pushRecipe(
 
   // A retried request can arrive after its transaction committed but before
   // the client received the response. Treat the document as already applied.
-  if (
-    hasSameRecipeContent(incoming, existing) &&
-    (!row.assumedMasterState ||
-      existing.revision > row.assumedMasterState.revision)
-  ) {
+  if (isAlreadyAppliedRecipe(incoming, existing, row.assumedMasterState)) {
     return
   }
 
