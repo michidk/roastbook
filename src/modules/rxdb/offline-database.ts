@@ -1,9 +1,9 @@
 import type { RxCollection, RxDatabase } from 'rxdb'
+import type { RecipeReplicationDocument } from '@/lib/replication-contracts'
 import type { LocalEntityRecord } from '@/modules/offline/local-data'
 import type { OfflineOperation } from '@/modules/offline/operations'
 import { pendingBrewToOperation } from '@/modules/offline/pending-brew-operation'
 import type { PendingBrew } from '@/modules/offline/types'
-import type { RecipeReplicationDocument } from '@/lib/replication-contracts'
 
 export type OfflineOperationDocument = OfflineOperation
 export type OfflineRecipeDocument = Omit<RecipeReplicationDocument, '_deleted'>
