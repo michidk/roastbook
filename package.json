@@ -96,6 +96,7 @@
   },
   "overrides": {
     "esbuild": "^0.28.2",
-    "smol-toml": "^1.8.0"
+    "smol-toml": "^1.8.0",
+    "rxdb": "17.6.0"
   }
 }
