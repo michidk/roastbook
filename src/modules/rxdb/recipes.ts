@@ -1,7 +1,6 @@
 import type { Collection, NonSingleResult, UtilsRecord } from '@tanstack/db'
 import { createCollection } from '@tanstack/db'
 import { rxdbCollectionOptions } from '@tanstack/rxdb-db-collection'
-import type { RxCollection } from 'rxdb'
 import type { RecipeReplicationDocument } from '@/lib/replication-contracts'
 import {
   getOfflineRxDatabase,
@@ -18,7 +17,6 @@ type RecipeCollection = Collection<
 > &
   NonSingleResult
 
-export type RecipeRxCollection = RxCollection<OfflineRecipe>
 export type RoastbookRxDatabase = OfflineRxDatabase
 let collectionPromise: Promise<RecipeCollection> | undefined
 
