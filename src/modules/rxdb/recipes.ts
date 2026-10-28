@@ -90,10 +90,3 @@ export async function getRecipeCollection() {
     throw new Error('Could not initialize the recipe collection')
   return collectionPromise
 }
-
-export async function closeRecipeDatabase(): Promise<void> {
-  const database = await databasePromise?.catch(() => undefined)
-  await database?.close()
-  databasePromise = undefined
-  collectionPromise = undefined
-}
