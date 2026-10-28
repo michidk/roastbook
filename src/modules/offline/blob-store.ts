@@ -3,12 +3,7 @@ import {
   DEFAULT_OWNER_KEY,
   type OfflineEntityType,
 } from '@/modules/offline/operations'
-import {
-  OFFLINE_BLOBS_STORE,
-  openOfflineDatabase,
-  requestToPromise,
-  transactionToPromise,
-} from '@/modules/offline/storage'
+import { getOfflineRxDatabase } from '@/modules/rxdb/offline-database'
 
 export interface OfflineBlobRecord {
   readonly key: string
@@ -30,6 +25,31 @@ export interface PutOfflineBlobInput {
 }
 
 const ALLOWED_IMAGE_TYPES = new Set<string>(IMAGE_MIME_TYPE_VALUES)
+
+function toBlobRecord(value: {
+  readonly id: string
+  readonly ownerKey: string
+  readonly entityType: string
+  readonly entityId: string
+  readonly filename: string
+  readonly mimeType: string
+  readonly sizeBytes: number
+  readonly createdAt: string
+  readonly data: string
+}): OfflineBlobRecord {
+  const bytes = Uint8Array.from(atob(value.data), (char) => char.charCodeAt(0))
+  return {
+    key: value.id,
+    ownerKey: value.ownerKey,
+    entityType: value.entityType as OfflineEntityType,
+    entityId: value.entityId,
+    filename: value.filename,
+    mimeType: value.mimeType,
+    sizeBytes: value.sizeBytes,
+    createdAt: value.createdAt,
+    blob: new Blob([bytes], { type: value.mimeType }),
+  }
+}
 
 export async function putOfflineBlob(
   input: PutOfflineBlobInput,
@@ -56,23 +76,22 @@ export async function putOfflineBlob(
     blob: input.file,
   }
 
-  const database = await openOfflineDatabase()
-  const transaction = database.transaction(OFFLINE_BLOBS_STORE, 'readwrite')
-  transaction.objectStore(OFFLINE_BLOBS_STORE).put(record)
-  await transactionToPromise(transaction)
+  const bytes = new Uint8Array(await input.file.arrayBuffer())
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  const database = await getOfflineRxDatabase()
+  const { key: id, blob: _blob, ...stored } = record
+  await database.blobs.insert({ ...stored, id, data: btoa(binary) })
   return record
 }
 
 export async function getOfflineBlob(
   key: string,
 ): Promise<OfflineBlobRecord | undefined> {
-  const database = await openOfflineDatabase()
-  const transaction = database.transaction(OFFLINE_BLOBS_STORE, 'readonly')
-  const record = (await requestToPromise(
-    transaction.objectStore(OFFLINE_BLOBS_STORE).get(key),
-  )) as OfflineBlobRecord | undefined
-  await transactionToPromise(transaction)
-  return record
+  const database = await getOfflineRxDatabase()
+  const doc = await database.blobs.findOne(key).exec()
+  if (!doc) return undefined
+  return toBlobRecord(doc.toJSON())
 }
 
 export async function listOfflineBlobs(
@@ -83,12 +102,10 @@ export async function listOfflineBlobs(
   } = {},
 ): Promise<OfflineBlobRecord[]> {
   const ownerKey = options.ownerKey ?? DEFAULT_OWNER_KEY
-  const database = await openOfflineDatabase()
-  const transaction = database.transaction(OFFLINE_BLOBS_STORE, 'readonly')
-  const records = (await requestToPromise(
-    transaction.objectStore(OFFLINE_BLOBS_STORE).getAll(),
-  )) as OfflineBlobRecord[]
-  await transactionToPromise(transaction)
+  const database = await getOfflineRxDatabase()
+  const records = (await database.blobs.find().exec()).map((doc) =>
+    doc.toJSON(),
+  )
 
   return records
     .filter(
@@ -100,13 +117,12 @@ export async function listOfflineBlobs(
           record.entityId === String(options.entityId)),
     )
     .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
+    .map((value) => toBlobRecord(value))
 }
 
 export async function deleteOfflineBlob(key: string): Promise<void> {
-  const database = await openOfflineDatabase()
-  const transaction = database.transaction(OFFLINE_BLOBS_STORE, 'readwrite')
-  transaction.objectStore(OFFLINE_BLOBS_STORE).delete(key)
-  await transactionToPromise(transaction)
+  const database = await getOfflineRxDatabase()
+  await database.blobs.findOne(key).remove()
 }
 
 export async function deleteOfflineBlobsForEntity(
@@ -115,9 +131,5 @@ export async function deleteOfflineBlobsForEntity(
   ownerKey: string = DEFAULT_OWNER_KEY,
 ): Promise<void> {
   const records = await listOfflineBlobs({ ownerKey, entityType, entityId })
-  const database = await openOfflineDatabase()
-  const transaction = database.transaction(OFFLINE_BLOBS_STORE, 'readwrite')
-  const store = transaction.objectStore(OFFLINE_BLOBS_STORE)
-  for (const record of records) store.delete(record.key)
-  await transactionToPromise(transaction)
+  await Promise.all(records.map((record) => deleteOfflineBlob(record.key)))
 }

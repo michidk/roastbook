@@ -1,3 +1,4 @@
+import { getOfflineRxDatabase } from '@/modules/rxdb/offline-database'
 import { deleteOfflineBlob } from './blob-store'
 import { getLocalEntityByServerId, removeLocalEntity } from './local-data'
 import {
@@ -9,12 +10,6 @@ import {
   type OfflineOperationStatus,
   type OfflineOperationType,
 } from './operations'
-import {
-  OPERATIONS_STORE,
-  openOfflineDatabase,
-  requestToPromise,
-  transactionToPromise,
-} from './storage'
 import { notifyPendingSyncFinished, requestPendingSync } from './sync-trigger'
 
 export interface OfflineOperationChanges {
@@ -50,25 +45,18 @@ function operationSort(
 export async function getOperation(
   id: string,
 ): Promise<OfflineOperation | undefined> {
-  const database = await openOfflineDatabase()
-  const transaction = database.transaction(OPERATIONS_STORE, 'readonly')
-  const operation = (await requestToPromise(
-    transaction.objectStore(OPERATIONS_STORE).get(id),
-  )) as OfflineOperation | undefined
-  await transactionToPromise(transaction)
-  return operation
+  const database = await getOfflineRxDatabase()
+  const document = await database.operations.findOne(id).exec()
+  return document?.toJSON() as OfflineOperation | undefined
 }
 
 export async function listOperations(
   options: ListOperationsOptions = {},
 ): Promise<OfflineOperation[]> {
-  const database = await openOfflineDatabase()
-  const transaction = database.transaction(OPERATIONS_STORE, 'readonly')
-  const operations = (await requestToPromise(
-    transaction.objectStore(OPERATIONS_STORE).getAll(),
-  )) as OfflineOperation[]
-  await transactionToPromise(transaction)
-
+  const database = await getOfflineRxDatabase()
+  const operations = (await database.operations.find().exec()).map(
+    (document) => document.toJSON() as OfflineOperation,
+  )
   const ownerKey = options.ownerKey ?? DEFAULT_OWNER_KEY
   return operations
     .filter(
@@ -85,36 +73,23 @@ export async function listOperations(
 }
 
 export async function putOperation(operation: OfflineOperation): Promise<void> {
-  const database = await openOfflineDatabase()
-  const transaction = database.transaction(OPERATIONS_STORE, 'readwrite')
-  const store = transaction.objectStore(OPERATIONS_STORE)
-  const existing = (await requestToPromise(store.get(operation.id))) as
-    | OfflineOperation
-    | undefined
+  const database = await getOfflineRxDatabase()
+  const existing = await getOperation(operation.id)
   if (existing && isTerminalOperationStatus(existing.status)) {
     throw new Error('A completed offline operation cannot be replaced')
   }
-  store.put(operation)
-  await transactionToPromise(transaction)
+  await database.operations.upsert(operation)
 }
 
 export async function updateOperation(
   id: string,
   changes: OfflineOperationChanges,
 ): Promise<void> {
-  const database = await openOfflineDatabase()
-  const transaction = database.transaction(OPERATIONS_STORE, 'readwrite')
-  const store = transaction.objectStore(OPERATIONS_STORE)
-  const existing = (await requestToPromise(store.get(id))) as
-    | OfflineOperation
-    | undefined
-  if (!existing) {
-    return
-  }
+  const existing = await getOperation(id)
+  if (!existing) return
   if (isTerminalOperationStatus(existing.status)) {
     throw new Error('A completed offline operation cannot be changed')
   }
-
   const status = changes.status ?? existing.status
   if (
     status !== existing.status &&
@@ -124,9 +99,8 @@ export async function updateOperation(
       `Cannot move an offline operation from ${existing.status} to ${status}`,
     )
   }
-
   const now = new Date().toISOString()
-  const updated: OfflineOperation = {
+  await putOperation({
     ...existing,
     ...changes,
     status,
@@ -139,34 +113,22 @@ export async function updateOperation(
       status === 'cancelled'
         ? (existing.cancelledAt ?? now)
         : existing.cancelledAt,
-  }
-  store.put(updated)
-  await transactionToPromise(transaction)
+  })
 }
 
 export async function claimOperation(id: string): Promise<boolean> {
-  const database = await openOfflineDatabase()
-  const transaction = database.transaction(OPERATIONS_STORE, 'readwrite')
-  const store = transaction.objectStore(OPERATIONS_STORE)
-  const existing = (await requestToPromise(store.get(id))) as
-    | OfflineOperation
-    | undefined
+  const existing = await getOperation(id)
   if (
     !existing ||
     (existing.status !== 'pending' && existing.status !== 'retryable')
-  ) {
-    await transactionToPromise(transaction)
+  )
     return false
-  }
-
-  const now = new Date().toISOString()
-  store.put({
+  await putOperation({
     ...existing,
     status: 'in-flight',
     attempts: existing.attempts + 1,
-    updatedAt: now,
+    updatedAt: new Date().toISOString(),
   })
-  await transactionToPromise(transaction)
   return true
 }
 
@@ -187,39 +149,22 @@ export async function acknowledgeOperation(
 }
 
 export async function cancelOperation(id: string): Promise<boolean> {
-  const database = await openOfflineDatabase()
-  const transaction = database.transaction(OPERATIONS_STORE, 'readwrite')
-  const store = transaction.objectStore(OPERATIONS_STORE)
-  const existing = (await requestToPromise(store.get(id))) as
-    | OfflineOperation
-    | undefined
-  if (!existing || isTerminalOperationStatus(existing.status)) {
-    await transactionToPromise(transaction)
-    return false
-  }
+  const existing = await getOperation(id)
+  if (!existing || isTerminalOperationStatus(existing.status)) return false
   if (existing.status === 'in-flight') {
-    await transactionToPromise(transaction)
     throw new Error(
       'Wait for the current sync to finish before discarding this operation',
     )
   }
-
-  const now = new Date().toISOString()
-  store.put({
-    ...existing,
+  await updateOperation(id, {
     status: 'cancelled',
     payload: null,
     details: null,
     blobKeys: [],
     lastError: null,
-    cancelledAt: existing.cancelledAt ?? now,
-    updatedAt: now,
   })
-  await transactionToPromise(transaction)
-
-  for (const blobKey of existing.blobKeys) {
+  for (const blobKey of existing.blobKeys)
     await deleteOfflineBlob(blobKey).catch(() => undefined)
-  }
   notifyPendingSyncFinished()
   return true
 }

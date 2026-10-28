@@ -21,14 +21,6 @@ const ENTITY_TYPE_INDEX = 'entityType'
 
 let databasePromise: Promise<IDBDatabase> | undefined
 
-export function requestToPromise<T>(request: IDBRequest<T>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result)
-    request.onerror = () =>
-      reject(request.error ?? new Error('Offline storage request failed'))
-  })
-}
-
 export function transactionToPromise(
   transaction: IDBTransaction,
 ): Promise<void> {
@@ -190,6 +182,10 @@ export async function resetOfflineDatabaseForTests(): Promise<void> {
 
 /** Removes everything this browser stored for offline journaling. */
 export async function deleteOfflineDatabase(): Promise<void> {
+  await import('@/modules/rxdb/offline-database').then(
+    ({ resetOfflineRxDatabase }) =>
+      resetOfflineRxDatabase().catch(() => undefined),
+  )
   const database = await databasePromise?.catch(() => undefined)
   database?.close()
   databasePromise = undefined
@@ -212,6 +208,20 @@ export async function deleteOfflineDatabase(): Promise<void> {
  * operation log, including unsynced work and the last-sync marker.
  */
 export async function clearOfflineCaches(): Promise<void> {
+  const { getOfflineRxDatabase } = await import(
+    '@/modules/rxdb/offline-database'
+  )
+  const rxDatabase = await getOfflineRxDatabase()
+  const rxEntities = await rxDatabase.entities.find().exec()
+  await Promise.all(
+    rxEntities
+      .filter(
+        (entity) =>
+          entity.entityType !== 'settings' ||
+          entity.localId.startsWith('reference:'),
+      )
+      .map((entity) => entity.remove()),
+  )
   const database = await openOfflineDatabase()
   const transaction = database.transaction(
     [LOCAL_ENTITIES_STORE, REFERENCE_STORE],
