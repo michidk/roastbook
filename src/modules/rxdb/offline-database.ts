@@ -5,7 +5,13 @@ import { pendingBrewToOperation } from '@/modules/offline/pending-brew-operation
 import type { PendingBrew } from '@/modules/offline/types'
 
 export type OfflineOperationDocument = OfflineOperation
-export type OfflineEntityDocument = LocalEntityRecord
+export type OfflineEntityDocument = Omit<
+  LocalEntityRecord,
+  'key' | 'revision'
+> & {
+  readonly id: string
+  readonly entityRevision: string | null
+}
 
 type OfflineCollections = {
   operations: RxCollection<OfflineOperationDocument>
@@ -67,27 +73,27 @@ const operationSchema = {
 
 const entitySchema = {
   title: 'roastbook offline entities',
-  version: 0,
-  primaryKey: 'key',
+  version: 1,
+  primaryKey: 'id',
   type: 'object',
   properties: {
-    key: { type: 'string', maxLength: 512 },
+    id: { type: 'string', maxLength: 512 },
     ownerKey: { type: 'string', maxLength: 128 },
     entityType: { type: 'string' },
     localId: { type: 'string', maxLength: 128 },
     serverId: { type: ['string', 'null'] },
     data: {},
-    revision: { type: ['string', 'null'] },
+    entityRevision: { type: ['string', 'null'] },
     syncState: { type: 'string' },
     updatedAt: { type: 'string' },
   },
   required: [
-    'key',
+    'id',
     'ownerKey',
     'entityType',
     'localId',
     'serverId',
-    'revision',
+    'entityRevision',
     'syncState',
     'updatedAt',
   ],
@@ -134,20 +140,28 @@ export async function getOfflineRxDatabase(): Promise<OfflineRxDatabase> {
   databasePromise ??= Promise.all([
     import('rxdb'),
     import('rxdb/plugins/storage-dexie'),
+    import('rxdb/plugins/migration-schema'),
   ])
-    .then(async ([{ createRxDatabase }, { getRxStorageDexie }]) => {
-      const database = await createRxDatabase<OfflineRxDatabase>({
-        name: 'roastbook-offline-rxdb',
-        storage: getRxStorageDexie(),
-        multiInstance: true,
-      })
-      await database.addCollections({
-        operations: { schema: operationSchema },
-        entities: { schema: entitySchema },
-      })
-      await migrateLegacyPendingBrews(database)
-      return database
-    })
+    .then(
+      async ([
+        { addRxPlugin, createRxDatabase },
+        { getRxStorageDexie },
+        { RxDBMigrationSchemaPlugin },
+      ]) => {
+        addRxPlugin(RxDBMigrationSchemaPlugin)
+        const database = await createRxDatabase<OfflineRxDatabase>({
+          name: 'roastbook-offline-rxdb',
+          storage: getRxStorageDexie(),
+          multiInstance: true,
+        })
+        await database.addCollections({
+          operations: { schema: operationSchema },
+          entities: { schema: entitySchema },
+        })
+        await migrateLegacyPendingBrews(database)
+        return database
+      },
+    )
     .catch((error: unknown) => {
       databasePromise = undefined
       throw error
