@@ -181,31 +181,86 @@ async function migrateLegacyPendingBrews(
   database: OfflineRxDatabase,
 ): Promise<void> {
   if (typeof indexedDB === 'undefined') return
-  const legacy = await new Promise<PendingBrew[]>((resolve) => {
+  const legacy = await new Promise<{
+    pending: PendingBrew[]
+    references: Array<{ key: string; value: unknown }>
+  }>((resolve) => {
     const request = indexedDB.open('roastbook-offline')
     request.onsuccess = () => {
       const oldDatabase = request.result
-      if (!oldDatabase.objectStoreNames.contains('pending-brews')) {
+      const hasPending = oldDatabase.objectStoreNames.contains('pending-brews')
+      const hasReferences =
+        oldDatabase.objectStoreNames.contains('reference-data')
+      if (!hasPending && !hasReferences) {
         oldDatabase.close()
-        resolve([])
+        resolve({ pending: [], references: [] })
         return
       }
-      const transaction = oldDatabase.transaction('pending-brews', 'readonly')
-      const read = transaction.objectStore('pending-brews').getAll()
-      read.onsuccess = () => {
+      const stores = [
+        ...(hasPending ? ['pending-brews'] : []),
+        ...(hasReferences ? ['reference-data'] : []),
+      ]
+      const transaction = oldDatabase.transaction(stores, 'readonly')
+      const read = hasPending
+        ? transaction.objectStore('pending-brews').getAll()
+        : undefined
+      const referenceStore = hasReferences
+        ? transaction.objectStore('reference-data')
+        : undefined
+      const references = referenceStore?.getAllKeys()
+      const values = referenceStore?.getAll()
+      transaction.oncomplete = async () => {
         oldDatabase.close()
-        resolve(read.result as PendingBrew[])
-      }
-      read.onerror = () => {
-        oldDatabase.close()
-        resolve([])
+        if (hasPending) {
+          await new Promise<void>((done) => {
+            const cleanup = indexedDB.open('roastbook-offline', 2)
+            cleanup.onupgradeneeded = () => {
+              const database = cleanup.result
+              if (database.objectStoreNames.contains('pending-brews'))
+                database.deleteObjectStore('pending-brews')
+            }
+            cleanup.onsuccess = () => {
+              cleanup.result.close()
+              done()
+            }
+            cleanup.onerror = () => done()
+          })
+        }
+        resolve({
+          pending: (read?.result ?? []) as PendingBrew[],
+          references: (references?.result ?? []).map((key, index) => ({
+            key: String(key),
+            value: values?.result?.[index],
+          })),
+        })
       }
     }
-    request.onerror = () => resolve([])
+    request.onerror = () => resolve({ pending: [], references: [] })
     request.onupgradeneeded = () => request.transaction?.abort()
   })
-  if (legacy.length === 0) return
-  await database.operations.bulkInsert(legacy.map(pendingBrewToOperation))
+  if (legacy.pending.length > 0)
+    await database.operations.bulkInsert(
+      legacy.pending.map(pendingBrewToOperation),
+    )
+  for (const reference of legacy.references) {
+    const value = reference.value as {
+      version?: number
+      savedAt?: string
+      data?: unknown
+    }
+    if (value.version === undefined || value.savedAt === undefined) continue
+    await database.entities.upsert({
+      id: `local:settings:reference%3A${encodeURIComponent(reference.key)}`,
+      ownerKey: 'local',
+      entityType: 'settings',
+      localId: `reference:${reference.key}`,
+      serverId: null,
+      data: { record: value },
+      entityRevision: null,
+      syncState: 'synced',
+      updatedAt: value.savedAt,
+    })
+  }
 }
 export async function getOfflineRxDatabase(): Promise<OfflineRxDatabase> {
   if (typeof indexedDB === 'undefined') {
