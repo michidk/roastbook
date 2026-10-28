@@ -169,6 +169,16 @@ function AiRequestEntry({ entry }: { entry: AiRequestLogSummary }) {
                 </dd>
               </div>
               <div>
+                <dt className="text-muted-foreground">Cost source</dt>
+                <dd className="mt-1 font-bold">
+                  {entry.estimatedCostSource === null
+                    ? '—'
+                    : entry.estimatedCostSource === 'provider'
+                      ? 'Provider reported'
+                      : `${entry.estimatedCostSource} (${entry.estimatedCostVersion ?? 'unknown version'})`}
+                </dd>
+              </div>
+              <div>
                 <dt className="text-muted-foreground">Duration</dt>
                 <dd className="mt-1 font-bold">
                   {entry.durationMs === null

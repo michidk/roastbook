@@ -1,9 +1,36 @@
 import { describe, expect, test } from 'bun:test'
 import { OPENAI_CHAT_MODELS } from '@tanstack/ai-openai'
-import { MODEL_TOKEN_RATES } from '@/lib/ai-model-pricing'
-import { estimateTokenCostUsd } from '@/lib/ai-pricing'
+import {
+  MODEL_PRICING_SOURCE,
+  MODEL_PRICING_VERSION,
+  MODEL_TOKEN_RATES,
+} from '@/lib/ai-model-pricing'
+import { estimateTokenCost, estimateTokenCostUsd } from '@/lib/ai-pricing'
 
 describe('AI token cost estimates', () => {
+  test('records the catalog source and version for estimates', () => {
+    expect(
+      estimateTokenCost('gpt-4o', {
+        promptTokens: 10,
+        completionTokens: 5,
+        totalTokens: 15,
+      }),
+    ).toMatchObject({
+      source: MODEL_PRICING_SOURCE,
+      version: MODEL_PRICING_VERSION,
+    })
+  })
+
+  test('marks documented fallback rates separately', () => {
+    expect(
+      estimateTokenCost('gpt-5-chat-latest', {
+        promptTokens: 10,
+        completionTokens: 5,
+        totalTokens: 15,
+      }),
+    ).toMatchObject({ source: 'models.dev-fallback' })
+  })
+
   test('covers every TanStack OpenAI chat model', () => {
     for (const model of OPENAI_CHAT_MODELS) {
       expect(MODEL_TOKEN_RATES[model]).toBeDefined()
@@ -63,6 +90,14 @@ describe('AI token cost estimates', () => {
   })
 
   test('prefers a provider-reported cost', () => {
+    expect(
+      estimateTokenCost('custom-model', {
+        promptTokens: 10,
+        completionTokens: 5,
+        totalTokens: 15,
+        cost: 0.0123,
+      }),
+    ).toEqual({ usd: 0.0123, source: 'provider', version: null })
     expect(
       estimateTokenCostUsd('custom-model', {
         promptTokens: 10,
