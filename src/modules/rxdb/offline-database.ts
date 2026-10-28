@@ -1,8 +1,8 @@
 import type { RxCollection, RxDatabase } from 'rxdb'
+import type { LocalEntityRecord } from '@/modules/offline/local-data'
+import type { OfflineOperation } from '@/modules/offline/operations'
 import { pendingBrewToOperation } from '@/modules/offline/pending-brew-operation'
 import type { PendingBrew } from '@/modules/offline/types'
-import type { OfflineOperation } from '@/modules/offline/operations'
-import type { LocalEntityRecord } from '@/modules/offline/local-data'
 
 export type OfflineOperationDocument = OfflineOperation
 export type OfflineEntityDocument = LocalEntityRecord

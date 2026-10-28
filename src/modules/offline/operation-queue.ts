@@ -1,3 +1,4 @@
+import { getOfflineRxDatabase } from '@/modules/rxdb/offline-database'
 import { deleteOfflineBlob } from './blob-store'
 import { getLocalEntityByServerId, removeLocalEntity } from './local-data'
 import {
@@ -9,7 +10,6 @@ import {
   type OfflineOperationStatus,
   type OfflineOperationType,
 } from './operations'
-import { getOfflineRxDatabase } from '@/modules/rxdb/offline-database'
 import { notifyPendingSyncFinished, requestPendingSync } from './sync-trigger'
 
 export interface OfflineOperationChanges {
