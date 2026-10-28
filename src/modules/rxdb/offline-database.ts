@@ -7,6 +7,17 @@ import type { RecipeReplicationDocument } from '@/lib/replication-contracts'
 
 export type OfflineOperationDocument = OfflineOperation
 export type OfflineRecipeDocument = Omit<RecipeReplicationDocument, '_deleted'>
+export type OfflineBlobDocument = {
+  readonly id: string
+  readonly ownerKey: string
+  readonly entityType: string
+  readonly entityId: string
+  readonly filename: string
+  readonly mimeType: string
+  readonly sizeBytes: number
+  readonly createdAt: string
+  readonly data: string
+}
 export type OfflineEntityDocument = Omit<
   LocalEntityRecord,
   'key' | 'revision'
@@ -19,6 +30,7 @@ type OfflineCollections = {
   operations: RxCollection<OfflineOperationDocument>
   entities: RxCollection<OfflineEntityDocument>
   recipes: RxCollection<OfflineRecipeDocument>
+  blobs: RxCollection<OfflineBlobDocument>
 }
 
 export type OfflineRxDatabase = RxDatabase<OfflineCollections>
@@ -132,6 +144,37 @@ const recipeSchema = {
   additionalProperties: false,
 } as const
 
+const blobSchema = {
+  title: 'roastbook offline blobs',
+  version: 0,
+  primaryKey: 'id',
+  type: 'object',
+  properties: {
+    id: { type: 'string', maxLength: 128 },
+    ownerKey: { type: 'string', maxLength: 128 },
+    entityType: { type: 'string' },
+    entityId: { type: 'string', maxLength: 128 },
+    filename: { type: 'string' },
+    mimeType: { type: 'string' },
+    sizeBytes: { type: 'number' },
+    createdAt: { type: 'string' },
+    data: { type: 'string' },
+  },
+  required: [
+    'id',
+    'ownerKey',
+    'entityType',
+    'entityId',
+    'filename',
+    'mimeType',
+    'sizeBytes',
+    'createdAt',
+    'data',
+  ],
+  indexes: ['ownerKey', 'entityType', 'entityId', 'createdAt'],
+  additionalProperties: false,
+} as const
+
 let databasePromise: Promise<OfflineRxDatabase> | undefined
 
 async function migrateLegacyPendingBrews(
@@ -189,6 +232,7 @@ export async function getOfflineRxDatabase(): Promise<OfflineRxDatabase> {
           operations: { schema: operationSchema },
           entities: { schema: entitySchema },
           recipes: { schema: recipeSchema },
+          blobs: { schema: blobSchema },
         })
         await migrateLegacyPendingBrews(database)
         return database
