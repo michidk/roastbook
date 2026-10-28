@@ -77,14 +77,17 @@ export function getRecipeDatabase(): Promise<RoastbookRxDatabase> {
 }
 
 export async function getRecipeCollection() {
-  collectionPromise ??= getRecipeDatabase().then((database) =>
-    createCollection<OfflineRecipe, string>(
-      rxdbCollectionOptions<OfflineRecipe>({
-        rxCollection: database.recipes,
-        startSync: true,
-        syncBatchSize: 250,
-      }),
-    ),
+  collectionPromise ??= getRecipeDatabase().then(
+    (database) =>
+      createCollection<OfflineRecipe, string>(
+        rxdbCollectionOptions<OfflineRecipe>({
+          rxCollection: database.recipes as never,
+          startSync: true,
+          syncBatchSize: 250,
+        }) as unknown as Parameters<
+          typeof createCollection<OfflineRecipe, string>
+        >[0],
+      ) as unknown as RecipeCollection,
   )
   if (!collectionPromise)
     throw new Error('Could not initialize the recipe collection')
