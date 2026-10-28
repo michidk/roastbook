@@ -179,89 +179,89 @@ export async function pushRecipes(
     const conflicts: RecipeReplicationDocument[] = []
 
     for (const row of rows) {
-      const incoming = row.newDocumentState
-      const existing = await tx.query.recipes.findFirst({
-        where: eq(recipes.syncId, incoming.syncId),
-      })
-
-      if (incoming._deleted) {
-        if (!existing) continue
-        if (
-          !row.assumedMasterState ||
-          existing.revision !== row.assumedMasterState.revision
-        ) {
-          conflicts.push(toDocument(existing))
-          continue
-        }
-        await tx.delete(recipes).where(eq(recipes.id, existing.id))
-        await recordRecipeReplicationDeletion(tx, existing.syncId)
-        continue
-      }
-
-      if (!existing) {
-        const [created] = await tx
-          .insert(recipes)
-          .values({
-            name: incoming.name,
-            syncId: incoming.syncId,
-            brewingMethodId: incoming.brewingMethodId,
-            beanId: incoming.beanId ?? null,
-            drinkTypeId: incoming.drinkTypeId ?? null,
-            revision: 0,
-          })
-          .returning()
-        if (!created)
-          throw new Error('Recipe replication insert returned no row')
-        await recordRecipeReplicationChange(tx, created)
-        continue
-      }
-
-      // A retried request can arrive after its transaction committed but
-      // before the client received the response. Treat the already-applied
-      // document as success so retries do not create false conflicts.
-      if (
-        hasSameRecipeContent(incoming, existing) &&
-        (!row.assumedMasterState ||
-          existing.revision > row.assumedMasterState.revision)
-      ) {
-        continue
-      }
-
-      if (
-        !row.assumedMasterState ||
-        existing.revision !== row.assumedMasterState.revision
-      ) {
-        conflicts.push(toDocument(existing))
-        continue
-      }
-
-      const [updated] = await tx
-        .update(recipes)
-        .set({
-          name: incoming.name,
-          brewingMethodId: incoming.brewingMethodId,
-          beanId: incoming.beanId ?? null,
-          drinkTypeId: incoming.drinkTypeId ?? null,
-          revision: existing.revision + 1,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(recipes.id, existing.id),
-            eq(recipes.revision, existing.revision),
-          ),
-        )
-        .returning()
-      if (!updated) {
-        const current = await tx.query.recipes.findFirst({
-          where: eq(recipes.id, existing.id),
-        })
-        if (current) conflicts.push(toDocument(current))
-        continue
-      }
-      await recordRecipeReplicationChange(tx, updated)
+      const conflict = await pushRecipe(tx, row)
+      if (conflict) conflicts.push(conflict)
     }
 
     return conflicts
   })
+}
+
+async function pushRecipe(
+  tx: ReplicationTransaction,
+  row: z.infer<typeof pushRowSchema>,
+): Promise<RecipeReplicationDocument | undefined> {
+  const incoming = row.newDocumentState
+  const existing = await tx.query.recipes.findFirst({
+    where: eq(recipes.syncId, incoming.syncId),
+  })
+
+  if (incoming._deleted) {
+    if (!existing) return
+    if (
+      !row.assumedMasterState ||
+      existing.revision !== row.assumedMasterState.revision
+    ) {
+      return toDocument(existing)
+    }
+    await tx.delete(recipes).where(eq(recipes.id, existing.id))
+    await recordRecipeReplicationDeletion(tx, existing.syncId)
+    return
+  }
+
+  if (!existing) {
+    const [created] = await tx
+      .insert(recipes)
+      .values({
+        name: incoming.name,
+        syncId: incoming.syncId,
+        brewingMethodId: incoming.brewingMethodId,
+        beanId: incoming.beanId ?? null,
+        drinkTypeId: incoming.drinkTypeId ?? null,
+        revision: 0,
+      })
+      .returning()
+    if (!created) throw new Error('Recipe replication insert returned no row')
+    await recordRecipeReplicationChange(tx, created)
+    return
+  }
+
+  // A retried request can arrive after its transaction committed but before
+  // the client received the response. Treat the document as already applied.
+  if (
+    hasSameRecipeContent(incoming, existing) &&
+    (!row.assumedMasterState ||
+      existing.revision > row.assumedMasterState.revision)
+  ) {
+    return
+  }
+
+  if (
+    !row.assumedMasterState ||
+    existing.revision !== row.assumedMasterState.revision
+  ) {
+    return toDocument(existing)
+  }
+
+  const [updated] = await tx
+    .update(recipes)
+    .set({
+      name: incoming.name,
+      brewingMethodId: incoming.brewingMethodId,
+      beanId: incoming.beanId ?? null,
+      drinkTypeId: incoming.drinkTypeId ?? null,
+      revision: existing.revision + 1,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(eq(recipes.id, existing.id), eq(recipes.revision, existing.revision)),
+    )
+    .returning()
+  if (!updated) {
+    const current = await tx.query.recipes.findFirst({
+      where: eq(recipes.id, existing.id),
+    })
+    return current ? toDocument(current) : undefined
+  }
+  await recordRecipeReplicationChange(tx, updated)
 }
