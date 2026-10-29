@@ -2,6 +2,7 @@ import {
   getOfflineRxDatabase,
   resetOfflineRxDatabase,
 } from '@/modules/rxdb/offline-database'
+import { listOperations } from './operation-queue'
 
 /** Test-only reset for the shared RxDB database. */
 export async function resetOfflineDatabaseForTests(): Promise<void> {
@@ -30,5 +31,13 @@ export async function clearOfflineCaches(): Promise<void> {
       .map((entity) => entity.remove()),
   )
   await database.recipes.find().remove()
-  await database.blobs.find().remove()
+  const referencedBlobKeys = new Set(
+    (await listOperations()).flatMap((operation) => operation.blobKeys),
+  )
+  const blobs = await database.blobs.find().exec()
+  await Promise.all(
+    blobs
+      .filter((blob) => !referencedBlobKeys.has(blob.id))
+      .map((blob) => blob.remove()),
+  )
 }
