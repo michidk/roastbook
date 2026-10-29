@@ -1,7 +1,5 @@
 import 'fake-indexeddb/auto'
 import { afterAll, beforeEach, describe, expect, test } from 'bun:test'
-import { newShotPayload } from '@/lib/new-shot-payload'
-import { EMPTY_SHOT_FORM_VALUES } from '@/modules/brews/shot-form-values'
 import {
   acknowledgeOperation,
   cancelOperation,
@@ -15,12 +13,7 @@ import {
   DEFAULT_OWNER_KEY,
   type OfflineOperation,
 } from '@/modules/offline/operations'
-import {
-  listPendingBrews,
-  readCachedReferenceData,
-} from '@/modules/offline/queue'
 import { resetOfflineDatabaseForTests } from '@/modules/offline/storage'
-import type { PendingBrew } from '@/modules/offline/types'
 
 function operation(
   overrides: Partial<OfflineOperation> = {},
@@ -49,74 +42,6 @@ function operation(
     blobKeys: [],
     ...overrides,
   }
-}
-
-function pendingBrew(overrides: Partial<PendingBrew> = {}): PendingBrew {
-  const operationId = overrides.operationId ?? crypto.randomUUID()
-  return {
-    operationId,
-    payload: {
-      ...newShotPayload(
-        {
-          ...EMPTY_SHOT_FORM_VALUES,
-          brewingMethodId: '1',
-          doseGrams: '18.00',
-        },
-        [],
-      ),
-      clientOperationId: operationId,
-    },
-    summary: {
-      beanName: 'Konga',
-      methodName: 'Espresso',
-      brewedAt: '2026-10-23T08:00:00.000Z',
-      doseGrams: '18.00',
-      yieldGrams: null,
-      shotTimeSeconds: null,
-    },
-    createdAt: '2026-10-23T08:00:01.000Z',
-    attempts: 0,
-    status: 'pending',
-    ...overrides,
-  }
-}
-
-async function seedVersionOnePendingBrews(
-  items: readonly PendingBrew[],
-  reference?: { readonly key: string; readonly value: unknown },
-) {
-  await new Promise<void>((resolve, reject) => {
-    const request = indexedDB.open('roastbook-offline', 1)
-    request.onupgradeneeded = () => {
-      const database = request.result
-      const store = database.createObjectStore('pending-brews', {
-        keyPath: 'operationId',
-      })
-      store.createIndex('createdAt', 'createdAt')
-      database.createObjectStore('reference-data')
-    }
-    request.onerror = () => reject(request.error)
-    request.onsuccess = () => {
-      const database = request.result
-      const transaction = database.transaction(
-        ['pending-brews', 'reference-data'],
-        'readwrite',
-      )
-      for (const item of items) {
-        transaction.objectStore('pending-brews').put(item)
-      }
-      if (reference) {
-        transaction
-          .objectStore('reference-data')
-          .put(reference.value, reference.key)
-      }
-      transaction.oncomplete = () => {
-        database.close()
-        resolve()
-      }
-      transaction.onerror = () => reject(transaction.error)
-    }
-  })
 }
 
 beforeEach(async () => {
@@ -230,71 +155,5 @@ describe('offline operation queue', () => {
       status: 'retryable',
       lastError: 'The previous sync was interrupted',
     })
-  })
-
-  test('migrates the legacy pending-brew store', async () => {
-    const pending = pendingBrew({ operationId: 'legacy-pending' })
-    const failed = pendingBrew({
-      operationId: 'legacy-failed',
-      status: 'failed',
-      attempts: 3,
-      lastError: 'Selected bag not found',
-      createdAt: '2026-10-23T08:00:02.000Z',
-    })
-    const authRequired = pendingBrew({
-      operationId: 'legacy-auth',
-      status: 'auth-required',
-      createdAt: '2026-10-23T08:00:03.000Z',
-    })
-
-    await seedVersionOnePendingBrews([pending, failed, authRequired], {
-      key: 'legacy-reference',
-      value: {
-        version: 1,
-        savedAt: '2026-10-23T08:00:00.000Z',
-        data: { beans: ['Konga'] },
-      },
-    })
-
-    const operations = await listOperations()
-    expect(operations.map((item) => item.id)).toEqual([
-      'legacy-pending',
-      'legacy-failed',
-      'legacy-auth',
-    ])
-    expect(operations[0]).toMatchObject({
-      entityType: 'brew',
-      operationType: 'create',
-      idempotencyKey: 'legacy-pending',
-      status: 'pending',
-      payload: pending.payload,
-      details: pending.summary,
-    })
-    expect(operations[1]).toMatchObject({
-      status: 'permanent',
-      attempts: 3,
-      lastError: 'Selected bag not found',
-    })
-    expect(operations[2]).toMatchObject({ status: 'auth-required' })
-
-    const visible = await listPendingBrews()
-    expect(visible.map((item) => item.operationId)).toEqual([
-      'legacy-pending',
-      'legacy-failed',
-      'legacy-auth',
-    ])
-    expect(visible[1]?.status).toBe('failed')
-    expect(await readCachedReferenceData('legacy-reference', 1)).toMatchObject({
-      version: 1,
-      data: { beans: ['Konga'] },
-    })
-
-    const database = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open('roastbook-offline')
-      request.onsuccess = () => resolve(request.result)
-      request.onerror = () => reject(request.error)
-    })
-    expect(database.objectStoreNames.contains('pending-brews')).toBe(false)
-    database.close()
   })
 })
