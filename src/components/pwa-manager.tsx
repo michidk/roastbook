@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
+import { isStandalone } from '@/lib/standalone'
 
 const UPDATE_TOAST_ID = 'pwa-update'
 
@@ -16,6 +17,12 @@ export function PwaManager() {
 
     const showUpdate = (worker: ServiceWorker | null) => {
       if (!worker || cancelled) return
+
+      // A browser tab reloads on its own; only the installed app needs a prompt.
+      if (!isStandalone()) {
+        worker.postMessage({ type: 'SKIP_WAITING' })
+        return
+      }
 
       toast('A new version of Roastbook is available', {
         id: UPDATE_TOAST_ID,

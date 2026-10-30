@@ -2,18 +2,12 @@ import { Download, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { usePreferencesStore } from '@/lib/preferences-store'
+import { isStandalone } from '@/lib/standalone'
 
 // Chromium-only event; not in the DOM typings.
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
-}
-
-function isStandalone(): boolean {
-  return (
-    window.matchMedia('(display-mode: standalone)').matches ||
-    Reflect.get(navigator, 'standalone') === true
-  )
 }
 
 function isIos(): boolean {
@@ -63,16 +57,24 @@ export function InstallAppHint() {
   }
 
   return (
-    <div className="border-b border-border bg-secondary/60 px-4 py-1.5 text-secondary-foreground">
-      <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 text-sm">
-        <Download className="h-4 w-4 shrink-0" aria-hidden="true" />
-        <p>
-          {installPrompt
-            ? 'Install Roastbook to use it offline, right from your home screen.'
-            : 'Install Roastbook for offline use: tap Share, then Add to Home Screen.'}
-        </p>
+    <div className="border-b border-border bg-secondary/60 px-4 py-2.5 text-secondary-foreground">
+      <div className="mx-auto flex max-w-7xl items-center gap-3">
+        <img
+          src="/logo192.png"
+          alt=""
+          className="size-10 shrink-0 rounded-xl border border-border shadow-control"
+        />
+        <div className="min-w-0 flex-1 leading-tight">
+          <p className="font-display text-sm font-bold">Install Roastbook</p>
+          <p className="text-xs text-muted-foreground">
+            {installPrompt
+              ? 'Use it offline, right from your home screen.'
+              : 'Tap Share, then Add to Home Screen to use it offline.'}
+          </p>
+        </div>
         {installPrompt ? (
-          <Button size="xs" variant="outline" onClick={() => void install()}>
+          <Button size="sm" onClick={() => void install()}>
+            <Download aria-hidden="true" />
             Install
           </Button>
         ) : null}
