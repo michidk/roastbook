@@ -442,6 +442,16 @@
     -webkit-font-smoothing: antialiased;
   }
 
+  /* The stain tile is 1800px wide with rings near its edges; centering it
+     would show only the empty middle on phones. */
+  @media (width < 768px) {
+    body {
+      background-position:
+        left top,
+        0 0;
+    }
+  }
+
   body.texture-disabled {
     background-image: none;
   }
