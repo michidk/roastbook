@@ -18,7 +18,7 @@ import {
 import {
   readCachedReferenceData,
   writeCachedReferenceData,
-} from '@/modules/offline/queue'
+} from '@/modules/offline/reference-cache'
 import {
   clearOfflineCaches,
   deleteOfflineDatabase,

@@ -3,7 +3,10 @@ import {
   DEFAULT_OWNER_KEY,
   type OfflineEntityType,
 } from '@/modules/offline/operations'
-import { getOfflineRxDatabase } from '@/modules/rxdb/offline-database'
+import {
+  getOfflineRxDatabase,
+  type OfflineBlobDocument,
+} from '@/modules/rxdb/offline-database'
 
 export interface OfflineBlobRecord {
   readonly key: string
@@ -26,22 +29,12 @@ export interface PutOfflineBlobInput {
 
 const ALLOWED_IMAGE_TYPES = new Set<string>(IMAGE_MIME_TYPE_VALUES)
 
-function toBlobRecord(value: {
-  readonly id: string
-  readonly ownerKey: string
-  readonly entityType: string
-  readonly entityId: string
-  readonly filename: string
-  readonly mimeType: string
-  readonly sizeBytes: number
-  readonly createdAt: string
-  readonly data: string
-}): OfflineBlobRecord {
+function toBlobRecord(value: OfflineBlobDocument): OfflineBlobRecord {
   const bytes = Uint8Array.from(atob(value.data), (char) => char.charCodeAt(0))
   return {
     key: value.id,
     ownerKey: value.ownerKey,
-    entityType: value.entityType as OfflineEntityType,
+    entityType: value.entityType,
     entityId: value.entityId,
     filename: value.filename,
     mimeType: value.mimeType,
@@ -117,7 +110,7 @@ export async function listOfflineBlobs(
           record.entityId === String(options.entityId)),
     )
     .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
-    .map((value) => toBlobRecord(value))
+    .map(toBlobRecord)
 }
 
 export async function deleteOfflineBlob(key: string): Promise<void> {

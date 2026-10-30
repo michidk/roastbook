@@ -1,7 +1,7 @@
 import { replicateRxCollection } from 'rxdb/plugins/replication'
 import type { ReplicationCheckpoint } from '@/lib/replication-contracts'
+import { getOfflineRxDatabase } from './offline-database'
 import type { OfflineRecipe } from './recipes'
-import { getRecipeDatabase } from './recipes'
 
 type PullResult = {
   readonly documents: Array<OfflineRecipe & { readonly _deleted: boolean }>
@@ -31,7 +31,7 @@ export async function startRecipeReplication(): Promise<void> {
 }
 
 async function startReplication(): Promise<void> {
-  const database = await getRecipeDatabase()
+  const database = await getOfflineRxDatabase()
   replicateRxCollection<OfflineRecipe, ReplicationCheckpoint>({
     replicationIdentifier: 'roastbook-recipes-v1',
     collection: database.recipes,

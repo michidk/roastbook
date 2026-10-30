@@ -9,11 +9,13 @@ import {
   getPendingBrew,
   listPendingBrews,
   putPendingBrew,
-  readCachedReferenceData,
   resetOfflineDatabaseForTests,
   updatePendingBrew,
-  writeCachedReferenceData,
 } from '@/modules/offline/queue'
+import {
+  readCachedReferenceData,
+  writeCachedReferenceData,
+} from '@/modules/offline/reference-cache'
 import type { PendingBrew } from '@/modules/offline/types'
 
 function pendingBrew(overrides: Partial<PendingBrew> = {}): PendingBrew {

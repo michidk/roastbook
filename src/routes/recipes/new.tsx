@@ -49,7 +49,7 @@ export const Route = createFileRoute('/recipes/new')({
       const data = await loadRecipeNewData()
       if (typeof window !== 'undefined') {
         const { writeCachedReferenceData } = await import(
-          '@/modules/offline/queue'
+          '@/modules/offline/reference-cache'
         )
         await writeCachedReferenceData('recipe-new', 1, data).catch(
           () => undefined,
@@ -61,7 +61,7 @@ export const Route = createFileRoute('/recipes/new')({
 
       try {
         const { readCachedReferenceData } = await import(
-          '@/modules/offline/queue'
+          '@/modules/offline/reference-cache'
         )
         const cached = await readCachedReferenceData<CachedRecipeReferenceData>(
           'recipe-new',

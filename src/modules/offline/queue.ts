@@ -1,4 +1,3 @@
-import { getLocalEntity, putLocalEntity, removeLocalEntity } from './local-data'
 import {
   acknowledgeOperation,
   cancelOperation,
@@ -13,7 +12,7 @@ import {
   pendingBrewStatusToOperation,
   pendingBrewToOperation,
 } from './pending-brew-operation'
-import type { CachedReferenceData, PendingBrew } from './types'
+import type { PendingBrew } from './types'
 
 export { resetOfflineDatabaseForTests } from './storage'
 
@@ -69,43 +68,4 @@ export async function acknowledgePendingBrew(
   operationId: string,
 ): Promise<void> {
   await acknowledgeOperation(operationId)
-}
-
-export async function writeCachedReferenceData<T>(
-  key: string,
-  version: number,
-  data: T,
-): Promise<void> {
-  const record: CachedReferenceData<T> = {
-    version,
-    savedAt: new Date().toISOString(),
-    data,
-  }
-  await putLocalEntity({
-    entityType: 'settings',
-    localId: `reference:${key}`,
-    data: { record },
-    syncState: 'synced',
-    updatedAt: record.savedAt,
-  })
-}
-
-export async function readCachedReferenceData<T>(
-  key: string,
-  version: number,
-): Promise<CachedReferenceData<T> | undefined> {
-  const entity = await getLocalEntity<{ record: CachedReferenceData<T> }>(
-    'settings',
-    `reference:${key}`,
-  )
-  const record = entity?.data.record
-
-  if (!record || record.version !== version) {
-    if (record) {
-      await removeLocalEntity('settings', `reference:${key}`)
-    }
-    return undefined
-  }
-
-  return record
 }

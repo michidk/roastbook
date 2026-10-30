@@ -1,14 +1,23 @@
 import type { RxCollection, RxDatabase } from 'rxdb'
 import type { RecipeReplicationDocument } from '@/lib/replication-contracts'
 import type { LocalEntityRecord } from '@/modules/offline/local-data'
-import type { OfflineOperation } from '@/modules/offline/operations'
+import type {
+  OfflineEntityType,
+  OfflineOperation,
+} from '@/modules/offline/operations'
+import {
+  blobSchema,
+  entitySchema,
+  operationSchema,
+  recipeSchema,
+} from './schemas'
 
 export type OfflineOperationDocument = OfflineOperation
 export type OfflineRecipeDocument = Omit<RecipeReplicationDocument, '_deleted'>
 export type OfflineBlobDocument = {
   readonly id: string
   readonly ownerKey: string
-  readonly entityType: string
+  readonly entityType: OfflineEntityType
   readonly entityId: string
   readonly filename: string
   readonly mimeType: string
@@ -32,146 +41,6 @@ type OfflineCollections = {
 }
 
 export type OfflineRxDatabase = RxDatabase<OfflineCollections>
-
-const operationSchema = {
-  title: 'roastbook offline operations',
-  version: 0,
-  primaryKey: 'id',
-  type: 'object',
-  properties: {
-    id: { type: 'string', maxLength: 128 },
-    idempotencyKey: { type: 'string', maxLength: 128 },
-    ownerKey: { type: 'string', maxLength: 128 },
-    entityType: { type: 'string' },
-    operationType: { type: 'string' },
-    entityLocalId: { type: 'string', maxLength: 128 },
-    entityServerId: { type: ['string', 'null'] },
-    payload: {},
-    details: {},
-    dependencyIds: { type: 'array', items: { type: 'string' } },
-    createdAt: { type: 'string' },
-    updatedAt: { type: 'string' },
-    status: { type: 'string' },
-    attempts: { type: 'number' },
-    lastError: { type: ['string', 'null'] },
-    nextAttemptAt: { type: ['string', 'null'] },
-    baseRevision: { type: ['string', 'null'] },
-    acknowledgedAt: { type: ['string', 'null'] },
-    cancelledAt: { type: ['string', 'null'] },
-    blobKeys: { type: 'array', items: { type: 'string' } },
-  },
-  required: [
-    'id',
-    'idempotencyKey',
-    'ownerKey',
-    'entityType',
-    'operationType',
-    'entityLocalId',
-    'entityServerId',
-    'dependencyIds',
-    'createdAt',
-    'updatedAt',
-    'status',
-    'attempts',
-    'lastError',
-    'nextAttemptAt',
-    'baseRevision',
-    'acknowledgedAt',
-    'cancelledAt',
-    'blobKeys',
-  ],
-  indexes: ['ownerKey', 'status', 'createdAt', 'updatedAt'],
-  additionalProperties: false,
-} as const
-
-const entitySchema = {
-  title: 'roastbook offline entities',
-  version: 1,
-  primaryKey: 'id',
-  type: 'object',
-  properties: {
-    id: { type: 'string', maxLength: 512 },
-    ownerKey: { type: 'string', maxLength: 128 },
-    entityType: { type: 'string' },
-    localId: { type: 'string', maxLength: 128 },
-    serverId: { type: ['string', 'null'] },
-    data: {},
-    entityRevision: { type: ['string', 'null'] },
-    syncState: { type: 'string' },
-    updatedAt: { type: 'string' },
-  },
-  required: [
-    'id',
-    'ownerKey',
-    'entityType',
-    'localId',
-    'serverId',
-    'entityRevision',
-    'syncState',
-    'updatedAt',
-  ],
-  indexes: ['ownerKey', 'entityType', 'updatedAt'],
-  additionalProperties: false,
-} as const
-
-const recipeSchema = {
-  title: 'roastbook recipes',
-  version: 0,
-  primaryKey: 'id',
-  type: 'object',
-  properties: {
-    id: { type: 'string', maxLength: 100 },
-    serverId: { type: ['number', 'null'] },
-    syncId: { type: 'string', maxLength: 100 },
-    name: { type: 'string', maxLength: 200 },
-    brewingMethodId: { type: 'number' },
-    beanId: { type: ['number', 'null'] },
-    drinkTypeId: { type: ['number', 'null'] },
-    serverRevision: { type: 'number' },
-    updatedAt: { type: 'string', format: 'date-time' },
-  },
-  required: [
-    'id',
-    'syncId',
-    'name',
-    'brewingMethodId',
-    'serverRevision',
-    'updatedAt',
-  ],
-  indexes: ['updatedAt', 'syncId'],
-  additionalProperties: false,
-} as const
-
-const blobSchema = {
-  title: 'roastbook offline blobs',
-  version: 0,
-  primaryKey: 'id',
-  type: 'object',
-  properties: {
-    id: { type: 'string', maxLength: 128 },
-    ownerKey: { type: 'string', maxLength: 128 },
-    entityType: { type: 'string' },
-    entityId: { type: 'string', maxLength: 128 },
-    filename: { type: 'string' },
-    mimeType: { type: 'string' },
-    sizeBytes: { type: 'number' },
-    createdAt: { type: 'string' },
-    data: { type: 'string' },
-  },
-  required: [
-    'id',
-    'ownerKey',
-    'entityType',
-    'entityId',
-    'filename',
-    'mimeType',
-    'sizeBytes',
-    'createdAt',
-    'data',
-  ],
-  indexes: ['ownerKey', 'entityType', 'entityId', 'createdAt'],
-  additionalProperties: false,
-} as const
 
 let databasePromise: Promise<OfflineRxDatabase> | undefined
 
