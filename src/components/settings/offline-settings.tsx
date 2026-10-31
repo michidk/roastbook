@@ -239,7 +239,7 @@ export function OfflineSettings() {
   return (
     <>
       <SettingsPanelSection
-        title="PWA app"
+        title="Offline"
         description={
           isOnline
             ? 'This browser stores pending brew and recipe changes, pictures, and saved copies for offline use. You are online.'
