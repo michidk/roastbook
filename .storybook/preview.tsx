@@ -6,7 +6,6 @@ import {
   createRouter,
   RouterContextProvider,
 } from '@tanstack/react-router'
-import { useEffect, useMemo, useState } from 'react'
 import { Toaster } from 'sonner'
 import { TooltipProvider } from '../src/components/ui/tooltip'
 import type { AppSettings } from '../src/lib/app-settings'
@@ -46,40 +45,31 @@ const preview: Preview = {
       },
     },
   },
+  loaders: [
+    async (context) => {
+      const appSettings: Partial<AppSettings> =
+        context.parameters.appSettings ?? {}
+      const root = createRootRoute({
+        loader: () => ({ ...settings, ...appSettings }),
+      })
+      const storyRouter = createRouter({
+        routeTree: root,
+        history: createMemoryHistory({ initialEntries: ['/'] }),
+      })
+      await storyRouter.load()
+      return { storyRouter }
+    },
+  ],
   decorators: [
     withThemeByClassName({
       themes: { light: '', dark: 'dark' },
       defaultTheme: 'light',
     }),
     function WithAppContext(Story, context) {
-      const appSettings: Partial<AppSettings> =
-        context.parameters.appSettings ?? settings
-      const router = useMemo(() => {
-        const root = createRootRoute({
-          loader: () => ({ ...settings, ...appSettings }),
-        })
-        return createRouter({
-          routeTree: root,
-          history: createMemoryHistory({ initialEntries: ['/'] }),
-        })
-      }, [appSettings])
-      const [loadedRouter, setLoadedRouter] = useState<typeof router | null>(
-        null,
-      )
-      useEffect(() => {
-        let active = true
-        void router.load().then(() => {
-          if (active) setLoadedRouter(router)
-        })
-        return () => {
-          active = false
-        }
-      }, [router])
-      if (loadedRouter !== router) return null
       return (
         <TooltipProvider>
           <div className="mx-auto w-full max-w-7xl text-foreground">
-            <RouterContextProvider router={router}>
+            <RouterContextProvider router={context.loaded.storyRouter}>
               <Story />
             </RouterContextProvider>
           </div>

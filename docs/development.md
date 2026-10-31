@@ -45,11 +45,34 @@ dark, and the viewport toolbar for 375px, 768px, and 1280px layouts. Controls
 edit component props, and Actions records callback arguments. Editable ratings,
 measurements, tags, filters, pagination, and the timer respond to interactions.
 
-The initial library covers buttons, badges, inputs, cards and loading states,
-star ratings, number inputs, bean and café cards, metrics, empty states, image
-fallbacks, collection toolbars, pagination, deletion dialogs, extraction balance,
-sensory ratings, taste tags, and the brew timer. Each component has an automatic
-documentation page alongside its stories.
+The component library covers these reusable UI areas:
+
+- **Journal:** bean/café cards, collection cards/tables, toolbar, view switcher,
+  pagination and metrics.
+- **Forms:** inputs, validation, dates, suggestions, creatable pickers,
+  sections/actions, tasting, roaster and gear fields.
+- **Brewing:** espresso/filter parameters, extraction balance, sensory ratings,
+  flavor tags, drink choices, timer, history charts and recommendation blocks.
+- **Stats:** activity chart/calendar and brewing averages.
+- **Feedback and layout:** page headers/layouts, loading, empty, missing entity,
+  route errors, error details and help.
+- **Media and maps:** image fallback, local picture intake, map status and
+  saved/favorite/wishlist place cards.
+- **UI primitives:** buttons, badges, cards, stars, checkbox, switch, toggle,
+  textarea, progress, calendar, tabs, dialog, sheet, popover, tooltip, dropdown,
+  command search, table, scroll area, collapsible and input groups.
+
+Variants include populated, empty, invalid, disabled, loading, selected and
+read-only states where applicable. Each story file has an automatic documentation
+page. Complex fixture objects are supplied by stories; interactive controls and
+Actions expose the useful behavior.
+
+Service-connected containers remain application integration coverage: saving
+entity forms, image persistence/gallery operations, AI requests and chat,
+command entity search, live map tiles/geocoding, settings persistence, and
+offline synchronization. Stories exercise their reusable presentation components
+without contacting those services. The picture uploader previews local files in
+memory and deliberately returns an error for URL imports.
 
 Stories live beside components as `*.stories.tsx`, with configuration under
 `.storybook/`. The preview provides the real stylesheet, tooltip provider,

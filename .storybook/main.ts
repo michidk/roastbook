@@ -19,7 +19,12 @@ const config: StorybookConfig = {
     return mergeConfig(config, {
       plugins: [tailwindcss()],
       resolve: {
-        alias: { '@': fileURLToPath(new URL('../src', import.meta.url)) },
+        alias: {
+          '@/hooks/use-online-status': fileURLToPath(
+            new URL('./mocks/use-online-status.ts', import.meta.url),
+          ),
+          '@': fileURLToPath(new URL('../src', import.meta.url)),
+        },
       },
       define: { __ROASTBOOK_DEMO_MODE__: 'false' },
     })

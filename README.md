@@ -278,6 +278,11 @@ cp .env.example .env
 bun run dev
 ```
 
+Run `bun run storybook` to browse the reusable UI library, including journal
+cards, brewing and tasting inputs, charts, dialogs, and form states. See
+[Component stories](docs/development.md#component-stories) for coverage and
+service boundaries.
+
 The unauthenticated development server listens on <http://localhost:3000>.
 It applies pending migrations before accepting requests, repeats the check on
 Vite configuration reloads, and watches for newly generated migrations while
