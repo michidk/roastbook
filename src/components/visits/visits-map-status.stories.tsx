@@ -9,7 +9,7 @@ const meta = {
 
   decorators: [
     (Story) => (
-      <div className="relative h-80 overflow-hidden rounded-2xl">
+      <div className="w-full max-w-sm overflow-hidden rounded-2xl [&>div]:relative [&>div]:inset-auto [&>div]:p-6">
         <Story />
       </div>
     ),

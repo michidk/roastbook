@@ -3,6 +3,13 @@ import { RouteError } from './route-error'
 
 const meta = {
   title: 'Journal/Route error',
+  decorators: [
+    (Story) => (
+      <div className="w-full max-w-md [&>[data-slot=page]]:min-h-0">
+        <Story />
+      </div>
+    ),
+  ],
   component: RouteError,
   args: {
     error: new Error('The brew could not be loaded.'),

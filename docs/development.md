@@ -74,6 +74,10 @@ offline synchronization. Stories exercise their reusable presentation components
 without contacting those services. The picture uploader previews local files in
 memory and deliberately returns an error for URL imports.
 
+Standalone stories fit their content. Keep page-height and map-positioning
+adjustments inside story wrappers; retain fixed dimensions when they demonstrate
+an image, chart, or scrolling behavior.
+
 Stories live beside components as `*.stories.tsx`, with configuration under
 `.storybook/`. The preview provides the real stylesheet, tooltip provider,
 toasts, and an in-memory TanStack router with fictional application settings.
