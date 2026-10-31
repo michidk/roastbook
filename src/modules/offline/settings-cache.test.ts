@@ -16,6 +16,39 @@ afterAll(async () => {
 })
 
 describe('offline settings cache', () => {
+  test('uses saved data after a network failure even when the browser says online', async () => {
+    await cacheSettingsData('storage', { usage: 42 })
+    const originalWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
+    const originalOnline = Object.getOwnPropertyDescriptor(navigator, 'onLine')
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: {},
+    })
+    Object.defineProperty(navigator, 'onLine', {
+      configurable: true,
+      value: true,
+    })
+    try {
+      expect(
+        await loadOfflineSettingsData<{ usage: number }>('storage', () =>
+          Promise.reject(new TypeError('Load failed')),
+        ),
+      ).toEqual({ usage: 42 })
+      await expect(
+        loadOfflineSettingsData('storage', () =>
+          Promise.reject(new Error('Permission denied')),
+        ),
+      ).rejects.toThrow('Permission denied')
+    } finally {
+      if (originalWindow)
+        Object.defineProperty(globalThis, 'window', originalWindow)
+      else Reflect.deleteProperty(globalThis, 'window')
+      if (originalOnline)
+        Object.defineProperty(navigator, 'onLine', originalOnline)
+      else Reflect.deleteProperty(navigator, 'onLine')
+    }
+  })
+
   test('stores and reads drinks and taste tags', async () => {
     await cacheSettingsData('drinks', {
       drinkTypes: [{ id: 1, name: 'Espresso' }],

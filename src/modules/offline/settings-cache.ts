@@ -1,7 +1,9 @@
+import { canUseOfflineCache } from '@/modules/offline/errors'
 import { getLocalEntity, putLocalEntity } from '@/modules/offline/local-data'
 import type { OfflineEntityType } from '@/modules/offline/operations'
 
 export type SettingsCacheKey =
+  | 'general'
   | 'drinks'
   | 'taste-tags'
   | 'ai'
@@ -9,6 +11,7 @@ export type SettingsCacheKey =
   | 'storage'
 
 const CACHE_ENTITY_TYPES: Record<SettingsCacheKey, OfflineEntityType> = {
+  general: 'settings',
   drinks: 'drink',
   'taste-tags': 'tag',
   ai: 'settings',
@@ -60,7 +63,7 @@ export async function loadOfflineSettingsData<T>(
     }
     return data
   } catch (error) {
-    if (typeof window === 'undefined' || navigator.onLine) throw error
+    if (!canUseOfflineCache(error)) throw error
 
     try {
       const cached = await readCachedSettingsData<T>(key)

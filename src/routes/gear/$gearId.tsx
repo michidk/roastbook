@@ -19,6 +19,7 @@ import {
 } from '@/lib/search-params'
 import { checkGearResearchEnabled, getGearById } from '@/lib/server/gear'
 import { getGearShotPage } from '@/lib/server/shots'
+import { canUseOfflineCache } from '@/modules/offline/errors'
 
 type GearDetailSearch = {
   readonly brewPage: number
@@ -83,7 +84,7 @@ export const Route = createFileRoute('/gear/$gearId')({
     try {
       return await loadGearDetail(gearId, deps)
     } catch (error) {
-      if (typeof window === 'undefined' || navigator.onLine) throw error
+      if (!canUseOfflineCache(error)) throw error
 
       try {
         const { readCachedEntityDetail } = await import(

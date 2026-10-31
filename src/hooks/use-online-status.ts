@@ -1,20 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
+import {
+  isConnectionOnline,
+  subscribeToConnection,
+} from '@/lib/connection-status'
 
 export function useOnlineStatus(): boolean {
-  const [isOnline, setIsOnline] = useState(true)
-
-  useEffect(() => {
-    const update = () => setIsOnline(window.navigator.onLine)
-
-    update()
-    window.addEventListener('online', update)
-    window.addEventListener('offline', update)
-
-    return () => {
-      window.removeEventListener('online', update)
-      window.removeEventListener('offline', update)
-    }
-  }, [])
-
-  return isOnline
+  return useSyncExternalStore(
+    subscribeToConnection,
+    isConnectionOnline,
+    () => true,
+  )
 }

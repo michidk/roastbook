@@ -9,7 +9,7 @@ export function PwaConnectionStatus() {
   const online = useOnlineStatus()
   if (!isPwa) return null
   const Icon = online ? Wifi : WifiOff
-  const label = `${online ? 'Online' : 'Offline'}. Open PWA settings`
+  const label = `${online ? 'Online' : 'Offline'}. Open offline settings`
   return (
     <Button variant="ghost" size="icon" asChild>
       <Link to="/settings/offline" aria-label={label} title={label}>

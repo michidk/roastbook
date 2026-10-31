@@ -2,6 +2,10 @@ import { useRouter } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { toast } from 'sonner'
 import { DEMO_MODE } from '@/lib/build-mode'
+import {
+  isConnectionOnline,
+  subscribeToConnection,
+} from '@/lib/connection-status'
 import { createEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
 import {
   deleteEntityImage,
@@ -299,11 +303,11 @@ export function OfflineSyncManager() {
   const router = useRouter()
 
   useEffect(() => {
-    if (DEMO_MODE || !navigator.onLine) return
+    if (DEMO_MODE || !isConnectionOnline()) return
 
     let cancelled = false
     const prefetch = () => {
-      if (cancelled || !navigator.onLine) return
+      if (cancelled || !isConnectionOnline()) return
       void router.preloadRoute({ to: '/brews/new' }).catch(() => undefined)
       void router.preloadRoute({ to: '/brews/pending' }).catch(() => undefined)
     }
@@ -342,10 +346,10 @@ export function OfflineSyncManager() {
 
       syncInFlight = (async () => {
         try {
-          if (!navigator.onLine) return
+          if (!isConnectionOnline()) return
 
           const result = await withOfflineSyncLock(async () => {
-            if (disposed || !navigator.onLine) return null
+            if (disposed || !isConnectionOnline()) return null
 
             activeSyncOwner = syncOwner
             usePendingBrewsStore.getState().setSyncing(true)
@@ -365,7 +369,7 @@ export function OfflineSyncManager() {
                   updateOperation(operation.id, changes),
                 execute: executeOperation,
                 authenticate: checkAuthentication,
-                isOnline: () => navigator.onLine,
+                isOnline: () => isConnectionOnline(),
                 onAcknowledged: async (operation, executionResult) => {
                   const serverId = executionResult.serverId
                   if (!serverId) return
@@ -494,7 +498,7 @@ export function OfflineSyncManager() {
           authNotified = result.authRequired
           if (
             (result.stoppedByNetwork || result.retryable) &&
-            navigator.onLine
+            isConnectionOnline()
           ) {
             scheduleRetry()
           } else clearRetry()
@@ -520,7 +524,7 @@ export function OfflineSyncManager() {
     function scheduleRetry() {
       if (
         !shouldScheduleSyncRetry({
-          online: navigator.onLine,
+          online: isConnectionOnline(),
           disposed,
           hasTimer: retryTimer !== null,
         })
@@ -558,11 +562,13 @@ export function OfflineSyncManager() {
       void runSync()
     }
 
-    window.addEventListener('online', handleOnline)
+    const unsubscribeConnection = subscribeToConnection(() => {
+      if (isConnectionOnline()) handleOnline()
+    })
     document.addEventListener('visibilitychange', handleVisibility)
     const unsubscribe = subscribeToPendingSync(handleManualSync)
 
-    if (navigator.onLine) void runSync()
+    if (isConnectionOnline()) void runSync()
 
     return () => {
       disposed = true
@@ -571,7 +577,7 @@ export function OfflineSyncManager() {
         usePendingBrewsStore.getState().setSyncing(false)
       }
       clearRetry()
-      window.removeEventListener('online', handleOnline)
+      unsubscribeConnection()
       document.removeEventListener('visibilitychange', handleVisibility)
       unsubscribe()
     }

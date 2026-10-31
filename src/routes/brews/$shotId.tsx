@@ -12,6 +12,7 @@ import { getRecipeOptions } from '@/lib/server/recipes'
 import { checkShotRecommendationEnabled } from '@/lib/server/shot-recommendations'
 import { getShot } from '@/lib/server/shots'
 import { getTasteTags } from '@/lib/server/taste-tags'
+import { canUseOfflineCache } from '@/modules/offline/errors'
 import { BrewDetailPage } from '@/routes/brews/-components/brew-detail-page'
 
 type BrewDetailData = Awaited<ReturnType<typeof loadBrewDetail>>
@@ -65,7 +66,7 @@ export const Route = createFileRoute('/brews/$shotId')({
     try {
       return await loadBrewDetail(shotId, deps.edit)
     } catch (error) {
-      if (typeof window === 'undefined' || navigator.onLine) throw error
+      if (!canUseOfflineCache(error)) throw error
 
       try {
         const { readCachedBrewDetail } = await import(

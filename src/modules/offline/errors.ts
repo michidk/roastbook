@@ -33,6 +33,13 @@ export function isNetworkError(error: unknown): boolean {
   return NETWORK_ERROR_PATTERN.test(errorMessage(error))
 }
 
+export function canUseOfflineCache(error: unknown): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    (navigator.onLine === false || isNetworkError(error))
+  )
+}
+
 export function isConflictError(error: unknown): boolean {
   return CONFLICT_ERROR_PATTERN.test(errorMessage(error))
 }

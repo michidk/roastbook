@@ -14,7 +14,7 @@ visit. Pending work lives in IndexedDB and syncs when connectivity returns.
 - Reopening brew, recipe, bean, or gear detail pages that were viewed online,
   with a saved-copy notice.
 - Reviewing pending changes and resolving edits that conflict with server data.
-- Viewing Settings → PWA app for pending counts, the last successful sync,
+- Viewing Settings → Offline for pending counts, the last successful sync,
   browser storage usage, re-sync, and local-data clearing.
 - Pending work survives reloads and app restarts.
 - Pending work is labeled on the pending page and in the app banner.
@@ -30,6 +30,11 @@ visit. Pending work lives in IndexedDB and syncs when connectivity returns.
 
 Those actions are disabled or show an error while offline. Brew and recipe
 journaling, pictures, and sync-later behavior work without a connection.
+
+The connection indicator combines browser network events with server-request
+failures and a reachability check when the app resumes. A failed network request
+can open a saved brew even when the browser still reports an online connection.
+Read requests stop waiting after ten seconds; queued writes stay on the device.
 
 ## Sync behavior
 
@@ -101,7 +106,7 @@ Settings pages show an offline banner and make server-backed controls read-only
 while offline. The browser theme preference and the PWA app settings page stay
 available; the server-backed page background control is disabled.
 
-Settings → PWA app shows waiting, attention, and auth-required operation counts,
+Settings → Offline shows waiting, attention, and auth-required operation counts,
 the last successful sync, and browser storage usage. It offers a re-sync action,
 a cached-data clear that preserves pending operations, and a full local-data
 clear. The full clear warns explicitly when unsynced operations would be
@@ -130,7 +135,7 @@ and account actions remain online-only.
   a corrupt cached entry is removed and refetched.
 - Client assets above 2 MiB are not precached or added to the runtime cache.
   `bun run check:pwa` enforces the same limit against the build output.
-- Settings → PWA app → Repair app shell clears the worker's shell caches and
+- Settings → Offline → Repair app shell clears the worker's shell caches and
   unregisters it without touching IndexedDB. The page reloads and re-registers
   the worker online, preserving pending operations.
 - API routes, server functions, auth gate paths, media, and writes stay outside
@@ -211,10 +216,12 @@ preserve or explicitly resolve pending local writes.
 
 ## Installed app status
 
-In the installed PWA, the Wi-Fi icon beside the theme switcher shows the browser
-network status. A red crossed-out icon means offline. This is a network indicator,
-not a guarantee that the server or AI provider is reachable. The icon opens
-Settings → PWA app, which is visible only in the installed app.
+In the installed PWA, the Wi-Fi icon beside the theme switcher combines browser
+network status with actual server reachability. A red crossed-out icon means
+offline or unreachable. Reachability is checked while the app is visible and
+when it resumes; it does not guarantee database or AI provider health. The icon
+opens
+Settings → Offline, which is visible only in the installed app.
 
 The page shows queued operations, synchronization activity, failures, last sync,
 and estimated browser storage. It also offers manual sync and local recovery

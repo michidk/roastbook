@@ -17,6 +17,7 @@ import { getDrinkConfiguration } from '@/lib/server/drink-options'
 import { getGear } from '@/lib/server/gear'
 import { getGearSets } from '@/lib/server/gear-sets'
 import { getDrinkTypeSuggestions } from '@/lib/server/suggestions'
+import { canUseOfflineCache } from '@/modules/offline/errors'
 
 type RecipeNewData = Awaited<ReturnType<typeof loadRecipeNewData>>
 type CachedRecipeReferenceData = RecipeNewData
@@ -57,7 +58,7 @@ export const Route = createFileRoute('/recipes/new')({
       }
       return data
     } catch (error) {
-      if (typeof window === 'undefined' || navigator.onLine) throw error
+      if (!canUseOfflineCache(error)) throw error
 
       try {
         const { readCachedReferenceData } = await import(

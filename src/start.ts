@@ -1,5 +1,6 @@
 import { createMiddleware, createStart } from '@tanstack/react-start'
 import { DEMO_MODE } from '@/lib/build-mode'
+import { fetchWithConnectionStatus } from '@/lib/connection-status'
 import {
   demoModeReadOnlyResponse,
   isDemoModeWriteRequest,
@@ -14,5 +15,6 @@ const demoReadOnlyRequestMiddleware = createMiddleware().server(
 )
 
 export const startInstance = createStart(() => ({
+  serverFns: { fetch: fetchWithConnectionStatus },
   requestMiddleware: [demoReadOnlyRequestMiddleware],
 }))

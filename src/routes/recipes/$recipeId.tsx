@@ -10,6 +10,7 @@ import { getDrinkConfiguration } from '@/lib/server/drink-options'
 import { getGear } from '@/lib/server/gear'
 import { getRecipe } from '@/lib/server/recipes'
 import { getDrinkTypeSuggestions } from '@/lib/server/suggestions'
+import { canUseOfflineCache } from '@/modules/offline/errors'
 import { RecipeDetailPage } from '@/routes/recipes/-components/recipe-detail-page'
 
 type RecipeDetailData = Awaited<ReturnType<typeof loadRecipeDetail>>
@@ -38,7 +39,7 @@ export const Route = createFileRoute('/recipes/$recipeId')({
     try {
       return await loadRecipeDetail(recipeId)
     } catch (error) {
-      if (typeof window === 'undefined' || navigator.onLine) throw error
+      if (!canUseOfflineCache(error)) throw error
 
       try {
         const { readCachedEntityDetail } = await import(

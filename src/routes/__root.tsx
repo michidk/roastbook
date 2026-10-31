@@ -31,9 +31,13 @@ import { usePreferencesStore } from '@/lib/preferences-store'
 import { getAppSettings } from '@/lib/server/app-settings'
 import { isDarkTheme, THEME_COLORS, themeColor } from '@/lib/theme'
 import { cn } from '@/lib/utils'
+import {
+  cacheSettingsData,
+  loadOfflineSettingsData,
+} from '@/modules/offline/settings-cache'
 
 export const Route = createRootRoute({
-  loader: () => getAppSettings(),
+  loader: () => loadOfflineSettingsData('general', getAppSettings),
   head: () => ({
     meta: [
       {
@@ -277,6 +281,9 @@ function RootErrorComponent({ error }: { error: unknown }) {
 function RootComponent() {
   const settings = Route.useLoaderData()
   const isOnline = useOnlineStatus()
+  useEffect(() => {
+    void cacheSettingsData('general', settings).catch(() => undefined)
+  }, [settings])
   const preventDemoSubmit = (event: FormEvent<HTMLElement>) => {
     event.preventDefault()
     toast.info(DEMO_MODE_READ_ONLY_MESSAGE)

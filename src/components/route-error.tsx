@@ -4,7 +4,9 @@ import { ErrorDetails } from '@/components/error-details'
 import { Page } from '@/components/page-layout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useOnlineStatus } from '@/hooks/use-online-status'
 import { getErrorDisplayState } from '@/lib/error-display'
+import { isNetworkError } from '@/modules/offline/errors'
 
 interface RouteErrorProps {
   error: unknown
@@ -18,7 +20,15 @@ export function RouteError({
   backLabel = 'Go back',
 }: RouteErrorProps) {
   const router = useRouter()
-  const errorState = getErrorDisplayState(error)
+  const online = useOnlineStatus()
+  const errorState =
+    !online && isNetworkError(error)
+      ? {
+          title: 'You are offline',
+          message:
+            'This page is not saved on this device. Reconnect and try again.',
+        }
+      : getErrorDisplayState(error)
 
   return (
     <Page

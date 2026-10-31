@@ -16,6 +16,7 @@ import {
 } from '@/lib/server/beans'
 import { getRoasters } from '@/lib/server/roasters'
 import { getBeanShotAnalytics, getBeanShotPage } from '@/lib/server/shots'
+import { canUseOfflineCache } from '@/modules/offline/errors'
 import { BeanDetailPage } from '@/routes/beans/-components/bean-detail-page'
 
 type BeanDetailSearch = {
@@ -98,7 +99,7 @@ export const Route = createFileRoute('/beans/$beanId')({
     try {
       return await loadBeanDetail(beanId, deps)
     } catch (error) {
-      if (typeof window === 'undefined' || navigator.onLine) throw error
+      if (!canUseOfflineCache(error)) throw error
 
       try {
         const { readCachedEntityDetail } = await import(
