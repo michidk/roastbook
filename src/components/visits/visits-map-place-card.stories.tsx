@@ -25,7 +25,7 @@ const meta = {
   argTypes: { place: { control: false } },
   decorators: [
     (Story) => (
-      <div className="relative min-h-96">
+      <div className="w-full max-w-[22rem] [&>article]:static [&>article]:m-0 [&>article]:w-full">
         <Story />
       </div>
     ),
