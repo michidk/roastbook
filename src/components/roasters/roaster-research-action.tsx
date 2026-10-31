@@ -30,6 +30,7 @@ export function RoasterResearchAction({
   const isOnline = useOnlineStatus()
 
   useEffect(() => {
+    if (!isOnline) return
     let active = true
     void checkRoasterResearchEnabled()
       .then((result) => {
@@ -41,7 +42,7 @@ export function RoasterResearchAction({
     return () => {
       active = false
     }
-  }, [])
+  }, [isOnline])
 
   if (!enabled) return null
 

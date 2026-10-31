@@ -16,6 +16,7 @@ import { useAppSettings } from '@/hooks/use-app-settings'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
 import { useImageUpload } from '@/hooks/use-image-upload'
+import { useOnlineStatus } from '@/hooks/use-online-status'
 import { getErrorMessage } from '@/lib/error-message'
 import type { ImageFile } from '@/lib/image-file'
 import {
@@ -43,6 +44,7 @@ export function GearForm({
   submitLabel = 'Add gear',
 }: GearFormProps) {
   const { defaultCurrency } = useAppSettings()
+  const isOnline = useOnlineStatus()
   const [researchEnabled, setResearchEnabled] = useState(false)
   const [isResearching, setIsResearching] = useState(false)
   const [researchModalOpen, setResearchModalOpen] = useState(false)
@@ -63,6 +65,7 @@ export function GearForm({
   }, [defaultCurrency, form.set])
 
   useEffect(() => {
+    if (!isOnline) return
     let active = true
     void checkGearResearchEnabled()
       .then(({ enabled }) => {
@@ -74,7 +77,7 @@ export function GearForm({
     return () => {
       active = false
     }
-  }, [])
+  }, [isOnline])
 
   const handleResearch = async () => {
     const brand = form.values.brand.trim()
@@ -206,7 +209,7 @@ export function GearForm({
         values={form.values}
         onChange={form.set}
         research={{
-          enabled: researchEnabled,
+          enabled: researchEnabled && isOnline,
           isResearching,
           onResearch: handleResearch,
         }}

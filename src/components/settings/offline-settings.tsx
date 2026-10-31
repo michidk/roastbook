@@ -2,12 +2,13 @@ import { Link } from '@tanstack/react-router'
 import {
   AlertTriangle,
   Clock3,
-  CloudOff,
   Database,
   HardDrive,
   LogIn,
   RefreshCw,
   Trash2,
+  Wifi,
+  WifiOff,
   Wrench,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
@@ -40,6 +41,7 @@ import {
   requestPendingSync,
   subscribeToPendingSyncFinished,
 } from '@/modules/offline/sync-trigger'
+import { getOfflineRxDatabase } from '@/modules/rxdb/offline-database'
 
 interface OfflineSnapshot {
   readonly operations: OfflineOperation[]
@@ -126,6 +128,24 @@ export function OfflineSettings() {
     return subscribeToPendingSyncFinished(() => {
       void loadSnapshot()
     })
+  }, [loadSnapshot])
+
+  useEffect(() => {
+    let disposed = false
+    let unsubscribe: (() => void) | undefined
+    void getOfflineRxDatabase()
+      .then((database) => {
+        if (disposed) return
+        const subscription = database.operations.$.subscribe(
+          () => void loadSnapshot(),
+        )
+        unsubscribe = () => subscription.unsubscribe()
+      })
+      .catch(() => undefined)
+    return () => {
+      disposed = true
+      unsubscribe?.()
+    }
   }, [loadSnapshot])
 
   useEffect(() => {
@@ -219,15 +239,51 @@ export function OfflineSettings() {
   return (
     <>
       <SettingsPanelSection
-        title="Offline journaling"
+        title="PWA app"
         description={
           isOnline
             ? 'This browser stores pending brew and recipe changes, pictures, and saved copies for offline use. You are online.'
             : 'You are offline. Pending brew creates stay on this device and sync when the connection returns.'
         }
-        action={<CloudOff className="size-5 text-link" />}
+        action={
+          isOnline ? (
+            <Wifi className="size-5 text-link" />
+          ) : (
+            <WifiOff className="size-5 text-destructive-text" />
+          )
+        }
       >
         <dl className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3">
+          <OfflineStat
+            label="Connection"
+            value={isOnline ? 'Online' : 'Offline'}
+            detail={
+              isOnline
+                ? 'Network available. AI features can connect to the server.'
+                : 'Changes stay on this device until you reconnect.'
+            }
+            icon={isOnline ? Wifi : WifiOff}
+          />
+          <OfflineStat
+            label="Synchronization"
+            value={
+              snapshot === null
+                ? 'Checking…'
+                : isSyncing
+                  ? 'Syncing…'
+                  : unsynced > 0
+                    ? 'Changes pending'
+                    : 'No queued changes'
+            }
+            detail={
+              isSyncing
+                ? 'Sending local changes'
+                : unsynced > 0
+                  ? `${unsynced} operations on this device`
+                  : 'No queued operations'
+            }
+            icon={RefreshCw}
+          />
           <OfflineStat
             label="Waiting to sync"
             value={formatNumber(waiting)}

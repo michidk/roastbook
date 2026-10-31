@@ -10,6 +10,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useOnlineStatus } from '@/hooks/use-online-status'
+import { usePwaMode } from '@/hooks/use-pwa-mode'
 import { cn } from '@/lib/utils'
 
 export type SettingsSection = {
@@ -48,6 +49,7 @@ export function SettingsShell({
 }) {
   const { pathname } = useLocation()
   const isOnline = useOnlineStatus()
+  const isPwa = usePwaMode()
   const activeSection = activeSectionPath(sections, pathname)
   const disableServerControls =
     !isOnline &&
@@ -127,12 +129,16 @@ export function SettingsShell({
               <p className="font-semibold">You’re offline</p>
               <p className="text-muted-foreground">
                 Server-backed settings are read-only. The browser theme and{' '}
-                <Link
-                  to="/settings/offline"
-                  className="font-semibold text-link underline underline-offset-2"
-                >
-                  offline data
-                </Link>{' '}
+                {isPwa ? (
+                  <Link
+                    to="/settings/offline"
+                    className="font-semibold text-link underline underline-offset-2"
+                  >
+                    PWA settings
+                  </Link>
+                ) : (
+                  'cached data'
+                )}{' '}
                 remain available.
               </p>
             </div>

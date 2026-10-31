@@ -27,6 +27,7 @@ import { useAppSettings } from '@/hooks/use-app-settings'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
 import { useImageUpload } from '@/hooks/use-image-upload'
+import { useOnlineStatus } from '@/hooks/use-online-status'
 import { getErrorMessage } from '@/lib/error-message'
 import type { ImageFile } from '@/lib/image-file'
 import { getExtractedRoasterAction } from '@/lib/roaster-match'
@@ -62,6 +63,7 @@ export function BeanForm({
   isArchived = false,
 }: BeanFormProps) {
   const { defaultCurrency } = useAppSettings()
+  const isOnline = useOnlineStatus()
   const [isExtracting, setIsExtracting] = useState(false)
   const [visionEnabled, setVisionEnabled] = useState(false)
   const [loadedRoasters, setLoadedRoasters] = useState<
@@ -95,6 +97,7 @@ export function BeanForm({
   }, [defaultCurrency, form.set])
 
   useEffect(() => {
+    if (!isOnline) return
     let active = true
     void checkVisionEnabled()
       .then((result) => {
@@ -106,7 +109,7 @@ export function BeanForm({
     return () => {
       active = false
     }
-  }, [])
+  }, [isOnline])
 
   useEffect(() => {
     if (roasters) return
@@ -252,12 +255,12 @@ export function BeanForm({
           isBusy={isSubmitting}
           statusText={isSubmitting ? 'Saving bean pictures' : undefined}
           helperText={
-            visionEnabled
+            visionEnabled && isOnline
               ? 'AI can extract bean info from your pictures'
               : undefined
           }
           footer={
-            visionEnabled ? (
+            visionEnabled && isOnline ? (
               <div className="flex items-center gap-1">
                 <Button
                   type="button"

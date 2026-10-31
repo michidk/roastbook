@@ -14,7 +14,7 @@ visit. Pending work lives in IndexedDB and syncs when connectivity returns.
 - Reopening brew, recipe, bean, or gear detail pages that were viewed online,
   with a saved-copy notice.
 - Reviewing pending changes and resolving edits that conflict with server data.
-- Viewing Settings → Offline for pending counts, the last successful sync,
+- Viewing Settings → PWA app for pending counts, the last successful sync,
   browser storage usage, re-sync, and local-data clearing.
 - Pending work survives reloads and app restarts.
 - Pending work is labeled on the pending page and in the app banner.
@@ -98,10 +98,10 @@ the server acknowledges the upload.
 ## Settings and local data
 
 Settings pages show an offline banner and make server-backed controls read-only
-while offline. The browser theme preference and the Offline settings page stay
+while offline. The browser theme preference and the PWA app settings page stay
 available; the server-backed page background control is disabled.
 
-Settings → Offline shows waiting, attention, and auth-required operation counts,
+Settings → PWA app shows waiting, attention, and auth-required operation counts,
 the last successful sync, and browser storage usage. It offers a re-sync action,
 a cached-data clear that preserves pending operations, and a full local-data
 clear. The full clear warns explicitly when unsynced operations would be
@@ -130,7 +130,7 @@ and account actions remain online-only.
   a corrupt cached entry is removed and refetched.
 - Client assets above 2 MiB are not precached or added to the runtime cache.
   `bun run check:pwa` enforces the same limit against the build output.
-- Settings → Offline → Repair app shell clears the worker's shell caches and
+- Settings → PWA app → Repair app shell clears the worker's shell caches and
   unregisters it without touching IndexedDB. The page reloads and re-registers
   the worker online, preserving pending operations.
 - API routes, server functions, auth gate paths, media, and writes stay outside
@@ -208,3 +208,15 @@ must choose one local write path per entity before removing the older queue.
 RxDB collection schema versions and migration strategies are independent of
 Drizzle migrations; a client schema change must bump its RxDB version and
 preserve or explicitly resolve pending local writes.
+
+## Installed app status
+
+In the installed PWA, the Wi-Fi icon beside the theme switcher shows the browser
+network status. A red crossed-out icon means offline. This is a network indicator,
+not a guarantee that the server or AI provider is reachable. The icon opens
+Settings → PWA app, which is visible only in the installed app.
+
+The page shows queued operations, synchronization activity, failures, last sync,
+and estimated browser storage. It also offers manual sync and local recovery
+controls. AI capability checks retry when connectivity returns. AI calls still
+require the server and its configured AI provider to be available.

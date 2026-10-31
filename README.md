@@ -347,3 +347,7 @@ charts/              Helm chart
   <sub><a href="https://demo.roastbook.coffee/overview">Try the demo</a> ·
   <a href="https://github.com/michidk/roastbook">Star it on GitHub</a></sub>
 </p>
+
+Installed PWA apps show a connection indicator beside the theme switcher. Open it
+to view PWA settings, queued changes, sync status, and local storage controls.
+AI integrations remain available while the installed app is online.
