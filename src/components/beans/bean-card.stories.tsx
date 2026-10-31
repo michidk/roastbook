@@ -4,6 +4,14 @@ import { BeanCard } from './bean-card'
 const meta = {
   title: 'Journal/Bean card',
   component: BeanCard,
+  argTypes: {
+    bean: {
+      control: false,
+      description:
+        'Coffee profile, current bag, and images. Use the stories below to compare common states.',
+      table: { type: { summary: 'BeanRecord' } },
+    },
+  },
   args: {
     compact: true,
     bean: {

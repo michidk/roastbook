@@ -1,0 +1,7 @@
+/* The application scrolls inside its shell; Storybook scrolls the document. */
+html,
+body {
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
+}
