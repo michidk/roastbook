@@ -16,7 +16,6 @@ import {
   BeanInfoDiffModal,
 } from '@/components/beans/bean-info-diff-modal'
 import { BeanPurchaseDialog } from '@/components/beans/bean-purchase-dialog'
-import type { EntityImage } from '@/components/entity-image-gallery'
 import { EntityNotFound } from '@/components/entity-not-found'
 import { Page } from '@/components/page-layout'
 import {
@@ -73,9 +72,7 @@ export function BeanDetailPage() {
       search: (current) => ({ ...current, ...values }),
       replace: options?.replace,
     })
-  const [extractingImageId, setExtractingImageId] = useState<number | null>(
-    null,
-  )
+  const [isExtracting, setIsExtracting] = useState(false)
   const [diffModalOpen, setDiffModalOpen] = useState(false)
   const [suggestedData, setSuggestedData] = useState<ExtractedBeanInfo | null>(
     null,
@@ -225,31 +222,28 @@ export function BeanDetailPage() {
     }
   }
 
-  const handleExtractFromImage = async (image: EntityImage) => {
+  const handleExtractFromImages = async () => {
+    if (bean.images.length === 0) return
     if (!isOnline) {
       toast.error('Image extraction needs a connection')
       return
     }
-    setExtractingImageId(image.id)
+    setIsExtracting(true)
     try {
-      const encodedImage = await fetchImageAsBase64(imageUrl(image.storagePath))
-      const extracted = await extractBeanInfo({
-        data: {
-          images: [
-            {
-              imageBase64: encodedImage.base64,
-              mimeType: encodedImage.mimeType,
-            },
-          ],
-        },
-      })
+      const images = await Promise.all(
+        bean.images.slice(0, 6).map(async (image) => {
+          const encoded = await fetchImageAsBase64(imageUrl(image.storagePath))
+          return { imageBase64: encoded.base64, mimeType: encoded.mimeType }
+        }),
+      )
+      const extracted = await extractBeanInfo({ data: { images } })
       if (!showSuggestion(extracted, 'image')) {
         throw new Error(
           'No coffee details were readable. Try a sharp, well-lit photo of the front or label.',
         )
       }
     } finally {
-      setExtractingImageId(null)
+      setIsExtracting(false)
     }
   }
 
@@ -323,9 +317,9 @@ export function BeanDetailPage() {
           visionEnabled={visionEnabled}
           online={isOnline}
           isResearching={isResearching}
-          extractingImageId={extractingImageId}
+          isExtracting={isExtracting}
           onResearch={handleResearchOnline}
-          onExtractFromImage={handleExtractFromImage}
+          onExtractFromImages={handleExtractFromImages}
           onImagesChange={() => router.invalidate()}
         />
       ) : (

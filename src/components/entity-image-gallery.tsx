@@ -56,10 +56,10 @@ export interface EntityImage {
 
 interface EntityImageAction {
   readonly label: string
-  readonly pendingImageId: number | null
+  readonly isPending: boolean
   readonly disabled?: boolean
   readonly help?: ReactNode
-  readonly onSelect: (image: EntityImage) => void | Promise<void>
+  readonly onSelect: () => void | Promise<void>
 }
 
 interface EntityImageGalleryProps {
@@ -397,49 +397,6 @@ export function EntityImageGallery({
                 </button>
                 {editable && (
                   <div className="pointer-events-none absolute inset-0 rounded-lg opacity-100 transition-colors [@media(hover:hover)]:group-hover:bg-foreground/55">
-                    {imageAction && (
-                      <div className="pointer-events-auto absolute bottom-2 left-2 flex items-center gap-1">
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          className="h-11 px-3 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary sm:h-11 [@media(hover:hover)]:h-8"
-                          onClick={() => {
-                            setGalleryError(null)
-                            void Promise.resolve(
-                              imageAction.onSelect(image),
-                            ).catch((error) => {
-                              setGalleryError(
-                                getErrorMessage(
-                                  error,
-                                  `Could not ${imageAction.label.toLowerCase()}`,
-                                ),
-                              )
-                            })
-                          }}
-                          disabled={
-                            imageAction.disabled ||
-                            imageAction.pendingImageId !== null
-                          }
-                          aria-label={
-                            imageAction.pendingImageId === image.id
-                              ? `${imageAction.label} using picture ${index + 1}, in progress`
-                              : `${imageAction.label} using picture ${index + 1}`
-                          }
-                          aria-busy={imageAction.pendingImageId === image.id}
-                          title={imageAction.label}
-                        >
-                          {imageAction.pendingImageId === image.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Sparkles className="h-4 w-4" />
-                          )}
-                          {imageAction.pendingImageId === image.id
-                            ? 'Analyzing…'
-                            : 'Use AI'}
-                        </Button>
-                        {imageAction.help}
-                      </div>
-                    )}
                     {entityType !== 'shots' ? (
                       <Button
                         size="icon"
@@ -505,12 +462,6 @@ export function EntityImageGallery({
             ))}
           </div>
         )}
-        {imageAction?.pendingImageId !== null &&
-          imageAction?.pendingImageId !== undefined && (
-            <span className="sr-only" role="status">
-              {imageAction.label} in progress
-            </span>
-          )}
         {editable && (
           <PictureUploader
             images={queuedImages}
@@ -563,6 +514,48 @@ export function EntityImageGallery({
             }))}
             onRetryImages={uploadPictures}
           />
+        )}
+        {editable && imageAction && (
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-w-0 flex-1"
+              disabled={
+                imageAction.disabled ||
+                imageAction.isPending ||
+                isUploading ||
+                images.length === 0
+              }
+              aria-busy={imageAction.isPending}
+              onClick={() => {
+                setGalleryError(null)
+                void Promise.resolve(imageAction.onSelect()).catch((error) => {
+                  setGalleryError(
+                    getErrorMessage(
+                      error,
+                      `Could not ${imageAction.label.toLowerCase()}`,
+                    ),
+                  )
+                })
+              }}
+            >
+              {imageAction.isPending ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Sparkles />
+              )}
+              {imageAction.isPending
+                ? 'Analyzing pictures…'
+                : imageAction.label}
+            </Button>
+            {imageAction.help}
+            {imageAction.isPending && (
+              <span className="sr-only" role="status">
+                Analyzing all pictures
+              </span>
+            )}
+          </div>
         )}
         <Dialog
           open={lightboxIndex !== null && lightboxImage !== undefined}

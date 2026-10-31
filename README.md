@@ -126,7 +126,8 @@ desktop where you dig through the numbers afterwards.
 > [!NOTE]
 > Set `OPENAI_API_KEY` and these turn on. Everything else works without it.
 
-- **Label scanning** — extract full bean details from a photo of the bag.
+- **Label scanning** — extract bean details from up to six pictures of the bag
+  together, using one analysis when adding or editing a coffee.
 - **Bean research** — fill in origin, process, roast level, and tasting notes
   from the roaster's own sources.
 - **Roaster research** — resolve official website, Instagram, location, and a

@@ -248,9 +248,9 @@ export function BeanEditContent({
   visionEnabled,
   online,
   isResearching,
-  extractingImageId,
+  isExtracting,
   onResearch,
-  onExtractFromImage,
+  onExtractFromImages,
   onImagesChange,
 }: {
   bean: Bean
@@ -261,9 +261,9 @@ export function BeanEditContent({
   visionEnabled: boolean
   online: boolean
   isResearching: boolean
-  extractingImageId: number | null
+  isExtracting: boolean
   onResearch: () => void
-  onExtractFromImage: (image: EntityImage) => Promise<void>
+  onExtractFromImages: () => Promise<void>
   onImagesChange: () => void
 }) {
   const set = <Key extends keyof BeanFormValues>(
@@ -290,7 +290,7 @@ export function BeanEditContent({
                   disabled={
                     !online ||
                     isResearching ||
-                    extractingImageId !== null ||
+                    isExtracting ||
                     !formData.name.trim()
                   }
                   aria-busy={isResearching}
@@ -324,15 +324,16 @@ export function BeanEditContent({
             visionEnabled
               ? {
                   label: 'Extract details with AI',
-                  pendingImageId: extractingImageId,
+                  isPending: isExtracting,
                   disabled: isResearching || !online,
                   help: (
                     <AiActionHelp>
-                      Reads coffee and roaster details from the packaging. Uses
-                      only the selected picture.
+                      Reads coffee and roaster details from the packaging.
+                      Combines up to six uploaded pictures and resolves
+                      conflicting details.
                     </AiActionHelp>
                   ),
-                  onSelect: onExtractFromImage,
+                  onSelect: onExtractFromImages,
                 }
               : undefined
           }
