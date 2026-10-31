@@ -38,3 +38,6 @@ logs/
 /marketing/exports/
 /output/imagegen/
 /marketing/__pycache__/
+
+# Generated component documentation
+/storybook-static/

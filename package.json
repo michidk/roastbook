@@ -40,7 +40,9 @@
     "db:duplicate-roasters": "bun run scripts/find-duplicate-roasters.ts",
     "storage:orphans": "bun run scripts/report-media-orphans.ts",
     "storage:backfill-thumbnails": "bun run scripts/backfill-thumbnails.ts",
-    "sync:ai-pricing": "bun run scripts/sync-ai-pricing.ts"
+    "sync:ai-pricing": "bun run scripts/sync-ai-pricing.ts",
+    "storybook": "storybook dev --port 6006 --no-open --disable-telemetry",
+    "build:storybook": "storybook build --disable-telemetry"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1068.0",
@@ -78,6 +80,9 @@
     "@biomejs/biome": "2.6.3",
     "@electric-sql/pglite": "0.5.12",
     "@opencode-ai/models": "0.0.118",
+    "@storybook/addon-docs": "10.6.5",
+    "@storybook/addon-themes": "10.6.5",
+    "@storybook/react-vite": "10.6.5",
     "@tanstack/devtools-vite": "0.8.5",
     "@tanstack/router-cli": "1.167.46",
     "@types/bun": "1.4.4",
@@ -91,6 +96,7 @@
     "knip": "6.43.0",
     "markdownlint-cli2": "0.24.0",
     "nitro": "3.0.260610-beta",
+    "storybook": "10.6.5",
     "typescript": "7.0.2",
     "vite": "8.3.5"
   },

@@ -31,6 +31,44 @@ reload. A migration failure during startup prevents the server from starting; a
 migration failure detected by the watcher is reported in the development-server
 log.
 
+## Component stories
+
+Storybook runs independently of the application server and needs no database,
+S3 service, or API credentials:
+
+```bash
+bun run storybook
+```
+
+Open <http://localhost:6006>. Use the theme toolbar to switch between light and
+dark, and the viewport toolbar for 375px, 768px, and 1280px layouts. Controls
+edit component props, and Actions records callback arguments. Editable ratings,
+measurements, tags, filters, pagination, and the timer respond to interactions.
+
+The initial library covers buttons, badges, inputs, cards and loading states,
+star ratings, number inputs, bean and café cards, metrics, empty states, image
+fallbacks, collection toolbars, pagination, deletion dialogs, extraction balance,
+sensory ratings, taste tags, and the brew timer. Each component has an automatic
+documentation page alongside its stories.
+
+Stories live beside components as `*.stories.tsx`, with configuration under
+`.storybook/`. The preview provides the real stylesheet, tooltip provider,
+toasts, and an in-memory TanStack router with fictional application settings.
+Override `parameters.appSettings` for a story that needs another number format
+or taste profile. Link destinations use memory history and do not navigate the
+Storybook host; this library covers components rather than complete app routes.
+Coffee packaging comes from the existing fictional seed assets. The small
+thumbnail and café logo under `.storybook/public/` are derived from those assets.
+
+```bash
+bun run build:storybook
+```
+
+This builds a static site under `storybook-static/`, which is ignored by Git.
+Build it when changing Storybook configuration or stories, in addition to the
+usual source checks. Stories with a `play` function run interaction assertions
+when opened in Storybook.
+
 ## Database workflow
 
 `bun run db:migrate` is the canonical initialization and upgrade command. It

@@ -289,6 +289,8 @@ running.
 | Command | Purpose |
 | --- | --- |
 | `bun run dev` | Apply migrations and start the watched development server |
+| `bun run storybook` | Browse interactive component stories on port 6006 |
+| `bun run build:storybook` | Build the static component library |
 | `bun run check` | Check source formatting, lint, and Markdown |
 | `bun run typecheck` | Run TypeScript without emitting files |
 | `bun run test` | Run tests; report unavailable integrations as skipped |
