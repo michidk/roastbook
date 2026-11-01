@@ -153,6 +153,13 @@ desktop where you dig through the numbers afterwards.
   then inspect every raw AI input, response event, error, and unparsed output
   from Settings.
 
+<p align="center">
+  <img src=".github/images/ai-opinion-desktop.png"
+    alt="AI opinion on a logged brew with a confidence rating, a comparison
+    with earlier brews, and a follow-up chat"
+    width="1000">
+</p>
+
 Every AI call is optional, server-side only, rate-limited, schema-validated,
 and recorded in PostgreSQL for local debugging. Image logs retain metadata such
 as MIME type and byte count, not the image payload itself.
