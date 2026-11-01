@@ -107,6 +107,30 @@ Set `migrations.enabled=false` when migrations are managed outside Helm, or
 - Local `ReadWriteOnce` storage uses the `Recreate` deployment strategy.
 - S3 and shared `ReadWriteMany` storage use the configured rolling strategy.
 
+## MCP
+
+MCP is stateless Streamable HTTP with **no authentication**, so the chart never
+routes it through the Ingress or Hodor. Set `mcp.enabled=true` to create a
+private `<release>-mcp` ClusterIP Service plus a NetworkPolicy rule admitting
+only `mcp.allowedCidrs` (for example a VPN range) and `mcp.allowedNamespaces`;
+at least one is required and `networkPolicy.enabled` must stay on. Those sources
+reach the app port directly, which has no login, so list only trusted ranges.
+The app additionally rejects any Host/Origin outside `localhost`, the Service
+names, `mcp.allowedHosts` and `mcp.allowedOrigins`.
+
+```yaml
+mcp:
+  enabled: true
+  allowedCidrs: ["100.64.0.0/10"] # tailnet / VPN
+  allowedNamespaces: []
+  allowedHosts: [] # extra VPN DNS names
+  allowedOrigins: [] # browser clients only; native clients omit Origin
+```
+
+Connect with `codex mcp add roastbook --url
+http://<release>-mcp.<namespace>.svc/api/mcp` (or the VPN-reachable name); there
+is no login step. Tool availability is managed on Roastbook's Settings page.
+
 ## Validate changes
 
 ```bash

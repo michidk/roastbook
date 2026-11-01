@@ -31,6 +31,8 @@ const serverSchema = {
     .min(1)
     .max(30)
     .default(1),
+  MCP_ALLOWED_HOSTS: optionalString,
+  MCP_ALLOWED_ORIGINS: optionalString,
   AI_TELEMETRY_MAX_PAYLOAD_BYTES: z.coerce
     .number()
     .int()
@@ -96,6 +98,8 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
         runtimeEnvironment.AI_TELEMETRY_RETENTION_DAYS,
       AI_TELEMETRY_MAX_PAYLOAD_BYTES:
         runtimeEnvironment.AI_TELEMETRY_MAX_PAYLOAD_BYTES,
+      MCP_ALLOWED_HOSTS: runtimeEnvironment.MCP_ALLOWED_HOSTS,
+      MCP_ALLOWED_ORIGINS: runtimeEnvironment.MCP_ALLOWED_ORIGINS,
     },
     emptyStringAsUndefined: true,
     isServer: true,

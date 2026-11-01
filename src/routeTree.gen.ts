@@ -46,6 +46,7 @@ import { Route as SettingsAiRouteImport } from './routes/settings/ai'
 import { Route as SettingsAppearanceRouteImport } from './routes/settings/appearance'
 import { Route as SettingsDrinksRouteImport } from './routes/settings/drinks'
 import { Route as SettingsMapRouteImport } from './routes/settings/map'
+import { Route as SettingsMcpRouteImport } from './routes/settings/mcp'
 import { Route as SettingsOfflineRouteImport } from './routes/settings/offline'
 import { Route as SettingsShottimerRouteImport } from './routes/settings/shottimer'
 import { Route as SettingsStorageRouteImport } from './routes/settings/storage'
@@ -250,6 +251,11 @@ const SettingsMapRoute = SettingsMapRouteImport.update({
   path: '/map',
   getParentRoute: () => SettingsRoute,
 } as any)
+const SettingsMcpRoute = SettingsMcpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
+  getParentRoute: () => SettingsRoute,
+} as any)
 const SettingsOfflineRoute = SettingsOfflineRouteImport.update({
   id: '/offline',
   path: '/offline',
@@ -364,6 +370,7 @@ export interface FileRoutesByFullPath {
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/drinks': typeof SettingsDrinksRoute
   '/settings/map': typeof SettingsMapRoute
+  '/settings/mcp': typeof SettingsMcpRoute
   '/settings/offline': typeof SettingsOfflineRoute
   '/settings/shottimer': typeof SettingsShottimerRoute
   '/settings/storage': typeof SettingsStorageRoute
@@ -419,6 +426,7 @@ export interface FileRoutesByTo {
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/drinks': typeof SettingsDrinksRoute
   '/settings/map': typeof SettingsMapRoute
+  '/settings/mcp': typeof SettingsMcpRoute
   '/settings/offline': typeof SettingsOfflineRoute
   '/settings/shottimer': typeof SettingsShottimerRoute
   '/settings/storage': typeof SettingsStorageRoute
@@ -476,6 +484,7 @@ export interface FileRoutesById {
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/drinks': typeof SettingsDrinksRoute
   '/settings/map': typeof SettingsMapRoute
+  '/settings/mcp': typeof SettingsMcpRoute
   '/settings/offline': typeof SettingsOfflineRoute
   '/settings/shottimer': typeof SettingsShottimerRoute
   '/settings/storage': typeof SettingsStorageRoute
@@ -534,6 +543,7 @@ export interface FileRouteTypes {
     | '/settings/appearance'
     | '/settings/drinks'
     | '/settings/map'
+    | '/settings/mcp'
     | '/settings/offline'
     | '/settings/shottimer'
     | '/settings/storage'
@@ -589,6 +599,7 @@ export interface FileRouteTypes {
     | '/settings/appearance'
     | '/settings/drinks'
     | '/settings/map'
+    | '/settings/mcp'
     | '/settings/offline'
     | '/settings/shottimer'
     | '/settings/storage'
@@ -645,6 +656,7 @@ export interface FileRouteTypes {
     | '/settings/appearance'
     | '/settings/drinks'
     | '/settings/map'
+    | '/settings/mcp'
     | '/settings/offline'
     | '/settings/shottimer'
     | '/settings/storage'
@@ -982,6 +994,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsMapRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/settings/mcp': {
+      id: '/settings/mcp'
+      path: '/mcp'
+      fullPath: '/settings/mcp'
+      preLoaderRoute: typeof SettingsMcpRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/settings/offline': {
       id: '/settings/offline'
       path: '/offline'
@@ -1110,6 +1129,7 @@ interface SettingsRouteChildren {
   SettingsAppearanceRoute: typeof SettingsAppearanceRoute
   SettingsDrinksRoute: typeof SettingsDrinksRoute
   SettingsMapRoute: typeof SettingsMapRoute
+  SettingsMcpRoute: typeof SettingsMcpRoute
   SettingsOfflineRoute: typeof SettingsOfflineRoute
   SettingsShottimerRoute: typeof SettingsShottimerRoute
   SettingsStorageRoute: typeof SettingsStorageRoute
@@ -1123,6 +1143,7 @@ const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsAppearanceRoute: SettingsAppearanceRoute,
   SettingsDrinksRoute: SettingsDrinksRoute,
   SettingsMapRoute: SettingsMapRoute,
+  SettingsMcpRoute: SettingsMcpRoute,
   SettingsOfflineRoute: SettingsOfflineRoute,
   SettingsShottimerRoute: SettingsShottimerRoute,
   SettingsStorageRoute: SettingsStorageRoute,

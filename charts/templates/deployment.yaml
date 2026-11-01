@@ -5,6 +5,12 @@
 {{- if and .Values.autoscaling.enabled (gt (int .Values.autoscaling.minReplicas) (int .Values.autoscaling.maxReplicas)) -}}
 {{- fail "autoscaling.minReplicas cannot exceed autoscaling.maxReplicas" -}}
 {{- end -}}
+{{- if and .Values.mcp.enabled (not .Values.networkPolicy.enabled) -}}
+{{- fail "networkPolicy.enabled must be true when MCP is enabled because MCP has no authentication of its own" -}}
+{{- end -}}
+{{- if and .Values.mcp.enabled (not .Values.mcp.allowedCidrs) (not .Values.mcp.allowedNamespaces) -}}
+{{- fail "mcp.allowedCidrs or mcp.allowedNamespaces is required when MCP is enabled" -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -118,6 +124,14 @@ spec:
             {{- if .Values.openai.researchModel }}
             - name: OPENAI_RESEARCH_MODEL
               value: {{ .Values.openai.researchModel | quote }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.mcp.enabled }}
+            - name: MCP_ALLOWED_HOSTS
+              value: {{ include "roastbook.mcpAllowedHosts" . | quote }}
+            {{- if .Values.mcp.allowedOrigins }}
+            - name: MCP_ALLOWED_ORIGINS
+              value: {{ join "," .Values.mcp.allowedOrigins | quote }}
             {{- end }}
             {{- end }}
             - name: AI_TELEMETRY_STORE_PAYLOADS

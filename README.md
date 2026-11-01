@@ -158,9 +158,12 @@ and recorded in PostgreSQL for local debugging. Image logs retain metadata such
 as MIME type and byte count, not the image payload itself.
 
 > [!IMPORTANT]
-> **On the roadmap: an MCP server**, so your own agents can read and write your
-> coffee log directly — ask what your last ten Gesha brews had in common, or
-> have an assistant log this morning's espresso for you.
+> **MCP server for your own agents.** `/api/mcp` is a stateless Streamable HTTP
+> endpoint (protocol 2026-07-28) with ten read tools and one write tool
+> (`create_brew`; nothing deletes or edits data). Ask what your last ten Gesha
+> brews had in common, or have an assistant log this morning's espresso. It has
+> no login: keep it on loopback, a firewall or a private VPN. See
+> [MCP deployment](docs/deployment.md#mcp).
 
 ## 📦 Features
 

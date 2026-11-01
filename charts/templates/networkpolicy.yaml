@@ -16,4 +16,20 @@ spec:
     - ports:
         - protocol: TCP
           port: {{ ternary 8080 3000 .Values.hodor.enabled }}
+    {{- if and .Values.mcp.enabled .Values.hodor.enabled }}
+    # Unauthenticated MCP on the app port, limited to private sources.
+    - from:
+        {{- range .Values.mcp.allowedCidrs }}
+        - ipBlock:
+            cidr: {{ . | quote }}
+        {{- end }}
+        {{- range .Values.mcp.allowedNamespaces }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ . | quote }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: 3000
+    {{- end }}
 {{- end }}

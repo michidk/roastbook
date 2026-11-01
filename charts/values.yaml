@@ -92,6 +92,22 @@ podDisruptionBudget:
 networkPolicy:
   enabled: true
 
+# Unauthenticated, stateless MCP at http://<release>-mcp/api/mcp. It is never
+# routed through the Ingress or Hodor; the only protection is network placement
+# (NetworkPolicy) plus Host/Origin validation. Sources listed here reach the
+# app's own port 3000, which has no login, so list only private VPN/trusted
+# ranges and namespaces.
+mcp:
+  enabled: false
+  # Required when enabled: at least one of these two source lists.
+  allowedCidrs: [] # e.g. a VPN or tailnet range
+  allowedNamespaces: [] # namespace names whose Pods may connect
+  # Extra Host names clients use (for example a VPN DNS name). The in-cluster
+  # Service names are always allowed; localhost is always allowed.
+  allowedHosts: []
+  # Extra Origin hostnames. Native MCP clients send no Origin.
+  allowedOrigins: []
+
 migrations:
   enabled: true
   backoffLimit: 3

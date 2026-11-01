@@ -6,10 +6,14 @@ import {
 } from '@tanstack/react-start/server'
 import { publicEnv } from '@/lib/env'
 import { injectHeadHtml } from '@/lib/head-html.server'
+import { handleMcpHttpRequest } from '@/lib/server/mcp/http.server'
 
 const startHandler = createStartHandler(defaultStreamHandler)
 
 const fetch: RequestHandler<Register> = async (request, options) => {
+  // MCP is stateless JSON over POST and bypasses the document pipeline.
+  const mcpResponse = await handleMcpHttpRequest(request)
+  if (mcpResponse) return mcpResponse
   const response = await startHandler(request, options)
   return injectHeadHtml(response, publicEnv.VITE_HEAD_HTML)
 }

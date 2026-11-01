@@ -126,6 +126,29 @@ export const shottimer = pgTable(
   (table) => [check('shottimer_singleton_check', sql`${table.id} = 1`)],
 )
 
+// Singleton owner policy for the MCP endpoint, plus a log of every tool call.
+export const mcpSettings = pgTable('mcp_settings', {
+  id: text('id').primaryKey().default('instance'),
+  enabled: boolean('enabled').default(true).notNull(),
+  disabledTools: jsonb('disabled_tools')
+    .$type<string[]>()
+    .default([])
+    .notNull(),
+  ...timestamps(),
+})
+
+export const mcpAuditEvents = pgTable(
+  'mcp_audit_events',
+  {
+    id: serial('id').primaryKey(),
+    event: text('event').notNull(),
+    outcome: text('outcome').notNull(),
+    toolName: text('tool_name'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [index('mcp_audit_events_created_at_idx').on(table.createdAt)],
+)
+
 export const drinkTypes = pgTable('drink_types', {
   id: serial('id').primaryKey(),
   name: text('name').notNull().unique(),

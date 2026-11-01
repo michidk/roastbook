@@ -92,3 +92,10 @@ Database URL construction - shared between app and migration secrets
 {{- printf "postgresql://%s:%s@%s:%s/%s" .Values.postgresql.auth.username (required "postgresql.auth.password is required" .Values.postgresql.auth.password) (required "postgresql.external.host is required" .Values.postgresql.external.host) .Values.postgresql.external.port .Values.postgresql.auth.database -}}
 {{- end -}}
 {{- end }}
+
+{{/* Host names the MCP Service is reached by; anything else gets a 403. */}}
+{{- define "roastbook.mcpAllowedHosts" -}}
+{{- $name := printf "%s-mcp" (include "roastbook.fullname" .) -}}
+{{- $hosts := concat (list $name (printf "%s.%s" $name .Release.Namespace) (printf "%s.%s.svc" $name .Release.Namespace) (printf "%s.%s.svc.cluster.local" $name .Release.Namespace)) (.Values.mcp.allowedHosts | default list) -}}
+{{- join "," (uniq $hosts) -}}
+{{- end -}}

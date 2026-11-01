@@ -75,6 +75,17 @@ immediately from the AI request log in Settings. Detailed logs can contain
 private bean, roaster, gear, and brew data, so keep the database and Settings
 page behind the deployment's authentication boundary.
 
+## MCP
+
+| Variable | Default | Required | Description |
+| --- | --- | --- | --- |
+| `MCP_ALLOWED_HOSTS` | — | No | Extra `Host` hostnames, besides loopback |
+| `MCP_ALLOWED_ORIGINS` | — | No | Extra `Origin` hostnames |
+| `MCP_PORT` | `3001` | No | Docker Compose loopback port for `/api/mcp` |
+
+The endpoint is unauthenticated; see [MCP in the deployment
+guide](deployment.md#mcp).
+
 ## Docker Compose authentication gate
 
 These variables configure the Hodor container rather than the Roastbook

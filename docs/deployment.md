@@ -25,6 +25,31 @@ login. Those endpoints authenticate the device with their own bearer token and
 reject every request until the integration is enabled; see
 [Shottimer API](shottimer.md).
 
+## MCP
+
+Roastbook serves MCP at `/api/mcp` as stateless Streamable HTTP (protocol
+2026-07-28). **The endpoint has no authentication**: anyone who can reach it
+can call every tool left enabled on **Settings → AI access (MCP)**, including
+the write tool that logs brews. Security rests on two layers:
+
+1. **Network restriction.** Never route `/api/mcp` through Hodor, an Ingress or
+   any public proxy. Compose publishes it on `127.0.0.1:${MCP_PORT:-3001}`
+   only. In Helm, `mcp.enabled` adds a private `<release>-mcp` ClusterIP Service
+   and a NetworkPolicy rule limited to `mcp.allowedCidrs` and
+   `mcp.allowedNamespaces`; see [the chart README](../charts/README.md#mcp).
+   Otherwise use a firewall or a private VPN.
+2. **Host and Origin validation** on every request against loopback plus
+   `MCP_ALLOWED_HOSTS` / `MCP_ALLOWED_ORIGINS`; anything else gets `403`, which
+   blocks DNS rebinding. No CORS headers are sent.
+
+```bash
+codex mcp add roastbook --url http://127.0.0.1:3001/api/mcp
+```
+
+There is no login step. The ten read tools list and read brews, beans, recipes,
+gear, roasters, brewing methods and statistics; `create_brew` logs a new brew.
+No tool deletes or edits existing data.
+
 ## PWA and HTTPS
 
 Roastbook is installable as a progressive web app. Installation requires a

@@ -38,8 +38,13 @@ services:
         condition: service_completed_successfully
     expose:
       - "3000"
+    ports:
+      # MCP has no login: publish it on loopback only, bypassing Hodor.
+      - "127.0.0.1:${MCP_PORT:-3001}:3000"
     environment:
       DATABASE_URL: postgresql://roastbook:roastbook@postgres:5432/roastbook
+      MCP_ALLOWED_HOSTS: ${MCP_ALLOWED_HOSTS:-}
+      MCP_ALLOWED_ORIGINS: ${MCP_ALLOWED_ORIGINS:-}
       STORAGE_PROVIDER: local
       STORAGE_PATH: /uploads
       STORAGE_URL: /media

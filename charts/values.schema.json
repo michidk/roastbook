@@ -263,6 +263,17 @@
         "enabled": { "type": "boolean" }
       }
     },
+    "mcp": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "allowedCidrs": { "type": "array", "items": { "type": "string" } },
+        "allowedNamespaces": { "type": "array", "items": { "type": "string" } },
+        "allowedHosts": { "type": "array", "items": { "type": "string" } },
+        "allowedOrigins": { "type": "array", "items": { "type": "string" } }
+      }
+    },
     "migrations": {
       "type": "object",
       "additionalProperties": false,
