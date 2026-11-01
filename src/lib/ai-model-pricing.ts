@@ -2,7 +2,7 @@
 // Do not edit manually; run `bun run sync:ai-pricing` instead.
 
 export const MODEL_PRICING_SOURCE = 'models.dev' as const
-export const MODEL_PRICING_VERSION = '2026-10-28T05:26:08.492Z' as const
+export const MODEL_PRICING_VERSION = '2026-10-29T05:26:25.333Z' as const
 export const MODEL_PRICING_FALLBACK_MODELS = new Set([
   'gpt-4o-mini-search-preview',
   'gpt-4o-search-preview',
