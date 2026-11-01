@@ -113,6 +113,20 @@ async function resolveSetup(
     }
   }
 
+  if (request.historyShotId) {
+    const setup = await resolveSetup({ shotId: request.historyShotId })
+    if (setup.beanId !== request.beanId) {
+      throw new ShotRecommendationError(
+        'The selected setup belongs to different beans.',
+      )
+    }
+    return {
+      ...setup,
+      beanPurchaseId: request.beanPurchaseId ?? setup.beanPurchaseId,
+      focusedShotId: null,
+    }
+  }
+
   if (request.currentDraft && request.brewingMethodId) {
     return {
       beanId: request.beanId,
@@ -187,6 +201,63 @@ function setupConditions(setup: RecommendationSetup) {
 export const checkShotRecommendationEnabled = createServerFn({
   method: 'GET',
 }).handler(async () => ({ enabled: isResearchEnabled() }))
+
+export const getShotRecommendationOptions = createServerFn({ method: 'GET' })
+  .validator(shotRecommendationRequestSchema)
+  .handler(async ({ data }) => {
+    if (isFocusedShotRecommendationRequest(data) || data.currentDraft) return []
+    const history = await db.query.shots.findMany({
+      where: data.brewingMethodId
+        ? and(
+            eq(shots.beanId, data.beanId),
+            eq(shots.brewingMethodId, data.brewingMethodId),
+          )
+        : eq(shots.beanId, data.beanId),
+      orderBy: [desc(shots.brewedAt), desc(shots.id)],
+      columns: {
+        id: true,
+        brewingMethodId: true,
+        machineId: true,
+        grinderId: true,
+        basketId: true,
+      },
+      with: {
+        brewingMethod: true,
+        machine: true,
+        grinder: true,
+        basket: true,
+        accessoryGearLinks: { with: { gear: true } },
+      },
+    })
+    const seen = new Set<string>()
+    return history.flatMap((brew) => {
+      const key = JSON.stringify([
+        brew.brewingMethodId,
+        brew.machineId,
+        brew.grinderId,
+        brew.basketId,
+        normalizedAccessoryIds(
+          brew.accessoryGearLinks.map((link) => link.gearId),
+        ),
+      ])
+      if (seen.has(key)) return []
+      seen.add(key)
+      const names = [
+        brew.machine?.name,
+        brew.grinder?.name,
+        brew.basket?.name,
+        ...brew.accessoryGearLinks.map((link) => link.gear.name),
+      ].filter(Boolean)
+      return [
+        {
+          historyShotId: brew.id,
+          brewingMethodId: brew.brewingMethodId,
+          brewingMethodName: brew.brewingMethod.name,
+          setupName: names.join(' · ') || 'No gear recorded',
+        },
+      ]
+    })
+  })
 
 async function loadRecommendationEvidence(request: ShotRecommendationRequest) {
   const setup = await resolveSetup(request)

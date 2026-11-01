@@ -20,6 +20,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Tooltip,
@@ -28,7 +35,10 @@ import {
 } from '@/components/ui/tooltip'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { getErrorMessage } from '@/lib/error-message'
-import { getShotRecommendation } from '@/lib/server/shot-recommendations'
+import {
+  getShotRecommendation,
+  getShotRecommendationOptions,
+} from '@/lib/server/shot-recommendations'
 import {
   isFocusedShotRecommendationRequest,
   type ShotRecommendationRequest,
@@ -64,6 +74,26 @@ export function AiRecommendationDialog({
    */
   readonly showDisabledReason?: boolean
 }) {
+  const [options, setOptions] = useState<
+    Awaited<ReturnType<typeof getShotRecommendationOptions>>
+  >([])
+  const [selection, setSelection] = useState<number | null>(null)
+  const [choosing, setChoosing] = useState(false)
+  const [activeRequest, setActiveRequest] = useState(request)
+  const selectedOption = options.find(
+    (option) => option.historyShotId === selection,
+  )
+  const methods = [
+    ...new Map(
+      options.map((option) => [
+        option.brewingMethodId,
+        option.brewingMethodName,
+      ]),
+    ).entries(),
+  ]
+  const setups = options.filter(
+    (option) => option.brewingMethodId === selectedOption?.brewingMethodId,
+  )
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -75,16 +105,42 @@ export function AiRecommendationDialog({
     ? isFocusedShotRecommendationRequest(request)
     : false
 
-  const loadRecommendation = async () => {
-    if (!request) return
+  const loadRecommendation = async (data = activeRequest) => {
+    if (!data) return
+    setActiveRequest(data)
+    setChoosing(false)
     setLoading(true)
     setError(null)
     setResult(null)
     setMobilePane('recommendation')
     try {
-      setResult(await getShotRecommendation({ data: request }))
+      setResult(await getShotRecommendation({ data }))
     } catch (caught) {
       setError(getErrorMessage(caught, 'Could not generate a recommendation'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const startRecommendation = async () => {
+    if (!request) return
+    setOpen(true)
+    setLoading(true)
+    setError(null)
+    setResult(null)
+    setChoosing(false)
+    setActiveRequest(request)
+    try {
+      const choices = await getShotRecommendationOptions({ data: request })
+      setOptions(choices)
+      setSelection(choices[0]?.historyShotId ?? null)
+      if (choices.length > 1) {
+        setChoosing(true)
+      } else {
+        await loadRecommendation(request)
+      }
+    } catch (caught) {
+      setError(getErrorMessage(caught, 'Could not load brew history'))
     } finally {
       setLoading(false)
     }
@@ -115,8 +171,7 @@ export function AiRecommendationDialog({
               disabled={!request}
               title={visibleDisabledReason ? undefined : buttonTitle}
               onClick={() => {
-                setOpen(true)
-                void loadRecommendation()
+                void startRecommendation()
               }}
             >
               <Sparkles />
@@ -175,7 +230,7 @@ export function AiRecommendationDialog({
               </Tabs>
               <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] lg:grid-cols-2 lg:divide-x lg:divide-border/70">
                 <RecommendationChat
-                  request={request}
+                  request={activeRequest ?? request}
                   recommendation={result.recommendation}
                   className={
                     mobilePane === 'chat' ? undefined : 'hidden lg:flex'
@@ -199,7 +254,87 @@ export function AiRecommendationDialog({
             </div>
           ) : (
             <DialogBody>
-              {loading ? (
+              {choosing ? (
+                <div className="space-y-5">
+                  <p className="text-sm text-muted-foreground">
+                    Choose which brews to use. The latest brew's method and
+                    setup are preselected.
+                  </p>
+                  {methods.length > 1 ? (
+                    <div className="space-y-2">
+                      <p
+                        id="recommendation-method-label"
+                        className="text-sm font-medium"
+                      >
+                        Brew type
+                      </p>
+                      <Select
+                        value={selectedOption?.brewingMethodId}
+                        onValueChange={(value) =>
+                          setSelection(
+                            options.find(
+                              (option) => option.brewingMethodId === value,
+                            )?.historyShotId ?? null,
+                          )
+                        }
+                      >
+                        <SelectTrigger aria-labelledby="recommendation-method-label">
+                          <SelectValue>
+                            {selectedOption?.brewingMethodName}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {methods.map(([id, name]) => (
+                            <SelectItem key={id} value={id}>
+                              {name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : (
+                    <p className="font-medium">
+                      {selectedOption?.brewingMethodName}
+                    </p>
+                  )}
+                  {setups.length > 1 ? (
+                    <div className="space-y-2">
+                      <p
+                        id="recommendation-setup-label"
+                        className="text-sm font-medium"
+                      >
+                        Equipment setup
+                      </p>
+                      <Select value={selection} onValueChange={setSelection}>
+                        <SelectTrigger
+                          aria-labelledby="recommendation-setup-label"
+                          className="h-auto min-h-11 whitespace-normal"
+                        >
+                          <SelectValue>{selectedOption?.setupName}</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {setups.map((option) => (
+                            <SelectItem
+                              key={option.historyShotId}
+                              value={option.historyShotId}
+                            >
+                              {option.setupName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      {selectedOption?.setupName}
+                    </p>
+                  )}
+                  <p className="text-sm text-muted-foreground">
+                    Only history for these beans, this brew type, and this exact
+                    setup will be sent to the AI.
+                  </p>
+                </div>
+              ) : loading ? (
                 <div
                   className="flex min-h-56 flex-col items-center justify-center gap-3 text-center"
                   aria-live="polite"
@@ -231,7 +366,7 @@ export function AiRecommendationDialog({
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => void loadRecommendation()}
+                    onClick={() => void startRecommendation()}
                   >
                     <RefreshCw />
                     Try again
@@ -244,6 +379,24 @@ export function AiRecommendationDialog({
             <DialogClose render={<Button type="button" variant="outline" />}>
               Close
             </DialogClose>
+            {choosing &&
+            request &&
+            !isFocusedShotRecommendationRequest(request) ? (
+              <Button
+                type="button"
+                disabled={!selectedOption}
+                onClick={() => {
+                  if (selectedOption)
+                    void loadRecommendation({
+                      ...request,
+                      brewingMethodId: selectedOption.brewingMethodId,
+                      historyShotId: selectedOption.historyShotId,
+                    })
+                }}
+              >
+                Generate recommendation
+              </Button>
+            ) : null}
             {result ? (
               <Button
                 type="button"

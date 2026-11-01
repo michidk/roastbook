@@ -137,8 +137,11 @@ desktop where you dig through the numbers afterwards.
   guesses, or values from similar machines.
 - **Brew recommendations** — compare a new-brew draft or one specific logged
   brew with up to 50 brews for the same bean, method, and exact gear setup, then
-  get a confidence-rated opinion that recognizes when recent brews are already
-  good, or proposes one explained adjustment or controlled experiment. The
+  choose a historical brew type and equipment setup when beans have multiple
+  combinations, with the latest brew preselected. Only matching history is
+  used to get a confidence-rated opinion that recognizes when recent brews
+  are already good, or proposes one explained adjustment or controlled
+  experiment. The
   prompt accounts for human entry errors and subjective taste-profile outliers,
   and favors bean-appropriate classic starting recipes for unbrewed drafts
   without reliable matching taste evidence. The recommendation also

@@ -19,6 +19,22 @@ describe('brew recommendation evidence', () => {
     ).toEqual({ beanId: 12, brewingMethodId: 3 })
   })
 
+  test('preserves the historical setup selection for recommendations and follow-ups', () => {
+    expect(
+      shotRecommendationRequestSchema.parse({
+        beanId: 12,
+        brewingMethodId: 3,
+        historyShotId: 42,
+      }),
+    ).toEqual({ beanId: 12, brewingMethodId: 3, historyShotId: 42 })
+    expect(
+      shotRecommendationRequestSchema.safeParse({
+        beanId: 12,
+        historyShotId: -1,
+      }).success,
+    ).toBe(false)
+  })
+
   test('accepts a request focused on one saved brew', () => {
     expect(shotRecommendationRequestSchema.parse({ shotId: 42 })).toEqual({
       shotId: 42,

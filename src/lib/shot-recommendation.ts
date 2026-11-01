@@ -79,6 +79,7 @@ const historyShotRecommendationRequestSchema = z
   .object({
     beanId: z.number().int().positive(),
     beanPurchaseId: z.number().int().positive().optional(),
+    historyShotId: z.number().int().positive().optional(),
     brewingMethodId: z.number().int().positive().optional(),
     currentDraft: shotRecommendationDraftSchema.optional(),
   })
