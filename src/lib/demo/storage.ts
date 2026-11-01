@@ -5,6 +5,8 @@ import { demoCapabilityDisabled } from './disabled'
 export type { StorageProvider, StoredObject } from '@/lib/storage/types'
 
 const disabledStorage: StorageProvider = {
+  uploadStream: async () => demoCapabilityDisabled('Storage uploads'),
+  downloadStream: async () => demoCapabilityDisabled('Storage downloads'),
   upload: async () => demoCapabilityDisabled('Storage uploads'),
   download: async () => demoCapabilityDisabled('Storage downloads'),
   delete: async () => demoCapabilityDisabled('Storage deletion'),

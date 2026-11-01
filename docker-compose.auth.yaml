@@ -1,0 +1,81 @@
+services:
+  postgres:
+    image: postgres:18@sha256:979bccfde35445db618c65107d27d08c6c21339d8dc3ad4c830c6633947be0e4
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: roastbook
+      POSTGRES_USER: roastbook
+      POSTGRES_PASSWORD: roastbook
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U roastbook -d roastbook"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    build:
+      context: .
+      args:
+        VITE_HEAD_HTML: ${VITE_HEAD_HTML:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["bun", "run", "db:migrate"]
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql://roastbook:roastbook@postgres:5432/roastbook
+
+  app: &authenticated-app
+    build:
+      context: .
+      args:
+        VITE_HEAD_HTML: ${VITE_HEAD_HTML:-}
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    expose:
+      - "3000"
+    ports:
+      # MCP requires a per-user bearer token. Keep the direct device port private.
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      DATABASE_URL: postgresql://roastbook:roastbook@postgres:5432/roastbook
+      MCP_ALLOWED_HOSTS: ${MCP_ALLOWED_HOSTS:-}
+      MCP_ALLOWED_ORIGINS: ${MCP_ALLOWED_ORIGINS:-}
+      AUTH_ENABLED: "true"
+      AUTH_URL: ${AUTH_URL:?Set the public application URL}
+      AUTH_SECRET: ${AUTH_SECRET:?Set a random secret with at least 32 characters}
+      AUTH_SIGNUP_ENABLED: ${AUTH_SIGNUP_ENABLED:-true}
+      AUTH_ADMIN_EMAIL: ${AUTH_ADMIN_EMAIL:-}
+      DEPLOYMENT_MODE: ${DEPLOYMENT_MODE:-self-hosted}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-smtp}
+      EMAIL_FROM: ${EMAIL_FROM:?Set the sender address}
+      SMTP_URL: ${SMTP_URL:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      STORAGE_PROVIDER: local
+      STORAGE_PATH: /uploads
+      STORAGE_URL: /media
+      # OPENAI_API_KEY: sk-...
+      # OPENAI_BASE_URL: https://api.openai.com/v1
+      # OPENAI_VISION_MODEL: gpt-5.1-codex
+      # OPENAI_RESEARCH_MODEL: gpt-5.1-codex
+      AI_TELEMETRY_STORE_PAYLOADS: ${AI_TELEMETRY_STORE_PAYLOADS:-false}
+      AI_TELEMETRY_RETENTION_DAYS: ${AI_TELEMETRY_RETENTION_DAYS:-1}
+      AI_TELEMETRY_MAX_PAYLOAD_BYTES: ${AI_TELEMETRY_MAX_PAYLOAD_BYTES:-65536}
+    volumes:
+      - uploads:/uploads
+
+
+  worker:
+    <<: *authenticated-app
+    command: ["bun", "run", "worker"]
+    ports: []
+    expose: []
+
+volumes:
+  postgres_data:
+  uploads:

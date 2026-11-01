@@ -279,7 +279,9 @@ export const updateRecipe = createServerFn({ method: 'POST' })
             operationId: data.clientOperationId,
             recipeId: persistedRecipe.id,
           })
-          .onConflictDoNothing({ target: clientOperations.operationId })
+          .onConflictDoNothing({
+            target: [clientOperations.ownerId, clientOperations.operationId],
+          })
         await pruneClientOperations(tx)
       }
       return persistedRecipe
@@ -320,7 +322,9 @@ export const createRecipe = createServerFn({ method: 'POST' })
           ...projected.values,
           clientOperationId: operationId ?? null,
         })
-        .onConflictDoNothing({ target: recipes.clientOperationId })
+        .onConflictDoNothing({
+          target: [recipes.ownerId, recipes.clientOperationId],
+        })
         .returning()
       if (!recipe) {
         const existing = operationId
@@ -350,7 +354,9 @@ export const createRecipe = createServerFn({ method: 'POST' })
             operationId: data.clientOperationId,
             recipeId: persistedRecipe.id,
           })
-          .onConflictDoNothing({ target: clientOperations.operationId })
+          .onConflictDoNothing({
+            target: [clientOperations.ownerId, clientOperations.operationId],
+          })
         await pruneClientOperations(tx)
       }
       return persistedRecipe
@@ -388,7 +394,9 @@ export const saveShotAsRecipe = createServerFn({ method: 'POST' })
             brewId: data.shotId,
             recipeId: recipe.id,
           })
-          .onConflictDoNothing({ target: clientOperations.operationId })
+          .onConflictDoNothing({
+            target: [clientOperations.ownerId, clientOperations.operationId],
+          })
         await pruneClientOperations(tx)
       }
       return recipe

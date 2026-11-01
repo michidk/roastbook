@@ -30,8 +30,6 @@ type EditableSettings = Pick<
   | 'defaultMapLabel'
 >
 
-let cachedSettings: AppSettings | undefined
-
 function toAppSettings(row: typeof settingsTable.$inferSelect): AppSettings {
   const latitude = row.defaultMapLatitude
   const longitude = row.defaultMapLongitude
@@ -58,7 +56,7 @@ async function ensureSettingsRow() {
   const [created] = await db
     .insert(settingsTable)
     .values({ id: 1 })
-    .onConflictDoNothing({ target: settingsTable.id })
+    .onConflictDoNothing({ target: [settingsTable.ownerId, settingsTable.id] })
     .returning()
   if (created) return created
 
@@ -70,9 +68,7 @@ async function ensureSettingsRow() {
 }
 
 export async function loadAppSettings(): Promise<AppSettings> {
-  if (cachedSettings) return cachedSettings
-  cachedSettings = toAppSettings(await ensureSettingsRow())
-  return cachedSettings
+  return toAppSettings(await ensureSettingsRow())
 }
 
 export async function updateSettings(
@@ -83,13 +79,12 @@ export async function updateSettings(
     .insert(settingsTable)
     .values({ id: 1, ...patch })
     .onConflictDoUpdate({
-      target: settingsTable.id,
+      target: [settingsTable.ownerId, settingsTable.id],
       set: { ...patch, updatedAt: new Date() },
     })
     .returning()
   if (!row) throw new Error(errorMessage)
-  cachedSettings = toAppSettings(row)
-  return cachedSettings
+  return toAppSettings(row)
 }
 
 /**
@@ -98,7 +93,6 @@ export async function updateSettings(
  * defaults when no row exists yet.
  */
 export async function readTasteProfile(): Promise<TasteProfileConfig> {
-  if (cachedSettings) return cachedSettings.tasteProfile
   const row = await db.query.settings.findFirst({
     columns: { tasteProfileFields: true },
     where: eq(settingsTable.id, 1),

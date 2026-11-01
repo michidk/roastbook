@@ -1,0 +1,360 @@
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
+import { SettingsPanelSection } from '@/components/settings/settings-shell'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { authClient } from '@/lib/auth-client'
+import {
+  confirmDeletion,
+  createToken,
+  deleteToken,
+  getCurrentAccount,
+  requestDeletion,
+  requestExport,
+} from '@/lib/server/account'
+
+export const Route = createFileRoute('/settings/account')({
+  loader: () => getCurrentAccount(),
+  component: AccountPage,
+})
+function AccountPage() {
+  const state = Route.useLoaderData(),
+    router = useRouter()
+  const [name, setName] = useState(state.identity?.name ?? '')
+  const [email, setEmail] = useState('')
+  const [token, setToken] = useState('')
+  const [deletion, setDeletion] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [passkeys, setPasskeys] = useState<
+    Array<{ id: string; name?: string | null }>
+  >([])
+  const accountId = state.identity?.id
+  useEffect(() => {
+    const fields = new URLSearchParams(window.location.hash.slice(1))
+    setDeletion(fields.get('delete') ?? '')
+    if (window.location.hash)
+      window.history.replaceState(null, '', '/settings/account')
+    if (!accountId) return
+    void authClient.passkey.listUserPasskeys().then((result) => {
+      if (result.data) setPasskeys(result.data)
+    })
+  }, [accountId])
+  if (!state.identity)
+    return <p>Account management is unavailable on this installation.</p>
+  const identity = state.identity
+  async function action(work: () => Promise<unknown>, message: string) {
+    setBusy(true)
+    try {
+      await work()
+      toast.success(message)
+      await router.invalidate()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'The action failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+  async function checkResult(result: { error?: { message?: string } | null }) {
+    if (result.error)
+      throw new Error(result.error.message ?? 'The action failed')
+  }
+  async function signOut() {
+    const { listOperations } = await import('@/modules/offline/operation-queue')
+    const pending = (await listOperations()).filter(
+      (item) => !['acknowledged', 'cancelled'].includes(item.status),
+    )
+    if (pending.length) {
+      toast.error('Sync or discard your pending changes before signing out.')
+      return
+    }
+    await action(async () => {
+      const { deleteOfflineDatabase } = await import(
+        '@/modules/offline/storage'
+      )
+      await deleteOfflineDatabase()
+      await checkResult(await authClient.signOut())
+      localStorage.removeItem('roastbook-active-owner')
+      if ('caches' in window)
+        for (const key of await caches.keys())
+          if (key.startsWith('roastbook-documents-')) await caches.delete(key)
+      window.location.assign('/login')
+    }, 'Signed out')
+  }
+  return (
+    <div className="space-y-8">
+      <SettingsPanelSection
+        title="Account"
+        description={`Signed in as ${identity.email}`}
+      >
+        <form
+          className="space-y-3"
+          onSubmit={(event) => {
+            event.preventDefault()
+            void action(
+              async () => checkResult(await authClient.updateUser({ name })),
+              'Name updated',
+            )
+          }}
+        >
+          <Label htmlFor="account-name">Display name</Label>
+          <Input
+            id="account-name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            maxLength={100}
+            required
+          />
+          <Button disabled={busy}>Save name</Button>
+        </form>
+        <form
+          className="mt-6 space-y-3"
+          onSubmit={(event) => {
+            event.preventDefault()
+            void action(
+              async () =>
+                checkResult(
+                  await authClient.changeEmail({
+                    newEmail: email,
+                    callbackURL: '/settings/account',
+                  }),
+                ),
+              'Check your current email to approve the change, then verify the new address.',
+            )
+          }}
+        >
+          <Label htmlFor="account-email">New email address</Label>
+          <Input
+            id="account-email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            required
+          />
+          <Button disabled={busy} variant="outline">
+            Change email
+          </Button>
+        </form>
+      </SettingsPanelSection>
+      <SettingsPanelSection
+        title="Passkeys and sessions"
+        description="Use your device or a security key to sign in without an email code."
+      >
+        <div className="space-y-3">
+          {passkeys.map((key) => (
+            <div
+              key={key.id}
+              className="flex items-center justify-between gap-3"
+            >
+              <span>{key.name || 'Passkey'}</span>
+              <Button
+                disabled={busy}
+                variant="outline"
+                onClick={() =>
+                  void action(async () => {
+                    await checkResult(
+                      await authClient.passkey.deletePasskey({ id: key.id }),
+                    )
+                    setPasskeys((current) =>
+                      current.filter((p) => p.id !== key.id),
+                    )
+                  }, 'Passkey removed')
+                }
+              >
+                Remove
+              </Button>
+            </div>
+          ))}
+          <Button
+            disabled={busy}
+            onClick={() =>
+              void action(async () => {
+                await checkResult(
+                  await authClient.passkey.addPasskey({ name: 'My passkey' }),
+                )
+                const result = await authClient.passkey.listUserPasskeys()
+                if (result.data) setPasskeys(result.data)
+              }, 'Passkey added')
+            }
+          >
+            Add a passkey
+          </Button>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              disabled={busy}
+              variant="outline"
+              onClick={() =>
+                void action(
+                  async () =>
+                    checkResult(await authClient.revokeOtherSessions()),
+                  'Other devices signed out',
+                )
+              }
+            >
+              Sign out other devices
+            </Button>
+            <Button
+              disabled={busy}
+              variant="outline"
+              onClick={() => void signOut()}
+            >
+              Sign out
+            </Button>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            For sensitive changes, sign in again if your session is older than
+            10 minutes.
+          </p>
+        </div>
+      </SettingsPanelSection>
+      <SettingsPanelSection
+        title="Connected applications"
+        description="Tokens allow an application to access your journal. Store them securely; each expires after one year."
+      >
+        <div className="space-y-3">
+          {state.tokens.map((item) => (
+            <div
+              key={item.id}
+              className="flex flex-wrap items-center justify-between gap-3"
+            >
+              <span>
+                {item.name} · {item.kind}
+              </span>
+              <Button
+                disabled={busy}
+                variant="outline"
+                onClick={() =>
+                  void action(
+                    () => deleteToken({ data: { id: item.id } }),
+                    'Token revoked',
+                  )
+                }
+              >
+                Revoke
+              </Button>
+            </div>
+          ))}
+          <Button
+            disabled={busy}
+            variant="outline"
+            onClick={() =>
+              void action(
+                async () =>
+                  setToken(
+                    await createToken({
+                      data: { kind: 'mcp', name: 'MCP client' },
+                    }),
+                  ),
+                'Token created. Copy it now; it will not be shown again.',
+              )
+            }
+          >
+            Create MCP token
+          </Button>
+          {token ? (
+            <div className="space-y-2">
+              <Label htmlFor="created-token">Copy this token now</Label>
+              <Input
+                id="created-token"
+                readOnly
+                value={token}
+                onFocus={(event) => event.target.select()}
+              />
+              <Button variant="ghost" onClick={() => setToken('')}>
+                Dismiss token
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      </SettingsPanelSection>
+      <SettingsPanelSection
+        title="Export your journal"
+        description="Download your data and original stored images as a ZIP archive. Downloads expire after 24 hours."
+      >
+        <div className="space-y-3">
+          <Button
+            disabled={busy}
+            onClick={() =>
+              void action(
+                () => requestExport(),
+                'Export requested. Refresh this page to check progress.',
+              )
+            }
+          >
+            Request export
+          </Button>
+          {state.exports.map((job) => (
+            <div key={job.id} className="flex flex-wrap items-center gap-3">
+              <span>
+                {new Date(job.createdAt).toLocaleString()} · {job.status}
+              </span>
+              {job.status === 'ready' ? (
+                <a
+                  className="text-link underline"
+                  href={`/api/account/exports/${job.id}`}
+                >
+                  Download ZIP
+                </a>
+              ) : null}
+            </div>
+          ))}
+          <Button variant="ghost" onClick={() => void router.invalidate()}>
+            Refresh status
+          </Button>
+        </div>
+      </SettingsPanelSection>
+      <SettingsPanelSection
+        title="Delete your account"
+        description="Permanently delete your journal and images. You must confirm through your email."
+      >
+        {deletion ? (
+          <div className="space-y-3">
+            <p role="alert">
+              Confirm permanent deletion of your account, journal, and images.
+              This cannot be undone.
+            </p>
+            <Button
+              disabled={busy}
+              variant="destructive"
+              onClick={() =>
+                void action(async () => {
+                  await confirmDeletion({ data: { token: deletion } })
+                  window.location.assign('/login')
+                }, 'Account deletion confirmed')
+              }
+            >
+              Permanently delete my account
+            </Button>
+            <Button variant="outline" onClick={() => setDeletion('')}>
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <Button
+            disabled={busy}
+            variant="destructive"
+            onClick={() =>
+              void action(
+                () => requestDeletion(),
+                'Check your email to confirm account deletion.',
+              )
+            }
+          >
+            Request account deletion
+          </Button>
+        )}
+      </SettingsPanelSection>
+      {identity.role === 'admin' ? (
+        <Link
+          to="/admin/users"
+          search={{ page: 0 }}
+          className="text-link underline"
+        >
+          Manage users
+        </Link>
+      ) : null}
+    </div>
+  )
+}

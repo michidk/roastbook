@@ -1,3 +1,5 @@
+import { getOfflineOwner } from '@/lib/journal-owner'
+
 const listeners = new Set<() => void>()
 let reachable = true
 let probe: Promise<void> | undefined
@@ -88,8 +90,14 @@ export async function fetchWithConnectionStatus(
   if (method.toUpperCase() === 'GET') signals.push(AbortSignal.timeout(10_000))
 
   try {
+    const headers = new Headers(
+      init?.headers ?? (input instanceof Request ? input.headers : undefined),
+    )
+    if (method.toUpperCase() !== 'GET')
+      headers.set('X-Roastbook-Owner', getOfflineOwner())
     const response = await fetch(input, {
       ...init,
+      headers,
       signal: AbortSignal.any(signals),
     })
     setReachable(true)

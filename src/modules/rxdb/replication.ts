@@ -1,5 +1,6 @@
 import { replicateRxCollection } from 'rxdb/plugins/replication'
 import { requireFeature } from '@/lib/app-capabilities'
+import { getOfflineOwner } from '@/lib/journal-owner'
 import type {
   RecipeReplicationDocument,
   ReplicationCheckpoint,
@@ -18,7 +19,10 @@ let replicationStartPromise: ReturnType<typeof startReplication> | undefined
 async function postJson<T>(url: string, body: unknown): Promise<T> {
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Roastbook-Owner': getOfflineOwner(),
+    },
     credentials: 'same-origin',
     body: JSON.stringify(body),
   })

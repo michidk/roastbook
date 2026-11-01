@@ -1,3 +1,4 @@
+import { Readable } from 'node:stream'
 import {
   DeleteObjectCommand,
   GetObjectCommand,
@@ -6,6 +7,7 @@ import {
   paginateListObjectsV2,
   S3Client,
 } from '@aws-sdk/client-s3'
+import { Upload } from '@aws-sdk/lib-storage'
 import type { StorageConfig, StorageProvider, StoredObject } from './types'
 
 export class S3StorageProvider implements StorageProvider {
@@ -23,6 +25,41 @@ export class S3StorageProvider implements StorageProvider {
       },
       forcePathStyle: !!config.endpoint,
     })
+  }
+
+  async uploadStream(stream: Readable, path: string): Promise<void> {
+    await new Upload({
+      client: this.client,
+      params: {
+        Bucket: this.bucket,
+        Key: path,
+        Body: stream,
+        ContentType: 'application/zip',
+      },
+      queueSize: 1,
+      partSize: 5 * 1024 * 1024,
+    }).done()
+  }
+
+  async downloadStream(path: string): Promise<Readable> {
+    const response = await this.client.send(
+      new GetObjectCommand({ Bucket: this.bucket, Key: path }),
+    )
+    if (!response.Body) throw new Error('Stored file is unavailable')
+    const reader = response.Body.transformToWebStream().getReader()
+    return Readable.from(
+      (async function* () {
+        try {
+          while (true) {
+            const part = await reader.read()
+            if (part.done) break
+            yield part.value
+          }
+        } finally {
+          await reader.cancel()
+        }
+      })(),
+    )
   }
 
   async upload(file: File | Blob, path: string): Promise<string> {
@@ -62,7 +99,7 @@ export class S3StorageProvider implements StorageProvider {
   }
 
   getUrl(path: string): string {
-    return `https://${this.bucket}.s3.amazonaws.com/${path}`
+    return `/media/${path}`
   }
 
   async exists(path: string): Promise<boolean> {

@@ -1,8 +1,6 @@
 import { IMAGE_MIME_TYPE_VALUES, MAX_IMAGE_BYTES } from '@/lib/domain-contracts'
-import {
-  DEFAULT_OWNER_KEY,
-  type OfflineEntityType,
-} from '@/modules/offline/operations'
+import { getOfflineOwner } from '@/lib/journal-owner'
+import type { OfflineEntityType } from '@/modules/offline/operations'
 import {
   getOfflineRxDatabase,
   type OfflineBlobDocument,
@@ -59,7 +57,7 @@ export async function putOfflineBlob(
 
   const record: OfflineBlobRecord = {
     key: crypto.randomUUID(),
-    ownerKey: input.ownerKey ?? DEFAULT_OWNER_KEY,
+    ownerKey: input.ownerKey ?? getOfflineOwner(),
     entityType: input.entityType,
     entityId: String(input.entityId),
     filename: input.file.name,
@@ -94,7 +92,7 @@ export async function listOfflineBlobs(
     readonly entityId?: string | number
   } = {},
 ): Promise<OfflineBlobRecord[]> {
-  const ownerKey = options.ownerKey ?? DEFAULT_OWNER_KEY
+  const ownerKey = options.ownerKey ?? getOfflineOwner()
   const database = await getOfflineRxDatabase()
   const records = (await database.blobs.find().exec()).map((doc) =>
     doc.toJSON(),
@@ -121,7 +119,7 @@ export async function deleteOfflineBlob(key: string): Promise<void> {
 export async function deleteOfflineBlobsForEntity(
   entityType: OfflineEntityType,
   entityId: string | number,
-  ownerKey: string = DEFAULT_OWNER_KEY,
+  ownerKey: string = getOfflineOwner(),
 ): Promise<void> {
   const records = await listOfflineBlobs({ ownerKey, entityType, entityId })
   await Promise.all(records.map((record) => deleteOfflineBlob(record.key)))

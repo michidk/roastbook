@@ -1,5 +1,6 @@
 import type { RxCollection, RxDatabase } from 'rxdb'
 import { requireFeature } from '@/lib/app-capabilities'
+import { offlineDatabaseName, registerOwnerCleanup } from '@/lib/journal-owner'
 import type { RecipeReplicationDocument } from '@/lib/replication-contracts'
 import type { LocalEntityRecord } from '@/modules/offline/local-data'
 import type {
@@ -63,7 +64,7 @@ export async function getOfflineRxDatabase(): Promise<OfflineRxDatabase> {
       ]) => {
         addRxPlugin(RxDBMigrationSchemaPlugin)
         const database = await createRxDatabase<OfflineRxDatabase>({
-          name: 'roastbook-offline-rxdb',
+          name: offlineDatabaseName(),
           storage: getRxStorageDexie(),
           multiInstance: true,
         })
@@ -96,5 +97,15 @@ export async function resetOfflineRxDatabase(): Promise<void> {
   databasePromise = undefined
   const { removeRxDatabase } = await import('rxdb')
   const { getRxStorageDexie } = await import('rxdb/plugins/storage-dexie')
-  await removeRxDatabase('roastbook-offline-rxdb', getRxStorageDexie())
+  await removeRxDatabase(offlineDatabaseName(), getRxStorageDexie())
 }
+
+export async function closeOfflineRxDatabase(): Promise<void> {
+  const { stopRecipeReplication } = await import('./replication')
+  await stopRecipeReplication()
+  const database = await databasePromise?.catch(() => undefined)
+  if (database) await database.close()
+  databasePromise = undefined
+}
+
+registerOwnerCleanup(closeOfflineRxDatabase)

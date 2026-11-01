@@ -38,7 +38,9 @@ export async function queueMediaCleanup(
   await tx
     .insert(mediaCleanupJobs)
     .values(paths.map((storagePath) => ({ storagePath })))
-    .onConflictDoNothing({ target: mediaCleanupJobs.storagePath })
+    .onConflictDoNothing({
+      target: [mediaCleanupJobs.ownerId, mediaCleanupJobs.storagePath],
+    })
 }
 
 const MEDIA_CLEANUP_BASE_RETRY_MS = 60_000
@@ -102,7 +104,9 @@ export async function cleanupUncommittedUpload(
     await db
       .insert(mediaCleanupJobs)
       .values(failedPaths.map((storagePath) => ({ storagePath })))
-      .onConflictDoNothing({ target: mediaCleanupJobs.storagePath })
+      .onConflictDoNothing({
+        target: [mediaCleanupJobs.ownerId, mediaCleanupJobs.storagePath],
+      })
   }
 }
 

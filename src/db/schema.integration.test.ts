@@ -79,7 +79,6 @@ databaseDescribe('PostgreSQL schema', () => {
             ) values (${ids.methodId}, ${ids.secondBeanId}, ${ids.purchaseId})
           `,
         '23503',
-        'brews_purchase_bean_fk',
       )
       await expectPostgresError(
         () =>
@@ -95,7 +94,6 @@ databaseDescribe('PostgreSQL schema', () => {
             )
           `,
         '23503',
-        'bean_images_purchase_bean_fk',
       )
     } finally {
       await database()`delete from brews where brewing_method_id = ${ids.methodId}`

@@ -107,29 +107,56 @@ Set `migrations.enabled=false` when migrations are managed outside Helm, or
 - Local `ReadWriteOnce` storage uses the `Recreate` deployment strategy.
 - S3 and shared `ReadWriteMany` storage use the configured rolling strategy.
 
+## Built-in accounts
+
+Set `auth.enabled=true`, `auth.existingSecret=roastbook-auth`, and
+`hodor.enabled=false` to use private accounts without Hodor. The referenced
+Secret supplies `AUTH_URL`, `AUTH_SECRET`, `EMAIL_FROM`, and either `SMTP_URL`
+or `EMAIL_PROVIDER=resend` with `RESEND_API_KEY`. It may also contain
+`AUTH_SIGNUP_ENABLED`, `DEPLOYMENT_MODE`, `AUTH_ADMIN_EMAIL`, and
+`AUTH_IP_HEADER`. The chart explicitly sets `AUTH_ENABLED` from `auth.enabled`.
+Use an HTTPS origin and a trusted ingress that overwrites the client IP header.
+
+```yaml
+auth:
+  enabled: true
+  existingSecret: roastbook-auth
+hodor:
+  enabled: false
+```
+
+A worker sidecar processes exports and deletion with the same database and
+storage configuration. Give it temporary disk capacity for ZIP archives.
+Migration credentials must own the application tables and be able to create
+and grant the restricted `roastbook_journal` role. Hosted mode also requires
+`DEPLOYMENT_MODE=hosted` and `AUTH_ADMIN_EMAIL`. See the
+[upgrade guide](../docs/deployment.md#upgrading-an-existing-journal).
+
 ## MCP
 
-MCP is stateless Streamable HTTP with **no authentication**, so the chart never
-routes it through the Ingress or Hodor. Set `mcp.enabled=true` to create a
-private `<release>-mcp` ClusterIP Service plus a NetworkPolicy rule admitting
-only `mcp.allowedCidrs` (for example a VPN range) and `mcp.allowedNamespaces`;
-at least one is required and `networkPolicy.enabled` must stay on. Those sources
-reach the app port directly, which has no login, so list only trusted ranges.
-The app additionally rejects any Host/Origin outside `localhost`, the Service
-names, `mcp.allowedHosts` and `mcp.allowedOrigins`.
+MCP requires an owner-bound bearer token in both authentication modes. Create
+and revoke it in Settings > AI access (MCP). It expires in one year. Account
+removal revokes it immediately. Host and Origin validation also applies.
+
+Set `mcp.enabled=true` to create a private `<release>-mcp` ClusterIP Service
+and a NetworkPolicy rule admitting only `mcp.allowedCidrs` and
+`mcp.allowedNamespaces`. At least one is required, and `networkPolicy.enabled`
+must stay on. The application additionally allows the Service hostnames and
+configured extra hosts/origins. Built-in auth can also serve MCP on its public
+origin when that hostname is included in its allowlist.
 
 ```yaml
 mcp:
   enabled: true
-  allowedCidrs: ["100.64.0.0/10"] # tailnet / VPN
+  allowedCidrs: ["100.64.0.0/10"]
   allowedNamespaces: []
-  allowedHosts: [] # extra VPN DNS names
-  allowedOrigins: [] # browser clients only; native clients omit Origin
+  allowedHosts: []
+  allowedOrigins: []
 ```
 
-Connect with `codex mcp add roastbook --url
-http://<release>-mcp.<namespace>.svc/api/mcp` (or the VPN-reachable name); there
-is no login step. Tool availability is managed on Roastbook's Settings page.
+Configure the client with `/api/mcp` and an `Authorization: Bearer` header.
+There is no MCP OAuth discovery or consent flow. Tool policy and audit history
+belong to the token's account.
 
 ## Validate changes
 

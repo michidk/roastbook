@@ -89,6 +89,31 @@
           }
         }
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "auth": {
+            "properties": {
+              "enabled": {
+                "const": true
+              }
+            }
+          }
+        },
+        "required": ["auth"]
+      },
+      "then": {
+        "properties": {
+          "auth": {
+            "properties": {
+              "existingSecret": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
     }
   ],
   "properties": {
@@ -466,6 +491,19 @@
           "type": "integer",
           "minimum": 1024,
           "maximum": 1048576
+        }
+      }
+    },
+    "auth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "existingSecret"],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "existingSecret": {
+          "type": "string"
         }
       }
     },

@@ -11,6 +11,26 @@ const booleanString = z
   .transform((value) => value === 'true')
 
 const serverSchema = {
+  AUTH_ENABLED: booleanString,
+  DEPLOYMENT_MODE: z.enum(['self-hosted', 'hosted']).default('self-hosted'),
+  AUTH_URL: z.url().optional(),
+  AUTH_SECRET: z.string().min(32).optional(),
+  AUTH_SIGNUP_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((value) => value === 'true'),
+  AUTH_ADMIN_EMAIL: z
+    .email()
+    .transform((value) => value.toLowerCase())
+    .optional(),
+  AUTH_IP_HEADER: z
+    .string()
+    .regex(/^[a-z0-9-]+$/)
+    .default('x-real-ip'),
+  EMAIL_PROVIDER: z.enum(['smtp', 'resend']).default('smtp'),
+  EMAIL_FROM: optionalString,
+  SMTP_URL: z.url().optional(),
+  RESEND_API_KEY: optionalString,
   DATABASE_URL: z.string().trim().min(1),
   STORAGE_PROVIDER: z.enum(['local', 's3']).default('local'),
   STORAGE_PATH: z.string().trim().min(1).default('./uploads'),
@@ -79,6 +99,18 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
   return createEnv({
     server: serverSchema,
     runtimeEnvStrict: {
+      AUTH_ENABLED: runtimeEnvironment.AUTH_ENABLED,
+      DEPLOYMENT_MODE: runtimeEnvironment.DEPLOYMENT_MODE,
+      AUTH_URL: runtimeEnvironment.AUTH_URL,
+      AUTH_SECRET: runtimeEnvironment.AUTH_SECRET,
+      AUTH_SIGNUP_ENABLED: runtimeEnvironment.AUTH_SIGNUP_ENABLED,
+      AUTH_ADMIN_EMAIL: runtimeEnvironment.AUTH_ADMIN_EMAIL,
+      AUTH_IP_HEADER: runtimeEnvironment.AUTH_IP_HEADER,
+      EMAIL_PROVIDER: runtimeEnvironment.EMAIL_PROVIDER,
+      EMAIL_FROM: runtimeEnvironment.EMAIL_FROM,
+      SMTP_URL: runtimeEnvironment.SMTP_URL,
+      RESEND_API_KEY: runtimeEnvironment.RESEND_API_KEY,
+
       DATABASE_URL: runtimeEnvironment.DATABASE_URL,
       STORAGE_PROVIDER: runtimeEnvironment.STORAGE_PROVIDER,
       STORAGE_PATH: runtimeEnvironment.STORAGE_PATH,
@@ -105,6 +137,49 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
     isServer: true,
     createFinalSchema: (shape) =>
       z.object(shape).superRefine((environment, context) => {
+        const requireVariable = (name: string, present: unknown) => {
+          if (!present)
+            context.addIssue({
+              code: 'custom',
+              path: [name],
+              message: 'Required for authenticated deployments',
+            })
+        }
+        if (
+          environment.DEPLOYMENT_MODE === 'hosted' &&
+          !environment.AUTH_ENABLED
+        ) {
+          context.addIssue({
+            code: 'custom',
+            path: ['AUTH_ENABLED'],
+            message: 'Must be true for hosted deployments',
+          })
+        }
+        if (environment.AUTH_ENABLED) {
+          requireVariable('AUTH_URL', environment.AUTH_URL)
+          requireVariable('AUTH_SECRET', environment.AUTH_SECRET)
+          requireVariable('EMAIL_FROM', environment.EMAIL_FROM)
+          requireVariable(
+            environment.EMAIL_PROVIDER === 'smtp'
+              ? 'SMTP_URL'
+              : 'RESEND_API_KEY',
+            environment.EMAIL_PROVIDER === 'smtp'
+              ? environment.SMTP_URL
+              : environment.RESEND_API_KEY,
+          )
+          if (environment.DEPLOYMENT_MODE === 'hosted') {
+            requireVariable('AUTH_ADMIN_EMAIL', environment.AUTH_ADMIN_EMAIL)
+            if (
+              environment.AUTH_URL &&
+              !environment.AUTH_URL.startsWith('https://')
+            )
+              context.addIssue({
+                code: 'custom',
+                path: ['AUTH_URL'],
+                message: 'Hosted authentication requires HTTPS',
+              })
+          }
+        }
         if (environment.STORAGE_PROVIDER !== 's3') return
 
         for (const variable of s3RequiredVariables) {

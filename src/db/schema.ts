@@ -1,5 +1,7 @@
+import '@tanstack/react-start/server-only'
 import { relations, sql } from 'drizzle-orm'
 import {
+  bigint,
   boolean,
   check,
   decimal,
@@ -10,6 +12,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   serial,
   text,
   timestamp,
@@ -21,6 +24,13 @@ import {
   ROAST_LEVEL_VALUES,
 } from '@/lib/domain-contracts'
 import type { JsonValue } from '@/lib/json-value'
+
+const journalOwner = () =>
+  text('owner_id')
+    .notNull()
+    .default(
+      sql`coalesce(nullif(current_setting('roastbook.user_id', true), ''), 'local')`,
+    )
 
 const timestamps = () => ({
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -50,7 +60,8 @@ export const beanTypeEnum = pgEnum('bean_type', BEAN_TYPE_VALUES)
 export const settings = pgTable(
   'settings',
   {
-    id: integer('id').primaryKey().default(1),
+    ownerId: journalOwner(),
+    id: integer('id').notNull().default(1),
     defaultCurrency: text('default_currency').default('EUR').notNull(),
     dateFormat: text('date_format').default('day-month-year-slash').notNull(),
     numberFormat: text('number_format').default('decimal-point').notNull(),
@@ -75,6 +86,8 @@ export const settings = pgTable(
     ...timestamps(),
   },
   (table) => [
+    primaryKey({ columns: [table.ownerId, table.id] }),
+    index('settings_owner_id_idx').on(table.ownerId),
     check('settings_singleton_check', sql`${table.id} = 1`),
     check(
       'settings_currency_check',
@@ -115,7 +128,8 @@ export const settings = pgTable(
 export const shottimer = pgTable(
   'shottimer',
   {
-    id: integer('id').primaryKey().default(1),
+    ownerId: journalOwner(),
+    id: integer('id').notNull().default(1),
     enabled: boolean('enabled').default(false).notNull(),
     tokenHash: text('token_hash'),
     latestShotSeconds: doublePrecision('latest_shot_seconds'),
@@ -123,49 +137,85 @@ export const shottimer = pgTable(
     targetTimeSeconds: doublePrecision('target_time_seconds'),
     ...timestamps(),
   },
-  (table) => [check('shottimer_singleton_check', sql`${table.id} = 1`)],
+  (table) => [
+    primaryKey({ columns: [table.ownerId, table.id] }),
+    index('shottimer_owner_id_idx').on(table.ownerId),
+    check('shottimer_singleton_check', sql`${table.id} = 1`),
+  ],
 )
 
 // Singleton owner policy for the MCP endpoint, plus a log of every tool call.
-export const mcpSettings = pgTable('mcp_settings', {
-  id: text('id').primaryKey().default('instance'),
-  enabled: boolean('enabled').default(true).notNull(),
-  disabledTools: jsonb('disabled_tools')
-    .$type<string[]>()
-    .default([])
-    .notNull(),
-  ...timestamps(),
-})
+export const mcpSettings = pgTable(
+  'mcp_settings',
+  {
+    ownerId: journalOwner(),
+    id: text('id').notNull().default('instance'),
+    enabled: boolean('enabled').default(true).notNull(),
+    disabledTools: jsonb('disabled_tools')
+      .$type<string[]>()
+      .default([])
+      .notNull(),
+    ...timestamps(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.ownerId, table.id] }),
+    index('mcp_settings_owner_id_idx').on(table.ownerId),
+  ],
+)
 
 export const mcpAuditEvents = pgTable(
   'mcp_audit_events',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     event: text('event').notNull(),
     outcome: text('outcome').notNull(),
     toolName: text('tool_name'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
-  (table) => [index('mcp_audit_events_created_at_idx').on(table.createdAt)],
+  (table) => [
+    index('mcp_audit_events_owner_id_idx').on(table.ownerId),
+    index('mcp_audit_events_created_at_idx').on(table.createdAt),
+  ],
 )
 
-export const drinkTypes = pgTable('drink_types', {
-  id: serial('id').primaryKey(),
-  name: text('name').notNull().unique(),
-  isArchived: boolean('is_archived').default(false).notNull(),
-  ...timestamps(),
-})
+export const drinkTypes = pgTable(
+  'drink_types',
+  {
+    ownerId: journalOwner(),
+    id: serial('id').primaryKey(),
+    name: text('name').notNull(),
+    isArchived: boolean('is_archived').default(false).notNull(),
+    ...timestamps(),
+  },
+  (table) => [
+    uniqueIndex('drink_types_name_unique').on(table.ownerId, table.name),
+    index('drink_types_owner_id_idx').on(table.ownerId),
+  ],
+)
 
-export const drinkOptionGroups = pgTable('drink_option_groups', {
-  id: serial('id').primaryKey(),
-  name: text('name').notNull().unique(),
-  isArchived: boolean('is_archived').default(false).notNull(),
-  ...timestamps(),
-})
+export const drinkOptionGroups = pgTable(
+  'drink_option_groups',
+  {
+    ownerId: journalOwner(),
+    id: serial('id').primaryKey(),
+    name: text('name').notNull(),
+    isArchived: boolean('is_archived').default(false).notNull(),
+    ...timestamps(),
+  },
+  (table) => [
+    uniqueIndex('drink_option_groups_name_unique').on(
+      table.ownerId,
+      table.name,
+    ),
+    index('drink_option_groups_owner_id_idx').on(table.ownerId),
+  ],
+)
 
 export const drinkOptionValues = pgTable(
   'drink_option_values',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     groupId: integer('group_id')
       .references(() => drinkOptionGroups.id, { onDelete: 'cascade' })
@@ -175,7 +225,9 @@ export const drinkOptionValues = pgTable(
     ...timestamps(),
   },
   (table) => [
+    index('drink_option_values_owner_id_idx').on(table.ownerId),
     uniqueIndex('drink_option_values_group_name_idx').on(
+      table.ownerId,
       table.groupId,
       table.name,
     ),
@@ -186,6 +238,7 @@ export const drinkOptionValues = pgTable(
 export const drinkTypeOptionGroups = pgTable(
   'drink_type_option_groups',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     drinkTypeId: integer('drink_type_id')
       .references(() => drinkTypes.id, { onDelete: 'cascade' })
@@ -195,7 +248,9 @@ export const drinkTypeOptionGroups = pgTable(
       .notNull(),
   },
   (table) => [
+    index('drink_type_option_groups_owner_id_idx').on(table.ownerId),
     uniqueIndex('drink_type_option_groups_type_group_idx').on(
+      table.ownerId,
       table.drinkTypeId,
       table.optionGroupId,
     ),
@@ -228,6 +283,7 @@ export const drinkTypeOptionGroupsRelations = relations(
 export const aiUsage = pgTable(
   'ai_usage',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     requestId: text('request_id').notNull(),
     feature: text('feature').notNull(),
@@ -243,6 +299,7 @@ export const aiUsage = pgTable(
     createdAt: createdAt(),
   },
   (table) => [
+    index('ai_usage_owner_id_idx').on(table.ownerId),
     check(
       'ai_usage_tokens_nonnegative_check',
       sql`${table.promptTokens} >= 0
@@ -263,6 +320,7 @@ export const aiUsage = pgTable(
 export const aiRequestLogs = pgTable(
   'ai_request_logs',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     requestType: text('request_type').notNull(),
     model: text('model').notNull(),
@@ -285,6 +343,7 @@ export const aiRequestLogs = pgTable(
     createdAt: createdAt(),
   },
   (table) => [
+    index('ai_request_logs_owner_id_idx').on(table.ownerId),
     check(
       'ai_request_logs_status_check',
       sql`${table.status} in ('in_progress', 'succeeded', 'failed', 'aborted')`,
@@ -305,6 +364,7 @@ export const aiRequestLogs = pgTable(
 export const roasters = pgTable(
   'roasters',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     name: text('name').notNull(),
     location: text('location'),
@@ -314,7 +374,10 @@ export const roasters = pgTable(
     notes: text('notes'),
     ...timestamps(),
   },
-  (table) => [index('roasters_name_idx').on(table.name)],
+  (table) => [
+    index('roasters_owner_id_idx').on(table.ownerId),
+    index('roasters_name_idx').on(table.name),
+  ],
 )
 
 export const roastersRelations = relations(roasters, ({ many }) => ({
@@ -324,6 +387,7 @@ export const roastersRelations = relations(roasters, ({ many }) => ({
 export const beans = pgTable(
   'beans',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     name: text('name').notNull(),
     type: beanTypeEnum('type'),
@@ -342,6 +406,7 @@ export const beans = pgTable(
     ...timestamps(),
   },
   (table) => [
+    index('beans_owner_id_idx').on(table.ownerId),
     index('beans_created_at_idx').on(table.createdAt),
     index('beans_roaster_id_idx').on(table.roasterId),
   ],
@@ -360,6 +425,7 @@ export const beansRelations = relations(beans, ({ one, many }) => ({
 export const beanPurchases = pgTable(
   'bean_purchases',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     beanId: integer('bean_id')
       .references(() => beans.id, { onDelete: 'restrict' })
@@ -377,6 +443,7 @@ export const beanPurchases = pgTable(
     ...archiveState(),
   },
   (table) => [
+    index('bean_purchases_owner_id_idx').on(table.ownerId),
     check(
       'bean_purchases_weight_nonnegative',
       sql`${table.initialWeightGrams} >= 0`,
@@ -410,6 +477,7 @@ export const beanPurchasesRelations = relations(
 export const beanImages = pgTable(
   'bean_images',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     beanId: integer('bean_id')
       .references(() => beans.id, { onDelete: 'cascade' })
@@ -420,6 +488,7 @@ export const beanImages = pgTable(
     createdAt: createdAt(),
   },
   (table) => [
+    index('bean_images_owner_id_idx').on(table.ownerId),
     foreignKey({
       name: 'bean_images_purchase_bean_fk',
       columns: [table.beanPurchaseId, table.beanId],
@@ -428,7 +497,7 @@ export const beanImages = pgTable(
     index('bean_images_bean_id_idx').on(table.beanId),
     index('bean_images_bean_purchase_id_idx').on(table.beanPurchaseId),
     uniqueIndex('bean_images_one_thumbnail_idx')
-      .on(table.beanPurchaseId)
+      .on(table.ownerId, table.beanPurchaseId)
       .where(sql`${table.isThumbnail} = true`),
   ],
 )
@@ -447,6 +516,7 @@ export const beanImagesRelations = relations(beanImages, ({ one }) => ({
 export const gear = pgTable(
   'gear',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     name: text('name').notNull(),
     brand: text('brand'),
@@ -461,6 +531,7 @@ export const gear = pgTable(
     ...archiveState(),
   },
   (table) => [
+    index('gear_owner_id_idx').on(table.ownerId),
     check('gear_purchase_price_nonnegative', sql`${table.purchasePrice} >= 0`),
     check(
       'gear_currency_check',
@@ -473,6 +544,7 @@ export const gear = pgTable(
 export const espressoMachineDetails = pgTable(
   'espresso_machine_details',
   {
+    ownerId: journalOwner(),
     gearId: integer('gear_id')
       .primaryKey()
       .references(() => gear.id, { onDelete: 'cascade' }),
@@ -509,6 +581,7 @@ export const espressoMachineDetails = pgTable(
     }),
   },
   (table) => [
+    index('espresso_machine_details_owner_id_idx').on(table.ownerId),
     check(
       'espresso_machine_details_heating_architecture_check',
       sql`${table.heatingArchitecture} in ('single_boiler', 'heat_exchanger', 'dual_boiler', 'multi_boiler', 'single_thermoblock', 'dual_thermoblock', 'hybrid', 'manual', 'other')`,
@@ -560,6 +633,7 @@ export const espressoMachineDetails = pgTable(
 export const espressoMachineSettingRevisions = pgTable(
   'espresso_machine_setting_revisions',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     gearId: integer('gear_id')
       .references(() => gear.id, { onDelete: 'cascade' })
@@ -604,6 +678,7 @@ export const espressoMachineSettingRevisions = pgTable(
     createdAt: createdAt(),
   },
   (table) => [
+    index('espresso_machine_setting_revisions_owner_id_idx').on(table.ownerId),
     check(
       'espresso_machine_setting_revisions_kind_check',
       sql`${table.kind} in ('factory', 'owner')`,
@@ -623,7 +698,7 @@ export const espressoMachineSettingRevisions = pgTable(
         and (${table.steamPressureBar} is null or ${table.steamPressureBar} >= 0)`,
     ),
     uniqueIndex('espresso_machine_setting_revisions_current_kind_idx')
-      .on(table.gearId, table.kind)
+      .on(table.ownerId, table.gearId, table.kind)
       .where(sql`${table.supersededAt} is null`),
     index('espresso_machine_setting_revisions_gear_id_idx').on(
       table.gearId,
@@ -635,6 +710,7 @@ export const espressoMachineSettingRevisions = pgTable(
 export const grinderDetails = pgTable(
   'grinder_details',
   {
+    ownerId: journalOwner(),
     gearId: integer('gear_id')
       .primaryKey()
       .references(() => gear.id, { onDelete: 'cascade' }),
@@ -658,6 +734,7 @@ export const grinderDetails = pgTable(
     burrMaterial: text('burr_material'),
   },
   (table) => [
+    index('grinder_details_owner_id_idx').on(table.ownerId),
     check(
       'grinder_details_burr_mechanism_check',
       sql`${table.burrMechanism} in ('conical', 'flat', 'ghost', 'roller', 'blade', 'other')`,
@@ -705,6 +782,7 @@ export const grinderDetails = pgTable(
 export const brewerDetails = pgTable(
   'brewer_details',
   {
+    ownerId: journalOwner(),
     gearId: integer('gear_id')
       .primaryKey()
       .references(() => gear.id, { onDelete: 'cascade' }),
@@ -714,6 +792,7 @@ export const brewerDetails = pgTable(
     flowControl: text('flow_control'),
   },
   (table) => [
+    index('brewer_details_owner_id_idx').on(table.ownerId),
     check(
       'brewer_details_mechanism_check',
       sql`${table.mechanism} in ('percolation', 'immersion', 'hybrid', 'press', 'vacuum', 'other')`,
@@ -732,6 +811,7 @@ export const brewerDetails = pgTable(
 export const kettleDetails = pgTable(
   'kettle_details',
   {
+    ownerId: journalOwner(),
     gearId: integer('gear_id')
       .primaryKey()
       .references(() => gear.id, { onDelete: 'cascade' }),
@@ -749,6 +829,7 @@ export const kettleDetails = pgTable(
     supportsTemperatureHold: boolean('supports_temperature_hold'),
   },
   (table) => [
+    index('kettle_details_owner_id_idx').on(table.ownerId),
     check(
       'kettle_details_spout_type_check',
       sql`${table.spoutType} in ('gooseneck', 'standard', 'other')`,
@@ -770,6 +851,7 @@ export const kettleDetails = pgTable(
 export const scaleDetails = pgTable(
   'scale_details',
   {
+    ownerId: journalOwner(),
     gearId: integer('gear_id')
       .primaryKey()
       .references(() => gear.id, { onDelete: 'cascade' }),
@@ -781,6 +863,7 @@ export const scaleDetails = pgTable(
     hasFlowRateDisplay: boolean('has_flow_rate_display'),
   },
   (table) => [
+    index('scale_details_owner_id_idx').on(table.ownerId),
     check(
       'scale_details_measurements_check',
       sql`(${table.resolutionGrams} is null or ${table.resolutionGrams} > 0)
@@ -792,6 +875,7 @@ export const scaleDetails = pgTable(
 export const tamperDetails = pgTable(
   'tamper_details',
   {
+    ownerId: journalOwner(),
     gearId: integer('gear_id')
       .primaryKey()
       .references(() => gear.id, { onDelete: 'cascade' }),
@@ -801,6 +885,7 @@ export const tamperDetails = pgTable(
     selfLeveling: boolean('self_leveling'),
   },
   (table) => [
+    index('tamper_details_owner_id_idx').on(table.ownerId),
     check(
       'tamper_details_force_control_check',
       sql`${table.forceControl} in ('none', 'fixed', 'adjustable')`,
@@ -819,6 +904,7 @@ export const tamperDetails = pgTable(
 export const wdtDetails = pgTable(
   'wdt_details',
   {
+    ownerId: journalOwner(),
     gearId: integer('gear_id')
       .primaryKey()
       .references(() => gear.id, { onDelete: 'cascade' }),
@@ -830,6 +916,7 @@ export const wdtDetails = pgTable(
     depthControl: text('depth_control'),
   },
   (table) => [
+    index('wdt_details_owner_id_idx').on(table.ownerId),
     check(
       'wdt_details_depth_control_check',
       sql`${table.depthControl} in ('none', 'fixed', 'adjustable')`,
@@ -845,6 +932,7 @@ export const wdtDetails = pgTable(
 export const basketDetails = pgTable(
   'basket_details',
   {
+    ownerId: journalOwner(),
     gearId: integer('gear_id')
       .primaryKey()
       .references(() => gear.id, { onDelete: 'cascade' }),
@@ -865,6 +953,7 @@ export const basketDetails = pgTable(
     kind: text('kind'),
   },
   (table) => [
+    index('basket_details_owner_id_idx').on(table.ownerId),
     check(
       'basket_details_kind_check',
       sql`${table.kind} in ('single', 'double', 'triple', 'other')`,
@@ -883,6 +972,7 @@ export const basketDetails = pgTable(
 export const gearPropertyEvidence = pgTable(
   'gear_property_evidence',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     gearId: integer('gear_id')
       .references(() => gear.id, { onDelete: 'cascade' })
@@ -898,6 +988,7 @@ export const gearPropertyEvidence = pgTable(
     acceptedAt: timestamp('accepted_at').defaultNow().notNull(),
   },
   (table) => [
+    index('gear_property_evidence_owner_id_idx').on(table.ownerId),
     check(
       'gear_property_evidence_source_kind_check',
       sql`${table.sourceKind} in ('manual', 'manufacturer', 'specialist', 'retailer', 'community')`,
@@ -1009,6 +1100,7 @@ export const gearPropertyEvidenceRelations = relations(
 export const gearSets = pgTable(
   'gear_sets',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     name: text('name').notNull(),
     description: text('description'),
@@ -1023,12 +1115,16 @@ export const gearSets = pgTable(
     }),
     ...timestamps(),
   },
-  (table) => [index('gear_sets_created_at_idx').on(table.createdAt)],
+  (table) => [
+    index('gear_sets_owner_id_idx').on(table.ownerId),
+    index('gear_sets_created_at_idx').on(table.createdAt),
+  ],
 )
 
 export const gearSetAccessoryGear = pgTable(
   'gear_set_accessory_gear',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     gearSetId: integer('gear_set_id')
       .references(() => gearSets.id, { onDelete: 'cascade' })
@@ -1038,7 +1134,9 @@ export const gearSetAccessoryGear = pgTable(
       .notNull(),
   },
   (table) => [
+    index('gear_set_accessory_gear_owner_id_idx').on(table.ownerId),
     uniqueIndex('gear_set_accessory_gear_set_gear_idx').on(
+      table.ownerId,
       table.gearSetId,
       table.gearId,
     ),
@@ -1082,6 +1180,7 @@ export const gearSetAccessoryGearRelations = relations(
 export const gearImages = pgTable(
   'gear_images',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     gearId: integer('gear_id')
       .references(() => gear.id, { onDelete: 'cascade' })
@@ -1091,9 +1190,10 @@ export const gearImages = pgTable(
     createdAt: createdAt(),
   },
   (table) => [
+    index('gear_images_owner_id_idx').on(table.ownerId),
     index('gear_images_gear_id_idx').on(table.gearId),
     uniqueIndex('gear_images_one_thumbnail_idx')
-      .on(table.gearId)
+      .on(table.ownerId, table.gearId)
       .where(sql`${table.isThumbnail} = true`),
   ],
 )
@@ -1105,21 +1205,30 @@ export const gearImagesRelations = relations(gearImages, ({ one }) => ({
   }),
 }))
 
-export const brewingMethods = pgTable('brewing_methods', {
-  id: serial('id').primaryKey(),
-  name: text('name').notNull().unique(),
-  description: text('description'),
-  enabledParameters: text('enabled_parameters')
-    .array()
-    .default(sql`'{}'::text[]`)
-    .notNull(),
-  timerEnabled: boolean('timer_enabled').default(false).notNull(),
-  ...timestamps(),
-})
+export const brewingMethods = pgTable(
+  'brewing_methods',
+  {
+    ownerId: journalOwner(),
+    id: serial('id').primaryKey(),
+    name: text('name').notNull(),
+    description: text('description'),
+    enabledParameters: text('enabled_parameters')
+      .array()
+      .default(sql`'{}'::text[]`)
+      .notNull(),
+    timerEnabled: boolean('timer_enabled').default(false).notNull(),
+    ...timestamps(),
+  },
+  (table) => [
+    uniqueIndex('brewing_methods_name_unique').on(table.ownerId, table.name),
+    index('brewing_methods_owner_id_idx').on(table.ownerId),
+  ],
+)
 
 export const brewingMethodDrinkTypes = pgTable(
   'brewing_method_drink_types',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     brewingMethodId: integer('brewing_method_id')
       .references(() => brewingMethods.id, { onDelete: 'cascade' })
@@ -1129,7 +1238,9 @@ export const brewingMethodDrinkTypes = pgTable(
       .notNull(),
   },
   (table) => [
+    index('brewing_method_drink_types_owner_id_idx').on(table.ownerId),
     uniqueIndex('brewing_method_drink_types_method_type_idx').on(
+      table.ownerId,
       table.brewingMethodId,
       table.drinkTypeId,
     ),
@@ -1207,6 +1318,7 @@ const shotParameterColumns = (dosePrecision = 6) => ({
 export const recipes = pgTable(
   'recipes',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     name: text('name').notNull(),
     clientOperationId: text('client_operation_id'),
@@ -1222,10 +1334,12 @@ export const recipes = pgTable(
     ...timestamps(),
   },
   (table) => [
+    index('recipes_owner_id_idx').on(table.ownerId),
     uniqueIndex('recipes_client_operation_id_unique').on(
+      table.ownerId,
       table.clientOperationId,
     ),
-    uniqueIndex('recipes_sync_id_unique').on(table.syncId),
+    uniqueIndex('recipes_sync_id_unique').on(table.ownerId, table.syncId),
     check(
       'recipes_ratio_basis_check',
       sql`${table.ratioBasis} in ('target_yield', 'brew_water')`,
@@ -1290,6 +1404,7 @@ export const recipesRelations = relations(recipes, ({ one, many }) => ({
 export const coffeeShops = pgTable(
   'coffee_shops',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     name: text('name').notNull(),
     address: text('address'),
@@ -1306,6 +1421,7 @@ export const coffeeShops = pgTable(
     ...timestamps(),
   },
   (table) => [
+    index('coffee_shops_owner_id_idx').on(table.ownerId),
     check('coffee_shops_rating_check', sql`${table.rating} between 1 and 5`),
     check(
       'coffee_shops_latitude_check',
@@ -1328,6 +1444,7 @@ export const coffeeShopsRelations = relations(coffeeShops, ({ many }) => ({
 export const coffeeShopImages = pgTable(
   'coffee_shop_images',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     coffeeShopId: integer('coffee_shop_id')
       .references(() => coffeeShops.id, { onDelete: 'cascade' })
@@ -1335,7 +1452,10 @@ export const coffeeShopImages = pgTable(
     ...imageFile(),
     createdAt: createdAt(),
   },
-  (table) => [index('coffee_shop_images_shop_id_idx').on(table.coffeeShopId)],
+  (table) => [
+    index('coffee_shop_images_owner_id_idx').on(table.ownerId),
+    index('coffee_shop_images_shop_id_idx').on(table.coffeeShopId),
+  ],
 )
 
 export const coffeeShopImagesRelations = relations(
@@ -1351,6 +1471,7 @@ export const coffeeShopImagesRelations = relations(
 export const shots = pgTable(
   'brews',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     brewedAt: timestamp('brewed_at').defaultNow().notNull(),
     revision: integer('revision').default(0).notNull(),
@@ -1376,6 +1497,7 @@ export const shots = pgTable(
     ...timestamps(),
   },
   (table) => [
+    index('brews_owner_id_idx').on(table.ownerId),
     check(
       'brews_ratio_basis_check',
       sql`${table.ratioBasis} in ('target_yield', 'brew_water')`,
@@ -1433,13 +1555,17 @@ export const shots = pgTable(
     index('brews_machine_id_idx').on(table.machineId),
     index('brews_grinder_id_idx').on(table.grinderId),
     index('brews_basket_id_idx').on(table.basketId),
-    uniqueIndex('brews_client_operation_id_unique').on(table.clientOperationId),
+    uniqueIndex('brews_client_operation_id_unique').on(
+      table.ownerId,
+      table.clientOperationId,
+    ),
   ],
 )
 
 export const replicationChanges = pgTable(
   'replication_changes',
   {
+    ownerId: journalOwner(),
     sequence: serial('sequence').primaryKey(),
     entity: text('entity').notNull(),
     documentId: text('document_id').notNull(),
@@ -1448,6 +1574,7 @@ export const replicationChanges = pgTable(
     createdAt: createdAt(),
   },
   (table) => [
+    index('replication_changes_owner_id_idx').on(table.ownerId),
     index('replication_changes_entity_sequence_idx').on(
       table.entity,
       table.sequence,
@@ -1458,7 +1585,8 @@ export const replicationChanges = pgTable(
 export const clientOperations = pgTable(
   'client_operations',
   {
-    operationId: text('operation_id').primaryKey(),
+    ownerId: journalOwner(),
+    operationId: text('operation_id').notNull(),
     brewId: integer('brew_id').references(() => shots.id, {
       onDelete: 'set null',
     }),
@@ -1468,6 +1596,8 @@ export const clientOperations = pgTable(
     createdAt: createdAt(),
   },
   (table) => [
+    primaryKey({ columns: [table.ownerId, table.operationId] }),
+    index('client_operations_owner_id_idx').on(table.ownerId),
     index('client_operations_brew_id_idx').on(table.brewId),
     index('client_operations_recipe_id_idx').on(table.recipeId),
     index('client_operations_created_at_idx').on(table.createdAt),
@@ -1520,6 +1650,7 @@ export const shotsRelations = relations(shots, ({ one, many }) => ({
 export const shotDrinkOptions = pgTable(
   'brew_drink_options',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     shotId: integer('brew_id')
       .references(() => shots.id, { onDelete: 'cascade' })
@@ -1529,7 +1660,9 @@ export const shotDrinkOptions = pgTable(
       .notNull(),
   },
   (table) => [
+    index('brew_drink_options_owner_id_idx').on(table.ownerId),
     uniqueIndex('brew_drink_options_brew_value_idx').on(
+      table.ownerId,
       table.shotId,
       table.optionValueId,
     ),
@@ -1554,6 +1687,7 @@ export const shotDrinkOptionsRelations = relations(
 export const recipeDrinkOptions = pgTable(
   'recipe_drink_options',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     recipeId: integer('recipe_id')
       .references(() => recipes.id, { onDelete: 'cascade' })
@@ -1563,7 +1697,9 @@ export const recipeDrinkOptions = pgTable(
       .notNull(),
   },
   (table) => [
+    index('recipe_drink_options_owner_id_idx').on(table.ownerId),
     uniqueIndex('recipe_drink_options_recipe_value_idx').on(
+      table.ownerId,
       table.recipeId,
       table.optionValueId,
     ),
@@ -1588,6 +1724,7 @@ export const recipeDrinkOptionsRelations = relations(
 export const recipeAccessoryGear = pgTable(
   'recipe_accessory_gear',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     recipeId: integer('recipe_id')
       .references(() => recipes.id, { onDelete: 'cascade' })
@@ -1597,7 +1734,9 @@ export const recipeAccessoryGear = pgTable(
       .notNull(),
   },
   (table) => [
+    index('recipe_accessory_gear_owner_id_idx').on(table.ownerId),
     uniqueIndex('recipe_accessory_gear_recipe_gear_idx').on(
+      table.ownerId,
       table.recipeId,
       table.gearId,
     ),
@@ -1622,6 +1761,7 @@ export const recipeAccessoryGearRelations = relations(
 export const shotAccessoryGear = pgTable(
   'brew_accessory_gear',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     shotId: integer('brew_id')
       .references(() => shots.id, { onDelete: 'cascade' })
@@ -1631,7 +1771,9 @@ export const shotAccessoryGear = pgTable(
       .notNull(),
   },
   (table) => [
+    index('brew_accessory_gear_owner_id_idx').on(table.ownerId),
     uniqueIndex('brew_accessory_gear_brew_gear_idx').on(
+      table.ownerId,
       table.shotId,
       table.gearId,
     ),
@@ -1665,6 +1807,7 @@ export const brewingMethodsRelations = relations(
 export const shotImages = pgTable(
   'brew_images',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     shotId: integer('brew_id')
       .references(() => shots.id, { onDelete: 'cascade' })
@@ -1674,8 +1817,10 @@ export const shotImages = pgTable(
     createdAt: createdAt(),
   },
   (table) => [
+    index('brew_images_owner_id_idx').on(table.ownerId),
     index('brew_images_brew_id_idx').on(table.shotId),
     uniqueIndex('brew_images_client_operation_id_unique').on(
+      table.ownerId,
       table.clientOperationId,
     ),
   ],
@@ -1691,14 +1836,17 @@ export const shotImagesRelations = relations(shotImages, ({ one }) => ({
 export const tasteTags = pgTable(
   'taste_tags',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
-    name: text('name').notNull().unique(),
+    name: text('name').notNull(),
     category: text('category'),
     extractionAxis: decimal('extraction_axis', { precision: 3, scale: 2 }),
     strengthAxis: decimal('strength_axis', { precision: 3, scale: 2 }),
     hint: text('hint').default('').notNull(),
   },
   (table) => [
+    uniqueIndex('taste_tags_name_unique').on(table.ownerId, table.name),
+    index('taste_tags_owner_id_idx').on(table.ownerId),
     check(
       'taste_tags_extraction_axis_check',
       sql`${table.extractionAxis} between -1 and 1`,
@@ -1718,6 +1866,7 @@ export const tasteTagsRelations = relations(tasteTags, ({ many }) => ({
 export const shotTasteTags = pgTable(
   'brew_taste_tags',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     shotId: integer('brew_id')
       .references(() => shots.id, { onDelete: 'cascade' })
@@ -1727,7 +1876,9 @@ export const shotTasteTags = pgTable(
       .notNull(),
   },
   (table) => [
+    index('brew_taste_tags_owner_id_idx').on(table.ownerId),
     uniqueIndex('brew_taste_tags_brew_tag_idx').on(
+      table.ownerId,
       table.shotId,
       table.tasteTagId,
     ),
@@ -1749,6 +1900,7 @@ export const shotTasteTagsRelations = relations(shotTasteTags, ({ one }) => ({
 export const cafeVisits = pgTable(
   'cafe_visits',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     coffeeShopId: integer('coffee_shop_id').references(() => coffeeShops.id, {
       onDelete: 'set null',
@@ -1767,6 +1919,7 @@ export const cafeVisits = pgTable(
     ...timestamps(),
   },
   (table) => [
+    index('cafe_visits_owner_id_idx').on(table.ownerId),
     check('cafe_visits_price_nonnegative', sql`${table.price} >= 0`),
     check('cafe_visits_rating_check', sql`${table.rating} between 1 and 5`),
     check(
@@ -1801,6 +1954,7 @@ export const cafeVisitsRelations = relations(cafeVisits, ({ one, many }) => ({
 export const cafeVisitDrinkOptions = pgTable(
   'cafe_visit_drink_options',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     cafeVisitId: integer('cafe_visit_id')
       .references(() => cafeVisits.id, { onDelete: 'cascade' })
@@ -1810,7 +1964,9 @@ export const cafeVisitDrinkOptions = pgTable(
       .notNull(),
   },
   (table) => [
+    index('cafe_visit_drink_options_owner_id_idx').on(table.ownerId),
     uniqueIndex('cafe_visit_drink_options_visit_value_idx').on(
+      table.ownerId,
       table.cafeVisitId,
       table.optionValueId,
     ),
@@ -1854,6 +2010,7 @@ export const drinkOptionValuesRelations = relations(
 export const cafeVisitImages = pgTable(
   'cafe_visit_images',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     cafeVisitId: integer('cafe_visit_id')
       .references(() => cafeVisits.id, { onDelete: 'cascade' })
@@ -1861,7 +2018,10 @@ export const cafeVisitImages = pgTable(
     ...imageFile(),
     createdAt: createdAt(),
   },
-  (table) => [index('cafe_visit_images_visit_id_idx').on(table.cafeVisitId)],
+  (table) => [
+    index('cafe_visit_images_owner_id_idx').on(table.ownerId),
+    index('cafe_visit_images_visit_id_idx').on(table.cafeVisitId),
+  ],
 )
 
 export const cafeVisitImagesRelations = relations(
@@ -1877,6 +2037,7 @@ export const cafeVisitImagesRelations = relations(
 export const cafeVisitTasteTags = pgTable(
   'cafe_visit_taste_tags',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     cafeVisitId: integer('cafe_visit_id')
       .references(() => cafeVisits.id, { onDelete: 'cascade' })
@@ -1886,7 +2047,9 @@ export const cafeVisitTasteTags = pgTable(
       .notNull(),
   },
   (table) => [
+    index('cafe_visit_taste_tags_owner_id_idx').on(table.ownerId),
     uniqueIndex('cafe_visit_taste_tags_visit_tag_idx').on(
+      table.ownerId,
       table.cafeVisitId,
       table.tasteTagId,
     ),
@@ -1911,8 +2074,9 @@ export const cafeVisitTasteTagsRelations = relations(
 export const mediaCleanupJobs = pgTable(
   'media_cleanup_jobs',
   {
+    ownerId: journalOwner(),
     id: serial('id').primaryKey(),
-    storagePath: text('storage_path').notNull().unique(),
+    storagePath: text('storage_path').notNull(),
     attempts: integer('attempts').default(0).notNull(),
     lastError: text('last_error'),
     nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true })
@@ -1921,6 +2085,157 @@ export const mediaCleanupJobs = pgTable(
     ...timestamps(),
   },
   (table) => [
+    uniqueIndex('media_cleanup_jobs_storage_path_unique').on(
+      table.ownerId,
+      table.storagePath,
+    ),
+    index('media_cleanup_jobs_owner_id_idx').on(table.ownerId),
     index('media_cleanup_jobs_next_attempt_at_idx').on(table.nextAttemptAt),
   ],
 )
+
+export const authUsers = pgTable('auth_users', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  email: text('email').notNull().unique(),
+  emailVerified: boolean('email_verified').notNull().default(false),
+  image: text('image'),
+  role: text('role', { enum: ['user', 'admin'] })
+    .notNull()
+    .default('user'),
+  journalInitializedAt: timestamp('journal_initialized_at', {
+    withTimezone: true,
+  }),
+  deletingAt: timestamp('deleting_at', { withTimezone: true }),
+  ...timestamps(),
+})
+
+export const authSessions = pgTable(
+  'auth_sessions',
+  {
+    id: text('id').primaryKey(),
+    expiresAt: timestamp('expires_at').notNull(),
+    token: text('token').notNull().unique(),
+    ipAddress: text('ip_address'),
+    userAgent: text('user_agent'),
+    userId: text('user_id')
+      .notNull()
+      .references(() => authUsers.id, { onDelete: 'cascade' }),
+    ...timestamps(),
+  },
+  (table) => [index('auth_sessions_user_id_idx').on(table.userId)],
+)
+
+export const authAccounts = pgTable(
+  'auth_accounts',
+  {
+    id: text('id').primaryKey(),
+    accountId: text('account_id').notNull(),
+    providerId: text('provider_id').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => authUsers.id, { onDelete: 'cascade' }),
+    accessToken: text('access_token'),
+    refreshToken: text('refresh_token'),
+    idToken: text('id_token'),
+    accessTokenExpiresAt: timestamp('access_token_expires_at'),
+    refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
+    scope: text('scope'),
+    password: text('password'),
+    ...timestamps(),
+  },
+  (table) => [index('auth_accounts_user_id_idx').on(table.userId)],
+)
+
+export const authVerifications = pgTable(
+  'auth_verifications',
+  {
+    id: text('id').primaryKey(),
+    identifier: text('identifier').notNull(),
+    value: text('value').notNull(),
+    expiresAt: timestamp('expires_at').notNull(),
+    ...timestamps(),
+  },
+  (table) => [index('auth_verifications_identifier_idx').on(table.identifier)],
+)
+
+export const authPasskeys = pgTable(
+  'auth_passkeys',
+  {
+    id: text('id').primaryKey(),
+    name: text('name'),
+    publicKey: text('public_key').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => authUsers.id, { onDelete: 'cascade' }),
+    credentialID: text('credential_id').notNull().unique(),
+    counter: integer('counter').notNull(),
+    deviceType: text('device_type').notNull(),
+    backedUp: boolean('backed_up').notNull(),
+    transports: text('transports'),
+    aaguid: text('aaguid'),
+    createdAt: createdAt(),
+  },
+  (table) => [index('auth_passkeys_user_id_idx').on(table.userId)],
+)
+
+export const authRateLimits = pgTable('auth_rate_limits', {
+  id: text('id').primaryKey(),
+  key: text('key').notNull().unique(),
+  count: integer('count').notNull(),
+  lastRequest: bigint('last_request', { mode: 'number' }).notNull(),
+})
+
+export const instanceIdentity = pgTable('instance_identity', {
+  id: integer('id').primaryKey().default(1),
+  defaultUserId: text('default_user_id').notNull().default('local'),
+  bootstrapCompletedAt: timestamp('bootstrap_completed_at', {
+    withTimezone: true,
+  }),
+})
+
+export const integrationTokens = pgTable(
+  'integration_tokens',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => authUsers.id, { onDelete: 'cascade' }),
+    kind: text('kind', { enum: ['mcp', 'shottimer'] }).notNull(),
+    name: text('name').notNull(),
+    tokenHash: text('token_hash').notNull().unique(),
+    createdAt: createdAt(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  },
+  (table) => [index('integration_tokens_user_id_idx').on(table.userId)],
+)
+
+export const accountJobs = pgTable(
+  'account_jobs',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id').notNull(),
+    kind: text('kind', { enum: ['export', 'delete'] }).notNull(),
+    status: text('status', { enum: ['pending', 'running', 'ready', 'failed'] })
+      .notNull()
+      .default('pending'),
+    storagePath: text('storage_path'),
+    attempts: integer('attempts').notNull().default(0),
+    availableAt: timestamp('available_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
+    ...timestamps(),
+  },
+  (table) => [
+    index('account_jobs_claim_idx').on(table.status, table.availableAt),
+  ],
+)
+
+export const adminAuditEvents = pgTable('admin_audit_events', {
+  id: serial('id').primaryKey(),
+  actorId: text('actor_id'),
+  targetId: text('target_id'),
+  action: text('action').notNull(),
+  createdAt: createdAt(),
+})

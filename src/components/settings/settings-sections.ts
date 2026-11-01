@@ -10,6 +10,7 @@ import {
   SlidersHorizontal,
   Sparkles,
   Timer,
+  UserRound,
 } from 'lucide-react'
 import type { SettingsSection } from '@/components/settings/settings-shell'
 
@@ -19,6 +20,7 @@ import type { SettingsSection } from '@/components/settings/settings-shell'
  * data it actually renders. General is the index route at `/settings`.
  */
 export const SETTINGS_SECTIONS = [
+  { to: '/settings/account', label: 'Account', icon: UserRound },
   { to: '/settings', label: 'General', icon: SlidersHorizontal },
   { to: '/settings/appearance', label: 'Appearance', icon: Palette },
   { to: '/settings/map', label: 'Map', icon: MapIcon },

@@ -404,7 +404,9 @@ async function createShotInTransaction(
       await tx
         .insert(clientOperations)
         .values({ operationId, brewId: existingShot.id })
-        .onConflictDoNothing({ target: clientOperations.operationId })
+        .onConflictDoNothing({
+          target: [clientOperations.ownerId, clientOperations.operationId],
+        })
       await pruneClientOperations(tx)
       return {
         shot: existingShot,
@@ -416,7 +418,9 @@ async function createShotInTransaction(
     const [operation] = await tx
       .insert(clientOperations)
       .values({ operationId })
-      .onConflictDoNothing({ target: clientOperations.operationId })
+      .onConflictDoNothing({
+        target: [clientOperations.ownerId, clientOperations.operationId],
+      })
       .returning()
     await pruneClientOperations(tx)
 
@@ -466,7 +470,7 @@ async function createShotInTransaction(
       clientOperationId: operationId ?? null,
       machineSettingRevisionId,
     })
-    .onConflictDoNothing({ target: shots.clientOperationId })
+    .onConflictDoNothing({ target: [shots.ownerId, shots.clientOperationId] })
     .returning()
   if (!shot) {
     const existingShot = operationId
@@ -668,7 +672,9 @@ export function updateShotOperation(
       await tx
         .insert(clientOperations)
         .values({ operationId: data.clientOperationId, brewId: id })
-        .onConflictDoNothing({ target: clientOperations.operationId })
+        .onConflictDoNothing({
+          target: [clientOperations.ownerId, clientOperations.operationId],
+        })
       await pruneClientOperations(tx)
     }
     return persistedShot

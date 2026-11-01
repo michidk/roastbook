@@ -9,6 +9,8 @@ const forbiddenMarkers = [
   '@tanstack/ai-openai',
   'node_modules/postgres',
   'S3_SECRET_ACCESS_KEY=',
+  'roastbook.user_id',
+  'auth_verifications',
   'OPENAI_API_KEY=',
 ]
 

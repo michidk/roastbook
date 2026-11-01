@@ -36,6 +36,12 @@ function request(host: string, headers: Record<string, string> = {}) {
 }
 
 describe('stateless MCP HTTP endpoint', () => {
+  test('allows the configured auth origin without trusting incoming Host headers', () => {
+    const config = resolveMcpConfig({ AUTH_URL: 'https://coffee.example.test' })
+    expect(config.allowedHostnames).toContain('coffee.example.test')
+    expect(config.allowedOrigins).toContain('coffee.example.test')
+    expect(config.allowedHostnames).not.toContain('attacker.example.test')
+  })
   test('only handles /api/mcp, with no OAuth or discovery paths', async () => {
     expect(handlesMcpHttpPath('/api/mcp')).toBe(true)
     for (const path of [

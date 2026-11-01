@@ -6,7 +6,7 @@
 {{- fail "autoscaling.minReplicas cannot exceed autoscaling.maxReplicas" -}}
 {{- end -}}
 {{- if and .Values.mcp.enabled (not .Values.networkPolicy.enabled) -}}
-{{- fail "networkPolicy.enabled must be true when MCP is enabled because MCP has no authentication of its own" -}}
+{{- fail "networkPolicy.enabled must be true when MCP is enabled to restrict the dedicated integration Service" -}}
 {{- end -}}
 {{- if and .Values.mcp.enabled (not .Values.mcp.allowedCidrs) (not .Values.mcp.allowedNamespaces) -}}
 {{- fail "mcp.allowedCidrs or mcp.allowedNamespaces is required when MCP is enabled" -}}
@@ -62,84 +62,7 @@ spec:
             - name: http
               containerPort: 3000
               protocol: TCP
-          env:
-            - name: DATABASE_URL
-              {{- if .Values.postgresql.existingSecret }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.postgresql.existingSecret }}
-                  key: {{ .Values.postgresql.existingSecretKey }}
-              {{- else if .Values.postgresql.enabled }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "roastbook.postgresqlSecretName" . }}
-                  key: url
-              {{- else }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "roastbook.dbSecretName" . }}
-                  key: url
-              {{- end }}
-            - name: STORAGE_PROVIDER
-              value: {{ .Values.storage.provider | quote }}
-            {{- if eq .Values.storage.provider "local" }}
-            - name: STORAGE_PATH
-              value: {{ .Values.storage.local.path | quote }}
-            - name: STORAGE_URL
-              value: "/media"
-            {{- else if eq .Values.storage.provider "s3" }}
-            - name: S3_BUCKET
-              value: {{ .Values.storage.s3.bucket | quote }}
-            - name: S3_REGION
-              value: {{ .Values.storage.s3.region | quote }}
-            {{- if .Values.storage.s3.endpoint }}
-            - name: S3_ENDPOINT
-              value: {{ .Values.storage.s3.endpoint | quote }}
-            {{- end }}
-            - name: S3_ACCESS_KEY_ID
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.storage.s3.existingSecret }}
-                  key: {{ .Values.storage.s3.existingSecretAccessKeyIdKey }}
-            - name: S3_SECRET_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.storage.s3.existingSecret }}
-                  key: {{ .Values.storage.s3.existingSecretSecretAccessKeyKey }}
-            {{- end }}
-            {{- if .Values.openai.existingSecret }}
-            - name: OPENAI_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.openai.existingSecret }}
-                  key: {{ .Values.openai.existingSecretKey }}
-            {{- if .Values.openai.baseUrl }}
-            - name: OPENAI_BASE_URL
-              value: {{ .Values.openai.baseUrl | quote }}
-            {{- end }}
-            {{- if .Values.openai.visionModel }}
-            - name: OPENAI_VISION_MODEL
-              value: {{ .Values.openai.visionModel | quote }}
-            {{- end }}
-            {{- if .Values.openai.researchModel }}
-            - name: OPENAI_RESEARCH_MODEL
-              value: {{ .Values.openai.researchModel | quote }}
-            {{- end }}
-            {{- end }}
-            {{- if .Values.mcp.enabled }}
-            - name: MCP_ALLOWED_HOSTS
-              value: {{ include "roastbook.mcpAllowedHosts" . | quote }}
-            {{- if .Values.mcp.allowedOrigins }}
-            - name: MCP_ALLOWED_ORIGINS
-              value: {{ join "," .Values.mcp.allowedOrigins | quote }}
-            {{- end }}
-            {{- end }}
-            - name: AI_TELEMETRY_STORE_PAYLOADS
-              value: {{ .Values.openai.telemetryStorePayloads | quote }}
-            - name: AI_TELEMETRY_RETENTION_DAYS
-              value: {{ .Values.openai.telemetryRetentionDays | quote }}
-            - name: AI_TELEMETRY_MAX_PAYLOAD_BYTES
-              value: {{ .Values.openai.telemetryMaxPayloadBytes | quote }}
+          {{- include "roastbook.applicationEnvironment" . | nindent 10 }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
@@ -157,6 +80,22 @@ spec:
             - name: uploads
               mountPath: {{ .Values.storage.local.path }}
           {{- end }}
+        {{- if .Values.auth.enabled }}
+        - name: account-worker
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          command: ["bun", "run", "worker"]
+          {{- include "roastbook.applicationEnvironment" . | nindent 10 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- if eq .Values.storage.provider "local" }}
+          volumeMounts:
+            - name: uploads
+              mountPath: {{ .Values.storage.local.path }}
+          {{- end }}
+        {{- end }}
         {{- if .Values.hodor.enabled }}
         - name: hodor
           {{- if .Values.hodor.image.digest }}

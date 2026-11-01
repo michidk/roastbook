@@ -20,7 +20,7 @@ modules instead of reading the environment directly.
 | `DATABASE_URL` | — | Yes | PostgreSQL connection URL |
 | `STORAGE_PROVIDER` | `local` | No | `local` or `s3` |
 | `STORAGE_PATH` | `./uploads` | No | Filesystem upload root for local storage |
-| `STORAGE_URL` | `/media` | No | Server-side public media URL base |
+| `STORAGE_URL` | `/media` | No | Application media URL base |
 | `VITE_HEAD_HTML` | — | No | Trusted head markup (build time) |
 | `VITE_STORAGE_URL` | `/media` | No | Browser media URL base (build time) |
 
@@ -41,7 +41,51 @@ Demo mode is selected when the application is built rather than through runtime
 configuration. See [Demo mode](demo-mode.md) for build instructions and the
 database-free architecture.
 
+## Authentication and email
+
+| Variable | Default | Required | Description |
+| --- | --- | --- | --- |
+| `AUTH_ENABLED` | `false` | Hosted | Private accounts and journals |
+| `DEPLOYMENT_MODE` | `self-hosted` | No | `self-hosted` or `hosted` |
+| `AUTH_URL` | None | Auth only | Canonical HTTPS origin |
+| `AUTH_SECRET` | None | Auth only | Random secret of at least 32 characters |
+| `AUTH_SIGNUP_ENABLED` | `true` | No | Allow verified email signup |
+| `AUTH_ADMIN_EMAIL` | None | Hosted | Bootstrap admin email |
+| `AUTH_IP_HEADER` | `x-real-ip` | No | Trusted proxy IP header |
+| `EMAIL_PROVIDER` | `smtp` | No | `smtp` or `resend` |
+| `EMAIL_FROM` | None | Auth only | Verified sender address |
+| `SMTP_URL` | None | SMTP only | SMTP connection URL, preferably `smtps://` |
+| `RESEND_API_KEY` | None | Resend only | Resend API key |
+
+Authentication uses Better Auth 1.7.15 with its email OTP plugin and the
+separate `@better-auth/passkey` package. Emails contain an eight-digit code and
+a link that prefills the same code. Users explicitly confirm sign-in. Codes
+expire after ten minutes and allow three attempts. Shared database limits also
+restrict each address to three code emails and eight sign-in attempts per ten
+minutes, in addition to IP limits. Passkeys require device
+verification. There are no passwords. Sessions expire after 30 days; sensitive
+account and administrator actions require a session created within ten minutes.
+
+With authentication disabled, one persistent default identity owns the journal.
+Account and administrator controls are hidden. This setting is independent of
+the read-only demo build. The application refuses to disable authentication on
+a database containing multiple accounts.
+
+The first verified self-hosted account becomes administrator and claims the
+existing journal. Restrict network access during this initial setup. Hosted
+mode requires authentication, HTTPS, and `AUTH_ADMIN_EMAIL`; other signups
+receive independent, empty journals with their own brewing defaults.
+
+A reverse proxy must overwrite `AUTH_IP_HEADER`, remove client-supplied values,
+and keep the application port private. Terminate TLS at that proxy, preserve
+the canonical Host, and forward cookies. Do not cache authenticated HTML, RPC,
+media, or export responses. See [deployment](deployment.md) for examples.
+
 ## S3-compatible storage
+
+Keep buckets private. Original images, thumbnails, and account archives are
+served through authorized application endpoints. Do not expose a public bucket
+or configure a public media CDN for private journals.
 
 | Variable | Default | Required | Description |
 | --- | --- | --- | --- |
@@ -83,8 +127,8 @@ page behind the deployment's authentication boundary.
 | `MCP_ALLOWED_ORIGINS` | — | No | Extra `Origin` hostnames |
 | `MCP_PORT` | `3001` | No | Docker Compose loopback port for `/api/mcp` |
 
-The endpoint is unauthenticated; see [MCP in the deployment
-guide](deployment.md#mcp).
+The endpoint requires a user-bound bearer token in both authentication modes.
+See [MCP in the deployment guide](deployment.md#mcp).
 
 ## Docker Compose authentication gate
 
@@ -102,7 +146,8 @@ application process.
 | `HODOR_SECURE_COOKIE` | `false` | No | Require HTTPS cookies |
 | `HODOR_LOG_FORMAT` | `compact` | No | Hodor log format |
 
-Set `HODOR_SECURE_COOKIE=true` whenever Compose is served over HTTPS.
+Set `HODOR_SECURE_COOKIE=true` whenever Compose is served over HTTPS. These
+variables are unnecessary for `docker-compose.auth.yaml`.
 
 ## Helm values
 

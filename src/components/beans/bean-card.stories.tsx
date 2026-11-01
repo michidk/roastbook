@@ -15,6 +15,7 @@ const meta = {
   args: {
     compact: true,
     bean: {
+      ownerId: 'local',
       id: 1,
       name: 'Ethiopia Guji',
       type: 'filter',
@@ -41,6 +42,7 @@ const meta = {
       isArchived: false,
       images: [
         {
+          ownerId: 'local',
           id: 1,
           beanId: 1,
           beanPurchaseId: 1,

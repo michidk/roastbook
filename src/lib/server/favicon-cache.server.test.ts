@@ -1,8 +1,20 @@
 import { describe, expect, test } from 'bun:test'
+import { Readable } from 'node:stream'
 import { refreshWebsiteFavicon } from '@/lib/server/favicon-cache.server'
 import type { StorageProvider } from '@/lib/storage'
 
 class MemoryStorage implements StorageProvider {
+  async uploadStream(stream: Readable, path: string) {
+    const chunks: ArrayBuffer[] = []
+    for await (const chunk of stream) chunks.push(new Uint8Array(chunk).buffer)
+    await this.upload(new Blob(chunks), path)
+  }
+  async downloadStream(path: string) {
+    return Readable.from(
+      new Uint8Array(await (await this.download(path)).arrayBuffer()),
+    )
+  }
+
   readonly files = new Map<string, Blob>()
 
   async upload(file: File | Blob, path: string) {

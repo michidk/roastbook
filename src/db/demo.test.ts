@@ -3,7 +3,7 @@ import { readdir, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { PGlite } from '@electric-sql/pglite'
 import { drizzle, type PgliteDatabase } from 'drizzle-orm/pglite'
-import { seedDemoDatabase } from '@/db/demo'
+import { seedDemoDatabase } from '@/db/demo-seed.server'
 import * as schema from '@/db/schema'
 import { DEFAULT_BREWING_METHODS } from '@/lib/brewing-methods'
 

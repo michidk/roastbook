@@ -6,6 +6,7 @@ services:
       POSTGRES_DB: roastbook
       POSTGRES_USER: roastbook
       POSTGRES_PASSWORD: roastbook
+      PGDATA: /var/lib/postgresql/data
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -39,12 +40,13 @@ services:
     expose:
       - "3000"
     ports:
-      # MCP has no login: publish it on loopback only, bypassing Hodor.
+      # MCP requires a per-user bearer token. Keep the direct device port private.
       - "127.0.0.1:${MCP_PORT:-3001}:3000"
     environment:
       DATABASE_URL: postgresql://roastbook:roastbook@postgres:5432/roastbook
       MCP_ALLOWED_HOSTS: ${MCP_ALLOWED_HOSTS:-}
       MCP_ALLOWED_ORIGINS: ${MCP_ALLOWED_ORIGINS:-}
+      AUTH_ENABLED: "false"
       STORAGE_PROVIDER: local
       STORAGE_PATH: /uploads
       STORAGE_URL: /media

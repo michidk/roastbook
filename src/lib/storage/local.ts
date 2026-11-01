@@ -1,13 +1,9 @@
 import type { Dirent } from 'node:fs'
-import {
-  mkdir,
-  readdir,
-  readFile,
-  stat,
-  unlink,
-  writeFile,
-} from 'node:fs/promises'
+import { createReadStream, createWriteStream } from 'node:fs'
+import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
+import type { Readable } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
 import type { StorageConfig, StorageProvider, StoredObject } from './types'
 
 export class InvalidStoragePathError extends Error {
@@ -87,6 +83,16 @@ export class LocalStorageProvider implements StorageProvider {
     return fullPath
   }
 
+  async uploadStream(stream: Readable, path: string): Promise<void> {
+    const fullPath = this.resolvePath(path)
+    await mkdir(dirname(fullPath), { recursive: true })
+    await pipeline(stream, createWriteStream(fullPath, { mode: 0o600 }))
+  }
+
+  async downloadStream(path: string): Promise<Readable> {
+    return createReadStream(this.resolvePath(path))
+  }
+
   async upload(file: File | Blob, path: string): Promise<string> {
     const fullPath = this.resolvePath(path)
     await mkdir(dirname(fullPath), { recursive: true })
@@ -105,7 +111,7 @@ export class LocalStorageProvider implements StorageProvider {
 
   async delete(path: string): Promise<void> {
     const fullPath = this.resolvePath(path)
-    await unlink(fullPath)
+    await rm(fullPath, { force: true })
   }
 
   getUrl(path: string): string {

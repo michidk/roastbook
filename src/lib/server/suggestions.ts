@@ -25,17 +25,18 @@ import {
   LEGACY_SENSORY_TASTE_TAG_NAMES,
 } from '@/lib/taste-tags'
 
-const hasActivePurchase = exists(
-  db
-    .select({ id: beanPurchases.id })
-    .from(beanPurchases)
-    .where(
-      and(
-        eq(beanPurchases.beanId, beans.id),
-        eq(beanPurchases.isArchived, false),
+const hasActivePurchase = () =>
+  exists(
+    db
+      .select({ id: beanPurchases.id })
+      .from(beanPurchases)
+      .where(
+        and(
+          eq(beanPurchases.beanId, beans.id),
+          eq(beanPurchases.isArchived, false),
+        ),
       ),
-    ),
-)
+  )
 
 type Suggestion = {
   readonly id: number
@@ -43,8 +44,8 @@ type Suggestion = {
   readonly name: string
 }
 
-const lastUsedAt = max(shots.brewedAt).as('last_used_at')
-const lastUsedShotId = max(shots.id).as('last_used_shot_id')
+const lastUsedAt = () => max(shots.brewedAt).as('last_used_at')
+const lastUsedShotId = () => max(shots.id).as('last_used_shot_id')
 
 function mergeSuggestions(
   recentlyUsed: readonly Suggestion[],
@@ -80,14 +81,14 @@ export const getBeanSuggestions = createServerFn({ method: 'GET' }).handler(
           id: beans.id,
           purchaseId: beanPurchases.id,
           name: beans.name,
-          lastUsedAt,
+          lastUsedAt: lastUsedAt(),
         })
         .from(shots)
         .innerJoin(beans, eq(shots.beanId, beans.id))
         .innerJoin(beanPurchases, eq(shots.beanPurchaseId, beanPurchases.id))
         .where(eq(beanPurchases.isArchived, false))
         .groupBy(beans.id, beanPurchases.id, beans.name)
-        .orderBy(desc(lastUsedAt))
+        .orderBy(desc(lastUsedAt()))
         .limit(5),
       db
         .select({
@@ -110,13 +111,13 @@ export const getBrewingMethodSuggestions = createServerFn({
     .select({
       id: brewingMethods.id,
       name: brewingMethods.name,
-      lastUsedAt,
-      lastUsedShotId,
+      lastUsedAt: lastUsedAt(),
+      lastUsedShotId: lastUsedShotId(),
     })
     .from(shots)
     .innerJoin(brewingMethods, eq(shots.brewingMethodId, brewingMethods.id))
     .groupBy(brewingMethods.id, brewingMethods.name)
-    .orderBy(desc(lastUsedAt), desc(lastUsedShotId))
+    .orderBy(desc(lastUsedAt()), desc(lastUsedShotId()))
     .limit(5),
 )
 
@@ -158,6 +159,6 @@ export const getLastBeansByBrewingMethod = createServerFn({
     })
     .from(shots)
     .innerJoin(beans, eq(shots.beanId, beans.id))
-    .where(and(isNotNull(shots.beanId), hasActivePurchase))
+    .where(and(isNotNull(shots.beanId), hasActivePurchase()))
     .orderBy(asc(shots.brewingMethodId), desc(shots.brewedAt), desc(shots.id)),
 )

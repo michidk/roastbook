@@ -92,11 +92,8 @@ podDisruptionBudget:
 networkPolicy:
   enabled: true
 
-# Unauthenticated, stateless MCP at http://<release>-mcp/api/mcp. It is never
-# routed through the Ingress or Hodor; the only protection is network placement
-# (NetworkPolicy) plus Host/Origin validation. Sources listed here reach the
-# app's own port 3000, which has no login, so list only private VPN/trusted
-# ranges and namespaces.
+# MCP requires an owner-bound bearer token. Network restrictions are optional
+# extra protection for the dedicated device Service.
 mcp:
   enabled: false
   # Required when enabled: at least one of these two source lists.
@@ -208,3 +205,10 @@ hodor:
     requests:
       cpu: 10m
       memory: 32Mi
+
+# Passwordless accounts. Set hodor.enabled=false when using built-in login.
+auth:
+  enabled: false
+  # Secret containing AUTH_URL, AUTH_SECRET, EMAIL_FROM, SMTP_URL or RESEND_API_KEY,
+  # and optional DEPLOYMENT_MODE, AUTH_ADMIN_EMAIL, AUTH_SIGNUP_ENABLED.
+  existingSecret: ""

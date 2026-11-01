@@ -240,7 +240,9 @@ async function storeEntityImage(data: EntityImageData) {
             shotId: data.entityId,
             clientOperationId: data.clientOperationId ?? null,
           })
-          .onConflictDoNothing({ target: shotImages.clientOperationId })
+          .onConflictDoNothing({
+            target: [shotImages.ownerId, shotImages.clientOperationId],
+          })
           .returning()
         if (!result) {
           const existing = data.clientOperationId

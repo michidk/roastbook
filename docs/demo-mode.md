@@ -1,5 +1,9 @@
 # Demo mode
 
+The demo remains read-only and database-free. It has no login, accounts, admin
+page, or account worker. `AUTH_ENABLED=false` in the standard edition selects
+a writable shared journal and never turns on the demo.
+
 Roastbook supports a read-only demo edition. The edition is compiled into the
 client and server bundles, so a standard production artifact cannot be changed
 into a demo by altering its runtime environment. The public demo runs from its

@@ -115,7 +115,8 @@ desktop where you dig through the numbers afterwards.
   forms you already use and return typed, validated fields you confirm before
   anything is saved.
 - 🔒 **Yours, end to end.** Self-hosted on your own PostgreSQL and your own
-  storage, behind your own auth proxy. No accounts, no telemetry, no upsell.
+  storage. Use private accounts with email codes and passkeys, or a shared
+  journal behind your own auth proxy.
 - 📓 **A journal, not just a log.** Beans, roasters, gear, recipe templates,
   brewing methods, and café visits keep every brew's full story structured.
 - 🚀 **Deploys in one command.** Docker Compose for a home server, a Helm chart
@@ -169,7 +170,8 @@ as MIME type and byte count, not the image payload itself.
 > endpoint (protocol 2026-07-28) with ten read tools and one write tool
 > (`create_brew`; nothing deletes or edits data). Ask what your last ten Gesha
 > brews had in common, or have an assistant log this morning's espresso. It has
-> no login: keep it on loopback, a firewall or a private VPN. See
+> a user-bound bearer token, managed in Settings. Keep device endpoints private
+> when public access is unnecessary. See
 > [MCP deployment](docs/deployment.md#mcp).
 
 ## 📦 Features
@@ -237,7 +239,10 @@ as MIME type and byte count, not the image payload itself.
 ### Self-hosting
 
 - Store media locally or in S3-compatible object storage.
-- Gate self-hosted deployments with the Hodor reverse proxy.
+- Choose built-in passwordless accounts with private journals, or one shared
+  journal behind the optional Hodor reverse proxy.
+- Manage users, export data and original images, and confirm account deletion
+  through email.
 - Explore a database-free, read-only demo backed by ephemeral PGlite seed data.
 
 </details>
@@ -249,7 +254,7 @@ from the database row to the rendered field:
 
 | Layer | Choice |
 | --- | --- |
-| Runtime and package manager | Bun 1.3.14 |
+| Runtime and package manager | Bun 1.4.4 |
 | Full-stack framework | TanStack Start with server functions |
 | Routing | TanStack Router, file-based and fully typed |
 | UI | React 19, shadcn/ui, Radix and Base UI, Tailwind CSS v4 |
@@ -260,7 +265,8 @@ from the database row to the rendered field:
 | Validation | Zod at every boundary, including environment variables |
 | PWA | Web app manifest and a hand-written service worker |
 | Tooling | Vite, Biome, Knip, `bun test` |
-| Deployment | Docker Compose or Helm, fronted by the Hodor auth proxy |
+| Authentication | Better Auth 1.7, email codes and passkeys; optional Hodor |
+| Deployment | Docker Compose or Helm, optional account worker |
 
 Server-only concerns — database access, storage providers, AI calls, and secrets
 — never cross into browser code, and configuration is validated lazily on first
@@ -280,9 +286,17 @@ docker compose up --build
 
 Open <http://localhost:3000> after the database migration completes.
 
+For private accounts, configure `AUTH_URL`, `AUTH_SECRET`, and email delivery in
+`.env`, then use `docker compose -f docker-compose.auth.yaml up --build`. This
+example includes the export/deletion worker and does not require Hodor. The
+first verified self-hosted user becomes administrator and claims the journal.
+See [authentication configuration](docs/configuration.md#authentication-and-email)
+and [upgrade instructions](docs/deployment.md#upgrading-an-existing-journal)
+before enabling accounts on an existing installation.
+
 ## 🔧 Local development
 
-Roastbook uses Bun 1.3.14. With PostgreSQL available at the `DATABASE_URL` from
+Roastbook uses Bun 1.4.4. With PostgreSQL available at the `DATABASE_URL` from
 `.env`:
 
 ```bash
@@ -296,7 +310,8 @@ cards, brewing and tasting inputs, charts, dialogs, and form states. See
 [Component stories](docs/development.md#component-stories) for coverage and
 service boundaries.
 
-The unauthenticated development server listens on <http://localhost:3000>.
+The development server listens on <http://localhost:3000>. Authentication is
+controlled by `AUTH_ENABLED`, with the same request boundary as production.
 It applies pending migrations before accepting requests, repeats the check on
 Vite configuration reloads, and watches for newly generated migrations while
 running.

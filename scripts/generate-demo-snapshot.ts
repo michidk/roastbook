@@ -2,7 +2,7 @@ import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { PGlite } from '@electric-sql/pglite'
 import { drizzle } from 'drizzle-orm/pglite'
-import { seedDemoDatabase } from '@/db/demo'
+import { seedDemoDatabase } from '@/db/demo-seed.server'
 import * as schema from '@/db/schema'
 
 const client = await PGlite.create('memory://')

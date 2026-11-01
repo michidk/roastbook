@@ -48,7 +48,7 @@ const recommendationShotRelations = {
   accessoryGearLinks: { columns: { gearId: true } },
 } as const
 
-const recommendationGearRelations = {
+const recommendationGearRelations = () => ({
   espressoMachineDetails: true as const,
   machineSettingRevisions: {
     orderBy: [desc(espressoMachineSettingRevisions.effectiveFrom)],
@@ -60,7 +60,7 @@ const recommendationGearRelations = {
   tamperDetails: true as const,
   wdtDetails: true as const,
   basketDetails: true as const,
-}
+})
 
 class ShotRecommendationError extends Error {
   constructor(message: string) {
@@ -328,7 +328,7 @@ async function loadRecommendationEvidence(request: ShotRecommendationRequest) {
         ? Promise.resolve([])
         : db.query.gear.findMany({
             where: inArray(gear.id, gearIds),
-            with: recommendationGearRelations,
+            with: recommendationGearRelations(),
           }),
     ])
   if (!bean || !brewingMethod) {

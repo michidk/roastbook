@@ -68,7 +68,12 @@ jobs:
         env:
           HODOR_PASSWORD: ci-password
           HODOR_SECRET: ci-signing-secret
-        run: docker compose config --quiet
+        run: |
+          docker compose config --quiet
+          AUTH_URL=https://coffee.example.test \
+          AUTH_SECRET=ci-auth-secret-at-least-thirty-two-characters \
+          EMAIL_FROM=coffee@example.test SMTP_URL=smtp://localhost:1025 \
+            docker compose -f docker-compose.auth.yaml config --quiet
 
       - name: Set up Helm
         uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
@@ -84,6 +89,12 @@ jobs:
             --set hodor.secret=ci-signing-secret \
             --set postgresql.enabled=true \
             --set postgresql.auth.password=database-password
+
+          helm lint charts \
+            --set auth.enabled=true \
+            --set auth.existingSecret=roastbook-auth \
+            --set hodor.enabled=false \
+            --set postgresql.external.url=postgresql://roastbook:password@postgres.example:5432/roastbook
 
       - name: Apply database migrations
         run: bun run db:migrate

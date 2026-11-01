@@ -2,6 +2,7 @@ import { useRouter } from '@tanstack/react-router'
 import { Activity, Bot, ChevronLeft, ChevronRight, Copy } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { IntegrationTokenControl } from '@/components/settings/integration-token-control'
 import { SettingsPanelSection } from '@/components/settings/settings-shell'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -90,7 +91,7 @@ export function McpSettings({ state }: { readonly state: McpAdminState }) {
     <>
       <SettingsPanelSection
         title="AI access (MCP)"
-        description="Roastbook serves stateless Streamable HTTP MCP (protocol 2026-07-28) with no login of its own. Reach it only over loopback or a private network and add that hostname to MCP_ALLOWED_HOSTS; any other Host or Origin is rejected."
+        description="Connect an MCP client to your private journal with a revocable bearer token. Add the hostname to MCP_ALLOWED_HOSTS. Host and Origin validation also apply."
         action={<Bot className="size-5 text-link" />}
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -106,6 +107,7 @@ export function McpSettings({ state }: { readonly state: McpAdminState }) {
             Copy URL
           </Button>
         </div>
+        {demoMode ? null : <IntegrationTokenControl />}
         <label
           htmlFor="mcp-enabled"
           className="flex items-center justify-between gap-4"
@@ -127,7 +129,7 @@ export function McpSettings({ state }: { readonly state: McpAdminState }) {
 
       <SettingsPanelSection
         title="Tools"
-        description="Disabled tools disappear from MCP discovery. Any client that can reach the endpoint can use the enabled tools, including the write tool."
+        description="Disabled tools disappear from MCP discovery. Clients authenticated with your token can use your enabled tools, including the write tool."
       >
         {groups.map(({ group, tools }) => (
           <fieldset key={group} className="space-y-1">

@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Bun 1.3.14
+- Bun 1.4.4
 - PostgreSQL for application development and database integration tests
 - Docker when running the complete stack or S3 integration tests
 
@@ -23,7 +23,11 @@ bun run dev
 ```
 
 The development server listens on <http://localhost:3000> and intentionally
-does not include the production Hodor authentication gate. It applies pending
+does not include Hodor. Set `AUTH_ENABLED=true` and configure email delivery to
+exercise built-in accounts. A local SMTP capture service works for development.
+Run `bun run worker` separately to process exports and account deletion. The
+same request authentication and RLS boundary runs in development and production.
+The server applies pending
 committed migrations before accepting requests and repeats that check whenever
 Vite restarts after a configuration change. While Vite is running, newly
 generated Drizzle migrations are applied serially and trigger a full page

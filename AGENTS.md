@@ -2,8 +2,8 @@
 
 Roastbook is a self-hosted coffee journal built with Bun, TanStack Start,
 React 19, shadcn/ui, PostgreSQL/Drizzle, and local or S3-compatible storage.
-Production deployments use Docker or the Helm chart and normally place the
-Hodor authentication proxy in front of the application.
+Production deployments use Docker or the Helm chart. Built-in Better Auth
+provides private accounts; Hodor remains optional for a shared journal.
 
 ## Sources of truth
 
@@ -44,8 +44,11 @@ work as shipped.
 - Define and validate server variables in `src/lib/env.server.ts`. Define
   browser-visible `VITE_` variables in `src/lib/env.ts`; do not read application
   configuration directly from `process.env` or `import.meta.env` elsewhere.
-- Hodor is the production authentication boundary. TanStack server functions
-  must not be exposed publicly by bypassing it.
+- All private requests must pass through the journal request boundary. Journal
+  database access uses a transaction-local identity and the restricted RLS role.
+  Reserve the control connection for authentication and account administration.
+- With AUTH_ENABLED=false the default journal is shared. Protect that mode with
+  Hodor, an equivalent proxy, or a private network.
 
 ## Generated and stateful files
 

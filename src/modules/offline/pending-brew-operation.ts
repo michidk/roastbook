@@ -1,8 +1,5 @@
-import {
-  DEFAULT_OWNER_KEY,
-  type OfflineOperation,
-  type OfflineOperationStatus,
-} from './operations'
+import { getOfflineOwner } from '@/lib/journal-owner'
+import type { OfflineOperation, OfflineOperationStatus } from './operations'
 import type {
   PendingBrew,
   PendingBrewPayload,
@@ -16,7 +13,7 @@ export function pendingBrewToOperation(
   return {
     id: item.operationId,
     idempotencyKey: item.operationId,
-    ownerKey: DEFAULT_OWNER_KEY,
+    ownerKey: getOfflineOwner(),
     entityType: 'brew',
     operationType: 'create',
     entityLocalId: item.operationId,

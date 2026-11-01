@@ -6,6 +6,7 @@
     "src/server.ts",
     "src/start.ts",
     "src/lib/demo/*.ts",
+    "src/db/demo.ts",
     "src/lib/server/media-handler.ts",
     "src/**/*.test.ts",
     "scripts/**/*.ts"

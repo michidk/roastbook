@@ -130,6 +130,15 @@ const config = defineConfig({
     ],
   },
   plugins: [
+    {
+      name: 'roastbook-schema-declarations',
+      transform(code, id) {
+        // Schema construction has no external effects. Allow unused server
+        // imports to disappear after Start removes server-function handlers.
+        if (id === resolve('src/db/schema.ts'))
+          return { code, moduleSideEffects: false }
+      },
+    },
     ...(roastbookEdition === 'demo' ? [demoAssets()] : []),
     devtools(),
     devMigrations(),

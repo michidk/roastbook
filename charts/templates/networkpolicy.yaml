@@ -17,7 +17,7 @@ spec:
         - protocol: TCP
           port: {{ ternary 8080 3000 .Values.hodor.enabled }}
     {{- if and .Values.mcp.enabled .Values.hodor.enabled }}
-    # Unauthenticated MCP on the app port, limited to private sources.
+    # Bearer-authenticated MCP on the app port, limited to configured sources.
     - from:
         {{- range .Values.mcp.allowedCidrs }}
         - ipBlock:

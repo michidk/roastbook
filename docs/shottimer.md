@@ -8,7 +8,9 @@ target time to count against.
 
 1. Open **Settings → Shottimer** and turn on the integration.
 2. Create a device token and copy it into the shottimer configuration. The
-   token is shown once; creating a new one invalidates the previous token.
+   token is shown once, belongs to your journal, and expires after one year.
+   Creating a new one invalidates the previous token. It can also be revoked
+   from Account settings.
 3. Point the device at the public Roastbook URL.
 
 Compose and Helm let `/api/shottimer/*` through Hodor without a session (see
@@ -35,7 +37,8 @@ decimals. A valid request returns `204`; a malformed body returns `400`.
 
 Open new brew pages poll for the latest time every few seconds and offer it in
 a dialog. Accepting fills in the brew time; accepting or dismissing clears the
-time for every page. Times older than 15 minutes are no longer offered.
+time for every page in the same user's journal. Times older than 15 minutes are
+no longer offered.
 
 ### Read the target time
 

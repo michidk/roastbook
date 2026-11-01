@@ -12,6 +12,7 @@ export type McpConfig = {
 }
 
 type McpEnvironment = {
+  AUTH_URL?: string
   MCP_ALLOWED_HOSTS?: string
   MCP_ALLOWED_ORIGINS?: string
 }
@@ -35,20 +36,26 @@ function toHostname(entry: string) {
 
 /**
  * Host and Origin allowlists are the DNS-rebinding defence. Requests are
- * unauthenticated, so network placement (loopback, private VPN, NetworkPolicy)
- * is what actually restricts access.
+ * authenticated with owner-bound bearer tokens at the request boundary.
+ * Network restrictions remain useful for deployments exposing device APIs.
  */
 export function resolveMcpConfig(environment: McpEnvironment): McpConfig {
   return {
     allowedHostnames: [
       ...new Set([
         ...localhostAllowedHostnames(),
+        ...(environment.AUTH_URL
+          ? [new URL(environment.AUTH_URL).hostname]
+          : []),
         ...splitList(environment.MCP_ALLOWED_HOSTS).map(toHostname),
       ]),
     ],
     allowedOrigins: [
       ...new Set([
         ...localhostAllowedOrigins(),
+        ...(environment.AUTH_URL
+          ? [new URL(environment.AUTH_URL).hostname]
+          : []),
         ...splitList(environment.MCP_ALLOWED_ORIGINS).map(toHostname),
       ]),
     ],

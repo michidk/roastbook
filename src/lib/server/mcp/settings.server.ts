@@ -49,7 +49,7 @@ export async function saveMcpPolicy(policy: {
     .insert(mcpSettings)
     .values({ id: 'instance', enabled: policy.enabled, disabledTools })
     .onConflictDoUpdate({
-      target: mcpSettings.id,
+      target: [mcpSettings.ownerId, mcpSettings.id],
       set: { enabled: policy.enabled, disabledTools, updatedAt: new Date() },
     })
     .returning({

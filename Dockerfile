@@ -41,6 +41,8 @@ RUN bun install --frozen-lockfile --production
 COPY --from=builder --chown=app:nodejs /app/.output /app/.output
 COPY --from=builder --chown=app:nodejs /app/drizzle /app/drizzle
 COPY --from=builder --chown=app:nodejs /app/scripts /app/scripts
+COPY --from=builder --chown=app:nodejs /app/src /app/src
+COPY --from=builder --chown=app:nodejs /app/tsconfig.json /app/tsconfig.json
 
 USER app
 

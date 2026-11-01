@@ -1,10 +1,10 @@
+import { getOfflineOwner } from '@/lib/journal-owner'
 import { getOfflineRxDatabase } from '@/modules/rxdb/offline-database'
 import {
   decodeStoredValue,
   encodeStoredValue,
 } from '@/modules/rxdb/stored-values'
 import {
-  DEFAULT_OWNER_KEY,
   isVisibleOperationStatus,
   type OfflineEntityType,
   type OfflineOperation,
@@ -95,7 +95,7 @@ async function pendingOperations(): Promise<OfflineOperation[]> {
 export async function putLocalEntity<T>(
   input: LocalEntityInput<T> | LocalEntityRecord<T>,
 ): Promise<LocalEntityRecord<T>> {
-  const ownerKey = input.ownerKey ?? DEFAULT_OWNER_KEY
+  const ownerKey = input.ownerKey ?? getOfflineOwner()
   const record: LocalEntityRecord<T> = {
     key:
       'key' in input
@@ -125,7 +125,7 @@ export async function putLocalEntity<T>(
 export async function getLocalEntity<T>(
   entityType: OfflineEntityType,
   localId: string,
-  ownerKey = DEFAULT_OWNER_KEY,
+  ownerKey = getOfflineOwner(),
 ): Promise<LocalEntityRecord<T> | undefined> {
   return findEntity<T>(localEntityKey(ownerKey, entityType, localId))
 }
@@ -133,7 +133,7 @@ export async function getLocalEntity<T>(
 export async function getLocalEntityByServerId<T>(
   entityType: OfflineEntityType,
   serverId: string,
-  ownerKey = DEFAULT_OWNER_KEY,
+  ownerKey = getOfflineOwner(),
 ): Promise<LocalEntityRecord<T> | undefined> {
   return (await allEntities()).find(
     (record) =>
@@ -149,7 +149,7 @@ export async function listLocalEntities<T>(
     readonly entityType?: OfflineEntityType
   } = {},
 ): Promise<LocalEntityRecord<T>[]> {
-  const ownerKey = options.ownerKey ?? DEFAULT_OWNER_KEY
+  const ownerKey = options.ownerKey ?? getOfflineOwner()
   return (await allEntities())
     .filter(
       (record) =>
@@ -207,7 +207,7 @@ export async function putServerEntity<T>(input: {
   readonly serverId: string
   readonly data: T
 }): Promise<void> {
-  const ownerKey = input.ownerKey ?? DEFAULT_OWNER_KEY
+  const ownerKey = input.ownerKey ?? getOfflineOwner()
   const existing = await getLocalEntityByServerId<T>(
     input.entityType,
     input.serverId,
@@ -336,7 +336,7 @@ export async function markLocalEntitySynced(
 export async function removeLocalEntity(
   entityType: OfflineEntityType,
   localId: string,
-  ownerKey = DEFAULT_OWNER_KEY,
+  ownerKey = getOfflineOwner(),
 ): Promise<void> {
   const database = await getOfflineRxDatabase()
   await database.entities
@@ -345,7 +345,7 @@ export async function removeLocalEntity(
 }
 
 export async function readOfflineSyncMetadata(
-  ownerKey = DEFAULT_OWNER_KEY,
+  ownerKey = getOfflineOwner(),
 ): Promise<OfflineSyncMetadata> {
   const database = await getOfflineRxDatabase()
   const doc = await database.entities.findOne(syncMetadataKey(ownerKey)).exec()
@@ -359,7 +359,7 @@ export async function readOfflineSyncMetadata(
 }
 
 export async function recordSuccessfulSync(
-  ownerKey = DEFAULT_OWNER_KEY,
+  ownerKey = getOfflineOwner(),
   at = new Date().toISOString(),
 ): Promise<OfflineSyncMetadata> {
   const metadata = {

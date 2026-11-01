@@ -1,8 +1,10 @@
 import '@tanstack/react-start/server-only'
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
+import { createHash } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
 import { db } from '@/db'
+import { getJournalContext } from '@/db/journal-context.server'
 import { shottimer as shottimerTable } from '@/db/schema'
+import { createIntegrationToken } from '@/lib/server/auth/integrations.server'
 import type { ShottimerSettings, ShottimerShot } from '@/lib/shottimer'
 
 // A shot this old is assumed to belong to an earlier brew, not the one being logged.
@@ -25,7 +27,7 @@ async function updateShottimer(patch: ShottimerPatch) {
     .insert(shottimerTable)
     .values({ id: 1, ...patch })
     .onConflictDoUpdate({
-      target: shottimerTable.id,
+      target: [shottimerTable.ownerId, shottimerTable.id],
       set: { ...patch, updatedAt: new Date() },
     })
     .returning()
@@ -49,19 +51,16 @@ export async function setShottimerEnabled(enabled: boolean) {
 
 /** Replaces the device token. The plain token is returned once and never stored. */
 export async function regenerateShottimerToken() {
-  const token = randomBytes(32).toString('base64url')
+  const token = await createIntegrationToken('shottimer', 'Shottimer')
   await updateShottimer({ tokenHash: hashToken(token).toString('hex') })
   return token
 }
 
 /** Checks a device request's `Authorization: Bearer <token>` header. */
-export async function isAuthorizedShottimerRequest(request: Request) {
-  const row = await readShottimer()
-  const match = /^Bearer\s+(\S+)$/i.exec(
-    request.headers.get('authorization') ?? '',
+export async function isAuthorizedShottimerRequest(_request: Request) {
+  return (
+    Boolean(getJournalContext()) && (await readShottimer())?.enabled === true
   )
-  if (!row?.enabled || !row.tokenHash || !match?.[1]) return false
-  return timingSafeEqual(hashToken(match[1]), Buffer.from(row.tokenHash, 'hex'))
 }
 
 export async function recordShottimerShot(seconds: number) {

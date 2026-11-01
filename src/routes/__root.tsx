@@ -5,6 +5,7 @@ import {
   Outlet,
   Scripts,
   useRouter,
+  useRouterState,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import type { ComponentType, FormEvent } from 'react'
@@ -26,8 +27,11 @@ import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useOnlineStatus } from '@/hooks/use-online-status'
 import { DEMO_MODE, DEMO_MODE_READ_ONLY_MESSAGE } from '@/lib/build-mode'
+import { DEFAULT_APP_SETTINGS } from '@/lib/default-app-settings'
 import { getErrorDisplayState } from '@/lib/error-display'
+import { restoreOfflineOwner, selectOfflineOwner } from '@/lib/journal-owner'
 import { usePreferencesStore } from '@/lib/preferences-store'
+import { getCurrentAccount } from '@/lib/server/account'
 import { getAppSettings } from '@/lib/server/app-settings'
 import { isDarkTheme, THEME_COLORS, themeColor } from '@/lib/theme'
 import { cn } from '@/lib/utils'
@@ -37,7 +41,18 @@ import {
 } from '@/modules/offline/settings-cache'
 
 export const Route = createRootRoute({
-  loader: () => loadOfflineSettingsData('general', getAppSettings),
+  loader: async ({ location }) => {
+    if (location.pathname === '/login') return DEFAULT_APP_SETTINGS
+    if (!DEMO_MODE) {
+      try {
+        const state = await getCurrentAccount()
+        await selectOfflineOwner(state.ownerId)
+      } catch (error) {
+        if (!(error instanceof TypeError)) throw error
+      }
+    }
+    return loadOfflineSettingsData('general', getAppSettings)
+  },
   head: () => ({
     meta: [
       {
@@ -132,6 +147,7 @@ const THEME_BOOTSTRAP_SCRIPT = `(function () {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   const settings = Route.useLoaderData()
+  if (settings?.journalOwner) restoreOfflineOwner(settings.journalOwner)
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -283,15 +299,27 @@ function RootErrorComponent({ error }: { error: unknown }) {
 }
 
 function RootComponent() {
+  const login = useRouterState({
+    select: (state) => state.location.pathname === '/login',
+  })
   const settings = Route.useLoaderData()
   const isOnline = useOnlineStatus()
   useEffect(() => {
-    void cacheSettingsData('general', settings).catch(() => undefined)
-  }, [settings])
+    if (!login)
+      void cacheSettingsData('general', settings).catch(() => undefined)
+  }, [settings, login])
   const preventDemoSubmit = (event: FormEvent<HTMLElement>) => {
     event.preventDefault()
     toast.info(DEMO_MODE_READ_ONLY_MESSAGE)
   }
+
+  if (login)
+    return (
+      <>
+        <Outlet />
+        <Toaster />
+      </>
+    )
 
   return (
     <TooltipProvider>

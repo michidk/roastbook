@@ -1,9 +1,12 @@
+import type { Readable } from 'node:stream'
 export interface StoredObject {
   path: string
   sizeBytes: number
 }
 
 export interface StorageProvider {
+  uploadStream(stream: Readable, path: string): Promise<void>
+  downloadStream(path: string): Promise<Readable>
   upload(file: File | Blob, path: string): Promise<string>
   download(path: string): Promise<Blob>
   delete(path: string): Promise<void>

@@ -1,5 +1,5 @@
 import type { PgliteDatabase } from 'drizzle-orm/pglite'
-import { seedDemoDatabase } from '../src/db/demo'
+import { seedDemoDatabase } from '../src/db/demo-seed.server'
 import type * as schema from '../src/db/schema'
 import { generateAndUploadThumbnail } from '../src/lib/server/thumbnails.server'
 import { getStorage } from '../src/lib/storage'

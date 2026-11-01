@@ -1,13 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { sql } from 'drizzle-orm'
-import { db } from '@/db'
+import { probeDatabase } from '@/lib/server/health'
 
 export const Route = createFileRoute('/api/health')({
   server: {
     handlers: {
       GET: async () => {
         try {
-          await db.execute(sql`select 1`)
+          await probeDatabase()
           return Response.json(
             { status: 'ready' },
             { headers: { 'Cache-Control': 'no-store' } },

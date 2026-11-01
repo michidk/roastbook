@@ -1,3 +1,4 @@
+import { getOfflineOwner } from '@/lib/journal-owner'
 import { getOfflineRxDatabase } from '@/modules/rxdb/offline-database'
 import {
   decodeStoredValue,
@@ -7,7 +8,6 @@ import { deleteOfflineBlob } from './blob-store'
 import { getLocalEntityByServerId, removeLocalEntity } from './local-data'
 import {
   canTransitionOperationStatus,
-  DEFAULT_OWNER_KEY,
   isTerminalOperationStatus,
   type OfflineEntityType,
   type OfflineOperation,
@@ -63,7 +63,7 @@ export async function listOperations(
   const operations = (await database.operations.find().exec()).map(
     (document) => decodeStoredValue(document.toJSON()) as OfflineOperation,
   )
-  const ownerKey = options.ownerKey ?? DEFAULT_OWNER_KEY
+  const ownerKey = options.ownerKey ?? getOfflineOwner()
   return operations
     .filter(
       (operation) =>
@@ -230,7 +230,7 @@ export async function discardOperation(id: string): Promise<void> {
  * records become retryable on the next hydration so they do not stay stuck.
  */
 export async function recoverInterruptedOperations(
-  ownerKey: string = DEFAULT_OWNER_KEY,
+  ownerKey: string = getOfflineOwner(),
 ): Promise<number> {
   const interrupted = await listOperations({
     ownerKey,

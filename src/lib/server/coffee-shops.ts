@@ -105,7 +105,7 @@ export const getCoffeeShops = createServerFn({ method: 'GET' }).handler(
     }),
 )
 
-const coffeeShopOverviewSelection = {
+const coffeeShopOverviewSelection = () => ({
   id: coffeeShops.id,
   name: coffeeShops.name,
   address: coffeeShops.address,
@@ -129,11 +129,11 @@ const coffeeShopOverviewSelection = {
     order by ${coffeeShopImages.id}
     limit 1
   )`,
-}
+})
 
 function coffeeShopOverviewQuery() {
   return db
-    .select(coffeeShopOverviewSelection)
+    .select(coffeeShopOverviewSelection())
     .from(coffeeShops)
     .leftJoin(cafeVisits, eq(cafeVisits.coffeeShopId, coffeeShops.id))
     .groupBy(coffeeShops.id)

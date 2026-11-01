@@ -41,6 +41,7 @@ describe('AI brew recommendation context', () => {
     })
     const machineSettings = {
       id: 14,
+      ownerId: 'local',
       gearId: 4,
       kind: 'owner',
       brewPressureBar: '9.00',
@@ -84,6 +85,7 @@ describe('AI brew recommendation context', () => {
       espressoMachineDetails: null,
       machineSettingRevisions: [],
       grinderDetails: {
+        ownerId: 'local',
         gearId: 5,
         burrMechanism: 'conical',
         burrDiameterMm: '64.00',
@@ -141,6 +143,7 @@ describe('AI brew recommendation context', () => {
     const evidence = recommendationShotEvidence(
       {
         id: 42,
+        ownerId: 'local',
         revision: 0,
         brewedAt,
         clientOperationId: null,
@@ -180,6 +183,7 @@ describe('AI brew recommendation context', () => {
         updatedAt: brewedAt,
         machineSettingRevision: {
           id: 14,
+          ownerId: 'local',
           gearId: 4,
           kind: 'owner',
           brewPressureBar: '9.00',

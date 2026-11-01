@@ -1,3 +1,4 @@
+import { getOfflineOwner } from '@/lib/journal-owner'
 export type AuthenticationState =
   | 'authenticated'
   | 'auth-required'
@@ -7,6 +8,7 @@ export async function checkAuthentication(): Promise<AuthenticationState> {
   try {
     const response = await fetch('/api/auth-probe', {
       cache: 'no-store',
+      headers: { 'X-Roastbook-Owner': getOfflineOwner() },
       signal: AbortSignal.timeout(5000),
     })
     if (response.status === 204) return 'authenticated'

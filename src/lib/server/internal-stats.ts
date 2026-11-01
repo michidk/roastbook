@@ -1,6 +1,9 @@
 import { createServerFn } from '@tanstack/react-start'
+import { sql } from 'drizzle-orm'
+import { db } from '@/db'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { getServerEnv } from '@/lib/env.server'
+import { getStoredImagePaths } from '@/lib/image-path'
 import { getStorage } from '@/lib/storage'
 
 const FAVICON_PREFIX = 'favicons/'
@@ -29,7 +32,15 @@ async function loadStorageStats(): Promise<StorageStats> {
       ? ('s3' as const)
       : ('local' as const)
   try {
-    const objects = await getStorage().listObjects()
+    const rows = await db.execute(
+      sql`select storage_path from bean_images union all select storage_path from gear_images union all select storage_path from brew_images union all select storage_path from coffee_shop_images union all select storage_path from cafe_visit_images`,
+    )
+    const allowed = new Set(
+      getStoredImagePaths(rows.map((row) => String(row.storage_path))),
+    )
+    const objects = (await getStorage().listObjects()).filter((object) =>
+      allowed.has(object.path),
+    )
     const faviconCount = objects.filter((object) =>
       object.path.startsWith(FAVICON_PREFIX),
     ).length

@@ -88,3 +88,58 @@ describe('server environment', () => {
     })
   })
 })
+
+describe('authentication deployment configuration', () => {
+  const authenticated = {
+    DATABASE_URL: databaseUrl,
+    AUTH_ENABLED: 'true',
+    AUTH_URL: 'https://coffee.example.test',
+    AUTH_SECRET: 'a'.repeat(64),
+    EMAIL_FROM: 'coffee@example.test',
+    SMTP_URL: 'smtp://localhost:1025',
+  }
+  test('keeps self-hosted authentication optional', () => {
+    expect(parseServerEnv({ DATABASE_URL: databaseUrl }).AUTH_ENABLED).toBe(
+      false,
+    )
+    expect(parseServerEnv(authenticated).AUTH_ENABLED).toBe(true)
+  })
+  test('requires authentication, HTTPS, and explicit administrator bootstrap for hosted mode', () => {
+    expect(() =>
+      parseServerEnv({ DATABASE_URL: databaseUrl, DEPLOYMENT_MODE: 'hosted' }),
+    ).toThrow('AUTH_ENABLED')
+    expect(() =>
+      parseServerEnv({ ...authenticated, DEPLOYMENT_MODE: 'hosted' }),
+    ).toThrow('AUTH_ADMIN_EMAIL')
+    expect(() =>
+      parseServerEnv({
+        ...authenticated,
+        DEPLOYMENT_MODE: 'hosted',
+        AUTH_ADMIN_EMAIL: 'owner@example.test',
+        AUTH_URL: 'http://coffee.example.test',
+      }),
+    ).toThrow('HTTPS')
+    expect(
+      parseServerEnv({
+        ...authenticated,
+        DEPLOYMENT_MODE: 'hosted',
+        AUTH_ADMIN_EMAIL: 'Owner@example.test',
+      }).AUTH_ADMIN_EMAIL,
+    ).toBe('owner@example.test')
+  })
+  test('requires a delivery provider and strong application secret', () => {
+    expect(() => parseServerEnv({ ...authenticated, SMTP_URL: '' })).toThrow(
+      'SMTP_URL',
+    )
+    expect(() =>
+      parseServerEnv({ ...authenticated, AUTH_SECRET: 'short' }),
+    ).toThrow('AUTH_SECRET')
+    expect(() =>
+      parseServerEnv({
+        ...authenticated,
+        EMAIL_PROVIDER: 'resend',
+        RESEND_API_KEY: '',
+      }),
+    ).toThrow('RESEND_API_KEY')
+  })
+})

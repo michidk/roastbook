@@ -43,7 +43,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url)
   if (url.origin !== self.location.origin) return
 
-  if (url.pathname === '/_gate/logout') {
+  if (url.pathname === '/_gate/logout' || url.pathname === '/login') {
     event.respondWith(fetch(request).finally(clearDocumentCaches))
     return
   }
@@ -180,6 +180,11 @@ async function networkFirstNavigation(request) {
 }
 
 function isCacheableDocument(response) {
+  if (
+    response.headers.get('X-Roastbook-Owner') &&
+    response.headers.get('X-Roastbook-Owner') !== 'local'
+  )
+    return false
   if (!response.ok || response.redirected) return false
   if (response.headers.get('content-type')?.includes('text/html') !== true) {
     return false
@@ -281,6 +286,11 @@ async function isCacheableStaticResponse(
   pathname,
   options = { checkSize: true },
 ) {
+  if (
+    response.headers.get('X-Roastbook-Owner') &&
+    response.headers.get('X-Roastbook-Owner') !== 'local'
+  )
+    return false
   if (!response.ok || response.redirected) return false
 
   const contentType = response.headers.get('content-type')?.toLowerCase()

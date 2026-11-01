@@ -10,10 +10,13 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as StatsRouteImport } from './routes/stats'
+import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as ApiAuthProbeRouteImport } from './routes/api/auth-probe'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ApiMcpRouteImport } from './routes/api/mcp'
 import { Route as BeansIndexRouteImport } from './routes/beans/index'
 import { Route as BeansBeanIdRouteImport } from './routes/beans/$beanId'
 import { Route as BeansNewRouteImport } from './routes/beans/new'
@@ -42,6 +45,7 @@ import { Route as RoastersRoasterIdRouteImport } from './routes/roasters/$roaste
 import { Route as RoastersNewRouteImport } from './routes/roasters/new'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as SettingsAboutRouteImport } from './routes/settings/about'
+import { Route as SettingsAccountRouteImport } from './routes/settings/account'
 import { Route as SettingsAiRouteImport } from './routes/settings/ai'
 import { Route as SettingsAppearanceRouteImport } from './routes/settings/appearance'
 import { Route as SettingsDrinksRouteImport } from './routes/settings/drinks'
@@ -64,10 +68,16 @@ import { Route as ApiReplicationPullRouteImport } from './routes/api/replication
 import { Route as ApiReplicationPushRouteImport } from './routes/api/replication/push'
 import { Route as ApiShottimerShotsRouteImport } from './routes/api/shottimer/shots'
 import { Route as ApiShottimerTargetRouteImport } from './routes/api/shottimer/target'
+import { Route as ApiAccountExportsJobIdRouteImport } from './routes/api/account/exports/$jobId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -80,6 +90,11 @@ const StatsRoute = StatsRouteImport.update({
   path: '/stats',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthProbeRoute = ApiAuthProbeRouteImport.update({
   id: '/api/auth-probe',
   path: '/api/auth-probe',
@@ -88,6 +103,11 @@ const ApiAuthProbeRoute = ApiAuthProbeRouteImport.update({
 const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
   path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMcpRoute = ApiMcpRouteImport.update({
+  id: '/api/mcp',
+  path: '/api/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BeansIndexRoute = BeansIndexRouteImport.update({
@@ -231,6 +251,11 @@ const SettingsAboutRoute = SettingsAboutRouteImport.update({
   path: '/about',
   getParentRoute: () => SettingsRoute,
 } as any)
+const SettingsAccountRoute = SettingsAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => SettingsRoute,
+} as any)
 const SettingsAiRoute = SettingsAiRouteImport.update({
   id: '/ai',
   path: '/ai',
@@ -341,13 +366,21 @@ const ApiShottimerTargetRoute = ApiShottimerTargetRouteImport.update({
   path: '/api/shottimer/target',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAccountExportsJobIdRoute = ApiAccountExportsJobIdRouteImport.update({
+  id: '/api/account/exports/$jobId',
+  path: '/api/account/exports/$jobId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/settings': typeof SettingsRouteWithChildren
   '/stats': typeof StatsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/api/auth-probe': typeof ApiAuthProbeRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/beans/$beanId': typeof BeansBeanIdRoute
   '/beans/new': typeof BeansNewRoute
   '/brewing-methods/$brewingMethodId': typeof BrewingMethodsBrewingMethodIdRoute
@@ -366,6 +399,7 @@ export interface FileRoutesByFullPath {
   '/roasters/$roasterId': typeof RoastersRoasterIdRoute
   '/roasters/new': typeof RoastersNewRoute
   '/settings/about': typeof SettingsAboutRoute
+  '/settings/account': typeof SettingsAccountRoute
   '/settings/ai': typeof SettingsAiRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/drinks': typeof SettingsDrinksRoute
@@ -398,12 +432,16 @@ export interface FileRoutesByFullPath {
   '/api/replication/push': typeof ApiReplicationPushRoute
   '/api/shottimer/shots': typeof ApiShottimerShotsRoute
   '/api/shottimer/target': typeof ApiShottimerTargetRoute
+  '/api/account/exports/$jobId': typeof ApiAccountExportsJobIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/stats': typeof StatsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/api/auth-probe': typeof ApiAuthProbeRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/beans/$beanId': typeof BeansBeanIdRoute
   '/beans/new': typeof BeansNewRoute
   '/brewing-methods/$brewingMethodId': typeof BrewingMethodsBrewingMethodIdRoute
@@ -422,6 +460,7 @@ export interface FileRoutesByTo {
   '/roasters/$roasterId': typeof RoastersRoasterIdRoute
   '/roasters/new': typeof RoastersNewRoute
   '/settings/about': typeof SettingsAboutRoute
+  '/settings/account': typeof SettingsAccountRoute
   '/settings/ai': typeof SettingsAiRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/drinks': typeof SettingsDrinksRoute
@@ -454,14 +493,18 @@ export interface FileRoutesByTo {
   '/api/replication/push': typeof ApiReplicationPushRoute
   '/api/shottimer/shots': typeof ApiShottimerShotsRoute
   '/api/shottimer/target': typeof ApiShottimerTargetRoute
+  '/api/account/exports/$jobId': typeof ApiAccountExportsJobIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/settings': typeof SettingsRouteWithChildren
   '/stats': typeof StatsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/api/auth-probe': typeof ApiAuthProbeRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/beans/$beanId': typeof BeansBeanIdRoute
   '/beans/new': typeof BeansNewRoute
   '/brewing-methods/$brewingMethodId': typeof BrewingMethodsBrewingMethodIdRoute
@@ -480,6 +523,7 @@ export interface FileRoutesById {
   '/roasters/$roasterId': typeof RoastersRoasterIdRoute
   '/roasters/new': typeof RoastersNewRoute
   '/settings/about': typeof SettingsAboutRoute
+  '/settings/account': typeof SettingsAccountRoute
   '/settings/ai': typeof SettingsAiRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/drinks': typeof SettingsDrinksRoute
@@ -512,15 +556,19 @@ export interface FileRoutesById {
   '/api/replication/push': typeof ApiReplicationPushRoute
   '/api/shottimer/shots': typeof ApiShottimerShotsRoute
   '/api/shottimer/target': typeof ApiShottimerTargetRoute
+  '/api/account/exports/$jobId': typeof ApiAccountExportsJobIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/login'
     | '/settings'
     | '/stats'
+    | '/admin/users'
     | '/api/auth-probe'
     | '/api/health'
+    | '/api/mcp'
     | '/beans/$beanId'
     | '/beans/new'
     | '/brewing-methods/$brewingMethodId'
@@ -539,6 +587,7 @@ export interface FileRouteTypes {
     | '/roasters/$roasterId'
     | '/roasters/new'
     | '/settings/about'
+    | '/settings/account'
     | '/settings/ai'
     | '/settings/appearance'
     | '/settings/drinks'
@@ -571,12 +620,16 @@ export interface FileRouteTypes {
     | '/api/replication/push'
     | '/api/shottimer/shots'
     | '/api/shottimer/target'
+    | '/api/account/exports/$jobId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/login'
     | '/stats'
+    | '/admin/users'
     | '/api/auth-probe'
     | '/api/health'
+    | '/api/mcp'
     | '/beans/$beanId'
     | '/beans/new'
     | '/brewing-methods/$brewingMethodId'
@@ -595,6 +648,7 @@ export interface FileRouteTypes {
     | '/roasters/$roasterId'
     | '/roasters/new'
     | '/settings/about'
+    | '/settings/account'
     | '/settings/ai'
     | '/settings/appearance'
     | '/settings/drinks'
@@ -627,13 +681,17 @@ export interface FileRouteTypes {
     | '/api/replication/push'
     | '/api/shottimer/shots'
     | '/api/shottimer/target'
+    | '/api/account/exports/$jobId'
   id:
     | '__root__'
     | '/'
+    | '/login'
     | '/settings'
     | '/stats'
+    | '/admin/users'
     | '/api/auth-probe'
     | '/api/health'
+    | '/api/mcp'
     | '/beans/$beanId'
     | '/beans/new'
     | '/brewing-methods/$brewingMethodId'
@@ -652,6 +710,7 @@ export interface FileRouteTypes {
     | '/roasters/$roasterId'
     | '/roasters/new'
     | '/settings/about'
+    | '/settings/account'
     | '/settings/ai'
     | '/settings/appearance'
     | '/settings/drinks'
@@ -684,14 +743,18 @@ export interface FileRouteTypes {
     | '/api/replication/push'
     | '/api/shottimer/shots'
     | '/api/shottimer/target'
+    | '/api/account/exports/$jobId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LoginRoute: typeof LoginRoute
   SettingsRoute: typeof SettingsRouteWithChildren
   StatsRoute: typeof StatsRoute
+  AdminUsersRoute: typeof AdminUsersRoute
   ApiAuthProbeRoute: typeof ApiAuthProbeRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  ApiMcpRoute: typeof ApiMcpRoute
   BeansBeanIdRoute: typeof BeansBeanIdRoute
   BeansNewRoute: typeof BeansNewRoute
   BrewingMethodsBrewingMethodIdRoute: typeof BrewingMethodsBrewingMethodIdRoute
@@ -731,6 +794,7 @@ export interface RootRouteChildren {
   ApiReplicationPushRoute: typeof ApiReplicationPushRoute
   ApiShottimerShotsRoute: typeof ApiShottimerShotsRoute
   ApiShottimerTargetRoute: typeof ApiShottimerTargetRoute
+  ApiAccountExportsJobIdRoute: typeof ApiAccountExportsJobIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -740,6 +804,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -756,6 +827,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StatsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth-probe': {
       id: '/api/auth-probe'
       path: '/api/auth-probe'
@@ -768,6 +846,13 @@ declare module '@tanstack/react-router' {
       path: '/api/health'
       fullPath: '/api/health'
       preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mcp': {
+      id: '/api/mcp'
+      path: '/api/mcp'
+      fullPath: '/api/mcp'
+      preLoaderRoute: typeof ApiMcpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/beans/': {
@@ -966,6 +1051,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsAboutRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/settings/account': {
+      id: '/settings/account'
+      path: '/account'
+      fullPath: '/settings/account'
+      preLoaderRoute: typeof SettingsAccountRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/settings/ai': {
       id: '/settings/ai'
       path: '/ai'
@@ -1120,11 +1212,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiShottimerTargetRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/account/exports/$jobId': {
+      id: '/api/account/exports/$jobId'
+      path: '/api/account/exports/$jobId'
+      fullPath: '/api/account/exports/$jobId'
+      preLoaderRoute: typeof ApiAccountExportsJobIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface SettingsRouteChildren {
   SettingsAboutRoute: typeof SettingsAboutRoute
+  SettingsAccountRoute: typeof SettingsAccountRoute
   SettingsAiRoute: typeof SettingsAiRoute
   SettingsAppearanceRoute: typeof SettingsAppearanceRoute
   SettingsDrinksRoute: typeof SettingsDrinksRoute
@@ -1139,6 +1239,7 @@ interface SettingsRouteChildren {
 
 const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsAboutRoute: SettingsAboutRoute,
+  SettingsAccountRoute: SettingsAccountRoute,
   SettingsAiRoute: SettingsAiRoute,
   SettingsAppearanceRoute: SettingsAppearanceRoute,
   SettingsDrinksRoute: SettingsDrinksRoute,
@@ -1157,10 +1258,13 @@ const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LoginRoute: LoginRoute,
   SettingsRoute: SettingsRouteWithChildren,
   StatsRoute: StatsRoute,
+  AdminUsersRoute: AdminUsersRoute,
   ApiAuthProbeRoute: ApiAuthProbeRoute,
   ApiHealthRoute: ApiHealthRoute,
+  ApiMcpRoute: ApiMcpRoute,
   BeansBeanIdRoute: BeansBeanIdRoute,
   BeansNewRoute: BeansNewRoute,
   BrewingMethodsBrewingMethodIdRoute: BrewingMethodsBrewingMethodIdRoute,
@@ -1200,6 +1304,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiReplicationPushRoute: ApiReplicationPushRoute,
   ApiShottimerShotsRoute: ApiShottimerShotsRoute,
   ApiShottimerTargetRoute: ApiShottimerTargetRoute,
+  ApiAccountExportsJobIdRoute: ApiAccountExportsJobIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

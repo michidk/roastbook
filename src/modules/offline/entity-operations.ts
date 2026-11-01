@@ -1,3 +1,4 @@
+import { getOfflineOwner } from '@/lib/journal-owner'
 import { deleteOfflineBlob, putOfflineBlob } from '@/modules/offline/blob-store'
 import {
   getLocalEntityByServerId,
@@ -9,10 +10,9 @@ import {
   cancelOperation,
   putOperation,
 } from '@/modules/offline/operation-queue'
-import {
-  DEFAULT_OWNER_KEY,
-  type OfflineEntityType,
-  type OfflineOperation,
+import type {
+  OfflineEntityType,
+  OfflineOperation,
 } from '@/modules/offline/operations'
 import { requestPendingSync } from '@/modules/offline/sync-trigger'
 
@@ -55,7 +55,7 @@ function newOperation(
     ...input,
     id,
     idempotencyKey: id,
-    ownerKey: DEFAULT_OWNER_KEY,
+    ownerKey: getOfflineOwner(),
     createdAt: now,
     updatedAt: now,
     status: 'pending',

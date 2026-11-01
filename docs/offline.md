@@ -2,9 +2,12 @@
 
 The standard edition can journal brews and recipes while the browser is
 offline. The demo disables installation, offline storage, queues, and
-replication. The app shell, reference data, and visited detail routes are cached
-after an online
-visit. Pending work lives in IndexedDB and syncs when connectivity returns.
+replication. With authentication disabled, the app shell, reference data, and
+visited detail
+routes are cached after an online visit. With built-in accounts, authenticated
+HTML is never cached by the service worker. Keep an authenticated tab open to
+continue journaling offline; a cold offline launch shows the offline fallback.
+Pending work lives in IndexedDB and syncs when connectivity returns.
 
 ## What works offline
 
@@ -47,7 +50,8 @@ Read requests stop waiting after ten seconds; queued writes stay on the device.
 - A queued item is marked acknowledged only after a successful server response.
   If the app closes after the server commits but before the response arrives,
   the next retry returns the same row and acknowledges the operation.
-- Edits carry the entity's numeric revision as a base revision. If the server row
+- Edits carry the entity's numeric revision as a base revision. If the server
+row
   changed in the meantime, the operation becomes `conflict` and the pending
   page offers **Keep local** or **Accept server**.
 - Deletes are idempotent; a retry after a lost delete response succeeds when
@@ -84,9 +88,12 @@ Statuses are `pending`, `in-flight`, `retryable`, `permanent`,
 `auth-required`, `conflict`, `cancelled`, and `acknowledged`. Acknowledged and
 cancelled records remain in IndexedDB as local audit or tombstone records but
 are hidden from the pending UI. The operation log is owner-scoped. The current
-single-user Hodor deployment uses the `local` owner key; the same field is the
-seam for per-user scoping if the authentication boundary later exposes an
-identity.
+shared Hodor deployment uses the `local` owner key. Built-in accounts use
+their user ID and separate RxDB databases. Every queued mutation and replication
+request includes its original owner; the server rejects a cookie for a different
+account. Signing out checks for pending work and clears that account's local
+database. A sign-in change in another tab reloads existing tabs. Legacy `local`
+caches stay separate when enabling accounts; sync them before upgrading.
 
 Pending brew and recipe creates, brew/recipe edits and deletes, image
 operations, and save-to-recipe operations are stored in this log. Existing

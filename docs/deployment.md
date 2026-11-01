@@ -1,54 +1,128 @@
 # Deployment
 
-A read-only demo build deploys to Vercel — see [docs/demo-mode.md](demo-mode.md).
+A read-only demo build deploys to Vercel — see
+[docs/demo-mode.md](demo-mode.md).
 
 ## Security boundary
 
-Roastbook is a single-user application. It delegates authentication to the
-Hodor reverse proxy rather than maintaining application users or sessions.
-TanStack server functions are RPC endpoints and must not be exposed by
-bypassing that proxy.
+Roastbook supports two self-hosted configurations and a hosted multi-user
+configuration. Every account has a private coffee journal. Administrator status
+allows listing users, changing their roles, and deleting accounts. It does not
+grant access to another person's journal through application endpoints.
 
-- Docker Compose publishes Hodor and keeps the application container private.
-- The Helm Service targets Hodor when enabled, and the default NetworkPolicy
-  restricts ingress to the selected public container port on application pods
-  without selecting bundled PostgreSQL or migration pods.
-- If Hodor is disabled, provide an equivalent authenticated proxy or deploy
-  only on a trusted network.
-- Configure TLS in production. Helm enables secure cookies when ingress TLS is
-  configured; Compose users set `HODOR_SECURE_COOKIE=true`.
+| Configuration | Authentication | Journal ownership |
+| --- | --- | --- |
+| `docker-compose.yaml` | Hodor, auth disabled | Shared journal |
+| `docker-compose.auth.yaml` | Email codes and passkeys | Private journals |
+| Hosted | Built-in auth | Open signup |
 
-Reserved Hodor paths are `/_gate/login`, `/_gate/logout`, and `/_gate/health`.
+Hodor is optional when built-in authentication is enabled. With both disabled,
+everyone who can reach the application can access the default journal. Protect
+that installation with a trusted proxy or private network. Hodor remains an
+optional additional gate, with reserved paths `/_gate/login`, `/_gate/logout`,
+and `/_gate/health`.
 
-Compose and Helm configure Hodor to pass `/api/shottimer/*` through without a
-login. Those endpoints authenticate the device with their own bearer token and
-reject every request until the integration is enabled; see
-[Shottimer API](shottimer.md).
+Terminate TLS in production and overwrite the configured client IP header at
+the trusted proxy. Keep the direct app port private and reject requests with
+unexpected Host values. In hosted mode set `AUTH_ADMIN_EMAIL` before accepting
+signups. In self-hosted mode keep initial setup private until the first verified
+user has claimed the journal.
+
+Journal requests use a transaction-local identity and the restricted
+`roastbook_journal` PostgreSQL role. Forced row-level security covers every
+journal table, including images, preferences, AI logs, and replication state.
+Ownership triggers reject references to another account's records. A separate
+control connection handles authentication, bootstrap, administrative account
+actions, and durable jobs. Use the same database owner for migrations and the
+application. Migration 0066 creates and grants a restricted NOLOGIN role and
+requires permission to create roles or an administrator-prepared equivalent.
+The runtime database owner does not need superuser or BYPASSRLS privileges.
+
+## Upgrading an existing journal
+
+1. Back up PostgreSQL and uploaded files and verify that both can be restored.
+2. Stop application writers and apply all committed migrations with
+   `bun run db:migrate` using the application's database owner.
+3. Keep `AUTH_ENABLED=false` to retain the shared journal and existing offline
+   owner `local`. Existing data receives that default ownership.
+4. To adopt accounts, configure email, `AUTH_URL`, and `AUTH_SECRET`, enable
+   authentication, and sign in privately as the intended first administrator.
+   The first verified self-hosted account claims the existing journal once,
+   inside a locked transaction.
+5. Start the account worker and verify sign-in, image access, and an export
+   before reopening the instance to other users.
+
+Sync pending offline changes before enabling accounts. Legacy browser caches
+are preserved under `local` and are never silently assigned to a new account.
+Disabling authentication on a database with multiple accounts is rejected;
+consolidating journals requires an explicit migration and backup.
+
+Existing shottimer and MCP clients must receive newly generated bearer tokens.
+Legacy shottimer hashes cannot identify an account and are not accepted.
 
 ## MCP
 
-Roastbook serves MCP at `/api/mcp` as stateless Streamable HTTP (protocol
-2026-07-28). **The endpoint has no authentication**: anyone who can reach it
-can call every tool left enabled on **Settings → AI access (MCP)**, including
-the write tool that logs brews. Security rests on two layers:
+`/api/mcp` serves stateless Streamable HTTP with protocol 2026-07-28. Every
+request requires `Authorization: Bearer <token>`, even when built-in login is
+disabled. Create and revoke tokens under Settings > AI access (MCP), or under
+Account > Connected applications. The token is shown once, stored as a hash,
+and expires after one year. It grants access only to its owner's enabled tools.
+Account deletion immediately revokes these credentials.
 
-1. **Network restriction.** Never route `/api/mcp` through Hodor, an Ingress or
-   any public proxy. Compose publishes it on `127.0.0.1:${MCP_PORT:-3001}`
-   only. In Helm, `mcp.enabled` adds a private `<release>-mcp` ClusterIP Service
-   and a NetworkPolicy rule limited to `mcp.allowedCidrs` and
-   `mcp.allowedNamespaces`; see [the chart README](../charts/README.md#mcp).
-   Otherwise use a firewall or a private VPN.
-2. **Host and Origin validation** on every request against loopback plus
-   `MCP_ALLOWED_HOSTS` / `MCP_ALLOWED_ORIGINS`; anything else gets `403`, which
-   blocks DNS rebinding. No CORS headers are sent.
+The ten read tools cover brews, beans, recipes, gear, roasters, brewing methods,
+and statistics. `create_brew` logs a brew. No tool deletes or edits existing
+data.
+Tool availability and audit history belong to the account. Tokens are scoped
+to their integration type; a shottimer token cannot authenticate MCP.
+
+Native clients send a bearer header. There is no MCP OAuth discovery or browser
+consent flow in this implementation. For Codex, store the token in your client
+environment and configure its name without putting the token in a command:
 
 ```bash
-codex mcp add roastbook --url http://127.0.0.1:3001/api/mcp
+codex mcp add roastbook --url http://127.0.0.1:3001/api/mcp \
+  --bearer-token-env-var ROASTBOOK_MCP_TOKEN
 ```
 
-There is no login step. The ten read tools list and read brews, beans, recipes,
-gear, roasters, brewing methods and statistics; `create_brew` logs a new brew.
-No tool deletes or edits existing data.
+Host and Origin allowlists also apply, with no CORS headers. Configure
+`MCP_ALLOWED_HOSTS` for additional public or VPN hostnames. The canonical
+`AUTH_URL` hostname is allowed automatically. Compose's Hodor example
+keeps the device port on loopback; the authenticated example serves MCP on
+the app origin. Helm can create a private integration Service with CIDR or
+namespace restrictions. Keep those restrictions when a private endpoint is
+sufficient. See [chart documentation](../charts/README.md#mcp).
+
+Shottimer devices use separate user-bound bearer tokens and must also be enabled
+in that journal. Hodor's shottimer bypass delegates authentication to this token
+check. See [Shottimer API](shottimer.md).
+
+## Accounts, exports, and deletion
+
+Account settings support display-name changes, email changes approved through
+the old address and verified through the new address, passkey management, and
+signing out other devices. Admin users have a separate `/admin/users` page.
+The last active administrator cannot be demoted or deleted.
+
+Run `bun run worker` with the same database, email, and storage configuration as
+the app. The authenticated Compose example runs a worker service; Helm runs a
+worker sidecar when `auth.enabled=true`. Multiple workers claim jobs through
+PostgreSQL leases and locks. They need temporary disk space for ZIP archives.
+Monitor worker errors, job age, and disk/storage usage.
+
+Users may request one export per hour after signing in again. The ZIP contains
+`account.json`, a versioned manifest, JSON Lines data files, and original
+images.
+It excludes authentication credentials and integration secrets. Downloads are
+authorized by account and expire after 24 hours. The worker removes expired
+archives. Exports retry up to four times. Large archives temporarily serialize
+writes to that journal to keep their data consistent.
+
+Self-deletion requires an emailed one-time confirmation followed by an explicit
+button press while signed in to the same account. Admin deletion requires a
+fresh admin session and explicit UI confirmation. Both revoke sessions and
+integration tokens immediately, then queue file and database cleanup. Failed
+deletions retry with backoff, capped at one hour between attempts. Database
+backups retain historical data until the operator's backup retention expires.
 
 ## PWA and HTTPS
 
@@ -90,8 +164,8 @@ docker run --rm -p 3000:3000 \
   roastbook
 ```
 
-The direct application port is unauthenticated. Put Hodor or an equivalent gate
-in front of it.
+The direct application port uses the selected authentication mode. For a
+shared journal, put Hodor or an equivalent gate in front of it.
 
 ## Docker Compose
 
@@ -105,10 +179,25 @@ cp .env.example .env
 docker compose up --build
 ```
 
+### Built-in multi-user authentication
+
+Use this standalone file instead of combining it with the Hodor example:
+
+```bash
+# Set AUTH_URL, AUTH_SECRET, EMAIL_FROM, and SMTP_URL or RESEND_API_KEY in .env.
+docker compose -f docker-compose.auth.yaml up --build
+```
+
+Set `EMAIL_PROVIDER=resend` to use Resend. Set `AUTH_SIGNUP_ENABLED=false` after
+initial setup to close registration while existing users can still sign in.
+Use `AUTH_ADMIN_EMAIL` and `DEPLOYMENT_MODE=hosted` for a hosted deployment.
+Both files share volume names within a Compose project; back up and stop the
+old stack before changing configuration.
+
 ### Upgrading PostgreSQL from an earlier major version
 
 PostgreSQL data volumes are tied to a major version, so a volume created by
-`postgres:16` will not start under `postgres:17`. Upgrade existing Compose
+`postgres:16` will not start under `postgres:18`. Upgrade existing Compose
 deployments with a dump and restore:
 
 ```bash
@@ -122,7 +211,7 @@ tail -1 roastbook-backup.sql   # must end with "cluster dump complete"
 docker compose down
 docker volume rm "$(basename "$PWD")_postgres_data"
 
-# 4. Start PostgreSQL 17 with an empty volume and restore.
+# 4. Start PostgreSQL 18 with an empty volume and restore.
 docker compose up -d postgres
 docker compose exec -T postgres psql -U roastbook -d roastbook \
   < roastbook-backup.sql
@@ -133,7 +222,7 @@ docker compose up -d
 
 The restore reports two `already exists` errors for the bootstrap role and
 database; they are harmless. If the Compose file was already updated to
-`postgres:17` before backing up, temporarily change the `postgres` service
+`postgres:18` before backing up, temporarily change the `postgres` service
 image back to `postgres:16`, run `docker compose up -d postgres`, and follow
 the steps above from the beginning.
 
@@ -164,6 +253,10 @@ Prefer existing Kubernetes Secrets in production. The chart accepts a full
 `DATABASE_URL` through `postgresql.existingSecret`, Hodor credentials through
 `hodor.existingSecret`, S3 credentials through
 `storage.s3.existingSecret`, and an AI key through `openai.existingSecret`.
+Built-in authentication uses
+`auth.enabled=true` and `auth.existingSecret`; see the chart README for its
+required environment keys. Set `hodor.enabled=false` when using built-in login
+without the extra proxy gate.
 
 The migration Job applies committed migrations during installs and upgrades.
 See `charts/README.md` for all supported database, storage, scaling, and secret
