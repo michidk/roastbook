@@ -1,4 +1,8 @@
 import { getOfflineRxDatabase } from '@/modules/rxdb/offline-database'
+import {
+  decodeStoredValue,
+  encodeStoredValue,
+} from '@/modules/rxdb/stored-values'
 import { deleteOfflineBlob } from './blob-store'
 import { getLocalEntityByServerId, removeLocalEntity } from './local-data'
 import {
@@ -47,7 +51,9 @@ export async function getOperation(
 ): Promise<OfflineOperation | undefined> {
   const database = await getOfflineRxDatabase()
   const document = await database.operations.findOne(id).exec()
-  return document?.toJSON() as OfflineOperation | undefined
+  return document
+    ? (decodeStoredValue(document.toJSON()) as OfflineOperation)
+    : undefined
 }
 
 export async function listOperations(
@@ -55,7 +61,7 @@ export async function listOperations(
 ): Promise<OfflineOperation[]> {
   const database = await getOfflineRxDatabase()
   const operations = (await database.operations.find().exec()).map(
-    (document) => document.toJSON() as OfflineOperation,
+    (document) => decodeStoredValue(document.toJSON()) as OfflineOperation,
   )
   const ownerKey = options.ownerKey ?? DEFAULT_OWNER_KEY
   return operations
@@ -78,7 +84,11 @@ export async function putOperation(operation: OfflineOperation): Promise<void> {
   if (existing && isTerminalOperationStatus(existing.status)) {
     throw new Error('A completed offline operation cannot be replaced')
   }
-  await database.operations.upsert(operation)
+  await database.operations.upsert({
+    ...operation,
+    payload: encodeStoredValue(operation.payload),
+    details: encodeStoredValue(operation.details),
+  })
 }
 
 export async function updateOperation(

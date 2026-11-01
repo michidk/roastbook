@@ -34,11 +34,12 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
-import { getErrorMessage } from '@/lib/error-message'
+import { useFeatureAvailability } from '@/hooks/use-feature-availability'
 import {
   getShotRecommendation,
   getShotRecommendationOptions,
-} from '@/lib/server/shot-recommendations'
+} from '@/lib/client/ai-recommendations'
+import { getErrorMessage } from '@/lib/error-message'
 import {
   isFocusedShotRecommendationRequest,
   type ShotRecommendationRequest,
@@ -74,6 +75,7 @@ export function AiRecommendationDialog({
    */
   readonly showDisabledReason?: boolean
 }) {
+  const availability = useFeatureAvailability('ai', enabled)
   const [options, setOptions] = useState<
     Awaited<ReturnType<typeof getShotRecommendationOptions>>
   >([])
@@ -146,9 +148,11 @@ export function AiRecommendationDialog({
     }
   }
 
-  const buttonTitle = !request
-    ? 'Choose beans and a brewing method first'
-    : undefined
+  const buttonTitle = !availability.available
+    ? availability.reason
+    : !request
+      ? 'Choose beans and a brewing method first'
+      : undefined
   const helpText = isFocusedShot
     ? 'Assesses this brew and suggests the next adjustment. Uses its beans, method, exact gear, parameters, tasting result, and matching history.'
     : 'Suggests the next controlled brew adjustment from the latest completed brew for the selected beans and its history. Unsaved form values are not used.'
@@ -168,7 +172,7 @@ export function AiRecommendationDialog({
               variant="outline"
               size={size}
               className={className ? 'min-w-0 flex-1' : undefined}
-              disabled={!request}
+              disabled={!request || !availability.available}
               title={visibleDisabledReason ? undefined : buttonTitle}
               onClick={() => {
                 void startRecommendation()

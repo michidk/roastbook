@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
+import { loadEntityDetail } from '@/lib/client/cached-reads'
 import { parseEditModeSearch } from '@/lib/edit-mode'
 import { parseIdParam } from '@/lib/route-params'
 import { searchValidator } from '@/lib/search-params'
@@ -10,7 +11,6 @@ import { getDrinkConfiguration } from '@/lib/server/drink-options'
 import { getGear } from '@/lib/server/gear'
 import { getRecipe } from '@/lib/server/recipes'
 import { getDrinkTypeSuggestions } from '@/lib/server/suggestions'
-import { canUseOfflineCache } from '@/modules/offline/errors'
 import { RecipeDetailPage } from '@/routes/recipes/-components/recipe-detail-page'
 
 type RecipeDetailData = Awaited<ReturnType<typeof loadRecipeDetail>>
@@ -36,29 +36,11 @@ export const Route = createFileRoute('/recipes/$recipeId')({
   loader: async ({ params }): Promise<RecipeDetailLoaderData> => {
     const recipeId = parseIdParam(params.recipeId)
 
-    try {
-      return await loadRecipeDetail(recipeId)
-    } catch (error) {
-      if (!canUseOfflineCache(error)) throw error
-
-      try {
-        const { readCachedEntityDetail } = await import(
-          '@/modules/offline/entity-detail-cache'
-        )
-        const cached = await readCachedEntityDetail<RecipeDetailData>(
-          'recipe',
-          recipeId,
-        )
-        if (cached) {
-          return { ...cached.data, offlineSnapshotSavedAt: cached.savedAt }
-        }
-      } catch {
-        // Fall through to the original loader error when the cache is
-        // unavailable or corrupt.
-      }
-
-      throw error
-    }
+    return loadEntityDetail({
+      entityType: 'recipe',
+      id: recipeId,
+      load: () => loadRecipeDetail(recipeId),
+    })
   },
   component: RecipeDetailPage,
   pendingComponent: DetailPending,

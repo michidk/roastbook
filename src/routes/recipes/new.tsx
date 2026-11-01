@@ -11,16 +11,19 @@ import { RecipeForm } from '@/components/recipes/recipe-form'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import { Button } from '@/components/ui/button'
+import { useReferenceSnapshot } from '@/hooks/use-reference-snapshot'
+import { loadReferenceData } from '@/lib/client/cached-reads'
 import { getActiveBeans } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
 import { getDrinkConfiguration } from '@/lib/server/drink-options'
 import { getGear } from '@/lib/server/gear'
 import { getGearSets } from '@/lib/server/gear-sets'
 import { getDrinkTypeSuggestions } from '@/lib/server/suggestions'
-import { canUseOfflineCache } from '@/modules/offline/errors'
 
 type RecipeNewData = Awaited<ReturnType<typeof loadRecipeNewData>>
-type CachedRecipeReferenceData = RecipeNewData
+type CachedRecipeReferenceData = RecipeNewData & {
+  readonly offlineSnapshotSavedAt?: string
+}
 
 type CachedNewBrewReferenceData = {
   readonly beans: RecipeNewData['beans']
@@ -46,55 +49,16 @@ async function loadRecipeNewData() {
 
 export const Route = createFileRoute('/recipes/new')({
   loader: async (): Promise<CachedRecipeReferenceData> => {
-    try {
-      const data = await loadRecipeNewData()
-      if (typeof window !== 'undefined') {
-        const { writeCachedReferenceData } = await import(
-          '@/modules/offline/reference-cache'
-        )
-        await writeCachedReferenceData('recipe-new', 1, data).catch(
-          () => undefined,
-        )
-      }
-      return data
-    } catch (error) {
-      if (!canUseOfflineCache(error)) throw error
-
-      try {
-        const { readCachedReferenceData } = await import(
-          '@/modules/offline/reference-cache'
-        )
-        const cached = await readCachedReferenceData<CachedRecipeReferenceData>(
-          'recipe-new',
-          1,
-        )
-        if (cached) return cached.data
-      } catch {
-        // Fall through to the new-brew snapshot below.
-      }
-
-      try {
+    return loadReferenceData({
+      key: 'recipe-new',
+      load: loadRecipeNewData,
+      fallback: async () => {
         const { readCachedNewBrewReferenceData } = await import(
           '@/modules/offline/reference-data'
         )
-        const cached =
-          await readCachedNewBrewReferenceData<CachedNewBrewReferenceData>()
-        if (cached) {
-          return {
-            beans: cached.data.beans,
-            methods: cached.data.methods,
-            gear: cached.data.gear,
-            gearSets: cached.data.gearSets,
-            drinks: cached.data.drinks,
-            drinkTypeSuggestions: cached.data.drinkTypeSuggestions,
-          }
-        }
-      } catch {
-        // Fall through to the original loader error when no snapshot exists.
-      }
-
-      throw error
-    }
+        return readCachedNewBrewReferenceData<CachedNewBrewReferenceData>()
+      },
+    })
   },
   component: NewRecipePage,
   pendingComponent: DetailPending,
@@ -104,8 +68,9 @@ export const Route = createFileRoute('/recipes/new')({
 })
 
 function NewRecipePage() {
-  const { beans, methods, gear, gearSets, drinks, drinkTypeSuggestions } =
-    Route.useLoaderData()
+  const data = Route.useLoaderData()
+  useReferenceSnapshot('recipe-new', data, data.offlineSnapshotSavedAt)
+  const { beans, methods, gear, gearSets, drinks, drinkTypeSuggestions } = data
   const navigate = useNavigate()
   const router = useRouter()
 

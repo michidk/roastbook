@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
+import { DEMO_MODE } from '@/lib/build-mode'
 import { isStandalone } from '@/lib/standalone'
 
 const UPDATE_TOAST_ID = 'pwa-update'
@@ -8,6 +9,30 @@ export function PwaManager() {
   const updateRequestedRef = useRef(false)
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      if ('serviceWorker' in navigator) {
+        void navigator.serviceWorker
+          .getRegistrations()
+          .then((registrations) =>
+            Promise.all(
+              registrations
+                .filter((registration) =>
+                  [
+                    registration.active,
+                    registration.waiting,
+                    registration.installing,
+                  ].some(
+                    (worker) =>
+                      worker && new URL(worker.scriptURL).pathname === '/sw.js',
+                  ),
+                )
+                .map((registration) => registration.unregister()),
+            ),
+          )
+          .catch(() => undefined)
+      }
+      return
+    }
     if (import.meta.env.DEV) return
     if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) {
       return

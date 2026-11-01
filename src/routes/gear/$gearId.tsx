@@ -3,11 +3,12 @@ import {
   stripSearchParams,
   useNavigate,
 } from '@tanstack/react-router'
-import { useEffect } from 'react'
 import { GearDetailPage } from '@/components/gear/gear-detail-page'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import type { ShotsTableServerPagination } from '@/components/shots/shots-table'
+import { useEntitySnapshot } from '@/hooks/use-entity-snapshot'
+import { loadEntityDetail } from '@/lib/client/cached-reads'
 import { nextSortDirection } from '@/lib/collection-sort'
 import { parseEditModeSearch } from '@/lib/edit-mode'
 import { parseIdParam } from '@/lib/route-params'
@@ -19,7 +20,6 @@ import {
 } from '@/lib/search-params'
 import { checkGearResearchEnabled, getGearById } from '@/lib/server/gear'
 import { getGearShotPage } from '@/lib/server/shots'
-import { canUseOfflineCache } from '@/modules/offline/errors'
 
 type GearDetailSearch = {
   readonly brewPage: number
@@ -81,37 +81,19 @@ export const Route = createFileRoute('/gear/$gearId')({
   loader: async ({ params, deps }): Promise<GearDetailLoaderData> => {
     const gearId = parseIdParam(params.gearId)
 
-    try {
-      return await loadGearDetail(gearId, deps)
-    } catch (error) {
-      if (!canUseOfflineCache(error)) throw error
-
-      try {
-        const { readCachedEntityDetail } = await import(
-          '@/modules/offline/entity-detail-cache'
-        )
-        const cached = await readCachedEntityDetail<
-          GearDetailData & { readonly query?: GearDetailSearch }
-        >('gear', gearId)
-        if (cached) {
-          const query = cached.data.query
-          if (
-            query &&
-            (query.brewPage !== deps.brewPage ||
-              query.brewSort !== deps.brewSort ||
-              query.brewDirection !== deps.brewDirection)
-          ) {
-            throw error
-          }
-          return { ...cached.data, offlineSnapshotSavedAt: cached.savedAt }
-        }
-      } catch {
-        // Fall through to the original loader error when the cache is
-        // unavailable or corrupt.
-      }
-
-      throw error
-    }
+    return loadEntityDetail({
+      entityType: 'gear',
+      id: gearId,
+      load: async () => ({
+        ...(await loadGearDetail(gearId, deps)),
+        query: deps,
+      }),
+      accepts: (data) =>
+        !data.query ||
+        (data.query.brewPage === deps.brewPage &&
+          data.query.brewSort === deps.brewSort &&
+          data.query.brewDirection === deps.brewDirection),
+    })
   },
   component: GearDetailRoute,
   pendingComponent: DetailPending,
@@ -121,36 +103,12 @@ export const Route = createFileRoute('/gear/$gearId')({
 })
 
 function GearDetailRoute() {
-  const { gear, shotPage, researchEnabled, offlineSnapshotSavedAt } =
-    Route.useLoaderData()
+  const detailData = Route.useLoaderData()
+  const { gear, shotPage, researchEnabled, offlineSnapshotSavedAt } = detailData
   const search = Route.useSearch()
   const navigate = useNavigate({ from: '/gear/$gearId' })
 
-  useEffect(() => {
-    if (!gear || offlineSnapshotSavedAt) return
-    void import('@/modules/offline/entity-detail-cache')
-      .then(({ cacheEntityDetail }) =>
-        cacheEntityDetail('gear', gear.id, {
-          gear,
-          shotPage,
-          researchEnabled,
-          query: {
-            brewPage: search.brewPage,
-            brewSort: search.brewSort,
-            brewDirection: search.brewDirection,
-          },
-        }),
-      )
-      .catch(() => undefined)
-  }, [
-    gear,
-    shotPage,
-    researchEnabled,
-    offlineSnapshotSavedAt,
-    search.brewPage,
-    search.brewSort,
-    search.brewDirection,
-  ])
+  useEntitySnapshot('gear', gear?.id, detailData, offlineSnapshotSavedAt)
 
   const updateShotSearch = (values: Partial<typeof search>) =>
     navigate({ search: (current) => ({ ...current, ...values }) })

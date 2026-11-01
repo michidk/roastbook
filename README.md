@@ -323,6 +323,7 @@ running.
 | [Configuration reference](docs/configuration.md) | Every environment variable |
 | [Read-only demo mode](docs/demo-mode.md) | How the PGlite demo is built |
 | [Offline journaling](docs/offline.md) | Offline brew/recipe work, conflicts, and sync |
+| [Client data boundaries](docs/client-data.md) | Feature commands, caching, and mode policies |
 | [Deployment](docs/deployment.md) | Docker, Helm, security boundary |
 | [Shottimer API](docs/shottimer.md) | Device integration endpoints |
 | [Design system](DESIGN.md) | Layout contract and UI conventions |

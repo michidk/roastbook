@@ -1,14 +1,16 @@
 # Offline journaling
 
-Roastbook can journal brews and recipes while the browser is offline. The app
-shell, reference data, and visited detail routes are cached after an online
+The standard edition can journal brews and recipes while the browser is
+offline. The demo disables installation, offline storage, queues, and
+replication. The app shell, reference data, and visited detail routes are cached
+after an online
 visit. Pending work lives in IndexedDB and syncs when connectivity returns.
 
 ## What works offline
 
 - Creating, editing, and deleting brews.
-- Creating, editing, and deleting recipes, including saving a brew into a
-  recipe.
+- Creating, copying, editing, and deleting recipes, including saving a brew
+  into a recipe.
 - Attaching and removing brew pictures.
 - Logging a brew with the new-brew form, including the tasting step.
 - Reopening brew, recipe, bean, or gear detail pages that were viewed online,
@@ -45,7 +47,7 @@ Read requests stop waiting after ten seconds; queued writes stay on the device.
 - A queued item is marked acknowledged only after a successful server response.
   If the app closes after the server commits but before the response arrives,
   the next retry returns the same row and acknowledges the operation.
-- Edits carry the entity's `updatedAt` as a base revision. If the server row
+- Edits carry the entity's numeric revision as a base revision. If the server row
   changed in the meantime, the operation becomes `conflict` and the pending
   page offers **Keep local** or **Accept server**.
 - Deletes are idempotent; a retry after a lost delete response succeeds when
@@ -192,27 +194,28 @@ and account actions remain online-only.
   record with the expected values. Also exercise an interrupted sync, a
   conflict, and an expired session.
 
-## RxDB replication slice
+## Recipe replication
 
-The first RxDB vertical slice synchronizes the recipe projection through a
-browser-only RxDB database backed by the open-source Dexie storage adapter.
-`@tanstack/rxdb-db-collection` mirrors that collection into TanStack DB for
-reactive client queries, while RxDB owns durable writes, replication metadata,
-retry, and multi-tab leadership.
+RxDB stores local journal operations and cached data using the Dexie storage
+adapter. The operation log is the sole local write path for brew and recipe
+forms, including recipe duplication and tasting recorded after a connection
+is lost. Server-only actions remain listed above.
 
-The replication endpoints are `/api/replication/pull` and
-`/api/replication/push`. Pull uses a monotonic PostgreSQL sequence checkpoint;
-push uses the recipe revision as the assumed master state and returns the
-current server document when a concurrent edit conflicts. Recipe writes made
-through the existing server functions append to the same change log in their
-transaction, so a second device can receive them without a separate worker.
+Recipe replication pulls the server projection from `/api/replication/pull`.
+Received changes refresh active route data; it resumes pulling when connectivity
+returns. Local recipe writes use the operation log and existing server
+functions. They never write through a second client replication push path.
+The server replication endpoints retain their validated revision contracts.
 
-The existing operation log remains authoritative for the current brew and
-recipe offline forms while this slice is validated. Future entity migrations
-must choose one local write path per entity before removing the older queue.
-RxDB collection schema versions and migration strategies are independent of
-Drizzle migrations; a client schema change must bump its RxDB version and
-preserve or explicitly resolve pending local writes.
+Dates in queued payloads and saved responses retain their types when stored
+in RxDB, so delayed sync and saved edit forms keep the original brew time.
+
+Client schema versions remain independent of Drizzle migrations. Preserve
+pending local writes when migrating client storage. Database recovery cancels
+replication before closing or resetting RxDB.
+
+Feature components use the shared commands and cached loaders described in
+[Client data boundaries](client-data.md).
 
 ## Installed app status
 

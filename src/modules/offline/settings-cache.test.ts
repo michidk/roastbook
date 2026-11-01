@@ -84,7 +84,10 @@ describe('offline settings cache', () => {
     try {
       const cached = await loadOfflineSettingsData<{ usage: number }>(
         'storage',
-        () => Promise.reject(new Error('offline')),
+        () =>
+          Promise.reject(
+            new TypeError('Failed to fetch Roastbook while offline'),
+          ),
       )
       expect(cached).toEqual({ usage: 42 })
     } finally {

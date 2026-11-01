@@ -54,3 +54,15 @@ queries, joins, pagination, and statistics therefore keep the same abstraction
 as the PostgreSQL edition while the deployment remains stateless. The public
 demo warns that its first request may be slower while a serverless instance
 starts and restores the database snapshot.
+
+## Installation and offline behavior
+
+The demo has no install manifest or offline page and does not open the local
+journal database, queue changes, or start replication. Its install banner
+explains the self-hosted app's offline support. Selecting Install shows a toast
+that installation is unavailable in the demo.
+
+A retiring service worker replaces workers published by older demo builds. It
+removes Roastbook shell caches and unregisters itself without handling network
+requests or deleting journal data. The runtime also unregisters old Roastbook
+workers when visiting the demo online.

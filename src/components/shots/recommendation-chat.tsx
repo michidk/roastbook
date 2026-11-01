@@ -15,8 +15,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Textarea } from '@/components/ui/textarea'
+import { chatAboutShotRecommendation } from '@/lib/client/ai-recommendations'
 import { getErrorMessage } from '@/lib/error-message'
-import { chatAboutShotRecommendation } from '@/lib/server/shot-recommendations'
 import type {
   ShotRecommendation,
   ShotRecommendationRequest,

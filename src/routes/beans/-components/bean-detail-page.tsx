@@ -27,6 +27,7 @@ import { ShotParameterCharts } from '@/components/shots/shot-parameter-charts'
 import { ShotsTable } from '@/components/shots/shots-table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
+import { useEntitySnapshot } from '@/hooks/use-entity-snapshot'
 import { useFormState } from '@/hooks/use-form-state'
 import { useOnlineStatus } from '@/hooks/use-online-status'
 import { estimateRemainingBeanWeight } from '@/lib/bean-weight'
@@ -47,6 +48,7 @@ import type { ExtractedBeanInfo } from '@/modules/ai/read-models'
 const routeApi = getRouteApi('/beans/$beanId')
 
 export function BeanDetailPage() {
+  const detailData = routeApi.useLoaderData()
   const {
     bean,
     shotPage,
@@ -55,7 +57,7 @@ export function BeanDetailPage() {
     visionEnabled,
     researchEnabled,
     offlineSnapshotSavedAt,
-  } = routeApi.useLoaderData()
+  } = detailData
   const search = routeApi.useSearch()
   const isEditing = search.edit ?? false
   const navigate = useNavigate({ from: '/beans/$beanId' })
@@ -99,37 +101,7 @@ export function BeanDetailPage() {
     setAvailableRoasters(roasters)
   }, [roasters])
 
-  useEffect(() => {
-    if (!bean || offlineSnapshotSavedAt) return
-    void import('@/modules/offline/entity-detail-cache')
-      .then(({ cacheEntityDetail }) =>
-        cacheEntityDetail('bean', bean.id, {
-          bean,
-          shotPage,
-          shotAnalytics,
-          roasters,
-          visionEnabled,
-          researchEnabled,
-          query: {
-            brewPage: search.brewPage,
-            brewSort: search.brewSort,
-            brewDirection: search.brewDirection,
-          },
-        }),
-      )
-      .catch(() => undefined)
-  }, [
-    bean,
-    shotPage,
-    shotAnalytics,
-    roasters,
-    visionEnabled,
-    researchEnabled,
-    offlineSnapshotSavedAt,
-    search.brewPage,
-    search.brewSort,
-    search.brewDirection,
-  ])
+  useEntitySnapshot('bean', bean?.id, detailData, offlineSnapshotSavedAt)
 
   const currentPurchase =
     bean?.purchases.find((purchase) => !purchase.isArchived) ??

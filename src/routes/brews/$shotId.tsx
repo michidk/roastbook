@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
+import { loadEntityDetail } from '@/lib/client/cached-reads'
 import { parseEditModeSearch } from '@/lib/edit-mode'
 import { parseIdParam } from '@/lib/route-params'
 import { searchValidator } from '@/lib/search-params'
@@ -12,7 +13,6 @@ import { getRecipeOptions } from '@/lib/server/recipes'
 import { checkShotRecommendationEnabled } from '@/lib/server/shot-recommendations'
 import { getShot } from '@/lib/server/shots'
 import { getTasteTags } from '@/lib/server/taste-tags'
-import { canUseOfflineCache } from '@/modules/offline/errors'
 import { BrewDetailPage } from '@/routes/brews/-components/brew-detail-page'
 
 type BrewDetailData = Awaited<ReturnType<typeof loadBrewDetail>>
@@ -63,52 +63,33 @@ export const Route = createFileRoute('/brews/$shotId')({
   loader: async ({ params, deps }): Promise<BrewDetailLoaderData> => {
     const shotId = parseIdParam(params.shotId)
 
-    try {
-      return await loadBrewDetail(shotId, deps.edit)
-    } catch (error) {
-      if (!canUseOfflineCache(error)) throw error
-
-      try {
-        const { readCachedBrewDetail } = await import(
-          '@/modules/offline/brew-cache'
+    return loadEntityDetail({
+      entityType: 'brew',
+      id: shotId,
+      load: () => loadBrewDetail(shotId, deps.edit),
+      restore: async (data) => {
+        if (!deps.edit || data.editData) return data
+        const { readCachedNewBrewReferenceData } = await import(
+          '@/modules/offline/reference-data'
         )
-        const cached = await readCachedBrewDetail<BrewDetailData>(shotId)
-        if (cached?.data?.shot) {
-          let editData = cached.data.editData
-          if (deps.edit && !editData) {
-            try {
-              const { readCachedNewBrewReferenceData } = await import(
-                '@/modules/offline/reference-data'
-              )
-              const reference =
-                await readCachedNewBrewReferenceData<CachedBrewEditData>()
-              if (reference) {
-                editData = {
-                  beans: reference.data.beans,
-                  tasteTags: reference.data.tasteTags,
-                  gear: reference.data.gear,
-                  methods: reference.data.methods,
-                  drinks: reference.data.drinks,
-                }
-              }
-            } catch {
-              // Edit data stays unavailable; the page falls back to read-only.
+        const reference =
+          await readCachedNewBrewReferenceData<CachedBrewEditData>().catch(
+            () => undefined,
+          )
+        return reference
+          ? {
+              ...data,
+              editData: {
+                beans: reference.data.beans,
+                tasteTags: reference.data.tasteTags,
+                gear: reference.data.gear,
+                methods: reference.data.methods,
+                drinks: reference.data.drinks,
+              },
             }
-          }
-
-          return {
-            ...cached.data,
-            editData,
-            offlineSnapshotSavedAt: cached.savedAt,
-          }
-        }
-      } catch {
-        // Fall through to the original loader error when the cache is
-        // unavailable or corrupt.
-      }
-
-      throw error
-    }
+          : data
+      },
+    })
   },
   component: BrewDetailPage,
   pendingComponent: DetailPending,

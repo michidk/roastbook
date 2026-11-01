@@ -1,6 +1,9 @@
 import { Download, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { DEMO_INSTALL_MESSAGE } from '@/lib/app-capabilities'
+import { DEMO_MODE } from '@/lib/build-mode'
 import { usePreferencesStore } from '@/lib/preferences-store'
 import { isStandalone } from '@/lib/standalone'
 
@@ -26,6 +29,12 @@ export function InstallAppHint() {
   const [showIosHint, setShowIosHint] = useState(false)
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      const preventInstall = (event: Event) => event.preventDefault()
+      window.addEventListener('beforeinstallprompt', preventInstall)
+      return () =>
+        window.removeEventListener('beforeinstallprompt', preventInstall)
+    }
     if (isStandalone()) return
     // iOS Safari has no install prompt API, so explain the manual step instead.
     setShowIosHint(isIos())
@@ -43,11 +52,19 @@ export function InstallAppHint() {
     }
   }, [])
 
-  if (!hasHydrated || dismissed || (!installPrompt && !showIosHint)) {
+  if (
+    !hasHydrated ||
+    dismissed ||
+    (!DEMO_MODE && !installPrompt && !showIosHint)
+  ) {
     return null
   }
 
   const install = async () => {
+    if (DEMO_MODE) {
+      toast.info(DEMO_INSTALL_MESSAGE)
+      return
+    }
     if (!installPrompt) return
     await installPrompt.prompt()
     const { outcome } = await installPrompt.userChoice
@@ -67,12 +84,14 @@ export function InstallAppHint() {
         <div className="min-w-0 flex-1 leading-tight">
           <p className="font-display text-sm font-bold">Install Roastbook</p>
           <p className="text-xs text-muted-foreground">
-            {installPrompt
-              ? 'Use it offline, right from your home screen.'
-              : 'Tap Share, then Add to Home Screen to use it offline.'}
+            {DEMO_MODE
+              ? 'Install your self-hosted app for offline journaling.'
+              : installPrompt
+                ? 'Use it offline, right from your home screen.'
+                : 'Tap Share, then Add to Home Screen to use it offline.'}
           </p>
         </div>
-        {installPrompt ? (
+        {DEMO_MODE || installPrompt ? (
           <Button size="sm" onClick={() => void install()}>
             <Download aria-hidden="true" />
             Install

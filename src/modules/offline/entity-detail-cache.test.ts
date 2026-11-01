@@ -21,6 +21,16 @@ afterAll(async () => {
 })
 
 describe('cached entity details', () => {
+  test('preserves nested dates used by saved detail and edit forms', async () => {
+    const brewedAt = new Date('2026-10-25T09:30:00.000Z')
+    const data = {
+      shot: { id: 9, brewedAt },
+      beans: [{ purchases: [{ purchasedAt: brewedAt }] }],
+    }
+    await cacheEntityDetail('brew', 9, data)
+    expect((await readCachedEntityDetail('brew', 9))?.data).toEqual(data)
+  })
+
   test('stores and updates recipe details by server ID', async () => {
     await cacheEntityDetail('recipe', 7, {
       recipe: { id: 7, name: 'Morning' },

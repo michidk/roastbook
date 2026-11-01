@@ -12,6 +12,24 @@ import {
   readServiceWorkerTemplate,
 } from './service-worker-build'
 
+if (process.argv.includes('--demo')) {
+  const directory = process.argv.at(-1)
+  if (!directory || directory === '--demo')
+    throw new Error('Demo output directory is required')
+  for (const name of ['manifest.json', 'offline.html']) {
+    if (existsSync(join(directory, name)))
+      throw new Error(`Demo must not publish ${name}`)
+  }
+  const worker = await readFile(join(directory, 'sw.js'), 'utf8')
+  if (
+    !worker.includes('registration.unregister()') ||
+    worker.includes("addEventListener('fetch'")
+  )
+    throw new Error('Demo must publish only a retiring service worker')
+  console.log('Demo has no install manifest or offline handler')
+  process.exit(0)
+}
+
 const DEFAULT_OUTPUT_DIR = '.output/public'
 const REQUIRED_ICON_SIZES = ['192x192', '512x512'] as const
 const REQUIRED_ICON_PURPOSES = ['any', 'maskable'] as const

@@ -49,7 +49,7 @@ import {
 import { useOnlineStatus } from '@/hooks/use-online-status'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes'
-import { DEMO_MODE, DEMO_MODE_READ_ONLY_MESSAGE } from '@/lib/build-mode'
+import { addBrew, editBrew } from '@/lib/client/journal'
 import {
   type DrinkConfiguration,
   drinkConfigurationForBrewingMethod,
@@ -66,12 +66,7 @@ import type { getBrewingMethods } from '@/lib/server/brewing-methods'
 import type { getGear } from '@/lib/server/gear'
 import type { getGearSets } from '@/lib/server/gear-sets'
 import type { getRecipes } from '@/lib/server/recipes'
-import {
-  createShot,
-  createShotAndSaveRecipe,
-  getLastShotForBeanAndMethod,
-  updateShot,
-} from '@/lib/server/shots'
+import { getLastShotForBeanAndMethod } from '@/lib/server/shots'
 import type {
   getBeanSuggestions,
   getBrewingMethodSuggestions,
@@ -99,18 +94,9 @@ import {
   shotFormValuesWithGearSet,
   shotFormValuesWithRecipe,
 } from '@/modules/brews/shot-form-values'
-import { enqueueBrewSaveToRecipe } from '@/modules/offline/entity-operations'
-import { isNetworkError } from '@/modules/offline/errors'
-import {
-  enqueuePendingBrew,
-  updateQueuedBrewPayload,
-} from '@/modules/offline/pending-store'
+import { updateQueuedBrewPayload } from '@/modules/offline/pending-store'
 import { requestPendingSync } from '@/modules/offline/sync-trigger'
-import {
-  holdPendingBrewForTasting,
-  releasePendingBrewForTasting,
-} from '@/modules/offline/tasting-holds'
-import type { PendingBrewPayload } from '@/modules/offline/types'
+import { releasePendingBrewForTasting } from '@/modules/offline/tasting-holds'
 
 type NewShotFormData = {
   readonly beans: Awaited<ReturnType<typeof getActiveBeanPurchases>>
@@ -431,11 +417,6 @@ export function NewShotForm({
     targetRecipe: SaveToRecipeTarget | null,
     formElement?: HTMLFormElement,
   ) => {
-    if (DEMO_MODE) {
-      toast.info(DEMO_MODE_READ_ONLY_MESSAGE)
-      return false
-    }
-
     const timerValue = hasShotTimer ? timer.getValue() : undefined
     const submittedValues =
       timerValue === undefined
@@ -454,146 +435,51 @@ export function NewShotForm({
     const operationId = operationIdRef.current ?? crypto.randomUUID()
     operationIdRef.current = operationId
 
-    const enqueueBrew = async () => {
-      const payload: PendingBrewPayload = {
-        ...baseData,
-        clientOperationId: operationId,
-      }
-      const brewedAtValue =
-        baseData.brewedAt instanceof Date
-          ? baseData.brewedAt.toISOString()
-          : new Date().toISOString()
-      const shouldHoldForTasting = hasEnabledTasteProfileField(tasteProfile)
-
-      if (shouldHoldForTasting) holdPendingBrewForTasting(operationId)
-
-      try {
-        await enqueuePendingBrew({
-          operationId,
-          payload,
-          summary: {
-            beanName: selectedBean?.name ?? null,
-            methodName: selectedMethod?.name ?? 'Brew',
-            brewedAt: brewedAtValue,
-            doseGrams: baseData.doseGrams ?? null,
-            yieldGrams: baseData.yieldGrams ?? null,
-            shotTimeSeconds: baseData.shotTimeSeconds ?? null,
-          },
-          createdAt: new Date().toISOString(),
-          attempts: 0,
-          status: 'pending',
-        })
-      } catch (error) {
-        if (shouldHoldForTasting) {
-          releasePendingBrewForTasting(operationId)
-        }
-        throw error
-      }
-
-      operationIdRef.current = null
-      setIsDirty(false)
-      // The tasting step is part of the core workflow, so keep it available
-      // for a queued brew too. It updates the queued payload in place.
-      if (shouldHoldForTasting) {
-        setTasting({ kind: 'pending', operationId, values: submittedValues })
-      } else {
-        await onQueued()
-      }
-      return true
-    }
-
-    const enqueueSaveToRecipe = async (target: SaveToRecipeTarget) => {
-      const shouldHoldForTasting = hasEnabledTasteProfileField(tasteProfile)
-      if (shouldHoldForTasting) holdPendingBrewForTasting(operationId)
-
-      try {
-        await enqueueBrewSaveToRecipe(
-          operationId,
-          {
-            shot: { ...baseData, clientOperationId: operationId },
-            target:
-              target.kind === 'new'
-                ? { name: target.name }
-                : { recipeId: target.recipeId },
-          },
-          {
-            label: selectedBean?.name ?? 'Brew',
-            detail:
-              target.kind === 'new'
-                ? `New recipe: ${target.name}`
-                : 'Existing recipe',
-          },
-        )
-      } catch (error) {
-        if (shouldHoldForTasting) {
-          releasePendingBrewForTasting(operationId)
-        }
-        throw error
-      }
-
-      operationIdRef.current = null
-      setIsDirty(false)
-      if (shouldHoldForTasting) {
-        toast.success(
-          'Saved on this device. Add tasting now; the brew and recipe will sync when you reconnect.',
-        )
-        setTasting({ kind: 'pending', operationId, values: submittedValues })
-      } else {
-        toast.success(
-          'Saved on this device. The brew and recipe will sync when you reconnect.',
-        )
-        await onQueued()
-      }
-      return true
-    }
-
     setIsSubmitting(true)
     try {
-      if (!isOnline) {
-        return targetRecipe
-          ? await enqueueSaveToRecipe(targetRecipe)
-          : await enqueueBrew()
-      }
-
-      const shot = targetRecipe
-        ? (
-            await createShotAndSaveRecipe({
-              data: {
-                shot: { ...baseData, clientOperationId: operationId },
-                target:
-                  targetRecipe.kind === 'new'
-                    ? { name: targetRecipe.name }
-                    : { recipeId: targetRecipe.recipeId },
-              },
-            })
-          ).shot
-        : await createShot({
-            data: { ...baseData, clientOperationId: operationId },
-          })
-
+      const shouldTaste = hasEnabledTasteProfileField(tasteProfile)
+      const result = await addBrew({
+        data: { ...baseData, clientOperationId: operationId },
+        summary: {
+          beanName: selectedBean?.name ?? null,
+          methodName: selectedMethod?.name ?? 'Brew',
+          brewedAt:
+            baseData.brewedAt instanceof Date
+              ? baseData.brewedAt.toISOString()
+              : new Date().toISOString(),
+          doseGrams: baseData.doseGrams ?? null,
+          yieldGrams: baseData.yieldGrams ?? null,
+          shotTimeSeconds: baseData.shotTimeSeconds ?? null,
+        },
+        target: targetRecipe
+          ? targetRecipe.kind === 'new'
+            ? { name: targetRecipe.name }
+            : { recipeId: targetRecipe.recipeId }
+          : null,
+        holdForTasting: shouldTaste,
+      })
       operationIdRef.current = null
       setIsDirty(false)
-      // Tasting comes after the brew is saved, as an optional second step.
-      if (hasEnabledTasteProfileField(tasteProfile))
-        setTasting({ kind: 'saved', id: shot.id, values: submittedValues })
-      else await onSaved()
+      if (result.kind === 'queued') {
+        toast.success(
+          'Saved on this device. Your brew will sync when you reconnect.',
+        )
+        if (shouldTaste)
+          setTasting({
+            kind: 'pending',
+            operationId: result.operationId,
+            values: submittedValues,
+          })
+        else await onQueued()
+      } else if (shouldTaste) {
+        setTasting({
+          kind: 'saved',
+          id: result.value.id,
+          values: submittedValues,
+        })
+      } else await onSaved()
       return true
     } catch (error) {
-      if (isNetworkError(error) || !navigator.onLine) {
-        try {
-          return targetRecipe
-            ? await enqueueSaveToRecipe(targetRecipe)
-            : await enqueueBrew()
-        } catch (queueError) {
-          toast.error(
-            queueError instanceof Error
-              ? queueError.message
-              : 'Could not save this brew on this device',
-          )
-          return false
-        }
-      }
-
       toast.error(
         error instanceof Error ? error.message : 'Could not save this brew',
       )
@@ -615,8 +501,17 @@ export function NewShotForm({
       )
 
       if (tasting.kind === 'saved') {
-        await updateShot({ data: { id: tasting.id, ...data } })
-        await onSaved()
+        const result = await editBrew(
+          { id: tasting.id, ...data },
+          {
+            label: selectedBean?.name ?? 'Brew',
+            detail: selectedMethod?.name ?? 'Tasting',
+          },
+        )
+        if (result.kind === 'queued') {
+          toast.success('Tasting saved on this device')
+          await onQueued()
+        } else await onSaved()
       } else {
         await updateQueuedBrewPayload(tasting.operationId, {
           ...data,

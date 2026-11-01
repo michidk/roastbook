@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { DEMO_MODE } from '@/lib/build-mode'
 import { isStandalone } from '@/lib/standalone'
 
 function subscribe(onChange: () => void) {
@@ -12,5 +13,9 @@ function subscribe(onChange: () => void) {
 }
 
 export function usePwaMode(): boolean {
-  return useSyncExternalStore(subscribe, isStandalone, () => false)
+  return useSyncExternalStore(
+    subscribe,
+    () => !DEMO_MODE && isStandalone(),
+    () => false,
+  )
 }

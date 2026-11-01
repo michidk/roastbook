@@ -1,6 +1,8 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { dirname, normalize, relative, resolve } from 'node:path'
 
+import { checkClientBoundaries } from './client-boundaries'
+
 const sourceRoot = 'src'
 const importPattern = /(?:from\s+|import\s*\()(['"])([^'"]+)\1/g
 const failures: string[] = []
@@ -14,6 +16,7 @@ const files = (
 
 for (const path of files) {
   const source = await readFile(path, 'utf8')
+  failures.push(...checkClientBoundaries(path, source))
   for (const match of source.matchAll(importPattern)) {
     const target = match[2]
     if (!target) continue

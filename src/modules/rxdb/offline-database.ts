@@ -1,4 +1,5 @@
 import type { RxCollection, RxDatabase } from 'rxdb'
+import { requireFeature } from '@/lib/app-capabilities'
 import type { RecipeReplicationDocument } from '@/lib/replication-contracts'
 import type { LocalEntityRecord } from '@/modules/offline/local-data'
 import type {
@@ -45,6 +46,7 @@ export type OfflineRxDatabase = RxDatabase<OfflineCollections>
 let databasePromise: Promise<OfflineRxDatabase> | undefined
 
 export async function getOfflineRxDatabase(): Promise<OfflineRxDatabase> {
+  requireFeature('offline')
   if (typeof indexedDB === 'undefined') {
     throw new Error('The Roastbook offline database is browser-only')
   }
@@ -65,12 +67,17 @@ export async function getOfflineRxDatabase(): Promise<OfflineRxDatabase> {
           storage: getRxStorageDexie(),
           multiInstance: true,
         })
-        await database.addCollections({
-          operations: { schema: operationSchema },
-          entities: { schema: entitySchema },
-          recipes: { schema: recipeSchema },
-          blobs: { schema: blobSchema },
-        })
+        try {
+          await database.addCollections({
+            operations: { schema: operationSchema },
+            entities: { schema: entitySchema },
+            recipes: { schema: recipeSchema },
+            blobs: { schema: blobSchema },
+          })
+        } catch (error) {
+          await database.close().catch(() => undefined)
+          throw error
+        }
         return database
       },
     )
@@ -82,6 +89,8 @@ export async function getOfflineRxDatabase(): Promise<OfflineRxDatabase> {
 }
 
 export async function resetOfflineRxDatabase(): Promise<void> {
+  const { stopRecipeReplication } = await import('./replication')
+  await stopRecipeReplication()
   const database = await databasePromise?.catch(() => undefined)
   if (database) await database.close()
   databasePromise = undefined

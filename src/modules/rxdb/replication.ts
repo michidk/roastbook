@@ -1,14 +1,19 @@
 import { replicateRxCollection } from 'rxdb/plugins/replication'
-import type { ReplicationCheckpoint } from '@/lib/replication-contracts'
+import { requireFeature } from '@/lib/app-capabilities'
+import type {
+  RecipeReplicationDocument,
+  ReplicationCheckpoint,
+} from '@/lib/replication-contracts'
 import { getOfflineRxDatabase } from './offline-database'
-import type { OfflineRecipe } from './recipes'
+
+type OfflineRecipe = Omit<RecipeReplicationDocument, '_deleted'>
 
 type PullResult = {
   readonly documents: Array<OfflineRecipe & { readonly _deleted: boolean }>
   readonly checkpoint: ReplicationCheckpoint | undefined
 }
 
-let replicationStartPromise: Promise<void> | undefined
+let replicationStartPromise: ReturnType<typeof startReplication> | undefined
 
 async function postJson<T>(url: string, body: unknown): Promise<T> {
   const response = await fetch(url, {
@@ -22,7 +27,8 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
   return (await response.json()) as T
 }
 
-export async function startRecipeReplication(): Promise<void> {
+export async function startRecipeReplication() {
+  requireFeature('offline')
   replicationStartPromise ??= startReplication().catch((error: unknown) => {
     replicationStartPromise = undefined
     throw error
@@ -30,9 +36,9 @@ export async function startRecipeReplication(): Promise<void> {
   return replicationStartPromise
 }
 
-async function startReplication(): Promise<void> {
+async function startReplication() {
   const database = await getOfflineRxDatabase()
-  replicateRxCollection<OfflineRecipe, ReplicationCheckpoint>({
+  return replicateRxCollection<OfflineRecipe, ReplicationCheckpoint>({
     replicationIdentifier: 'roastbook-recipes-v1',
     collection: database.recipes,
     live: true,
@@ -47,9 +53,12 @@ async function startReplication(): Promise<void> {
           batchSize,
         }),
     },
-    push: {
-      batchSize: 50,
-      handler: (rows) => postJson('/api/replication/push', { rows }),
-    },
   })
+}
+
+export async function stopRecipeReplication(): Promise<void> {
+  const running = replicationStartPromise
+  replicationStartPromise = undefined
+  const replication = await running?.catch(() => undefined)
+  if (replication) await replication.cancel()
 }

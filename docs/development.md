@@ -195,8 +195,10 @@ boot. Brews created offline are queued in IndexedDB and synchronized; see
 [Offline journaling](offline.md).
 
 `bun run check:pwa` validates the manifest, icons, offline page, and built
-service worker after a build. For the demo output, pass its static directory:
-`bun run check:pwa .vercel/output/static`. The worker's runtime behavior
+service worker after a build. The demo disables PWA installation and offline
+storage. Validate its output with
+`bun run scripts/check-pwa.ts --demo .vercel/output/static`.
+The worker's runtime behavior
 (offline fallback, precache serving, request exclusions, and update handling) is
 covered by `scripts/service-worker.test.ts` in `bun run test`. If a previous
 production run registered a service worker on the same localhost origin,

@@ -1,6 +1,7 @@
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
+import { loadEntityDetail } from '@/lib/client/cached-reads'
 import { parseEditModeSearch } from '@/lib/edit-mode'
 import { parseIdParam } from '@/lib/route-params'
 import {
@@ -16,7 +17,6 @@ import {
 } from '@/lib/server/beans'
 import { getRoasters } from '@/lib/server/roasters'
 import { getBeanShotAnalytics, getBeanShotPage } from '@/lib/server/shots'
-import { canUseOfflineCache } from '@/modules/offline/errors'
 import { BeanDetailPage } from '@/routes/beans/-components/bean-detail-page'
 
 type BeanDetailSearch = {
@@ -96,37 +96,19 @@ export const Route = createFileRoute('/beans/$beanId')({
   loader: async ({ params, deps }): Promise<BeanDetailLoaderData> => {
     const beanId = parseIdParam(params.beanId)
 
-    try {
-      return await loadBeanDetail(beanId, deps)
-    } catch (error) {
-      if (!canUseOfflineCache(error)) throw error
-
-      try {
-        const { readCachedEntityDetail } = await import(
-          '@/modules/offline/entity-detail-cache'
-        )
-        const cached = await readCachedEntityDetail<
-          BeanDetailData & { readonly query?: BeanDetailSearch }
-        >('bean', beanId)
-        if (cached) {
-          const query = cached.data.query
-          if (
-            query &&
-            (query.brewPage !== deps.brewPage ||
-              query.brewSort !== deps.brewSort ||
-              query.brewDirection !== deps.brewDirection)
-          ) {
-            throw error
-          }
-          return { ...cached.data, offlineSnapshotSavedAt: cached.savedAt }
-        }
-      } catch {
-        // Fall through to the original loader error when the cache is
-        // unavailable or corrupt.
-      }
-
-      throw error
-    }
+    return loadEntityDetail({
+      entityType: 'bean',
+      id: beanId,
+      load: async () => ({
+        ...(await loadBeanDetail(beanId, deps)),
+        query: deps,
+      }),
+      accepts: (data) =>
+        !data.query ||
+        (data.query.brewPage === deps.brewPage &&
+          data.query.brewSort === deps.brewSort &&
+          data.query.brewDirection === deps.brewDirection),
+    })
   },
   component: BeanDetailPage,
   pendingComponent: DetailPending,

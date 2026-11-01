@@ -5,11 +5,12 @@ import {
   useRouter,
 } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
-import { useEffect } from 'react'
 import { toast } from 'sonner'
 import { Page, PageHeader } from '@/components/page-layout'
 import { NewShotForm } from '@/components/shots/new-shot-form'
 import { Button } from '@/components/ui/button'
+import { useReferenceSnapshot } from '@/hooks/use-reference-snapshot'
+import { loadReferenceData } from '@/lib/client/cached-reads'
 import { searchValidator } from '@/lib/search-params'
 import { getActiveBeanPurchases } from '@/lib/server/beans'
 import { getBrewingMethods } from '@/lib/server/brewing-methods'
@@ -34,29 +35,11 @@ export const Route = createFileRoute('/brews/new')({
   loader: async (): Promise<NewBrewLoaderData> => {
     const defaultBrewedAt = new Date().toISOString()
 
-    try {
-      const data = await loadNewBrewReferenceData()
-      if (typeof window !== 'undefined') {
-        const { writeCachedNewBrewReferenceData } = await import(
-          '@/modules/offline/reference-data'
-        )
-        await writeCachedNewBrewReferenceData(data).catch(() => undefined)
-      }
-      return { ...data, defaultBrewedAt }
-    } catch (error) {
-      if (typeof window === 'undefined') throw error
-      const { readCachedNewBrewReferenceData } = await import(
-        '@/modules/offline/reference-data'
-      )
-      const cached =
-        await readCachedNewBrewReferenceData<NewBrewReferenceData>()
-      if (!cached) throw error
-      return {
-        ...cached.data,
-        defaultBrewedAt,
-        offlineSnapshotSavedAt: cached.savedAt,
-      }
-    }
+    const data = await loadReferenceData({
+      key: 'new-brew',
+      load: loadNewBrewReferenceData,
+    })
+    return { ...data, defaultBrewedAt }
   },
   component: NewShotPage,
 })
@@ -123,14 +106,7 @@ function NewShotPage() {
   const navigate = useNavigate()
   const router = useRouter()
 
-  useEffect(() => {
-    if (!navigator.onLine || data.offlineSnapshotSavedAt) return
-    void import('@/modules/offline/reference-data')
-      .then(({ writeCachedNewBrewReferenceData }) =>
-        writeCachedNewBrewReferenceData(data),
-      )
-      .catch(() => undefined)
-  }, [data])
+  useReferenceSnapshot('new-brew', data, data.offlineSnapshotSavedAt)
 
   return (
     <Page>

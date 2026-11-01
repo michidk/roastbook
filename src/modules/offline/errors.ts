@@ -1,3 +1,5 @@
+import { DEMO_MODE } from '@/lib/build-mode'
+
 const NETWORK_ERROR_PATTERN =
   /\b(?:failed to fetch|fetch failed|networkerror|network error|load failed)\b/i
 
@@ -34,10 +36,7 @@ export function isNetworkError(error: unknown): boolean {
 }
 
 export function canUseOfflineCache(error: unknown): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    (navigator.onLine === false || isNetworkError(error))
-  )
+  return !DEMO_MODE && typeof window !== 'undefined' && isNetworkError(error)
 }
 
 export function isConflictError(error: unknown): boolean {

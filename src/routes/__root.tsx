@@ -57,11 +57,11 @@ export const Route = createRootRoute({
       },
       {
         name: 'mobile-web-app-capable',
-        content: 'yes',
+        content: DEMO_MODE ? 'no' : 'yes',
       },
       {
         name: 'apple-mobile-web-app-capable',
-        content: 'yes',
+        content: DEMO_MODE ? 'no' : 'yes',
       },
       {
         name: 'apple-mobile-web-app-title',
@@ -93,11 +93,15 @@ export const Route = createRootRoute({
         sizes: '180x180',
         href: '/apple-touch-icon.png',
       },
-      {
-        rel: 'manifest',
-        href: '/manifest.json',
-        crossOrigin: 'use-credentials',
-      },
+      ...(!DEMO_MODE
+        ? [
+            {
+              rel: 'manifest',
+              href: '/manifest.json',
+              crossOrigin: 'use-credentials' as const,
+            },
+          ]
+        : []),
     ],
   }),
   component: RootComponent,

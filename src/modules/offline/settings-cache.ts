@@ -1,4 +1,5 @@
-import { canUseOfflineCache } from '@/modules/offline/errors'
+import { DEMO_MODE } from '@/lib/build-mode'
+import { readWithCache } from '@/modules/offline/cached-read'
 import { getLocalEntity, putLocalEntity } from '@/modules/offline/local-data'
 import type { OfflineEntityType } from '@/modules/offline/operations'
 
@@ -27,6 +28,7 @@ export async function cacheSettingsData<T>(
   key: SettingsCacheKey,
   data: T,
 ): Promise<void> {
+  if (DEMO_MODE) return
   await putLocalEntity({
     entityType: CACHE_ENTITY_TYPES[key],
     localId: cacheLocalId(key),
@@ -39,6 +41,7 @@ export async function cacheSettingsData<T>(
 export async function readCachedSettingsData<T>(
   key: SettingsCacheKey,
 ): Promise<T | undefined> {
+  if (DEMO_MODE) return undefined
   const record = await getLocalEntity<T>(
     CACHE_ENTITY_TYPES[key],
     cacheLocalId(key),
@@ -56,22 +59,15 @@ export async function loadOfflineSettingsData<T>(
   key: SettingsCacheKey,
   load: () => Promise<T>,
 ): Promise<T> {
-  try {
-    const data = await load()
-    if (typeof window !== 'undefined') {
-      await cacheSettingsData(key, data).catch(() => undefined)
-    }
-    return data
-  } catch (error) {
-    if (!canUseOfflineCache(error)) throw error
-
-    try {
+  const result = await readWithCache({
+    load,
+    write: (data) => cacheSettingsData(key, data),
+    read: async () => {
       const cached = await readCachedSettingsData<T>(key)
-      if (cached !== undefined) return cached
-    } catch {
-      // Fall through to the original loader error when the cache is missing.
-    }
-
-    throw error
-  }
+      return cached === undefined
+        ? undefined
+        : { data: cached, savedAt: new Date().toISOString() }
+    },
+  })
+  return result.value
 }

@@ -1,5 +1,9 @@
 import { getOfflineRxDatabase } from '@/modules/rxdb/offline-database'
 import {
+  decodeStoredValue,
+  encodeStoredValue,
+} from '@/modules/rxdb/stored-values'
+import {
   DEFAULT_OWNER_KEY,
   isVisibleOperationStatus,
   type OfflineEntityType,
@@ -53,7 +57,9 @@ function syncMetadataKey(ownerKey: string): string {
 }
 
 function asEntity<T>(value: unknown): LocalEntityRecord<T> {
-  const record = value as LocalEntityRecord<T> & { readonly id?: string }
+  const record = decodeStoredValue(value) as LocalEntityRecord<T> & {
+    readonly id?: string
+  }
   return {
     ...record,
     key: record.key ?? record.id ?? '',
@@ -82,7 +88,7 @@ async function findEntity<T>(
 async function pendingOperations(): Promise<OfflineOperation[]> {
   const database = await getOfflineRxDatabase()
   return (await database.operations.find().exec()).map(
-    (doc) => doc.toJSON() as OfflineOperation,
+    (doc) => decodeStoredValue(doc.toJSON()) as OfflineOperation,
   )
 }
 
@@ -109,6 +115,7 @@ export async function putLocalEntity<T>(
   const { revision, ...stored } = document
   await database.entities.upsert({
     ...stored,
+    data: encodeStoredValue(stored.data),
     entityRevision: revision,
     id: record.key,
   })

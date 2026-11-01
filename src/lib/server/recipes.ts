@@ -6,6 +6,7 @@ import { beans, brewingMethods, clientOperations, recipes } from '@/db/schema'
 import { escapedContainsPattern } from '@/lib/collection-query'
 import { expectReturnedRow } from '@/lib/domain-errors'
 import { getPaginationWindow } from '@/lib/pagination'
+import { recipeCreateSchema, recipeUpdateSchema } from '@/lib/recipe-input'
 import { shotRecipeTargetSchema } from '@/lib/recipe-target'
 import {
   replaceRecipeAccessoryGear,
@@ -27,33 +28,9 @@ import {
   projectShotParameters,
 } from '@/lib/server/shot-parameter-projection'
 import { saveShotToRecipeInTransaction } from '@/lib/server/shot-recipes.server'
-import {
-  deleteRecordSchema,
-  nameSchema,
-  positiveIdSchema,
-  shotUpdateSchema,
-} from '@/lib/server-validation'
+import { deleteRecordSchema, positiveIdSchema } from '@/lib/server-validation'
 import { assertValidUpdate, getShotUpdateErrors } from '@/lib/update-validation'
 
-const recipeUpdateSchema = shotUpdateSchema
-  .omit({
-    brewedAt: true,
-    rating: true,
-    bitterness: true,
-    acidity: true,
-    sweetness: true,
-    body: true,
-    astringency: true,
-    notes: true,
-    tasteTagIds: true,
-  })
-  .extend({ name: nameSchema })
-const recipeCreateSchema = recipeUpdateSchema
-  .omit({
-    id: true,
-    baseUpdatedAt: true,
-  })
-  .extend({ clientOperationId: z.uuid().optional() })
 type RecipeUpdateInput = z.infer<typeof recipeUpdateSchema>
 type RecipeCreateInput = z.infer<typeof recipeCreateSchema>
 type RecipeInput = RecipeUpdateInput | RecipeCreateInput
@@ -376,52 +353,6 @@ export const createRecipe = createServerFn({ method: 'POST' })
           .onConflictDoNothing({ target: clientOperations.operationId })
         await pruneClientOperations(tx)
       }
-      return persistedRecipe
-    }),
-  )
-
-export const duplicateRecipe = createServerFn({ method: 'POST' })
-  .validator(positiveIdSchema)
-  .handler(async ({ data: id }) =>
-    db.transaction(async (tx) => {
-      const source = await tx.query.recipes.findFirst({
-        where: eq(recipes.id, id),
-        with: {
-          accessoryGearLinks: { columns: { gearId: true } },
-          drinkOptions: true,
-        },
-      })
-      if (!source) throw new RecipeInputError('Recipe not found')
-
-      const { accessoryGearLinks, drinkOptions, ...sourceRecipe } = source
-      const {
-        id: _sourceId,
-        clientOperationId: _sourceOperationId,
-        syncId: _sourceSyncId,
-        createdAt: _sourceCreatedAt,
-        updatedAt: _sourceUpdatedAt,
-        ...recipeValues
-      } = sourceRecipe
-      const [duplicate] = await tx
-        .insert(recipes)
-        .values({
-          ...recipeValues,
-          name: `${source.name} copy`,
-          updatedAt: new Date(),
-        })
-        .returning()
-      const persistedRecipe = expectReturnedRow(duplicate, 'Recipe')
-      await replaceRecipeAccessoryGear(
-        tx,
-        persistedRecipe.id,
-        accessoryGearLinks.map(({ gearId }) => gearId),
-      )
-      await replaceRecipeDrinkOptions(
-        tx,
-        persistedRecipe.id,
-        drinkOptions.map(({ optionValueId }) => optionValueId),
-      )
-      await recordRecipeReplicationChange(tx, persistedRecipe)
       return persistedRecipe
     }),
   )

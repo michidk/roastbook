@@ -3,11 +3,11 @@ import { Copy, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { copyRecipe } from '@/lib/client/journal'
 import { getErrorMessage } from '@/lib/error-message'
-import { duplicateRecipe } from '@/lib/server/recipes'
 
 type RecipeDuplicateButtonProps = {
-  readonly recipe: { readonly id: number; readonly name: string }
+  readonly recipe: Parameters<typeof copyRecipe>[0]
   readonly compact?: boolean
 }
 
@@ -23,7 +23,13 @@ export function RecipeDuplicateButton({
     if (isDuplicating) return
     setIsDuplicating(true)
     try {
-      const duplicate = await duplicateRecipe({ data: recipe.id })
+      const result = await copyRecipe(recipe)
+      if (result.kind === 'queued') {
+        toast.success('Recipe copy saved on this device')
+        await navigate({ to: '/brews/pending' })
+        return
+      }
+      const duplicate = result.value
       await router.invalidate()
       toast.success('Recipe duplicated')
       await navigate({
