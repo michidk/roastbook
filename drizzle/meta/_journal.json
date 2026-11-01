@@ -442,6 +442,13 @@
       "when": 1793186196154,
       "tag": "0062_replication_changes",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1793526233407,
+      "tag": "0063_normalize_drink_and_method_defaults",
+      "breakpoints": true
     }
   ]
 }

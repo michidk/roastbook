@@ -435,6 +435,10 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
         `${method} method missing`,
       ),
       beanId: beanId.get(bean),
+      drinkTypeId: required(
+        drinkTypeId.get(method === 'Espresso' ? 'Espresso' : 'Filter'),
+        'Recipe drink type missing',
+      ),
       doseGrams,
       yieldGrams,
       shotTimeSeconds: method === 'Espresso' ? '30' : '180',
@@ -657,6 +661,10 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
             brewingMethodId: required(
               methodId.get(method),
               `${method} method missing`,
+            ),
+            drinkTypeId: required(
+              drinkTypeId.get(isEspresso ? 'Espresso' : 'Filter'),
+              'Brew drink type missing',
             ),
             doseGrams: dose.toFixed(1),
             brewWaterGrams: isEspresso

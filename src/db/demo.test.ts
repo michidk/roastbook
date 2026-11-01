@@ -5,6 +5,7 @@ import { PGlite } from '@electric-sql/pglite'
 import { drizzle, type PgliteDatabase } from 'drizzle-orm/pglite'
 import { seedDemoDatabase } from '@/db/demo'
 import * as schema from '@/db/schema'
+import { DEFAULT_BREWING_METHODS } from '@/lib/brewing-methods'
 
 describe('demo database', () => {
   let client: PGlite
@@ -136,5 +137,35 @@ describe('demo database', () => {
     expect(
       coldBrew?.drinkTypeLinks.map((link) => link.drinkType.name).sort(),
     ).toEqual(['Cold Brew', 'Other'])
+  })
+
+  test('uses Filter as the drink and keeps method-specific default fields', async () => {
+    const types = await database.query.drinkTypes.findMany()
+    expect(types.map((type) => type.name)).toContain('Filter')
+    expect(types.map((type) => type.name)).not.toContain('Pour Over')
+    const methods = await database.query.brewingMethods.findMany({
+      with: { drinkTypeLinks: { with: { drinkType: true } } },
+    })
+    for (const preset of DEFAULT_BREWING_METHODS) {
+      const method = methods.find((item) => item.name === preset.name)
+      expect(method?.enabledParameters.sort()).toEqual(
+        [...preset.enabledParameters].sort(),
+      )
+      expect(method?.timerEnabled).toBe(preset.timerEnabled)
+      expect(
+        method?.drinkTypeLinks.map((link) => link.drinkType.name).sort(),
+      ).toEqual([...preset.drinkTypeNames].sort())
+    }
+    const brews = await database.query.shots.findMany({
+      with: { brewingMethod: true, drinkType: true },
+    })
+    const recipes = await database.query.recipes.findMany({
+      with: { brewingMethod: true, drinkType: true },
+    })
+    for (const item of [...brews, ...recipes]) {
+      expect(item.drinkType?.name).toBe(
+        item.brewingMethod.name === 'Espresso' ? 'Espresso' : 'Filter',
+      )
+    }
   })
 })

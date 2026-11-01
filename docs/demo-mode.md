@@ -66,3 +66,11 @@ A retiring service worker replaces workers published by older demo builds. It
 removes Roastbook shell caches and unregisters itself without handling network
 requests or deleting journal data. The runtime also unregisters old Roastbook
 workers when visiting the demo online.
+
+## Brewing and drink defaults
+
+The sample journal uses brewing methods such as Espresso, Pour over, AeroPress,
+French press, and Moka pot with method-specific field selections. Pour over is
+a brewing method; its finished drink is Filter. The fixture uses the same
+defaults as a new standard installation. Cold brew and Other remain available
+for additional workflows.
