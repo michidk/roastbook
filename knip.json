@@ -22,5 +22,6 @@
     "src/components/ui/tooltip.tsx": ["exports"]
   },
   "ignoreExportsUsedInFile": true,
-  "ignoreDependencies": ["tailwindcss"]
+  "ignoreDependencies": ["tailwindcss"],
+  "ignoreBinaries": ["wait"]
 }

@@ -1,4 +1,4 @@
-import { createServerFn } from '@tanstack/react-start'
+import { createServerFn, createServerOnlyFn } from '@tanstack/react-start'
 import { and, asc, count, desc, eq, ilike, ne, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
@@ -49,12 +49,12 @@ const gearSetRelations = {
 
 type GearSetRow = NonNullable<Awaited<ReturnType<typeof queryGearSetById>>>
 
-function queryGearSetById(id: number) {
+const queryGearSetById = createServerOnlyFn((id: number) => {
   return db.query.gearSets.findFirst({
     where: eq(gearSets.id, id),
     with: gearSetRelations,
   })
-}
+})
 
 function toGearSet(row: GearSetRow) {
   const { accessoryGearLinks, ...values } = row

@@ -322,7 +322,9 @@ function RootComponent() {
   if (login)
     return (
       <>
-        <Outlet />
+        <div className="h-dvh overflow-y-auto">
+          <Outlet />
+        </div>
         <Toaster />
       </>
     )

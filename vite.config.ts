@@ -67,7 +67,10 @@ const demoAssets = () => ({
 const config = defineConfig({
   // Dev/preview servers run behind sandbox proxies that forward arbitrary
   // hostnames, which Vite's host check would otherwise reject.
-  server: { allowedHosts: true },
+  server: {
+    allowedHosts: true,
+    watch: { ignored: ['**/.artifacts/**', '**/.output/**'] },
+  },
   preview: { allowedHosts: true },
   build: { reportCompressedSize: false },
   define: {
