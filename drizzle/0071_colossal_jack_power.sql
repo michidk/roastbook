@@ -1,0 +1,1 @@
+ALTER TABLE "auth_users" ADD COLUMN "passkey_prompt_dismissed_at" timestamp with time zone;

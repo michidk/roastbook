@@ -1,6 +1,8 @@
 import { type SubmitEvent, useEffect, useRef, useState } from 'react'
 import { z } from 'zod'
 import { authClient } from '@/lib/auth-client'
+import { selectOfflineOwner } from '@/lib/journal-owner'
+import { getPasskeySetupOffer } from '@/lib/server/passkey-prompt'
 import {
   LOGIN_DRAFT_KEY,
   type LoginStep,
@@ -19,10 +21,11 @@ export function useLoginForm() {
   const [activity, setActivity] = useState<Activity>(null)
   const [error, setError] = useState('')
   const [now, setNow] = useState(0)
+  const [passkeyRedirect, setPasskeyRedirect] = useState<string | null>(null)
   const initialized = useRef(false)
   const emailInput = useRef<HTMLInputElement>(null)
   const codeInput = useRef<HTMLInputElement>(null)
-  const busy = activity !== null
+  const busy = activity !== null || passkeyRedirect !== null
   const remaining =
     step.kind === 'email'
       ? 0
@@ -78,14 +81,40 @@ export function useLoginForm() {
     return () => window.clearInterval(timer)
   }, [ready, stepKind])
 
-  function completeSignIn(data: unknown) {
+  function clearDraft() {
     try {
       sessionStorage.removeItem(LOGIN_DRAFT_KEY)
     } catch {
       /* Storage is optional. */
     }
+  }
+
+  function completeSignIn(data: unknown) {
+    clearDraft()
     const redirect = redirectSchema.safeParse(data)
     window.location.assign(redirect.success ? redirect.data.url : '/overview')
+  }
+
+  async function completeEmailSignIn(data: unknown) {
+    clearDraft()
+    try {
+      if (window.PublicKeyCredential) {
+        const { ownerId, offer } = await getPasskeySetupOffer()
+        await selectOfflineOwner(ownerId)
+        if (offer) {
+          const redirect = redirectSchema.safeParse(data)
+          setPasskeyRedirect(redirect.success ? redirect.data.url : '/overview')
+          return
+        }
+      }
+    } catch {
+      // An optional setup reminder must not prevent a successful sign-in.
+    }
+    completeSignIn(data)
+  }
+
+  function continueAfterPasskey() {
+    if (passkeyRedirect) completeSignIn({ url: passkeyRedirect })
   }
 
   async function sendEmail(resend = false) {
@@ -133,7 +162,7 @@ export function useLoginForm() {
           result.error.message ??
             'This code is invalid or expired. Request a new email.',
         )
-      completeSignIn(result.data)
+      await completeEmailSignIn(result.data)
     } catch (cause) {
       setError(
         cause instanceof Error
@@ -203,5 +232,7 @@ export function useLoginForm() {
     changeEmail,
     setEmail,
     setCode,
+    passkeyPromptOpen: passkeyRedirect !== null,
+    continueAfterPasskey,
   }
 }

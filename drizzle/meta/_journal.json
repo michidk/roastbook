@@ -498,6 +498,13 @@
       "when": 1793606637048,
       "tag": "0070_bean-altitude",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1793619035465,
+      "tag": "0071_colossal_jack_power",
+      "breakpoints": true
     }
   ]
 }

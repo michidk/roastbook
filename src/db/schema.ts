@@ -2107,6 +2107,9 @@ export const authUsers = pgTable('auth_users', {
   name: text('name').notNull().default(''),
   email: text('email').notNull().unique(),
   emailVerified: boolean('email_verified').notNull().default(false),
+  passkeyPromptDismissedAt: timestamp('passkey_prompt_dismissed_at', {
+    withTimezone: true,
+  }),
   image: text('image'),
   role: text('role', { enum: ['user', 'admin'] })
     .notNull()

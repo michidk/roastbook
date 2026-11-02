@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PasskeySetupDialog } from './passkey-setup-dialog'
 import { useLoginForm } from './use-login-form'
 
 export function LoginForm() {
@@ -221,6 +222,9 @@ export function LoginForm() {
           <p role="alert">Enable JavaScript in your browser to sign in.</p>
         </noscript>
       </CardContent>
+      {login.passkeyPromptOpen ? (
+        <PasskeySetupDialog onContinue={login.continueAfterPasskey} />
+      ) : null}
     </Card>
   )
 }
