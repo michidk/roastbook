@@ -13,21 +13,28 @@ useful content or an intentional state, never a browser-broken placeholder.
 
 Use these semantic tokens:
 
-- Page: `--background`, light `#f6eddf`, dark `#1f1a14`.
-- Ink: `--foreground`, light `#3a2a1e`, dark `#f6eddf`.
-- Card: `--card`, light `#ffffff`, dark `#2a2219`.
-- Secondary: `--secondary`, light `#fbf5eb`, dark `#36281c`.
-- Muted text: `--muted-foreground`, light `#7a6a58`, dark `#b8a78f`.
-- Primary action: `--primary`, light `#aa612f`, dark `#d2873e`.
-- Link and emphasized text: `--link`, light `#8a5a30`, dark `#e0a565`.
-- Coffee surface: `--coffee`, light `#6f4e37`, dark `#b07a45`.
-- Border: `--border`, light `#ead9bf`, dark `#3c2e20`.
-- Control boundary: `--input`, `#9f7548` in both themes.
+- Page: `--background`, light `#f6eddf`, dark `#191817`.
+- Ink: `--foreground`, light `#3a2a1e`, dark `#f0e9df`.
+- Card: `--card`, light `#ffffff`, dark `#242220`.
+- Secondary: `--secondary`, light `#fbf5eb`, dark `#302c28`.
+- Muted text: `--muted-foreground`, light `#7a6a58`, dark `#b7ada1`.
+- Primary action: `--primary`, light `#aa612f`, dark `#dda464`.
+- Link and emphasized text: `--link`, light `#8a5a30`, dark `#e8b87e`.
+- Coffee surface: `--coffee`, light `#6f4e37`, dark `#c59870`.
+- Border: `--border`, light `#ead9bf`, dark `#403a34`.
+- Control boundary: `--input`, light `#9f7548`, dark `#8c7c6c`.
 - Destructive: `--destructive`, `#c0573a` in both themes.
-- Destructive text: `--destructive-text`, light `#9d3b26`, dark `#ef947c`.
-- Positive: `--positive`, light `#6b8a3d`, dark `#8aa850`.
-- Positive text: `--positive-text`, light `#4c681f`, dark `#b7d47a`.
-- Favorite: `--favorite`, light `#8b3f60`, dark `#e3a0bd`.
+- Destructive text: `--destructive-text`, light `#9d3b26`, dark `#f0a08c`.
+- Positive: `--positive`, light `#6b8a3d`, dark `#a6b995`.
+- Positive text: `--positive-text`, light `#4c681f`, dark `#bbd1a6`.
+- Favorite: `--favorite`, light `#8b3f60`, dark `#dfacc3`.
+
+Dark mode uses warm charcoal for the canvas, lighter neutral cards, and a
+raised `--popover` tone (`#2e2b28`) for menus and dialogs. Reserve amber for
+actions and selected states; control outlines use a quieter warm gray. Cream
+text and muted stone labels keep long journal sessions comfortable. Charts
+use amber, sage, cream, mauve, and clay to distinguish series. Native browser
+controls follow the dark color scheme.
 
 Add new semantic roles to `src/styles.css` before using them. Amber identifies
 interaction and current state, not decoration. Roast gradients, badges, taste
