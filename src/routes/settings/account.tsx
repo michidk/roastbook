@@ -1,20 +1,18 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { SettingsPanelSection } from '@/components/settings/settings-shell'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { authClient } from '@/lib/auth-client'
 import {
   confirmDeletion,
-  createToken,
-  deleteToken,
   getCurrentAccount,
   requestDeletion,
   requestExport,
 } from '@/lib/server/account'
-import { disconnectOAuthGrant } from '@/lib/server/oauth'
 
 export const Route = createFileRoute('/settings/account')({
   loader: () => getCurrentAccount(),
@@ -23,8 +21,9 @@ export const Route = createFileRoute('/settings/account')({
 function AccountPage() {
   const state = Route.useLoaderData(),
     router = useRouter()
+  const formatDateTime = useDateTimeFormatter()
+  const deletionInitialized = useRef(false)
   const [email, setEmail] = useState('')
-  const [token, setToken] = useState('')
   const [deletion, setDeletion] = useState('')
   const [busy, setBusy] = useState(false)
   const [passkeys, setPasskeys] = useState<
@@ -32,10 +31,17 @@ function AccountPage() {
   >([])
   const accountId = state.identity?.id
   useEffect(() => {
-    const fields = new URLSearchParams(window.location.hash.slice(1))
-    setDeletion(fields.get('delete') ?? '')
-    if (window.location.hash)
-      window.history.replaceState(null, '', '/settings/account')
+    if (!deletionInitialized.current) {
+      deletionInitialized.current = true
+      const fields = new URLSearchParams(window.location.hash.slice(1))
+      setDeletion(fields.get('delete') ?? '')
+      if (window.location.hash)
+        window.history.replaceState(
+          window.history.state,
+          '',
+          '/settings/account',
+        )
+    }
     if (!accountId) return
     void authClient.passkey.listUserPasskeys().then((result) => {
       if (result.data) setPasskeys(result.data)
@@ -83,13 +89,14 @@ function AccountPage() {
     }, 'Signed out')
   }
   return (
-    <div className="space-y-8">
+    <>
       <SettingsPanelSection
-        title="Account"
-        description={`Signed in as ${identity.email}`}
+        title="Email address"
+        description="Your email address is used for passwordless sign-in and account confirmations."
       >
+        <p className="break-all font-medium">{identity.email}</p>
         <form
-          className="mt-6 space-y-3"
+          className="max-w-md space-y-3"
           onSubmit={(event) => {
             event.preventDefault()
             void action(
@@ -119,57 +126,19 @@ function AccountPage() {
         </form>
       </SettingsPanelSection>
       <SettingsPanelSection
-        title="Connected MCP applications"
-        description="Applications you authorized through the browser. Disconnecting immediately removes their access."
-      >
-        {state.grants.length ? (
-          state.grants.map((grant) => (
-            <div
-              key={grant.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3"
-            >
-              <div className="min-w-0">
-                <p className="break-words font-medium">
-                  {grant.name ?? 'Unnamed application'}
-                </p>
-                <p className="break-all text-sm text-muted-foreground">
-                  {grant.clientId}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {grant.scopes.includes('mcp:write')
-                    ? 'Read journal and log brews'
-                    : 'Read journal'}
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                disabled={busy}
-                onClick={() =>
-                  void action(
-                    () => disconnectOAuthGrant({ data: { id: grant.id } }),
-                    'Application disconnected',
-                  )
-                }
-              >
-                Disconnect
-              </Button>
-            </div>
-          ))
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            No applications connected.
-          </p>
-        )}
-      </SettingsPanelSection>
-      <SettingsPanelSection
-        title="Passkeys and sessions"
+        title="Passkeys"
         description="Use your device or a security key to sign in without an email code."
       >
         <div className="space-y-3">
+          {passkeys.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No passkeys added yet.
+            </p>
+          ) : null}
           {passkeys.map((key) => (
             <div
               key={key.id}
-              className="flex items-center justify-between gap-3"
+              className="flex flex-wrap items-center justify-between gap-3"
             >
               <span>{key.name || 'Passkey'}</span>
               <Button
@@ -204,93 +173,37 @@ function AccountPage() {
           >
             Add a passkey
           </Button>
-          <div className="flex flex-wrap gap-3">
-            <Button
-              disabled={busy}
-              variant="outline"
-              onClick={() =>
-                void action(
-                  async () =>
-                    checkResult(await authClient.revokeOtherSessions()),
-                  'Other devices signed out',
-                )
-              }
-            >
-              Sign out other devices
-            </Button>
-            <Button
-              disabled={busy}
-              variant="outline"
-              onClick={() => void signOut()}
-            >
-              Sign out
-            </Button>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            For sensitive changes, sign in again if your session is older than
-            10 minutes.
-          </p>
         </div>
       </SettingsPanelSection>
       <SettingsPanelSection
-        title="Connected applications"
-        description="Tokens allow an application to access your journal. Store them securely; each expires after one year."
+        title="Sessions"
+        description="Sign out on this device or end your sessions on other devices."
       >
-        <div className="space-y-3">
-          {state.tokens.map((item) => (
-            <div
-              key={item.id}
-              className="flex flex-wrap items-center justify-between gap-3"
-            >
-              <span>
-                {item.name} · {item.kind}
-              </span>
-              <Button
-                disabled={busy}
-                variant="outline"
-                onClick={() =>
-                  void action(
-                    () => deleteToken({ data: { id: item.id } }),
-                    'Token revoked',
-                  )
-                }
-              >
-                Revoke
-              </Button>
-            </div>
-          ))}
+        <div className="flex flex-wrap gap-3">
           <Button
             disabled={busy}
             variant="outline"
             onClick={() =>
               void action(
-                async () =>
-                  setToken(
-                    await createToken({
-                      data: { kind: 'mcp', name: 'MCP client' },
-                    }),
-                  ),
-                'Token created. Copy it now; it will not be shown again.',
+                async () => checkResult(await authClient.revokeOtherSessions()),
+                'Other devices signed out',
               )
             }
           >
-            Create MCP token
+            Sign out other devices
           </Button>
-          {token ? (
-            <div className="space-y-2">
-              <Label htmlFor="created-token">Copy this token now</Label>
-              <Input
-                id="created-token"
-                readOnly
-                value={token}
-                onFocus={(event) => event.target.select()}
-              />
-              <Button variant="ghost" onClick={() => setToken('')}>
-                Dismiss token
-              </Button>
-            </div>
-          ) : null}
+          <Button
+            disabled={busy}
+            variant="outline"
+            onClick={() => void signOut()}
+          >
+            Sign out
+          </Button>
         </div>
+        <p className="text-sm text-muted-foreground">
+          For sensitive changes, sign in again if your session is older than 10
+          minutes.
+        </p>
       </SettingsPanelSection>
       <SettingsPanelSection
         title="Export your journal"
@@ -311,7 +224,7 @@ function AccountPage() {
           {state.exports.map((job) => (
             <div key={job.id} className="flex flex-wrap items-center gap-3">
               <span>
-                {new Date(job.createdAt).toLocaleString()} · {job.status}
+                {formatDateTime(job.createdAt)} · {job.status}
               </span>
               {job.status === 'ready' ? (
                 <a
@@ -328,6 +241,19 @@ function AccountPage() {
           </Button>
         </div>
       </SettingsPanelSection>
+      {identity.role === 'admin' ? (
+        <SettingsPanelSection
+          title="Administration"
+          description="Manage users and administrator access for this installation."
+        >
+          <Button
+            variant="outline"
+            render={<Link to="/admin/users" search={{ page: 0 }} />}
+          >
+            Manage users
+          </Button>
+        </SettingsPanelSection>
+      ) : null}
       <SettingsPanelSection
         title="Delete your account"
         description="Permanently delete your journal and images. You must confirm through your email."
@@ -369,15 +295,6 @@ function AccountPage() {
           </Button>
         )}
       </SettingsPanelSection>
-      {identity.role === 'admin' ? (
-        <Link
-          to="/admin/users"
-          search={{ page: 0 }}
-          className="text-link underline"
-        >
-          Manage users
-        </Link>
-      ) : null}
-    </div>
+    </>
   )
 }

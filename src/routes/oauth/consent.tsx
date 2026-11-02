@@ -70,8 +70,8 @@ function ConsentPage() {
           </ul>
           <p className="text-sm text-muted-foreground">
             It cannot administer accounts or read your AI provider key. Your MCP
-            tool switches still apply. You can disconnect it in Account
-            settings.
+            tool switches still apply. You can disconnect it in Settings → AI
+            access (MCP).
           </p>
           <div className="text-sm">
             <p className="font-medium">Return address</p>

@@ -16,7 +16,6 @@ import { DEMO_MODE } from '@/lib/build-mode'
 import { getServerEnv } from '@/lib/env.server'
 import { sendAccountEmail } from './email.server'
 import { createIntegrationToken } from './integrations.server'
-import { listOAuthGrants } from './oauth-grants.server'
 
 function accountIdentity() {
   const identity = requireIdentity()
@@ -45,8 +44,6 @@ export async function getAccountState() {
       ownerId: 'local',
       identity: null,
       exports: [],
-      tokens: [],
-      grants: [],
     }
   const identity = requireIdentity()
   if (!identity.authentication)
@@ -54,38 +51,21 @@ export async function getAccountState() {
       ownerId: identity.id,
       identity: null,
       exports: [],
-      tokens: [],
-      grants: [],
     }
   const db = getControlDb()
-  const [exports, tokens, grants] = await Promise.all([
-    db
-      .select({
-        id: accountJobs.id,
-        status: accountJobs.status,
-        createdAt: accountJobs.createdAt,
-        expiresAt: accountJobs.expiresAt,
-      })
-      .from(accountJobs)
-      .where(
-        and(
-          eq(accountJobs.userId, identity.id),
-          eq(accountJobs.kind, 'export'),
-        ),
-      )
-      .orderBy(desc(accountJobs.createdAt))
-      .limit(10),
-    db
-      .select({
-        id: integrationTokens.id,
-        name: integrationTokens.name,
-        kind: integrationTokens.kind,
-        expiresAt: integrationTokens.expiresAt,
-      })
-      .from(integrationTokens)
-      .where(eq(integrationTokens.userId, identity.id)),
-    listOAuthGrants(),
-  ])
+  const exports = await db
+    .select({
+      id: accountJobs.id,
+      status: accountJobs.status,
+      createdAt: accountJobs.createdAt,
+      expiresAt: accountJobs.expiresAt,
+    })
+    .from(accountJobs)
+    .where(
+      and(eq(accountJobs.userId, identity.id), eq(accountJobs.kind, 'export')),
+    )
+    .orderBy(desc(accountJobs.createdAt))
+    .limit(10)
   return {
     ownerId: identity.id,
     identity: {
@@ -94,8 +74,6 @@ export async function getAccountState() {
       role: identity.role,
     },
     exports,
-    tokens,
-    grants,
   }
 }
 export async function listUsers(page: number) {

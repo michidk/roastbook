@@ -79,17 +79,17 @@ codex mcp login roastbook
 ```
 
 Access tokens expire after five minutes. Background authorization uses rotating
-refresh tokens that expire after 30 days without renewal. Reusing a rotated refresh
-token is rejected. Disconnect an application in Account settings to invalidate
-its existing access tokens and refresh tokens immediately. Deleting the account
-or disabling a client also blocks access. Pausing MCP and per-tool switches take
-effect on the next request.
+refresh tokens that expire after 30 days without renewal. Reusing a rotated
+refresh token is rejected. Disconnect an application in Settings > AI access
+(MCP) to invalidate its existing access tokens and refresh tokens immediately.
+Deleting the account or disabling a client also blocks access. Pausing MCP and
+per-tool switches take effect on the next request.
 
 Manual bearer tokens remain available for clients without browser authorization
 and for shared installations with `AUTH_ENABLED=false`. Create them under
-Settings > AI access (MCP), or Account > Connected applications. They are shown
-once, stored as hashes, expire after one year, and allow all enabled tools in
-their owner's journal. Store the token in the client environment:
+Settings > AI access (MCP) > MCP tokens. They are shown once, stored as hashes,
+expire after one year, and allow all enabled tools in their owner's journal.
+Store the token in the client environment:
 
 ```bash
 codex mcp add roastbook --url http://127.0.0.1:3001/api/mcp \

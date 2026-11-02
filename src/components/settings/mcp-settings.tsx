@@ -2,7 +2,7 @@ import { useRouter } from '@tanstack/react-router'
 import { Activity, Bot, ChevronLeft, ChevronRight, Copy } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { IntegrationTokenControl } from '@/components/settings/integration-token-control'
+import { McpConnections } from '@/components/settings/mcp-connections'
 import { SettingsPanelSection } from '@/components/settings/settings-shell'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -91,7 +91,7 @@ export function McpSettings({ state }: { readonly state: McpAdminState }) {
     <>
       <SettingsPanelSection
         title="AI access (MCP)"
-        description="Add this URL to your MCP client. With accounts enabled, sign in and approve the access it requests. You can disconnect applications in Account settings. Clients without browser sign-in can use a manual token."
+        description="Add this URL to your MCP client. Manage connected applications, manual tokens, and tool access below."
         action={<Bot className="size-5 text-link" />}
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -107,7 +107,6 @@ export function McpSettings({ state }: { readonly state: McpAdminState }) {
             Copy URL
           </Button>
         </div>
-        {demoMode ? null : <IntegrationTokenControl />}
         <label
           htmlFor="mcp-enabled"
           className="flex items-center justify-between gap-4"
@@ -126,6 +125,8 @@ export function McpSettings({ state }: { readonly state: McpAdminState }) {
           />
         </label>
       </SettingsPanelSection>
+
+      <McpConnections grants={state.grants} />
 
       <SettingsPanelSection
         title="Tools"

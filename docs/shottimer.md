@@ -10,7 +10,7 @@ target time to count against.
 2. Create a device token and copy it into the shottimer configuration. The
    token is shown once, belongs to your journal, and expires after one year.
    Creating a new one invalidates the previous token. It can also be revoked
-   from Account settings.
+   from Settings → Shottimer.
 3. Point the device at the public Roastbook URL.
 
 Compose and Helm let `/api/shottimer/*` through Hodor without a session (see

@@ -1,17 +1,13 @@
-import { Copy, KeyRound, Loader2, Timer } from 'lucide-react'
+import { KeyRound, Loader2, Timer } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { IntegrationTokenControl } from '@/components/settings/integration-token-control'
 import { SettingsPanelSection } from '@/components/settings/settings-shell'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useOnlineStatus } from '@/hooks/use-online-status'
-import {
-  createShottimerToken,
-  updateShottimerEnabled,
-} from '@/lib/server/shottimer'
+import { updateShottimerEnabled } from '@/lib/server/shottimer'
 import type { ShottimerSettings as ShottimerSettingsState } from '@/lib/shottimer'
 
 /** Enables the shottimer device API and issues its access token. */
@@ -26,8 +22,6 @@ export function ShottimerSettings({
   const isOnline = useOnlineStatus()
   const [enabled, setEnabled] = useState(settings.enabled)
   const [isSaving, setIsSaving] = useState(false)
-  const [token, setToken] = useState<string | null>(null)
-  const [isCreatingToken, setIsCreatingToken] = useState(false)
 
   const saveEnabled = async (nextEnabled: boolean) => {
     if (!isOnline) {
@@ -44,32 +38,6 @@ export function ShottimerSettings({
       toast.error('Could not save the shottimer setting')
     } finally {
       setIsSaving(false)
-    }
-  }
-
-  const createToken = async () => {
-    if (!isOnline) {
-      toast.error('Creating a shottimer token needs a connection')
-      return
-    }
-    setIsCreatingToken(true)
-    try {
-      setToken(await createShottimerToken())
-      onSaved()
-    } catch {
-      toast.error('Could not create a device token')
-    } finally {
-      setIsCreatingToken(false)
-    }
-  }
-
-  const copyToken = async () => {
-    if (!token) return
-    try {
-      await navigator.clipboard.writeText(token)
-      toast.success('Token copied')
-    } catch {
-      toast.error('Could not copy the token. Select and copy it manually.')
     }
   }
 
@@ -105,52 +73,16 @@ export function ShottimerSettings({
 
       <SettingsPanelSection
         title="Device token"
-        description={
-          settings.hasToken
-            ? 'A token is configured. Creating a new one disconnects devices that use the old token.'
-            : 'Create a token and enter it in the shottimer configuration.'
-        }
+        description="Create a token and enter it in your shottimer configuration. Replacing a token disconnects devices using the old one."
         action={<KeyRound className="size-5 text-link" />}
       >
-        <div className="space-y-4">
-          {token ? (
-            <div className="space-y-2">
-              <Label htmlFor="shottimer-token">New device token</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="shottimer-token"
-                  readOnly
-                  value={token}
-                  className="font-mono"
-                  onFocus={(event) => event.currentTarget.select()}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  aria-label="Copy token"
-                  onClick={() => void copyToken()}
-                >
-                  <Copy aria-hidden="true" />
-                </Button>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                This token is shown only once.
-              </p>
-            </div>
-          ) : null}
-          <Button
-            type="button"
-            variant="outline"
-            disabled={demoMode || !isOnline || isCreatingToken}
-            onClick={() => void createToken()}
-          >
-            {isCreatingToken ? (
-              <Loader2 className="animate-spin" aria-hidden="true" />
-            ) : null}
-            {settings.hasToken ? 'Replace token' : 'Create token'}
-          </Button>
-        </div>
+        {demoMode ? (
+          <p className="text-sm text-muted-foreground">
+            Device tokens are unavailable in the demo.
+          </p>
+        ) : (
+          <IntegrationTokenControl kind="shottimer" onSaved={onSaved} />
+        )}
       </SettingsPanelSection>
     </>
   )

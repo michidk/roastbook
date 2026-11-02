@@ -174,10 +174,9 @@ as MIME type and byte count, not the image payload itself.
 > (`create_brew`; nothing deletes or edits data). Ask what your last ten Gesha
 > brews had in common, or have an assistant log this morning's espresso. It has
 > browser sign-in and scoped OAuth consent with private accounts, plus manual
-> tokens for shared installations and other clients. Disconnect applications in
-> Account settings. Keep device endpoints private when public access is
-> unnecessary. See
-> [MCP deployment](docs/deployment.md#mcp).
+> tokens for shared installations and other clients. Manage connections and
+> tokens in Settings > AI access (MCP). Keep device endpoints private when
+> public access is unnecessary. See [MCP deployment](docs/deployment.md#mcp).
 
 ## 📦 Features
 

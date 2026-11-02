@@ -4,12 +4,14 @@ import { getRequest } from '@tanstack/react-start/server'
 import { count, desc, eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { mcpAuditEvents, mcpSettings } from '@/db/schema'
+import { DEMO_MODE } from '@/lib/build-mode'
 import { getServerEnv } from '@/lib/env.server'
 import {
   MCP_TOOL_CATALOG,
   MCP_TOOL_NAMES,
   type McpToolName,
 } from '@/lib/mcp/catalog'
+import { listOAuthGrants } from '../auth/oauth-grants.server'
 import { getMcpEndpoint } from './config.server'
 
 export type McpPolicy = {
@@ -99,9 +101,10 @@ export async function loadMcpAuditPage(page = 0) {
 }
 
 export async function loadMcpAdminState() {
-  const [policy, audit] = await Promise.all([
+  const [policy, audit, grants] = await Promise.all([
     loadMcpPolicy(),
     loadMcpAuditPage(0),
+    DEMO_MODE ? [] : listOAuthGrants(),
   ])
   return {
     endpoint: getMcpEndpoint(
@@ -110,5 +113,6 @@ export async function loadMcpAdminState() {
     policy,
     tools: MCP_TOOL_CATALOG.map((tool) => ({ ...tool })),
     audit,
+    grants,
   }
 }
