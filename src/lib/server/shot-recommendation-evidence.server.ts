@@ -32,6 +32,8 @@ type BeanEvidenceSource = Pick<
   | 'region'
   | 'farm'
   | 'variety'
+  | 'altitudeMinMeters'
+  | 'altitudeMaxMeters'
   | 'process'
   | 'roastLevel'
   | 'notes'
@@ -103,6 +105,8 @@ export function recommendationBeanEvidence(
     region: bean.region,
     farm: bean.farm,
     variety: bean.variety,
+    altitudeMinMeters: bean.altitudeMinMeters,
+    altitudeMaxMeters: bean.altitudeMaxMeters,
     process: bean.process,
     roastLevel: bean.roastLevel,
     ...(purchase ? { purchaseId: purchase.id } : undefined),

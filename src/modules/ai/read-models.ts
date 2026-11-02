@@ -33,6 +33,8 @@ export type ExtractedBeanInfo = Partial<{
   region: string
   farm: string
   variety: string
+  altitudeMinMeters: string
+  altitudeMaxMeters: string
   process: (typeof PROCESS_METHOD_VALUES)[number]
   roastLevel: (typeof ROAST_LEVEL_VALUES)[number]
   roastDate: string

@@ -27,6 +27,8 @@ const meta = {
       region: 'Guji',
       farm: null,
       variety: 'Heirloom',
+      altitudeMinMeters: 1900,
+      altitudeMaxMeters: 2100,
       process: 'washed',
       roastLevel: 'light',
       notes: 'Jasmine, bergamot, peach',

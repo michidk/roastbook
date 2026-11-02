@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { AltitudeRangeField } from '@/components/beans/altitude-range-field'
 import type { BeanFormValues } from '@/components/beans/bean-form-values'
 import { DateField } from '@/components/form/date-field'
 import {
@@ -166,6 +167,14 @@ export function BeanFields({
             placeholder="e.g., Heirloom"
             value={values.variety}
             onChange={(value) => onChange('variety', value)}
+          />
+          <AltitudeRangeField
+            id={id('altitude')}
+            className="sm:col-span-2"
+            min={values.altitudeMinMeters}
+            max={values.altitudeMaxMeters}
+            onMinChange={(value) => onChange('altitudeMinMeters', value)}
+            onMaxChange={(value) => onChange('altitudeMaxMeters', value)}
           />
         </div>
       </FormSection>
