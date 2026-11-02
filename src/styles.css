@@ -457,6 +457,16 @@
     background-image: none;
   }
 
+  body:has([data-auth-page]) {
+    --page-stains: url("/coffee-stains-light.svg");
+    --page-texture: url("/paper-grain-light.svg");
+  }
+
+  .dark body:has([data-auth-page]) {
+    --page-stains: url("/coffee-stains-dark.svg");
+    --page-texture: url("/paper-grain-dark.svg");
+  }
+
   h1,
   h2,
   h3,

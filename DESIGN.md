@@ -447,6 +447,9 @@ The page canvas uses a low-contrast, theme-aware paper grain with sparse,
 barely visible coffee-ring marks. Keep these textures on `body`; cards,
 popovers, controls, and other raised surfaces remain solid and crisp.
 
+Authentication pages retain these light or dark texture layers with every
+palette, including palettes that omit them inside private journals.
+
 - `--coffee-shadow` is the standard card elevation.
 - `--coffee-shadow-inline` shades trailing actions toward their input.
 - `--coffee-shadow-strong` is for coffee-colored focal surfaces.
