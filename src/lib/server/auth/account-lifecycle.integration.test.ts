@@ -10,6 +10,7 @@ import { type JournalIdentity, withJournal } from '@/db/journal-context.server'
 import { withJournalResponse } from '@/db/journal-response.server'
 import {
   accountJobs,
+  aiProviderCredentials,
   authUsers,
   authVerifications,
   beanImages,
@@ -73,6 +74,14 @@ suite('private account lifecycle', () => {
         })),
       )
     await database().transaction((tx) => createJournalDefaults(tx, second.id))
+    await database().insert(aiProviderCredentials).values({
+      userId: second.id,
+      baseURL: 'https://provider.example/v1',
+      api: 'responses',
+      encryptedApiKey: 'fixture-secret-not-for-export',
+      visionModel: 'private-vision',
+      researchModel: 'private-reasoning',
+    })
     await asSecond(async () => {
       const [bean] = await db
         .insert(beans)
@@ -256,6 +265,15 @@ suite('private account lifecycle', () => {
     expect(entries).toContain(`images/${gearImagePath}`)
     expect(entries).not.toContain('auth_')
     expect(entries).not.toContain('integration_tokens')
+    const provider = Bun.spawnSync([
+      'unzip',
+      '-p',
+      zip,
+      'ai-provider.json',
+    ]).stdout.toString()
+    expect(provider).toContain('private-vision')
+    expect(provider).not.toContain('fixture-secret-not-for-export')
+    expect(provider).not.toContain('encryptedApiKey')
     const profile = Bun.spawnSync([
       'unzip',
       '-p',
@@ -335,6 +353,12 @@ suite('private account lifecycle', () => {
         .select()
         .from(integrationTokens)
         .where(eq(integrationTokens.userId, second.id)),
+    ).toHaveLength(0)
+    expect(
+      await database()
+        .select()
+        .from(aiProviderCredentials)
+        .where(eq(aiProviderCredentials.userId, second.id)),
     ).toHaveLength(0)
     expect(await getStorage().exists(imagePath)).toBe(false)
     expect(await getStorage().exists(gearImagePath)).toBe(false)

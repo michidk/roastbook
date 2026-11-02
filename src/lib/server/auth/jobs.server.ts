@@ -17,6 +17,7 @@ import {
 } from '@/db/schema'
 import { getStoredImagePaths } from '@/lib/image-path'
 import { getStorage } from '@/lib/storage'
+import { readAiProviderCredentials } from '../ai-provider-settings.server'
 import { journalTables } from './journal-tables.server'
 
 type Job = typeof accountJobs.$inferSelect
@@ -63,6 +64,21 @@ async function exportJournal(job: Job) {
       .from(authUsers)
       .where(eq(authUsers.id, job.userId))
     archive.append(JSON.stringify(profile, null, 2), { name: 'account.json' })
+    const provider = await readAiProviderCredentials()
+    if (provider)
+      archive.append(
+        JSON.stringify(
+          {
+            baseURL: provider.baseURL,
+            api: provider.api,
+            visionModel: provider.visionModel,
+            researchModel: provider.researchModel,
+          },
+          null,
+          2,
+        ),
+        { name: 'ai-provider.json' },
+      )
     archive.append(
       'Each data/*.jsonl file contains one JSON object per line. Image storage_path fields refer to images/<storage_path>. Authentication credentials and integration secrets are excluded.\n',
       { name: 'README.txt' },

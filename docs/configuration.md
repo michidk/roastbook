@@ -99,16 +99,45 @@ or configure a public media CDN for private journals.
 
 | Variable | Default | Required | Description |
 | --- | --- | --- | --- |
-| `OPENAI_API_KEY` | — | No | Enables all optional AI features |
-| `OPENAI_BASE_URL` | OpenAI | No | Compatible API base URL |
-| `OPENAI_VISION_MODEL` | `gpt-5.1-codex` | No | Image extraction model |
-| `OPENAI_RESEARCH_MODEL` | `gpt-5.1-codex` | No | Research model |
+| `AI_CREDENTIAL_ENCRYPTION_KEY` | None | AI | Credential encryption key |
+| `AI_ALLOWED_PRIVATE_ORIGINS` | None | No | Self-hosted origin exceptions |
 | `AI_TELEMETRY_STORE_PAYLOADS` | `false` | No | Store detailed payloads |
 | `AI_TELEMETRY_RETENTION_DAYS` | `1` | No | Retention (1–30 days) |
 | `AI_TELEMETRY_MAX_PAYLOAD_BYTES` | `65536` | No | Cap (1 KiB–1 MiB) |
 
-Model values must be supported by the installed TanStack OpenAI adapter.
-Unsupported configured values fall back to the application defaults.
+Each user configures an endpoint, API key, API format, and model IDs in
+Settings > AI. AI stays disabled until that user connects a provider. There is
+no fallback to a shared server API key, including in authentication-disabled
+mode. The former `OPENAI_*` environment variables are no longer used.
+
+Generate the encryption key once with `openssl rand -base64 32` and keep it in
+a secret manager alongside database backups. All replicas must use the same
+key. API keys use AES-256-GCM with a unique nonce and are bound to the user and
+endpoint. Keys and encrypted credentials are excluded from browser responses,
+offline caches, account exports, and request logs. A database dump alone does
+not disclose the keys; an administrator controlling both the application and
+its encryption key can decrypt them. Losing or replacing the encryption key
+requires users to reconnect their providers. Removing a connection deletes its
+stored credentials; account deletion removes them as well.
+
+Public endpoints must use HTTPS. Connections resolve and validate all returned
+addresses on every request, pin the connection to an approved IP, retain TLS
+hostname verification, and reject redirects. Requests time out after two
+minutes and responses are limited to 8 MiB. Private, loopback, metadata, and
+reserved IP ranges are blocked. A self-hosted operator can allow an exact origin
+such as `http://ollama:11434` with `AI_ALLOWED_PRIVATE_ORIGINS`; this grants
+users permission to send AI requests to that service. Hosted deployments reject
+this setting. Keep network egress restrictions as additional protection.
+
+Changing the endpoint requires entering the API key again to avoid forwarding a
+saved key to another provider. Users should only configure providers they trust:
+selected journal data and images are sent to that endpoint and billed by it.
+Models use provider-defined IDs. Recommendations require structured output;
+image extraction uses Chat Completions with image input. Web research requires
+a Responses-compatible provider with web search. Unsupported capabilities return
+an error without switching to another provider or account.
+
+Maps use OpenFreeMap styles and tiles and require no API key.
 
 Roastbook records AI request metadata, status, token usage, duration, and cost
 in PostgreSQL. Prompts, provider response events, outputs, and detailed errors

@@ -172,10 +172,9 @@ storage:
 
 openai:
   existingSecret: ""
-  existingSecretKey: "api-key"
-  baseUrl: ""  # e.g., "https://openrouter.ai/api/v1" for OpenRouter
-  visionModel: "gpt-5.1-codex"
-  researchModel: "gpt-5.1-codex"
+  # Secret containing a base64-encoded 32-byte credential encryption key.
+  existingSecretKey: "encryption-key"
+  allowedPrivateOrigins: []
   telemetryStorePayloads: false
   telemetryRetentionDays: 1
   telemetryMaxPayloadBytes: 65536

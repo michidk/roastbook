@@ -18,7 +18,11 @@ if (missingEnvironmentVariables.length > 0) {
 }
 
 const result = Bun.spawnSync(['bun', 'test', 'integration'], {
-  env: { ...process.env, SSR: 'true' },
+  env: {
+    ...process.env,
+    SSR: 'true',
+    AI_CREDENTIAL_ENCRYPTION_KEY: Buffer.alloc(32, 31).toString('base64'),
+  },
   stdout: 'inherit',
   stderr: 'inherit',
 })

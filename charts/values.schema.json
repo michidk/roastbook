@@ -468,9 +468,7 @@
       "required": [
         "existingSecret",
         "existingSecretKey",
-        "baseUrl",
-        "visionModel",
-        "researchModel",
+        "allowedPrivateOrigins",
         "telemetryStorePayloads",
         "telemetryRetentionDays",
         "telemetryMaxPayloadBytes"
@@ -478,9 +476,10 @@
       "properties": {
         "existingSecret": { "type": "string" },
         "existingSecretKey": { "type": "string", "minLength": 1 },
-        "baseUrl": { "type": "string" },
-        "visionModel": { "type": "string", "minLength": 1 },
-        "researchModel": { "type": "string", "minLength": 1 },
+        "allowedPrivateOrigins": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
         "telemetryStorePayloads": { "type": "boolean" },
         "telemetryRetentionDays": {
           "type": "integer",

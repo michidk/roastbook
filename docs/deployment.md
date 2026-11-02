@@ -252,7 +252,8 @@ helm install roastbook ./charts \
 Prefer existing Kubernetes Secrets in production. The chart accepts a full
 `DATABASE_URL` through `postgresql.existingSecret`, Hodor credentials through
 `hodor.existingSecret`, S3 credentials through
-`storage.s3.existingSecret`, and an AI key through `openai.existingSecret`.
+`storage.s3.existingSecret`, and the AI credential encryption key through
+`openai.existingSecret`. Users supply their own AI provider keys in Settings.
 Built-in authentication uses
 `auth.enabled=true` and `auth.existingSecret`; see the chart README for its
 required environment keys. Set `hodor.enabled=false` when using built-in login

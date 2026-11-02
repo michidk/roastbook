@@ -24,9 +24,9 @@ import {
 export async function recommendShotFromHistory(
   context: ShotRecommendationContext,
 ): Promise<ShotRecommendation> {
-  const config = getOpenAIConfig()
+  const config = await getOpenAIConfig()
   if (!config.apiKey) {
-    throw new Error('OPENAI_API_KEY is not configured')
+    throw new Error('Connect your AI provider in Settings > AI')
   }
 
   const systemPrompts = [
@@ -72,9 +72,9 @@ export async function answerShotRecommendationQuestion(
   recommendation: ShotRecommendation,
   conversation: readonly ShotRecommendationChatMessage[],
 ): Promise<ShotRecommendationAnswer> {
-  const config = getOpenAIConfig()
+  const config = await getOpenAIConfig()
   if (!config.apiKey) {
-    throw new Error('OPENAI_API_KEY is not configured')
+    throw new Error('Connect your AI provider in Settings > AI')
   }
 
   const { systemPrompts, messages } = buildShotRecommendationChatMessages(

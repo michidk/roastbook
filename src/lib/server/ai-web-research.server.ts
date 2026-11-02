@@ -54,8 +54,12 @@ async function researchStructuredDataFromWeb<
 }: StructuredWebResearchRequest<TFields>): Promise<
   StructuredResearchResult<TFields>
 > {
-  const config = getOpenAIConfig()
+  const config = await getOpenAIConfig()
   if (!config.apiKey) return {}
+  if (config.api !== 'responses')
+    throw new Error(
+      'Online research requires a Responses-compatible provider with web search',
+    )
 
   console.info(`[AI research:${logLabel}] search query`, {
     ...logContext,

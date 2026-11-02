@@ -4,6 +4,7 @@ export {
 } from '@/lib/server/ai-brew-recommendation.server'
 export { extractBeanInfoFromImages } from '@/lib/server/ai-image-extraction.server'
 export {
+  isRecommendationsEnabled,
   isResearchEnabled,
   isVisionEnabled,
 } from '@/lib/server/ai-runtime.server'

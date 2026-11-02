@@ -13,9 +13,6 @@ describe('server environment', () => {
       STORAGE_PATH: './uploads',
       STORAGE_URL: '/media',
       S3_REGION: 'us-east-1',
-      OPENAI_BASE_URL: 'https://api.openai.com/v1',
-      OPENAI_VISION_MODEL: 'gpt-5.1-codex',
-      OPENAI_RESEARCH_MODEL: 'gpt-5.1-codex',
       AI_TELEMETRY_STORE_PAYLOADS: false,
       AI_TELEMETRY_RETENTION_DAYS: 1,
       AI_TELEMETRY_MAX_PAYLOAD_BYTES: 65_536,
@@ -46,11 +43,11 @@ describe('server environment', () => {
   test('treats empty optional values as unset', () => {
     const environment = parseServerEnv({
       DATABASE_URL: databaseUrl,
-      OPENAI_API_KEY: '',
+      AI_CREDENTIAL_ENCRYPTION_KEY: '',
       STORAGE_PATH: '',
     })
 
-    expect(environment.OPENAI_API_KEY).toBeUndefined()
+    expect(environment.AI_CREDENTIAL_ENCRYPTION_KEY).toBeUndefined()
     expect(environment.STORAGE_PATH).toBe('./uploads')
   })
 
@@ -142,4 +139,44 @@ describe('authentication deployment configuration', () => {
       }),
     ).toThrow('RESEND_API_KEY')
   })
+})
+
+test('validates the AI encryption key and confines private AI origins to self-hosting', () => {
+  const value = Buffer.alloc(32, 7).toString('base64')
+  expect(
+    parseServerEnv({
+      DATABASE_URL: databaseUrl,
+      AI_CREDENTIAL_ENCRYPTION_KEY: value,
+    }).AI_CREDENTIAL_ENCRYPTION_KEY,
+  ).toBe(value)
+  expect(() =>
+    parseServerEnv({
+      DATABASE_URL: databaseUrl,
+      AI_CREDENTIAL_ENCRYPTION_KEY: 'short',
+    }),
+  ).toThrow('AI_CREDENTIAL_ENCRYPTION_KEY')
+  for (const origin of [
+    'http://localhost:11434/v1',
+    'https://user:pass@provider.example',
+    '*',
+  ])
+    expect(() =>
+      parseServerEnv({
+        DATABASE_URL: databaseUrl,
+        AI_ALLOWED_PRIVATE_ORIGINS: origin,
+      }),
+    ).toThrow('AI_ALLOWED_PRIVATE_ORIGINS')
+  expect(
+    parseServerEnv({
+      DATABASE_URL: databaseUrl,
+      AI_ALLOWED_PRIVATE_ORIGINS: 'http://ollama:11434',
+    }).AI_ALLOWED_PRIVATE_ORIGINS,
+  ).toBe('http://ollama:11434')
+  expect(() =>
+    parseServerEnv({
+      DATABASE_URL: databaseUrl,
+      DEPLOYMENT_MODE: 'hosted',
+      AI_ALLOWED_PRIVATE_ORIGINS: 'http://localhost:11434',
+    }),
+  ).toThrow('AI_ALLOWED_PRIVATE_ORIGINS')
 })

@@ -40,10 +40,17 @@ const serverSchema = {
   S3_ENDPOINT: z.url().optional(),
   S3_ACCESS_KEY_ID: optionalString,
   S3_SECRET_ACCESS_KEY: optionalString,
-  OPENAI_API_KEY: optionalString,
-  OPENAI_BASE_URL: z.url().default('https://api.openai.com/v1'),
-  OPENAI_VISION_MODEL: z.string().trim().min(1).default('gpt-5.1-codex'),
-  OPENAI_RESEARCH_MODEL: z.string().trim().min(1).default('gpt-5.1-codex'),
+  AI_CREDENTIAL_ENCRYPTION_KEY: z
+    .string()
+    .regex(/^[A-Za-z0-9+/]{43}=$/)
+    .refine(
+      (value) =>
+        Buffer.from(value, 'base64').length === 32 &&
+        Buffer.from(value, 'base64').toString('base64') === value,
+      'Use a base64-encoded 32-byte encryption key',
+    )
+    .optional(),
+  AI_ALLOWED_PRIVATE_ORIGINS: optionalString,
   AI_TELEMETRY_STORE_PAYLOADS: booleanString,
   AI_TELEMETRY_RETENTION_DAYS: z.coerce
     .number()
@@ -120,10 +127,9 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
       S3_ENDPOINT: runtimeEnvironment.S3_ENDPOINT,
       S3_ACCESS_KEY_ID: runtimeEnvironment.S3_ACCESS_KEY_ID,
       S3_SECRET_ACCESS_KEY: runtimeEnvironment.S3_SECRET_ACCESS_KEY,
-      OPENAI_API_KEY: runtimeEnvironment.OPENAI_API_KEY,
-      OPENAI_BASE_URL: runtimeEnvironment.OPENAI_BASE_URL,
-      OPENAI_VISION_MODEL: runtimeEnvironment.OPENAI_VISION_MODEL,
-      OPENAI_RESEARCH_MODEL: runtimeEnvironment.OPENAI_RESEARCH_MODEL,
+      AI_CREDENTIAL_ENCRYPTION_KEY:
+        runtimeEnvironment.AI_CREDENTIAL_ENCRYPTION_KEY,
+      AI_ALLOWED_PRIVATE_ORIGINS: runtimeEnvironment.AI_ALLOWED_PRIVATE_ORIGINS,
       AI_TELEMETRY_STORE_PAYLOADS:
         runtimeEnvironment.AI_TELEMETRY_STORE_PAYLOADS,
       AI_TELEMETRY_RETENTION_DAYS:
@@ -154,6 +160,33 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
             path: ['AUTH_ENABLED'],
             message: 'Must be true for hosted deployments',
           })
+        }
+        if (environment.AI_ALLOWED_PRIVATE_ORIGINS) {
+          const origins = environment.AI_ALLOWED_PRIVATE_ORIGINS.split(',').map(
+            (value) => value.trim(),
+          )
+          if (
+            environment.DEPLOYMENT_MODE === 'hosted' ||
+            origins.some((value) => {
+              try {
+                const url = new URL(value)
+                return (
+                  !['https:', 'http:'].includes(url.protocol) ||
+                  url.origin !== value ||
+                  !!url.username ||
+                  !!url.password
+                )
+              } catch {
+                return true
+              }
+            })
+          )
+            context.addIssue({
+              code: 'custom',
+              path: ['AI_ALLOWED_PRIVATE_ORIGINS'],
+              message:
+                'Use exact HTTP(S) origins, only on self-hosted deployments',
+            })
         }
         if (environment.AUTH_ENABLED) {
           requireVariable('AUTH_URL', environment.AUTH_URL)

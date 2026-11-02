@@ -90,7 +90,7 @@ const config = defineConfig({
               replacement: resolve('src/lib/demo/tanstack-ai.ts'),
             },
             {
-              find: /^@tanstack\/ai-openai$/,
+              find: /^@tanstack\/ai-openai(?:\/compatible)?$/,
               replacement: resolve('src/lib/demo/tanstack-ai-openai.ts'),
             },
             {

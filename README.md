@@ -125,7 +125,10 @@ desktop where you dig through the numbers afterwards.
 ## 🧠 AI features
 
 > [!NOTE]
-> Set `OPENAI_API_KEY` and these turn on. Everything else works without it.
+> Connect your own provider in Settings > AI. Your provider bills AI usage.
+> Self-hosted operators first configure `AI_CREDENTIAL_ENCRYPTION_KEY`; see
+> [AI configuration](docs/configuration.md#openai-compatible-ai). Everything else
+> works without AI.
 
 - **Label scanning** — extract bean details from up to six pictures of the bag
   together, using one analysis when adding or editing a coffee.

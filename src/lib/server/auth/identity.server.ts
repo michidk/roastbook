@@ -2,8 +2,9 @@ import '@tanstack/react-start/server-only'
 import { and, eq, isNull, ne, sql } from 'drizzle-orm'
 import { getControlDb } from '@/db/connection.server'
 import type { JournalIdentity } from '@/db/journal-context.server'
-import { authUsers, instanceIdentity } from '@/db/schema'
+import { aiProviderCredentials, authUsers, instanceIdentity } from '@/db/schema'
 import { getServerEnv } from '@/lib/env.server'
+import { decryptAiKey, encryptAiKey } from '../ai-credential.server'
 import { createJournalDefaults } from './defaults.server'
 import { journalTables } from './journal-tables.server'
 
@@ -51,6 +52,27 @@ export async function initializeUser(user: {
           sql`update ${sql.identifier(table)} set owner_id = ${user.id} where owner_id = ${instance.defaultUserId}`,
         )
       }
+      const [provider] = await tx
+        .select()
+        .from(aiProviderCredentials)
+        .where(eq(aiProviderCredentials.userId, instance.defaultUserId))
+      if (provider)
+        await tx
+          .update(aiProviderCredentials)
+          .set({
+            userId: user.id,
+            encryptedApiKey: encryptAiKey(
+              decryptAiKey(
+                provider.encryptedApiKey,
+                provider.userId,
+                provider.baseURL,
+              ),
+              user.id,
+              provider.baseURL,
+            ),
+            updatedAt: new Date(),
+          })
+          .where(eq(aiProviderCredentials.userId, instance.defaultUserId))
       await tx.execute(
         sql`select set_config('roastbook.bootstrap', 'false', true)`,
       )

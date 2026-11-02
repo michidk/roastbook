@@ -52,23 +52,15 @@ env:
         key: {{ .Values.storage.s3.existingSecretSecretAccessKeyKey }}
   {{- end }}
   {{- if .Values.openai.existingSecret }}
-  - name: OPENAI_API_KEY
+  - name: AI_CREDENTIAL_ENCRYPTION_KEY
     valueFrom:
       secretKeyRef:
         name: {{ .Values.openai.existingSecret }}
         key: {{ .Values.openai.existingSecretKey }}
-  {{- if .Values.openai.baseUrl }}
-  - name: OPENAI_BASE_URL
-    value: {{ .Values.openai.baseUrl | quote }}
   {{- end }}
-  {{- if .Values.openai.visionModel }}
-  - name: OPENAI_VISION_MODEL
-    value: {{ .Values.openai.visionModel | quote }}
-  {{- end }}
-  {{- if .Values.openai.researchModel }}
-  - name: OPENAI_RESEARCH_MODEL
-    value: {{ .Values.openai.researchModel | quote }}
-  {{- end }}
+  {{- if .Values.openai.allowedPrivateOrigins }}
+  - name: AI_ALLOWED_PRIVATE_ORIGINS
+    value: {{ join "," .Values.openai.allowedPrivateOrigins | quote }}
   {{- end }}
   {{- if .Values.mcp.enabled }}
   - name: MCP_ALLOWED_HOSTS

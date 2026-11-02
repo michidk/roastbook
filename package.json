@@ -31,7 +31,7 @@
     "test:coverage": "bun test --coverage --path-ignore-patterns='**/*.integration.test.ts'",
     "test:integration": "bun run scripts/test-integration.ts",
     "verify": "bun run check && bun run typecheck && bun run test && bun run lint:deadcode && bun run build && bun run check:client-assets && bun run check:pwa",
-    "db:generate": "drizzle-kit generate",
+    "db:generate": "bun --bun drizzle-kit generate",
     "db:migrate": "bun run scripts/migrate.ts",
     "db:migrate:cli": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",

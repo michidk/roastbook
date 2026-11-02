@@ -11,6 +11,8 @@ const forbiddenMarkers = [
   'S3_SECRET_ACCESS_KEY=',
   'roastbook.user_id',
   'auth_verifications',
+  'ai_provider_credentials',
+  'AI_CREDENTIAL_ENCRYPTION_KEY',
   'OPENAI_API_KEY=',
 ]
 

@@ -43,6 +43,7 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgresql://roastbook:roastbook@localhost:5432/roastbook_test
+      AI_CREDENTIAL_ENCRYPTION_KEY: Hx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8=
       TEST_DATABASE_URL: postgresql://roastbook:roastbook@localhost:5432/roastbook_test
       TEST_S3_ENDPOINT: http://localhost:9000
       TEST_S3_ACCESS_KEY_ID: roastbook-test

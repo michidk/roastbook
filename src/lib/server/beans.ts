@@ -412,15 +412,15 @@ export const deleteBean = createServerFn({ method: 'POST' })
 
 export const checkVisionEnabled = createServerFn({ method: 'GET' }).handler(
   async () => {
-    return { enabled: isVisionEnabled() }
+    return { enabled: await isVisionEnabled() }
   },
 )
 
 export const extractBeanInfo = createServerFn({ method: 'POST' })
   .validator(extractBeanInfoSchema)
   .handler(async ({ data }): Promise<ExtractedBeanInfo> => {
-    if (!isVisionEnabled()) {
-      throw new Error('OpenAI vision is not configured')
+    if (!(await isVisionEnabled())) {
+      throw new Error('Connect your AI provider in Settings > AI')
     }
     const aiImages = await Promise.all(
       data.images.map(async ({ imageBase64, mimeType }) => {
@@ -436,15 +436,17 @@ export const extractBeanInfo = createServerFn({ method: 'POST' })
 
 export const checkResearchEnabled = createServerFn({ method: 'GET' }).handler(
   async () => {
-    return { enabled: isResearchEnabled() }
+    return { enabled: await isResearchEnabled() }
   },
 )
 
 export const researchBeanInfo = createServerFn({ method: 'POST' })
   .validator(researchBeanInfoSchema)
   .handler(async ({ data }): Promise<ExtractedBeanInfo> => {
-    if (!isResearchEnabled()) {
-      throw new Error('OpenAI research is not configured')
+    if (!(await isResearchEnabled())) {
+      throw new Error(
+        'Connect a provider with Responses API web search in Settings > AI',
+      )
     }
 
     console.info('[Bean research] request', {

@@ -301,13 +301,15 @@ export const deleteGear = createServerFn({ method: 'POST' })
 
 export const checkGearResearchEnabled = createServerFn({
   method: 'GET',
-}).handler(async () => ({ enabled: isResearchEnabled() }))
+}).handler(async () => ({ enabled: await isResearchEnabled() }))
 
 export const researchMachineSettings = createServerFn({ method: 'POST' })
   .validator(researchMachineSettingsSchema)
   .handler(async ({ data }): Promise<ExtractedMachineResearch> => {
-    if (!isResearchEnabled()) {
-      throw new Error('OpenAI research is not configured')
+    if (!(await isResearchEnabled())) {
+      throw new Error(
+        'Connect a provider with Responses API web search in Settings > AI',
+      )
     }
 
     return withResourceLimits('machine-web-research', () =>

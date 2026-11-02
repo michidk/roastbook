@@ -1,52 +1,41 @@
+import { openaiCompatibleText } from '@tanstack/ai-openai/compatible'
+import { DEFAULT_AI_PROVIDER } from '@/lib/ai-provider'
+import { createAiProviderFetch } from './ai-provider-fetch.server'
 import {
-  createOpenaiChat,
-  OPENAI_CHAT_MODELS,
-  type OpenAIChatModel,
-} from '@tanstack/ai-openai'
-import { DEMO_MODE } from '@/lib/build-mode'
-import { getServerEnv } from '@/lib/env.server'
+  getAiRuntimeConfig,
+  readAiProviderCredentials,
+} from './ai-provider-settings.server'
 
-function isOpenAIChatModel(model: string): model is OpenAIChatModel {
-  return (OPENAI_CHAT_MODELS as ReadonlyArray<string>).includes(model)
-}
-
-function resolveModel(
-  envValue: string | undefined,
-  fallback: OpenAIChatModel,
-): OpenAIChatModel {
-  return envValue && isOpenAIChatModel(envValue) ? envValue : fallback
-}
-
-export function getOpenAIConfig() {
-  const environment = getServerEnv()
-  return {
-    apiKey: environment.OPENAI_API_KEY,
-    baseURL: environment.OPENAI_BASE_URL,
-    visionModel: environment.OPENAI_VISION_MODEL,
-    researchModel: resolveModel(
-      environment.OPENAI_RESEARCH_MODEL,
-      'gpt-5.1-codex',
-    ),
-  }
+export async function getOpenAIConfig() {
+  return (
+    (await getAiRuntimeConfig()) ?? {
+      ...DEFAULT_AI_PROVIDER,
+      apiKey: undefined,
+    }
+  )
 }
 
 export function createAiAdapter(
-  model: OpenAIChatModel,
-  config: ReturnType<typeof getOpenAIConfig>,
+  model: string,
+  config: Awaited<ReturnType<typeof getOpenAIConfig>>,
 ) {
-  if (!config.apiKey) {
-    throw new Error('OPENAI_API_KEY is not configured')
-  }
-
-  return createOpenaiChat(model, config.apiKey, { baseURL: config.baseURL })
+  if (!config.apiKey)
+    throw new Error('Connect your AI provider in Settings > AI')
+  return openaiCompatibleText(model, {
+    apiKey: config.apiKey,
+    baseURL: config.baseURL,
+    api: config.api,
+    fetch: createAiProviderFetch(config.baseURL),
+    maxRetries: 0,
+    timeout: 120_000,
+  })
 }
-
-export function isVisionEnabled(): boolean {
-  if (DEMO_MODE) return false
-  return Boolean(getServerEnv().OPENAI_API_KEY)
+export async function isVisionEnabled(): Promise<boolean> {
+  return Boolean(await readAiProviderCredentials())
 }
-
-export function isResearchEnabled(): boolean {
-  if (DEMO_MODE) return false
-  return Boolean(getServerEnv().OPENAI_API_KEY)
+export async function isResearchEnabled(): Promise<boolean> {
+  return (await readAiProviderCredentials())?.api === 'responses'
+}
+export async function isRecommendationsEnabled(): Promise<boolean> {
+  return Boolean(await readAiProviderCredentials())
 }

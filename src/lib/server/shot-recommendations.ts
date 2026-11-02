@@ -10,7 +10,7 @@ import {
 } from '@/db/schema'
 import {
   answerShotRecommendationQuestion,
-  isResearchEnabled,
+  isRecommendationsEnabled,
   recommendShotFromHistory,
 } from '@/lib/server/ai-operations.server'
 import { withResourceLimits } from '@/lib/server/resource-limits.server'
@@ -200,7 +200,7 @@ function setupConditions(setup: RecommendationSetup) {
 
 export const checkShotRecommendationEnabled = createServerFn({
   method: 'GET',
-}).handler(async () => ({ enabled: isResearchEnabled() }))
+}).handler(async () => ({ enabled: await isRecommendationsEnabled() }))
 
 export const getShotRecommendationOptions = createServerFn({ method: 'GET' })
   .validator(shotRecommendationRequestSchema)
@@ -414,8 +414,8 @@ async function loadRecommendationEvidence(request: ShotRecommendationRequest) {
   }
 }
 
-function assertRecommendationEnabled() {
-  if (!isResearchEnabled()) {
+async function assertRecommendationEnabled() {
+  if (!(await isRecommendationsEnabled())) {
     throw new ShotRecommendationError('AI recommendations are not configured')
   }
 }
@@ -423,7 +423,7 @@ function assertRecommendationEnabled() {
 export const getShotRecommendation = createServerFn({ method: 'POST' })
   .validator(shotRecommendationRequestSchema)
   .handler(async ({ data: request }) => {
-    assertRecommendationEnabled()
+    await assertRecommendationEnabled()
     const { context, basis } = await loadRecommendationEvidence(request)
     const recommendation = await withResourceLimits('shot-recommendation', () =>
       recommendShotFromHistory(context),
@@ -434,7 +434,7 @@ export const getShotRecommendation = createServerFn({ method: 'POST' })
 export const chatAboutShotRecommendation = createServerFn({ method: 'POST' })
   .validator(shotRecommendationChatRequestSchema)
   .handler(async ({ data }) => {
-    assertRecommendationEnabled()
+    await assertRecommendationEnabled()
     const { context } = await loadRecommendationEvidence(data.request)
     const answer = await withResourceLimits('shot-recommendation-chat', () =>
       answerShotRecommendationQuestion(

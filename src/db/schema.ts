@@ -2239,3 +2239,25 @@ export const adminAuditEvents = pgTable('admin_audit_events', {
   action: text('action').notNull(),
   createdAt: createdAt(),
 })
+
+// Credentials stay outside journal queries and data exports. Only the control connection can read them.
+export const aiProviderCredentials = pgTable(
+  'ai_provider_credentials',
+  {
+    userId: text('user_id')
+      .primaryKey()
+      .references(() => authUsers.id, { onDelete: 'cascade' }),
+    baseURL: text('base_url').notNull(),
+    api: text('api').$type<'responses' | 'chat-completions'>().notNull(),
+    encryptedApiKey: text('encrypted_api_key').notNull(),
+    visionModel: text('vision_model').notNull(),
+    researchModel: text('research_model').notNull(),
+    ...timestamps(),
+  },
+  (table) => [
+    check(
+      'ai_provider_api_check',
+      sql`${table.api} in ('responses','chat-completions')`,
+    ),
+  ],
+)
