@@ -87,7 +87,7 @@ export const usePreferencesStore = create<PreferencesState>()(
     {
       // Keep the existing key so current theme choices survive this migration.
       name: 'roastbook-settings',
-      version: 6,
+      version: 10,
       skipHydration: true,
       partialize: ({
         theme,

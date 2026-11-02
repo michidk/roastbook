@@ -11,6 +11,7 @@ import {
   tasteProfileFieldsSchema,
   timeZoneSchema,
 } from '@/lib/server/settings-contract'
+import { DARK_THEMES, LIGHT_THEMES } from '@/lib/theme'
 
 async function saveSettings(
   patch: Parameters<typeof updateSettings>[0],
@@ -82,4 +83,20 @@ export const updateDefaultMapLocation = createServerFn({ method: 'POST' })
       },
       'Could not save the default map location',
     ),
+  )
+
+export const updateLightTheme = createServerFn({ method: 'POST' })
+  .validator(z.enum(LIGHT_THEMES.map((theme) => theme.id)))
+  .handler(({ data: lightTheme }) =>
+    saveSettings({ lightTheme }, 'Could not save the light theme'),
+  )
+export const updateDarkTheme = createServerFn({ method: 'POST' })
+  .validator(z.enum(DARK_THEMES.map((theme) => theme.id)))
+  .handler(({ data: darkTheme }) =>
+    saveSettings({ darkTheme }, 'Could not save the dark theme'),
+  )
+export const updateBackgroundGrainEnabled = createServerFn({ method: 'POST' })
+  .validator(z.boolean())
+  .handler(({ data: backgroundGrainEnabled }) =>
+    saveSettings({ backgroundGrainEnabled }, 'Could not save background grain'),
   )

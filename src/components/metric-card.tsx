@@ -29,7 +29,7 @@ export function MetricCard({
       className={cn(
         'h-full',
         variant === 'hero' &&
-          'bg-coffee text-coffee-foreground shadow-coffee-strong',
+          'bg-coffee text-coffee-foreground shadow-coffee-strong dark:bg-card dark:text-link dark:shadow-coffee',
         variant === 'quiet' &&
           'rounded-2xl bg-secondary/70 py-4 shadow-none [--card-spacing:--spacing(4)] sm:[--card-spacing:--spacing(4)]',
       )}
@@ -40,7 +40,7 @@ export function MetricCard({
             className={cn(
               'text-sm font-medium',
               variant === 'hero'
-                ? 'text-coffee-foreground/80'
+                ? 'text-coffee-foreground/80 dark:text-muted-foreground'
                 : 'text-muted-foreground',
             )}
           >
@@ -61,7 +61,7 @@ export function MetricCard({
               className={cn(
                 'mt-1 text-xs',
                 variant === 'hero'
-                  ? 'text-coffee-foreground/80'
+                  ? 'text-coffee-foreground/80 dark:text-muted-foreground'
                   : 'text-muted-foreground',
               )}
             >
@@ -75,7 +75,9 @@ export function MetricCard({
             aria-hidden
             className={cn(
               'shrink-0',
-              variant === 'hero' ? 'text-coffee-foreground/80' : 'text-link',
+              variant === 'hero'
+                ? 'text-coffee-foreground/80 dark:text-muted-foreground'
+                : 'text-link',
             )}
           >
             <Icon className="size-5" />

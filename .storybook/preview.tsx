@@ -16,6 +16,9 @@ import './preview.css'
 const settings = {
   demoMode: false,
   backgroundTextureEnabled: false,
+  backgroundGrainEnabled: true,
+  lightTheme: 'light-roast',
+  darkTheme: 'dark-roast',
   defaultCurrency: 'EUR',
   dateFormat: 'day-month-year-slash',
   defaultListView: 'grid',

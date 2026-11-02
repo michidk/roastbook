@@ -1,6 +1,7 @@
 import type { CollectionView } from '@/lib/collection-view'
 import { CURRENCIES } from '@/lib/constants'
 import type { TasteProfileConfig } from '@/lib/taste-profile'
+import type { DarkTheme, LightTheme } from '@/lib/theme'
 
 export type Currency = (typeof CURRENCIES)[number]['value']
 
@@ -62,6 +63,9 @@ export type AppSettings = {
     role: 'user' | 'admin'
   } | null
   readonly demoMode: boolean
+  readonly lightTheme: LightTheme
+  readonly darkTheme: DarkTheme
+  readonly backgroundGrainEnabled: boolean
   readonly backgroundTextureEnabled: boolean
   readonly defaultCurrency: Currency
   readonly dateFormat: DateFormat

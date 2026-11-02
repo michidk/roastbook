@@ -157,7 +157,7 @@ function RecentBrewRow({
 
 function RecentBrewsEmpty() {
   return (
-    <div className="rounded-2xl bg-secondary px-4 py-6 text-center sm:px-5 sm:py-8">
+    <div className="rounded-2xl bg-secondary px-4 py-6 text-center dark:bg-transparent sm:px-5 sm:py-8">
       <p className="text-sm text-muted-foreground">
         No brews logged yet. Start by recording your first coffee.
       </p>
@@ -209,7 +209,7 @@ function QuickAddRow({
   return (
     <Link
       to={href}
-      className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-secondary px-3.5 py-2 transition-colors hover:bg-accent/70 sm:px-4 sm:py-3"
+      className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-secondary px-3.5 py-2 transition-colors hover:bg-accent/70 dark:border-input/50 sm:px-4 sm:py-3"
     >
       <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground sm:size-9">
         <Icon className="h-4 w-4" />

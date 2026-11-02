@@ -78,7 +78,7 @@ function DesktopNavLink({ item }: { item: NavItem }) {
       item={item}
       isActive={isActive}
       className="inline-flex min-h-11 items-center rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground [@media(hover:hover)_and_(pointer:fine)]:min-h-0"
-      activeClassName="bg-primary text-primary-foreground"
+      activeClassName="bg-primary text-primary-foreground hover:text-primary-foreground"
     >
       {item.title}
     </NavItemLink>
@@ -130,7 +130,7 @@ function DesktopMoreMenu() {
         className={cn(
           'group/more inline-flex min-h-11 cursor-pointer items-center gap-1 rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground data-popup-open:bg-accent data-popup-open:text-foreground [@media(hover:hover)_and_(pointer:fine)]:min-h-0',
           isActive &&
-            'bg-primary text-primary-foreground data-popup-open:bg-primary data-popup-open:text-primary-foreground',
+            'bg-primary text-primary-foreground hover:text-primary-foreground data-popup-open:bg-primary data-popup-open:text-primary-foreground',
         )}
       >
         More

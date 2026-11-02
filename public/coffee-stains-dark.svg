@@ -20,28 +20,28 @@
   </defs>
   <g
     fill="none"
-    stroke="#d2873e"
+    stroke="#c99564"
     stroke-linecap="round"
     filter="url(#wobble)"
   >
-    <circle cx="230" cy="190" r="91" stroke-width="3" opacity="0.032" />
+    <circle cx="230" cy="190" r="91" stroke-width="3" opacity="0.18" />
     <path
       d="M159 235a91 91 0 0 0 140 12"
       stroke-width="6"
-      opacity="0.018"
+      opacity="0.10"
     />
     <ellipse
-      cx="1510"
-      cy="1120"
+      cx="1450"
+      cy="860"
       rx="126"
       ry="109"
       stroke-width="4"
-      opacity="0.025"
+      opacity="0.14"
     />
     <path
-      d="M1409 1059a126 109 0 0 1 84-46"
+      d="M1349 799a126 109 0 0 1 84-46"
       stroke-width="7"
-      opacity="0.014"
+      opacity="0.08"
     />
   </g>
 </svg>

@@ -80,8 +80,22 @@ face when you don't.
     width="900">
 </p>
 
-Roastbook runs equally well on the phone in your hand at the machine and on the
-desktop where you dig through the numbers afterwards.
+Roastbook is designed for desktop first, with full support for phones and
+tablets. Use the browser or install it as a Progressive Web App (PWA) on your
+phone or desktop. Its offline mode lets you log brews, work on recipes, and
+attach pictures without a connection, then sync when you reconnect.
+[See what works offline.](docs/offline.md)
+
+Choose your look in **Settings → Appearance**: three light palettes and three
+dark palettes, each with a live miniature preview. Light Roast and Dark Roast
+are the defaults. Palettes, coffee stains, and background grain save to your
+journal on the server and apply across devices. Only the Light, Dark, or Browser
+color-mode choice stays on this device. The header switch uses your saved
+palettes. The Roast pair keeps
+paper grain and coffee-ring backgrounds, with separate controls for each.
+Classic Light and Classic Dark use
+ivory and charcoal with copper accents. Pure Light and Pure Dark offer minimal
+white and black styling without textures.
 
 ## ✨ Why Roastbook
 
@@ -104,11 +118,12 @@ desktop where you dig through the numbers afterwards.
   history and AI recommendations learn across every purchase of that coffee.
   Edit an existing bag to update its roast and purchase details. Pictures
   belong to the coffee, not the bag, so every bag shows the same photos.
-- 📱 **Mobile and desktop, both first-class.** Large touch targets and compact
-  cards next to the machine; full data tables, charts, and maps at the desk,
-  plus a <kbd>⌘</kbd> <kbd>K</kbd> command palette for jumping anywhere without
-  the mouse.
-- 📴 **Offline journaling.** Install Roastbook as a PWA, keep brewing and recipe
+- 📱 **Desktop first, fully mobile-friendly.** Full data tables, charts, and
+  maps at the desk, with a <kbd>⌘</kbd> <kbd>K</kbd> command palette for keyboard
+  navigation. Responsive layouts, large touch targets, and compact cards
+  support phones and tablets next to the coffee machine.
+- 📴 **An installable app with offline mode.** Install Roastbook as a PWA on
+  your phone or desktop, keep brewing and recipe
   work on the device without a connection, and sync it when you reconnect.
   [See what works offline.](docs/offline.md)
 - 🤖 **AI-native, not AI-bolted-on.** Research and extraction are wired into the

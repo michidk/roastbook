@@ -67,6 +67,11 @@ export const settings = pgTable(
     numberFormat: text('number_format').default('decimal-point').notNull(),
     timeZone: text('time_zone').default('UTC').notNull(),
     defaultListView: text('default_list_view').default('cards').notNull(),
+    lightTheme: text('light_theme').default('light-roast').notNull(),
+    darkTheme: text('dark_theme').default('dark-roast').notNull(),
+    backgroundGrainEnabled: boolean('background_grain_enabled')
+      .default(true)
+      .notNull(),
     backgroundTextureEnabled: boolean('background_texture_enabled')
       .default(true)
       .notNull(),

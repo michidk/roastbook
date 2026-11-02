@@ -13,28 +13,61 @@ useful content or an intentional state, never a browser-broken placeholder.
 
 Use these semantic tokens:
 
-- Page: `--background`, light `#f6eddf`, dark `#191817`.
-- Ink: `--foreground`, light `#3a2a1e`, dark `#f0e9df`.
-- Card: `--card`, light `#ffffff`, dark `#242220`.
-- Secondary: `--secondary`, light `#fbf5eb`, dark `#302c28`.
-- Muted text: `--muted-foreground`, light `#7a6a58`, dark `#b7ada1`.
-- Primary action: `--primary`, light `#aa612f`, dark `#dda464`.
-- Link and emphasized text: `--link`, light `#8a5a30`, dark `#e8b87e`.
-- Coffee surface: `--coffee`, light `#6f4e37`, dark `#c59870`.
-- Border: `--border`, light `#ead9bf`, dark `#403a34`.
-- Control boundary: `--input`, light `#9f7548`, dark `#8c7c6c`.
+- Page: `--background`, light `#f6eddf`, dark `#241b17`.
+- Ink: `--foreground`, light `#3a2a1e`, dark `#ecdbc5`.
+- Card: `--card`, light `#ffffff`, dark `#332720`.
+- Secondary: `--secondary`, light `#fbf5eb`, dark `#403128`.
+- Muted text: `--muted-foreground`, light `#7a6a58`, dark `#c6af96`.
+- Primary action: `--primary`, light `#aa612f`, dark `#c99564`.
+- Link and emphasized text: `--link`, light `#8a5a30`, dark `#edc399`.
+- Coffee surface: `--coffee`, light `#6f4e37`, dark `#ba8a60`.
+- Border: `--border`, light `#ead9bf`, dark `#6a5040`.
+- Control boundary: `--input`, light `#9f7548`, dark `#aa8b70`.
 - Destructive: `--destructive`, `#c0573a` in both themes.
-- Destructive text: `--destructive-text`, light `#9d3b26`, dark `#f0a08c`.
-- Positive: `--positive`, light `#6b8a3d`, dark `#a6b995`.
-- Positive text: `--positive-text`, light `#4c681f`, dark `#bbd1a6`.
-- Favorite: `--favorite`, light `#8b3f60`, dark `#dfacc3`.
+- Destructive text: `--destructive-text`, light `#9d3b26`, dark `#eea198`.
+- Positive: `--positive`, light `#6b8a3d`, dark `#a9b665`.
+- Positive text: `--positive-text`, light `#4c681f`, dark `#b8c57b`.
+- Favorite: `--favorite`, light `#8b3f60`, dark `#d3869b`.
 
-Dark mode uses warm charcoal for the canvas, lighter neutral cards, and a
-raised `--popover` tone (`#2e2b28`) for menus and dialogs. Reserve amber for
-actions and selected states; control outlines use a quieter warm gray. Cream
-text and muted stone labels keep long journal sessions comfortable. Charts
-use amber, sage, cream, mauve, and clay to distinguish series. Native browser
-controls follow the dark color scheme.
+Dark mode starts from [Gruvbox Material](https://github.com/sainnhe/gruvbox-material)'s
+muted accents, with custom espresso and cocoa surfaces to make the coffee
+identity visible. The reference palette is in
+[gruvbox_material.vim](https://github.com/sainnhe/gruvbox-material/blob/master/autoload/gruvbox_material.vim).
+
+The canvas is espresso brown, cards are cocoa, and secondary surfaces are
+milk chocolate. Popovers use a lighter coffee tone (`#48382d`). Cream text,
+caramel actions, and latte-colored links keep the palette warm without bright
+orange buttons. Brown outlines separate cards and controls. Chart series retain
+olive, aqua, and rose accents so they remain distinguishable. Text and control
+colors are adjusted for application contrast.
+Keep coffee-ring marks on the canvas and hero metrics dark. Quick-add rows
+retain their filled surfaces, visible outlines, and icon backgrounds in both
+themes.
+Native browser controls follow the dark color scheme.
+
+Other references considered were [Kanagawa Dragon](https://github.com/rebelot/kanagawa.nvim),
+[Catppuccin Mocha](https://catppuccin.com/palette/), and
+[daisyUI Coffee](https://daisyui.com/theme-generator/#theme=coffee).
+Dragon is more subdued; Mocha and daisyUI Coffee have cooler violet bases.
+Gruvbox Material provides the warmer, earthy direction used here.
+
+Appearance settings offer separate light and dark palette selections. Light
+Roast and Dark Roast preserve the default tokens above, including paper grain
+and coffee-ring backgrounds. Both background settings are saved with the
+journal. Classic Light uses
+ivory and white with copper
+accents; Classic Dark uses neutral charcoal, cream text, and copper.
+Pure Light and Pure Dark
+use white and black with neutral accents and no decorative shadows. Classic
+and Pure omit paper grain and coffee stains. All themes retain visible card
+and control boundaries. Palette overrides live in `src/styles.css`; their
+miniature settings previews use those same tokens.
+
+Only color mode is a browser-local appearance preference. Palettes, coffee
+stains, and grain are stored in the server settings for the current journal.
+The header toggle and browser mode use the server-saved light/dark pair. Apply palette
+attributes before hydration to avoid a flash of the wrong colors, and update
+the browser/PWA theme color to the active palette's canvas.
 
 Add new semantic roles to `src/styles.css` before using them. Amber identifies
 interaction and current state, not decoration. Roast gradients, badges, taste
@@ -443,8 +476,10 @@ Use cream and card tones for hierarchy, coffee-tinted shadows for elevation,
 and borders for controls or structural separation. Errors and empty states stay
 inside the same card geometry.
 
-The page canvas uses a low-contrast, theme-aware paper grain with sparse,
-barely visible coffee-ring marks. Keep these textures on `body`; cards,
+The light page canvas uses low-contrast paper grain with sparse, barely
+visible coffee-ring marks. Dark mode uses caramel coffee rings with enough
+contrast to remain visible against espresso brown, with subtle paper grain.
+Keep these textures on `body`; cards,
 popovers, controls, and other raised surfaces remain solid and crisp.
 
 Authentication pages retain these light or dark texture layers with every

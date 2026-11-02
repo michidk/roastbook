@@ -33,7 +33,12 @@ import { restoreOfflineOwner, selectOfflineOwner } from '@/lib/journal-owner'
 import { usePreferencesStore } from '@/lib/preferences-store'
 import { getCurrentAccount } from '@/lib/server/account'
 import { getAppSettings } from '@/lib/server/app-settings'
-import { isDarkTheme, THEME_COLORS, themeColor } from '@/lib/theme'
+import {
+  isDarkTheme,
+  THEME_BOOTSTRAP_SCRIPT,
+  THEME_COLORS,
+  themeColor,
+} from '@/lib/theme'
 import { cn } from '@/lib/utils'
 import {
   cacheSettingsData,
@@ -129,32 +134,18 @@ export const Route = createRootRoute({
   notFoundComponent: () => <RouteNotFound />,
 })
 
-const THEME_BOOTSTRAP_SCRIPT = `(function () {
-  var theme = null
-  try {
-    var raw = localStorage.getItem('roastbook-settings')
-    var stored = raw ? JSON.parse(raw) : null
-    theme = stored && stored.state ? stored.state.theme : null
-  } catch (error) {}
-  try {
-    var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    var dark = theme === 'dark' || (theme !== 'light' && systemDark)
-    var color = dark ? '${THEME_COLORS.dark}' : '${THEME_COLORS.light}'
-    document.documentElement.classList.toggle('dark', dark)
-    document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
-    document.documentElement.style.backgroundColor = color
-    document.querySelectorAll('meta[name="theme-color"]').forEach(function (meta) {
-      meta.setAttribute('content', color)
-    })
-  } catch (error) {}
-})()`
-
 function RootDocument({ children }: { children: React.ReactNode }) {
   const settings = Route.useLoaderData()
   if (settings?.journalOwner) restoreOfflineOwner(settings.journalOwner)
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      data-light-theme={settings?.lightTheme ?? 'light-roast'}
+      data-dark-theme={settings?.darkTheme ?? 'dark-roast'}
+      data-background-grain={String(settings?.backgroundGrainEnabled !== false)}
+    >
       <head>
         <HeadContent />
         {/* biome-ignore lint/security/noDangerouslySetInnerHtml: static theme bootstrap must run before hydration */}
@@ -209,6 +200,10 @@ function OfflineStatusMount() {
 }
 
 function SettingsHydrator() {
+  const settings = Route.useLoaderData()
+  const lightTheme = settings?.lightTheme ?? 'light-roast'
+  const darkTheme = settings?.darkTheme ?? 'dark-roast'
+  const backgroundGrainEnabled = settings?.backgroundGrainEnabled !== false
   const theme = usePreferencesStore((state) => state.theme)
   const hasHydrated = usePreferencesStore((state) => state.hasHydrated)
 
@@ -224,7 +219,12 @@ function SettingsHydrator() {
     const browserTheme = window.matchMedia('(prefers-color-scheme: dark)')
     const applyTheme = () => {
       const isDark = isDarkTheme(theme, browserTheme.matches)
-      const color = themeColor(isDark)
+      const color = themeColor(isDark, lightTheme, darkTheme)
+      document.documentElement.dataset.backgroundGrain = String(
+        backgroundGrainEnabled,
+      )
+      document.documentElement.dataset.lightTheme = lightTheme
+      document.documentElement.dataset.darkTheme = darkTheme
       document.documentElement.classList.toggle('dark', isDark)
       document.documentElement.style.colorScheme = isDark ? 'dark' : 'light'
       document.documentElement.style.backgroundColor = color
@@ -238,7 +238,7 @@ function SettingsHydrator() {
 
     browserTheme.addEventListener('change', applyTheme)
     return () => browserTheme.removeEventListener('change', applyTheme)
-  }, [hasHydrated, theme])
+  }, [hasHydrated, theme, lightTheme, darkTheme, backgroundGrainEnabled])
 
   return null
 }

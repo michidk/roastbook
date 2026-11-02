@@ -15,10 +15,14 @@ import {
   type TasteProfileConfig,
   tasteProfileConfigFrom,
 } from '@/lib/taste-profile'
+import { resolveDarkTheme, resolveLightTheme } from '@/lib/theme'
 
 type EditableSettings = Pick<
   typeof settingsTable.$inferInsert,
   | 'backgroundTextureEnabled'
+  | 'lightTheme'
+  | 'darkTheme'
+  | 'backgroundGrainEnabled'
   | 'defaultCurrency'
   | 'dateFormat'
   | 'defaultListView'
@@ -42,6 +46,9 @@ function toAppSettings(row: typeof settingsTable.$inferSelect): AppSettings {
   return {
     demoMode: DEMO_MODE,
     backgroundTextureEnabled: row.backgroundTextureEnabled,
+    backgroundGrainEnabled: row.backgroundGrainEnabled,
+    lightTheme: resolveLightTheme(row.lightTheme),
+    darkTheme: resolveDarkTheme(row.darkTheme),
     defaultCurrency: currencySchema(row.defaultCurrency),
     dateFormat: dateFormatSchema(row.dateFormat),
     defaultListView: listViewSchema(row.defaultListView),
