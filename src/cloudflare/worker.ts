@@ -1,7 +1,4 @@
-import type {
-  ExecutionContext,
-  ScheduledController,
-} from '@cloudflare/workers-types'
+import type { ExecutionContext } from '@cloudflare/workers-types'
 import { getServerEnv } from '@/lib/env.server'
 import app from '../server'
 import {
@@ -14,11 +11,24 @@ export default {
   async fetch(
     request: Request,
     bindings: CloudflareRuntimeBindings,
-    _context: ExecutionContext,
+    context: ExecutionContext,
   ): Promise<Response> {
     try {
       const canonical = canonicalRequest(request, bindings)
       if (canonical instanceof Response) return secureResponse(canonical)
+      if (new URL(canonical.url).pathname === '/api/health') {
+        const jobs = bindings.ACCOUNT_JOBS.get(
+          bindings.ACCOUNT_JOBS.idFromName('account-jobs'),
+        )
+        context.waitUntil(
+          jobs
+            .fetch('https://account-jobs.internal/start', { method: 'POST' })
+            .then(async (response) => {
+              await response.body?.cancel()
+              if (!response.ok) throw new Error('Account job scheduling failed')
+            }),
+        )
+      }
       return await withCloudflareRuntime(bindings, async () => {
         if (new URL(canonical.url).pathname.startsWith('/media/')) {
           const { handleCloudflareMedia } = await import('./media.server')
@@ -39,18 +49,7 @@ export default {
       )
     }
   },
-  async scheduled(
-    _event: ScheduledController,
-    bindings: CloudflareRuntimeBindings,
-    context: ExecutionContext,
-  ): Promise<void> {
-    context.waitUntil(
-      withCloudflareRuntime(bindings, async () => {
-        const { runScheduledJobs } = await import('./jobs.server')
-        await runScheduledJobs()
-      }),
-    )
-  },
 }
 
+export { AccountJobs } from './account-jobs'
 export { OAuthCoordinator } from './oauth-coordinator'

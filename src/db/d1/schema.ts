@@ -3223,6 +3223,7 @@ export const accountJobs = sqliteTable(
       .notNull()
       .default('pending'),
     storagePath: text('storage_path'),
+    progressStep: integer('progress_step').notNull().default(0),
     attempts: integer('attempts').notNull().default(0),
     availableAt: timestamp('available_at', { withTimezone: true })
       .notNull()

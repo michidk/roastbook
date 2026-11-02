@@ -62,7 +62,7 @@ await writeFile(
       compatibilityDate: '2026-11-02',
       compatibilityFlags: ['nodejs_compat', 'global_fetch_strictly_public'],
       images: true,
-      durableObjects: ['OAuthCoordinator'],
+      durableObjects: ['OAuthCoordinator', 'AccountJobs'],
       files: hashes,
     },
     null,

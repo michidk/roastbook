@@ -18,6 +18,7 @@ const jobRow = z.object({
   user_id: z.string(),
   kind: z.enum(['export', 'delete']),
   attempts: z.number().int().positive(),
+  progress_step: z.number().int().nonnegative(),
   available_at: z.number(),
 })
 type Job = z.infer<typeof jobRow>
@@ -212,11 +213,15 @@ async function exportJournal(job: Job) {
   let bytes = 0
   let rows = 0
   let images = 0
+  let renewAt = 0
   const encoder = new TextEncoder()
   const guard = async () => {
     if (Date.now() - startedAt > maxExportMs)
       throw new ExportLimit('Export exceeds execution time limit')
-    await renew(job)
+    if (Date.now() >= renewAt) {
+      await renew(job)
+      renewAt = Date.now() + 15_000
+    }
   }
   function countBytes(size: number) {
     bytes += size
@@ -262,57 +267,70 @@ async function exportJournal(job: Job) {
       name: 'README.txt',
       body: 'Each data/*.jsonl file contains one JSON object per line. Image storage_path fields refer to images/<storage_path>. Authentication credentials and integration secrets are excluded.\n',
     }
-    for (const table of exportedTables) {
-      async function* lines() {
-        let cursor = 0
-        while (true) {
-          await guard()
-          const page = await database()
+    for (let group = 0; group < exportedTables.length; group += 4) {
+      const tables = exportedTables.slice(group, group + 4)
+      await guard()
+      const firstPages = await database().batch<Record<string, unknown>>(
+        tables.map((table) =>
+          database()
             .prepare(
-              `select rowid as __cursor,* from "${table}" where owner_id=? and rowid>? order by rowid limit 25`,
+              `select rowid as __cursor,* from "${table}" where owner_id=? order by rowid limit 250`,
             )
-            .bind(job.user_id, cursor)
-            .all<Record<string, unknown>>()
-          for (const row of page.results) {
-            cursor = z.number().int().parse(row.__cursor)
-            if (++rows > maxExportRows)
-              throw new ExportLimit('Export exceeds 5000 rows')
-            const encoded = encoder.encode(
-              `${JSON.stringify(decodedRow(table, row))}\n`,
-            )
-            countBytes(encoded.length)
-            yield encoded
+            .bind(job.user_id),
+        ),
+      )
+      for (const [index, table] of tables.entries()) {
+        async function* lines() {
+          let page = firstPages[index]
+          if (!page) throw new Error('Export table is unavailable')
+          let cursor = 0
+          while (true) {
+            for (const row of page.results) {
+              cursor = z.number().int().parse(row.__cursor)
+              if (++rows > maxExportRows)
+                throw new ExportLimit('Export exceeds 5000 rows')
+              const encoded = encoder.encode(
+                `${JSON.stringify(decodedRow(table, row))}\n`,
+              )
+              countBytes(encoded.length)
+              yield encoded
+            }
+            if (page.results.length < 250) return
+            await guard()
+            page = await database()
+              .prepare(
+                `select rowid as __cursor,* from "${table}" where owner_id=? and rowid>? order by rowid limit 250`,
+              )
+              .bind(job.user_id, cursor)
+              .all()
           }
-          if (page.results.length < 25) return
         }
+        yield { name: `data/${table}.jsonl`, body: rowsStream(lines()) }
       }
-      yield { name: `data/${table}.jsonl`, body: rowsStream(lines()) }
     }
-    for (const table of imageTables) {
-      let cursor = 0
-      while (true) {
-        await guard()
-        const page = await database()
+    await guard()
+    const imagePages = await database().batch<{ storage_path: string }>(
+      imageTables.map((table) =>
+        database()
           .prepare(
-            `select rowid as cursor,storage_path from "${table}" where owner_id=? and rowid>? order by rowid limit 100`,
+            `select storage_path from "${table}" where owner_id=? order by rowid limit 201`,
           )
-          .bind(job.user_id, cursor)
-          .all<{ cursor: number; storage_path: string }>()
-        for (const row of page.results) {
-          cursor = row.cursor
-          if (++images > maxExportImages)
-            throw new ExportLimit('Export exceeds 200 images')
-          const path = validateObjectKey(row.storage_path)
-          const object = await bucket().get(path)
-          if (!object) throw new Error('An exported image is unavailable')
-          countBytes(object.size)
-          yield {
-            name: `images/${path}`,
-            body: imageBody(object.body.getReader()),
-          }
-          await guard()
+          .bind(job.user_id),
+      ),
+    )
+    for (const page of imagePages) {
+      for (const row of page.results) {
+        if (++images > maxExportImages)
+          throw new ExportLimit('Export exceeds 200 images')
+        const path = validateObjectKey(z.string().parse(row.storage_path))
+        const object = await bucket().get(path)
+        if (!object) throw new Error('An exported image is unavailable')
+        countBytes(object.size)
+        yield {
+          name: `images/${path}`,
+          body: imageBody(object.body.getReader()),
         }
-        if (page.results.length < 100) break
+        await guard()
       }
     }
   }
@@ -346,35 +364,76 @@ async function exportJournal(job: Job) {
   }
 }
 async function deleteJournal(job: Job) {
-  const startedAt = Date.now()
-  let pages = 0
-  for (const table of [...imageTables, 'media_cleanup_jobs'] as const) {
-    while (true) {
-      await renew(job)
+  const imageSteps = new Set<string>([...imageTables, 'media_cleanup_jobs'])
+  const steps = [
+    ...new Set([...imageTables, 'media_cleanup_jobs', ...deleteOrder]),
+  ]
+  for (let index = job.progress_step; index < steps.length; index++) {
+    const table = steps[index]
+    if (!table) throw new Error('Invalid deletion progress')
+    await renew(job)
+    let fullPage = false
+    let removedImages = false
+    if (imageSteps.has(table)) {
       const page = await database()
         .prepare(
-          `select rowid as cursor,storage_path from "${table}" where owner_id=? order by rowid limit 100`,
+          `select rowid as cursor,storage_path from "${table}" where owner_id=? order by rowid limit 90`,
         )
         .bind(job.user_id)
         .all<{ cursor: number; storage_path: string }>()
-      if (!page.results.length) break
-      for (const row of page.results) {
-        await renew(job)
-        const paths =
+      if (page.results.length) {
+        const paths = page.results.flatMap((row) =>
           table === 'media_cleanup_jobs'
             ? [row.storage_path]
-            : getStoredImagePaths([row.storage_path])
+            : getStoredImagePaths([row.storage_path]),
+        )
         await bucket().delete(paths.map(validateObjectKey))
+        const cursors = page.results.map((row) => sql`${row.cursor}`)
         await runControlBatch(
           [
             ...assertControlCondition(claimCondition(job)),
-            sql`delete from ${sql.identifier(table)} where owner_id=${job.user_id} and rowid=${row.cursor}`,
+            sql`delete from ${sql.identifier(table)} where owner_id=${job.user_id} and rowid in (${sql.join(cursors, sql`,`)})`,
           ],
           'Job claim is no longer current',
         )
+        removedImages = true
       }
-      if (++pages >= 1 || Date.now() - startedAt > 15_000) return false
+      fullPage = page.results.length === 90
+    } else {
+      const hasFavicons = table === 'coffee_shops' || table === 'roasters'
+      const limit = hasFavicons ? 100 : 250
+      if (hasFavicons) {
+        const page = await database()
+          .prepare(
+            `select id from "${table}" where owner_id=? order by rowid limit ${limit}`,
+          )
+          .bind(job.user_id)
+          .all<{ id: number }>()
+        if (page.results.length) {
+          const kind = table === 'coffee_shops' ? 'coffee-shops' : 'roasters'
+          await bucket().delete(
+            page.results.map((row) => `favicons/${kind}/${row.id}.png`),
+          )
+        }
+      }
+      const result = await database()
+        .prepare(
+          `delete from "${table}" where owner_id=? and rowid in (select rowid from "${table}" where owner_id=? order by rowid limit ${limit}) and exists(select 1 from account_jobs where id=? and attempts=? and status='running' and available_at>?)`,
+        )
+        .bind(job.user_id, job.user_id, job.id, job.attempts, Date.now())
+        .run()
+      fullPage = result.meta.changes >= limit
     }
+    if (fullPage) return false
+    const saved = await database()
+      .prepare(
+        "update account_jobs set progress_step=? where id=? and user_id=? and attempts=? and status='running' and available_at>?",
+      )
+      .bind(index + 1, job.id, job.user_id, job.attempts, Date.now())
+      .run()
+    if (saved.meta.changes !== 1)
+      throw new LostClaim('Job claim is no longer current')
+    if (removedImages || index - job.progress_step >= 7) return false
   }
   await renew(job)
   if (
@@ -383,36 +442,6 @@ async function deleteJournal(job: Job) {
     ))
   )
     return false
-  // Favicons are deterministically named; remove them while owner records still exist.
-  for (const [table, kind] of [
-    ['coffee_shops', 'coffee-shops'],
-    ['roasters', 'roasters'],
-  ] as const) {
-    const page = await database()
-      .prepare(
-        `select id from "${table}" where owner_id=? order by id limit 100`,
-      )
-      .bind(job.user_id)
-      .all<{ id: number }>()
-    for (const row of page.results)
-      await bucket().delete(`favicons/${kind}/${row.id}.png`)
-  }
-  for (const table of deleteOrder) {
-    const limit = table === 'coffee_shops' || table === 'roasters' ? 100 : 250
-    await renew(job)
-    const result = await database()
-      .prepare(
-        `delete from "${table}" where owner_id=? and rowid in (select rowid from "${table}" where owner_id=? limit ${limit}) and exists(select 1 from account_jobs where id=? and attempts=? and status='running' and available_at>?)`,
-      )
-      .bind(job.user_id, job.user_id, job.id, job.attempts, Date.now())
-      .run()
-    if (
-      result.meta.changes >= limit ||
-      ++pages >= 80 ||
-      Date.now() - startedAt > 15_000
-    )
-      return false
-  }
   await renew(job)
   const profile = await database()
     .prepare(
@@ -511,7 +540,7 @@ export async function expireAccountExports() {
     .run()
   const jobs = await database()
     .prepare(
-      "select id,user_id from account_jobs where kind='export' and status in ('ready','failed') and expires_at<? limit 25",
+      "select id,user_id from account_jobs where kind='export' and status in ('ready','failed') and expires_at<? limit 2",
     )
     .bind(Date.now())
     .all<{ id: string; user_id: string }>()

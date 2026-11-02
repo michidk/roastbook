@@ -10,7 +10,7 @@ export async function sendAccountEmail(
 ) {
   const env = getServerEnv()
   if (!env.EMAIL_FROM) throw new Error('EMAIL_FROM is required')
-  if (env.EMAIL_PROVIDER === 'cloudflare')
+  if (env.EMAIL_PROVIDER === 'service')
     return sendCloudflareAccountEmail(to, subject, text)
   if (env.EMAIL_PROVIDER === 'resend') {
     const response = await fetch('https://api.resend.com/emails', {

@@ -1,8 +1,76 @@
+import { AccountJobs } from '../../src/cloudflare/account-jobs'
 import {
+  runAccountJob as executeAccountJob,
   expireAccountExports,
-  runAccountJob,
 } from '../../src/cloudflare/auth/jobs.server'
-import { withCloudflareRuntime } from '../../src/cloudflare/context.server'
+import {
+  requireCloudflareRuntime,
+  withCloudflareRuntime,
+} from '../../src/cloudflare/context.server'
+
+let maximumQueries = 0
+async function runAccountJob() {
+  const { bindings } = requireCloudflareRuntime()
+  let queries = 0
+  const count = () => {
+    maximumQueries = Math.max(maximumQueries, ++queries)
+    if (queries > 45) throw new Error('Job exceeded its D1 request budget')
+  }
+  function statement(target) {
+    return new Proxy(target, {
+      get(target, key) {
+        if (key === 'bind')
+          return (...values) => statement(target.bind(...values))
+        if (['run', 'all', 'first', 'raw'].includes(key))
+          return (...args) => {
+            count()
+            return target[key](...args)
+          }
+        const value = target[key]
+        return typeof value === 'function' ? value.bind(target) : value
+      },
+    })
+  }
+  const database = new Proxy(bindings.DB, {
+    get(target, key) {
+      if (key === 'prepare') return (query) => statement(target.prepare(query))
+      if (key === 'batch')
+        return (...args) => {
+          count()
+          return target.batch(...args)
+        }
+      const value = target[key]
+      return typeof value === 'function' ? value.bind(target) : value
+    },
+  })
+  return withCloudflareRuntime({ ...bindings, DB: database }, executeAccountJob)
+}
+
+export class VerifyAccountJobs extends AccountJobs {
+  constructor(state, bindings) {
+    super(state, bindings)
+    this.testState = state
+  }
+  async fetch(request) {
+    const path = new URL(request.url).pathname
+    if (path === '/test/status')
+      return Response.json({ alarm: await this.testState.storage.getAlarm() })
+    if (path === '/test/pause') {
+      await this.testState.storage.deleteAlarm()
+      return new Response(null, { status: 204 })
+    }
+    if (path === '/test/alarm') {
+      try {
+        await this.alarm()
+        return new Response(null, { status: 204 })
+      } catch {
+        return new Response('Job failed', { status: 503 })
+      }
+    }
+    return super.fetch(request)
+  }
+}
+
 export default {
   async fetch(request, env) {
     return withCloudflareRuntime(env, async () => {
@@ -70,7 +138,7 @@ export default {
         })
       }
       if (step === '/delete') {
-        for (let i = 0; i < 10; i++) if (!(await runAccountJob())) break
+        for (let i = 0; i < 30; i++) if (!(await runAccountJob())) break
         return Response.json({
           user: await env.DB.prepare(
             "select id from auth_users where id='alice'",
@@ -85,6 +153,7 @@ export default {
               "select count(*) n from beans where owner_id='bob'",
             ).first()
           ).n,
+          maximumQueries,
           job: await env.DB.prepare(
             "select status from account_jobs where kind='delete'",
           ).first(),

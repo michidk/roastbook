@@ -15,6 +15,13 @@
       "when": 1793649164595,
       "tag": "0001_journal_guards",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793654333975,
+      "tag": "0002_premium_thundra",
+      "breakpoints": true
     }
   ]
 }

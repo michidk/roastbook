@@ -244,7 +244,7 @@ and the external-secret contract.
 
 ## Hosted Cloudflare target
 
-See [Cloudflare runtime](cloudflare-runtime.md) for the separate Workers build,
+See [Cloudflare runtime](cloudflare-runtime.md) for the separate Workers Free build,
 D1/R2 bindings, Cloudflare Email Sending, and environment isolation. The hosted
 runtime always requires authentication. It uses platform bindings instead of a
 PostgreSQL URL, local files, S3 credentials, or SMTP credentials.

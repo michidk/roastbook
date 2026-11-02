@@ -379,7 +379,7 @@ running.
 | [Offline journaling](docs/offline.md) | Offline brew/recipe work, conflicts, and sync |
 | [Client data boundaries](docs/client-data.md) | Feature commands, caching, and mode policies |
 | [Deployment](docs/deployment.md) | Docker, Helm, security boundary |
-| [Cloudflare runtime](docs/cloudflare-runtime.md) | Workers, D1, R2, release artifacts, hosted security boundary |
+| [Cloudflare runtime](docs/cloudflare-runtime.md) | Workers Free target, D1, R2, private Resend relay, hosted security boundary |
 | [Shottimer API](docs/shottimer.md) | Device integration endpoints |
 | [Design system](DESIGN.md) | Layout contract and UI conventions |
 | [Design files](design/README.md) | Editable OpenPencil views and editor |

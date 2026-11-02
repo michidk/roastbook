@@ -3,16 +3,17 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 import type {
   D1Database,
   DurableObjectNamespace,
+  Fetcher,
   ImagesBinding,
   R2Bucket,
-  SendEmail,
 } from '@cloudflare/workers-types'
 
 export interface CloudflareRuntimeBindings {
   OAUTH_COORDINATOR: DurableObjectNamespace
   DB: D1Database
   MEDIA: R2Bucket
-  EMAIL: SendEmail
+  ACCOUNT_JOBS: DurableObjectNamespace
+  ACCOUNT_EMAIL: Fetcher
   IMAGES: ImagesBinding
   AUTH_URL: string
   [name: string]: unknown

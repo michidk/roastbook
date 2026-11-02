@@ -12,7 +12,7 @@ assert.deepEqual(manifest.compatibilityFlags, [
   'nodejs_compat',
   'global_fetch_strictly_public',
 ])
-assert.deepEqual(manifest.durableObjects, ['OAuthCoordinator'])
+assert.deepEqual(manifest.durableObjects, ['OAuthCoordinator', 'AccountJobs'])
 const root = resolve(release, 'worker')
 const paths = (await readdir(root, { recursive: true })).filter((path) =>
   path.endsWith('.js'),
@@ -29,6 +29,7 @@ const modules = await Promise.all(
 const origin = 'https://app.example.test'
 const resource = `${origin}/api/mcp`
 const secret = randomBytes(32).toString('hex')
+const messages = []
 const runtime = new Miniflare(
   convertV4MiniflareOptions({
     name: 'roastbook-release-verification',
@@ -49,10 +50,18 @@ const runtime = new Miniflare(
         headers: Object.fromEntries(request.headers),
       })
     },
+    serviceBindings: {
+      ACCOUNT_EMAIL: async (request) => {
+        assert.equal(request.url, 'https://account-email.internal/send')
+        messages.push(await request.json())
+        return new Response(null, { status: 204 })
+      },
+    },
     d1Databases: ['DB'],
     r2Buckets: ['MEDIA'],
     durableObjects: {
       OAUTH_COORDINATOR: { className: 'OAuthCoordinator', useSQLite: true },
+      ACCOUNT_JOBS: { className: 'AccountJobs', useSQLite: true },
     },
     bindings: {
       AUTH_URL: origin,
@@ -163,6 +172,26 @@ try {
   )
   console.log(
     'PASS release modules, migrated health, revision, login SSR, canonical origin and private routes',
+  )
+
+  const loginEmail = 'release-login@example.test'
+  await json(
+    await api('/email-otp/send-verification-otp', {
+      email: loginEmail,
+      type: 'sign-in',
+    }),
+  )
+  assert.equal(messages.length, 1)
+  assert.equal(messages[0].to, loginEmail)
+  const otp = /sign-in code is (\d{8})/.exec(messages[0].text)?.[1]
+  assert(otp)
+  const signedIn = await json(
+    await api('/sign-in/email-otp', { email: loginEmail, otp }),
+  )
+  assert.equal(signedIn.user.email, loginEmail)
+  assert.equal(signedIn.user.emailVerified, true)
+  console.log(
+    'PASS real email OTP signup through the private email service binding',
   )
 
   const userId = 'release-oauth-user'
