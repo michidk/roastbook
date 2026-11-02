@@ -62,27 +62,61 @@ Legacy shottimer hashes cannot identify an account and are not accepted.
 
 ## MCP
 
-`/api/mcp` serves stateless Streamable HTTP with protocol 2026-07-28. Every
-request requires `Authorization: Bearer <token>`, even when built-in login is
-disabled. Create and revoke tokens under Settings > AI access (MCP), or under
-Account > Connected applications. The token is shown once, stored as a hash,
-and expires after one year. It grants access only to its owner's enabled tools.
-Account deletion immediately revokes these credentials.
+`/api/mcp` serves stateless Streamable HTTP with protocol 2026-07-28.
+With built-in accounts enabled, add the canonical endpoint URL to an MCP client
+and sign in through its browser authorization flow. Roastbook publishes OAuth
+resource and authorization-server discovery, supports Client ID Metadata
+Documents and dynamic client registration, and requires Authorization Code
+with PKCE S256. Approve read access, optional brew creation, and optional
+background access on the consent page. Each application receives access to
+one private journal. There are no account administration or AI credential tools.
 
-The ten read tools cover brews, beans, recipes, gear, roasters, brewing methods,
-and statistics. `create_brew` logs a brew. No tool deletes or edits existing
-data.
-Tool availability and audit history belong to the account. Tokens are scoped
-to their integration type; a shottimer token cannot authenticate MCP.
+For Codex with built-in authentication:
 
-Native clients send a bearer header. There is no MCP OAuth discovery or browser
-consent flow in this implementation. For Codex, store the token in your client
-environment and configure its name without putting the token in a command:
+```bash
+codex mcp add roastbook --url https://coffee.example.com/api/mcp
+codex mcp login roastbook
+```
+
+Access tokens expire after five minutes. Background authorization uses rotating
+refresh tokens that expire after 30 days without renewal. Reusing a rotated refresh
+token is rejected. Disconnect an application in Account settings to invalidate
+its existing access tokens and refresh tokens immediately. Deleting the account
+or disabling a client also blocks access. Pausing MCP and per-tool switches take
+effect on the next request.
+
+Manual bearer tokens remain available for clients without browser authorization
+and for shared installations with `AUTH_ENABLED=false`. Create them under
+Settings > AI access (MCP), or Account > Connected applications. They are shown
+once, stored as hashes, expire after one year, and allow all enabled tools in
+their owner's journal. Store the token in the client environment:
 
 ```bash
 codex mcp add roastbook --url http://127.0.0.1:3001/api/mcp \
   --bearer-token-env-var ROASTBOOK_MCP_TOKEN
 ```
+
+The ten read tools cover brews, beans, recipes, gear, roasters, brewing methods,
+and statistics. `create_brew` logs a brew. No tool deletes or edits existing
+data. Tool availability and audit history belong to the account. A shottimer
+token cannot authenticate MCP, and an MCP credential cannot authenticate
+browser or account endpoints.
+
+Every MCP request needs an access token. DPoP-bound tokens also require a valid
+proof for the canonical public URL, including behind reverse proxies.
+The endpoint accepts POST only,
+limits request bodies to 1 MiB with a ten-second read deadline, and allows 120
+requests per journal per minute across application replicas. Read-only OAuth
+clients cannot call the write tool, even by bypassing discovery.
+
+Set `AUTH_URL` to the externally reachable HTTPS origin. Keep the same
+`AUTH_SECRET` on all replicas and across restarts; it encrypts OAuth signing
+keys stored in PostgreSQL. Back up these keys with the database. Discovery at
+`/.well-known/oauth-protected-resource/api/mcp` and
+`/.well-known/oauth-authorization-server/api/auth`, `/api/auth/jwks`, OAuth
+endpoints under `/api/auth/oauth2/`, `/login`, `/oauth/consent`, and `/api/mcp`
+must be reachable through the same origin. Avoid an additional interactive
+proxy gate on this origin when native MCP clients need OAuth.
 
 Host and Origin allowlists also apply, with no CORS headers. Configure
 `MCP_ALLOWED_HOSTS` for additional public or VPN hostnames. The canonical
@@ -92,14 +126,21 @@ the app origin. Helm can create a private integration Service with CIDR or
 namespace restrictions. Keep those restrictions when a private endpoint is
 sufficient. See [chart documentation](../charts/README.md#mcp).
 
+Client metadata fetches accept HTTPS only, reject private and special-use DNS
+addresses, pin the approved address while preserving TLS hostname verification,
+and refuse redirects. Client registration and token endpoints have additional
+IP rate limits. Configure the trusted proxy to overwrite `AUTH_IP_HEADER`;
+clients must not control that header.
+
 Shottimer devices use separate user-bound bearer tokens and must also be enabled
 in that journal. Hodor's shottimer bypass delegates authentication to this token
 check. See [Shottimer API](shottimer.md).
 
 ## Accounts, exports, and deletion
 
-Account settings support display-name changes, email changes approved through
-the old address and verified through the new address, passkey management, and
+Accounts use email addresses without usernames or display names. Account
+settings support email changes approved through the old address and verified
+through the new address, passkey management, and
 signing out other devices. Admin users have a separate `/admin/users` page.
 The last active administrator cannot be demoted or deleted.
 

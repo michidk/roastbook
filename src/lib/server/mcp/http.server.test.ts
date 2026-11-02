@@ -23,6 +23,9 @@ function request(host: string, headers: Record<string, string> = {}) {
     headers: {
       Host: host,
       Accept: 'application/json, text/event-stream',
+      'MCP-Protocol-Version': '2026-07-28',
+      'Mcp-Method': 'tools/call',
+      'Mcp-Name': 'list_brews',
       'Content-Type': 'application/json',
       ...headers,
     },
@@ -30,7 +33,14 @@ function request(host: string, headers: Record<string, string> = {}) {
       jsonrpc: '2.0',
       id: 1,
       method: 'tools/call',
-      params: { name: 'list_brews', arguments: {} },
+      params: {
+        _meta: {
+          'io.modelcontextprotocol/protocolVersion': '2026-07-28',
+          'io.modelcontextprotocol/clientCapabilities': {},
+        },
+        name: 'list_brews',
+        arguments: {},
+      },
     }),
   })
 }
@@ -57,7 +67,7 @@ describe('stateless MCP HTTP endpoint', () => {
     expect(await handle(new Request('http://localhost/oauth/token'))).toBeNull()
   })
 
-  test('serves requests without credentials from allowed hosts', async () => {
+  test('dispatches authenticated requests from allowed hosts', async () => {
     const audits: unknown[] = []
     const handle = createMcpHttpHandler(config, {
       audit: async (event) => void audits.push(event),

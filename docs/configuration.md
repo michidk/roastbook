@@ -157,6 +157,9 @@ page behind the deployment's authentication boundary.
 | `MCP_PORT` | `3001` | No | Docker Compose loopback port for `/api/mcp` |
 
 The endpoint requires a user-bound bearer token in both authentication modes.
+With accounts enabled, OAuth discovery and browser consent use the canonical
+HTTPS `AUTH_URL`. Keep `AUTH_SECRET` stable to decrypt persisted signing keys.
+Without accounts, use a manual token from MCP settings.
 See [MCP in the deployment guide](deployment.md#mcp).
 
 ## Docker Compose authentication gate

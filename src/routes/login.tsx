@@ -24,7 +24,7 @@ function LoginPage() {
       setCode(otp)
       setSent(true)
     }
-    window.history.replaceState(null, '', '/login')
+    window.history.replaceState(null, '', `/login${window.location.search}`)
   }, [])
   async function submit(event: React.FormEvent) {
     event.preventDefault()
@@ -50,7 +50,13 @@ function LoginPage() {
           throw new Error(
             result.error.message ?? 'This code is invalid or expired',
           )
-        window.location.assign('/overview')
+        window.location.assign(
+          result.data &&
+            'url' in result.data &&
+            typeof result.data.url === 'string'
+            ? result.data.url
+            : '/overview',
+        )
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Sign-in failed')
@@ -64,7 +70,13 @@ function LoginPage() {
       const result = await authClient.signIn.passkey()
       if (result.error)
         throw new Error(result.error.message ?? 'Passkey sign-in failed')
-      window.location.assign('/overview')
+      window.location.assign(
+        result.data &&
+          'url' in result.data &&
+          typeof result.data.url === 'string'
+          ? result.data.url
+          : '/overview',
+      )
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Passkey sign-in failed',

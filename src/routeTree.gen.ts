@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as StatsRouteImport } from './routes/stats'
+import { Route as DotwellKnownSplatRouteImport } from './routes/[.]well-known/$'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as ApiAuthProbeRouteImport } from './routes/api/auth-probe'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
@@ -33,6 +34,7 @@ import { Route as GearSetsNewRouteImport } from './routes/gear-sets/new'
 import { Route as GearIndexRouteImport } from './routes/gear/index'
 import { Route as GearGearIdRouteImport } from './routes/gear/$gearId'
 import { Route as GearNewRouteImport } from './routes/gear/new'
+import { Route as OauthConsentRouteImport } from './routes/oauth/consent'
 import { Route as OverviewIndexRouteImport } from './routes/overview/index'
 import { Route as PlacesIndexRouteImport } from './routes/places/index'
 import { Route as PlacesCoffeeShopIdRouteImport } from './routes/places/$coffeeShopId'
@@ -88,6 +90,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const StatsRoute = StatsRouteImport.update({
   id: '/stats',
   path: '/stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DotwellKnownSplatRoute = DotwellKnownSplatRouteImport.update({
+  id: '/.well-known/$',
+  path: '/.well-known/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
@@ -189,6 +196,11 @@ const GearGearIdRoute = GearGearIdRouteImport.update({
 const GearNewRoute = GearNewRouteImport.update({
   id: '/gear/new',
   path: '/gear/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OauthConsentRoute = OauthConsentRouteImport.update({
+  id: '/oauth/consent',
+  path: '/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OverviewIndexRoute = OverviewIndexRouteImport.update({
@@ -377,6 +389,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRouteWithChildren
   '/stats': typeof StatsRoute
+  '/.well-known/$': typeof DotwellKnownSplatRoute
   '/admin/users': typeof AdminUsersRoute
   '/api/auth-probe': typeof ApiAuthProbeRoute
   '/api/health': typeof ApiHealthRoute
@@ -392,6 +405,7 @@ export interface FileRoutesByFullPath {
   '/gear-sets/new': typeof GearSetsNewRoute
   '/gear/$gearId': typeof GearGearIdRoute
   '/gear/new': typeof GearNewRoute
+  '/oauth/consent': typeof OauthConsentRoute
   '/places/$coffeeShopId': typeof PlacesCoffeeShopIdRoute
   '/places/new': typeof PlacesNewRoute
   '/recipes/$recipeId': typeof RecipesRecipeIdRoute
@@ -438,6 +452,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/stats': typeof StatsRoute
+  '/.well-known/$': typeof DotwellKnownSplatRoute
   '/admin/users': typeof AdminUsersRoute
   '/api/auth-probe': typeof ApiAuthProbeRoute
   '/api/health': typeof ApiHealthRoute
@@ -453,6 +468,7 @@ export interface FileRoutesByTo {
   '/gear-sets/new': typeof GearSetsNewRoute
   '/gear/$gearId': typeof GearGearIdRoute
   '/gear/new': typeof GearNewRoute
+  '/oauth/consent': typeof OauthConsentRoute
   '/places/$coffeeShopId': typeof PlacesCoffeeShopIdRoute
   '/places/new': typeof PlacesNewRoute
   '/recipes/$recipeId': typeof RecipesRecipeIdRoute
@@ -501,6 +517,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRouteWithChildren
   '/stats': typeof StatsRoute
+  '/.well-known/$': typeof DotwellKnownSplatRoute
   '/admin/users': typeof AdminUsersRoute
   '/api/auth-probe': typeof ApiAuthProbeRoute
   '/api/health': typeof ApiHealthRoute
@@ -516,6 +533,7 @@ export interface FileRoutesById {
   '/gear-sets/new': typeof GearSetsNewRoute
   '/gear/$gearId': typeof GearGearIdRoute
   '/gear/new': typeof GearNewRoute
+  '/oauth/consent': typeof OauthConsentRoute
   '/places/$coffeeShopId': typeof PlacesCoffeeShopIdRoute
   '/places/new': typeof PlacesNewRoute
   '/recipes/$recipeId': typeof RecipesRecipeIdRoute
@@ -565,6 +583,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/settings'
     | '/stats'
+    | '/.well-known/$'
     | '/admin/users'
     | '/api/auth-probe'
     | '/api/health'
@@ -580,6 +599,7 @@ export interface FileRouteTypes {
     | '/gear-sets/new'
     | '/gear/$gearId'
     | '/gear/new'
+    | '/oauth/consent'
     | '/places/$coffeeShopId'
     | '/places/new'
     | '/recipes/$recipeId'
@@ -626,6 +646,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/stats'
+    | '/.well-known/$'
     | '/admin/users'
     | '/api/auth-probe'
     | '/api/health'
@@ -641,6 +662,7 @@ export interface FileRouteTypes {
     | '/gear-sets/new'
     | '/gear/$gearId'
     | '/gear/new'
+    | '/oauth/consent'
     | '/places/$coffeeShopId'
     | '/places/new'
     | '/recipes/$recipeId'
@@ -688,6 +710,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/settings'
     | '/stats'
+    | '/.well-known/$'
     | '/admin/users'
     | '/api/auth-probe'
     | '/api/health'
@@ -703,6 +726,7 @@ export interface FileRouteTypes {
     | '/gear-sets/new'
     | '/gear/$gearId'
     | '/gear/new'
+    | '/oauth/consent'
     | '/places/$coffeeShopId'
     | '/places/new'
     | '/recipes/$recipeId'
@@ -751,6 +775,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   SettingsRoute: typeof SettingsRouteWithChildren
   StatsRoute: typeof StatsRoute
+  DotwellKnownSplatRoute: typeof DotwellKnownSplatRoute
   AdminUsersRoute: typeof AdminUsersRoute
   ApiAuthProbeRoute: typeof ApiAuthProbeRoute
   ApiHealthRoute: typeof ApiHealthRoute
@@ -766,6 +791,7 @@ export interface RootRouteChildren {
   GearSetsNewRoute: typeof GearSetsNewRoute
   GearGearIdRoute: typeof GearGearIdRoute
   GearNewRoute: typeof GearNewRoute
+  OauthConsentRoute: typeof OauthConsentRoute
   PlacesCoffeeShopIdRoute: typeof PlacesCoffeeShopIdRoute
   PlacesNewRoute: typeof PlacesNewRoute
   RecipesRecipeIdRoute: typeof RecipesRecipeIdRoute
@@ -825,6 +851,13 @@ declare module '@tanstack/react-router' {
       path: '/stats'
       fullPath: '/stats'
       preLoaderRoute: typeof StatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/$': {
+      id: '/.well-known/$'
+      path: '/.well-known/$'
+      fullPath: '/.well-known/$'
+      preLoaderRoute: typeof DotwellKnownSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/users': {
@@ -965,6 +998,13 @@ declare module '@tanstack/react-router' {
       path: '/gear/new'
       fullPath: '/gear/new'
       preLoaderRoute: typeof GearNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oauth/consent': {
+      id: '/oauth/consent'
+      path: '/oauth/consent'
+      fullPath: '/oauth/consent'
+      preLoaderRoute: typeof OauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/overview/': {
@@ -1261,6 +1301,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   SettingsRoute: SettingsRouteWithChildren,
   StatsRoute: StatsRoute,
+  DotwellKnownSplatRoute: DotwellKnownSplatRoute,
   AdminUsersRoute: AdminUsersRoute,
   ApiAuthProbeRoute: ApiAuthProbeRoute,
   ApiHealthRoute: ApiHealthRoute,
@@ -1276,6 +1317,7 @@ const rootRouteChildren: RootRouteChildren = {
   GearSetsNewRoute: GearSetsNewRoute,
   GearGearIdRoute: GearGearIdRoute,
   GearNewRoute: GearNewRoute,
+  OauthConsentRoute: OauthConsentRoute,
   PlacesCoffeeShopIdRoute: PlacesCoffeeShopIdRoute,
   PlacesNewRoute: PlacesNewRoute,
   RecipesRecipeIdRoute: RecipesRecipeIdRoute,

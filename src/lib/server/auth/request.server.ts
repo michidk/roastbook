@@ -7,8 +7,14 @@ import { withJournalResponse } from '@/db/journal-response.server'
 import { authUsers, integrationTokens } from '@/db/schema'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { getServerEnv } from '@/lib/env.server'
+import { validateMcpRequest } from '../mcp/http-policy.server'
 import { getAuth } from './auth.server'
 import { defaultIdentity, initializeUser } from './identity.server'
+import {
+  authorizeMcpRequest,
+  OAUTH_DISCOVERY_PATHS,
+} from './mcp-authorization.server'
+import { handleOAuthTokenRequest } from './oauth-token.server'
 
 export function hashIntegrationToken(token: string) {
   return createHash('sha256').update(token).digest('hex')
@@ -20,7 +26,6 @@ export async function resolveIdentity(
   if (DEMO_MODE)
     return {
       id: 'local',
-      name: 'Demo',
       email: '',
       role: 'user',
       authentication: false,
@@ -55,11 +60,13 @@ export async function resolveIdentity(
     if (!match) return null
     return {
       id: match.user.id,
-      name: match.user.name,
       email: match.user.email,
       role: match.user.role,
       authentication: env.AUTH_ENABLED,
       authenticatedAt: null,
+      ...(integration === 'mcp'
+        ? { mcpScopes: ['mcp:read', 'mcp:write'] }
+        : {}),
     }
   }
   if (!env.AUTH_ENABLED) return defaultIdentity()
@@ -73,7 +80,6 @@ export async function resolveIdentity(
     .where(eq(authUsers.id, session.user.id))
   return {
     id: session.user.id,
-    name: session.user.name,
     email: session.user.email,
     role: current?.role === 'admin' ? 'admin' : 'user',
     authentication: true,
@@ -88,17 +94,33 @@ export async function handleJournalRequest(
   if (DEMO_MODE) return next()
   const path = new URL(request.url).pathname
   if (path === '/api/health') return next()
+  if (OAUTH_DISCOVERY_PATHS.has(path)) {
+    if (!getServerEnv().AUTH_ENABLED)
+      return new Response('Not found', { status: 404 })
+    return getAuth().handler(request)
+  }
+  if (path === '/api/mcp') {
+    const rejected = await validateMcpRequest(request)
+    if (rejected) return rejected
+  }
   if (path.startsWith('/api/auth/')) {
     if (!getServerEnv().AUTH_ENABLED)
       return new Response('Not found', { status: 404 })
     const endpoint = path.slice('/api/auth'.length)
     const allowed = new Set([
       '/ok',
+      '/oauth2/authorize',
+      '/oauth2/token',
+      '/oauth2/register',
+      '/oauth2/revoke',
+      '/oauth2/consent',
+      '/oauth2/continue',
+      '/oauth2/public-client',
+      '/jwks',
       '/get-session',
       '/sign-out',
       '/email-otp/send-verification-otp',
       '/sign-in/email-otp',
-      '/update-user',
       '/change-email',
       '/verify-email',
       '/send-verification-email',
@@ -116,7 +138,9 @@ export async function handleJournalRequest(
     ])
     if (!allowed.has(endpoint))
       return new Response('Not found', { status: 404 })
-    const response = await getAuth().handler(request)
+    const response = await (endpoint === '/oauth2/token'
+      ? handleOAuthTokenRequest(request)
+      : getAuth().handler(request))
     const headers = new Headers(response.headers)
     headers.set('Cache-Control', 'private, no-store')
     headers.set('Referrer-Policy', 'no-referrer')
@@ -130,6 +154,7 @@ export async function handleJournalRequest(
   }
   const identity = await resolveIdentity(request)
   if (!identity) {
+    if (path === '/api/mcp') return authorizeMcpRequest(request, next)
     if (path === '/login') return next()
     if (
       request.method === 'GET' &&

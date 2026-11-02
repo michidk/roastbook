@@ -4,6 +4,7 @@ import { getRequest } from '@tanstack/react-start/server'
 import { count, desc, eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { mcpAuditEvents, mcpSettings } from '@/db/schema'
+import { getServerEnv } from '@/lib/env.server'
 import {
   MCP_TOOL_CATALOG,
   MCP_TOOL_NAMES,
@@ -103,7 +104,9 @@ export async function loadMcpAdminState() {
     loadMcpAuditPage(0),
   ])
   return {
-    endpoint: getMcpEndpoint(getRequest()).toString(),
+    endpoint: getMcpEndpoint(
+      getServerEnv().AUTH_URL ?? getRequest(),
+    ).toString(),
     policy,
     tools: MCP_TOOL_CATALOG.map((tool) => ({ ...tool })),
     audit,

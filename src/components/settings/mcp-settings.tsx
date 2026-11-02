@@ -91,7 +91,7 @@ export function McpSettings({ state }: { readonly state: McpAdminState }) {
     <>
       <SettingsPanelSection
         title="AI access (MCP)"
-        description="Connect an MCP client to your private journal with a revocable bearer token. Add the hostname to MCP_ALLOWED_HOSTS. Host and Origin validation also apply."
+        description="Add this URL to your MCP client. With accounts enabled, sign in and approve the access it requests. You can disconnect applications in Account settings. Clients without browser sign-in can use a manual token."
         action={<Bot className="size-5 text-link" />}
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -129,7 +129,7 @@ export function McpSettings({ state }: { readonly state: McpAdminState }) {
 
       <SettingsPanelSection
         title="Tools"
-        description="Disabled tools disappear from MCP discovery. Clients authenticated with your token can use your enabled tools, including the write tool."
+        description="Disabled tools disappear from MCP discovery. Applications can use only tools allowed by both these switches and the access you approved. Manual tokens allow all enabled tools."
       >
         {groups.map(({ group, tools }) => (
           <fieldset key={group} className="space-y-1">

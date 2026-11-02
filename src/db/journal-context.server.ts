@@ -9,11 +9,11 @@ type Transaction = Parameters<
 >[0]
 export type JournalIdentity = {
   id: string
-  name: string
   email: string
   role: 'user' | 'admin'
   authentication: boolean
   authenticatedAt: Date | null
+  mcpScopes?: readonly string[]
 }
 const context = new AsyncLocalStorage<{
   identity: JournalIdentity

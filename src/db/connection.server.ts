@@ -14,3 +14,14 @@ export function getControlDb() {
   connection ??= connect()
   return connection
 }
+
+// Advisory locks stay on a separate pool so exchanges can always use the
+// authentication adapter while holding a lock, even under concurrent load.
+let oauthLockConnection: ReturnType<typeof connect> | undefined
+export function getOAuthLockDb() {
+  oauthLockConnection ??= drizzle(
+    postgres(getServerEnv().DATABASE_URL, { max: 4 }),
+    { schema },
+  )
+  return oauthLockConnection
+}

@@ -57,7 +57,6 @@ async function exportJournal(job: Job) {
     const [profile] = await getControlDb()
       .select({
         id: authUsers.id,
-        name: authUsers.name,
         email: authUsers.email,
         createdAt: authUsers.createdAt,
       })
@@ -302,7 +301,6 @@ export async function runAccountJob(): Promise<boolean> {
     await withJournal(
       {
         id: user.id,
-        name: user.name,
         email: user.email,
         role: user.role,
         authentication: true,

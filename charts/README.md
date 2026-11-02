@@ -161,8 +161,12 @@ mcp:
 ```
 
 Configure the client with `/api/mcp` and an `Authorization: Bearer` header.
-There is no MCP OAuth discovery or consent flow. Tool policy and audit history
-belong to the token's account.
+With built-in accounts, MCP clients can discover OAuth and request browser
+consent through the public `AUTH_URL` origin. This needs `hodor.enabled=false`
+or a proxy configuration that permits native OAuth clients. The private MCP
+Service is optional and does not enable or disable OAuth on the public app.
+Tool policy and audit history belong to the authorized account. See
+[MCP deployment](../docs/deployment.md#mcp) for discovery paths and scopes.
 
 ## Validate changes
 

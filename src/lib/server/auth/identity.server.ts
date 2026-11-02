@@ -119,7 +119,6 @@ export async function defaultIdentity(): Promise<JournalIdentity> {
     )
   return {
     id: instance.defaultUserId,
-    name: 'Default user',
     email: '',
     role: 'admin',
     authentication: false,

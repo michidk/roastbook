@@ -14,6 +14,7 @@ import {
   requestDeletion,
   requestExport,
 } from '@/lib/server/account'
+import { disconnectOAuthGrant } from '@/lib/server/oauth'
 
 export const Route = createFileRoute('/settings/account')({
   loader: () => getCurrentAccount(),
@@ -22,7 +23,6 @@ export const Route = createFileRoute('/settings/account')({
 function AccountPage() {
   const state = Route.useLoaderData(),
     router = useRouter()
-  const [name, setName] = useState(state.identity?.name ?? '')
   const [email, setEmail] = useState('')
   const [token, setToken] = useState('')
   const [deletion, setDeletion] = useState('')
@@ -89,26 +89,6 @@ function AccountPage() {
         description={`Signed in as ${identity.email}`}
       >
         <form
-          className="space-y-3"
-          onSubmit={(event) => {
-            event.preventDefault()
-            void action(
-              async () => checkResult(await authClient.updateUser({ name })),
-              'Name updated',
-            )
-          }}
-        >
-          <Label htmlFor="account-name">Display name</Label>
-          <Input
-            id="account-name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            maxLength={100}
-            required
-          />
-          <Button disabled={busy}>Save name</Button>
-        </form>
-        <form
           className="mt-6 space-y-3"
           onSubmit={(event) => {
             event.preventDefault()
@@ -137,6 +117,49 @@ function AccountPage() {
             Change email
           </Button>
         </form>
+      </SettingsPanelSection>
+      <SettingsPanelSection
+        title="Connected MCP applications"
+        description="Applications you authorized through the browser. Disconnecting immediately removes their access."
+      >
+        {state.grants.length ? (
+          state.grants.map((grant) => (
+            <div
+              key={grant.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3"
+            >
+              <div className="min-w-0">
+                <p className="break-words font-medium">
+                  {grant.name ?? 'Unnamed application'}
+                </p>
+                <p className="break-all text-sm text-muted-foreground">
+                  {grant.clientId}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {grant.scopes.includes('mcp:write')
+                    ? 'Read journal and log brews'
+                    : 'Read journal'}
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                disabled={busy}
+                onClick={() =>
+                  void action(
+                    () => disconnectOAuthGrant({ data: { id: grant.id } }),
+                    'Application disconnected',
+                  )
+                }
+              >
+                Disconnect
+              </Button>
+            </div>
+          ))
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No applications connected.
+          </p>
+        )}
       </SettingsPanelSection>
       <SettingsPanelSection
         title="Passkeys and sessions"

@@ -38,7 +38,7 @@ import { handleJournalRequest } from './request.server'
 const suite = process.env.TEST_DATABASE_URL ? describe : describe.skip
 const first: JournalIdentity = {
   id: `account-a-${randomUUID()}`,
-  name: 'Private owner',
+
   email: `a-${randomUUID()}@example.test`,
   role: 'admin',
   authentication: true,
@@ -66,7 +66,6 @@ suite('private account lifecycle', () => {
       .values(
         [first, second].map((user) => ({
           id: user.id,
-          name: user.name,
           email: user.email,
           role: user.role,
           emailVerified: true,
@@ -198,7 +197,12 @@ suite('private account lifecycle', () => {
     const request = (path: string, value = token) =>
       new Request(`http://localhost${path}`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${value}` },
+        headers: {
+          Authorization: `Bearer ${value}`,
+          'content-type': 'application/json',
+          Host: 'localhost',
+        },
+        body: '{}',
       })
     const mcp = request('/api/mcp')
     const result = await handleJournalRequest(mcp, async () =>

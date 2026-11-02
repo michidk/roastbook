@@ -20,7 +20,7 @@ import {
 const suite = process.env.TEST_DATABASE_URL ? describe : describe.skip
 const first: JournalIdentity = {
   id: `provider-${randomUUID()}`,
-  name: 'First AI owner',
+
   email: `${randomUUID()}@example.test`,
   role: 'user',
   authentication: true,
@@ -47,7 +47,6 @@ suite('private AI provider settings', () => {
       .values(
         [first, second].map((user) => ({
           id: user.id,
-          name: user.name,
           email: user.email,
           emailVerified: true,
           journalInitializedAt: new Date(),

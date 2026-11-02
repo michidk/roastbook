@@ -57,7 +57,6 @@ function UsersPage() {
             className="flex flex-wrap items-center justify-between gap-4 rounded-lg border p-4"
           >
             <div>
-              <p className="font-medium">{user.name}</p>
               <p className="break-all text-sm text-muted-foreground">
                 {user.email}
               </p>

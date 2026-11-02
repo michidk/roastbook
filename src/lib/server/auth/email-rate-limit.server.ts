@@ -1,5 +1,5 @@
 import '@tanstack/react-start/server-only'
-import { createHash } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { getControlDb } from '@/db/connection.server'
 import { authRateLimits } from '@/db/schema'
@@ -13,7 +13,7 @@ export async function allowEmailAttempt(
   const key = `email:${action}:${createHash('sha256').update(email).digest('hex')}`
   const [result] = await getControlDb()
     .insert(authRateLimits)
-    .values({ id: key, key, count: 1, lastRequest: windowStart })
+    .values({ id: randomUUID(), key, count: 1, lastRequest: windowStart })
     .onConflictDoUpdate({
       target: authRateLimits.key,
       set: {

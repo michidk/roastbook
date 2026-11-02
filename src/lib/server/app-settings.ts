@@ -11,7 +11,6 @@ const loadAppSettingsServerOnly = createServerOnlyFn(async () => {
     account: identity?.authentication
       ? {
           id: identity.id,
-          name: identity.name,
           email: identity.email,
           role: identity.role,
         }

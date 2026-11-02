@@ -35,7 +35,6 @@ function postShot(token: string | null, body: unknown) {
 integrationDescribe('shottimer device API', () => {
   const identity: JournalIdentity = {
     id: `device-${crypto.randomUUID()}`,
-    name: 'Device test',
     email: 'device@example.test',
     role: 'user',
     authentication: false,
@@ -47,7 +46,6 @@ integrationDescribe('shottimer device API', () => {
       .insert(authUsers)
       .values({
         id: identity.id,
-        name: identity.name,
         email: `${identity.id}@example.test`,
       })
   })

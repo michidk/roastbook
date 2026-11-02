@@ -16,6 +16,7 @@ import { DEMO_MODE } from '@/lib/build-mode'
 import { getServerEnv } from '@/lib/env.server'
 import { sendAccountEmail } from './email.server'
 import { createIntegrationToken } from './integrations.server'
+import { listOAuthGrants } from './oauth-grants.server'
 
 function accountIdentity() {
   const identity = requireIdentity()
@@ -40,12 +41,24 @@ function requireAdmin(fresh = false) {
 }
 export async function getAccountState() {
   if (DEMO_MODE)
-    return { ownerId: 'local', identity: null, exports: [], tokens: [] }
+    return {
+      ownerId: 'local',
+      identity: null,
+      exports: [],
+      tokens: [],
+      grants: [],
+    }
   const identity = requireIdentity()
   if (!identity.authentication)
-    return { ownerId: identity.id, identity: null, exports: [], tokens: [] }
+    return {
+      ownerId: identity.id,
+      identity: null,
+      exports: [],
+      tokens: [],
+      grants: [],
+    }
   const db = getControlDb()
-  const [exports, tokens] = await Promise.all([
+  const [exports, tokens, grants] = await Promise.all([
     db
       .select({
         id: accountJobs.id,
@@ -71,17 +84,18 @@ export async function getAccountState() {
       })
       .from(integrationTokens)
       .where(eq(integrationTokens.userId, identity.id)),
+    listOAuthGrants(),
   ])
   return {
     ownerId: identity.id,
     identity: {
       id: identity.id,
-      name: identity.name,
       email: identity.email,
       role: identity.role,
     },
     exports,
     tokens,
+    grants,
   }
 }
 export async function listUsers(page: number) {
@@ -91,7 +105,6 @@ export async function listUsers(page: number) {
     db
       .select({
         id: authUsers.id,
-        name: authUsers.name,
         email: authUsers.email,
         role: authUsers.role,
         createdAt: authUsers.createdAt,

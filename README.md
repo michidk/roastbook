@@ -173,8 +173,10 @@ as MIME type and byte count, not the image payload itself.
 > endpoint (protocol 2026-07-28) with ten read tools and one write tool
 > (`create_brew`; nothing deletes or edits data). Ask what your last ten Gesha
 > brews had in common, or have an assistant log this morning's espresso. It has
-> a user-bound bearer token, managed in Settings. Keep device endpoints private
-> when public access is unnecessary. See
+> browser sign-in and scoped OAuth consent with private accounts, plus manual
+> tokens for shared installations and other clients. Disconnect applications in
+> Account settings. Keep device endpoints private when public access is
+> unnecessary. See
 > [MCP deployment](docs/deployment.md#mcp).
 
 ## 📦 Features

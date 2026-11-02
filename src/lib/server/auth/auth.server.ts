@@ -1,4 +1,5 @@
 import '@tanstack/react-start/server-only'
+import { verifyOAuthQueryParams } from '@better-auth/oauth-provider'
 import { passkey } from '@better-auth/passkey'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
@@ -14,11 +15,20 @@ import {
   authUsers,
   authVerifications,
   instanceIdentity,
+  jwks,
+  oauthAccessToken,
+  oauthClient,
+  oauthClientAssertion,
+  oauthClientResource,
+  oauthConsent,
+  oauthRefreshToken,
+  oauthResource,
 } from '@/db/schema'
 import { getServerEnv } from '@/lib/env.server'
 import { sendAccountEmail } from './email.server'
 import { allowEmailAttempt } from './email-rate-limit.server'
 import { initializeUser } from './identity.server'
+import { mcpAuthPlugins } from './mcp-options.server'
 import { requirePasskeyUserVerification } from './passkey-policy.server'
 
 function createAuth() {
@@ -41,9 +51,18 @@ function createAuth() {
         verification: authVerifications,
         passkey: authPasskeys,
         rateLimit: authRateLimits,
+        jwks,
+        oauthClient,
+        oauthResource,
+        oauthClientResource,
+        oauthAccessToken,
+        oauthRefreshToken,
+        oauthConsent,
+        oauthClientAssertion,
       },
     }),
     emailAndPassword: { enabled: false },
+    disabledPaths: ['/token', '/update-user'],
     session: {
       expiresIn: 60 * 60 * 24 * 30,
       updateAge: 60 * 60 * 24,
@@ -89,6 +108,9 @@ function createAuth() {
       customRules: {
         '/email-otp/send-verification-otp': { window: 60, max: 3 },
         '/sign-in/email-otp': { window: 60, max: 5 },
+        '/oauth2/register': { window: 3600, max: 10 },
+        '/oauth2/authorize': { window: 60, max: 30 },
+        '/oauth2/token': { window: 60, max: 30 },
       },
     },
     hooks: {
@@ -100,15 +122,6 @@ function createAuth() {
             message: 'Passkey device verification is required',
           })
         }
-        if (
-          ctx.path === '/update-user' &&
-          (typeof ctx.body?.name !== 'string' ||
-            !ctx.body.name.trim() ||
-            ctx.body.name.length > 100)
-        )
-          throw new APIError('BAD_REQUEST', {
-            message: 'Use a display name between 1 and 100 characters',
-          })
         if (
           ctx.path !== '/email-otp/send-verification-otp' &&
           ctx.path !== '/sign-in/email-otp'
@@ -159,6 +172,10 @@ function createAuth() {
       }),
     },
     databaseHooks: {
+      user: {
+        create: { before: async (user) => ({ data: { ...user, name: '' } }) },
+        update: { before: async (user) => ({ data: { ...user, name: '' } }) },
+      },
       session: {
         create: {
           before: async (session) => {
@@ -174,17 +191,31 @@ function createAuth() {
       },
     },
     plugins: [
+      ...mcpAuthPlugins(origin),
       emailOTP({
         otpLength: 8,
         expiresIn: 600,
         allowedAttempts: 3,
         storeOTP: 'hashed',
-        sendVerificationOTP: async ({ email, otp, type }) => {
+        sendVerificationOTP: async ({ email, otp, type }, ctx) => {
           if (type !== 'sign-in')
             throw new Error('This verification flow is unavailable')
           // A fragment never reaches the server or email scanner. The confirmation button
           // submits the same OTP as manual entry, so both choices consume one challenge.
           const url = new URL('/login', origin)
+          // Email OTP validation strips plugin-only body fields. The same-origin
+          // page referrer retains the signed query for a link opened in a new tab.
+          const referrer = ctx?.headers?.get('referer')
+          const page = referrer ? new URL(referrer, origin) : undefined
+          const query =
+            page?.origin === origin && page.pathname === '/login'
+              ? page.search.slice(1)
+              : undefined
+          if (
+            typeof query === 'string' &&
+            (await verifyOAuthQueryParams(query, env.AUTH_SECRET ?? ''))
+          )
+            url.search = query
           url.hash = new URLSearchParams({ email, code: otp }).toString()
           await sendAccountEmail(
             email,

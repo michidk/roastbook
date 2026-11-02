@@ -42,7 +42,11 @@ import {
 
 export const Route = createRootRoute({
   loader: async ({ location }) => {
-    if (location.pathname === '/login') return DEFAULT_APP_SETTINGS
+    if (
+      location.pathname === '/login' ||
+      location.pathname === '/oauth/consent'
+    )
+      return DEFAULT_APP_SETTINGS
     if (!DEMO_MODE) {
       try {
         const state = await getCurrentAccount()
@@ -300,7 +304,9 @@ function RootErrorComponent({ error }: { error: unknown }) {
 
 function RootComponent() {
   const login = useRouterState({
-    select: (state) => state.location.pathname === '/login',
+    select: (state) =>
+      state.location.pathname === '/login' ||
+      state.location.pathname === '/oauth/consent',
   })
   const settings = Route.useLoaderData()
   const isOnline = useOnlineStatus()
