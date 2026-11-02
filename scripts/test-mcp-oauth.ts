@@ -18,6 +18,7 @@ import { z } from 'zod'
 assert(process.env.TEST_DATABASE_URL, 'An isolated test database is required')
 process.env.DATABASE_URL = process.env.TEST_DATABASE_URL
 process.env.AUTH_ENABLED = 'true'
+process.env.DEPLOYMENT_MODE = 'self-hosted'
 process.env.AUTH_SECRET ??= Buffer.alloc(32, 47).toString('hex')
 process.env.EMAIL_FROM = 'test@example.test'
 process.env.SMTP_URL = 'smtp://127.0.0.1:1'
@@ -32,7 +33,7 @@ const origin = server.url.origin
 const resource = `${origin}/api/mcp`
 process.env.AUTH_URL = origin
 
-const { getControlDb, getOAuthLockDb } = await import(
+const { getControlDb, getJournalDb, getOAuthLockDb } = await import(
   '../src/db/connection.server'
 )
 const { getAuth } = await import('../src/lib/server/auth/auth.server')
@@ -625,4 +626,5 @@ try {
   await server.stop(true)
   await control.$client.end({ timeout: 5 })
   await getOAuthLockDb().$client.end({ timeout: 5 })
+  await getJournalDb().$client.end({ timeout: 5 })
 }

@@ -150,6 +150,8 @@ a hard threshold. `test:integration` is strict and requires all of:
 - `TEST_S3_SECRET_ACCESS_KEY`
 - `TEST_S3_BUCKET`
 
+The strict runner executes each integration suite in a separate process so
+cached authentication and provider configuration cannot leak between suites.
 Always use isolated test services. CI provisions PostgreSQL and MinIO, applies
 the complete migration chain, and then runs all tests.
 

@@ -9,7 +9,10 @@ type Database = PostgresJsDatabase<typeof schema>
 
 export const getDb = createServerOnlyFn(() => {
   const scope = getJournalContext()
-  if (scope) return scope.database
+  if (scope) {
+    scope.signal?.throwIfAborted()
+    return scope.database
+  }
   if (getServerEnv().AUTH_ENABLED)
     throw new Error('Database access requires a journal scope')
   return getControlDb()

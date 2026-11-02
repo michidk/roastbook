@@ -74,6 +74,7 @@ const provider =
       })
     : undefined
 if (provider) {
+  process.env.AUTH_ENABLED = 'true'
   const endpointVariable = process.env.AI_PROVIDED_API_KEY
     ? 'AI_PROVIDED_BASE_URL'
     : 'OPENAI_BASE_URL'

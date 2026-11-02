@@ -36,3 +36,17 @@ export function getAiControlDb() {
   )
   return aiControlConnection
 }
+
+// Authentication stays available when journal work reaches its own pool limit.
+let journalConnection: ReturnType<typeof connect> | undefined
+export function getJournalDb() {
+  journalConnection ??= drizzle(
+    postgres(getServerEnv().DATABASE_URL, {
+      max: 8,
+      connect_timeout: 5,
+      connection: { statement_timeout: 30_000, lock_timeout: 5_000 },
+    }),
+    { schema },
+  )
+  return journalConnection
+}

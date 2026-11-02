@@ -93,6 +93,7 @@ export async function authorizeMcpRequest(
           mcpScopes: grantedScopes,
         },
         next,
+        { signal: request.signal },
       )
     },
     {

@@ -191,7 +191,9 @@ export async function handleJournalRequest(
     if (request.headers.get('sec-fetch-site') === 'cross-site')
       return new Response('Forbidden', { status: 403 })
   }
-  const response = await withJournalResponse(identity, next)
+  const response = await withJournalResponse(identity, next, {
+    signal: request.signal,
+  })
   const headers = new Headers(response.headers)
   headers.set('Cache-Control', 'private, no-store')
   headers.set(

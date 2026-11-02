@@ -198,7 +198,10 @@ short diagnostic window. Detailed payloads are capped and automatically
 scrubbed after the configured retention period; they can also be purged
 immediately from the AI request log in Settings. Detailed logs can contain
 private bean, roaster, gear, and brew data, so keep the database and Settings
-page behind the deployment's authentication boundary.
+page behind the deployment's authentication boundary. Application console logs
+contain request IDs and operational metadata, without research queries,
+user-provided names, response content, or raw provider errors. Enabling detailed
+telemetry stores content only in the bounded database logs described above.
 
 ## MCP
 

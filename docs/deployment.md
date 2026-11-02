@@ -38,6 +38,22 @@ application. Migration 0066 creates and grants a restricted NOLOGIN role and
 requires permission to create roles or an administrator-prepared equivalent.
 The runtime database owner does not need superuser or BYPASSRLS privileges.
 
+Journal work has a separate pool of up to eight connections per process.
+Authentication, account administration, OAuth locks, and AI accounting use
+separate pools; budget up to 26 connections per application process, plus
+workers, migrations, and other database clients. Each process admits one active
+operation per journal, at most 16 active or waiting operations per journal,
+and at most 128 waiting operations overall. Waiting happens outside PostgreSQL
+and expires after five seconds. Cross-replica lock retries release the database
+connection between attempts. Overload returns `429` with `Retry-After: 1`.
+
+Journal SQL statements have a 30-second timeout and database lock waits have a
+five-second timeout. HTTP journal requests have a three-minute deadline, and
+streamed responses allow at most 15 seconds of client backpressure. Client
+cancellation and expired deadlines roll back unfinished journal transactions.
+Account workers retain their own job leases and retry policy; the HTTP deadline
+does not limit archive generation or account cleanup.
+
 ## Upgrading an existing journal
 
 1. Back up PostgreSQL and uploaded files and verify that both can be restored.

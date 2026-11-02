@@ -37,7 +37,6 @@ type StructuredWebResearchRequest<TFields extends StructuredResearchFields> = {
   readonly evidenceRules: readonly string[]
   readonly knownContext?: Readonly<Record<string, unknown>>
   readonly logLabel: string
-  readonly logContext?: Readonly<Record<string, unknown>>
 }
 
 async function researchStructuredDataFromWeb<
@@ -51,7 +50,6 @@ async function researchStructuredDataFromWeb<
   evidenceRules,
   knownContext,
   logLabel,
-  logContext,
 }: StructuredWebResearchRequest<TFields>): Promise<
   StructuredResearchResult<TFields>
 > {
@@ -62,11 +60,6 @@ async function researchStructuredDataFromWeb<
       'Online research requires a Responses-compatible provider with web search',
     )
 
-  console.info(`[AI research:${logLabel}] search query`, {
-    ...logContext,
-    searchQuery,
-    model: config.researchModel,
-  })
   const systemPrompts = [
     buildStructuredResearchPrompt({ role, task, fields, evidenceRules }),
   ]
@@ -110,12 +103,15 @@ async function researchStructuredDataFromWeb<
       stream: false,
     })
     console.info(`[AI research:${logLabel}] complete`, {
+      requestLogId,
       hasContent: content.length > 0,
-      preview: content.slice(0, 300),
     })
     return content ? parseStructuredResearchResult(content, fields) : {}
   } catch (error) {
-    console.error(`[AI research:${logLabel}] failed`, { ...logContext, error })
+    console.error(`[AI research:${logLabel}] failed`, {
+      requestLogId,
+      aborted: abortController.signal.aborted,
+    })
     if (abortController.signal.aborted) {
       throw new Error('Online research timed out. Please try again.')
     }
@@ -145,7 +141,6 @@ export async function researchBeanFromWeb(
     ],
     knownContext,
     logLabel: 'bean',
-    logContext: { beanName, roasterName: roasterName ?? null },
   })
 }
 
@@ -169,7 +164,6 @@ export async function researchRoasterFromWeb(
     ],
     knownContext,
     logLabel: 'roaster',
-    logContext: { roasterName },
   })
 }
 
@@ -200,7 +194,6 @@ export async function researchMachineFromWeb(
     ],
     knownContext,
     logLabel: 'machine',
-    logContext: { brand, model },
   })
 
   return normalizeMachineResearchResult(research)
