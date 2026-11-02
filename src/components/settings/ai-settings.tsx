@@ -30,7 +30,7 @@ export function AiSettings({ stats }: { stats: AiRequestStats }) {
   return (
     <>
       <SettingsPanelSection
-        title="AI"
+        title="AI Integration"
         description="Review lifetime token usage and diagnostic request metadata."
         action={<Bot className="h-5 w-5 text-link" aria-hidden="true" />}
       >

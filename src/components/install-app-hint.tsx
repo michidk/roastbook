@@ -79,7 +79,9 @@ export function InstallAppHint() {
         <img
           src="/logo192.png"
           alt=""
-          className="size-10 shrink-0 rounded-xl border border-border shadow-control"
+          width={40}
+          height={40}
+          className="size-10 shrink-0 rounded-[22%] border border-border shadow-control"
         />
         <div className="min-w-0 flex-1 leading-tight">
           <p className="font-display text-sm font-bold">Install Roastbook</p>
