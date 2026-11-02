@@ -526,6 +526,13 @@
       "when": 1793654308786,
       "tag": "0074_fair_diamondback",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1793655734650,
+      "tag": "0075_brief_shiver_man",
+      "breakpoints": true
     }
   ]
 }

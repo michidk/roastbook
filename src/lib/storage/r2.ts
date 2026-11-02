@@ -136,6 +136,10 @@ export class R2StorageProvider implements StorageProvider {
   getUrl(path: string) {
     return `/media/${validateObjectKey(path).split('/').map(encodeURIComponent).join('/')}`
   }
+  async stat(path: string): Promise<StoredObject | null> {
+    const object = await this.bucket.head(validateObjectKey(path))
+    return object ? { path, sizeBytes: object.size } : null
+  }
   async exists(path: string) {
     return !!(await this.bucket.head(validateObjectKey(path)))
   }

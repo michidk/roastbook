@@ -78,6 +78,7 @@ const imageFile = () => ({
   originalFilename: text('original_filename'),
   mimeType: text('mime_type'),
   sizeBytes: integer('size_bytes'),
+  storageBytes: integer('storage_bytes'),
 })
 
 const createdAt = () =>

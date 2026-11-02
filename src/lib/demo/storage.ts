@@ -11,6 +11,7 @@ const disabledStorage: StorageProvider = {
   download: async () => demoCapabilityDisabled('Storage downloads'),
   delete: async () => demoCapabilityDisabled('Storage deletion'),
   getUrl: (path) => `/media/${path}`,
+  stat: async () => null,
   exists: async () => false,
   list: async () => [],
   listObjects: async (): Promise<StoredObject[]> => [],

@@ -22,6 +22,13 @@
       "when": 1793654333975,
       "tag": "0002_premium_thundra",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1793655847079,
+      "tag": "0003_chunky_roxanne_simpson",
+      "breakpoints": true
     }
   ]
 }

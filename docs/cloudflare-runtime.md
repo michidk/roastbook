@@ -86,9 +86,24 @@ must not be served by a public asset route.
 ## Images and exports
 
 The Images binding validates file metadata and rejects SVGs, mismatched MIME
-types, files over 10 MB, and dimensions larger than 12,000 pixels. It generates
+types, files over 10 MiB, dimensions larger than 12,000 pixels, and images
+above 50 million pixels. It generates
 WebP storage and thumbnail images and JPEG inputs for AI. Transform output is
-bounded by the same size limit.
+bounded by the same size limit. All three compressed objects are prepared before
+storage admission. Their actual byte lengths, including thumbnails, count toward
+the current journal's allowance. A conditional D1 INSERT checks the per-item count
+and the total owner-scoped storage within the same atomic batch. Concurrent
+uploads cannot bypass either limit.
+
+[Images Free](https://developers.cloudflare.com/images/pricing/) includes 5,000
+unique transformations per calendar month across the account. A stored picture
+normally requires three transformations for its full image and two thumbnails;
+AI image preparation consumes additional transformations. `.info()` is free.
+Compressed outputs are persisted in private R2, so viewing them requires no new
+transformations. If the Free allowance is exhausted, uploads fail without storing
+uncompressed originals or partial picture sets. Existing pictures remain readable.
+The infrastructure must keep Images on Free; it must not enable paid Images
+storage or silently upgrade the transformation plan.
 
 Account exports use streaming ZIP64 with CRC32 checksums and UTF-8 filenames.
 Image contents are stored without another compression pass. The writer honors

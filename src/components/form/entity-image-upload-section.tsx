@@ -30,6 +30,7 @@ export function EntityImageUploadSection({
   return (
     <FormSection title="Pictures">
       <PictureUploader
+        maxImages={upload.maxImages}
         images={upload.images}
         fileInputRef={upload.fileInputRef}
         onFilesAdded={upload.addFiles}
@@ -73,6 +74,7 @@ export function EntityImageUploadRecovery({
     <div className="space-y-4">
       <FormSection title={title} description={description}>
         <PictureUploader
+          maxImages={upload.maxImages}
           images={upload.images}
           fileInputRef={upload.fileInputRef}
           onFilesAdded={upload.addFiles}

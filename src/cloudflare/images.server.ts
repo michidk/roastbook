@@ -39,7 +39,8 @@ export const validateImageBuffer = createServerOnlyFn(
       !metadata.width ||
       !metadata.height ||
       metadata.width > 12000 ||
-      metadata.height > 12000
+      metadata.height > 12000 ||
+      metadata.width * metadata.height > 50_000_000
     )
       throw new Error('The image dimensions are unsupported')
   },
@@ -51,27 +52,35 @@ async function transform(
   format: 'image/webp' | 'image/jpeg',
   height?: number,
 ): Promise<Buffer> {
-  const result = await requireCloudflareRuntime()
-    .bindings.IMAGES.input(source(buffer))
-    .transform({ width, height, fit: 'scale-down' })
-    .output({ format, quality, anim: false })
-  const reader = result.image().getReader()
-  const chunks: Uint8Array[] = []
-  let size = 0
   try {
-    while (true) {
-      const chunk = await reader.read()
-      if (chunk.done) break
-      size += chunk.value.length
-      if (size > MAX_IMAGE_BYTES)
-        throw new Error('Transformed image exceeds size limit')
-      chunks.push(chunk.value)
+    const result = await requireCloudflareRuntime()
+      .bindings.IMAGES.input(source(buffer))
+      .transform({ width, height, fit: 'scale-down' })
+      .output({ format, quality, anim: false })
+    const reader = result.image().getReader()
+    const chunks: Uint8Array[] = []
+    let size = 0
+    try {
+      while (true) {
+        const chunk = await reader.read()
+        if (chunk.done) break
+        size += chunk.value.length
+        if (size > MAX_IMAGE_BYTES)
+          throw new Error('Transformed image exceeds size limit')
+        chunks.push(chunk.value)
+      }
+    } finally {
+      await reader.cancel()
+      reader.releaseLock()
     }
-  } finally {
-    await reader.cancel()
-    reader.releaseLock()
+    return Buffer.concat(chunks, size)
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 9422)
+      throw new Error(
+        'Image processing has reached its monthly free allowance. Try again next month or contact the administrator.',
+      )
+    throw error
   }
-  return Buffer.concat(chunks, size)
 }
 export const createThumbnail = createServerOnlyFn((buffer: Buffer) =>
   transform(buffer, 640, 78, 'image/webp'),

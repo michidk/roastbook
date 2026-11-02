@@ -270,7 +270,9 @@ as MIME type and byte count, not the image payload itself.
 - Store media locally or in S3-compatible object storage.
 - Choose built-in passwordless accounts with private journals, or one shared
   journal behind the optional Hodor reverse proxy.
-- Manage users, export data and original images, and confirm account deletion
+- Track compressed image storage per journal, with three pictures per item and
+  a configurable storage allowance.
+- Manage users, export data and stored images, and confirm account deletion
   through email.
 - Explore a database-free, read-only demo backed by ephemeral PGlite seed data.
 

@@ -39,6 +39,13 @@ const serverSchema = {
   RESEND_API_KEY: optionalString,
   DATABASE_PROVIDER: z.enum(['postgres', 'd1']).default('postgres'),
   DATABASE_URL: z.string().trim().default(''),
+  IMAGE_MAX_PER_ITEM: z.coerce.number().int().min(1).max(100).default(3),
+  IMAGE_STORAGE_LIMIT_MIB: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(1_048_576)
+    .optional(),
   STORAGE_PROVIDER: z.enum(['local', 's3', 'r2']).default('local'),
   STORAGE_PATH: z.string().trim().min(1).default('./uploads'),
   STORAGE_URL: z.string().trim().min(1).default('/media'),
@@ -159,6 +166,8 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
       DATABASE_PROVIDER: runtimeEnvironment.DATABASE_PROVIDER,
       DATABASE_URL: runtimeEnvironment.DATABASE_URL,
       STORAGE_PROVIDER: runtimeEnvironment.STORAGE_PROVIDER,
+      IMAGE_MAX_PER_ITEM: runtimeEnvironment.IMAGE_MAX_PER_ITEM,
+      IMAGE_STORAGE_LIMIT_MIB: runtimeEnvironment.IMAGE_STORAGE_LIMIT_MIB,
       STORAGE_PATH: runtimeEnvironment.STORAGE_PATH,
       STORAGE_URL: runtimeEnvironment.STORAGE_URL,
       S3_BUCKET: runtimeEnvironment.S3_BUCKET,

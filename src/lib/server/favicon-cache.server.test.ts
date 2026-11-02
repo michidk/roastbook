@@ -36,6 +36,11 @@ class MemoryStorage implements StorageProvider {
     return `/media/${path}`
   }
 
+  async stat(path: string) {
+    const file = this.files.get(path)
+    return file ? { path, sizeBytes: file.size } : null
+  }
+
   async exists(path: string) {
     return this.files.has(path)
   }

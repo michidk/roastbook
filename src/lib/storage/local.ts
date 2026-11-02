@@ -118,6 +118,19 @@ export class LocalStorageProvider implements StorageProvider {
     return `${this.baseUrl}/${path}`
   }
 
+  async stat(path: string): Promise<StoredObject | null> {
+    const fullPath = this.resolvePath(path)
+    try {
+      const metadata = await stat(fullPath)
+      if (!metadata.isFile()) return null
+      return { path, sizeBytes: metadata.size }
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT')
+        return null
+      throw error
+    }
+  }
+
   async exists(path: string): Promise<boolean> {
     const fullPath = this.resolvePath(path)
     try {

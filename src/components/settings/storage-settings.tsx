@@ -1,4 +1,4 @@
-import { Globe2, HardDrive, Images } from 'lucide-react'
+import { HardDrive, Images } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { SettingsPanelSection } from '@/components/settings/settings-shell'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
@@ -60,21 +60,15 @@ export function StorageSettings({
   return (
     <SettingsPanelSection
       title="Storage"
-      description="Live media usage for this installation."
+      description="Image storage used by your journal. Usage includes compressed pictures and their thumbnails."
       action={<HardDrive className="size-5 text-link" />}
     >
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3">
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-2">
         <InternalStat
           label="Stored images"
           value={storageValue(storage.imageCount, formatNumber)}
-          detail={storageDetail(storage.available, 'physical files')}
+          detail={storageDetail(storage.available, 'pictures in your journal')}
           icon={Images}
-        />
-        <InternalStat
-          label="Cached favicons"
-          value={storageValue(storage.faviconCount, formatNumber)}
-          detail={storageDetail(storage.available, 'website icons')}
-          icon={Globe2}
         />
         <InternalStat
           label="Storage used"
@@ -85,11 +79,38 @@ export function StorageSettings({
           }
           detail={storageDetail(
             storage.available,
-            `${storage.provider.toUpperCase()} storage`,
+            storage.limitBytes === null
+              ? 'No storage limit'
+              : `of ${formatBytes(storage.limitBytes, formatNumber)} available`,
           )}
           icon={HardDrive}
         />
       </dl>
+      {storage.limitBytes !== null && storage.totalBytes !== null && (
+        <progress
+          aria-label="Image storage used"
+          value={Math.min(storage.totalBytes, storage.limitBytes)}
+          max={storage.limitBytes}
+          className="mt-5 h-2 w-full overflow-hidden rounded-full bg-muted accent-primary"
+        />
+      )}
+      <p className="mt-4 text-sm text-muted-foreground">
+        Up to {storage.maxImagesPerItem} pictures per item. Uploads can be up to
+        10 MiB each. Pictures are resized to at most 1,600 pixels and compressed
+        to WebP before they count toward your allowance.
+      </p>
+      {Boolean(storage.unmeasuredImages) && (
+        <p className="mt-3 text-sm text-muted-foreground" role="status">
+          Measuring {formatNumber(storage.unmeasuredImages ?? 0)} older
+          pictures. Usage is provisional until measurement finishes. Refresh to
+          continue.
+        </p>
+      )}
+      {!storage.available && (
+        <p className="mt-3 text-sm text-destructive-text" role="alert">
+          Storage usage could not be loaded. Refresh to try again.
+        </p>
+      )}
     </SettingsPanelSection>
   )
 }

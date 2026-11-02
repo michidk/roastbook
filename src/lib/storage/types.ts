@@ -11,6 +11,7 @@ export interface StorageProvider {
   download(path: string): Promise<Blob>
   delete(path: string): Promise<void>
   getUrl(path: string): string
+  stat(path: string): Promise<StoredObject | null>
   exists(path: string): Promise<boolean>
   list(prefix?: string): Promise<string[]>
   listObjects(prefix?: string): Promise<StoredObject[]>
