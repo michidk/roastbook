@@ -1,5 +1,10 @@
-import { and, desc, eq, isNull } from 'drizzle-orm'
-import type { db } from '@/db'
+import { and, desc, eq, isNull, type SQL } from 'drizzle-orm'
+import { db } from '@/db'
+import {
+  allocateJournalIds,
+  type JournalMutation,
+} from '@/db/journal-mutations.server'
+import { journalInsertValues, owned } from '@/db/journal-scope.server'
 import {
   basketDetails,
   brewerDetails,
@@ -45,7 +50,7 @@ export type GearPropertyPayload = {
   readonly propertyEvidence?: readonly GearPropertyEvidenceInput[]
 }
 
-type GearTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+type GearReader = Pick<typeof db, 'query'>
 type MachineSettingKind = 'factory' | 'owner'
 
 const MACHINE_SETTING_KEYS = [
@@ -96,186 +101,319 @@ function settingsMatch(
 }
 
 async function syncMachineSettingRevision(
-  tx: GearTransaction,
   gearId: number,
   kind: MachineSettingKind,
   settings: EspressoMachineSettingsInput | null,
-) {
-  const current = await tx.query.espressoMachineSettingRevisions.findFirst({
-    where: and(
-      eq(espressoMachineSettingRevisions.gearId, gearId),
-      eq(espressoMachineSettingRevisions.kind, kind),
-      isNull(espressoMachineSettingRevisions.supersededAt),
+): Promise<JournalMutation[]> {
+  const current = await db.query.espressoMachineSettingRevisions.findFirst({
+    where: owned(
+      espressoMachineSettingRevisions,
+      and(
+        eq(espressoMachineSettingRevisions.gearId, gearId),
+        eq(espressoMachineSettingRevisions.kind, kind),
+        isNull(espressoMachineSettingRevisions.supersededAt),
+      ),
     ),
     orderBy: [desc(espressoMachineSettingRevisions.effectiveFrom)],
   })
-
-  if (settings && current && settingsMatch(current, settings)) return
-  if (!settings && !current) return
-
+  if (settings && current && settingsMatch(current, settings)) return []
+  if (!settings && !current) return []
+  const mutations: JournalMutation[] = []
   const now = new Date()
   if (current) {
-    await tx
-      .update(espressoMachineSettingRevisions)
-      .set({ supersededAt: now })
-      .where(eq(espressoMachineSettingRevisions.id, current.id))
-  }
-
-  if (settings && !settingsAreEmpty(settings)) {
-    await tx.insert(espressoMachineSettingRevisions).values({
-      gearId,
-      kind,
-      ...settings,
-      effectiveFrom: now,
+    mutations.push({
+      statement: db
+        .update(espressoMachineSettingRevisions)
+        .set({ supersededAt: now })
+        .where(
+          owned(
+            espressoMachineSettingRevisions,
+            and(
+              eq(espressoMachineSettingRevisions.id, current.id),
+              isNull(espressoMachineSettingRevisions.supersededAt),
+            ),
+          ),
+        )
+        .getSQL(),
+      expectedChanges: 1,
+      conflictMessage: 'Machine settings changed. Reload and try again.',
     })
   }
+  if (settings && !settingsAreEmpty(settings)) {
+    const [id] = await allocateJournalIds(espressoMachineSettingRevisions)
+    if (id === undefined) throw new Error('Could not allocate machine settings')
+    mutations.push({
+      statement: db
+        .insert(espressoMachineSettingRevisions)
+        .values(
+          journalInsertValues({
+            id,
+            gearId,
+            kind,
+            ...settings,
+            effectiveFrom: now,
+          }),
+        )
+        .getSQL(),
+    })
+  }
+  return mutations
 }
 
-async function replaceDetail<TValues>(
+function replaceDetail<TValues>(
   allowed: boolean,
   value: TValues | null | undefined,
   typeChanged: boolean,
-  remove: () => Promise<unknown>,
-  insert: (value: TValues) => Promise<unknown>,
-) {
-  if (value === undefined) {
-    if (typeChanged && !allowed) await remove()
-    return
-  }
-  await remove()
-  if (allowed && value) await insert(value)
-}
-
-async function supersedeCurrentMachineSettings(
-  tx: GearTransaction,
-  gearId: number,
-) {
-  await tx
-    .update(espressoMachineSettingRevisions)
-    .set({ supersededAt: new Date() })
-    .where(
-      and(
-        eq(espressoMachineSettingRevisions.gearId, gearId),
-        isNull(espressoMachineSettingRevisions.supersededAt),
-      ),
-    )
+  remove: () => SQL,
+  insert: (value: TValues) => SQL,
+): JournalMutation[] {
+  if (value === undefined)
+    return typeChanged && !allowed ? [{ statement: remove() }] : []
+  const mutations: JournalMutation[] = [{ statement: remove() }]
+  if (allowed && value) mutations.push({ statement: insert(value) })
+  return mutations
 }
 
 export async function syncGearProperties(
-  tx: GearTransaction,
   gearId: number,
   type: GearType,
   payload: GearPropertyPayload,
   typeChanged: boolean,
-) {
+): Promise<JournalMutation[]> {
   const machine = isEspressoMachineGearType(type)
   const grinder = isGrinderGearType(type)
+  const mutations: JournalMutation[] = []
 
-  await replaceDetail(
-    machine,
-    payload.espressoMachineDetails,
-    typeChanged,
-    () =>
-      tx
-        .delete(espressoMachineDetails)
-        .where(eq(espressoMachineDetails.gearId, gearId)),
-    (value) => tx.insert(espressoMachineDetails).values({ gearId, ...value }),
+  mutations.push(
+    ...replaceDetail(
+      machine,
+      payload.espressoMachineDetails,
+      typeChanged,
+      () =>
+        db
+          .delete(espressoMachineDetails)
+          .where(
+            owned(
+              espressoMachineDetails,
+              eq(espressoMachineDetails.gearId, gearId),
+            ),
+          )
+          .getSQL(),
+      (value) =>
+        db
+          .insert(espressoMachineDetails)
+          .values(journalInsertValues({ gearId, ...value }))
+          .getSQL(),
+    ),
   )
-  await replaceDetail(
-    grinder,
-    payload.grinderDetails,
-    typeChanged,
-    () => tx.delete(grinderDetails).where(eq(grinderDetails.gearId, gearId)),
-    (value) => tx.insert(grinderDetails).values({ gearId, ...value }),
+
+  mutations.push(
+    ...replaceDetail(
+      grinder,
+      payload.grinderDetails,
+      typeChanged,
+      () =>
+        db
+          .delete(grinderDetails)
+          .where(owned(grinderDetails, eq(grinderDetails.gearId, gearId)))
+          .getSQL(),
+      (value) =>
+        db
+          .insert(grinderDetails)
+          .values(journalInsertValues({ gearId, ...value }))
+          .getSQL(),
+    ),
   )
-  await replaceDetail(
-    type === 'brewer',
-    payload.brewerDetails,
-    typeChanged,
-    () => tx.delete(brewerDetails).where(eq(brewerDetails.gearId, gearId)),
-    (value) => tx.insert(brewerDetails).values({ gearId, ...value }),
+
+  mutations.push(
+    ...replaceDetail(
+      type === 'brewer',
+      payload.brewerDetails,
+      typeChanged,
+      () =>
+        db
+          .delete(brewerDetails)
+          .where(owned(brewerDetails, eq(brewerDetails.gearId, gearId)))
+          .getSQL(),
+      (value) =>
+        db
+          .insert(brewerDetails)
+          .values(journalInsertValues({ gearId, ...value }))
+          .getSQL(),
+    ),
   )
-  await replaceDetail(
-    type === 'kettle',
-    payload.kettleDetails,
-    typeChanged,
-    () => tx.delete(kettleDetails).where(eq(kettleDetails.gearId, gearId)),
-    (value) => tx.insert(kettleDetails).values({ gearId, ...value }),
+
+  mutations.push(
+    ...replaceDetail(
+      type === 'kettle',
+      payload.kettleDetails,
+      typeChanged,
+      () =>
+        db
+          .delete(kettleDetails)
+          .where(owned(kettleDetails, eq(kettleDetails.gearId, gearId)))
+          .getSQL(),
+      (value) =>
+        db
+          .insert(kettleDetails)
+          .values(journalInsertValues({ gearId, ...value }))
+          .getSQL(),
+    ),
   )
-  await replaceDetail(
-    type === 'scale',
-    payload.scaleDetails,
-    typeChanged,
-    () => tx.delete(scaleDetails).where(eq(scaleDetails.gearId, gearId)),
-    (value) => tx.insert(scaleDetails).values({ gearId, ...value }),
+
+  mutations.push(
+    ...replaceDetail(
+      type === 'scale',
+      payload.scaleDetails,
+      typeChanged,
+      () =>
+        db
+          .delete(scaleDetails)
+          .where(owned(scaleDetails, eq(scaleDetails.gearId, gearId)))
+          .getSQL(),
+      (value) =>
+        db
+          .insert(scaleDetails)
+          .values(journalInsertValues({ gearId, ...value }))
+          .getSQL(),
+    ),
   )
-  await replaceDetail(
-    type === 'tamper',
-    payload.tamperDetails,
-    typeChanged,
-    () => tx.delete(tamperDetails).where(eq(tamperDetails.gearId, gearId)),
-    (value) => tx.insert(tamperDetails).values({ gearId, ...value }),
+
+  mutations.push(
+    ...replaceDetail(
+      type === 'tamper',
+      payload.tamperDetails,
+      typeChanged,
+      () =>
+        db
+          .delete(tamperDetails)
+          .where(owned(tamperDetails, eq(tamperDetails.gearId, gearId)))
+          .getSQL(),
+      (value) =>
+        db
+          .insert(tamperDetails)
+          .values(journalInsertValues({ gearId, ...value }))
+          .getSQL(),
+    ),
   )
-  await replaceDetail(
-    type === 'wdt',
-    payload.wdtDetails,
-    typeChanged,
-    () => tx.delete(wdtDetails).where(eq(wdtDetails.gearId, gearId)),
-    (value) => tx.insert(wdtDetails).values({ gearId, ...value }),
+
+  mutations.push(
+    ...replaceDetail(
+      type === 'wdt',
+      payload.wdtDetails,
+      typeChanged,
+      () =>
+        db
+          .delete(wdtDetails)
+          .where(owned(wdtDetails, eq(wdtDetails.gearId, gearId)))
+          .getSQL(),
+      (value) =>
+        db
+          .insert(wdtDetails)
+          .values(journalInsertValues({ gearId, ...value }))
+          .getSQL(),
+    ),
   )
-  await replaceDetail(
-    type === 'basket',
-    payload.basketDetails,
-    typeChanged,
-    () => tx.delete(basketDetails).where(eq(basketDetails.gearId, gearId)),
-    (value) => tx.insert(basketDetails).values({ gearId, ...value }),
+
+  mutations.push(
+    ...replaceDetail(
+      type === 'basket',
+      payload.basketDetails,
+      typeChanged,
+      () =>
+        db
+          .delete(basketDetails)
+          .where(owned(basketDetails, eq(basketDetails.gearId, gearId)))
+          .getSQL(),
+      (value) =>
+        db
+          .insert(basketDetails)
+          .values(journalInsertValues({ gearId, ...value }))
+          .getSQL(),
+    ),
   )
 
   if (!machine && typeChanged) {
-    await supersedeCurrentMachineSettings(tx, gearId)
+    mutations.push({
+      statement: db
+        .update(espressoMachineSettingRevisions)
+        .set({ supersededAt: new Date() })
+        .where(
+          owned(
+            espressoMachineSettingRevisions,
+            and(
+              eq(espressoMachineSettingRevisions.gearId, gearId),
+              isNull(espressoMachineSettingRevisions.supersededAt),
+            ),
+          ),
+        )
+        .getSQL(),
+    })
   } else if (machine) {
     if (payload.ownerMachineSettings !== undefined) {
-      await syncMachineSettingRevision(
-        tx,
-        gearId,
-        'owner',
-        payload.ownerMachineSettings,
+      mutations.push(
+        ...(await syncMachineSettingRevision(
+          gearId,
+          'owner',
+          payload.ownerMachineSettings,
+        )),
       )
     }
     if (payload.factoryMachineSettings !== undefined) {
-      await syncMachineSettingRevision(
-        tx,
-        gearId,
-        'factory',
-        payload.factoryMachineSettings,
+      mutations.push(
+        ...(await syncMachineSettingRevision(
+          gearId,
+          'factory',
+          payload.factoryMachineSettings,
+        )),
       )
     }
   }
-
-  if (payload.propertyEvidence && payload.propertyEvidence.length > 0) {
-    await tx.insert(gearPropertyEvidence).values(
-      payload.propertyEvidence.map((evidence) => ({
+  if (payload.propertyEvidence?.length) {
+    const ids = await allocateJournalIds(
+      gearPropertyEvidence,
+      payload.propertyEvidence.length,
+    )
+    const rows = ids.map((id, index) => {
+      const evidence = payload.propertyEvidence?.[index]
+      if (!evidence) throw new Error('Could not allocate gear evidence')
+      return {
+        id,
         gearId,
         ...evidence,
         valueJson: toJsonValue(evidence.valueJson),
-      })),
-    )
+      }
+    })
+    for (let offset = 0; offset < rows.length; offset += 5) {
+      mutations.push({
+        statement: db
+          .insert(gearPropertyEvidence)
+          .values(journalInsertValues(rows.slice(offset, offset + 5)))
+          .getSQL(),
+      })
+    }
   }
+  return mutations
 }
 
 export async function findCurrentOwnerMachineSettingRevisionId(
-  tx: GearTransaction,
+  reader: GearReader,
   gearId: number | null | undefined,
 ) {
   if (!gearId) return null
-  const revision = await tx.query.espressoMachineSettingRevisions.findFirst({
-    where: and(
-      eq(espressoMachineSettingRevisions.gearId, gearId),
-      eq(espressoMachineSettingRevisions.kind, 'owner'),
-      isNull(espressoMachineSettingRevisions.supersededAt),
-    ),
-    columns: { id: true },
-    orderBy: [desc(espressoMachineSettingRevisions.effectiveFrom)],
-  })
+  const revision = await reader.query.espressoMachineSettingRevisions.findFirst(
+    {
+      where: owned(
+        espressoMachineSettingRevisions,
+        and(
+          eq(espressoMachineSettingRevisions.gearId, gearId),
+          eq(espressoMachineSettingRevisions.kind, 'owner'),
+          isNull(espressoMachineSettingRevisions.supersededAt),
+        ),
+      ),
+      columns: { id: true },
+      orderBy: [desc(espressoMachineSettingRevisions.effectiveFrom)],
+    },
+  )
   return revision?.id ?? null
 }

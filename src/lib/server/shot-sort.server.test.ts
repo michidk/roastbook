@@ -13,7 +13,7 @@ describe('brew collection sorting', () => {
     const query = new PgDialect().sqlToQuery(expression)
 
     expect(query.sql).toBe(
-      `coalesce((select "beans"."name" from "beans" where "beans"."id" = "shots"."bean_id"), '')`,
+      `coalesce((select "beans"."name" from "beans" where "beans"."owner_id" = "shots"."owner_id" and "beans"."id" = "shots"."bean_id"), '')`,
     )
     expect(query.params).toEqual([])
   })

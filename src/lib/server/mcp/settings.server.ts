@@ -1,3 +1,4 @@
+import { journalInsertValues, owned } from '@/db/journal-scope.server'
 import '@tanstack/react-start/server-only'
 
 import { getRequest } from '@tanstack/react-start/server'
@@ -33,7 +34,7 @@ export async function loadMcpPolicy(): Promise<McpPolicy> {
       disabledTools: mcpSettings.disabledTools,
     })
     .from(mcpSettings)
-    .where(eq(mcpSettings.id, 'instance'))
+    .where(owned(mcpSettings, eq(mcpSettings.id, 'instance')))
     .limit(1)
   return row
     ? {
@@ -50,7 +51,13 @@ export async function saveMcpPolicy(policy: {
   const disabledTools = knownDisabledTools(policy.disabledTools)
   const [row] = await db
     .insert(mcpSettings)
-    .values({ id: 'instance', enabled: policy.enabled, disabledTools })
+    .values(
+      journalInsertValues({
+        id: 'instance',
+        enabled: policy.enabled,
+        disabledTools,
+      }),
+    )
     .onConflictDoUpdate({
       target: [mcpSettings.ownerId, mcpSettings.id],
       set: { enabled: policy.enabled, disabledTools, updatedAt: new Date() },
@@ -72,7 +79,7 @@ export type McpAuditEvent = {
 }
 
 export async function recordMcpAudit(event: McpAuditEvent) {
-  await db.insert(mcpAuditEvents).values(event)
+  await db.insert(mcpAuditEvents).values(journalInsertValues(event))
 }
 
 export const MCP_AUDIT_PAGE_SIZE = 25
@@ -84,10 +91,14 @@ export async function loadMcpAuditPage(page = 0) {
     db
       .select()
       .from(mcpAuditEvents)
+      .where(owned(mcpAuditEvents))
       .orderBy(desc(mcpAuditEvents.createdAt), desc(mcpAuditEvents.id))
       .limit(MCP_AUDIT_PAGE_SIZE)
       .offset(safePage * MCP_AUDIT_PAGE_SIZE),
-    db.select({ total: count() }).from(mcpAuditEvents),
+    db
+      .select({ total: count() })
+      .from(mcpAuditEvents)
+      .where(owned(mcpAuditEvents)),
   ])
   return {
     events: rows.map((row) => ({

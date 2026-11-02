@@ -1,6 +1,7 @@
 import { and, asc, eq, gt } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
+import { owned } from '@/db/journal-scope.server'
 import { recipes, replicationChanges } from '@/db/schema'
 import type {
   RecipeReplicationDocument,
@@ -29,57 +30,57 @@ export async function pullRecipes(input: unknown): Promise<{
     .parse(input)
   const batchSize = body.batchSize ?? DEFAULT_BATCH_SIZE
 
-  return db.transaction(
-    async (tx) => {
-      if (!body.checkpoint || body.checkpoint.recipeId) {
-        const sequence =
-          body.checkpoint?.sequence ?? (await latestCheckpoint(tx)).sequence
-        const rows = body.checkpoint?.recipeId
-          ? await tx
-              .select()
-              .from(recipes)
-              .where(gt(recipes.id, body.checkpoint.recipeId))
-              .orderBy(asc(recipes.id))
-              .limit(batchSize)
-          : await tx
-              .select()
-              .from(recipes)
-              .orderBy(asc(recipes.id))
-              .limit(batchSize)
-        const lastRecipeId = rows.at(-1)?.id
-        const hasMore = rows.length === batchSize && lastRecipeId !== undefined
-        return {
-          documents: rows.map(toDocument),
-          checkpoint: hasMore
-            ? { sequence, recipeId: lastRecipeId }
-            : {
-                sequence: await latestCheckpoint(tx).then(
-                  ({ sequence: latest }) => latest,
-                ),
-              },
-        }
+  const tx = db
+  {
+    if (!body.checkpoint || body.checkpoint.recipeId) {
+      const sequence =
+        body.checkpoint?.sequence ?? (await latestCheckpoint(tx)).sequence
+      const rows = body.checkpoint?.recipeId
+        ? await tx
+            .select()
+            .from(recipes)
+            .where(owned(recipes, gt(recipes.id, body.checkpoint.recipeId)))
+            .orderBy(asc(recipes.id))
+            .limit(batchSize)
+        : await tx
+            .select()
+            .from(recipes)
+            .where(owned(recipes))
+            .orderBy(asc(recipes.id))
+            .limit(batchSize)
+      const lastRecipeId = rows.at(-1)?.id
+      const hasMore = rows.length === batchSize && lastRecipeId !== undefined
+      return {
+        documents: rows.map(toDocument),
+        checkpoint: hasMore
+          ? { sequence, recipeId: lastRecipeId }
+          : {
+              sequence,
+            },
       }
+    }
 
-      const changes = await tx
-        .select()
-        .from(replicationChanges)
-        .where(
+    const changes = await tx
+      .select()
+      .from(replicationChanges)
+      .where(
+        owned(
+          replicationChanges,
           and(
             eq(replicationChanges.entity, ENTITY),
             gt(replicationChanges.sequence, body.checkpoint.sequence),
           ),
-        )
-        .orderBy(asc(replicationChanges.sequence))
-        .limit(batchSize)
-
-      const documents = changes.map((change) =>
-        recipeDocumentSchema.parse(change.document),
+        ),
       )
-      const checkpoint = changes.at(-1)
-        ? { sequence: changes.at(-1)?.sequence ?? body.checkpoint.sequence }
-        : body.checkpoint
-      return { documents, checkpoint }
-    },
-    { isolationLevel: 'repeatable read' },
-  )
+      .orderBy(asc(replicationChanges.sequence))
+      .limit(batchSize)
+
+    const documents = changes.map((change) =>
+      recipeDocumentSchema.parse(change.document),
+    )
+    const checkpoint = changes.at(-1)
+      ? { sequence: changes.at(-1)?.sequence ?? body.checkpoint.sequence }
+      : body.checkpoint
+    return { documents, checkpoint }
+  }
 }

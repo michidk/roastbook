@@ -1,5 +1,10 @@
-import { eq, lte, sql } from 'drizzle-orm'
+import { eq, lte, type SQL, sql } from 'drizzle-orm'
 import { db } from '@/db'
+import {
+  type JournalMutation,
+  runJournalMutations,
+} from '@/db/journal-mutations.server'
+import { journalInsertValues, owned } from '@/db/journal-scope.server'
 import {
   beanImages,
   beans,
@@ -13,7 +18,6 @@ import {
   shotImages,
   shots,
 } from '@/db/schema'
-import { expectReturnedRow } from '@/lib/domain-errors'
 import { getStoredImagePaths } from '@/lib/image-path'
 import { getStorage } from '@/lib/storage'
 
@@ -24,23 +28,28 @@ export type MediaEntityType =
   | 'shots'
   | 'visits'
 
-export type DatabaseTransaction = Parameters<
-  Parameters<typeof db.transaction>[0]
->[0]
-
-export async function queueMediaCleanup(
-  tx: DatabaseTransaction,
+export function queueMediaCleanup(
   originalPaths: readonly string[],
-): Promise<void> {
+): JournalMutation[] {
   const paths = getStoredImagePaths(originalPaths)
-  if (paths.length === 0) return
-
-  await tx
-    .insert(mediaCleanupJobs)
-    .values(paths.map((storagePath) => ({ storagePath })))
-    .onConflictDoNothing({
-      target: [mediaCleanupJobs.ownerId, mediaCleanupJobs.storagePath],
+  const result: JournalMutation[] = []
+  for (let offset = 0; offset < paths.length; offset += 20)
+    result.push({
+      statement: db
+        .insert(mediaCleanupJobs)
+        .values(
+          journalInsertValues(
+            paths
+              .slice(offset, offset + 20)
+              .map((storagePath) => ({ storagePath })),
+          ),
+        )
+        .onConflictDoNothing({
+          target: [mediaCleanupJobs.ownerId, mediaCleanupJobs.storagePath],
+        })
+        .getSQL(),
     })
+  return result
 }
 
 const MEDIA_CLEANUP_BASE_RETRY_MS = 60_000
@@ -57,7 +66,7 @@ export function mediaCleanupRetryDelay(attempts: number): number {
 export async function drainMediaCleanupQueue(limit = 50): Promise<void> {
   const now = new Date()
   const jobs = await db.query.mediaCleanupJobs.findMany({
-    where: lte(mediaCleanupJobs.nextAttemptAt, now),
+    where: owned(mediaCleanupJobs, lte(mediaCleanupJobs.nextAttemptAt, now)),
     orderBy: (jobs, { asc }) => [asc(jobs.nextAttemptAt), asc(jobs.createdAt)],
     limit,
   })
@@ -68,7 +77,9 @@ export async function drainMediaCleanupQueue(limit = 50): Promise<void> {
       if (await storage.exists(job.storagePath)) {
         await storage.delete(job.storagePath)
       }
-      await db.delete(mediaCleanupJobs).where(eq(mediaCleanupJobs.id, job.id))
+      await db
+        .delete(mediaCleanupJobs)
+        .where(owned(mediaCleanupJobs, eq(mediaCleanupJobs.id, job.id)))
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       await db
@@ -81,7 +92,7 @@ export async function drainMediaCleanupQueue(limit = 50): Promise<void> {
           ),
           updatedAt: now,
         })
-        .where(eq(mediaCleanupJobs.id, job.id))
+        .where(owned(mediaCleanupJobs, eq(mediaCleanupJobs.id, job.id)))
     }
   }
 }
@@ -103,129 +114,38 @@ export async function cleanupUncommittedUpload(
   if (failedPaths.length > 0) {
     await db
       .insert(mediaCleanupJobs)
-      .values(failedPaths.map((storagePath) => ({ storagePath })))
+      .values(
+        journalInsertValues(
+          failedPaths.map((storagePath) => ({ storagePath })),
+        ),
+      )
       .onConflictDoNothing({
         target: [mediaCleanupJobs.ownerId, mediaCleanupJobs.storagePath],
       })
   }
 }
 
-async function selectEntityImagePaths(
-  tx: DatabaseTransaction,
-  entityType: MediaEntityType,
-  entityId: number,
-): Promise<string[]> {
+function mediaEntity(entityType: MediaEntityType) {
   switch (entityType) {
     case 'beans':
-      return (
-        await tx
-          .select({ storagePath: beanImages.storagePath })
-          .from(beanImages)
-          .where(eq(beanImages.beanId, entityId))
-      ).map((image) => image.storagePath)
+      return { table: beans, images: beanImages, foreignKey: beanImages.beanId }
     case 'gear':
-      return (
-        await tx
-          .select({ storagePath: gearImages.storagePath })
-          .from(gearImages)
-          .where(eq(gearImages.gearId, entityId))
-      ).map((image) => image.storagePath)
+      return { table: gear, images: gearImages, foreignKey: gearImages.gearId }
     case 'coffee-shops':
-      return (
-        await tx
-          .select({ storagePath: coffeeShopImages.storagePath })
-          .from(coffeeShopImages)
-          .where(eq(coffeeShopImages.coffeeShopId, entityId))
-      ).map((image) => image.storagePath)
+      return {
+        table: coffeeShops,
+        images: coffeeShopImages,
+        foreignKey: coffeeShopImages.coffeeShopId,
+      }
     case 'shots':
-      return (
-        await tx
-          .select({ storagePath: shotImages.storagePath })
-          .from(shotImages)
-          .where(eq(shotImages.shotId, entityId))
-      ).map((image) => image.storagePath)
+      return { table: shots, images: shotImages, foreignKey: shotImages.shotId }
     case 'visits':
-      return (
-        await tx
-          .select({ storagePath: cafeVisitImages.storagePath })
-          .from(cafeVisitImages)
-          .where(eq(cafeVisitImages.cafeVisitId, entityId))
-      ).map((image) => image.storagePath)
+      return {
+        table: cafeVisits,
+        images: cafeVisitImages,
+        foreignKey: cafeVisitImages.cafeVisitId,
+      }
   }
-}
-
-async function deleteEntityRow(
-  tx: DatabaseTransaction,
-  entityType: MediaEntityType,
-  entityId: number,
-): Promise<void> {
-  switch (entityType) {
-    case 'beans':
-      return deleteBeanRow(tx, entityId)
-    case 'gear':
-      return deleteGearRow(tx, entityId)
-    case 'coffee-shops':
-      return deleteCoffeeShopRow(tx, entityId)
-    case 'shots':
-      return deleteShotRow(tx, entityId)
-    case 'visits':
-      return deleteVisitRow(tx, entityId)
-  }
-}
-
-async function deleteBeanRow(
-  tx: DatabaseTransaction,
-  entityId: number,
-): Promise<void> {
-  const [deleted] = await tx
-    .delete(beans)
-    .where(eq(beans.id, entityId))
-    .returning({ id: beans.id })
-  expectReturnedRow(deleted, 'Bean')
-}
-
-async function deleteGearRow(
-  tx: DatabaseTransaction,
-  entityId: number,
-): Promise<void> {
-  const [deleted] = await tx
-    .delete(gear)
-    .where(eq(gear.id, entityId))
-    .returning({ id: gear.id })
-  expectReturnedRow(deleted, 'Gear')
-}
-
-async function deleteCoffeeShopRow(
-  tx: DatabaseTransaction,
-  entityId: number,
-): Promise<void> {
-  const [deleted] = await tx
-    .delete(coffeeShops)
-    .where(eq(coffeeShops.id, entityId))
-    .returning({ id: coffeeShops.id })
-  expectReturnedRow(deleted, 'Café')
-}
-
-async function deleteShotRow(
-  tx: DatabaseTransaction,
-  entityId: number,
-): Promise<void> {
-  const [deleted] = await tx
-    .delete(shots)
-    .where(eq(shots.id, entityId))
-    .returning({ id: shots.id })
-  expectReturnedRow(deleted, 'Shot')
-}
-
-async function deleteVisitRow(
-  tx: DatabaseTransaction,
-  entityId: number,
-): Promise<void> {
-  const [deleted] = await tx
-    .delete(cafeVisits)
-    .where(eq(cafeVisits.id, entityId))
-    .returning({ id: cafeVisits.id })
-  expectReturnedRow(deleted, 'Visit')
 }
 
 export async function deleteEntityWithMedia(
@@ -242,42 +162,49 @@ export async function deleteEntityWithMedia(
     (options.expectedRevision !== undefined ||
       options.expectedUpdatedAt ||
       options.idempotent)
-  ) {
+  )
     throw new Error('Revision-aware deletion is only supported for brews')
+  const { table, images, foreignKey } = mediaEntity(entityType)
+  const [current] = await db
+    .select({ id: table.id })
+    .from(table)
+    .where(owned(table, eq(table.id, entityId)))
+    .limit(1)
+  if (!current) {
+    if (options.idempotent) return
+    throw new Error('Record not found')
   }
-  await db.transaction(async (tx) => {
-    if (
-      entityType === 'shots' &&
-      (options.expectedRevision !== undefined ||
-        options.expectedUpdatedAt ||
-        options.idempotent)
-    ) {
-      const [existing] = await tx
-        .select({ revision: shots.revision, updatedAt: shots.updatedAt })
-        .from(shots)
-        .where(eq(shots.id, entityId))
-        .for('update')
-      if (!existing) {
-        if (options.idempotent) return
-        throw new Error('Brew not found')
-      }
-      if (
-        (options.expectedRevision !== undefined &&
-          existing.revision !== options.expectedRevision) ||
-        (options.expectedRevision === undefined &&
-          options.expectedUpdatedAt &&
-          existing.updatedAt.getTime() !== options.expectedUpdatedAt.getTime())
-      ) {
-        throw new Error(
-          'This brew changed on the server. Reload and try again.',
-        )
-      }
-    }
-
-    const paths = await selectEntityImagePaths(tx, entityType, entityId)
-    await queueMediaCleanup(tx, paths)
-    await deleteEntityRow(tx, entityType, entityId)
-  })
-
+  const conditions: Array<SQL | undefined> = [eq(table.id, entityId)]
+  if (entityType === 'shots') {
+    if (options.expectedRevision !== undefined)
+      conditions.push(eq(shots.revision, options.expectedRevision))
+    else if (options.expectedUpdatedAt)
+      conditions.push(eq(shots.updatedAt, options.expectedUpdatedAt))
+  }
+  const where = owned(table, ...conditions)
+  const path = images.storagePath
+  const base = sql`substr(${path}, 1, length(${path}) - case when ${path} like '%.webp' or ${path} like '%.jpeg' then 5 else 4 end)`
+  const selected = owned(images, eq(foreignKey, entityId))
+  // Select and enqueue paths inside the write batch, so an upload cannot enter
+  // between the path snapshot and the cascading parent deletion.
+  const cleanup = sql`insert into ${mediaCleanupJobs} (owner_id, storage_path)
+    select ${images.ownerId}, ${path} from ${images} where ${selected}
+    union all select ${images.ownerId}, ${base} || '.thumb.webp' from ${images} where ${selected}
+    union all select ${images.ownerId}, ${base} || '.small.webp' from ${images} where ${selected}
+    on conflict(owner_id, storage_path) do nothing`
+  await runJournalMutations([
+    {
+      statement: db
+        .update(table)
+        .set({ updatedAt: sql`${table.updatedAt}` })
+        .where(where)
+        .getSQL(),
+      expectedChanges: 1,
+      conflictMessage:
+        'This record changed on the server. Reload and try again.',
+    },
+    { statement: cleanup },
+    { statement: db.delete(table).where(where).getSQL(), expectedChanges: 1 },
+  ])
   await drainMediaCleanupQueue()
 }

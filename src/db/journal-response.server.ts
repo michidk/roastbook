@@ -1,6 +1,6 @@
 import '@tanstack/react-start/server-only'
+import { type JournalIdentity, withJournal } from '@/db/journal-context.server'
 import { JournalBusyError } from './journal-admission.server'
-import { type JournalIdentity, withJournal } from './journal-context.server'
 
 /** Keep streamed database work scoped, with bounded request and reader lifetimes. */
 export function withJournalResponse(

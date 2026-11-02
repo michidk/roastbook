@@ -1,7 +1,12 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, asc, count, desc, eq, ilike, or } from 'drizzle-orm'
+import { and, asc, count, desc, eq, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
+import {
+  allocateJournalIds,
+  runJournalMutations,
+} from '@/db/journal-mutations.server'
+import { journalInsertValues, owned } from '@/db/journal-scope.server'
 import {
   espressoMachineSettingRevisions,
   gear,
@@ -30,10 +35,7 @@ import {
   isResearchEnabled,
   researchMachineFromWeb,
 } from '@/lib/server/ai-operations.server'
-import {
-  type GearPropertyPayload,
-  syncGearProperties,
-} from '@/lib/server/gear-properties.server'
+import { syncGearProperties } from '@/lib/server/gear-properties.server'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
 import { withResourceLimits } from '@/lib/server/resource-limits.server'
 import {
@@ -147,6 +149,7 @@ function hasPropertyPayload(data: Partial<GearValues>) {
 
 export const getGear = createServerFn({ method: 'GET' }).handler(async () =>
   db.query.gear.findMany({
+    where: owned(gear),
     orderBy: [desc(gear.createdAt)],
     with: gearRelations,
   }),
@@ -167,9 +170,9 @@ export const getGearPage = createServerFn({ method: 'GET' })
     const pattern = escapedContainsPattern(data.query)
     const search = data.query
       ? or(
-          ilike(gear.name, pattern),
-          ilike(gear.brand, pattern),
-          ilike(gear.model, pattern),
+          sql`lower(${gear.name}) like lower(${pattern}) escape ${'\\'}`,
+          sql`lower(${gear.brand}) like lower(${pattern}) escape ${'\\'}`,
+          sql`lower(${gear.model}) like lower(${pattern}) escape ${'\\'}`,
         )
       : undefined
     const sortColumn =
@@ -190,7 +193,7 @@ export const getGearPage = createServerFn({ method: 'GET' })
       const countRows = await db
         .select({ value: count() })
         .from(gear)
-        .where(where)
+        .where(owned(gear, where))
       const totalItems = countRows[0]?.value ?? 0
       const pagination = resolvePagination(
         totalItems,
@@ -198,7 +201,7 @@ export const getGearPage = createServerFn({ method: 'GET' })
         GEAR_PAGE_SIZE,
       )
       const items = await db.query.gear.findMany({
-        where,
+        where: owned(gear, where),
         orderBy: [order, asc(gear.id)],
         limit: GEAR_PAGE_SIZE,
         offset: (pagination.page - 1) * GEAR_PAGE_SIZE,
@@ -222,78 +225,107 @@ export const getGearById = createServerFn({ method: 'GET' })
   .validator(positiveIdSchema)
   .handler(async ({ data: id }) =>
     db.query.gear.findFirst({
-      where: eq(gear.id, id),
+      where: owned(gear, eq(gear.id, id)),
       with: gearRelations,
     }),
   )
 
 export const createGear = createServerFn({ method: 'POST' })
   .validator(gearCreateSchema)
-  .handler(async ({ data }) =>
-    db.transaction(async (tx) => {
-      const { type, ...values } = data
-      const [item] = await tx
-        .insert(gear)
-        .values({
-          ...toGearUpdateRow(values),
-          type,
-          name: gearName(data.brand, data.model),
-        })
-        .returning()
-      const persistedItem = expectReturnedRow(item, 'Gear')
-      await syncGearProperties(tx, persistedItem.id, type, data, false)
-      return persistedItem
-    }),
-  )
+  .handler(async ({ data }) => {
+    const [id] = await allocateJournalIds(gear)
+    if (id === undefined)
+      throw new Error('Could not allocate a gear identifier')
+    const { type, ...values } = data
+    const properties = await syncGearProperties(id, type, data, false)
+    await runJournalMutations([
+      {
+        statement: db
+          .insert(gear)
+          .values(
+            journalInsertValues({
+              id,
+              ...toGearUpdateRow(values),
+              type,
+              name: gearName(data.brand, data.model),
+            }),
+          )
+          .getSQL(),
+      },
+      ...properties,
+    ])
+    return expectReturnedRow(
+      await db.query.gear.findFirst({
+        where: owned(gear, eq(gear.id, id)),
+      }),
+      'Gear',
+    )
+  })
 
 export const updateGear = createServerFn({ method: 'POST' })
   .validator(gearUpdateSchema)
-  .handler(async ({ data }) =>
-    db.transaction(async (tx) => {
-      const { id, confirmTypeChange, ...values } = data
-      const current = await tx.query.gear.findFirst({
-        where: eq(gear.id, id),
-        columns: { brand: true, model: true, type: true },
-      })
-      if (!current) throw new DomainError('not_found', 'Gear not found')
-      const typeChanged =
-        values.type !== undefined && values.type !== current.type
-      if (typeChanged && !confirmTypeChange) {
-        throw new DomainError(
-          'validation',
-          'Confirm the gear type change before removing incompatible details',
-        )
-      }
-      let derivedName: string | undefined
-      if (values.brand !== undefined || values.model !== undefined) {
-        derivedName =
-          gearName(
-            values.brand ?? current.brand,
-            values.model ?? current.model,
-          ) || undefined
-      }
-      const [item] = await tx
-        .update(gear)
-        .set({
-          ...toGearUpdateRow(values),
-          ...(derivedName ? { name: derivedName } : {}),
-          updatedAt: new Date(),
-        })
-        .where(eq(gear.id, id))
-        .returning()
-      const persistedItem = expectReturnedRow(item, 'Gear')
-      if (typeChanged || hasPropertyPayload(values)) {
-        await syncGearProperties(
-          tx,
-          id,
-          persistedItem.type,
-          values as GearPropertyPayload,
-          typeChanged,
-        )
-      }
-      return persistedItem
-    }),
-  )
+  .handler(async ({ data }) => {
+    const { id, confirmTypeChange, ...values } = data
+    const current = await db.query.gear.findFirst({
+      where: owned(gear, eq(gear.id, id)),
+      columns: { brand: true, model: true, type: true, updatedAt: true },
+    })
+    if (!current) throw new DomainError('not_found', 'Gear not found')
+    const typeChanged =
+      values.type !== undefined && values.type !== current.type
+    if (typeChanged && !confirmTypeChange) {
+      throw new DomainError(
+        'validation',
+        'Confirm the gear type change before removing incompatible details',
+      )
+    }
+    let derivedName: string | undefined
+    if (values.brand !== undefined || values.model !== undefined) {
+      derivedName =
+        gearName(
+          values.brand ?? current.brand,
+          values.model ?? current.model,
+        ) || undefined
+    }
+    const properties =
+      typeChanged || hasPropertyPayload(values)
+        ? await syncGearProperties(
+            id,
+            values.type ?? current.type,
+            values,
+            typeChanged,
+          )
+        : []
+    await runJournalMutations([
+      {
+        statement: db
+          .update(gear)
+          .set({
+            ...toGearUpdateRow(values),
+            ...(derivedName ? { name: derivedName } : {}),
+            updatedAt: new Date(
+              Math.max(Date.now(), current.updatedAt.getTime() + 1),
+            ),
+          })
+          .where(
+            owned(
+              gear,
+              and(eq(gear.id, id), eq(gear.updatedAt, current.updatedAt)),
+            ),
+          )
+          .getSQL(),
+        expectedChanges: 1,
+        conflictMessage: 'Gear changed. Reload and try again.',
+      },
+      ...properties,
+    ])
+    return expectReturnedRow(
+      await db.query.gear.findFirst({
+        where: owned(gear, eq(gear.id, id)),
+      }),
+      'Gear',
+    )
+  })
 
 export const deleteGear = createServerFn({ method: 'POST' })
   .validator(positiveIdSchema)

@@ -43,7 +43,13 @@
     "sync:ai-pricing": "bun run scripts/sync-ai-pricing.ts",
     "storybook": "storybook dev --port 6006 --no-open --disable-telemetry",
     "build:storybook": "storybook build --disable-telemetry",
-    "worker": "bun run scripts/account-worker.ts"
+    "worker": "bun run scripts/account-worker.ts",
+    "build:cloudflare": "ROASTBOOK_RUNTIME=cloudflare vite build && bun run scripts/build-service-worker.ts dist/client && bun run src/cloudflare/build-release.ts",
+    "dev:cloudflare": "ROASTBOOK_RUNTIME=cloudflare vite dev",
+    "typecheck:cloudflare": "tsc --noEmit -p tsconfig.cloudflare.json",
+    "test:cloudflare": "bun run scripts/test-cloudflare.ts",
+    "test:cloudflare:jobs": "node scripts/cloudflare/verify-jobs.mjs",
+    "test:cloudflare:release": "node scripts/cloudflare/verify-release.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1068.0",
@@ -87,6 +93,8 @@
   "devDependencies": {
     "@babel/parser": "^7.29.11",
     "@biomejs/biome": "2.6.4",
+    "@cloudflare/vite-plugin": "1.67.0",
+    "@cloudflare/workers-types": "5.20261102.1",
     "@electric-sql/pglite": "0.5.13",
     "@modelcontextprotocol/client": "^2.4.0",
     "@opencode-ai/models": "0.0.119",
@@ -107,10 +115,12 @@
     "fake-indexeddb": "6.2.6",
     "knip": "6.44.0",
     "markdownlint-cli2": "0.24.0",
+    "miniflare": "5.20261101.0-beta",
     "nitro": "3.0.260610-beta",
     "storybook": "10.6.5",
     "typescript": "7.0.2",
-    "vite": "8.3.5"
+    "vite": "8.3.5",
+    "wrangler": "4.156.2"
   },
   "overrides": {
     "esbuild": "^0.28.2",

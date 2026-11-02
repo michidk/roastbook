@@ -1,5 +1,4 @@
-import { and, gte, lt, type SQL } from 'drizzle-orm'
-import type { AnyPgColumn } from 'drizzle-orm/pg-core'
+import { and, type Column, gte, lt, type SQL } from 'drizzle-orm'
 
 /**
  * PostgreSQL timestamps can retain sub-millisecond precision, while the client
@@ -7,7 +6,7 @@ import type { AnyPgColumn } from 'drizzle-orm/pg-core'
  * whole millisecond bucket instead of requiring exact equality.
  */
 export function matchesRevision(
-  column: AnyPgColumn,
+  column: Column,
   revision: string | undefined,
 ): SQL | undefined {
   if (!revision) return undefined

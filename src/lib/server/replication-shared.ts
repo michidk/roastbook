@@ -1,6 +1,8 @@
 import { eq, max } from 'drizzle-orm'
 import { z } from 'zod'
-import type { db } from '@/db'
+import { db } from '@/db'
+import type { JournalMutation } from '@/db/journal-mutations.server'
+import { journalInsertValues, owned } from '@/db/journal-scope.server'
 import { type recipes, replicationChanges } from '@/db/schema'
 import type {
   RecipeReplicationDocument,
@@ -42,11 +44,19 @@ export const pushBodySchema = z.object({
   rows: z.array(pushRowSchema).min(1).max(MAX_BATCH_SIZE),
 })
 
-type RecipeRow = typeof recipes.$inferSelect
+type RecipeRow = Pick<
+  typeof recipes.$inferSelect,
+  | 'id'
+  | 'syncId'
+  | 'name'
+  | 'brewingMethodId'
+  | 'beanId'
+  | 'drinkTypeId'
+  | 'revision'
+  | 'updatedAt'
+>
 
-export type ReplicationTransaction = Parameters<
-  Parameters<typeof db.transaction>[0]
->[0]
+export type ReplicationTransaction = Pick<typeof db, 'select' | 'query'>
 
 function documentId(syncId: string): string {
   return syncId
@@ -106,30 +116,40 @@ export function isAlreadyAppliedRecipe(
   )
 }
 
-export async function recordRecipeReplicationChange(
-  tx: ReplicationTransaction,
-  row: RecipeRow,
-): Promise<void> {
+export function recipeReplicationMutation(row: RecipeRow): JournalMutation {
   const document = toDocument(row)
-  await tx.insert(replicationChanges).values({
-    entity: ENTITY,
-    documentId: document.id,
-    document,
-    deleted: false,
-  })
+  return {
+    statement: db
+      .insert(replicationChanges)
+      .values(
+        journalInsertValues({
+          entity: ENTITY,
+          documentId: document.id,
+          document,
+          deleted: false,
+        }),
+      )
+      .getSQL(),
+  }
 }
 
-export async function recordRecipeReplicationDeletion(
-  tx: ReplicationTransaction,
+export function recipeReplicationDeletionMutation(
   syncId: string,
-): Promise<void> {
+): JournalMutation {
   const document = deletedDocument(syncId)
-  await tx.insert(replicationChanges).values({
-    entity: ENTITY,
-    documentId: document.id,
-    document,
-    deleted: true,
-  })
+  return {
+    statement: db
+      .insert(replicationChanges)
+      .values(
+        journalInsertValues({
+          entity: ENTITY,
+          documentId: document.id,
+          document,
+          deleted: true,
+        }),
+      )
+      .getSQL(),
+  }
 }
 
 export async function latestCheckpoint(
@@ -139,7 +159,7 @@ export async function latestCheckpoint(
     await tx
       .select({ sequence: max(replicationChanges.sequence) })
       .from(replicationChanges)
-      .where(eq(replicationChanges.entity, ENTITY))
+      .where(owned(replicationChanges, eq(replicationChanges.entity, ENTITY)))
   )[0]
   return { sequence: Number(checkpointRow?.sequence ?? 0) }
 }

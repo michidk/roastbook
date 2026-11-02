@@ -3,15 +3,10 @@ import { verifyOAuthQueryParams } from '@better-auth/oauth-provider'
 import { and, eq } from 'drizzle-orm'
 import { getControlDb } from '@/db/connection.server'
 import { requireIdentity } from '@/db/journal-context.server'
-import {
-  oauthAccessToken,
-  oauthClient,
-  oauthConsent,
-  oauthRefreshToken,
-} from '@/db/schema'
+import { oauthClient, oauthConsent } from '@/db/schema'
+import { coordinateRevokeGrant } from '@/lib/server/auth/oauth-coordination.server'
 import { getAuth } from './auth.server'
 import { MCP_SCOPES } from './mcp-options.server'
-import { withOAuthClientLock } from './oauth-lock.server'
 
 export async function loadConsent(query: string) {
   const identity = requireIdentity()
@@ -84,27 +79,9 @@ export async function revokeOAuthGrant(id: string) {
     .from(oauthConsent)
     .where(and(eq(oauthConsent.id, id), eq(oauthConsent.userId, identity.id)))
   if (!connection) throw new Error('Application connection not found')
-  await withOAuthClientLock(connection.clientId, async (tx) => {
-    const [grant] = await tx
-      .delete(oauthConsent)
-      .where(and(eq(oauthConsent.id, id), eq(oauthConsent.userId, identity.id)))
-      .returning({ clientId: oauthConsent.clientId })
-    if (!grant) throw new Error('Application connection not found')
-    await tx
-      .delete(oauthAccessToken)
-      .where(
-        and(
-          eq(oauthAccessToken.userId, identity.id),
-          eq(oauthAccessToken.clientId, grant.clientId),
-        ),
-      )
-    await tx
-      .delete(oauthRefreshToken)
-      .where(
-        and(
-          eq(oauthRefreshToken.userId, identity.id),
-          eq(oauthRefreshToken.clientId, grant.clientId),
-        ),
-      )
+  await coordinateRevokeGrant({
+    clientId: connection.clientId,
+    userId: identity.id,
+    id,
   })
 }

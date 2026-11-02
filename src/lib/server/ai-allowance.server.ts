@@ -1,5 +1,5 @@
 import '@tanstack/react-start/server-only'
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { getAiControlDb } from '@/db/connection.server'
 import { requireIdentity } from '@/db/journal-context.server'
 import { aiWeeklyUsage, authUsers } from '@/db/schema'
@@ -77,40 +77,4 @@ export async function selectAiProvider(mode: 'provided' | 'byo') {
     .update(authUsers)
     .set({ aiProviderMode: mode })
     .where(eq(authUsers.id, identity.id))
-}
-
-// Committed independently of the journal transaction: a failed or cancelled request
-// must not roll back the allowance after work has been sent to the provider.
-export async function reserveProvidedAiRequest(
-  transaction: Parameters<
-    Parameters<ReturnType<typeof getAiControlDb>['transaction']>[0]
-  >[0],
-) {
-  const identity = requireIdentity()
-  if (!identity.authentication || !providedAiConfig())
-    throw new Error('Provided AI is unavailable')
-  const [account] = await transaction
-    .select()
-    .from(authUsers)
-    .where(eq(authUsers.id, identity.id))
-    .for('share')
-  if (!account || account.deletingAt) throw new Error('Account is unavailable')
-  const { start } = aiAllowanceWeek()
-  if (account.aiWeeklyLimit <= 0)
-    throw new Error(
-      'Your free AI allowance is exhausted. It resets Monday at 00:00 UTC. You can also use BYOAI in Settings > AI.',
-    )
-  const [usage] = await transaction
-    .insert(aiWeeklyUsage)
-    .values({ userId: identity.id, weekStart: start, requests: 1 })
-    .onConflictDoUpdate({
-      target: [aiWeeklyUsage.userId, aiWeeklyUsage.weekStart],
-      set: { requests: sql`${aiWeeklyUsage.requests} + 1` },
-      setWhere: sql`${aiWeeklyUsage.requests} < ${account.aiWeeklyLimit}`,
-    })
-    .returning()
-  if (!usage)
-    throw new Error(
-      'Your free AI allowance is exhausted. It resets Monday at 00:00 UTC. You can also use BYOAI in Settings > AI.',
-    )
 }

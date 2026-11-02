@@ -12,7 +12,7 @@ import {
   requestAccountDeletion,
   requestAccountExport,
   revokeToken,
-} from './auth/account.server'
+} from '@/lib/server/auth/account.server'
 
 export const getCurrentAccount = createServerFn({ method: 'GET' }).handler(
   getAccountState,

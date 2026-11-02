@@ -1,7 +1,8 @@
 # Roastbook agent guide
 
 Roastbook is a self-hosted coffee journal built with Bun, TanStack Start,
-React 19, shadcn/ui, PostgreSQL/Drizzle, and local or S3-compatible storage.
+React 19, shadcn/ui, and Drizzle. Self-hosting uses PostgreSQL with local or
+S3-compatible storage; hosted builds use Cloudflare Workers, D1, and R2.
 Production deployments use Docker or the Helm chart. Built-in Better Auth
 provides private accounts; Hodor remains optional for a shared journal.
 
@@ -12,9 +13,10 @@ provides private accounts; Hodor remains optional for a shared journal.
 - Runtime configuration: `docs/configuration.md`
 - Docker, Helm, and security boundary: `docs/deployment.md`
 - Demo edition and Vercel build: `docs/demo-mode.md`
+- Hosted Workers target and release artifact: `docs/cloudflare-runtime.md`
 - Visual and interaction rules: `DESIGN.md`
 - OpenPencil design files, capture, and editor: `design/README.md`
-- Database schema: `src/db/schema.ts`
+- Database schemas: `src/db/schema.ts` (PostgreSQL), `src/db/d1/schema.ts` (D1)
 - Helm defaults: `charts/values.yaml`
 
 Do not duplicate configuration tables or deployment examples here. Update the
@@ -38,15 +40,20 @@ work as shipped.
 - Server-side domain operations live in `src/lib/server/`. There, files with a
   `.server.ts` suffix are internal server modules; unsuffixed files export
   `createServerFn` boundaries.
-- `src/lib/ai.ts`, database access, storage providers, and secrets are
+- `src/lib/server/ai-runtime.server.ts`, database access, storage providers, and
+  secrets are
   server-only. Never import them into browser code or expose non-`VITE_`
   environment variables to the client.
 - Define and validate server variables in `src/lib/env.server.ts`. Define
   browser-visible `VITE_` variables in `src/lib/env.ts`; do not read application
   configuration directly from `process.env` or `import.meta.env` elsewhere.
 - All private requests must pass through the journal request boundary. Journal
-  database access uses a transaction-local identity and the restricted RLS role.
-  Reserve the control connection for authentication and account administration.
+  database access on PostgreSQL uses a transaction-local identity and the
+  restricted RLS role. D1 uses explicit owner predicates, owner values, and
+  composite owner foreign keys. Related writes use `runJournalMutations` with
+  compare-and-swap assertions inside the same atomic batch. Never emulate an
+  interactive transaction on D1. Reserve control access for authentication and
+  account administration.
 - With AUTH_ENABLED=false the default journal is shared. Protect that mode with
   Hodor, an equivalent proxy, or a private network.
 

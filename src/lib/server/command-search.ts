@@ -1,7 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
-import { asc, eq, ilike, or, sql } from 'drizzle-orm'
+import { asc, eq, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
+import { owned } from '@/db/journal-scope.server'
 import { beanPurchases, beans, coffeeShops, gear, roasters } from '@/db/schema'
 import { escapedContainsPattern } from '@/lib/collection-query'
 import type {
@@ -55,15 +56,18 @@ export const searchCommandEntities = createServerFn({ method: 'GET' })
         .from(beans)
         .leftJoin(roasters, eq(beans.roasterId, roasters.id))
         .where(
-          or(
-            ilike(beans.name, beanPattern),
-            ilike(beans.roaster, beanPattern),
-            ilike(roasters.name, beanPattern),
-            ilike(beans.origin, beanPattern),
+          owned(
+            beans,
+            or(
+              sql`lower(${beans.name}) like lower(${beanPattern}) escape ${'\\'}`,
+              sql`lower(${beans.roaster}) like lower(${beanPattern}) escape ${'\\'}`,
+              sql`lower(${roasters.name}) like lower(${beanPattern}) escape ${'\\'}`,
+              sql`lower(${beans.origin}) like lower(${beanPattern}) escape ${'\\'}`,
+            ),
           ),
         )
         .orderBy(
-          sql`not exists (select 1 from ${beanPurchases} where ${beanPurchases.beanId} = ${beans.id} and ${beanPurchases.isArchived} = false)`,
+          sql`not exists (select 1 from ${beanPurchases} where ${owned(beanPurchases)} and ${beanPurchases.beanId} = ${beans.id} and ${beanPurchases.isArchived} = false)`,
           asc(beans.name),
           asc(beans.id),
         )
@@ -77,10 +81,13 @@ export const searchCommandEntities = createServerFn({ method: 'GET' })
         })
         .from(coffeeShops)
         .where(
-          or(
-            ilike(coffeeShops.name, cafePattern),
-            ilike(coffeeShops.city, cafePattern),
-            ilike(coffeeShops.country, cafePattern),
+          owned(
+            coffeeShops,
+            or(
+              sql`lower(${coffeeShops.name}) like lower(${cafePattern}) escape ${'\\'}`,
+              sql`lower(${coffeeShops.city}) like lower(${cafePattern}) escape ${'\\'}`,
+              sql`lower(${coffeeShops.country}) like lower(${cafePattern}) escape ${'\\'}`,
+            ),
           ),
         )
         .orderBy(asc(coffeeShops.name), asc(coffeeShops.id))
@@ -95,11 +102,14 @@ export const searchCommandEntities = createServerFn({ method: 'GET' })
         })
         .from(gear)
         .where(
-          or(
-            ilike(gear.name, gearPattern),
-            ilike(gear.brand, gearPattern),
-            ilike(gear.model, gearPattern),
-            sql`${gear.type}::text ilike ${gearPattern}`,
+          owned(
+            gear,
+            or(
+              sql`lower(${gear.name}) like lower(${gearPattern}) escape ${'\\'}`,
+              sql`lower(${gear.brand}) like lower(${gearPattern}) escape ${'\\'}`,
+              sql`lower(${gear.model}) like lower(${gearPattern}) escape ${'\\'}`,
+              sql`lower(cast(${gear.type} as text)) like lower(${gearPattern}) escape ${'\\'}`,
+            ),
           ),
         )
         .orderBy(asc(gear.isArchived), asc(gear.name), asc(gear.id))

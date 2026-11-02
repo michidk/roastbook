@@ -1,5 +1,6 @@
 import { count, eq } from 'drizzle-orm'
 import { db } from '@/db'
+import { owned } from '@/db/journal-scope.server'
 import {
   beanPurchases,
   cafeVisits,
@@ -16,7 +17,7 @@ export async function loadDashboardStats() {
     const now = new Date()
     const installationSettings = await db.query.settings.findFirst({
       columns: { timeZone: true },
-      where: eq(settings.id, 1),
+      where: owned(settings, eq(settings.id, 1)),
     })
     const timeZone = installationSettings?.timeZone ?? 'UTC'
     const today = dateKeyInTimeZone(now, timeZone)
@@ -28,24 +29,27 @@ export async function loadDashboardStats() {
       [visitsCount],
       [coffeeShopsCount],
     ] = await Promise.all([
-      db.select({ count: count() }).from(shots),
+      db.select({ count: count() }).from(shots).where(owned(shots)),
       db
         .select({ count: count() })
         .from(beanPurchases)
-        .where(eq(beanPurchases.isArchived, false)),
+        .where(owned(beanPurchases, eq(beanPurchases.isArchived, false))),
       db
         .select({ count: count() })
         .from(shots)
         .where(
-          localDateRangeCondition(
-            shots.brewedAt,
-            timeZone,
-            startOfMonth,
-            today,
+          owned(
+            shots,
+            localDateRangeCondition(
+              shots.brewedAt,
+              timeZone,
+              startOfMonth,
+              today,
+            ),
           ),
         ),
-      db.select({ count: count() }).from(cafeVisits),
-      db.select({ count: count() }).from(coffeeShops),
+      db.select({ count: count() }).from(cafeVisits).where(owned(cafeVisits)),
+      db.select({ count: count() }).from(coffeeShops).where(owned(coffeeShops)),
     ])
 
     return {
@@ -63,6 +67,7 @@ export async function loadDashboardStats() {
 export async function loadRecentShots(limit: number) {
   try {
     return await db.query.shots.findMany({
+      where: owned(shots),
       limit,
       orderBy: (shots, { desc }) => [desc(shots.brewedAt)],
       with: {

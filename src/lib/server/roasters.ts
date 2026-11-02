@@ -1,7 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
-import { asc, count, desc, eq, ilike, sql } from 'drizzle-orm'
+import { asc, count, desc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
+import { journalInsertValues, owned } from '@/db/journal-scope.server'
 import { beans, roasters } from '@/db/schema'
 import {
   escapedContainsPattern,
@@ -16,6 +17,7 @@ import {
   deleteWebsiteFaviconBestEffort,
   refreshWebsiteFaviconBestEffort,
 } from '@/lib/server/favicon-cache.server'
+import { caseInsensitiveLike } from '@/lib/server/portable-query.server'
 import { withResourceLimits } from '@/lib/server/resource-limits.server'
 import {
   nameSchema,
@@ -75,6 +77,7 @@ const roasterListSchema = z.object({
 export const getRoasters = createServerFn({ method: 'GET' }).handler(
   async () => {
     return db.query.roasters.findMany({
+      where: owned(roasters),
       orderBy: [desc(roasters.createdAt)],
       with: {
         beans: true,
@@ -87,12 +90,12 @@ export const getRoasterPage = createServerFn({ method: 'GET' })
   .validator(roasterListSchema)
   .handler(async ({ data }) => {
     const where = data.query
-      ? ilike(roasters.name, escapedContainsPattern(data.query))
+      ? caseInsensitiveLike(roasters.name, escapedContainsPattern(data.query))
       : undefined
     const countRows = await db
       .select({ value: count() })
       .from(roasters)
-      .where(where)
+      .where(owned(roasters, where))
     const totalItems = countRows[0]?.value ?? 0
     const pagination = resolvePagination(
       totalItems,
@@ -100,7 +103,7 @@ export const getRoasterPage = createServerFn({ method: 'GET' })
       ROASTERS_PAGE_SIZE,
     )
     const { page } = pagination
-    const beanCount = sql<number>`count(${beans.id})::int`
+    const beanCount = sql<number>`count(${beans.id})`
     const sortExpression =
       data.sort === 'beans'
         ? beanCount
@@ -122,7 +125,7 @@ export const getRoasterPage = createServerFn({ method: 'GET' })
       })
       .from(roasters)
       .leftJoin(beans, eq(beans.roasterId, roasters.id))
-      .where(where)
+      .where(owned(roasters, where))
       .groupBy(roasters.id)
       .orderBy(order, asc(roasters.id))
       .limit(ROASTERS_PAGE_SIZE)
@@ -135,7 +138,7 @@ export const getRoaster = createServerFn({ method: 'GET' })
   .validator(positiveIdSchema)
   .handler(async ({ data: id }) =>
     db.query.roasters.findFirst({
-      where: eq(roasters.id, id),
+      where: owned(roasters, eq(roasters.id, id)),
       with: {
         beans: true,
       },
@@ -163,7 +166,10 @@ export const researchRoasterInfo = createServerFn({ method: 'POST' })
 export const createRoaster = createServerFn({ method: 'POST' })
   .validator(roasterCreateSchema)
   .handler(async ({ data }) => {
-    const [roaster] = await db.insert(roasters).values(data).returning()
+    const [roaster] = await db
+      .insert(roasters)
+      .values(journalInsertValues(data))
+      .returning()
     const created = expectReturnedRow(roaster, 'Roaster')
     await refreshWebsiteFaviconBestEffort({
       entityType: 'roasters',
@@ -180,7 +186,7 @@ export const updateRoaster = createServerFn({ method: 'POST' })
     const [roaster] = await db
       .update(roasters)
       .set({ ...values, updatedAt: new Date() })
-      .where(eq(roasters.id, id))
+      .where(owned(roasters, eq(roasters.id, id)))
       .returning()
     const updated = expectReturnedRow(roaster, 'Roaster')
     await refreshWebsiteFaviconBestEffort({
@@ -196,7 +202,7 @@ export const deleteRoaster = createServerFn({ method: 'POST' })
   .handler(async ({ data: id }) => {
     const [roaster] = await db
       .delete(roasters)
-      .where(eq(roasters.id, id))
+      .where(owned(roasters, eq(roasters.id, id)))
       .returning({ id: roasters.id })
     expectReturnedRow(roaster, 'Roaster')
     await deleteWebsiteFaviconBestEffort('roasters', id)

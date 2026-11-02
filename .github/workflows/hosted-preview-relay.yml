@@ -1,0 +1,83 @@
+name: Hosted preview relay
+
+on:
+  workflow_run:
+    workflows: [Checks and Build]
+    types: [completed]
+  pull_request_target:
+    branches: [main]
+    types: [closed]
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: hosted-preview-relay-${{ github.event.pull_request.number || github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+jobs:
+  relay:
+    if: github.repository == 'michidk/roastbook'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # This trusted workflow never checks out or executes a pull request.
+      - name: Validate event and current pull request
+        id: validate
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const {owner, repo} = context.repo;
+            if (context.eventName === 'pull_request_target') {
+              const pr = context.payload.pull_request;
+              if (!Number.isSafeInteger(pr.number) || pr.state !== 'closed' || pr.base.ref !== 'main') return;
+              core.setOutput('event', 'hosted-preview-cleanup');
+              core.setOutput('payload', JSON.stringify({pullRequest: pr.number}));
+              return;
+            }
+            const run = context.payload.workflow_run;
+            if (run.conclusion !== 'success' || run.event !== 'pull_request' ||
+                run.head_repository?.full_name !== `${owner}/${repo}`) return;
+            const {data: workflow} = await github.rest.actions.getWorkflow({owner, repo, workflow_id: 'ci.yml'});
+            if (run.workflow_id !== workflow.id || workflow.path !== '.github/workflows/ci.yml') return;
+            let candidates = run.pull_requests ?? [];
+            if (!candidates.length) {
+              const {data} = await github.rest.repos.listPullRequestsAssociatedWithCommit({owner, repo, commit_sha: run.head_sha});
+              candidates = data;
+            }
+            for (const candidate of candidates) {
+              const {data: pr} = await github.rest.pulls.get({owner, repo, pull_number: candidate.number});
+              if (pr.state !== 'open' || pr.base.ref !== 'main' || pr.base.repo.full_name !== `${owner}/${repo}` ||
+                  pr.head.repo?.full_name !== `${owner}/${repo}` || pr.head.sha !== run.head_sha) continue;
+              core.setOutput('event', 'hosted-preview');
+              core.setOutput('payload', JSON.stringify({pullRequest: pr.number, runId: run.id, revision: pr.head.sha}));
+              return;
+            }
+
+      - name: Create infrastructure dispatch token
+        if: steps.validate.outputs.event != ''
+        id: token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
+        with:
+          app-id: ${{ secrets.PREVIEW_DISPATCH_APP_ID }}
+          private-key: ${{ secrets.PREVIEW_DISPATCH_APP_PRIVATE_KEY }}
+          owner: michidk
+          repositories: roastbook-infra
+          permission-contents: write
+
+      - name: Notify private infrastructure
+        if: steps.validate.outputs.event != ''
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        env:
+          DISPATCH_EVENT: ${{ steps.validate.outputs.event }}
+          DISPATCH_PAYLOAD: ${{ steps.validate.outputs.payload }}
+        with:
+          github-token: ${{ steps.token.outputs.token }}
+          script: |
+            await github.rest.repos.createDispatchEvent({
+              owner: 'michidk', repo: 'roastbook-infra',
+              event_type: process.env.DISPATCH_EVENT,
+              client_payload: JSON.parse(process.env.DISPATCH_PAYLOAD),
+            });

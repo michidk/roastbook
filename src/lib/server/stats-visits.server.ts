@@ -1,5 +1,6 @@
-import { and, desc, eq, isNotNull, type SQL, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, isNotNull, type SQL, sql } from 'drizzle-orm'
 import { db } from '@/db'
+import { owned } from '@/db/journal-scope.server'
 import {
   cafeVisits,
   cafeVisitTasteTags,
@@ -8,18 +9,18 @@ import {
   tasteTags,
 } from '@/db/schema'
 import {
-  localDate,
-  localDateKey,
-  localDateRangeCondition,
-  statsBucketExpression,
-} from '@/lib/server/stats-sql.server'
+  STATS_SCAN_PAGE_SIZE,
+  scanStatsRows,
+} from '@/lib/server/stats-scan.server'
+import { localDateRangeCondition } from '@/lib/server/stats-sql.server'
 import { calculateStreaks, fillBucketSeries } from '@/lib/stats-analysis'
 import { dateKeyInTimeZone, type StatsRange } from '@/lib/stats-filters'
+import { createLocalActivity } from '@/lib/stats-local'
 import { normalizeRatingAverages, toNullableNumber } from '@/lib/stats-number'
 
 const averageVisitRatingSql = sql<
   string | number | null
->`round(avg(${cafeVisits.rating})::numeric, 2)`
+>`round(cast(avg(${cafeVisits.rating}) as numeric), 2)`
 
 function visitCondition(
   timeZone: string,
@@ -43,12 +44,32 @@ export async function getVisitsAndPlacesStats({
     range.previousStart && range.previousEnd
       ? visitCondition(timeZone, range.previousStart, range.previousEnd)
       : null
-  const trendBucket = statsBucketExpression(
-    cafeVisits.visitedAt,
-    timeZone,
-    range.bucket,
-  )
-  const visitDateKey = localDateKey(cafeVisits.visitedAt, timeZone)
+  const localScanPromise = (async () => {
+    const activity = createLocalActivity(timeZone, range.bucket)
+    await scanStatsRows(
+      (afterId) =>
+        db
+          .select({
+            id: cafeVisits.id,
+            visitedAt: cafeVisits.visitedAt,
+            rating: cafeVisits.rating,
+          })
+          .from(cafeVisits)
+          .where(
+            owned(
+              cafeVisits,
+              and(
+                currentWhere,
+                afterId === undefined ? undefined : gt(cafeVisits.id, afterId),
+              ),
+            ),
+          )
+          .orderBy(asc(cafeVisits.id))
+          .limit(STATS_SCAN_PAGE_SIZE),
+      (row) => activity.add(row.visitedAt, row.rating),
+    )
+    return activity.result()
+  })()
 
   const [
     visitTotals,
@@ -64,64 +85,59 @@ export async function getVisitsAndPlacesStats({
   ] = await Promise.all([
     db
       .select({
-        total: sql<number>`count(*)::int`,
-        firstDate: sql<
-          string | null
-        >`min(${localDate(cafeVisits.visitedAt, timeZone)})::text`,
+        total: sql<number>`cast(count(*) as integer)`,
         averageRating: averageVisitRatingSql,
-        totalRated: sql<number>`count(${cafeVisits.rating})::int`,
-        uniquePlaces: sql<number>`count(distinct ${cafeVisits.coffeeShopId})::int`,
+        totalRated: sql<number>`cast(count(${cafeVisits.rating}) as integer)`,
+        uniquePlaces: sql<number>`cast(count(distinct ${cafeVisits.coffeeShopId}) as integer)`,
       })
       .from(cafeVisits)
-      .where(currentWhere),
+      .where(owned(cafeVisits, currentWhere)),
 
     previousWhere
       ? db
           .select({
-            total: sql<number>`count(*)::int`,
+            total: sql<number>`cast(count(*) as integer)`,
             averageRating: averageVisitRatingSql,
           })
           .from(cafeVisits)
-          .where(previousWhere)
+          .where(owned(cafeVisits, previousWhere))
       : Promise.resolve([]),
 
     db
       .select({
-        total: sql<number>`count(*)::int`,
-        favorites: sql<number>`count(*) filter (where ${coffeeShops.isFavorite} = true)::int`,
+        total: sql<number>`cast(count(*) as integer)`,
+        favorites: sql<number>`cast(count(*) filter (where ${coffeeShops.isFavorite} = true) as integer)`,
       })
-      .from(coffeeShops),
+      .from(coffeeShops)
+      .where(owned(coffeeShops)),
 
     db
       .select({
         coffeeShopId: coffeeShops.id,
         coffeeShopName: coffeeShops.name,
         city: coffeeShops.city,
-        visitCount: sql<number>`count(*)::int`,
+        visitCount: sql<number>`cast(count(*) as integer)`,
         avgRating: averageVisitRatingSql,
       })
       .from(cafeVisits)
       .innerJoin(coffeeShops, eq(cafeVisits.coffeeShopId, coffeeShops.id))
-      .where(currentWhere)
+      .where(owned(cafeVisits, currentWhere))
       .groupBy(coffeeShops.id, coffeeShops.name, coffeeShops.city)
       .orderBy(desc(sql`count(*)`), coffeeShops.name)
       .limit(5),
 
-    db
-      .select({
-        date: trendBucket,
-        count: sql<number>`count(*)::int`,
-        averageRating: averageVisitRatingSql,
-      })
-      .from(cafeVisits)
-      .where(currentWhere)
-      .groupBy(sql`1`)
-      .orderBy(sql`1`),
+    localScanPromise.then((row) =>
+      row.trend.map(({ date, count, averageRating }) => ({
+        date,
+        count,
+        averageRating,
+      })),
+    ),
 
     db
       .select({
         name: drinkTypesTable.name,
-        count: sql<number>`count(*)::int`,
+        count: sql<number>`cast(count(*) as integer)`,
         avgRating: averageVisitRatingSql,
       })
       .from(cafeVisits)
@@ -129,7 +145,9 @@ export async function getVisitsAndPlacesStats({
         drinkTypesTable,
         eq(drinkTypesTable.id, cafeVisits.drinkTypeId),
       )
-      .where(and(currentWhere, isNotNull(cafeVisits.drinkTypeId)))
+      .where(
+        owned(cafeVisits, and(currentWhere, isNotNull(cafeVisits.drinkTypeId))),
+      )
       .groupBy(drinkTypesTable.name)
       .orderBy(desc(sql`count(*)`))
       .limit(6),
@@ -137,11 +155,11 @@ export async function getVisitsAndPlacesStats({
     db
       .select({
         name: coffeeShops.city,
-        count: sql<number>`count(*)::int`,
+        count: sql<number>`cast(count(*) as integer)`,
       })
       .from(cafeVisits)
       .innerJoin(coffeeShops, eq(cafeVisits.coffeeShopId, coffeeShops.id))
-      .where(and(currentWhere, isNotNull(coffeeShops.city)))
+      .where(owned(cafeVisits, and(currentWhere, isNotNull(coffeeShops.city))))
       .groupBy(coffeeShops.city)
       .orderBy(desc(sql`count(*)`))
       .limit(6),
@@ -151,13 +169,13 @@ export async function getVisitsAndPlacesStats({
         id: tasteTags.id,
         name: tasteTags.name,
         category: tasteTags.category,
-        count: sql<number>`count(distinct ${cafeVisits.id})::int`,
+        count: sql<number>`cast(count(distinct ${cafeVisits.id}) as integer)`,
         avgRating: averageVisitRatingSql,
       })
       .from(cafeVisitTasteTags)
       .innerJoin(cafeVisits, eq(cafeVisitTasteTags.cafeVisitId, cafeVisits.id))
       .innerJoin(tasteTags, eq(cafeVisitTasteTags.tasteTagId, tasteTags.id))
-      .where(currentWhere)
+      .where(owned(cafeVisitTasteTags, currentWhere))
       .groupBy(tasteTags.id, tasteTags.name, tasteTags.category)
       .orderBy(desc(sql`count(distinct ${cafeVisits.id})`))
       .limit(8),
@@ -167,25 +185,21 @@ export async function getVisitsAndPlacesStats({
         currency: cafeVisits.currency,
         total: sql<
           string | number
-        >`round(sum(${cafeVisits.price}::numeric), 2)`,
+        >`round(sum(cast(${cafeVisits.price} as numeric)), 2)`,
         average: sql<
           string | number
-        >`round(avg(${cafeVisits.price}::numeric), 2)`,
-        count: sql<number>`count(${cafeVisits.price})::int`,
+        >`round(avg(cast(${cafeVisits.price} as numeric)), 2)`,
+        count: sql<number>`cast(count(${cafeVisits.price}) as integer)`,
       })
       .from(cafeVisits)
-      .where(and(currentWhere, isNotNull(cafeVisits.price)))
+      .where(owned(cafeVisits, and(currentWhere, isNotNull(cafeVisits.price))))
       .groupBy(cafeVisits.currency)
       .orderBy(cafeVisits.currency),
 
-    db
-      .select({ date: visitDateKey, count: sql<number>`count(*)::int` })
-      .from(cafeVisits)
-      .where(currentWhere)
-      .groupBy(sql`1`)
-      .orderBy(sql`1`),
+    localScanPromise.then((row) => row.activityDates),
   ])
 
+  const localized = await localScanPromise
   return {
     visits: {
       total: visitTotals[0]?.total ?? 0,
@@ -198,7 +212,7 @@ export async function getVisitsAndPlacesStats({
           ...row,
           averageRating: toNullableNumber(row.averageRating),
         })),
-        range.start ?? visitTotals[0]?.firstDate ?? null,
+        range.start ?? localized.firstDate ?? null,
         range.end,
         range.bucket,
         (date) => ({ date, count: 0, averageRating: null }),

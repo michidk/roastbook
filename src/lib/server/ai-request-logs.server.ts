@@ -1,8 +1,8 @@
 import type { ChatMiddleware, StreamChunk, TokenUsage } from '@tanstack/ai'
 import { and, desc, eq, lt, sql } from 'drizzle-orm'
 import { db } from '@/db'
-import { getAiControlDb } from '@/db/connection.server'
 import { requireIdentity } from '@/db/journal-context.server'
+import { owned } from '@/db/journal-scope.server'
 import { aiRequestLogs } from '@/db/schema'
 import { estimateTokenCost } from '@/lib/ai-pricing'
 import {
@@ -13,12 +13,15 @@ import {
 import { DEMO_MODE } from '@/lib/build-mode'
 import type { JsonValue } from '@/lib/json-value'
 import {
+  startAiAccounting,
+  updateAiAccounting,
+} from '@/lib/server/ai-request-accounting.server'
+import {
   getAiTelemetryPolicy,
   REDACTED_AI_PAYLOAD,
   storedAiErrorMessage,
   storedAiPayload,
 } from '@/lib/server/ai-request-log-policy.server'
-import { reserveProvidedAiRequest } from './ai-allowance.server'
 
 export type AiRequestStatus = 'in_progress' | 'succeeded' | 'failed' | 'aborted'
 
@@ -90,36 +93,13 @@ function aiRequestStatus(value: string): AiRequestStatus {
   return value
 }
 
-// Keep request accounting when the surrounding journal operation rolls back.
-// The independent connection still uses the restricted journal role and RLS.
-async function withRequestLogDatabase<T>(
-  work: (
-    tx: Parameters<
-      Parameters<ReturnType<typeof getAiControlDb>['transaction']>[0]
-    >[0],
-  ) => Promise<T>,
-  provided = false,
-) {
-  const identity = requireIdentity()
-  return getAiControlDb().transaction(async (tx) => {
-    if (provided) await reserveProvidedAiRequest(tx)
-    await tx.execute(
-      sql`select set_config('roastbook.user_id', ${identity.id}, true)`,
-    )
-    await tx.execute(sql`set local role roastbook_journal`)
-    return work(tx)
-  })
-}
-
 async function updateLogSafely(
   id: number | undefined,
   values: Partial<typeof aiRequestLogs.$inferInsert>,
 ) {
   if (id === undefined) return
   try {
-    await withRequestLogDatabase((tx) =>
-      tx.update(aiRequestLogs).set(values).where(eq(aiRequestLogs.id, id)),
-    )
+    await updateAiAccounting(id, values)
   } catch (error) {
     console.error('Could not update AI request log', error)
   }
@@ -138,7 +118,7 @@ export async function scrubExpiredAiRequestPayloads({
   policy ??= getAiTelemetryPolicy()
 
   const hasDetailedPayload = sql<boolean>`(
-    ${aiRequestLogs.requestPayload} <> ${JSON.stringify(REDACTED_AI_PAYLOAD)}::jsonb
+    ${aiRequestLogs.requestPayload} <> ${sql.param(REDACTED_AI_PAYLOAD, aiRequestLogs.requestPayload)}
     or ${aiRequestLogs.responsePayload} is not null
     or ${aiRequestLogs.errorMessage} is not null
   )`
@@ -153,9 +133,15 @@ export async function scrubExpiredAiRequestPayloads({
       errorMessage: null,
     })
     .where(
-      force || !policy.storePayloads
-        ? hasDetailedPayload
-        : and(lt(aiRequestLogs.createdAt, retentionCutoff), hasDetailedPayload),
+      owned(
+        aiRequestLogs,
+        force || !policy.storePayloads
+          ? hasDetailedPayload
+          : and(
+              lt(aiRequestLogs.createdAt, retentionCutoff),
+              hasDetailedPayload,
+            ),
+      ),
     )
     .returning({ id: aiRequestLogs.id })
   return rows.length
@@ -177,20 +163,13 @@ export async function startAiRequestLog({
   providerMode: 'provided' | 'byo'
 }): Promise<number> {
   const policy = getAiTelemetryPolicy()
-  return withRequestLogDatabase(async (tx) => {
-    const [entry] = await tx
-      .insert(aiRequestLogs)
-      .values({
-        ownerId: requireIdentity().id,
-        providerMode,
-        requestType,
-        model,
-        requestPayload: storedAiPayload(requestPayload, policy),
-      })
-      .returning({ id: aiRequestLogs.id })
-    if (!entry) throw new Error('Could not start AI request accounting')
-    return entry.id
-  }, providerMode === 'provided')
+  return startAiAccounting({
+    ownerId: requireIdentity().id,
+    providerMode,
+    requestType,
+    model,
+    requestPayload: storedAiPayload(requestPayload, policy),
+  })
 }
 
 export async function completeAiRequestLog({
@@ -339,13 +318,13 @@ export function createAiRequestLogMiddleware(
 }
 
 export const aiRequestStatsSelection = {
-  requestCount: sql<number>`count(*)::double precision`,
-  promptTokens: sql<number>`coalesce(sum(${aiRequestLogs.promptTokens}), 0)::double precision`,
-  cachedPromptTokens: sql<number>`coalesce(sum(${aiRequestLogs.cachedPromptTokens}), 0)::double precision`,
-  completionTokens: sql<number>`coalesce(sum(${aiRequestLogs.completionTokens}), 0)::double precision`,
-  totalTokens: sql<number>`coalesce(sum(${aiRequestLogs.totalTokens}), 0)::double precision`,
-  estimatedCostUsd: sql<string>`coalesce(sum(${aiRequestLogs.estimatedCostUsd}), 0)::text`,
-  pricedTokens: sql<number>`coalesce(sum(${aiRequestLogs.totalTokens}) filter (where ${aiRequestLogs.estimatedCostUsd} is not null), 0)::double precision`,
+  requestCount: sql<number>`cast(count(*) as double precision)`,
+  promptTokens: sql<number>`cast(coalesce(sum(${aiRequestLogs.promptTokens}), 0) as double precision)`,
+  cachedPromptTokens: sql<number>`cast(coalesce(sum(${aiRequestLogs.cachedPromptTokens}), 0) as double precision)`,
+  completionTokens: sql<number>`cast(coalesce(sum(${aiRequestLogs.completionTokens}), 0) as double precision)`,
+  totalTokens: sql<number>`cast(coalesce(sum(${aiRequestLogs.totalTokens}), 0) as double precision)`,
+  estimatedCostUsd: sql<string>`cast(coalesce(sum(${aiRequestLogs.estimatedCostUsd}), 0) as text)`,
+  pricedTokens: sql<number>`cast(coalesce(sum(${aiRequestLogs.totalTokens}) filter (where ${aiRequestLogs.estimatedCostUsd} is not null), 0) as double precision)`,
 }
 
 export async function loadAiRequestStats(
@@ -355,7 +334,7 @@ export async function loadAiRequestStats(
   const [stats] = await db
     .select(aiRequestStatsSelection)
     .from(aiRequestLogs)
-    .where(eq(aiRequestLogs.providerMode, providerMode))
+    .where(owned(aiRequestLogs, eq(aiRequestLogs.providerMode, providerMode)))
 
   return (
     stats ?? {
@@ -398,7 +377,12 @@ export async function loadAiRequestLogs({
       createdAt: aiRequestLogs.createdAt,
     })
     .from(aiRequestLogs)
-    .where(cursor === undefined ? undefined : lt(aiRequestLogs.id, cursor))
+    .where(
+      owned(
+        aiRequestLogs,
+        cursor === undefined ? undefined : lt(aiRequestLogs.id, cursor),
+      ),
+    )
     .orderBy(desc(aiRequestLogs.id))
     .limit(limit + 1)
   const pageRows = rows.slice(0, limit)
@@ -419,7 +403,7 @@ export async function loadAiRequestLogs({
 export async function loadAiRequestLog(id: number): Promise<AiRequestLogEntry> {
   await scrubExpiredAiRequestPayloads()
   const entry = await db.query.aiRequestLogs.findFirst({
-    where: eq(aiRequestLogs.id, id),
+    where: owned(aiRequestLogs, eq(aiRequestLogs.id, id)),
   })
   if (!entry) throw new Error('AI request log not found')
 

@@ -4,6 +4,7 @@ import { LocalStorageProvider } from './local'
 import { S3StorageProvider } from './s3'
 import type { StorageConfig, StorageProvider } from './types'
 
+export { generateStoragePath } from './path'
 export type { StorageProvider } from './types'
 
 let storageInstance: StorageProvider | null = null
@@ -59,14 +60,3 @@ export const getStorage = createServerOnlyFn((): StorageProvider => {
 
   return storageInstance
 })
-
-export function generateStoragePath(
-  type: 'beans' | 'gear' | 'coffee-shops' | 'shots' | 'cafe-visits',
-  id: number,
-  filename: string,
-): string {
-  const ext = filename.split('.').pop() || 'jpg'
-  const timestamp = Date.now()
-  const randomSuffix = Math.random().toString(36).substring(2, 8)
-  return `${type}/${id}/${timestamp}-${randomSuffix}.${ext}`
-}

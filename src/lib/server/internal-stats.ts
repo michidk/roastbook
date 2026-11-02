@@ -1,6 +1,13 @@
 import { createServerFn } from '@tanstack/react-start'
-import { sql } from 'drizzle-orm'
 import { db } from '@/db'
+import { owned } from '@/db/journal-scope.server'
+import {
+  beanImages,
+  cafeVisitImages,
+  coffeeShopImages,
+  gearImages,
+  shotImages,
+} from '@/db/schema'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { getServerEnv } from '@/lib/env.server'
 import { getStoredImagePaths } from '@/lib/image-path'
@@ -10,7 +17,7 @@ const FAVICON_PREFIX = 'favicons/'
 
 type StorageStats = {
   readonly available: boolean
-  readonly provider: 'local' | 's3'
+  readonly provider: 'local' | 's3' | 'r2'
   readonly imageCount: number | null
   readonly faviconCount: number | null
   readonly totalBytes: number | null
@@ -27,16 +34,33 @@ async function loadStorageStats(): Promise<StorageStats> {
     }
   }
 
-  const provider =
-    getServerEnv().STORAGE_PROVIDER === 's3'
-      ? ('s3' as const)
-      : ('local' as const)
+  const provider = getServerEnv().STORAGE_PROVIDER
   try {
-    const rows = await db.execute(
-      sql`select storage_path from bean_images union all select storage_path from gear_images union all select storage_path from brew_images union all select storage_path from coffee_shop_images union all select storage_path from cafe_visit_images`,
-    )
+    const groups = await Promise.all([
+      db
+        .select({ storagePath: beanImages.storagePath })
+        .from(beanImages)
+        .where(owned(beanImages)),
+      db
+        .select({ storagePath: gearImages.storagePath })
+        .from(gearImages)
+        .where(owned(gearImages)),
+      db
+        .select({ storagePath: shotImages.storagePath })
+        .from(shotImages)
+        .where(owned(shotImages)),
+      db
+        .select({ storagePath: coffeeShopImages.storagePath })
+        .from(coffeeShopImages)
+        .where(owned(coffeeShopImages)),
+      db
+        .select({ storagePath: cafeVisitImages.storagePath })
+        .from(cafeVisitImages)
+        .where(owned(cafeVisitImages)),
+    ])
+    const rows = groups.flat()
     const allowed = new Set(
-      getStoredImagePaths(rows.map((row) => String(row.storage_path))),
+      getStoredImagePaths(rows.map((row) => row.storagePath)),
     )
     const objects = (await getStorage().listObjects()).filter((object) =>
       allowed.has(object.path),

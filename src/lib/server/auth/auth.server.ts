@@ -2,32 +2,17 @@ import '@tanstack/react-start/server-only'
 import { verifyOAuthQueryParams } from '@better-auth/oauth-provider'
 import { passkey } from '@better-auth/passkey'
 import { betterAuth } from 'better-auth'
-import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { APIError, createAuthMiddleware } from 'better-auth/api'
 import { emailOTP } from 'better-auth/plugins'
 import { and, eq, isNull } from 'drizzle-orm'
+import { getCloudflareRuntime } from '@/cloudflare/context.server'
 import { getControlDb } from '@/db/connection.server'
-import {
-  authAccounts,
-  authPasskeys,
-  authRateLimits,
-  authSessions,
-  authUsers,
-  authVerifications,
-  instanceIdentity,
-  jwks,
-  oauthAccessToken,
-  oauthClient,
-  oauthClientAssertion,
-  oauthClientResource,
-  oauthConsent,
-  oauthRefreshToken,
-  oauthResource,
-} from '@/db/schema'
+import { authUsers, instanceIdentity } from '@/db/schema'
 import { getServerEnv } from '@/lib/env.server'
-import { sendAccountEmail } from './email.server'
+import { createAuthDatabaseAdapter } from '@/lib/server/auth/database-adapter.server'
+import { sendAccountEmail } from '@/lib/server/auth/email.server'
+import { initializeUser } from '@/lib/server/auth/identity.server'
 import { allowEmailAttempt } from './email-rate-limit.server'
-import { initializeUser } from './identity.server'
 import { mcpAuthPlugins } from './mcp-options.server'
 import { requirePasskeyUserVerification } from './passkey-policy.server'
 
@@ -41,26 +26,7 @@ function createAuth() {
     baseURL: origin,
     secret: env.AUTH_SECRET,
     trustedOrigins: [origin],
-    database: drizzleAdapter(getControlDb(), {
-      provider: 'pg',
-      transaction: true,
-      schema: {
-        user: authUsers,
-        session: authSessions,
-        account: authAccounts,
-        verification: authVerifications,
-        passkey: authPasskeys,
-        rateLimit: authRateLimits,
-        jwks,
-        oauthClient,
-        oauthResource,
-        oauthClientResource,
-        oauthAccessToken,
-        oauthRefreshToken,
-        oauthConsent,
-        oauthClientAssertion,
-      },
-    }),
+    database: createAuthDatabaseAdapter(),
     emailAndPassword: { enabled: false },
     disabledPaths: ['/token', '/update-user'],
     session: {
@@ -243,7 +209,16 @@ function createAuth() {
   })
 }
 let auth: ReturnType<typeof createAuth> | undefined
+const runtimeAuth = new WeakMap<object, ReturnType<typeof createAuth>>()
 export function getAuth() {
+  const runtime = getCloudflareRuntime()
+  if (runtime) {
+    const cached = runtimeAuth.get(runtime.bindings)
+    if (cached) return cached
+    const created = createAuth()
+    runtimeAuth.set(runtime.bindings, created)
+    return created
+  }
   auth ??= createAuth()
   return auth
 }

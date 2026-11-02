@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
 import { db } from '@/db'
+import { owned } from '@/db/journal-scope.server'
 import {
   beanPurchases,
   brewingMethods,
@@ -78,7 +79,7 @@ async function resolveSetup(
 ): Promise<RecommendationSetup> {
   if (isFocusedShotRecommendationRequest(request)) {
     const focusedShot = await db.query.shots.findFirst({
-      where: eq(shots.id, request.shotId),
+      where: owned(shots, eq(shots.id, request.shotId)),
       columns: {
         id: true,
         beanId: true,
@@ -143,12 +144,15 @@ async function resolveSetup(
   }
 
   const latestShot = await db.query.shots.findFirst({
-    where: request.brewingMethodId
-      ? and(
-          eq(shots.beanId, request.beanId),
-          eq(shots.brewingMethodId, request.brewingMethodId),
-        )
-      : eq(shots.beanId, request.beanId),
+    where: owned(
+      shots,
+      request.brewingMethodId
+        ? and(
+            eq(shots.beanId, request.beanId),
+            eq(shots.brewingMethodId, request.brewingMethodId),
+          )
+        : eq(shots.beanId, request.beanId),
+    ),
     orderBy: [desc(shots.brewedAt), desc(shots.id)],
     columns: {
       beanId: true,
@@ -207,12 +211,15 @@ export const getShotRecommendationOptions = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     if (isFocusedShotRecommendationRequest(data) || data.currentDraft) return []
     const history = await db.query.shots.findMany({
-      where: data.brewingMethodId
-        ? and(
-            eq(shots.beanId, data.beanId),
-            eq(shots.brewingMethodId, data.brewingMethodId),
-          )
-        : eq(shots.beanId, data.beanId),
+      where: owned(
+        shots,
+        data.brewingMethodId
+          ? and(
+              eq(shots.beanId, data.beanId),
+              eq(shots.brewingMethodId, data.brewingMethodId),
+            )
+          : eq(shots.beanId, data.beanId),
+      ),
       orderBy: [desc(shots.brewedAt), desc(shots.id)],
       columns: {
         id: true,
@@ -265,7 +272,7 @@ async function loadRecommendationEvidence(request: ShotRecommendationRequest) {
     ? null
     : (request.currentDraft ?? null)
   const candidateShots = await db.query.shots.findMany({
-    where: setupConditions(setup),
+    where: owned(shots, setupConditions(setup)),
     orderBy: [desc(shots.brewedAt), desc(shots.id)],
     columns: { id: true },
     with: { accessoryGearLinks: { columns: { gearId: true } } },
@@ -303,33 +310,44 @@ async function loadRecommendationEvidence(request: ShotRecommendationRequest) {
   const [bean, purchase, brewingMethod, matchingHistory, selectedGear] =
     await Promise.all([
       db.query.beans.findFirst({
-        where: (beans, { eq }) => eq(beans.id, setup.beanId),
+        where: (beans, { eq }) => owned(beans, eq(beans.id, setup.beanId)),
         with: { roasterRef: true },
       }),
       setup.beanPurchaseId === null
         ? Promise.resolve(null)
         : db.query.beanPurchases.findFirst({
-            where: and(
-              eq(beanPurchases.id, setup.beanPurchaseId),
-              eq(beanPurchases.beanId, setup.beanId),
+            where: owned(
+              beanPurchases,
+              and(
+                eq(beanPurchases.id, setup.beanPurchaseId),
+                eq(beanPurchases.beanId, setup.beanId),
+              ),
             ),
           }),
       db.query.brewingMethods.findFirst({
-        where: eq(brewingMethods.id, setup.brewingMethodId),
+        where: owned(
+          brewingMethods,
+          eq(brewingMethods.id, setup.brewingMethodId),
+        ),
       }),
       includedIds.length === 0
         ? Promise.resolve([])
         : db.query.shots.findMany({
-            where: inArray(shots.id, includedIds),
+            where: owned(shots, inArray(shots.id, includedIds)),
             orderBy: [asc(shots.brewedAt), asc(shots.id)],
             with: recommendationShotRelations,
           }),
-      gearIds.length === 0
-        ? Promise.resolve([])
-        : db.query.gear.findMany({
-            where: inArray(gear.id, gearIds),
+      Promise.all(
+        Array.from({ length: Math.ceil(gearIds.length / 60) }, (_, index) =>
+          db.query.gear.findMany({
+            where: owned(
+              gear,
+              inArray(gear.id, gearIds.slice(index * 60, index * 60 + 60)),
+            ),
             with: recommendationGearRelations(),
           }),
+        ),
+      ).then((pages) => pages.flat()),
     ])
   if (!bean || !brewingMethod) {
     throw new ShotRecommendationError(

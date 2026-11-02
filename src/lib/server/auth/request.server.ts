@@ -7,9 +7,12 @@ import { withJournalResponse } from '@/db/journal-response.server'
 import { authUsers, integrationTokens } from '@/db/schema'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { getServerEnv } from '@/lib/env.server'
+import {
+  defaultIdentity,
+  initializeUser,
+} from '@/lib/server/auth/identity.server'
 import { validateMcpRequest } from '../mcp/http-policy.server'
 import { getAuth } from './auth.server'
-import { defaultIdentity, initializeUser } from './identity.server'
 import {
   authorizeMcpRequest,
   OAUTH_DISCOVERY_PATHS,

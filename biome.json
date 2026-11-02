@@ -11,6 +11,7 @@
       "**",
       "!src/routeTree.gen.ts",
       "!drizzle/meta",
+      "!drizzle-d1/meta",
       "!design/tokens",
       "!charts/templates",
       "!**/*.md",

@@ -1,7 +1,12 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, count, desc, eq, exists, ilike, not, or } from 'drizzle-orm'
+import { and, count, desc, eq, exists, not, or } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
+import {
+  allocateJournalIds,
+  runJournalMutations,
+} from '@/db/journal-mutations.server'
+import { journalInsertValues, owned } from '@/db/journal-scope.server'
 import { beanPurchases, beans, cafeVisits, recipes, shots } from '@/db/schema'
 import {
   escapedContainsPattern,
@@ -16,11 +21,12 @@ import {
   researchBeanFromWeb,
 } from '@/lib/server/ai-operations.server'
 import {
-  createBeanPurchaseOperation,
+  createBeanPurchaseMutations,
   newestPurchase,
   purchaseUsageById,
 } from '@/lib/server/bean-purchases.server'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
+import { caseInsensitiveLike } from '@/lib/server/portable-query.server'
 import { withResourceLimits } from '@/lib/server/resource-limits.server'
 import {
   currencySchema,
@@ -142,6 +148,7 @@ const beanListSchema = z.object({
 
 export const getBeans = createServerFn({ method: 'GET' }).handler(async () => {
   const rows = await db.query.beans.findMany({
+    where: owned(beans),
     orderBy: [desc(beans.createdAt)],
     with: {
       images: true,
@@ -181,9 +188,9 @@ export const getBeanCollection = createServerFn({ method: 'GET' })
     const pattern = escapedContainsPattern(data.query)
     const search = data.query
       ? or(
-          ilike(beans.name, pattern),
-          ilike(beans.origin, pattern),
-          ilike(beans.roaster, pattern),
+          caseInsensitiveLike(beans.name, pattern),
+          caseInsensitiveLike(beans.origin, pattern),
+          caseInsensitiveLike(beans.roaster, pattern),
         )
       : undefined
 
@@ -199,9 +206,12 @@ export const getBeanCollection = createServerFn({ method: 'GET' })
           .select({ id: beanPurchases.id })
           .from(beanPurchases)
           .where(
-            and(
-              eq(beanPurchases.beanId, beans.id),
-              eq(beanPurchases.isArchived, false),
+            owned(
+              beanPurchases,
+              and(
+                eq(beanPurchases.beanId, beans.id),
+                eq(beanPurchases.isArchived, false),
+              ),
             ),
           ),
       )
@@ -210,12 +220,12 @@ export const getBeanCollection = createServerFn({ method: 'GET' })
       const countRows = await db
         .select({ value: count() })
         .from(beans)
-        .where(where)
+        .where(owned(beans, where))
       const totalItems = countRows[0]?.value ?? 0
       const pagination = resolvePagination(totalItems, requestedPage, pageSize)
       const { page } = pagination
       const items = await db.query.beans.findMany({
-        where,
+        where: owned(beans, where),
         orderBy: [desc(beans.createdAt), desc(beans.id)],
         limit: pageSize,
         offset: (page - 1) * pageSize,
@@ -252,7 +262,7 @@ export const getBeanCollection = createServerFn({ method: 'GET' })
       .select({ value: count(beanPurchases.id) })
       .from(beanPurchases)
       .innerJoin(beans, eq(beanPurchases.beanId, beans.id))
-      .where(search)
+      .where(owned(beanPurchases, search))
     const active = {
       ...activePage,
       items: await includeWeightUsage(activePage.items),
@@ -274,7 +284,7 @@ export const getBean = createServerFn({ method: 'GET' })
   .handler(async ({ data: id }) => {
     return db.query.beans
       .findFirst({
-        where: eq(beans.id, id),
+        where: owned(beans, eq(beans.id, id)),
         with: {
           images: true,
           roasterRef: true,
@@ -294,16 +304,22 @@ export const getBean = createServerFn({ method: 'GET' })
 export const getActiveBeans = createServerFn({ method: 'GET' }).handler(
   async () => {
     const rows = await db.query.beans.findMany({
-      where: exists(
-        db
-          .select({ id: beanPurchases.id })
-          .from(beanPurchases)
-          .where(
-            and(
-              eq(beanPurchases.beanId, beans.id),
-              eq(beanPurchases.isArchived, false),
+      where: owned(
+        beans,
+        exists(
+          db
+            .select({ id: beanPurchases.id })
+            .from(beanPurchases)
+            .where(
+              owned(
+                beanPurchases,
+                and(
+                  eq(beanPurchases.beanId, beans.id),
+                  eq(beanPurchases.isArchived, false),
+                ),
+              ),
             ),
-          ),
+        ),
       ),
       orderBy: [desc(beans.createdAt)],
       with: {
@@ -322,7 +338,7 @@ export const getActiveBeans = createServerFn({ method: 'GET' }).handler(
 export const getActiveBeanPurchases = createServerFn({ method: 'GET' }).handler(
   async () => {
     const rows = await db.query.beanPurchases.findMany({
-      where: eq(beanPurchases.isArchived, false),
+      where: owned(beanPurchases, eq(beanPurchases.isArchived, false)),
       orderBy: [desc(beanPurchases.createdAt)],
       with: {
         images: true,
@@ -359,20 +375,33 @@ export const createBean = createServerFn({ method: 'POST' })
       isArchived,
       ...profile
     } = data
-    return db.transaction(async (tx) => {
-      const [bean] = await tx.insert(beans).values(profile).returning()
-      const savedBean = expectReturnedRow(bean, 'Bean')
-      const purchase = await createBeanPurchaseOperation(tx, savedBean.id, {
-        roastDate,
-        initialWeightGrams: weight,
-        price,
-        priceCurrency,
-        shopName,
-        shopUrl,
-        isArchived,
-      })
-      return { ...savedBean, purchaseId: purchase.id }
+    const [id] = await allocateJournalIds(beans)
+    if (id === undefined) throw new Error('Could not allocate bean identifier')
+    const purchase = await createBeanPurchaseMutations(id, {
+      roastDate,
+      initialWeightGrams: weight,
+      price,
+      priceCurrency,
+      shopName,
+      shopUrl,
+      isArchived,
     })
+    await runJournalMutations([
+      {
+        statement: db
+          .insert(beans)
+          .values(journalInsertValues({ id, ...profile }))
+          .getSQL(),
+      },
+      ...purchase.mutations,
+    ])
+    const savedBean = expectReturnedRow(
+      await db.query.beans.findFirst({
+        where: owned(beans, eq(beans.id, id)),
+      }),
+      'Bean',
+    )
+    return { ...savedBean, purchaseId: purchase.id }
   })
 
 export const updateBean = createServerFn({ method: 'POST' })
@@ -389,20 +418,34 @@ export const updateBean = createServerFn({ method: 'POST' })
       isArchived,
       ...values
     } = data
-    return db.transaction(async (tx) => {
-      const [bean] = await tx
-        .update(beans)
-        .set({ ...values, updatedAt: new Date() })
-        .where(eq(beans.id, id))
-        .returning()
-      if (isArchived !== undefined) {
-        await tx
-          .update(beanPurchases)
-          .set({ isArchived, updatedAt: new Date() })
-          .where(eq(beanPurchases.beanId, id))
-      }
-      return expectReturnedRow(bean, 'Bean')
-    })
+    await runJournalMutations([
+      {
+        statement: db
+          .update(beans)
+          .set({ ...values, updatedAt: new Date() })
+          .where(owned(beans, eq(beans.id, id)))
+          .getSQL(),
+        expectedChanges: 1,
+        conflictMessage: 'Bean not found',
+      },
+      ...(isArchived === undefined
+        ? []
+        : [
+            {
+              statement: db
+                .update(beanPurchases)
+                .set({ isArchived, updatedAt: new Date() })
+                .where(owned(beanPurchases, eq(beanPurchases.beanId, id)))
+                .getSQL(),
+            },
+          ]),
+    ])
+    return expectReturnedRow(
+      await db.query.beans.findFirst({
+        where: owned(beans, eq(beans.id, id)),
+      }),
+      'Bean',
+    )
   })
 
 export const deleteBean = createServerFn({ method: 'POST' })
@@ -410,15 +453,15 @@ export const deleteBean = createServerFn({ method: 'POST' })
   .handler(async ({ data: id }) => {
     const [brew, recipe, visit] = await Promise.all([
       db.query.shots.findFirst({
-        where: eq(shots.beanId, id),
+        where: owned(shots, eq(shots.beanId, id)),
         columns: { id: true },
       }),
       db.query.recipes.findFirst({
-        where: eq(recipes.beanId, id),
+        where: owned(recipes, eq(recipes.beanId, id)),
         columns: { id: true },
       }),
       db.query.cafeVisits.findFirst({
-        where: eq(cafeVisits.beanId, id),
+        where: owned(cafeVisits, eq(cafeVisits.beanId, id)),
         columns: { id: true },
       }),
     ])
@@ -426,10 +469,12 @@ export const deleteBean = createServerFn({ method: 'POST' })
       await db
         .update(beanPurchases)
         .set({ isArchived: true, updatedAt: new Date() })
-        .where(eq(beanPurchases.beanId, id))
+        .where(owned(beanPurchases, eq(beanPurchases.beanId, id)))
       return { archived: true }
     }
-    await db.delete(beanPurchases).where(eq(beanPurchases.beanId, id))
+    await db
+      .delete(beanPurchases)
+      .where(owned(beanPurchases, eq(beanPurchases.beanId, id)))
     await deleteEntityWithMedia('beans', id)
     return { archived: false }
   })

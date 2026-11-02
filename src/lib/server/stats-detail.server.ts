@@ -1,5 +1,6 @@
-import { and, desc, eq, isNotNull, type SQL, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, isNotNull, type SQL, sql } from 'drizzle-orm'
 import { db } from '@/db'
+import { owned } from '@/db/journal-scope.server'
 import {
   beanPurchases,
   beans,
@@ -10,33 +11,125 @@ import {
 import { toDisplayableDatabaseError } from '@/lib/server/database-error.server'
 import { loadStatsExploration } from '@/lib/server/stats-exploration.server'
 import {
-  localDate,
-  localDateKey,
-  localDateRangeCondition,
-  localTimestamp,
-  statsBucketExpression,
-} from '@/lib/server/stats-sql.server'
+  STATS_SCAN_PAGE_SIZE,
+  scanStatsRows,
+} from '@/lib/server/stats-scan.server'
+import { localDateRangeCondition } from '@/lib/server/stats-sql.server'
 import { getVisitsAndPlacesStats } from '@/lib/server/stats-visits.server'
 import { calculateStreaks, fillBucketSeries } from '@/lib/stats-analysis'
 import {
   dateKeyInTimeZone,
   daysBetween,
   resolveStatsRange,
+  type StatsBucket,
   type StatsFilter,
 } from '@/lib/stats-filters'
+import { continuousPercentiles, createLocalActivity } from '@/lib/stats-local'
 import { toNullableNumber } from '@/lib/stats-number'
 import type { DetailedStats } from '@/modules/stats/read-models'
 
-const shotCountSql = sql<number>`count(*)::int`
+const shotCountSql = sql<number>`cast(count(*) as integer)`
 const averageShotRatingSql = sql<
   string | number | null
->`round(avg(${shots.rating})::numeric, 2)`
+>`round(cast(avg(${shots.rating}) as numeric), 2)`
 const ratioSql = sql<string | number | null>`case
-  when ${shots.doseGrams} is null or ${shots.doseGrams}::numeric = 0 then null
+  when ${shots.doseGrams} is null or cast(${shots.doseGrams} as numeric) = 0 then null
   when ${shots.ratioBasis} = 'brew_water' then
-    ${shots.brewWaterGrams}::numeric / nullif(${shots.doseGrams}::numeric, 0)
-  else ${shots.yieldGrams}::numeric / nullif(${shots.doseGrams}::numeric, 0)
+    (1.0 * cast(${shots.brewWaterGrams} as numeric)) / nullif(cast(${shots.doseGrams} as numeric), 0)
+  else (1.0 * cast(${shots.yieldGrams} as numeric)) / nullif(cast(${shots.doseGrams} as numeric), 0)
 end`
+
+async function loadBrewActivity(
+  where: SQL,
+  timeZone: string,
+  bucket: StatsBucket,
+) {
+  const activity = createLocalActivity(timeZone, bucket)
+  const dose: number[] = []
+  const yieldValues: number[] = []
+  const time: number[] = []
+  const ratio: number[] = []
+  await scanStatsRows(
+    (afterId) =>
+      db
+        .select({
+          id: shots.id,
+          brewedAt: shots.brewedAt,
+          rating: shots.rating,
+          dose: shots.doseGrams,
+          yield: shots.yieldGrams,
+          time: shots.shotTimeSeconds,
+          ratio: ratioSql,
+        })
+        .from(shots)
+        .where(
+          owned(
+            shots,
+            and(
+              where,
+              afterId === undefined ? undefined : gt(shots.id, afterId),
+            ),
+          ),
+        )
+        .orderBy(asc(shots.id))
+        .limit(STATS_SCAN_PAGE_SIZE),
+    (row) => {
+      activity.add(row.brewedAt, row.rating)
+      if (row.dose !== null) dose.push(Number(row.dose))
+      if (row.yield !== null) yieldValues.push(Number(row.yield))
+      if (row.time !== null) time.push(Number(row.time))
+      if (row.ratio !== null) ratio.push(Number(row.ratio))
+    },
+  )
+  const d = continuousPercentiles(dose)
+  const y = continuousPercentiles(yieldValues)
+  const t = continuousPercentiles(time)
+  const r = continuousPercentiles(ratio)
+  return {
+    ...activity.result(),
+    consistency: {
+      doseCount: d.count,
+      doseMedian: d.median,
+      doseP25: d.p25,
+      doseP75: d.p75,
+      yieldCount: y.count,
+      yieldMedian: y.median,
+      yieldP25: y.p25,
+      yieldP75: y.p75,
+      timeCount: t.count,
+      timeMedian: t.median,
+      timeP25: t.p25,
+      timeP75: t.p75,
+      ratioCount: r.count,
+      ratioMedian: r.median,
+      ratioP25: r.p25,
+      ratioP75: r.p75,
+    },
+  }
+}
+
+async function loadActivityCalendar(where: SQL, timeZone: string) {
+  const activity = createLocalActivity(timeZone, 'day')
+  await scanStatsRows(
+    (afterId) =>
+      db
+        .select({ id: shots.id, brewedAt: shots.brewedAt })
+        .from(shots)
+        .where(
+          owned(
+            shots,
+            and(
+              where,
+              afterId === undefined ? undefined : gt(shots.id, afterId),
+            ),
+          ),
+        )
+        .orderBy(asc(shots.id))
+        .limit(STATS_SCAN_PAGE_SIZE),
+    (row) => activity.add(row.brewedAt),
+  )
+  return activity.result().activityDates
+}
 
 function shotCondition({
   timeZone,
@@ -68,7 +161,7 @@ export async function loadDetailedStats(
     const now = options.now ?? new Date()
     const installationSettings = await db.query.settings.findFirst({
       columns: { timeZone: true },
-      where: eq(settings.id, 1),
+      where: owned(settings, eq(settings.id, 1)),
     })
     const timeZone = installationSettings?.timeZone ?? 'UTC'
     const range = resolveStatsRange(filter, now, timeZone)
@@ -97,12 +190,15 @@ export async function loadDetailedStats(
             bean: filter.bean,
           })
         : null
-    const trendBucket = statsBucketExpression(
-      shots.brewedAt,
+    const localScanPromise = loadBrewActivity(
+      currentWhere,
       timeZone,
       range.bucket,
     )
-    const shotDateKey = localDateKey(shots.brewedAt, timeZone)
+    const calendarPromise = loadActivityCalendar(
+      activityCalendarWhere,
+      timeZone,
+    )
     const explorationPromise = loadStatsExploration({
       where: currentWhere,
       timeZone,
@@ -136,34 +232,31 @@ export async function loadDetailedStats(
       db
         .select({
           total: shotCountSql,
-          firstDate: sql<
-            string | null
-          >`min(${localDate(shots.brewedAt, timeZone)})::text`,
           totalGrams: sql<
             string | number
-          >`coalesce(sum(${shots.doseGrams}::numeric), 0)`,
-          uniqueBeans: sql<number>`count(distinct ${shots.beanId})::int`,
+          >`coalesce(sum(cast(${shots.doseGrams} as numeric)), 0)`,
+          uniqueBeans: sql<number>`cast(count(distinct ${shots.beanId}) as integer)`,
           avgRating: averageShotRatingSql,
-          totalRated: sql<number>`count(${shots.rating})::int`,
-          highRated: sql<number>`count(*) filter (where ${shots.rating} >= 4)::int`,
-          rating1: sql<number>`count(*) filter (where ${shots.rating} = 1)::int`,
-          rating2: sql<number>`count(*) filter (where ${shots.rating} = 2)::int`,
-          rating3: sql<number>`count(*) filter (where ${shots.rating} = 3)::int`,
-          rating4: sql<number>`count(*) filter (where ${shots.rating} = 4)::int`,
-          rating5: sql<number>`count(*) filter (where ${shots.rating} = 5)::int`,
+          totalRated: sql<number>`cast(count(${shots.rating}) as integer)`,
+          highRated: sql<number>`cast(count(*) filter (where ${shots.rating} >= 4) as integer)`,
+          rating1: sql<number>`cast(count(*) filter (where ${shots.rating} = 1) as integer)`,
+          rating2: sql<number>`cast(count(*) filter (where ${shots.rating} = 2) as integer)`,
+          rating3: sql<number>`cast(count(*) filter (where ${shots.rating} = 3) as integer)`,
+          rating4: sql<number>`cast(count(*) filter (where ${shots.rating} = 4) as integer)`,
+          rating5: sql<number>`cast(count(*) filter (where ${shots.rating} = 5) as integer)`,
           avgDose: sql<
             string | number | null
-          >`round(avg(${shots.doseGrams}::numeric), 1)`,
+          >`round(avg(cast(${shots.doseGrams} as numeric)), 1)`,
           avgYield: sql<
             string | number | null
-          >`round(avg(${shots.yieldGrams}::numeric), 1)`,
+          >`round(avg(cast(${shots.yieldGrams} as numeric)), 1)`,
           avgTime: sql<
             string | number | null
-          >`round(avg(${shots.shotTimeSeconds}::numeric), 0)`,
+          >`round(avg(cast(${shots.shotTimeSeconds} as numeric)), 0)`,
           avgRatio: sql<string | number | null>`round(avg(${ratioSql}), 2)`,
         })
         .from(shots)
-        .where(currentWhere),
+        .where(owned(shots, currentWhere)),
 
       previousWhere
         ? db
@@ -171,12 +264,12 @@ export async function loadDetailedStats(
               total: shotCountSql,
               totalGrams: sql<
                 string | number
-              >`coalesce(sum(${shots.doseGrams}::numeric), 0)`,
+              >`coalesce(sum(cast(${shots.doseGrams} as numeric)), 0)`,
               avgRating: averageShotRatingSql,
-              totalRated: sql<number>`count(${shots.rating})::int`,
+              totalRated: sql<number>`cast(count(${shots.rating}) as integer)`,
             })
             .from(shots)
-            .where(previousWhere)
+            .where(owned(shots, previousWhere))
         : Promise.resolve([]),
 
       explorationPromise.then(({ beans }) => beans.topByShots),
@@ -185,67 +278,12 @@ export async function loadDetailedStats(
       explorationPromise.then(({ gear }) => gear.grinders),
       explorationPromise.then(({ gear }) => gear.accessories),
 
-      db
-        .select({
-          date: trendBucket,
-          count: shotCountSql,
-          averageRating: averageShotRatingSql,
-          totalRated: sql<number>`count(${shots.rating})::int`,
-          highRated: sql<number>`count(*) filter (where ${shots.rating} >= 4)::int`,
-        })
-        .from(shots)
-        .where(currentWhere)
-        .groupBy(sql`1`)
-        .orderBy(sql`1`),
+      localScanPromise.then((row) => row.trend),
 
       explorationPromise.then(({ methods }) => methods),
       explorationPromise.then(({ tasteProfile }) => tasteProfile),
 
-      db
-        .select({
-          doseCount: sql<number>`count(${shots.doseGrams})::int`,
-          doseMedian: sql<
-            string | number | null
-          >`percentile_cont(0.5) within group (order by ${shots.doseGrams}::numeric)`,
-          doseP25: sql<
-            string | number | null
-          >`percentile_cont(0.25) within group (order by ${shots.doseGrams}::numeric)`,
-          doseP75: sql<
-            string | number | null
-          >`percentile_cont(0.75) within group (order by ${shots.doseGrams}::numeric)`,
-          yieldCount: sql<number>`count(${shots.yieldGrams})::int`,
-          yieldMedian: sql<
-            string | number | null
-          >`percentile_cont(0.5) within group (order by ${shots.yieldGrams}::numeric)`,
-          yieldP25: sql<
-            string | number | null
-          >`percentile_cont(0.25) within group (order by ${shots.yieldGrams}::numeric)`,
-          yieldP75: sql<
-            string | number | null
-          >`percentile_cont(0.75) within group (order by ${shots.yieldGrams}::numeric)`,
-          timeCount: sql<number>`count(${shots.shotTimeSeconds})::int`,
-          timeMedian: sql<
-            string | number | null
-          >`percentile_cont(0.5) within group (order by ${shots.shotTimeSeconds}::numeric)`,
-          timeP25: sql<
-            string | number | null
-          >`percentile_cont(0.25) within group (order by ${shots.shotTimeSeconds}::numeric)`,
-          timeP75: sql<
-            string | number | null
-          >`percentile_cont(0.75) within group (order by ${shots.shotTimeSeconds}::numeric)`,
-          ratioCount: sql<number>`count(${ratioSql})::int`,
-          ratioMedian: sql<
-            string | number | null
-          >`percentile_cont(0.5) within group (order by ${ratioSql})`,
-          ratioP25: sql<
-            string | number | null
-          >`percentile_cont(0.25) within group (order by ${ratioSql})`,
-          ratioP75: sql<
-            string | number | null
-          >`percentile_cont(0.75) within group (order by ${ratioSql})`,
-        })
-        .from(shots)
-        .where(currentWhere),
+      localScanPromise.then((row) => [row.consistency]),
 
       db
         .select({
@@ -263,33 +301,13 @@ export async function loadDetailedStats(
         .from(shots)
         .innerJoin(beans, eq(shots.beanId, beans.id))
         .innerJoin(brewingMethods, eq(shots.brewingMethodId, brewingMethods.id))
-        .where(and(currentWhere, isNotNull(shots.rating)))
+        .where(owned(shots, and(currentWhere, isNotNull(shots.rating))))
         .orderBy(desc(shots.brewedAt))
         .limit(250),
 
-      db
-        .select({
-          weekday: sql<number>`extract(isodow from ${localTimestamp(shots.brewedAt, timeZone)})::int`,
-          hour: sql<number>`extract(hour from ${localTimestamp(shots.brewedAt, timeZone)})::int`,
-          count: shotCountSql,
-        })
-        .from(shots)
-        .where(currentWhere)
-        .groupBy(sql`1`, sql`2`),
-
-      db
-        .select({ date: shotDateKey, count: shotCountSql })
-        .from(shots)
-        .where(currentWhere)
-        .groupBy(sql`1`)
-        .orderBy(sql`1`),
-
-      db
-        .select({ date: shotDateKey, count: shotCountSql })
-        .from(shots)
-        .where(activityCalendarWhere)
-        .groupBy(sql`1`)
-        .orderBy(sql`1`),
+      localScanPromise.then((row) => row.rhythm),
+      localScanPromise.then((row) => row.activityDates),
+      calendarPromise,
 
       explorationPromise.then(({ exploration }) => exploration.roasters),
       explorationPromise.then(({ exploration }) => exploration.origins),
@@ -302,22 +320,25 @@ export async function loadDetailedStats(
           currency: beanPurchases.priceCurrency,
           total: sql<
             string | number
-          >`round(sum((${beanPurchases.price}::numeric / nullif(${beanPurchases.initialWeightGrams}::numeric, 0)) * ${shots.doseGrams}::numeric), 2)`,
+          >`round(sum(((1.0 * cast(${beanPurchases.price} as numeric)) / nullif(cast(${beanPurchases.initialWeightGrams} as numeric), 0)) * cast(${shots.doseGrams} as numeric)), 2)`,
           average: sql<
             string | number
-          >`round(avg((${beanPurchases.price}::numeric / nullif(${beanPurchases.initialWeightGrams}::numeric, 0)) * ${shots.doseGrams}::numeric), 2)`,
+          >`round(avg(((1.0 * cast(${beanPurchases.price} as numeric)) / nullif(cast(${beanPurchases.initialWeightGrams} as numeric), 0)) * cast(${shots.doseGrams} as numeric)), 2)`,
           count: shotCountSql,
         })
         .from(shots)
         .innerJoin(beans, eq(shots.beanId, beans.id))
         .innerJoin(beanPurchases, eq(shots.beanPurchaseId, beanPurchases.id))
         .where(
-          and(
-            currentWhere,
-            isNotNull(shots.doseGrams),
-            isNotNull(beanPurchases.price),
-            isNotNull(beanPurchases.initialWeightGrams),
-            sql`${beanPurchases.initialWeightGrams}::numeric > 0`,
+          owned(
+            shots,
+            and(
+              currentWhere,
+              isNotNull(shots.doseGrams),
+              isNotNull(beanPurchases.price),
+              isNotNull(beanPurchases.initialWeightGrams),
+              sql`cast(${beanPurchases.initialWeightGrams} as numeric) > 0`,
+            ),
           ),
         )
         .groupBy(beanPurchases.priceCurrency)
@@ -329,13 +350,14 @@ export async function loadDetailedStats(
       getVisitsAndPlacesStats({ range, timeZone, now }),
     ])
 
+    const localized = await localScanPromise
     const summary = summaryRows[0]
     const previous = previousSummaryRows[0]
     const total = summary?.total ?? 0
     const periodDays =
       range.days ??
-      (summary?.firstDate
-        ? daysBetween(summary.firstDate, range.end)
+      (localized.firstDate
+        ? daysBetween(localized.firstDate, range.end)
         : total > 0
           ? 1
           : 0)
@@ -426,7 +448,7 @@ export async function loadDetailedStats(
           ...row,
           averageRating: toNullableNumber(row.averageRating),
         })),
-        range.start ?? summary?.firstDate ?? null,
+        range.start ?? localized.firstDate ?? null,
         range.end,
         range.bucket,
         (date) => ({

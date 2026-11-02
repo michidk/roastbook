@@ -8,13 +8,13 @@ export function shotSortExpression(sort: ShotSortKey) {
       // Relational queries remap Drizzle column objects to their outer alias.
       // Keep the correlated subquery's bean identifiers literal so only the
       // outer brew column is remapped to the query alias.
-      return sql`coalesce((select "beans"."name" from "beans" where "beans"."id" = ${shots.beanId}), '')`
+      return sql`coalesce((select "beans"."name" from "beans" where "beans"."owner_id" = ${shots.ownerId} and "beans"."id" = ${shots.beanId}), '')`
     case 'dose':
-      return shots.doseGrams
+      return sql`cast(${shots.doseGrams} as numeric)`
     case 'yield':
-      return shots.yieldGrams
+      return sql`cast(${shots.yieldGrams} as numeric)`
     case 'time':
-      return shots.shotTimeSeconds
+      return sql`cast(${shots.shotTimeSeconds} as numeric)`
     case 'rating':
       return shots.rating
     case 'date':

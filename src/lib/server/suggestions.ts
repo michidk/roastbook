@@ -9,8 +9,10 @@ import {
   isNotNull,
   max,
   notInArray,
+  sql,
 } from 'drizzle-orm'
 import { db } from '@/db'
+import { owned } from '@/db/journal-scope.server'
 import {
   beanPurchases,
   beans,
@@ -31,9 +33,12 @@ const hasActivePurchase = () =>
       .select({ id: beanPurchases.id })
       .from(beanPurchases)
       .where(
-        and(
-          eq(beanPurchases.beanId, beans.id),
-          eq(beanPurchases.isArchived, false),
+        owned(
+          beanPurchases,
+          and(
+            eq(beanPurchases.beanId, beans.id),
+            eq(beanPurchases.isArchived, false),
+          ),
         ),
       ),
   )
@@ -86,7 +91,7 @@ export const getBeanSuggestions = createServerFn({ method: 'GET' }).handler(
         .from(shots)
         .innerJoin(beans, eq(shots.beanId, beans.id))
         .innerJoin(beanPurchases, eq(shots.beanPurchaseId, beanPurchases.id))
-        .where(eq(beanPurchases.isArchived, false))
+        .where(owned(shots, eq(beanPurchases.isArchived, false)))
         .groupBy(beans.id, beanPurchases.id, beans.name)
         .orderBy(desc(lastUsedAt()))
         .limit(5),
@@ -98,7 +103,7 @@ export const getBeanSuggestions = createServerFn({ method: 'GET' }).handler(
         })
         .from(beanPurchases)
         .innerJoin(beans, eq(beanPurchases.beanId, beans.id))
-        .where(eq(beanPurchases.isArchived, false))
+        .where(owned(beanPurchases, eq(beanPurchases.isArchived, false)))
         .orderBy(desc(beanPurchases.createdAt))
         .limit(2),
     ),
@@ -115,6 +120,7 @@ export const getBrewingMethodSuggestions = createServerFn({
       lastUsedShotId: lastUsedShotId(),
     })
     .from(shots)
+    .where(owned(shots))
     .innerJoin(brewingMethods, eq(shots.brewingMethodId, brewingMethods.id))
     .groupBy(brewingMethods.id, brewingMethods.name)
     .orderBy(desc(lastUsedAt()), desc(lastUsedShotId()))
@@ -128,7 +134,7 @@ export const getDrinkTypeSuggestions = createServerFn({
     .select({ id: drinkTypes.id, name: drinkTypes.name, uses: count(shots.id) })
     .from(shots)
     .innerJoin(drinkTypes, eq(shots.drinkTypeId, drinkTypes.id))
-    .where(eq(drinkTypes.isArchived, false))
+    .where(owned(shots, eq(drinkTypes.isArchived, false)))
     .groupBy(drinkTypes.id, drinkTypes.name)
     .orderBy(desc(count(shots.id)), asc(drinkTypes.name))
     .limit(5),
@@ -142,7 +148,12 @@ export const getTasteTagSuggestions = createServerFn({
     .select({ id: tasteTags.id, uses: count(shotTasteTags.id) })
     .from(shotTasteTags)
     .innerJoin(tasteTags, eq(shotTasteTags.tasteTagId, tasteTags.id))
-    .where(notInArray(tasteTags.name, [...LEGACY_SENSORY_TASTE_TAG_NAMES]))
+    .where(
+      owned(
+        shotTasteTags,
+        notInArray(tasteTags.name, [...LEGACY_SENSORY_TASTE_TAG_NAMES]),
+      ),
+    )
     .groupBy(tasteTags.id, tasteTags.name)
     .orderBy(desc(count(shotTasteTags.id)), asc(tasteTags.name))
     .limit(FREQUENT_TASTE_TAG_LIMIT),
@@ -152,13 +163,32 @@ export const getLastBeansByBrewingMethod = createServerFn({
   method: 'GET',
 }).handler(() =>
   db
-    .selectDistinctOn([shots.brewingMethodId], {
+    .select({
       brewingMethodId: shots.brewingMethodId,
       beanId: shots.beanId,
       beanPurchaseId: shots.beanPurchaseId,
     })
     .from(shots)
     .innerJoin(beans, eq(shots.beanId, beans.id))
-    .where(and(isNotNull(shots.beanId), hasActivePurchase()))
+    .where(
+      owned(
+        shots,
+        and(
+          isNotNull(shots.beanId),
+          hasActivePurchase(),
+          sql`not exists (
+      select 1 from brews as newer
+      where newer.owner_id = ${shots.ownerId}
+        and newer.brewing_method_id = ${shots.brewingMethodId}
+        and newer.bean_id is not null
+        and exists (select 1 from bean_purchases as active_bag
+          where active_bag.owner_id = newer.owner_id
+            and active_bag.bean_id = newer.bean_id and active_bag.is_archived = false)
+        and (newer.brewed_at > ${shots.brewedAt}
+          or (newer.brewed_at = ${shots.brewedAt} and newer.id > ${shots.id}))
+    )`,
+        ),
+      ),
+    )
     .orderBy(asc(shots.brewingMethodId), desc(shots.brewedAt), desc(shots.id)),
 )

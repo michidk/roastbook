@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { cloudflare } from '@cloudflare/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
 import { devtools } from '@tanstack/devtools-vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
@@ -9,10 +10,99 @@ import sharp from 'sharp'
 import { defineConfig } from 'vite'
 import { devMigrations } from './scripts/vite-dev-migrations'
 
+const cloudflareRuntime = process.env.ROASTBOOK_RUNTIME === 'cloudflare'
 const roastbookEdition = process.env.ROASTBOOK_EDITION ?? 'standard'
 if (roastbookEdition !== 'standard' && roastbookEdition !== 'demo') {
   throw new Error('ROASTBOOK_EDITION must be standard or demo')
 }
+
+if (cloudflareRuntime && roastbookEdition === 'demo')
+  throw new Error('Cloudflare hosting requires the standard edition')
+
+const cloudflareAliases = [
+  {
+    find: /^@\/lib\/server\/database-error.server$/,
+    replacement: resolve('src/cloudflare/database-error.server.ts'),
+  },
+  {
+    find: /^@\/lib\/server\/remote-url-policy.server$/,
+    replacement: resolve('src/cloudflare/remote-url-policy.server.ts'),
+  },
+  {
+    find: /^@\/lib\/server\/remote-image.server$/,
+    replacement: resolve('src/cloudflare/remote-image.server.ts'),
+  },
+  {
+    find: /^@\/lib\/server\/ai-provider-fetch.server$/,
+    replacement: resolve('src/cloudflare/ai-provider-fetch.server.ts'),
+  },
+  {
+    find: /^@better-auth\/cimd\/node$/,
+    replacement: resolve('src/cloudflare/cimd-fetch.server.ts'),
+  },
+  {
+    find: /^@\/db\/sql-dialect.server$/,
+    replacement: resolve('src/db/d1/sql-dialect.server.ts'),
+  },
+  {
+    find: /^@\/lib\/server\/health$/,
+    replacement: resolve('src/cloudflare/health.server.ts'),
+  },
+  {
+    find: /^@\/lib\/server\/auth\/oauth-coordination.server$/,
+    replacement: resolve('src/cloudflare/oauth-coordination.server.ts'),
+  },
+  {
+    find: /^@\/lib\/server\/auth\/jobs.server$/,
+    replacement: resolve('src/cloudflare/auth/jobs.server.ts'),
+  },
+  {
+    find: /^@\/lib\/server\/ai-request-accounting.server$/,
+    replacement: resolve('src/cloudflare/ai-request-accounting.server.ts'),
+  },
+  {
+    find: /^@\/lib\/server\/auth\/identity.server$/,
+    replacement: resolve('src/cloudflare/auth/identity.server.ts'),
+  },
+  {
+    find: /^@\/lib\/server\/auth\/account.server$/,
+    replacement: resolve('src/cloudflare/auth/account.server.ts'),
+  },
+  {
+    find: /^@\/lib\/server\/auth\/integrations.server$/,
+    replacement: resolve('src/cloudflare/auth/integrations.server.ts'),
+  },
+  {
+    find: /^@\/db\/journal-mutations.server$/,
+    replacement: resolve('src/db/d1/journal-mutations.server.ts'),
+  },
+  {
+    find: /^@\/lib\/server\/auth\/database-adapter.server$/,
+    replacement: resolve('src/db/d1/auth-database-adapter.server.ts'),
+  },
+  { find: /^@\/db\/schema$/, replacement: resolve('src/db/d1/schema.ts') },
+  { find: /^@\/db$/, replacement: resolve('src/db/d1/index.ts') },
+  {
+    find: /^@\/db\/connection.server$/,
+    replacement: resolve('src/db/d1/connection.server.ts'),
+  },
+  {
+    find: /^@\/db\/journal-context.server$/,
+    replacement: resolve('src/db/d1/journal-context.server.ts'),
+  },
+  {
+    find: /^@\/lib\/storage$/,
+    replacement: resolve('src/cloudflare/storage.server.ts'),
+  },
+  {
+    find: /^@\/lib\/thumbnail-image$/,
+    replacement: resolve('src/cloudflare/images.server.ts'),
+  },
+  {
+    find: /^@\/lib\/server\/auth\/email.server$/,
+    replacement: resolve('src/cloudflare/auth-email.server.ts'),
+  },
+]
 
 const demoAssets = () => ({
   name: 'roastbook-demo-assets',
@@ -77,8 +167,9 @@ const config = defineConfig({
     __ROASTBOOK_DEMO_MODE__: JSON.stringify(roastbookEdition === 'demo'),
   },
   resolve: {
-    alias:
-      roastbookEdition === 'demo'
+    alias: cloudflareRuntime
+      ? cloudflareAliases
+      : roastbookEdition === 'demo'
         ? [
             { find: /^@\/db$/, replacement: resolve('src/db/demo.ts') },
             {
@@ -139,13 +230,23 @@ const config = defineConfig({
       transform(code, id) {
         // Schema construction has no external effects. Allow unused server
         // imports to disappear after Start removes server-function handlers.
-        if (id === resolve('src/db/schema.ts'))
+        if (
+          id === resolve('src/db/schema.ts') ||
+          id === resolve('src/db/d1/schema.ts')
+        )
           return { code, moduleSideEffects: false }
       },
     },
     ...(roastbookEdition === 'demo' ? [demoAssets()] : []),
-    devtools(),
-    devMigrations(),
+    ...(!cloudflareRuntime ? [devtools(), devMigrations()] : []),
+    ...(cloudflareRuntime
+      ? [
+          cloudflare({
+            configPath: 'wrangler.runtime.jsonc',
+            viteEnvironment: { name: 'ssr' },
+          }),
+        ]
+      : []),
     tailwindcss(),
     tanstackStart({
       router: {
@@ -164,24 +265,30 @@ const config = defineConfig({
         },
       },
     }),
-    nitro({
-      preset: roastbookEdition === 'demo' ? 'vercel' : 'bun',
-      routeRules: {
-        '/sw.js': {
-          headers: { 'cache-control': 'no-cache, no-store, must-revalidate' },
-        },
-        '/manifest.json': {
-          headers: { 'cache-control': 'no-cache' },
-        },
-        '/offline.html': {
-          headers: { 'cache-control': 'no-cache' },
-        },
-      },
-      routes:
-        roastbookEdition === 'demo'
-          ? {}
-          : { '/media/**': './src/lib/server/media-handler.ts' },
-    }),
+    ...(!cloudflareRuntime
+      ? [
+          nitro({
+            preset: roastbookEdition === 'demo' ? 'vercel' : 'bun',
+            routeRules: {
+              '/sw.js': {
+                headers: {
+                  'cache-control': 'no-cache, no-store, must-revalidate',
+                },
+              },
+              '/manifest.json': {
+                headers: { 'cache-control': 'no-cache' },
+              },
+              '/offline.html': {
+                headers: { 'cache-control': 'no-cache' },
+              },
+            },
+            routes:
+              roastbookEdition === 'demo'
+                ? {}
+                : { '/media/**': './src/lib/server/media-handler.ts' },
+          }),
+        ]
+      : []),
     viteReact(),
   ],
 })

@@ -1,0 +1,33 @@
+import {
+  authAccounts,
+  authPasskeys,
+  authRateLimits,
+  authSessions,
+  authUsers,
+  authVerifications,
+  jwks,
+  oauthAccessToken,
+  oauthClient,
+  oauthClientAssertion,
+  oauthClientResource,
+  oauthConsent,
+  oauthRefreshToken,
+  oauthResource,
+} from '@/db/schema'
+
+export const authDatabaseSchema = {
+  user: authUsers,
+  session: authSessions,
+  account: authAccounts,
+  verification: authVerifications,
+  passkey: authPasskeys,
+  rateLimit: authRateLimits,
+  jwks,
+  oauthClient,
+  oauthResource,
+  oauthClientResource,
+  oauthAccessToken,
+  oauthRefreshToken,
+  oauthConsent,
+  oauthClientAssertion,
+}

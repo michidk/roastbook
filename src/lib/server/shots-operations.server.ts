@@ -12,10 +12,17 @@ import {
 } from 'drizzle-orm'
 import { db } from '@/db'
 import {
+  allocateJournalIds,
+  type JournalMutation,
+  runJournalMutations,
+} from '@/db/journal-mutations.server'
+import { journalInsertValues, owned } from '@/db/journal-scope.server'
+import {
   beanPurchases,
   beans,
   brewingMethods,
   clientOperations,
+  recipes,
   shotAccessoryGear,
   shots,
   shotTasteTags,
@@ -27,7 +34,7 @@ import {
   replaceShotAccessoryGear,
   withAccessoryGearIds,
 } from '@/lib/server/accessory-gear.server'
-import { pruneClientOperations } from '@/lib/server/client-operations.server'
+import { clientOperationMutations } from '@/lib/server/client-operations.server'
 import {
   assertDrinkSelection,
   assertDrinkTypeAvailableForBrewingMethod,
@@ -35,7 +42,6 @@ import {
 } from '@/lib/server/drink-options.server'
 import { findCurrentOwnerMachineSettingRevisionId } from '@/lib/server/gear-properties.server'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
-import { matchesRevision } from '@/lib/server/revision.server'
 import { readTasteProfile } from '@/lib/server/settings.server'
 import type {
   CreateShotAndSaveRecipeInput,
@@ -47,7 +53,7 @@ import {
   projectAccessoryGearIds,
   projectShotParameters,
 } from '@/lib/server/shot-parameter-projection'
-import { saveShotToRecipeInTransaction } from '@/lib/server/shot-recipes.server'
+import { prepareRecipeFromShot } from '@/lib/server/shot-recipes.server'
 import { shotSortExpression } from '@/lib/server/shot-sort.server'
 import type {
   shotCreateSchema,
@@ -57,12 +63,6 @@ import { LEGACY_SENSORY_TASTE_TAG_NAMES } from '@/lib/taste-tags'
 import type { ShotSortKey } from '@/modules/brews/read-models'
 
 type ShotCreateCandidate = ReturnType<typeof shotCreateSchema.parse>
-type ShotRow = typeof shots.$inferSelect
-type CreateShotResult = {
-  readonly shot: ShotRow | null
-  readonly created: boolean
-  readonly operationAlreadyCompleted: boolean
-}
 const SHOTS_PAGE_SIZE = 12
 const SHOT_GROUPS_PAGE_SIZE = 8
 const BEAN_SHOT_CHART_LIMIT = 100
@@ -74,11 +74,11 @@ class ShotInputError extends Error {
   }
 }
 
-type ShotTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+type ShotTransaction = Pick<typeof db, 'query' | 'select'>
 
 async function getBrewingMethod(tx: ShotTransaction, brewingMethodId: number) {
   const method = await tx.query.brewingMethods.findFirst({
-    where: eq(brewingMethods.id, brewingMethodId),
+    where: owned(brewingMethods, eq(brewingMethods.id, brewingMethodId)),
   })
   if (!method) throw new ShotInputError('Brewing method not found')
   return method
@@ -117,7 +117,7 @@ async function resolveShotBean(
     return { beanId: data.beanId ?? null, beanPurchaseId: null }
   }
   const purchase = await tx.query.beanPurchases.findFirst({
-    where: eq(beanPurchases.id, data.beanPurchaseId),
+    where: owned(beanPurchases, eq(beanPurchases.id, data.beanPurchaseId)),
     columns: { id: true, beanId: true },
   })
   if (!purchase) throw new ShotInputError('Selected bag not found')
@@ -176,7 +176,10 @@ async function loadShotPage(data: Omit<ShotListInput, 'beanId'>, scope?: SQL) {
   const scoped = await ratingAwareScope(data.rating, data.sort)
   const filters = shotFilterCondition(data.methodId, scoped.rating)
   const where = scope && filters ? and(scope, filters) : (scope ?? filters)
-  const countRows = await db.select({ value: count() }).from(shots).where(where)
+  const countRows = await db
+    .select({ value: count() })
+    .from(shots)
+    .where(owned(shots, where))
   const totalItems = countRows[0]?.value ?? 0
   const pagination = resolvePagination(totalItems, data.page, SHOTS_PAGE_SIZE)
   const { page } = pagination
@@ -184,7 +187,7 @@ async function loadShotPage(data: Omit<ShotListInput, 'beanId'>, scope?: SQL) {
   const order =
     data.direction === 'asc' ? asc(sortExpression) : desc(sortExpression)
   const items = await db.query.shots.findMany({
-    where,
+    where: owned(shots, where),
     orderBy: [order, desc(shots.id)],
     limit: SHOTS_PAGE_SIZE,
     offset: (page - 1) * SHOTS_PAGE_SIZE,
@@ -228,7 +231,7 @@ export async function getShotPageOperation(data: ShotListInput) {
         ? 'No bean recorded'
         : db.query.beans
             .findFirst({
-              where: eq(beans.id, data.beanId),
+              where: owned(beans, eq(beans.id, data.beanId)),
               columns: { name: true },
             })
             .then((bean) => bean?.name ?? 'Unknown beans'),
@@ -258,17 +261,17 @@ export function getGearShotPageOperation(data: RelatedShotListInput) {
 }
 
 export async function getBeanShotAnalyticsOperation(beanId: number) {
-  const tagUsageCount = sql<number>`count(${shotTasteTags.id})::int`
+  const tagUsageCount = sql<number>`count(${shotTasteTags.id})`
   const [totals, chartShots, topTasteTags] = await Promise.all([
     db
       .select({
         totalShots: count(),
-        usedWeightGrams: sql<string>`coalesce(sum(${shots.doseGrams}), 0)::text`,
+        usedWeightGrams: sql<string>`cast(coalesce(sum(cast(${shots.doseGrams} as numeric)), 0) as text)`,
       })
       .from(shots)
-      .where(eq(shots.beanId, beanId)),
+      .where(owned(shots, eq(shots.beanId, beanId))),
     db.query.shots.findMany({
-      where: eq(shots.beanId, beanId),
+      where: owned(shots, eq(shots.beanId, beanId)),
       orderBy: [desc(shots.brewedAt), desc(shots.id)],
       limit: BEAN_SHOT_CHART_LIMIT,
       columns: {
@@ -290,9 +293,12 @@ export async function getBeanShotAnalyticsOperation(beanId: number) {
       .innerJoin(shots, eq(shotTasteTags.shotId, shots.id))
       .innerJoin(tasteTags, eq(shotTasteTags.tasteTagId, tasteTags.id))
       .where(
-        and(
-          eq(shots.beanId, beanId),
-          notInArray(tasteTags.name, [...LEGACY_SENSORY_TASTE_TAG_NAMES]),
+        owned(
+          shotTasteTags,
+          and(
+            eq(shots.beanId, beanId),
+            notInArray(tasteTags.name, [...LEGACY_SENSORY_TASTE_TAG_NAMES]),
+          ),
         ),
       )
       .groupBy(tasteTags.id, tasteTags.name)
@@ -313,9 +319,9 @@ export async function getShotGroupsOperation(data: ShotGroupListInput) {
   const where = shotFilterCondition(data.methodId, rating)
   const groupKey = sql<number>`coalesce(${shots.beanId}, 0)`
   const countRows = await db
-    .select({ value: sql<number>`count(distinct ${groupKey})::int` })
+    .select({ value: sql<number>`count(distinct ${groupKey})` })
     .from(shots)
-    .where(where)
+    .where(owned(shots, where))
   const totalItems = countRows[0]?.value ?? 0
   const pagination = resolvePagination(
     totalItems,
@@ -327,12 +333,12 @@ export async function getShotGroupsOperation(data: ShotGroupListInput) {
     .select({
       beanId: shots.beanId,
       beanName: beans.name,
-      latestShotAt: sql<Date>`max(${shots.brewedAt})`,
-      totalShots: sql<number>`count(*)::int`,
+      latestShotAt: sql<Date>`max(${shots.brewedAt})`.mapWith(shots.brewedAt),
+      totalShots: sql<number>`count(*)`,
     })
     .from(shots)
     .leftJoin(beans, eq(shots.beanId, beans.id))
-    .where(where)
+    .where(owned(shots, where))
     .groupBy(shots.beanId, beans.name)
     .orderBy(desc(sql`max(${shots.brewedAt})`))
     .limit(SHOT_GROUPS_PAGE_SIZE)
@@ -347,11 +353,14 @@ export async function getShotGroupsOperation(data: ShotGroupListInput) {
       label: summary.beanName ?? 'No bean recorded',
       totalShots: summary.totalShots,
       shots: await db.query.shots.findMany({
-        where: and(
-          where,
-          summary.beanId
-            ? eq(shots.beanId, summary.beanId)
-            : isNull(shots.beanId),
+        where: owned(
+          shots,
+          and(
+            where,
+            summary.beanId
+              ? eq(shots.beanId, summary.beanId)
+              : isNull(shots.beanId),
+          ),
         ),
         orderBy: [desc(shots.brewedAt), desc(shots.id)],
         limit: SHOTS_PAGE_SIZE,
@@ -382,303 +391,244 @@ export async function getShotGroupsOperation(data: ShotGroupListInput) {
 
 export async function getShotOperation(id: number) {
   const shot = await db.query.shots.findFirst({
-    where: eq(shots.id, id),
+    where: owned(shots, eq(shots.id, id)),
     with: shotRelations,
   })
   return shot ? withAccessoryGearIds(shot) : undefined
 }
 
-async function createShotInTransaction(
-  tx: ShotTransaction,
-  data: ShotCreateCandidate,
-): Promise<CreateShotResult> {
-  const operationId = data.clientOperationId
+async function completedShot(operationId?: string) {
+  if (!operationId) return undefined
+  const operation = await db.query.clientOperations.findFirst({
+    where: owned(
+      clientOperations,
+      eq(clientOperations.operationId, operationId),
+    ),
+  })
+  if (!operation) return undefined
+  const shot = operation.brewId
+    ? await db.query.shots.findFirst({
+        where: owned(shots, eq(shots.id, operation.brewId)),
+      })
+    : undefined
+  if (!shot)
+    throw new ShotInputError('This brew was already synced and deleted')
+  return shot
+}
 
-  if (operationId) {
-    // A brew created before the operation tombstone existed is still a valid
-    // idempotency result; make sure it has an operation row from now on.
-    const existingShot = await tx.query.shots.findFirst({
-      where: eq(shots.clientOperationId, operationId),
+async function shotTagMutations(
+  shotId: number,
+  tasteTagIds: readonly number[],
+): Promise<JournalMutation[]> {
+  const mutations: JournalMutation[] = [
+    {
+      statement: db
+        .delete(shotTasteTags)
+        .where(owned(shotTasteTags, eq(shotTasteTags.shotId, shotId)))
+        .getSQL(),
+    },
+  ]
+  const selected = [...new Set(tasteTagIds)]
+  if (!selected.length) return mutations
+  const ids = await allocateJournalIds(shotTasteTags, selected.length)
+  const rows = ids.map((id, index) => {
+    const tasteTagId = selected[index]
+    if (tasteTagId === undefined) throw new Error('Invalid tag identifier')
+    return { id, shotId, tasteTagId }
+  })
+  for (let offset = 0; offset < rows.length; offset += 20)
+    mutations.push({
+      statement: db
+        .insert(shotTasteTags)
+        .values(journalInsertValues(rows.slice(offset, offset + 20)))
+        .getSQL(),
     })
-    if (existingShot) {
-      await tx
-        .insert(clientOperations)
-        .values({ operationId, brewId: existingShot.id })
-        .onConflictDoNothing({
-          target: [clientOperations.ownerId, clientOperations.operationId],
-        })
-      await pruneClientOperations(tx)
-      return {
-        shot: existingShot,
-        created: false,
-        operationAlreadyCompleted: false,
-      }
-    }
+  return mutations
+}
 
-    const [operation] = await tx
-      .insert(clientOperations)
-      .values({ operationId })
-      .onConflictDoNothing({
-        target: [clientOperations.ownerId, clientOperations.operationId],
-      })
-      .returning()
-    await pruneClientOperations(tx)
-
-    if (!operation) {
-      const existingOperation = await tx.query.clientOperations.findFirst({
-        where: eq(clientOperations.operationId, operationId),
-      })
-      if (existingOperation?.brewId) {
-        const existingBrew = await tx.query.shots.findFirst({
-          where: eq(shots.id, existingOperation.brewId),
-        })
-        if (existingBrew) {
-          return {
-            shot: existingBrew,
-            created: false,
-            operationAlreadyCompleted: false,
-          }
-        }
-      }
-
-      return {
-        shot: null,
-        created: false,
-        operationAlreadyCompleted: true,
-      }
-    }
-  }
-
-  const method = await getBrewingMethod(tx, data.brewingMethodId)
+async function prepareShotCreate(data: ShotCreateCandidate) {
+  const method = await getBrewingMethod(db, data.brewingMethodId)
   await assertDrinkTypeAvailableForBrewingMethod(
-    tx,
+    db,
     data.brewingMethodId,
     data.drinkTypeId,
   )
-  await assertDrinkSelection(tx, data.drinkTypeId, data.drinkOptionValueIds)
+  await assertDrinkSelection(db, data.drinkTypeId, data.drinkOptionValueIds)
   const values = getShotValues(
     data,
     method.enabledParameters,
-    await resolveShotBean(tx, data),
+    await resolveShotBean(db, data),
   )
   const machineSettingRevisionId =
-    await findCurrentOwnerMachineSettingRevisionId(tx, values.machineId)
-  const [shot] = await tx
-    .insert(shots)
-    .values({
-      ...values,
-      clientOperationId: operationId ?? null,
-      machineSettingRevisionId,
-    })
-    .onConflictDoNothing({ target: [shots.ownerId, shots.clientOperationId] })
-    .returning()
-  if (!shot) {
-    const existingShot = operationId
-      ? await tx.query.shots.findFirst({
-          where: eq(shots.clientOperationId, operationId),
-        })
-      : undefined
-    if (!existingShot) throw new ShotInputError('Could not create brew')
-    if (operationId) {
-      await tx
-        .update(clientOperations)
-        .set({ brewId: existingShot.id })
-        .where(eq(clientOperations.operationId, operationId))
-    }
-    return {
-      shot: existingShot,
-      created: false,
-      operationAlreadyCompleted: false,
-    }
-  }
-  const persistedShot = expectReturnedRow(shot, 'Shot')
-
-  if (operationId) {
-    await tx
-      .update(clientOperations)
-      .set({ brewId: persistedShot.id })
-      .where(eq(clientOperations.operationId, operationId))
-  }
-
-  await replaceShotDrinkOptions(
-    tx,
-    persistedShot.id,
-    data.drinkOptionValueIds ?? [],
-  )
-
-  await replaceShotAccessoryGear(
-    tx,
-    persistedShot.id,
-    projectAccessoryGearIds(data, method.enabledParameters),
-  )
-
-  if (data.tasteTagIds && data.tasteTagIds.length > 0) {
-    await tx.insert(shotTasteTags).values(
-      [...new Set(data.tasteTagIds)].map((tasteTagId) => ({
-        shotId: persistedShot.id,
-        tasteTagId,
-      })),
-    )
-  }
-
-  return {
-    shot: persistedShot,
-    created: true,
-    operationAlreadyCompleted: false,
-  }
-}
-
-export function createShotOperation(data: ShotCreateCandidate) {
-  return db.transaction(async (tx) => {
-    const result = await createShotInTransaction(tx, data)
-    if (result.operationAlreadyCompleted) {
-      throw new ShotInputError('This brew was already synced and deleted')
-    }
-    if (!result.shot) throw new ShotInputError('Could not create brew')
-    return result.shot
-  })
-}
-
-export function createShotAndSaveRecipeOperation(
-  data: CreateShotAndSaveRecipeInput,
-) {
-  return db.transaction(async (tx) => {
-    const result = await createShotInTransaction(tx, data.shot)
-    if (result.operationAlreadyCompleted) {
-      throw new ShotInputError('This brew was already synced and deleted')
-    }
-    if (!result.shot) throw new ShotInputError('Could not create brew')
-    if (!result.created) return { shot: result.shot, recipe: null }
-
-    const recipe = await saveShotToRecipeInTransaction(
-      tx,
-      result.shot.id,
-      data.target,
-    )
-    return { shot: result.shot, recipe }
-  })
-}
-
-export function updateShotOperation(
-  data: ReturnType<typeof shotUpdateSchema.parse>,
-) {
-  return db.transaction(async (tx) => {
-    const existingShot = await tx.query.shots.findFirst({
-      columns: {
-        brewingMethodId: true,
-        drinkTypeId: true,
-        machineId: true,
-        revision: true,
-        updatedAt: true,
-      },
-      where: eq(shots.id, data.id),
-    })
-    if (!existingShot) throw new ShotInputError('Brew not found')
-    if (data.clientOperationId) {
-      const completed = await tx.query.clientOperations.findFirst({
-        where: eq(clientOperations.operationId, data.clientOperationId),
-      })
-      if (completed?.brewId) {
-        const existing = await tx.query.shots.findFirst({
-          where: eq(shots.id, completed.brewId),
-        })
-        if (existing) return existing
-      }
-    }
-    const method = await getBrewingMethod(tx, data.brewingMethodId)
-    if (
-      (data.baseRevision !== undefined &&
-        existingShot.revision !== data.baseRevision) ||
-      (data.baseRevision === undefined &&
-        data.baseUpdatedAt &&
-        existingShot.updatedAt.toISOString() !== data.baseUpdatedAt)
-    ) {
-      throw new ShotInputError(
-        'This brew changed on the server. Reload and try again.',
-      )
-    }
-    if (
-      existingShot.brewingMethodId !== data.brewingMethodId ||
-      existingShot.drinkTypeId !== data.drinkTypeId
-    ) {
-      await assertDrinkTypeAvailableForBrewingMethod(
-        tx,
-        data.brewingMethodId,
-        data.drinkTypeId,
-      )
-    }
-    await assertDrinkSelection(tx, data.drinkTypeId, data.drinkOptionValueIds)
-    const { id, tasteTagIds } = data
-    const values = getShotValues(
-      data,
-      method.enabledParameters,
-      await resolveShotBean(tx, data),
-    )
-    const machineChanged = existingShot.machineId !== values.machineId
-    const machineSettingRevisionId = machineChanged
-      ? await findCurrentOwnerMachineSettingRevisionId(tx, values.machineId)
-      : undefined
-    const [shot] = await tx
-      .update(shots)
-      .set({
-        ...values,
-        ...(machineChanged ? { machineSettingRevisionId } : undefined),
-        revision: sql`${shots.revision} + 1`,
-        updatedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(shots.id, id),
-          data.baseRevision !== undefined
-            ? eq(shots.revision, data.baseRevision)
-            : matchesRevision(shots.updatedAt, data.baseUpdatedAt),
-        ),
-      )
-      .returning()
-    if (!shot) {
-      const current = await tx.query.shots.findFirst({
-        columns: { id: true },
-        where: eq(shots.id, id),
-      })
-      if (!current) throw new ShotInputError('Brew not found')
-      throw new ShotInputError(
-        'This brew changed on the server. Reload and try again.',
-      )
-    }
-    const persistedShot = expectReturnedRow(shot, 'Shot')
-
-    if (data.drinkOptionValueIds !== undefined) {
-      await replaceShotDrinkOptions(tx, id, data.drinkOptionValueIds)
-    }
-
-    await replaceShotAccessoryGear(
-      tx,
+    await findCurrentOwnerMachineSettingRevisionId(db, values.machineId)
+  const [id] = await allocateJournalIds(shots)
+  if (id === undefined) throw new Error('Could not allocate brew identifier')
+  const mutations: JournalMutation[] = [
+    {
+      statement: db
+        .insert(shots)
+        .values(
+          journalInsertValues({
+            ...values,
+            id,
+            machineSettingRevisionId,
+            clientOperationId: data.clientOperationId ?? null,
+          }),
+        )
+        .getSQL(),
+      expectedChanges: 1,
+    },
+    ...(await replaceShotDrinkOptions(id, data.drinkOptionValueIds ?? [])),
+    ...(await replaceShotAccessoryGear(
       id,
       projectAccessoryGearIds(data, method.enabledParameters),
-    )
+    )),
+    ...(await shotTagMutations(id, data.tasteTagIds ?? [])),
+    ...clientOperationMutations({
+      operationId: data.clientOperationId,
+      brewId: id,
+    }),
+  ]
+  return {
+    id,
+    mutations,
+    source: {
+      ...values,
+      accessoryGearIds: data.accessoryGearIds,
+      enabledParameters: method.enabledParameters,
+      drinkOptionValueIds: data.drinkOptionValueIds ?? [],
+    },
+  }
+}
 
-    if (tasteTagIds !== undefined) {
-      await tx.delete(shotTasteTags).where(eq(shotTasteTags.shotId, id))
-      if (tasteTagIds.length > 0) {
-        await tx.insert(shotTasteTags).values(
-          [...new Set(tasteTagIds)].map((tasteTagId) => ({
-            shotId: id,
-            tasteTagId,
-          })),
-        )
-      }
-    }
-    if (data.clientOperationId) {
-      await tx
-        .insert(clientOperations)
-        .values({ operationId: data.clientOperationId, brewId: id })
-        .onConflictDoNothing({
-          target: [clientOperations.ownerId, clientOperations.operationId],
-        })
-      await pruneClientOperations(tx)
-    }
-    return persistedShot
+async function loadPersistedShot(id: number) {
+  return expectReturnedRow(
+    await db.query.shots.findFirst({ where: owned(shots, eq(shots.id, id)) }),
+    'Brew',
+  )
+}
+
+export async function createShotOperation(data: ShotCreateCandidate) {
+  const completed = await completedShot(data.clientOperationId)
+  if (completed) return completed
+  const plan = await prepareShotCreate(data)
+  try {
+    await runJournalMutations(plan.mutations)
+  } catch (error) {
+    const existing = await completedShot(data.clientOperationId)
+    if (existing) return existing
+    throw error
+  }
+  return loadPersistedShot(plan.id)
+}
+
+export async function createShotAndSaveRecipeOperation(
+  data: CreateShotAndSaveRecipeInput,
+) {
+  const completed = await completedShot(data.shot.clientOperationId)
+  if (completed) return { shot: completed, recipe: null }
+  const shot = await prepareShotCreate(data.shot)
+  const recipe = await prepareRecipeFromShot(shot.source, data.target)
+  try {
+    await runJournalMutations([...shot.mutations, ...recipe.mutations])
+  } catch (error) {
+    const existing = await completedShot(data.shot.clientOperationId)
+    if (existing) return { shot: existing, recipe: null }
+    throw error
+  }
+  return {
+    shot: await loadPersistedShot(shot.id),
+    recipe: expectReturnedRow(
+      await db.query.recipes.findFirst({
+        where: owned(recipes, eq(recipes.id, recipe.id)),
+      }),
+      'Recipe',
+    ),
+  }
+}
+
+export async function updateShotOperation(
+  data: ReturnType<typeof shotUpdateSchema.parse>,
+) {
+  const completed = await completedShot(data.clientOperationId)
+  if (completed) return completed
+  const existing = await db.query.shots.findFirst({
+    where: owned(shots, eq(shots.id, data.id)),
   })
+  if (!existing) throw new ShotInputError('Brew not found')
+  if (
+    (data.baseRevision !== undefined &&
+      existing.revision !== data.baseRevision) ||
+    (data.baseRevision === undefined &&
+      data.baseUpdatedAt &&
+      existing.updatedAt.toISOString() !== data.baseUpdatedAt)
+  )
+    throw new ShotInputError(
+      'This brew changed on the server. Reload and try again.',
+    )
+  const method = await getBrewingMethod(db, data.brewingMethodId)
+  if (
+    existing.brewingMethodId !== data.brewingMethodId ||
+    existing.drinkTypeId !== data.drinkTypeId
+  )
+    await assertDrinkTypeAvailableForBrewingMethod(
+      db,
+      data.brewingMethodId,
+      data.drinkTypeId,
+    )
+  await assertDrinkSelection(db, data.drinkTypeId, data.drinkOptionValueIds)
+  const values = getShotValues(
+    data,
+    method.enabledParameters,
+    await resolveShotBean(db, data),
+  )
+  const machineSettingRevisionId =
+    existing.machineId !== values.machineId
+      ? await findCurrentOwnerMachineSettingRevisionId(db, values.machineId)
+      : existing.machineSettingRevisionId
+  const mutations: JournalMutation[] = [
+    {
+      statement: db
+        .update(shots)
+        .set({
+          ...values,
+          machineSettingRevisionId,
+          revision: existing.revision + 1,
+          updatedAt: new Date(),
+        })
+        .where(
+          owned(
+            shots,
+            and(eq(shots.id, data.id), eq(shots.revision, existing.revision)),
+          ),
+        )
+        .getSQL(),
+      expectedChanges: 1,
+      conflictMessage: 'This brew changed on the server. Reload and try again.',
+    },
+    ...(data.drinkOptionValueIds === undefined
+      ? []
+      : await replaceShotDrinkOptions(data.id, data.drinkOptionValueIds)),
+    ...(await replaceShotAccessoryGear(
+      data.id,
+      projectAccessoryGearIds(data, method.enabledParameters),
+    )),
+    ...(data.tasteTagIds === undefined
+      ? []
+      : await shotTagMutations(data.id, data.tasteTagIds)),
+    ...clientOperationMutations({
+      operationId: data.clientOperationId,
+      brewId: data.id,
+    }),
+  ]
+  try {
+    await runJournalMutations(mutations)
+  } catch (error) {
+    const completed = await completedShot(data.clientOperationId)
+    if (completed) return completed
+    throw error
+  }
+  return loadPersistedShot(data.id)
 }
 
 export async function deleteShotOperation(data: {
@@ -701,9 +651,12 @@ export async function getLastShotForBeanAndMethodOperation(data: {
   readonly brewingMethodId: number
 }) {
   const shot = await db.query.shots.findFirst({
-    where: and(
-      eq(shots.beanId, data.beanId),
-      eq(shots.brewingMethodId, data.brewingMethodId),
+    where: owned(
+      shots,
+      and(
+        eq(shots.beanId, data.beanId),
+        eq(shots.brewingMethodId, data.brewingMethodId),
+      ),
     ),
     orderBy: [desc(shots.brewedAt)],
     with: {

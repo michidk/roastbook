@@ -1,3 +1,4 @@
+import { journalInsertValues, owned } from '@/db/journal-scope.server'
 import '@tanstack/react-start/server-only'
 import { createHash } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
@@ -19,13 +20,15 @@ function hashToken(token: string) {
 }
 
 async function readShottimer() {
-  return db.query.shottimer.findFirst({ where: eq(shottimerTable.id, 1) })
+  return db.query.shottimer.findFirst({
+    where: owned(shottimerTable, eq(shottimerTable.id, 1)),
+  })
 }
 
 async function updateShottimer(patch: ShottimerPatch) {
   const [row] = await db
     .insert(shottimerTable)
-    .values({ id: 1, ...patch })
+    .values(journalInsertValues({ id: 1, ...patch }))
     .onConflictDoUpdate({
       target: [shottimerTable.ownerId, shottimerTable.id],
       set: { ...patch, updatedAt: new Date() },
@@ -88,9 +91,12 @@ export async function dismissShottimerShot(receivedAt: string) {
     .update(shottimerTable)
     .set({ latestShotSeconds: null, latestShotAt: null })
     .where(
-      and(
-        eq(shottimerTable.id, 1),
-        eq(shottimerTable.latestShotAt, new Date(receivedAt)),
+      owned(
+        shottimerTable,
+        and(
+          eq(shottimerTable.id, 1),
+          eq(shottimerTable.latestShotAt, new Date(receivedAt)),
+        ),
       ),
     )
 }

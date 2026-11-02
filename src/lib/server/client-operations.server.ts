@@ -1,24 +1,38 @@
 import { lt } from 'drizzle-orm'
-import type { db } from '@/db'
+import { db } from '@/db'
+import type { JournalMutation } from '@/db/journal-mutations.server'
+import { journalInsertValues, owned } from '@/db/journal-scope.server'
 import { clientOperations } from '@/db/schema'
-
-type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 export const CLIENT_OPERATION_RETENTION_DAYS = 90
 
-/**
- * Idempotency tombstones only need to outlive a realistic lost-response retry.
- * Prune old rows whenever a new operation is recorded so the table stays
- * bounded without a separate maintenance job.
- */
-export async function pruneClientOperations(
-  tx: DatabaseTransaction,
-  now: Date = new Date(),
-): Promise<void> {
+export function clientOperationMutations(
+  value: { operationId?: string; brewId?: number; recipeId?: number },
+  now = new Date(),
+): JournalMutation[] {
+  if (!value.operationId) return []
   const cutoff = new Date(
-    now.getTime() - CLIENT_OPERATION_RETENTION_DAYS * 24 * 60 * 60 * 1_000,
+    now.getTime() - CLIENT_OPERATION_RETENTION_DAYS * 86400_000,
   )
-  await tx
-    .delete(clientOperations)
-    .where(lt(clientOperations.createdAt, cutoff))
+  return [
+    {
+      statement: db
+        .insert(clientOperations)
+        .values(
+          journalInsertValues({
+            operationId: value.operationId,
+            brewId: value.brewId,
+            recipeId: value.recipeId,
+          }),
+        )
+        .getSQL(),
+      expectedChanges: 1,
+    },
+    {
+      statement: db
+        .delete(clientOperations)
+        .where(owned(clientOperations, lt(clientOperations.createdAt, cutoff)))
+        .getSQL(),
+    },
+  ]
 }

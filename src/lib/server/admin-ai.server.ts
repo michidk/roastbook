@@ -1,10 +1,11 @@
+import { utcDateKey } from '@/db/sql-dialect.server'
 import '@tanstack/react-start/server-only'
 import { and, desc, eq, gte, lt, sql } from 'drizzle-orm'
 import { getAiControlDb } from '@/db/connection.server'
 import { aiRequestLogs, authUsers } from '@/db/schema'
+import { requireAdmin } from '@/lib/server/auth/account.server'
 import { providedAiConfig } from './ai-allowance.server'
 import { aiRequestStatsSelection } from './ai-request-logs.server'
-import { requireAdmin } from './auth/account.server'
 
 export async function loadAdminAiReport({
   includeByo,
@@ -27,7 +28,7 @@ export async function loadAdminAiReport({
     database
       .select({
         ...aiRequestStatsSelection,
-        unpricedRequests: sql<number>`count(*) filter (where ${aiRequestLogs.estimatedCostUsd} is null)::int`,
+        unpricedRequests: sql<number>`count(*) filter (where ${aiRequestLogs.estimatedCostUsd} is null)`,
       })
       .from(aiRequestLogs)
       .where(filter),
@@ -60,13 +61,13 @@ export async function loadAdminAiReport({
       .limit(50),
     database
       .select({
-        date: sql<string>`to_char(${aiRequestLogs.createdAt}, 'YYYY-MM-DD')`,
+        date: utcDateKey(aiRequestLogs.createdAt),
         ...aiRequestStatsSelection,
       })
       .from(aiRequestLogs)
       .where(filter)
-      .groupBy(sql`to_char(${aiRequestLogs.createdAt}, 'YYYY-MM-DD')`)
-      .orderBy(sql`to_char(${aiRequestLogs.createdAt}, 'YYYY-MM-DD')`),
+      .groupBy(utcDateKey(aiRequestLogs.createdAt))
+      .orderBy(utcDateKey(aiRequestLogs.createdAt)),
     database
       .select({
         id: aiRequestLogs.id,

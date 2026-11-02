@@ -2,6 +2,8 @@ import { createServerFn } from '@tanstack/react-start'
 import { and, count, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
+import { runJournalMutations } from '@/db/journal-mutations.server'
+import { journalInsertValues, owned } from '@/db/journal-scope.server'
 import {
   beanImages,
   beanPurchases,
@@ -14,7 +16,6 @@ import { expectReturnedRow } from '@/lib/domain-errors'
 import { parseEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
 import {
   cleanupUncommittedUpload,
-  type DatabaseTransaction,
   drainMediaCleanupQueue,
   queueMediaCleanup,
 } from '@/lib/server/media-lifecycle.server'
@@ -92,7 +93,7 @@ async function getBeanPurchaseImageCount(entityId: number): Promise<number> {
   const [result] = await db
     .select({ value: count() })
     .from(beanImages)
-    .where(eq(beanImages.beanPurchaseId, entityId))
+    .where(owned(beanImages, eq(beanImages.beanPurchaseId, entityId)))
   return result?.value ?? 0
 }
 
@@ -100,7 +101,7 @@ async function getGearImageCount(entityId: number): Promise<number> {
   const [result] = await db
     .select({ value: count() })
     .from(gearImages)
-    .where(eq(gearImages.gearId, entityId))
+    .where(owned(gearImages, eq(gearImages.gearId, entityId)))
   return result?.value ?? 0
 }
 
@@ -108,7 +109,7 @@ async function getCoffeeShopImageCount(entityId: number): Promise<number> {
   const [result] = await db
     .select({ value: count() })
     .from(coffeeShopImages)
-    .where(eq(coffeeShopImages.coffeeShopId, entityId))
+    .where(owned(coffeeShopImages, eq(coffeeShopImages.coffeeShopId, entityId)))
   return result?.value ?? 0
 }
 
@@ -116,7 +117,7 @@ async function getShotImageCount(entityId: number): Promise<number> {
   const [result] = await db
     .select({ value: count() })
     .from(shotImages)
-    .where(eq(shotImages.shotId, entityId))
+    .where(owned(shotImages, eq(shotImages.shotId, entityId)))
   return result?.value ?? 0
 }
 
@@ -124,7 +125,7 @@ async function getVisitImageCount(entityId: number): Promise<number> {
   const [result] = await db
     .select({ value: count() })
     .from(cafeVisitImages)
-    .where(eq(cafeVisitImages.cafeVisitId, entityId))
+    .where(owned(cafeVisitImages, eq(cafeVisitImages.cafeVisitId, entityId)))
   return result?.value ?? 0
 }
 
@@ -142,9 +143,12 @@ async function storeEntityImage(data: EntityImageData) {
 
   if (data.entityType === 'shots' && data.clientOperationId) {
     const existing = await db.query.shotImages.findFirst({
-      where: and(
-        eq(shotImages.clientOperationId, data.clientOperationId),
-        eq(shotImages.shotId, data.entityId),
+      where: owned(
+        shotImages,
+        and(
+          eq(shotImages.clientOperationId, data.clientOperationId),
+          eq(shotImages.shotId, data.entityId),
+        ),
       ),
     })
     if (existing) {
@@ -155,7 +159,10 @@ async function storeEntityImage(data: EntityImageData) {
     }
     const usedElsewhere = await db.query.shotImages.findFirst({
       columns: { id: true },
-      where: eq(shotImages.clientOperationId, data.clientOperationId),
+      where: owned(
+        shotImages,
+        eq(shotImages.clientOperationId, data.clientOperationId),
+      ),
     })
     if (usedElsewhere) {
       throw new Error('Image operation id is already used for another brew')
@@ -201,17 +208,19 @@ async function storeEntityImage(data: EntityImageData) {
     switch (data.entityType) {
       case 'bean-purchases': {
         const purchase = await db.query.beanPurchases.findFirst({
-          where: eq(beanPurchases.id, data.entityId),
+          where: owned(beanPurchases, eq(beanPurchases.id, data.entityId)),
           columns: { beanId: true },
         })
         if (!purchase) throw new Error('Bag not found')
         const [result] = await db
           .insert(beanImages)
-          .values({
-            ...baseValues,
-            beanId: purchase.beanId,
-            beanPurchaseId: data.entityId,
-          })
+          .values(
+            journalInsertValues({
+              ...baseValues,
+              beanId: purchase.beanId,
+              beanPurchaseId: data.entityId,
+            }),
+          )
           .returning()
         image = expectReturnedRow(result, 'Image')
         break
@@ -219,7 +228,7 @@ async function storeEntityImage(data: EntityImageData) {
       case 'gear': {
         const [result] = await db
           .insert(gearImages)
-          .values({ ...baseValues, gearId: data.entityId })
+          .values(journalInsertValues({ ...baseValues, gearId: data.entityId }))
           .returning()
         image = expectReturnedRow(result, 'Image')
         break
@@ -227,7 +236,9 @@ async function storeEntityImage(data: EntityImageData) {
       case 'coffee-shops': {
         const [result] = await db
           .insert(coffeeShopImages)
-          .values({ ...baseValues, coffeeShopId: data.entityId })
+          .values(
+            journalInsertValues({ ...baseValues, coffeeShopId: data.entityId }),
+          )
           .returning()
         image = expectReturnedRow(result, 'Image')
         break
@@ -235,11 +246,13 @@ async function storeEntityImage(data: EntityImageData) {
       case 'shots': {
         const [result] = await db
           .insert(shotImages)
-          .values({
-            ...baseValues,
-            shotId: data.entityId,
-            clientOperationId: data.clientOperationId ?? null,
-          })
+          .values(
+            journalInsertValues({
+              ...baseValues,
+              shotId: data.entityId,
+              clientOperationId: data.clientOperationId ?? null,
+            }),
+          )
           .onConflictDoNothing({
             target: [shotImages.ownerId, shotImages.clientOperationId],
           })
@@ -247,9 +260,12 @@ async function storeEntityImage(data: EntityImageData) {
         if (!result) {
           const existing = data.clientOperationId
             ? await db.query.shotImages.findFirst({
-                where: and(
-                  eq(shotImages.clientOperationId, data.clientOperationId),
-                  eq(shotImages.shotId, data.entityId),
+                where: owned(
+                  shotImages,
+                  and(
+                    eq(shotImages.clientOperationId, data.clientOperationId),
+                    eq(shotImages.shotId, data.entityId),
+                  ),
                 ),
               })
             : undefined
@@ -266,7 +282,9 @@ async function storeEntityImage(data: EntityImageData) {
       case 'visits': {
         const [result] = await db
           .insert(cafeVisitImages)
-          .values({ ...baseValues, cafeVisitId: data.entityId })
+          .values(
+            journalInsertValues({ ...baseValues, cafeVisitId: data.entityId }),
+          )
           .returning()
         image = expectReturnedRow(result, 'Image')
         break
@@ -312,129 +330,73 @@ export const setImageAsThumbnail = createServerFn({ method: 'POST' })
         ? beanImages.beanPurchaseId
         : gearImages.gearId
 
-    await db.transaction(async (tx) => {
-      await tx
-        .update(table)
-        .set({ isThumbnail: false })
-        .where(eq(foreignKey, data.entityId))
-
-      const [image] = await tx
-        .update(table)
-        .set({ isThumbnail: true })
-        .where(and(eq(table.id, data.imageId), eq(foreignKey, data.entityId)))
-        .returning({ id: table.id })
-      expectReturnedRow(image, 'Image')
-    })
+    await runJournalMutations([
+      {
+        statement: db
+          .update(table)
+          .set({ isThumbnail: false })
+          .where(owned(table, eq(foreignKey, data.entityId)))
+          .getSQL(),
+      },
+      {
+        statement: db
+          .update(table)
+          .set({ isThumbnail: true })
+          .where(
+            owned(
+              table,
+              and(eq(table.id, data.imageId), eq(foreignKey, data.entityId)),
+            ),
+          )
+          .getSQL(),
+        expectedChanges: 1,
+        conflictMessage: 'Image not found',
+      },
+    ])
   })
 
-async function deleteImageRecord(
-  tx: DatabaseTransaction,
-  entityType: EntityType,
-  entityId: number,
-  imageId: number,
-): Promise<{ storagePath: string } | undefined> {
+function entityImage(entityType: EntityType) {
   switch (entityType) {
     case 'bean-purchases':
-      return deleteBeanPurchaseImageRecord(tx, entityId, imageId)
+      return { table: beanImages, foreignKey: beanImages.beanPurchaseId }
     case 'gear':
-      return deleteGearImageRecord(tx, entityId, imageId)
+      return { table: gearImages, foreignKey: gearImages.gearId }
     case 'coffee-shops':
-      return deleteCoffeeShopImageRecord(tx, entityId, imageId)
+      return {
+        table: coffeeShopImages,
+        foreignKey: coffeeShopImages.coffeeShopId,
+      }
     case 'shots':
-      return deleteShotImageRecord(tx, entityId, imageId)
+      return { table: shotImages, foreignKey: shotImages.shotId }
     case 'visits':
-      return deleteVisitImageRecord(tx, entityId, imageId)
+      return { table: cafeVisitImages, foreignKey: cafeVisitImages.cafeVisitId }
   }
-}
-
-async function deleteBeanPurchaseImageRecord(
-  tx: DatabaseTransaction,
-  entityId: number,
-  imageId: number,
-) {
-  const [image] = await tx
-    .delete(beanImages)
-    .where(
-      and(eq(beanImages.id, imageId), eq(beanImages.beanPurchaseId, entityId)),
-    )
-    .returning({ storagePath: beanImages.storagePath })
-  return image
-}
-
-async function deleteGearImageRecord(
-  tx: DatabaseTransaction,
-  entityId: number,
-  imageId: number,
-) {
-  const [image] = await tx
-    .delete(gearImages)
-    .where(and(eq(gearImages.id, imageId), eq(gearImages.gearId, entityId)))
-    .returning({ storagePath: gearImages.storagePath })
-  return image
-}
-
-async function deleteCoffeeShopImageRecord(
-  tx: DatabaseTransaction,
-  entityId: number,
-  imageId: number,
-) {
-  const [image] = await tx
-    .delete(coffeeShopImages)
-    .where(
-      and(
-        eq(coffeeShopImages.id, imageId),
-        eq(coffeeShopImages.coffeeShopId, entityId),
-      ),
-    )
-    .returning({ storagePath: coffeeShopImages.storagePath })
-  return image
-}
-
-async function deleteShotImageRecord(
-  tx: DatabaseTransaction,
-  entityId: number,
-  imageId: number,
-) {
-  const [image] = await tx
-    .delete(shotImages)
-    .where(and(eq(shotImages.id, imageId), eq(shotImages.shotId, entityId)))
-    .returning({ storagePath: shotImages.storagePath })
-  return image
-}
-
-async function deleteVisitImageRecord(
-  tx: DatabaseTransaction,
-  entityId: number,
-  imageId: number,
-) {
-  const [image] = await tx
-    .delete(cafeVisitImages)
-    .where(
-      and(
-        eq(cafeVisitImages.id, imageId),
-        eq(cafeVisitImages.cafeVisitId, entityId),
-      ),
-    )
-    .returning({ storagePath: cafeVisitImages.storagePath })
-  return image
 }
 
 export const deleteEntityImage = createServerFn({ method: 'POST' })
   .validator(entityImageIdSchema)
   .handler(async ({ data }) => {
-    let deleted = false
-    await db.transaction(async (tx) => {
-      const image = await deleteImageRecord(
-        tx,
-        data.entityType,
-        data.entityId,
-        data.imageId,
-      )
-      if (!image && data.idempotent) return
-      const persistedImage = expectReturnedRow(image, 'Image')
-      await queueMediaCleanup(tx, [persistedImage.storagePath])
-      deleted = true
-    })
-
-    if (deleted) await drainMediaCleanupQueue()
+    const { table, foreignKey } = entityImage(data.entityType)
+    const where = owned(
+      table,
+      and(eq(table.id, data.imageId), eq(foreignKey, data.entityId)),
+    )
+    const [image] = await db
+      .select({ storagePath: table.storagePath })
+      .from(table)
+      .where(where)
+      .limit(1)
+    if (!image) {
+      if (data.idempotent) return
+      throw new Error('Image not found')
+    }
+    await runJournalMutations([
+      {
+        statement: db.delete(table).where(where).getSQL(),
+        expectedChanges: 1,
+        conflictMessage: 'Image changed. Reload and try again.',
+      },
+      ...queueMediaCleanup([image.storagePath]),
+    ])
+    await drainMediaCleanupQueue()
   })

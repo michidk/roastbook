@@ -14,7 +14,6 @@ import {
   shots,
 } from '@/db/schema'
 import { aiAllowanceWeek } from '@/lib/ai-allowance'
-import { DEFAULT_AI_PROVIDER } from '@/lib/ai-provider'
 import { loadAdminAiReport } from './admin-ai.server'
 import { loadAiAllowance, selectAiProvider } from './ai-allowance.server'
 import { extractBeanInfoFromImages } from './ai-image-extraction.server'
@@ -39,53 +38,55 @@ const upstreamRequests: {
   limit: number
   authorization: string | null
 }[] = []
-const operatorKey =
-  process.env.AI_PROVIDED_API_KEY || process.env.OPENAI_API_KEY
-const operatorVisionModel =
-  process.env.AI_PROVIDED_VISION_MODEL ||
-  process.env.OPENAI_VISION_MODEL ||
-  DEFAULT_AI_PROVIDER.visionModel
-const provider =
-  process.env.TEST_DATABASE_URL && operatorKey
-    ? Bun.serve({
-        port: 0,
-        async fetch(request) {
-          const body = await request.json()
-          upstreamRequests.push({
-            model: body.model,
-            limit: body.max_completion_tokens,
-            authorization: request.headers.get('authorization'),
-          })
-          return Response.json({
-            choices: [
-              {
-                message: {
-                  content: JSON.stringify({ name: 'Fixture coffee' }),
-                },
+const operatorKey = 'integration-operator-ai-key'
+const operatorVisionModel = 'gpt-4o-mini'
+const provider = process.env.TEST_DATABASE_URL
+  ? Bun.serve({
+      port: 0,
+      async fetch(request) {
+        const body = await request.json()
+        upstreamRequests.push({
+          model: body.model,
+          limit: body.max_completion_tokens,
+          authorization: request.headers.get('authorization'),
+        })
+        return Response.json({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({ name: 'Fixture coffee' }),
               },
-            ],
-            usage: {
-              prompt_tokens: 12,
-              completion_tokens: 8,
-              total_tokens: 20,
             },
-          })
-        },
-      })
-    : undefined
+          ],
+          usage: {
+            prompt_tokens: 12,
+            completion_tokens: 8,
+            total_tokens: 20,
+          },
+        })
+      },
+    })
+  : undefined
 if (provider) {
   process.env.AUTH_ENABLED = 'true'
-  const endpointVariable = process.env.AI_PROVIDED_API_KEY
-    ? 'AI_PROVIDED_BASE_URL'
-    : 'OPENAI_BASE_URL'
-  process.env[endpointVariable] = `http://127.0.0.1:${provider.port}/v1`
+  process.env.AUTH_SECRET = Buffer.alloc(32, 47).toString('hex')
+  process.env.EMAIL_PROVIDER = 'smtp'
+  process.env.EMAIL_FROM = 'test@example.test'
+  process.env.SMTP_URL = 'smtp://127.0.0.1:1'
+  process.env.AI_PROVIDED_API_KEY = operatorKey
+  process.env.AI_PROVIDED_API = 'chat-completions'
+  process.env.AI_PROVIDED_BASE_URL = `http://127.0.0.1:${provider.port}/v1`
+  process.env.AI_PROVIDED_VISION_MODEL = operatorVisionModel
+  process.env.AI_PROVIDED_RESEARCH_MODEL = operatorVisionModel
+  process.env.AI_CREDENTIAL_ENCRYPTION_KEY = Buffer.alloc(32, 31).toString(
+    'base64',
+  )
   process.env.DEPLOYMENT_MODE = 'hosted'
   process.env.AUTH_URL = 'https://coffee.example.test'
   process.env.AUTH_ADMIN_EMAIL = 'owner@example.test'
   delete process.env.AI_ALLOWED_PRIVATE_ORIGINS
 }
-const suite =
-  process.env.TEST_DATABASE_URL && operatorKey ? describe : describe.skip
+const suite = process.env.TEST_DATABASE_URL ? describe : describe.skip
 const user: JournalIdentity = {
   id: `free-${randomUUID()}`,
   email: `${randomUUID()}@example.test`,
@@ -143,7 +144,7 @@ suite('provided AI accounting and administration', () => {
     expect((await asUser(getAccountState)).providedAiAvailable).toBe(true)
     expect(config.apiKey).toBe(operatorKey)
     expect(JSON.stringify(await asUser(loadAiAllowance))).not.toContain(
-      operatorKey ?? 'fixture-key',
+      operatorKey,
     )
     await asUser(() => selectAiProvider('byo'))
     expect((await asUser(getOpenAIConfig)).apiKey).toBeUndefined()

@@ -1,5 +1,6 @@
 import '@tanstack/react-start/server-only'
 import nodemailer from 'nodemailer'
+import { sendCloudflareAccountEmail } from '@/cloudflare/email.server'
 import { getServerEnv } from '@/lib/env.server'
 
 export async function sendAccountEmail(
@@ -9,6 +10,8 @@ export async function sendAccountEmail(
 ) {
   const env = getServerEnv()
   if (!env.EMAIL_FROM) throw new Error('EMAIL_FROM is required')
+  if (env.EMAIL_PROVIDER === 'cloudflare')
+    return sendCloudflareAccountEmail(to, subject, text)
   if (env.EMAIL_PROVIDER === 'resend') {
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',

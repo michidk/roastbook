@@ -3,6 +3,7 @@ import '@tanstack/react-start/server-only'
 import { createEnv, type StandardSchemaV1 } from '@t3-oss/env-core'
 import { createServerOnlyFn } from '@tanstack/react-start'
 import { z } from 'zod'
+import { getCloudflareRuntime } from '@/cloudflare/context.server'
 import { DEFAULT_AI_PROVIDER } from '@/lib/ai-provider'
 
 const optionalString = z.string().trim().min(1).optional()
@@ -12,6 +13,10 @@ const booleanString = z
   .transform((value) => value === 'true')
 
 const serverSchema = {
+  ROASTBOOK_SOURCE_REVISION: z
+    .string()
+    .regex(/^[a-f0-9]{40}$/)
+    .optional(),
   AUTH_ENABLED: booleanString,
   DEPLOYMENT_MODE: z.enum(['self-hosted', 'hosted']).default('self-hosted'),
   AUTH_URL: z.url().optional(),
@@ -28,12 +33,13 @@ const serverSchema = {
     .string()
     .regex(/^[a-z0-9-]+$/)
     .default('x-real-ip'),
-  EMAIL_PROVIDER: z.enum(['smtp', 'resend']).default('smtp'),
+  EMAIL_PROVIDER: z.enum(['smtp', 'resend', 'cloudflare']).default('smtp'),
   EMAIL_FROM: optionalString,
   SMTP_URL: z.url().optional(),
   RESEND_API_KEY: optionalString,
-  DATABASE_URL: z.string().trim().min(1),
-  STORAGE_PROVIDER: z.enum(['local', 's3']).default('local'),
+  DATABASE_PROVIDER: z.enum(['postgres', 'd1']).default('postgres'),
+  DATABASE_URL: z.string().trim().default(''),
+  STORAGE_PROVIDER: z.enum(['local', 's3', 'r2']).default('local'),
   STORAGE_PATH: z.string().trim().min(1).default('./uploads'),
   STORAGE_URL: z.string().trim().min(1).default('/media'),
   S3_BUCKET: optionalString,
@@ -137,6 +143,7 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
   return createEnv({
     server: serverSchema,
     runtimeEnvStrict: {
+      ROASTBOOK_SOURCE_REVISION: runtimeEnvironment.ROASTBOOK_SOURCE_REVISION,
       AUTH_ENABLED: runtimeEnvironment.AUTH_ENABLED,
       DEPLOYMENT_MODE: runtimeEnvironment.DEPLOYMENT_MODE,
       AUTH_URL: runtimeEnvironment.AUTH_URL,
@@ -149,6 +156,7 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
       SMTP_URL: runtimeEnvironment.SMTP_URL,
       RESEND_API_KEY: runtimeEnvironment.RESEND_API_KEY,
 
+      DATABASE_PROVIDER: runtimeEnvironment.DATABASE_PROVIDER,
       DATABASE_URL: runtimeEnvironment.DATABASE_URL,
       STORAGE_PROVIDER: runtimeEnvironment.STORAGE_PROVIDER,
       STORAGE_PATH: runtimeEnvironment.STORAGE_PATH,
@@ -189,6 +197,24 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
     isServer: true,
     createFinalSchema: (shape) =>
       z.object(shape).superRefine((environment, context) => {
+        if (
+          environment.DATABASE_PROVIDER === 'postgres' &&
+          !environment.DATABASE_URL
+        )
+          context.addIssue({
+            code: 'custom',
+            path: ['DATABASE_URL'],
+            message: 'Required for PostgreSQL deployments',
+          })
+        if (
+          environment.DATABASE_PROVIDER === 'd1' &&
+          environment.DEPLOYMENT_MODE !== 'hosted'
+        )
+          context.addIssue({
+            code: 'custom',
+            path: ['DATABASE_PROVIDER'],
+            message: 'D1 requires the hosted Workers runtime',
+          })
         if (environment.AUTH_ENABLED && environment.AI_PROVIDED_API_KEY) {
           for (const name of [
             'AI_PROVIDED_VISION_MODEL',
@@ -251,14 +277,15 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
           requireVariable('AUTH_URL', environment.AUTH_URL)
           requireVariable('AUTH_SECRET', environment.AUTH_SECRET)
           requireVariable('EMAIL_FROM', environment.EMAIL_FROM)
-          requireVariable(
-            environment.EMAIL_PROVIDER === 'smtp'
-              ? 'SMTP_URL'
-              : 'RESEND_API_KEY',
-            environment.EMAIL_PROVIDER === 'smtp'
-              ? environment.SMTP_URL
-              : environment.RESEND_API_KEY,
-          )
+          if (environment.EMAIL_PROVIDER !== 'cloudflare')
+            requireVariable(
+              environment.EMAIL_PROVIDER === 'smtp'
+                ? 'SMTP_URL'
+                : 'RESEND_API_KEY',
+              environment.EMAIL_PROVIDER === 'smtp'
+                ? environment.SMTP_URL
+                : environment.RESEND_API_KEY,
+            )
           if (environment.DEPLOYMENT_MODE === 'hosted') {
             requireVariable('AUTH_ADMIN_EMAIL', environment.AUTH_ADMIN_EMAIL)
             if (
@@ -290,8 +317,37 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
 export type ServerEnv = ReturnType<typeof parseServerEnv>
 
 let cachedEnvironment: ServerEnv | undefined
+const cloudflareEnvironments = new WeakMap<object, ServerEnv>()
 
 export const getServerEnv = createServerOnlyFn((): ServerEnv => {
+  const runtime = getCloudflareRuntime()
+  if (runtime) {
+    const cached = cloudflareEnvironments.get(runtime)
+    if (cached) return cached
+    const variables = runtime.variables
+    if (
+      variables.AUTH_ENABLED !== 'true' ||
+      variables.DEPLOYMENT_MODE !== 'hosted'
+    )
+      throw new Error('Hosted Workers require authentication')
+    const environment = parseServerEnv({
+      ...variables,
+      DATABASE_PROVIDER: 'd1',
+      STORAGE_PROVIDER: 'r2',
+      EMAIL_PROVIDER: 'cloudflare',
+      AUTH_IP_HEADER: 'x-real-ip',
+    })
+    cloudflareEnvironments.set(runtime, environment)
+    return environment
+  }
   cachedEnvironment ??= parseServerEnv(process.env)
+  if (
+    cachedEnvironment.DATABASE_PROVIDER === 'd1' ||
+    cachedEnvironment.STORAGE_PROVIDER === 'r2' ||
+    cachedEnvironment.EMAIL_PROVIDER === 'cloudflare'
+  )
+    throw new Error(
+      'Cloudflare bindings are required for D1, R2, or Cloudflare Email',
+    )
   return cachedEnvironment
 })

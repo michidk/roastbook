@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { db } from '@/db'
+import { journalInsertValues, owned } from '@/db/journal-scope.server'
 import { settings as settingsTable } from '@/db/schema'
 import type { AppSettings } from '@/lib/app-settings'
 import { DEMO_MODE } from '@/lib/build-mode'
@@ -62,13 +63,13 @@ function toAppSettings(row: typeof settingsTable.$inferSelect): AppSettings {
 async function ensureSettingsRow() {
   const [created] = await db
     .insert(settingsTable)
-    .values({ id: 1 })
+    .values(journalInsertValues({ id: 1 }))
     .onConflictDoNothing({ target: [settingsTable.ownerId, settingsTable.id] })
     .returning()
   if (created) return created
 
   const existing = await db.query.settings.findFirst({
-    where: eq(settingsTable.id, 1),
+    where: owned(settingsTable, eq(settingsTable.id, 1)),
   })
   if (!existing) throw new Error('Could not load application settings')
   return existing
@@ -84,7 +85,7 @@ export async function updateSettings(
 ): Promise<AppSettings> {
   const [row] = await db
     .insert(settingsTable)
-    .values({ id: 1, ...patch })
+    .values(journalInsertValues({ id: 1, ...patch }))
     .onConflictDoUpdate({
       target: [settingsTable.ownerId, settingsTable.id],
       set: { ...patch, updatedAt: new Date() },
@@ -102,7 +103,7 @@ export async function updateSettings(
 export async function readTasteProfile(): Promise<TasteProfileConfig> {
   const row = await db.query.settings.findFirst({
     columns: { tasteProfileFields: true },
-    where: eq(settingsTable.id, 1),
+    where: owned(settingsTable, eq(settingsTable.id, 1)),
   })
   return tasteProfileConfigFrom(
     row?.tasteProfileFields ?? DEFAULT_TASTE_PROFILE_FIELDS,

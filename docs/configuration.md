@@ -17,8 +17,8 @@ modules instead of reading the environment directly.
 
 | Variable | Default | Required | Description |
 | --- | --- | --- | --- |
-| `DATABASE_URL` | — | Yes | PostgreSQL connection URL |
-| `STORAGE_PROVIDER` | `local` | No | `local` or `s3` |
+| `DATABASE_URL` | — | Self-hosted | PostgreSQL connection URL |
+| `STORAGE_PROVIDER` | `local` | No | `local` or `s3`; Workers selects `r2` |
 | `STORAGE_PATH` | `./uploads` | No | Filesystem upload root for local storage |
 | `STORAGE_URL` | `/media` | No | Application media URL base |
 | `VITE_HEAD_HTML` | — | No | Trusted head markup (build time) |
@@ -52,7 +52,7 @@ database-free architecture.
 | `AUTH_SIGNUP_ENABLED` | `true` | No | Allow verified email signup |
 | `AUTH_ADMIN_EMAIL` | None | Hosted | Bootstrap admin email |
 | `AUTH_IP_HEADER` | `x-real-ip` | No | Trusted proxy IP header |
-| `EMAIL_PROVIDER` | `smtp` | No | `smtp` or `resend` |
+| `EMAIL_PROVIDER` | `smtp` | No | `smtp` or `resend`; see hosted target below |
 | `EMAIL_FROM` | None | Auth only | Verified sender address |
 | `SMTP_URL` | None | SMTP only | SMTP connection URL, preferably `smtps://` |
 | `RESEND_API_KEY` | None | Resend only | Resend API key |
@@ -241,3 +241,14 @@ variables are unnecessary for `docker-compose.auth.yaml`.
 The chart's complete defaults live in `charts/values.yaml` and are validated by
 `charts/values.schema.json`. See `charts/README.md` for installation examples
 and the external-secret contract.
+
+## Hosted Cloudflare target
+
+See [Cloudflare runtime](cloudflare-runtime.md) for the separate Workers build,
+D1/R2 bindings, Cloudflare Email Sending, and environment isolation. The hosted
+runtime always requires authentication. It uses platform bindings instead of a
+PostgreSQL URL, local files, S3 credentials, or SMTP credentials.
+
+Production resource identifiers, state, and deployment credentials belong in the
+private infrastructure repository. The public artifact contains application
+code, static assets, migrations, and an integrity manifest.

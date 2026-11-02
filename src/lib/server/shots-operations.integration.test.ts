@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db'
+import { runJournalMutations } from '@/db/journal-mutations.server'
 import {
   brewingMethods,
   drinkOptionGroups,
@@ -11,7 +12,7 @@ import {
   shots,
 } from '@/db/schema'
 import { replaceRecipeDrinkOptions } from '@/lib/server/drink-options.server'
-import { saveShotToRecipeInTransaction } from '@/lib/server/shot-recipes.server'
+import { saveShotToRecipe } from '@/lib/server/shot-recipes.server'
 import {
   createShotAndSaveRecipeOperation,
   createShotOperation,
@@ -259,7 +260,8 @@ integrationDescribe('brew operations contract', () => {
   test('saving a brew as a recipe preserves milk options on create and overwrite', async () => {
     if (!brewingMethodId) throw new Error('Missing contract method')
     const methodId = brewingMethodId
-    await db.transaction(async (tx) => {
+    {
+      const tx = db
       const [drink] = await tx
         .insert(drinkTypes)
         .values({ name: `milk-drink-${crypto.randomUUID()}` })
@@ -281,7 +283,7 @@ integrationDescribe('brew operations contract', () => {
       await tx
         .insert(shotDrinkOptions)
         .values({ shotId: brew.id, optionValueId: milk.id })
-      const recipe = await saveShotToRecipeInTransaction(tx, brew.id, {
+      const recipe = await saveShotToRecipe(brew.id, {
         name: 'Milk recipe',
       })
       const readRecipe = () =>
@@ -302,9 +304,9 @@ integrationDescribe('brew operations contract', () => {
         shotFormValuesFrom({ ...saved, accessoryGearIds: [] })
           .drinkOptionValueIds,
       ).toEqual({ [String(group.id)]: String(milk.id) })
-      await replaceRecipeDrinkOptions(tx, recipe.id, [])
+      await runJournalMutations(await replaceRecipeDrinkOptions(recipe.id, []))
       expect((await readRecipe())?.drinkOptions).toEqual([])
-      await saveShotToRecipeInTransaction(tx, brew.id, { recipeId: recipe.id })
+      await saveShotToRecipe(brew.id, { recipeId: recipe.id })
       expect(
         (await readRecipe())?.drinkOptions.map(
           ({ optionValue }) => optionValue.name,
@@ -313,7 +315,7 @@ integrationDescribe('brew operations contract', () => {
       await tx
         .delete(shotDrinkOptions)
         .where(eq(shotDrinkOptions.shotId, brew.id))
-      await saveShotToRecipeInTransaction(tx, brew.id, { recipeId: recipe.id })
+      await saveShotToRecipe(brew.id, { recipeId: recipe.id })
       expect((await readRecipe())?.drinkOptions).toEqual([])
       expect((await readRecipe())?.revision).toBe(recipe.revision + 2)
       await tx.delete(recipes).where(eq(recipes.id, recipe.id))
@@ -325,6 +327,6 @@ integrationDescribe('brew operations contract', () => {
         .delete(drinkOptionGroups)
         .where(eq(drinkOptionGroups.id, group.id))
       await tx.delete(drinkTypes).where(eq(drinkTypes.id, drink.id))
-    })
+    }
   })
 })

@@ -55,7 +55,7 @@ export function mcpAuthPlugins(origin: string) {
         },
       ],
     }),
-    // This transport uses Bun's node:https compatibility, with a pinned DNS lookup.
+    // The build selects the runtime's public-network transport for client metadata.
     cimd({ fetchClientMetadataResource, metadataProfile: 'mcp-2026-07-28' }),
   ] as const
 }

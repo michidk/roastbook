@@ -1,80 +1,89 @@
-import { eq, sql } from 'drizzle-orm'
-import type { db } from '@/db'
+import { eq } from 'drizzle-orm'
+import { db } from '@/db'
+import { runJournalMutations } from '@/db/journal-mutations.server'
+import { owned } from '@/db/journal-scope.server'
 import { recipes, shots } from '@/db/schema'
 import { expectReturnedRow, notFound } from '@/lib/domain-errors'
 import type { RecipeTarget } from '@/lib/recipe-target'
-import {
-  replaceRecipeAccessoryGear,
-  withAccessoryGearIds,
-} from '@/lib/server/accessory-gear.server'
-import { replaceRecipeDrinkOptions } from '@/lib/server/drink-options.server'
+import type { ShotParameterInput } from '@/lib/shot-parameters'
+import { withAccessoryGearIds } from './accessory-gear.server'
+import { prepareRecipeWrite } from './recipe-mutations.server'
 import {
   projectAccessoryGearIds,
   projectShotParameters,
-} from '@/lib/server/shot-parameter-projection'
+} from './shot-parameter-projection'
 
-type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+type RecipeSource = ShotParameterInput & {
+  brewingMethodId: number
+  beanId: number | null
+  drinkTypeId: number | null
+  enabledParameters: readonly string[]
+  drinkOptionValueIds: readonly number[]
+}
 
-export async function saveShotToRecipeInTransaction(
-  tx: DatabaseTransaction,
+export async function prepareRecipeFromShot(
+  source: RecipeSource,
+  target: RecipeTarget,
+  operationId?: string,
+) {
+  const existing =
+    target.recipeId === undefined
+      ? undefined
+      : await db.query.recipes.findFirst({
+          where: owned(recipes, eq(recipes.id, target.recipeId)),
+        })
+  if (target.recipeId !== undefined && !existing) throw notFound('Recipe')
+  if (existing && existing.brewingMethodId !== source.brewingMethodId)
+    throw new Error('Recipe does not use this brew’s brewing method')
+  return prepareRecipeWrite({
+    values: {
+      name: existing?.name ?? target.name ?? '',
+      brewingMethodId: source.brewingMethodId,
+      beanId: source.beanId,
+      drinkTypeId: source.drinkTypeId,
+      ...projectShotParameters(source, source.enabledParameters),
+    },
+    existing,
+    accessoryGearIds: projectAccessoryGearIds(source, source.enabledParameters),
+    drinkOptionValueIds: source.drinkOptionValueIds,
+    operationId,
+  })
+}
+
+export async function prepareShotToRecipe(
   shotId: number,
   target: RecipeTarget,
+  operationId?: string,
 ) {
-  const shot = await tx.query.shots.findFirst({
-    where: eq(shots.id, shotId),
+  const shot = await db.query.shots.findFirst({
+    where: owned(shots, eq(shots.id, shotId)),
     with: {
       brewingMethod: true,
       drinkOptions: true,
       accessoryGearLinks: { columns: { gearId: true } },
     },
   })
-  if (!shot) throw notFound('Shot')
-
-  const shotValues = withAccessoryGearIds(shot)
-  const values = {
-    brewingMethodId: shot.brewingMethodId,
-    beanId: shot.beanId,
-    drinkTypeId: shot.drinkTypeId,
-    ...projectShotParameters(shotValues, shot.brewingMethod.enabledParameters),
-    updatedAt: new Date(),
-  }
-
-  let recipe: typeof recipes.$inferSelect
-  if (target.recipeId !== undefined) {
-    const existingRecipe = await tx.query.recipes.findFirst({
-      where: eq(recipes.id, target.recipeId),
-      columns: { id: true, brewingMethodId: true },
-    })
-    if (!existingRecipe) throw notFound('Recipe')
-    if (existingRecipe.brewingMethodId !== shot.brewingMethodId) {
-      throw new Error('Recipe does not use this brew’s brewing method')
-    }
-
-    const [updatedRecipe] = await tx
-      .update(recipes)
-      .set({ ...values, revision: sql`${recipes.revision} + 1` })
-      .where(eq(recipes.id, target.recipeId))
-      .returning()
-    recipe = expectReturnedRow(updatedRecipe, 'Recipe')
-  } else {
-    const [createdRecipe] = await tx
-      .insert(recipes)
-      .values({ ...values, name: target.name ?? '' })
-      .returning()
-    recipe = expectReturnedRow(createdRecipe, 'Recipe')
-  }
-
-  await replaceRecipeAccessoryGear(
-    tx,
-    recipe.id,
-    projectAccessoryGearIds(shotValues, shot.brewingMethod.enabledParameters),
+  if (!shot) throw notFound('Brew')
+  return prepareRecipeFromShot(
+    {
+      ...withAccessoryGearIds(shot),
+      enabledParameters: shot.brewingMethod.enabledParameters,
+      drinkOptionValueIds: shot.drinkOptions.map(
+        ({ optionValueId }) => optionValueId,
+      ),
+    },
+    target,
+    operationId,
   )
+}
 
-  await replaceRecipeDrinkOptions(
-    tx,
-    recipe.id,
-    shot.drinkOptions.map(({ optionValueId }) => optionValueId),
+export async function saveShotToRecipe(shotId: number, target: RecipeTarget) {
+  const plan = await prepareShotToRecipe(shotId, target)
+  await runJournalMutations(plan.mutations)
+  return expectReturnedRow(
+    await db.query.recipes.findFirst({
+      where: owned(recipes, eq(recipes.id, plan.id)),
+    }),
+    'Recipe',
   )
-
-  return recipe
 }

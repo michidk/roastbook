@@ -1,5 +1,11 @@
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import { db } from '@/db'
+import {
+  allocateJournalIds,
+  type JournalMutation,
+  runJournalMutations,
+} from '@/db/journal-mutations.server'
+import { journalInsertValues, owned } from '@/db/journal-scope.server'
 import { beanPurchases, shots } from '@/db/schema'
 import { expectReturnedRow } from '@/lib/domain-errors'
 
@@ -14,20 +20,35 @@ export type BeanPurchaseValues = {
   readonly isArchived?: boolean
 }
 
-type BeanPurchaseTransaction = Parameters<
-  Parameters<typeof db.transaction>[0]
->[0]
-
-export async function createBeanPurchaseOperation(
-  tx: BeanPurchaseTransaction,
+export async function createBeanPurchaseMutations(
   beanId: number,
   values: BeanPurchaseValues,
 ) {
-  const [purchase] = await tx
-    .insert(beanPurchases)
-    .values({ beanId, ...values })
-    .returning()
-  return expectReturnedRow(purchase, 'Bag')
+  const [id] = await allocateJournalIds(beanPurchases)
+  if (id === undefined) throw new Error('Could not allocate a bag identifier')
+  const mutations: JournalMutation[] = [
+    {
+      statement: db
+        .insert(beanPurchases)
+        .values(journalInsertValues({ id, beanId, ...values }))
+        .getSQL(),
+    },
+  ]
+  return { id, mutations }
+}
+
+export async function createBeanPurchaseOperation(
+  beanId: number,
+  values: BeanPurchaseValues,
+) {
+  const { id, mutations } = await createBeanPurchaseMutations(beanId, values)
+  await runJournalMutations(mutations)
+  return expectReturnedRow(
+    await db.query.beanPurchases.findFirst({
+      where: owned(beanPurchases, eq(beanPurchases.id, id)),
+    }),
+    'Bag',
+  )
 }
 
 export async function updateBeanPurchaseOperation(
@@ -35,12 +56,28 @@ export async function updateBeanPurchaseOperation(
   beanId: number,
   values: BeanPurchaseValues,
 ) {
-  const [purchase] = await db
-    .update(beanPurchases)
-    .set({ ...values, updatedAt: new Date() })
-    .where(and(eq(beanPurchases.id, id), eq(beanPurchases.beanId, beanId)))
-    .returning()
-  return expectReturnedRow(purchase, 'Bag')
+  await runJournalMutations([
+    {
+      statement: db
+        .update(beanPurchases)
+        .set({ ...values, updatedAt: new Date() })
+        .where(
+          owned(
+            beanPurchases,
+            and(eq(beanPurchases.id, id), eq(beanPurchases.beanId, beanId)),
+          ),
+        )
+        .getSQL(),
+      expectedChanges: 1,
+      conflictMessage: 'Bag not found',
+    },
+  ])
+  return expectReturnedRow(
+    await db.query.beanPurchases.findFirst({
+      where: owned(beanPurchases, eq(beanPurchases.id, id)),
+    }),
+    'Bag',
+  )
 }
 
 export async function archiveBeanPurchaseOperation(
@@ -56,10 +93,10 @@ export async function purchaseUsageById(purchaseIds: readonly number[]) {
   const rows = await db
     .select({
       purchaseId: shots.beanPurchaseId,
-      usedWeightGrams: sql<string>`coalesce(sum(${shots.doseGrams}), 0)::text`,
+      usedWeightGrams: sql<string>`cast(coalesce(sum(cast(${shots.doseGrams} as numeric)), 0) as text)`,
     })
     .from(shots)
-    .where(inArray(shots.beanPurchaseId, purchaseIds))
+    .where(owned(shots, inArray(shots.beanPurchaseId, purchaseIds)))
     .groupBy(shots.beanPurchaseId)
   return new Map(
     rows.flatMap((row) =>

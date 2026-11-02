@@ -1,6 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import { db } from '@/db'
 import {
   archiveBeanPurchaseOperation,
   createBeanPurchaseOperation,
@@ -38,9 +37,7 @@ export const createBeanPurchase = createServerFn({ method: 'POST' })
   .validator(createSchema)
   .handler(({ data }) => {
     const { beanId, ...values } = data
-    return db.transaction((tx) =>
-      createBeanPurchaseOperation(tx, beanId, values),
-    )
+    return createBeanPurchaseOperation(beanId, values)
   })
 
 export const setBeanPurchaseArchived = createServerFn({ method: 'POST' })

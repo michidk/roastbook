@@ -46,7 +46,9 @@
 > sample data — no account, no database, nothing to install.
 
 The public website is [roastbook.coffee](https://roastbook.coffee/). This repository
-serves the read-only demo and the self-hosted journal.
+serves the read-only demo, the self-hosted journal, and a Cloudflare Workers
+runtime for managed hosting. Hosted infrastructure stays in a separate private
+repository; this does not change the self-hosted installation.
 
 ## ☕ What it is
 
@@ -286,8 +288,8 @@ from the database row to the rendered field:
 | Routing | TanStack Router, file-based and fully typed |
 | UI | React 19, shadcn/ui, Radix and Base UI, Tailwind CSS v4 |
 | Icons and maps | Lucide, MapLibre GL |
-| Database | PostgreSQL when self-hosted; ephemeral PGlite for the demo |
-| Media storage | Local filesystem or any S3-compatible bucket |
+| Database | PostgreSQL, hosted Cloudflare D1, demo PGlite |
+| Media storage | Local filesystem, S3-compatible buckets, hosted R2 |
 | AI | TanStack AI with any OpenAI-compatible endpoint |
 | Validation | Zod at every boundary, including environment variables |
 | PWA | Web app manifest and a hand-written service worker |
@@ -377,6 +379,7 @@ running.
 | [Offline journaling](docs/offline.md) | Offline brew/recipe work, conflicts, and sync |
 | [Client data boundaries](docs/client-data.md) | Feature commands, caching, and mode policies |
 | [Deployment](docs/deployment.md) | Docker, Helm, security boundary |
+| [Cloudflare runtime](docs/cloudflare-runtime.md) | Workers, D1, R2, release artifacts, hosted security boundary |
 | [Shottimer API](docs/shottimer.md) | Device integration endpoints |
 | [Design system](DESIGN.md) | Layout contract and UI conventions |
 | [Design files](design/README.md) | Editable OpenPencil views and editor |

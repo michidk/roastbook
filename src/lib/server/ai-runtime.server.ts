@@ -1,11 +1,11 @@
 import { maxIterations } from '@tanstack/ai'
 import { openaiCompatibleText } from '@tanstack/ai-openai/compatible'
 import { DEFAULT_AI_PROVIDER } from '@/lib/ai-provider'
-import { loadAiAllowance, providedAiConfig } from './ai-allowance.server'
 import {
   createAiProviderFetch,
   createProvidedAiFetch,
-} from './ai-provider-fetch.server'
+} from '@/lib/server/ai-provider-fetch.server'
+import { loadAiAllowance, providedAiConfig } from './ai-allowance.server'
 import { getAiRuntimeConfig } from './ai-provider-settings.server'
 
 export async function getOpenAIConfig() {

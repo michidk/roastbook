@@ -1,54 +1,117 @@
 import { eq } from 'drizzle-orm'
-import type { db } from '@/db'
+import { db } from '@/db'
+import {
+  allocateJournalIds,
+  type JournalMutation,
+} from '@/db/journal-mutations.server'
+import { journalInsertValues, owned } from '@/db/journal-scope.server'
 import {
   gearSetAccessoryGear,
   recipeAccessoryGear,
   shotAccessoryGear,
 } from '@/db/schema'
 
-type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
-
 export async function replaceShotAccessoryGear(
-  tx: DatabaseTransaction,
   shotId: number,
   gearIds: readonly number[],
-) {
-  await tx.delete(shotAccessoryGear).where(eq(shotAccessoryGear.shotId, shotId))
-  if (gearIds.length > 0) {
-    await tx
-      .insert(shotAccessoryGear)
-      .values([...new Set(gearIds)].map((gearId) => ({ shotId, gearId })))
+): Promise<JournalMutation[]> {
+  const mutations: JournalMutation[] = [
+    {
+      statement: db
+        .delete(shotAccessoryGear)
+        .where(owned(shotAccessoryGear, eq(shotAccessoryGear.shotId, shotId)))
+        .getSQL(),
+    },
+  ]
+  const selectedIds = [...new Set(gearIds)]
+  if (!selectedIds.length) return mutations
+  const ids = await allocateJournalIds(shotAccessoryGear, selectedIds.length)
+  const rows = ids.map((id, index) => {
+    const gearId = selectedIds[index]
+    if (gearId === undefined) throw new Error('Invalid accessory allocation')
+    return { id, shotId, gearId }
+  })
+  for (let offset = 0; offset < rows.length; offset += 20) {
+    mutations.push({
+      statement: db
+        .insert(shotAccessoryGear)
+        .values(journalInsertValues(rows.slice(offset, offset + 20)))
+        .getSQL(),
+    })
   }
+  return mutations
 }
 
 export async function replaceRecipeAccessoryGear(
-  tx: DatabaseTransaction,
   recipeId: number,
   gearIds: readonly number[],
-) {
-  await tx
-    .delete(recipeAccessoryGear)
-    .where(eq(recipeAccessoryGear.recipeId, recipeId))
-  if (gearIds.length > 0) {
-    await tx
-      .insert(recipeAccessoryGear)
-      .values([...new Set(gearIds)].map((gearId) => ({ recipeId, gearId })))
+): Promise<JournalMutation[]> {
+  const mutations: JournalMutation[] = [
+    {
+      statement: db
+        .delete(recipeAccessoryGear)
+        .where(
+          owned(
+            recipeAccessoryGear,
+            eq(recipeAccessoryGear.recipeId, recipeId),
+          ),
+        )
+        .getSQL(),
+    },
+  ]
+  const selectedIds = [...new Set(gearIds)]
+  if (!selectedIds.length) return mutations
+  const ids = await allocateJournalIds(recipeAccessoryGear, selectedIds.length)
+  const rows = ids.map((id, index) => {
+    const gearId = selectedIds[index]
+    if (gearId === undefined) throw new Error('Invalid accessory allocation')
+    return { id, recipeId, gearId }
+  })
+  for (let offset = 0; offset < rows.length; offset += 20) {
+    mutations.push({
+      statement: db
+        .insert(recipeAccessoryGear)
+        .values(journalInsertValues(rows.slice(offset, offset + 20)))
+        .getSQL(),
+    })
   }
+  return mutations
 }
 
 export async function replaceGearSetAccessoryGear(
-  tx: DatabaseTransaction,
   gearSetId: number,
   gearIds: readonly number[],
-) {
-  await tx
-    .delete(gearSetAccessoryGear)
-    .where(eq(gearSetAccessoryGear.gearSetId, gearSetId))
-  if (gearIds.length > 0) {
-    await tx
-      .insert(gearSetAccessoryGear)
-      .values([...new Set(gearIds)].map((gearId) => ({ gearSetId, gearId })))
+): Promise<JournalMutation[]> {
+  const mutations: JournalMutation[] = [
+    {
+      statement: db
+        .delete(gearSetAccessoryGear)
+        .where(
+          owned(
+            gearSetAccessoryGear,
+            eq(gearSetAccessoryGear.gearSetId, gearSetId),
+          ),
+        )
+        .getSQL(),
+    },
+  ]
+  const selectedIds = [...new Set(gearIds)]
+  if (!selectedIds.length) return mutations
+  const ids = await allocateJournalIds(gearSetAccessoryGear, selectedIds.length)
+  const rows = ids.map((id, index) => {
+    const gearId = selectedIds[index]
+    if (gearId === undefined) throw new Error('Invalid accessory allocation')
+    return { id, gearSetId, gearId }
+  })
+  for (let offset = 0; offset < rows.length; offset += 20) {
+    mutations.push({
+      statement: db
+        .insert(gearSetAccessoryGear)
+        .values(journalInsertValues(rows.slice(offset, offset + 20)))
+        .getSQL(),
+    })
   }
+  return mutations
 }
 
 export function withAccessoryGearIds<

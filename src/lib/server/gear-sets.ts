@@ -1,7 +1,12 @@
 import { createServerFn, createServerOnlyFn } from '@tanstack/react-start'
-import { and, asc, count, desc, eq, ilike, ne, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, ne, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
+import {
+  allocateJournalIds,
+  runJournalMutations,
+} from '@/db/journal-mutations.server'
+import { journalInsertValues, owned } from '@/db/journal-scope.server'
 import { gearSets } from '@/db/schema'
 import {
   escapedContainsPattern,
@@ -51,7 +56,7 @@ type GearSetRow = NonNullable<Awaited<ReturnType<typeof queryGearSetById>>>
 
 const queryGearSetById = createServerOnlyFn((id: number) => {
   return db.query.gearSets.findFirst({
-    where: eq(gearSets.id, id),
+    where: owned(gearSets, eq(gearSets.id, id)),
     with: gearSetRelations,
   })
 })
@@ -77,12 +82,15 @@ function toGearSetRow(data: GearSetWrite) {
 
 async function assertUniqueName(name: string, excludeId?: number) {
   const duplicate = await db.query.gearSets.findFirst({
-    where: excludeId
-      ? and(
-          ne(gearSets.id, excludeId),
-          sql`lower(${gearSets.name}) = lower(${name})`,
-        )
-      : sql`lower(${gearSets.name}) = lower(${name})`,
+    where: owned(
+      gearSets,
+      excludeId
+        ? and(
+            ne(gearSets.id, excludeId),
+            sql`lower(${gearSets.name}) = lower(${name})`,
+          )
+        : sql`lower(${gearSets.name}) = lower(${name})`,
+    ),
   })
   if (duplicate) {
     throw new GearSetInputError('A gear set with this name already exists')
@@ -92,6 +100,7 @@ async function assertUniqueName(name: string, excludeId?: number) {
 export const getGearSets = createServerFn({ method: 'GET' }).handler(
   async () => {
     const rows = await db.query.gearSets.findMany({
+      where: owned(gearSets),
       orderBy: [asc(gearSets.name), asc(gearSets.id)],
       with: gearSetRelations,
     })
@@ -111,12 +120,12 @@ export const getGearSetPage = createServerFn({ method: 'GET' })
   .validator(gearSetListSchema)
   .handler(async ({ data }) => {
     const where = data.query
-      ? ilike(gearSets.name, escapedContainsPattern(data.query))
+      ? sql`lower(${gearSets.name}) like lower(${escapedContainsPattern(data.query)}) escape ${'\\'}`
       : undefined
     const countRows = await db
       .select({ value: count() })
       .from(gearSets)
-      .where(where)
+      .where(owned(gearSets, where))
     const totalItems = countRows[0]?.value ?? 0
     const pagination = resolvePagination(
       totalItems,
@@ -127,7 +136,7 @@ export const getGearSetPage = createServerFn({ method: 'GET' })
       data.sort === 'added' ? gearSets.createdAt : gearSets.name
     const order = data.direction === 'asc' ? asc(sortColumn) : desc(sortColumn)
     const rows = await db.query.gearSets.findMany({
-      where,
+      where: owned(gearSets, where),
       orderBy: [order, asc(gearSets.id)],
       limit: GEAR_SETS_PAGE_SIZE,
       offset: (pagination.page - 1) * GEAR_SETS_PAGE_SIZE,
@@ -147,35 +156,48 @@ export const createGearSet = createServerFn({ method: 'POST' })
   .validator(gearSetWriteSchema)
   .handler(async ({ data }) => {
     await assertUniqueName(data.name)
-    return db.transaction(async (tx) => {
-      const [item] = await tx
-        .insert(gearSets)
-        .values(toGearSetRow(data))
-        .returning()
-      const persistedItem = expectReturnedRow(item, 'Gear set')
-      await replaceGearSetAccessoryGear(
-        tx,
-        persistedItem.id,
-        data.accessoryGearIds,
-      )
-      return persistedItem
-    })
+    const [id] = await allocateJournalIds(gearSets)
+    if (id === undefined)
+      throw new Error('Could not allocate a gear set identifier')
+    await runJournalMutations([
+      {
+        statement: db
+          .insert(gearSets)
+          .values(journalInsertValues({ id, ...toGearSetRow(data) }))
+          .getSQL(),
+      },
+      ...(await replaceGearSetAccessoryGear(id, data.accessoryGearIds)),
+    ])
+    return expectReturnedRow(
+      await db.query.gearSets.findFirst({
+        where: owned(gearSets, eq(gearSets.id, id)),
+      }),
+      'Gear set',
+    )
   })
 
 export const updateGearSet = createServerFn({ method: 'POST' })
   .validator(gearSetUpdateSchema)
   .handler(async ({ data }) => {
     await assertUniqueName(data.name, data.id)
-    return db.transaction(async (tx) => {
-      const [item] = await tx
-        .update(gearSets)
-        .set({ ...toGearSetRow(data), updatedAt: new Date() })
-        .where(eq(gearSets.id, data.id))
-        .returning()
-      const persistedItem = expectReturnedRow(item, 'Gear set')
-      await replaceGearSetAccessoryGear(tx, data.id, data.accessoryGearIds)
-      return persistedItem
-    })
+    await runJournalMutations([
+      {
+        statement: db
+          .update(gearSets)
+          .set({ ...toGearSetRow(data), updatedAt: new Date() })
+          .where(owned(gearSets, eq(gearSets.id, data.id)))
+          .getSQL(),
+        expectedChanges: 1,
+        conflictMessage: 'Gear set not found',
+      },
+      ...(await replaceGearSetAccessoryGear(data.id, data.accessoryGearIds)),
+    ])
+    return expectReturnedRow(
+      await db.query.gearSets.findFirst({
+        where: owned(gearSets, eq(gearSets.id, data.id)),
+      }),
+      'Gear set',
+    )
   })
 
 export const deleteGearSet = createServerFn({ method: 'POST' })
@@ -183,7 +205,7 @@ export const deleteGearSet = createServerFn({ method: 'POST' })
   .handler(async ({ data: id }) => {
     const [item] = await db
       .delete(gearSets)
-      .where(eq(gearSets.id, id))
+      .where(owned(gearSets, eq(gearSets.id, id)))
       .returning({ id: gearSets.id })
     expectReturnedRow(item, 'Gear set')
   })

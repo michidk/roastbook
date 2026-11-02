@@ -1,5 +1,10 @@
 import { and, eq, inArray } from 'drizzle-orm'
-import type { db } from '@/db'
+import { db } from '@/db'
+import {
+  allocateJournalIds,
+  type JournalMutation,
+} from '@/db/journal-mutations.server'
+import { journalInsertValues, owned } from '@/db/journal-scope.server'
 import {
   brewingMethodDrinkTypes,
   cafeVisitDrinkOptions,
@@ -9,12 +14,10 @@ import {
   shotDrinkOptions,
 } from '@/db/schema'
 
-type DrinkOptionTransaction = Parameters<
-  Parameters<typeof db.transaction>[0]
->[0]
+type DrinkOptionReader = Pick<typeof db, 'select' | 'query'>
 
 export async function assertDrinkTypeAvailableForBrewingMethod(
-  tx: DrinkOptionTransaction,
+  tx: DrinkOptionReader,
   brewingMethodId: number,
   drinkTypeId: number | null | undefined,
 ) {
@@ -22,7 +25,12 @@ export async function assertDrinkTypeAvailableForBrewingMethod(
   const assignments = await tx
     .select({ drinkTypeId: brewingMethodDrinkTypes.drinkTypeId })
     .from(brewingMethodDrinkTypes)
-    .where(eq(brewingMethodDrinkTypes.brewingMethodId, brewingMethodId))
+    .where(
+      owned(
+        brewingMethodDrinkTypes,
+        eq(brewingMethodDrinkTypes.brewingMethodId, brewingMethodId),
+      ),
+    )
   if (
     assignments.length > 0 &&
     !assignments.some((assignment) => assignment.drinkTypeId === drinkTypeId)
@@ -32,7 +40,7 @@ export async function assertDrinkTypeAvailableForBrewingMethod(
 }
 
 export async function assertDrinkSelection(
-  tx: DrinkOptionTransaction,
+  tx: DrinkOptionReader,
   drinkTypeId: number | null | undefined,
   optionValueIds: readonly number[] | undefined,
 ) {
@@ -54,14 +62,18 @@ export async function assertDrinkSelection(
     .innerJoin(
       drinkTypeOptionGroups,
       and(
+        eq(drinkTypeOptionGroups.ownerId, drinkOptionValues.ownerId),
         eq(drinkTypeOptionGroups.optionGroupId, drinkOptionValues.groupId),
         eq(drinkTypeOptionGroups.drinkTypeId, drinkTypeId),
       ),
     )
     .where(
-      and(
-        inArray(drinkOptionValues.id, selectedIds),
-        eq(drinkOptionValues.isArchived, false),
+      owned(
+        drinkOptionValues,
+        and(
+          inArray(drinkOptionValues.id, selectedIds),
+          eq(drinkOptionValues.isArchived, false),
+        ),
       ),
     )
 
@@ -74,46 +86,107 @@ export async function assertDrinkSelection(
 }
 
 export async function replaceShotDrinkOptions(
-  tx: DrinkOptionTransaction,
   shotId: number,
   optionValueIds: readonly number[],
-) {
-  await tx.delete(shotDrinkOptions).where(eq(shotDrinkOptions.shotId, shotId))
+): Promise<JournalMutation[]> {
+  const mutations: JournalMutation[] = [
+    {
+      statement: db
+        .delete(shotDrinkOptions)
+        .where(owned(shotDrinkOptions, eq(shotDrinkOptions.shotId, shotId)))
+        .getSQL(),
+    },
+  ]
   const selectedIds = [...new Set(optionValueIds)]
-  if (selectedIds.length === 0) return
-  await tx
-    .insert(shotDrinkOptions)
-    .values(selectedIds.map((optionValueId) => ({ shotId, optionValueId })))
+  if (!selectedIds.length) return mutations
+  const ids = await allocateJournalIds(shotDrinkOptions, selectedIds.length)
+  const rows = ids.map((id, index) => {
+    const optionValueId = selectedIds[index]
+    if (optionValueId === undefined)
+      throw new Error('Invalid option allocation')
+    return { id, shotId, optionValueId }
+  })
+  for (let offset = 0; offset < rows.length; offset += 20) {
+    mutations.push({
+      statement: db
+        .insert(shotDrinkOptions)
+        .values(journalInsertValues(rows.slice(offset, offset + 20)))
+        .getSQL(),
+    })
+  }
+  return mutations
 }
 
 export async function replaceCafeVisitDrinkOptions(
-  tx: DrinkOptionTransaction,
   cafeVisitId: number,
   optionValueIds: readonly number[],
-) {
-  await tx
-    .delete(cafeVisitDrinkOptions)
-    .where(eq(cafeVisitDrinkOptions.cafeVisitId, cafeVisitId))
+): Promise<JournalMutation[]> {
+  const mutations: JournalMutation[] = [
+    {
+      statement: db
+        .delete(cafeVisitDrinkOptions)
+        .where(
+          owned(
+            cafeVisitDrinkOptions,
+            eq(cafeVisitDrinkOptions.cafeVisitId, cafeVisitId),
+          ),
+        )
+        .getSQL(),
+    },
+  ]
   const selectedIds = [...new Set(optionValueIds)]
-  if (selectedIds.length === 0) return
-  await tx
-    .insert(cafeVisitDrinkOptions)
-    .values(
-      selectedIds.map((optionValueId) => ({ cafeVisitId, optionValueId })),
-    )
+  if (!selectedIds.length) return mutations
+  const ids = await allocateJournalIds(
+    cafeVisitDrinkOptions,
+    selectedIds.length,
+  )
+  const rows = ids.map((id, index) => {
+    const optionValueId = selectedIds[index]
+    if (optionValueId === undefined)
+      throw new Error('Invalid option allocation')
+    return { id, cafeVisitId, optionValueId }
+  })
+  for (let offset = 0; offset < rows.length; offset += 20) {
+    mutations.push({
+      statement: db
+        .insert(cafeVisitDrinkOptions)
+        .values(journalInsertValues(rows.slice(offset, offset + 20)))
+        .getSQL(),
+    })
+  }
+  return mutations
 }
 
 export async function replaceRecipeDrinkOptions(
-  tx: DrinkOptionTransaction,
   recipeId: number,
   optionValueIds: readonly number[],
-) {
-  await tx
-    .delete(recipeDrinkOptions)
-    .where(eq(recipeDrinkOptions.recipeId, recipeId))
+): Promise<JournalMutation[]> {
+  const mutations: JournalMutation[] = [
+    {
+      statement: db
+        .delete(recipeDrinkOptions)
+        .where(
+          owned(recipeDrinkOptions, eq(recipeDrinkOptions.recipeId, recipeId)),
+        )
+        .getSQL(),
+    },
+  ]
   const selectedIds = [...new Set(optionValueIds)]
-  if (selectedIds.length === 0) return
-  await tx
-    .insert(recipeDrinkOptions)
-    .values(selectedIds.map((optionValueId) => ({ recipeId, optionValueId })))
+  if (!selectedIds.length) return mutations
+  const ids = await allocateJournalIds(recipeDrinkOptions, selectedIds.length)
+  const rows = ids.map((id, index) => {
+    const optionValueId = selectedIds[index]
+    if (optionValueId === undefined)
+      throw new Error('Invalid option allocation')
+    return { id, recipeId, optionValueId }
+  })
+  for (let offset = 0; offset < rows.length; offset += 20) {
+    mutations.push({
+      statement: db
+        .insert(recipeDrinkOptions)
+        .values(journalInsertValues(rows.slice(offset, offset + 20)))
+        .getSQL(),
+    })
+  }
+  return mutations
 }

@@ -9,12 +9,12 @@ import {
 } from '@/lib/ai-provider'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { getServerEnv } from '@/lib/env.server'
-import { loadAiAllowance } from './ai-allowance.server'
-import { decryptAiKey, encryptAiKey } from './ai-credential.server'
 import {
   normalizeAiEndpoint,
   resolveAiEndpoint,
-} from './ai-provider-fetch.server'
+} from '@/lib/server/ai-provider-fetch.server'
+import { loadAiAllowance } from './ai-allowance.server'
+import { decryptAiKey, encryptAiKey } from './ai-credential.server'
 
 export async function readAiProviderCredentials() {
   if (DEMO_MODE) return undefined

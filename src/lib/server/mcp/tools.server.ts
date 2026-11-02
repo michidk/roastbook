@@ -1,3 +1,4 @@
+import { owned } from '@/db/journal-scope.server'
 import '@tanstack/react-start/server-only'
 
 import { McpServer } from '@modelcontextprotocol/server'
@@ -138,6 +139,7 @@ export function createRoastbookMcpServer(
   register('get_brew', idInput, ({ id }) => getShotOperation(id))
   register('list_beans', pageInput, ({ offset, limit }) =>
     db.query.beans.findMany({
+      where: owned(beans),
       orderBy: [desc(beans.createdAt)],
       limit,
       offset,
@@ -146,7 +148,7 @@ export function createRoastbookMcpServer(
   )
   register('get_bean', idInput, ({ id }) =>
     db.query.beans.findFirst({
-      where: eq(beans.id, id),
+      where: owned(beans, eq(beans.id, id)),
       with: {
         roasterRef: { columns: { id: true, name: true } },
         purchases: true,
@@ -155,16 +157,18 @@ export function createRoastbookMcpServer(
   )
   register('list_recipes', pageInput, ({ offset, limit }) =>
     db.query.recipes.findMany({
+      where: owned(recipes),
       orderBy: [desc(recipes.updatedAt)],
       limit,
       offset,
     }),
   )
   register('get_recipe', idInput, ({ id }) =>
-    db.query.recipes.findFirst({ where: eq(recipes.id, id) }),
+    db.query.recipes.findFirst({ where: owned(recipes, eq(recipes.id, id)) }),
   )
   register('list_gear', pageInput, ({ offset, limit }) =>
     db.query.gear.findMany({
+      where: owned(gear),
       orderBy: [desc(gear.createdAt)],
       limit,
       offset,
@@ -172,6 +176,7 @@ export function createRoastbookMcpServer(
   )
   register('list_roasters', pageInput, ({ offset, limit }) =>
     db.query.roasters.findMany({
+      where: owned(roasters),
       orderBy: [asc(roasters.name)],
       limit,
       offset,
@@ -179,6 +184,7 @@ export function createRoastbookMcpServer(
   )
   register('list_brewing_methods', emptyInput, () =>
     db.query.brewingMethods.findMany({
+      where: owned(brewingMethods),
       columns: { id: true, name: true, description: true },
       orderBy: [asc(brewingMethods.id)],
       with: { drinkTypeLinks: true },
