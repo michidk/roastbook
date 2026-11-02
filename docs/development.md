@@ -155,6 +155,26 @@ cached authentication and provider configuration cannot leak between suites.
 Always use isolated test services. CI provisions PostgreSQL and MinIO, applies
 the complete migration chain, and then runs all tests.
 
+GitHub Actions workflows with `@orcastrate` frontmatter are managed by
+[`michidk/workflows`](https://github.com/michidk/workflows). Change the canonical
+template alongside the rendered workflow so the next sync preserves the change.
+Renovate inherits that repository's preset from `.github/renovate.json5`, with
+local rules for the tested TypeScript version and coordinated Better Auth updates.
+
+CI checks both database schemas against their committed migration snapshots,
+including newly generated files. It builds the database-free demo separately
+and runs D1 ownership, concurrency, account-job, and OAuth tests inside workerd.
+Hosted and demo browser bundles use the same server-code and asset-size checks
+as the self-hosted build. Workflow validation runs actionlint with shell checks;
+the shared PR-title workflow checks Conventional Commit titles.
+
+To inspect a different build's client assets, pass its public directory:
+
+```bash
+bun run check:client-assets .output/cloudflare/public
+bun run check:client-assets .vercel/output/static
+```
+
 ## Maintenance scripts
 
 - `bun run sync:ai-pricing` refreshes the committed AI pricing snapshot from

@@ -6,10 +6,33 @@
   "packageRules": [
     {
       "description": "Do not pin or refresh the Roastbook application image digest",
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["ghcr.io/michidk/roastbook"],
-      "matchUpdateTypes": ["pinDigest", "digest"],
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "ghcr.io/michidk/roastbook"
+      ],
+      "matchUpdateTypes": [
+        "pinDigest",
+        "digest"
+      ],
       "enabled": false
+    },
+    {
+      "description": "Use the tested TypeScript 7 toolchain; this project uses Biome without typescript-eslint",
+      "matchPackageNames": [
+        "typescript"
+      ],
+      "allowedVersions": ">=7 <8"
+    },
+    {
+      "description": "Update Better Auth core and plugins together",
+      "matchPackageNames": [
+        "better-auth",
+        "/^@better-auth\\//"
+      ],
+      "groupName": "Better Auth",
+      "groupSlug": "better-auth"
     }
   ]
 }
