@@ -25,6 +25,7 @@ export async function extractBeanInfoFromImages(
     'Only include fields where you can clearly read the information. Do not guess. When images disagree, keep the value that is most legible and specific (for example a full roast date over a partial one) and omit the field when the conflict cannot be resolved.',
   )
   const requestLogId = await startAiRequestLog({
+    providerMode: config.providerMode,
     requestType: 'bean-image-extraction',
     model: config.visionModel,
     requestPayload: {
@@ -57,6 +58,9 @@ export async function extractBeanInfoFromImages(
         },
         body: JSON.stringify({
           model: config.visionModel,
+          ...(config.providerMode === 'provided'
+            ? { max_completion_tokens: 4096 }
+            : {}),
           messages: [
             { role: 'system', content: systemPrompt },
             {
@@ -89,7 +93,9 @@ export async function extractBeanInfoFromImages(
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {
         throw new Error(
-          'AI service authentication failed. Update the configured API key.',
+          config.providerMode === 'provided'
+            ? 'Provided AI is temporarily unavailable. Contact the administrator.'
+            : 'AI service authentication failed. Update the configured API key.',
         )
       }
       const providerError = z

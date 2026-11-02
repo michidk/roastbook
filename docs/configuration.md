@@ -100,15 +100,52 @@ or configure a public media CDN for private journals.
 | Variable | Default | Required | Description |
 | --- | --- | --- | --- |
 | `AI_CREDENTIAL_ENCRYPTION_KEY` | None | AI | Credential encryption key |
+| `AI_PROVIDED_API_KEY` | None | Provided AI | Operator key |
+| `AI_PROVIDED_BASE_URL` | `https://api.openai.com/v1` | No | API endpoint |
+| `AI_PROVIDED_API` | `responses` | No | `responses` or `chat-completions` |
+| `AI_PROVIDED_VISION_MODEL` | None | Provided AI | Image model |
+| `AI_PROVIDED_RESEARCH_MODEL` | None | Provided AI | Text model |
 | `AI_ALLOWED_PRIVATE_ORIGINS` | None | No | Self-hosted origin exceptions |
 | `AI_TELEMETRY_STORE_PAYLOADS` | `false` | No | Store detailed payloads |
 | `AI_TELEMETRY_RETENTION_DAYS` | `1` | No | Retention (1–30 days) |
 | `AI_TELEMETRY_MAX_PAYLOAD_BYTES` | `65536` | No | Cap (1 KiB–1 MiB) |
 
-Each user configures an endpoint, API key, API format, and model IDs in
-Settings > AI. AI stays disabled until that user connects a provider. There is
-no fallback to a shared server API key, including in authentication-disabled
-mode. The former `OPENAI_*` environment variables are no longer used.
+Settings > AI offers provided AI and a **BYOAI** switch. Operators enable provided
+AI by setting its key and both model IDs above. It requires authentication and
+is unavailable in the demo or shared-journal mode. Its credentials never reach
+the browser. All provider endpoints use the same HTTPS, DNS, and redirect
+protections described below. Choose models that support the required features.
+
+New accounts default to provided AI when configured. Existing BYOAI connections
+keep their selection during migration. Without a provided provider, users connect
+their own endpoint, API key, API format, and model IDs. Switching providers never
+falls back automatically to the other credentials. The former `OPENAI_*`
+variables remain unused.
+
+Every account starts with 10 provided AI operations per week, resetting Monday
+at 00:00 UTC. Administrators can set each user's allowance to any nonnegative
+32-bit integer, including zero, in Admin > Users. Changes take effect immediately
+and keep existing usage. Unused requests do not carry over. Lowering the limit
+below current usage blocks further provided requests until the next week or a
+limit increase. BYOAI requests do not consume the allowance.
+
+One submitted extraction, research, recommendation, or follow-up counts as one
+operation. All images submitted together count once. Provider/tool turns belong
+to that operation. Reservations commit before dispatch and remain consumed on
+failure, cancellation, or process interruption because upstream work can incur
+costs. Rejected over-quota requests never reach the provider. A database counter
+makes reservations atomic across replicas and independent of journal rollbacks
+and diagnostic payload deletion. Provided operations cap output at 4,096 tokens
+per model call, two agent iterations, and three provider tool calls per turn.
+These limits bound individual operations, not total spending across open signups;
+use provider account spending limits as well.
+
+Settings separates provided request/token totals from BYOAI costs. The request
+log labels free requests. Admin > AI costs and requests defaults to provided AI,
+with a switch to include BYOAI, date periods, daily request counts, user/model
+breakdowns, and a paginated metadata log. Cost estimates use reported provider
+costs or known model token rates and exclude tool fees and unknown prices. The
+admin report does not expose private prompts, responses, or provider keys.
 
 Generate the encryption key once with `openssl rand -base64 32` and keep it in
 a secret manager alongside database backups. All replicas must use the same

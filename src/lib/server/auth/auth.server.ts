@@ -187,6 +187,12 @@ function createAuth() {
             await initializeUser(user)
             return { data: session }
           },
+          after: async (session) => {
+            await getControlDb()
+              .update(authUsers)
+              .set({ lastLoginAt: new Date() })
+              .where(eq(authUsers.id, session.userId))
+          },
         },
       },
     },

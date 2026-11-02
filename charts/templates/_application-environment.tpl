@@ -1,8 +1,15 @@
 {{- define "roastbook.applicationEnvironment" -}}
+{{- if and .Values.openai.providedExistingSecret (not .Values.auth.enabled) }}
+{{- fail "Provided AI requires auth.enabled=true" }}
+{{- end }}
 {{- if .Values.auth.enabled }}
 envFrom:
   - secretRef:
       name: {{ required "auth.existingSecret is required for built-in authentication" .Values.auth.existingSecret }}
+{{- end }}
+{{- if .Values.openai.providedExistingSecret }}
+  - secretRef:
+      name: {{ .Values.openai.providedExistingSecret }}
 {{- end }}
 env:
   - name: AUTH_ENABLED

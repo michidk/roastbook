@@ -4,6 +4,7 @@ import {
   startAiRequestLog,
 } from '@/lib/server/ai-request-logs.server'
 import {
+  aiChatLimits,
   createAiAdapter,
   getOpenAIConfig,
 } from '@/lib/server/ai-runtime.server'
@@ -36,6 +37,7 @@ export async function recommendShotFromHistory(
     { role: 'user', content: buildShotRecommendationPrompt(context) },
   ]
   const requestLogId = await startAiRequestLog({
+    providerMode: config.providerMode,
     requestType: 'shot-recommendation',
     model: config.researchModel,
     requestPayload: {
@@ -52,6 +54,7 @@ export async function recommendShotFromHistory(
   try {
     return await chat({
       adapter: createAiAdapter(config.researchModel, config),
+      ...aiChatLimits(config),
       systemPrompts,
       messages,
       outputSchema: shotRecommendationSchema,
@@ -83,6 +86,7 @@ export async function answerShotRecommendationQuestion(
     conversation,
   )
   const requestLogId = await startAiRequestLog({
+    providerMode: config.providerMode,
     requestType: 'shot-recommendation-chat',
     model: config.researchModel,
     requestPayload: {
@@ -99,6 +103,7 @@ export async function answerShotRecommendationQuestion(
   try {
     const wire = await chat({
       adapter: createAiAdapter(config.researchModel, config),
+      ...aiChatLimits(config),
       systemPrompts,
       messages,
       outputSchema: shotRecommendationAnswerWireSchema,

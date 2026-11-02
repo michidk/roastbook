@@ -294,7 +294,10 @@ Prefer existing Kubernetes Secrets in production. The chart accepts a full
 `DATABASE_URL` through `postgresql.existingSecret`, Hodor credentials through
 `hodor.existingSecret`, S3 credentials through
 `storage.s3.existingSecret`, and the AI credential encryption key through
-`openai.existingSecret`. Users supply their own AI provider keys in Settings.
+`openai.existingSecret`. Users can supply their own AI provider keys in Settings.
+For provided AI, set `openai.providedExistingSecret` on authenticated deployments.
+See [AI configuration](configuration.md#openai-compatible-ai) for required Secret
+fields and weekly allowance accounting.
 Built-in authentication uses
 `auth.enabled=true` and `auth.existingSecret`; see the chart README for its
 required environment keys. Set `hodor.enabled=false` when using built-in login

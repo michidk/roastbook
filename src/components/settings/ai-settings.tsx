@@ -30,8 +30,8 @@ export function AiSettings({ stats }: { stats: AiRequestStats }) {
   return (
     <>
       <SettingsPanelSection
-        title="AI Integration"
-        description="Review lifetime token usage and diagnostic request metadata."
+        title="BYOAI usage and costs"
+        description="Lifetime usage billed to your own provider. Free provided-AI requests are excluded."
         action={<Bot className="h-5 w-5 text-link" aria-hidden="true" />}
       >
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">

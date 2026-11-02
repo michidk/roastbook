@@ -128,7 +128,7 @@ export function AccountMenu({
             <DropdownMenuItem>
               <Link to="/admin/users" search={{ page: 0 }}>
                 <ShieldCheck aria-hidden />
-                Manage users
+                Admin
               </Link>
             </DropdownMenuItem>
           ) : null}

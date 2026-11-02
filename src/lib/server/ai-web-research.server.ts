@@ -11,6 +11,7 @@ import {
   ROASTER_INFO_FIELDS,
 } from '@/lib/server/ai-research-fields.server'
 import {
+  aiChatLimits,
   createAiAdapter,
   getOpenAIConfig,
 } from '@/lib/server/ai-runtime.server'
@@ -80,6 +81,7 @@ async function researchStructuredDataFromWeb<
     },
   ]
   const requestLogId = await startAiRequestLog({
+    providerMode: config.providerMode,
     requestType: `${logLabel}-web-research`,
     model: config.researchModel,
     requestPayload: {
@@ -96,6 +98,7 @@ async function researchStructuredDataFromWeb<
   try {
     const { text: content } = await chat({
       adapter: createAiAdapter(config.researchModel, config),
+      ...aiChatLimits(config),
       systemPrompts,
       messages,
       tools: [webSearchTool({ type: 'web_search' })],

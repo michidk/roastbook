@@ -322,6 +322,9 @@ export const aiRequestLogs = pgTable(
   {
     ownerId: journalOwner(),
     id: serial('id').primaryKey(),
+    providerMode: text('provider_mode', { enum: ['provided', 'byo'] })
+      .notNull()
+      .default('byo'),
     requestType: text('request_type').notNull(),
     model: text('model').notNull(),
     status: text('status').default('in_progress').notNull(),
@@ -344,6 +347,14 @@ export const aiRequestLogs = pgTable(
   },
   (table) => [
     index('ai_request_logs_owner_id_idx').on(table.ownerId),
+    index('ai_request_logs_provider_created_idx').on(
+      table.providerMode,
+      table.createdAt,
+    ),
+    check(
+      'ai_request_logs_provider_check',
+      sql`${table.providerMode} in ('provided', 'byo')`,
+    ),
     check(
       'ai_request_logs_status_check',
       sql`${table.status} in ('in_progress', 'succeeded', 'failed', 'aborted')`,
@@ -2102,24 +2113,55 @@ export const mediaCleanupJobs = pgTable(
   ],
 )
 
-export const authUsers = pgTable('auth_users', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull().default(''),
-  email: text('email').notNull().unique(),
-  emailVerified: boolean('email_verified').notNull().default(false),
-  passkeyPromptDismissedAt: timestamp('passkey_prompt_dismissed_at', {
-    withTimezone: true,
-  }),
-  image: text('image'),
-  role: text('role', { enum: ['user', 'admin'] })
-    .notNull()
-    .default('user'),
-  journalInitializedAt: timestamp('journal_initialized_at', {
-    withTimezone: true,
-  }),
-  deletingAt: timestamp('deleting_at', { withTimezone: true }),
-  ...timestamps(),
-})
+export const authUsers = pgTable(
+  'auth_users',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull().default(''),
+    email: text('email').notNull().unique(),
+    emailVerified: boolean('email_verified').notNull().default(false),
+    passkeyPromptDismissedAt: timestamp('passkey_prompt_dismissed_at', {
+      withTimezone: true,
+    }),
+    lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
+    aiProviderMode: text('ai_provider_mode', { enum: ['provided', 'byo'] })
+      .notNull()
+      .default('provided'),
+    aiWeeklyLimit: integer('ai_weekly_limit').notNull().default(10),
+    image: text('image'),
+    role: text('role', { enum: ['user', 'admin'] })
+      .notNull()
+      .default('user'),
+    journalInitializedAt: timestamp('journal_initialized_at', {
+      withTimezone: true,
+    }),
+    deletingAt: timestamp('deleting_at', { withTimezone: true }),
+    ...timestamps(),
+  },
+  (table) => [
+    check('auth_users_ai_limit_check', sql`${table.aiWeeklyLimit} >= 0`),
+    check(
+      'auth_users_ai_mode_check',
+      sql`${table.aiProviderMode} in ('provided', 'byo')`,
+    ),
+  ],
+)
+
+// Control-plane allowance ledger. Journal credentials cannot modify counters.
+export const aiWeeklyUsage = pgTable(
+  'ai_weekly_usage',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => authUsers.id, { onDelete: 'cascade' }),
+    weekStart: timestamp('week_start', { withTimezone: true }).notNull(),
+    requests: integer('requests').notNull().default(0),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.weekStart] }),
+    check('ai_weekly_usage_requests_check', sql`${table.requests} >= 0`),
+  ],
+)
 
 export const authSessions = pgTable(
   'auth_sessions',

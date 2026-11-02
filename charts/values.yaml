@@ -174,6 +174,10 @@ openai:
   existingSecret: ""
   # Secret containing a base64-encoded 32-byte credential encryption key.
   existingSecretKey: "encryption-key"
+  # Authenticated deployments only. Secret with AI_PROVIDED_API_KEY,
+  # AI_PROVIDED_VISION_MODEL, AI_PROVIDED_RESEARCH_MODEL, and optional
+  # AI_PROVIDED_BASE_URL / AI_PROVIDED_API. Never store keys in values.yaml.
+  providedExistingSecret: ""
   allowedPrivateOrigins: []
   telemetryStorePayloads: false
   telemetryRetentionDays: 1

@@ -176,3 +176,13 @@ helm lint charts \
   --set hodor.secret=audit-secret \
   --set postgresql.external.url=postgresql://roastbook:password@postgres.example:5432/roastbook
 ```
+
+## Provided AI
+
+Authenticated deployments can set `openai.providedExistingSecret` to a Secret
+containing `AI_PROVIDED_API_KEY`, `AI_PROVIDED_VISION_MODEL`, and
+`AI_PROVIDED_RESEARCH_MODEL`. Optional `AI_PROVIDED_BASE_URL` and
+`AI_PROVIDED_API` select an OpenAI-compatible operator provider. These variables
+are server-only. Users can switch between the weekly free allowance and BYOAI.
+See [AI configuration](../docs/configuration.md#openai-compatible-ai) for quota
+accounting, limits, and admin reporting. Never place provider keys in values.

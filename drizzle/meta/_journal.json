@@ -505,6 +505,13 @@
       "when": 1793619035465,
       "tag": "0071_colossal_jack_power",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1793624628636,
+      "tag": "0072_green_stellaris",
+      "breakpoints": true
     }
   ]
 }

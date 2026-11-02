@@ -127,8 +127,11 @@ desktop where you dig through the numbers afterwards.
 ## 🧠 AI features
 
 > [!NOTE]
-> Connect your own provider in Settings > AI. Your provider bills AI usage.
-> Self-hosted operators first configure `AI_CREDENTIAL_ENCRYPTION_KEY`; see
+> Choose provided AI or BYOAI in Settings > AI. When enabled by your operator,
+> provided AI includes 10 free requests per week, resetting Monday at 00:00 UTC.
+> Administrators can adjust each user's allowance and review instance AI costs.
+> BYOAI uses your own endpoint and key, billed by your provider.
+> Self-hosted operators configure `AI_CREDENTIAL_ENCRYPTION_KEY` for BYOAI; see
 > [AI configuration](docs/configuration.md#openai-compatible-ai). Everything else
 > works without AI.
 

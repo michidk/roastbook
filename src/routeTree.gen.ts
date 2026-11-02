@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as DotwellKnownSplatRouteImport } from './routes/[.]well-known/$'
+import { Route as AdminAiRouteImport } from './routes/admin/ai'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as ApiAuthProbeRouteImport } from './routes/api/auth-probe'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
@@ -95,6 +96,11 @@ const StatsRoute = StatsRouteImport.update({
 const DotwellKnownSplatRoute = DotwellKnownSplatRouteImport.update({
   id: '/.well-known/$',
   path: '/.well-known/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminAiRoute = AdminAiRouteImport.update({
+  id: '/admin/ai',
+  path: '/admin/ai',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
@@ -390,6 +396,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRouteWithChildren
   '/stats': typeof StatsRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
+  '/admin/ai': typeof AdminAiRoute
   '/admin/users': typeof AdminUsersRoute
   '/api/auth-probe': typeof ApiAuthProbeRoute
   '/api/health': typeof ApiHealthRoute
@@ -453,6 +460,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/stats': typeof StatsRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
+  '/admin/ai': typeof AdminAiRoute
   '/admin/users': typeof AdminUsersRoute
   '/api/auth-probe': typeof ApiAuthProbeRoute
   '/api/health': typeof ApiHealthRoute
@@ -518,6 +526,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRouteWithChildren
   '/stats': typeof StatsRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
+  '/admin/ai': typeof AdminAiRoute
   '/admin/users': typeof AdminUsersRoute
   '/api/auth-probe': typeof ApiAuthProbeRoute
   '/api/health': typeof ApiHealthRoute
@@ -584,6 +593,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/stats'
     | '/.well-known/$'
+    | '/admin/ai'
     | '/admin/users'
     | '/api/auth-probe'
     | '/api/health'
@@ -647,6 +657,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/stats'
     | '/.well-known/$'
+    | '/admin/ai'
     | '/admin/users'
     | '/api/auth-probe'
     | '/api/health'
@@ -711,6 +722,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/stats'
     | '/.well-known/$'
+    | '/admin/ai'
     | '/admin/users'
     | '/api/auth-probe'
     | '/api/health'
@@ -776,6 +788,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRouteWithChildren
   StatsRoute: typeof StatsRoute
   DotwellKnownSplatRoute: typeof DotwellKnownSplatRoute
+  AdminAiRoute: typeof AdminAiRoute
   AdminUsersRoute: typeof AdminUsersRoute
   ApiAuthProbeRoute: typeof ApiAuthProbeRoute
   ApiHealthRoute: typeof ApiHealthRoute
@@ -858,6 +871,13 @@ declare module '@tanstack/react-router' {
       path: '/.well-known/$'
       fullPath: '/.well-known/$'
       preLoaderRoute: typeof DotwellKnownSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/ai': {
+      id: '/admin/ai'
+      path: '/admin/ai'
+      fullPath: '/admin/ai'
+      preLoaderRoute: typeof AdminAiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/users': {
@@ -1302,6 +1322,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRouteWithChildren,
   StatsRoute: StatsRoute,
   DotwellKnownSplatRoute: DotwellKnownSplatRoute,
+  AdminAiRoute: AdminAiRoute,
   AdminUsersRoute: AdminUsersRoute,
   ApiAuthProbeRoute: ApiAuthProbeRoute,
   ApiHealthRoute: ApiHealthRoute,

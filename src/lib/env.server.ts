@@ -50,6 +50,25 @@ const serverSchema = {
       'Use a base64-encoded 32-byte encryption key',
     )
     .optional(),
+  AI_PROVIDED_API_KEY: optionalString,
+  AI_PROVIDED_BASE_URL: z
+    .url()
+    .refine((value) => {
+      const url = new URL(value)
+      return (
+        ['https:', 'http:'].includes(url.protocol) &&
+        !url.username &&
+        !url.password &&
+        !url.search &&
+        !url.hash
+      )
+    }, 'Use an HTTP(S) base URL without credentials, query parameters, or a fragment')
+    .default('https://api.openai.com/v1'),
+  AI_PROVIDED_API: z
+    .enum(['responses', 'chat-completions'])
+    .default('responses'),
+  AI_PROVIDED_VISION_MODEL: optionalString,
+  AI_PROVIDED_RESEARCH_MODEL: optionalString,
   AI_ALLOWED_PRIVATE_ORIGINS: optionalString,
   AI_TELEMETRY_STORE_PAYLOADS: booleanString,
   AI_TELEMETRY_RETENTION_DAYS: z.coerce
@@ -129,6 +148,11 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
       S3_SECRET_ACCESS_KEY: runtimeEnvironment.S3_SECRET_ACCESS_KEY,
       AI_CREDENTIAL_ENCRYPTION_KEY:
         runtimeEnvironment.AI_CREDENTIAL_ENCRYPTION_KEY,
+      AI_PROVIDED_API_KEY: runtimeEnvironment.AI_PROVIDED_API_KEY,
+      AI_PROVIDED_BASE_URL: runtimeEnvironment.AI_PROVIDED_BASE_URL,
+      AI_PROVIDED_API: runtimeEnvironment.AI_PROVIDED_API,
+      AI_PROVIDED_VISION_MODEL: runtimeEnvironment.AI_PROVIDED_VISION_MODEL,
+      AI_PROVIDED_RESEARCH_MODEL: runtimeEnvironment.AI_PROVIDED_RESEARCH_MODEL,
       AI_ALLOWED_PRIVATE_ORIGINS: runtimeEnvironment.AI_ALLOWED_PRIVATE_ORIGINS,
       AI_TELEMETRY_STORE_PAYLOADS:
         runtimeEnvironment.AI_TELEMETRY_STORE_PAYLOADS,
@@ -143,6 +167,25 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
     isServer: true,
     createFinalSchema: (shape) =>
       z.object(shape).superRefine((environment, context) => {
+        if (environment.AI_PROVIDED_API_KEY) {
+          for (const name of [
+            'AI_PROVIDED_VISION_MODEL',
+            'AI_PROVIDED_RESEARCH_MODEL',
+          ] as const) {
+            if (!environment[name])
+              context.addIssue({
+                code: 'custom',
+                path: [name],
+                message: 'Required when provided AI is configured',
+              })
+          }
+          if (!environment.AUTH_ENABLED)
+            context.addIssue({
+              code: 'custom',
+              path: ['AI_PROVIDED_API_KEY'],
+              message: 'Provided AI requires authentication',
+            })
+        }
         const requireVariable = (name: string, present: unknown) => {
           if (!present)
             context.addIssue({

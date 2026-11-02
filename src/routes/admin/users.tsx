@@ -1,8 +1,11 @@
 import { createFileRoute, redirect, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { AdminNavigation } from '@/components/admin-navigation'
+import { AdminUserAllowance } from '@/components/admin-user-allowance'
 import { Page, PageHeader } from '@/components/page-layout'
 import { Button } from '@/components/ui/button'
+import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import {
   deleteUser,
   getCurrentAccount,
@@ -30,6 +33,7 @@ export const Route = createFileRoute('/admin/users')({
 function UsersPage() {
   const state = Route.useLoaderData(),
     router = useRouter()
+  const formatDate = useDateTimeFormatter()
   const [busy, setBusy] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
   async function action(work: () => Promise<unknown>) {
@@ -48,21 +52,42 @@ function UsersPage() {
     <Page>
       <PageHeader
         title="Users"
-        description="Manage accounts and administrator access."
+        description="Manage accounts, administrator access, and weekly free AI allowances."
       />
+      <AdminNavigation />
       <div className="space-y-4">
         {state.users.map((user) => (
           <div
             key={user.id}
             className="flex flex-wrap items-center justify-between gap-4 rounded-lg border p-4"
           >
-            <div>
+            <div className="min-w-0 space-y-2">
               <p className="break-all text-sm text-muted-foreground">
                 {user.email}
               </p>
               <p className="text-sm">
                 {user.deletingAt ? 'Deletion in progress' : user.role}
               </p>
+              <p className="text-sm text-muted-foreground">
+                Joined {formatDate(user.createdAt)} · Last login:{' '}
+                {user.lastLoginAt
+                  ? formatDate(user.lastLoginAt)
+                  : 'Not recorded'}
+              </p>
+              <p className="text-sm">
+                {user.brews} brews · {user.beans} beans · {user.visits} café
+                visits
+              </p>
+              {!user.deletingAt ? (
+                <AdminUserAllowance
+                  key={`${user.id}-${user.aiWeeklyLimit}`}
+                  userId={user.id}
+                  limit={user.aiWeeklyLimit}
+                  used={user.aiRequestsThisWeek}
+                  busy={busy}
+                  onSave={action}
+                />
+              ) : null}
             </div>
             {user.deletingAt ? null : (
               <div className="flex flex-wrap gap-2">

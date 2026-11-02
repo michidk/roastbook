@@ -118,6 +118,11 @@ function AiRequestEntry({ entry }: { entry: AiRequestLogSummary }) {
             <span className="font-display font-bold">
               {requestTypeLabel(entry.requestType)}
             </span>
+            <Badge variant="outline">
+              {entry.providerMode === 'provided'
+                ? 'Free · provided AI'
+                : 'BYOAI'}
+            </Badge>
             <Badge variant={statusVariant(entry.status)}>
               {statusLabel(entry.status)}
             </Badge>
@@ -163,9 +168,11 @@ function AiRequestEntry({ entry }: { entry: AiRequestLogSummary }) {
               <div>
                 <dt className="text-muted-foreground">Estimated cost</dt>
                 <dd className="mt-1 font-bold">
-                  {entry.estimatedCostUsd === null
-                    ? '—'
-                    : `$${Number(entry.estimatedCostUsd).toFixed(4)}`}
+                  {entry.providerMode === 'provided'
+                    ? 'Free'
+                    : entry.estimatedCostUsd === null
+                      ? '—'
+                      : `$${Number(entry.estimatedCostUsd).toFixed(4)}`}
                 </dd>
               </div>
               <div>

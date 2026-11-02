@@ -1,6 +1,6 @@
 import '@tanstack/react-start/server-only'
 import { eq } from 'drizzle-orm'
-import { getControlDb } from '@/db/connection.server'
+import { getAiControlDb } from '@/db/connection.server'
 import { requireIdentity } from '@/db/journal-context.server'
 import { aiProviderCredentials } from '@/db/schema'
 import {
@@ -9,6 +9,7 @@ import {
 } from '@/lib/ai-provider'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { getServerEnv } from '@/lib/env.server'
+import { loadAiAllowance } from './ai-allowance.server'
 import { decryptAiKey, encryptAiKey } from './ai-credential.server'
 import {
   normalizeAiEndpoint,
@@ -18,7 +19,7 @@ import {
 export async function readAiProviderCredentials() {
   if (DEMO_MODE) return undefined
   const identity = requireIdentity()
-  const [row] = await getControlDb()
+  const [row] = await getAiControlDb()
     .select()
     .from(aiProviderCredentials)
     .where(eq(aiProviderCredentials.userId, identity.id))
@@ -26,7 +27,9 @@ export async function readAiProviderCredentials() {
 }
 export async function loadAiProviderSettings() {
   const row = await readAiProviderCredentials()
+  const allowance = await loadAiAllowance()
   return {
+    allowance,
     ...(row
       ? {
           baseURL: row.baseURL,
@@ -67,7 +70,7 @@ export async function saveAiProviderSettings(input: AiProviderSettingsInput) {
     ? encryptAiKey(input.apiKey, identity.id, baseURL)
     : previous?.encryptedApiKey
   if (!encryptedApiKey) throw new Error('Enter your API key')
-  await getControlDb()
+  await getAiControlDb()
     .insert(aiProviderCredentials)
     .values({
       userId: identity.id,
@@ -92,7 +95,7 @@ export async function saveAiProviderSettings(input: AiProviderSettingsInput) {
 }
 export async function removeAiProviderSettings() {
   const identity = requireCredentialChange()
-  await getControlDb()
+  await getAiControlDb()
     .delete(aiProviderCredentials)
     .where(eq(aiProviderCredentials.userId, identity.id))
   return loadAiProviderSettings()

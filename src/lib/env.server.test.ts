@@ -180,3 +180,45 @@ test('validates the AI encryption key and confines private AI origins to self-ho
     }),
   ).toThrow('AI_ALLOWED_PRIVATE_ORIGINS')
 })
+
+describe('provided AI deployment configuration', () => {
+  const base = {
+    DATABASE_URL: databaseUrl,
+    AUTH_ENABLED: 'true',
+    AUTH_URL: 'https://coffee.example.test',
+    AUTH_SECRET: 'a'.repeat(64),
+    EMAIL_FROM: 'coffee@example.test',
+    SMTP_URL: 'smtp://localhost:1025',
+  }
+  test('requires authentication and explicit models before enabling the operator key', () => {
+    expect(() =>
+      parseServerEnv({
+        DATABASE_URL: databaseUrl,
+        AI_PROVIDED_API_KEY: 'fixture-key',
+      }),
+    ).toThrow('Provided AI requires authentication')
+    expect(() =>
+      parseServerEnv({ ...base, AI_PROVIDED_API_KEY: 'fixture-key' }),
+    ).toThrow('AI_PROVIDED_VISION_MODEL')
+    expect(
+      parseServerEnv({
+        ...base,
+        AI_PROVIDED_API_KEY: 'fixture-key',
+        AI_PROVIDED_VISION_MODEL: 'vision',
+        AI_PROVIDED_RESEARCH_MODEL: 'research',
+      }).AI_PROVIDED_API,
+    ).toBe('responses')
+  })
+  test('rejects operator endpoint URLs that could forward credentials unexpectedly', () => {
+    for (const endpoint of [
+      'file:///tmp/provider',
+      'https://user:password@example.test/v1',
+      'https://example.test/v1?key=secret',
+      'https://example.test/v1#fragment',
+    ]) {
+      expect(() =>
+        parseServerEnv({ ...base, AI_PROVIDED_BASE_URL: endpoint }),
+      ).toThrow('AI_PROVIDED_BASE_URL')
+    }
+  })
+})

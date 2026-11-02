@@ -25,3 +25,14 @@ export function getOAuthLockDb() {
   )
   return oauthLockConnection
 }
+
+// AI accounting commits independently while a journal request holds its own
+// connection. A separate pool prevents request bursts exhausting both sides.
+let aiControlConnection: ReturnType<typeof connect> | undefined
+export function getAiControlDb() {
+  aiControlConnection ??= drizzle(
+    postgres(getServerEnv().DATABASE_URL, { max: 4 }),
+    { schema },
+  )
+  return aiControlConnection
+}

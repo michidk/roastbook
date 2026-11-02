@@ -9,6 +9,7 @@ export type SettingsCacheKey =
   | 'taste-tags'
   | 'ai'
   | 'ai-provider'
+  | 'ai-provided-usage'
   | 'shottimer'
   | 'storage'
 
@@ -18,6 +19,7 @@ const CACHE_ENTITY_TYPES: Record<SettingsCacheKey, OfflineEntityType> = {
   'taste-tags': 'tag',
   ai: 'settings',
   'ai-provider': 'settings',
+  'ai-provided-usage': 'settings',
   shottimer: 'settings',
   storage: 'settings',
 }

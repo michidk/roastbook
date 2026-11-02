@@ -20,8 +20,8 @@ const aiRequestLogPageSchema = z.object({
   limit: z.number().int().min(1).max(50).default(20),
 })
 
-export const getAiRequestStats = createServerFn({ method: 'GET' }).handler(
-  loadAiRequestStats,
+export const getAiRequestStats = createServerFn({ method: 'GET' }).handler(() =>
+  loadAiRequestStats(),
 )
 
 export const getAiRequestLogs = createServerFn({ method: 'GET' })
@@ -35,3 +35,7 @@ export const getAiRequestLog = createServerFn({ method: 'GET' })
 export const purgeAiRequestPayloads = createServerFn({
   method: 'POST',
 }).handler(purgeAiRequestLogPayloads)
+
+export const getProvidedAiRequestStats = createServerFn({
+  method: 'GET',
+}).handler(() => loadAiRequestStats('provided'))
