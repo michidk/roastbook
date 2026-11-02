@@ -69,6 +69,7 @@ const config = defineConfig({
   // hostnames, which Vite's host check would otherwise reject.
   server: { allowedHosts: true },
   preview: { allowedHosts: true },
+  build: { reportCompressedSize: false },
   define: {
     __ROASTBOOK_DEMO_MODE__: JSON.stringify(roastbookEdition === 'demo'),
   },

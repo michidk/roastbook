@@ -11,7 +11,7 @@
     "dev:log": "mkdir -p logs && bun run dev 2>&1 | tee logs/dev.log",
     "generate-routes": "tsr generate",
     "build": "vite build && bun run scripts/build-service-worker.ts .output/public",
-    "build:demo": "bun run scripts/generate-demo-snapshot.ts && ROASTBOOK_EDITION=demo vite build && bun run scripts/copy-pglite-assets.ts && bun run scripts/build-demo-pwa.ts .vercel/output/static && bun run scripts/check-pwa.ts --demo .vercel/output/static",
+    "build:demo": "bun run scripts/generate-demo-snapshot.ts & snapshot=$!; ROASTBOOK_EDITION=demo vite build && wait $snapshot && bun run scripts/copy-pglite-assets.ts && bun run scripts/build-demo-pwa.ts .vercel/output/static && bun run scripts/check-pwa.ts --demo .vercel/output/static",
     "start": "bun .output/server/index.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
