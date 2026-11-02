@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Coffee, LockKeyhole } from 'lucide-react'
+import { LockKeyhole } from 'lucide-react'
 import { LoginForm } from '@/components/auth/login-form'
 
 export const Route = createFileRoute('/login')({ component: LoginPage })
@@ -23,13 +23,7 @@ function LoginPage() {
         </span>
       </div>
       <div className="grid flex-1 items-center gap-10 py-8 lg:grid-cols-[1fr_1.05fr] lg:gap-20 lg:py-14">
-        <section
-          className="hidden space-y-8 lg:block"
-          aria-labelledby="journal-heading"
-        >
-          <div className="flex size-16 items-center justify-center rounded-2xl border border-border bg-secondary text-coffee">
-            <Coffee aria-hidden className="size-8" strokeWidth={1.5} />
-          </div>
+        <section className="hidden lg:block" aria-labelledby="journal-heading">
           <div className="space-y-5">
             <h2
               id="journal-heading"
