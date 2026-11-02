@@ -190,6 +190,70 @@ describe('provided AI deployment configuration', () => {
     EMAIL_FROM: 'coffee@example.test',
     SMTP_URL: 'smtp://localhost:1025',
   }
+  const legacy = {
+    OPENAI_API_KEY: 'existing-operator-key',
+    OPENAI_BASE_URL: 'http://omniroute.internal:20128/v1',
+    OPENAI_VISION_MODEL: 'existing-vision',
+    OPENAI_RESEARCH_MODEL: 'existing-research',
+  }
+  test('reuses the complete existing operator provider, including internal endpoints', () => {
+    expect(parseServerEnv({ ...base, ...legacy })).toMatchObject({
+      AI_PROVIDED_API_KEY: legacy.OPENAI_API_KEY,
+      AI_PROVIDED_BASE_URL: legacy.OPENAI_BASE_URL,
+      AI_PROVIDED_API: 'responses',
+      AI_PROVIDED_VISION_MODEL: legacy.OPENAI_VISION_MODEL,
+      AI_PROVIDED_RESEARCH_MODEL: legacy.OPENAI_RESEARCH_MODEL,
+    })
+    expect(
+      parseServerEnv({ ...base, OPENAI_API_KEY: legacy.OPENAI_API_KEY }),
+    ).toMatchObject({
+      AI_PROVIDED_BASE_URL: 'https://api.openai.com/v1',
+      AI_PROVIDED_VISION_MODEL: 'gpt-5.1-codex',
+      AI_PROVIDED_RESEARCH_MODEL: 'gpt-5.1-codex',
+    })
+    expect(
+      parseServerEnv({ ...base, ...legacy, AI_PROVIDED_API_KEY: '  ' })
+        .AI_PROVIDED_API_KEY,
+    ).toBe(legacy.OPENAI_API_KEY)
+  })
+  test('never combines a new provider key with the existing endpoint or models', () => {
+    expect(
+      parseServerEnv({
+        ...base,
+        ...legacy,
+        AI_PROVIDED_API_KEY: 'new-provider-key',
+        AI_PROVIDED_VISION_MODEL: 'new-vision',
+        AI_PROVIDED_RESEARCH_MODEL: 'new-research',
+      }),
+    ).toMatchObject({
+      AI_PROVIDED_API_KEY: 'new-provider-key',
+      AI_PROVIDED_BASE_URL: 'https://api.openai.com/v1',
+      AI_PROVIDED_VISION_MODEL: 'new-vision',
+      AI_PROVIDED_RESEARCH_MODEL: 'new-research',
+    })
+    expect(() =>
+      parseServerEnv({ ...base, ...legacy, AI_PROVIDED_API_KEY: 'new-key' }),
+    ).toThrow('AI_PROVIDED_VISION_MODEL')
+    expect(
+      parseServerEnv({
+        ...base,
+        ...legacy,
+        AI_PROVIDED_BASE_URL: 'https://new-provider.example/v1',
+      }).AI_PROVIDED_API_KEY,
+    ).toBeUndefined()
+  })
+  test('does not expose the existing operator key to anonymous shared journals', () => {
+    expect(() =>
+      parseServerEnv({ DATABASE_URL: databaseUrl, ...legacy }),
+    ).toThrow('Provided AI requires authentication')
+    expect(() =>
+      parseServerEnv({
+        ...base,
+        ...legacy,
+        OPENAI_BASE_URL: 'https://user:password@example.test/v1',
+      }),
+    ).toThrow('AI_PROVIDED_BASE_URL')
+  })
   test('requires authentication and explicit models before enabling the operator key', () => {
     expect(() =>
       parseServerEnv({

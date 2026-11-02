@@ -3,6 +3,7 @@ import '@tanstack/react-start/server-only'
 import { createEnv, type StandardSchemaV1 } from '@t3-oss/env-core'
 import { createServerOnlyFn } from '@tanstack/react-start'
 import { z } from 'zod'
+import { DEFAULT_AI_PROVIDER } from '@/lib/ai-provider'
 
 const optionalString = z.string().trim().min(1).optional()
 const booleanString = z
@@ -122,6 +123,17 @@ function validationError(issues: readonly StandardSchemaV1.Issue[]): never {
 }
 
 export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
+  // Select the entire operator credential bundle so a key never inherits
+  // another provider's endpoint. Empty variables do not select a bundle.
+  const explicitProvided = [
+    'AI_PROVIDED_API_KEY',
+    'AI_PROVIDED_BASE_URL',
+    'AI_PROVIDED_API',
+    'AI_PROVIDED_VISION_MODEL',
+    'AI_PROVIDED_RESEARCH_MODEL',
+  ].some((name) => runtimeEnvironment[name]?.trim())
+  const legacyProvided =
+    !explicitProvided && !!runtimeEnvironment.OPENAI_API_KEY?.trim()
   return createEnv({
     server: serverSchema,
     runtimeEnvStrict: {
@@ -148,11 +160,21 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
       S3_SECRET_ACCESS_KEY: runtimeEnvironment.S3_SECRET_ACCESS_KEY,
       AI_CREDENTIAL_ENCRYPTION_KEY:
         runtimeEnvironment.AI_CREDENTIAL_ENCRYPTION_KEY,
-      AI_PROVIDED_API_KEY: runtimeEnvironment.AI_PROVIDED_API_KEY,
-      AI_PROVIDED_BASE_URL: runtimeEnvironment.AI_PROVIDED_BASE_URL,
+      AI_PROVIDED_API_KEY: legacyProvided
+        ? runtimeEnvironment.OPENAI_API_KEY
+        : runtimeEnvironment.AI_PROVIDED_API_KEY,
+      AI_PROVIDED_BASE_URL: legacyProvided
+        ? runtimeEnvironment.OPENAI_BASE_URL
+        : runtimeEnvironment.AI_PROVIDED_BASE_URL,
       AI_PROVIDED_API: runtimeEnvironment.AI_PROVIDED_API,
-      AI_PROVIDED_VISION_MODEL: runtimeEnvironment.AI_PROVIDED_VISION_MODEL,
-      AI_PROVIDED_RESEARCH_MODEL: runtimeEnvironment.AI_PROVIDED_RESEARCH_MODEL,
+      AI_PROVIDED_VISION_MODEL: legacyProvided
+        ? runtimeEnvironment.OPENAI_VISION_MODEL?.trim() ||
+          DEFAULT_AI_PROVIDER.visionModel
+        : runtimeEnvironment.AI_PROVIDED_VISION_MODEL,
+      AI_PROVIDED_RESEARCH_MODEL: legacyProvided
+        ? runtimeEnvironment.OPENAI_RESEARCH_MODEL?.trim() ||
+          DEFAULT_AI_PROVIDER.researchModel
+        : runtimeEnvironment.AI_PROVIDED_RESEARCH_MODEL,
       AI_ALLOWED_PRIVATE_ORIGINS: runtimeEnvironment.AI_ALLOWED_PRIVATE_ORIGINS,
       AI_TELEMETRY_STORE_PAYLOADS:
         runtimeEnvironment.AI_TELEMETRY_STORE_PAYLOADS,

@@ -475,8 +475,13 @@
       ],
       "properties": {
         "providedExistingSecret": { "type": "string" },
+        "credentialExistingSecret": { "type": "string" },
+        "credentialExistingSecretKey": { "type": "string", "minLength": 1 },
         "existingSecret": { "type": "string" },
         "existingSecretKey": { "type": "string", "minLength": 1 },
+        "baseUrl": { "type": "string" },
+        "visionModel": { "type": "string", "minLength": 1 },
+        "researchModel": { "type": "string", "minLength": 1 },
         "allowedPrivateOrigins": {
           "type": "array",
           "items": { "type": "string" }

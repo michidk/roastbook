@@ -1,5 +1,8 @@
 import { z } from 'zod'
-import { createAiProviderFetch } from '@/lib/server/ai-provider-fetch.server'
+import {
+  createAiProviderFetch,
+  createProvidedAiFetch,
+} from '@/lib/server/ai-provider-fetch.server'
 import {
   completeAiRequestLog,
   failAiRequestLog,
@@ -48,47 +51,48 @@ export async function extractBeanInfoFromImages(
       /\/$/,
       '',
     )
-    const response = await createAiProviderFetch(baseURL)(
-      `${baseURL}/chat/completions`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${config.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: config.visionModel,
-          ...(config.providerMode === 'provided'
-            ? { max_completion_tokens: 4096 }
-            : {}),
-          messages: [
-            { role: 'system', content: systemPrompt },
-            {
-              role: 'user',
-              content: [
-                ...imagesBase64.map((imageBase64) => ({
-                  type: 'image_url',
-                  image_url: {
-                    url: `data:${mimeType};base64,${imageBase64}`,
-                    detail: 'high',
-                  },
-                })),
-                {
-                  type: 'text',
-                  text:
-                    imagesBase64.length === 1
-                      ? 'Extract the coffee bean information from this image.'
-                      : `Extract the coffee bean information from these ${imagesBase64.length} images of the same coffee.`,
-                },
-              ],
-            },
-          ],
-          response_format: { type: 'json_object' },
-          temperature: 0,
-        }),
-        signal: abortController.signal,
+    const providerFetch =
+      config.providerMode === 'provided'
+        ? createProvidedAiFetch()
+        : createAiProviderFetch(baseURL)
+    const response = await providerFetch(`${baseURL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        'Content-Type': 'application/json',
       },
-    )
+      body: JSON.stringify({
+        model: config.visionModel,
+        ...(config.providerMode === 'provided'
+          ? { max_completion_tokens: 4096 }
+          : {}),
+        messages: [
+          { role: 'system', content: systemPrompt },
+          {
+            role: 'user',
+            content: [
+              ...imagesBase64.map((imageBase64) => ({
+                type: 'image_url',
+                image_url: {
+                  url: `data:${mimeType};base64,${imageBase64}`,
+                  detail: 'high',
+                },
+              })),
+              {
+                type: 'text',
+                text:
+                  imagesBase64.length === 1
+                    ? 'Extract the coffee bean information from this image.'
+                    : `Extract the coffee bean information from these ${imagesBase64.length} images of the same coffee.`,
+              },
+            ],
+          },
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0,
+      }),
+      signal: abortController.signal,
+    })
     const responseBody: unknown = await response.json()
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {

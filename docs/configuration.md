@@ -113,14 +113,25 @@ or configure a public media CDN for private journals.
 Settings > AI offers provided AI and a **BYOAI** switch. Operators enable provided
 AI by setting its key and both model IDs above. It requires authentication and
 is unavailable in the demo or shared-journal mode. Its credentials never reach
-the browser. All provider endpoints use the same HTTPS, DNS, and redirect
-protections described below. Choose models that support the required features.
+the browser. The operator endpoint may use an internal HTTP(S) service such as
+OmniRoute, including in hosted mode. Requests stay pinned to that configured base
+URL, resolve DNS for each request, and reject redirects. User-supplied BYOAI
+endpoints retain the network restrictions below. Choose models that support the
+required features.
 
 New accounts default to provided AI when configured. Existing BYOAI connections
 keep their selection during migration. Without a provided provider, users connect
 their own endpoint, API key, API format, and model IDs. Switching providers never
-falls back automatically to the other credentials. The former `OPENAI_*`
-variables remain unused.
+falls back automatically to the other credentials.
+
+Existing operator configuration is reused for provided AI. If no nonempty
+`AI_PROVIDED_*` variable is set, `OPENAI_API_KEY`, `OPENAI_BASE_URL`,
+`OPENAI_VISION_MODEL`, and `OPENAI_RESEARCH_MODEL` supply the complete provider
+configuration. The legacy defaults remain `https://api.openai.com/v1` and
+`gpt-5.1-codex` for both models, using the Responses API. Any explicit
+`AI_PROVIDED_*` configuration selects the new bundle as a whole; it never inherits
+the old key, endpoint, or models. Authentication is required for either format.
+Remove operator provider variables when running a shared anonymous journal.
 
 Every account starts with 10 provided AI operations per week, resetting Monday
 at 00:00 UTC. Administrators can set each user's allowance to any nonnegative

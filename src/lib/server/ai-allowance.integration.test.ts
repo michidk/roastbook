@@ -14,9 +14,11 @@ import {
   shots,
 } from '@/db/schema'
 import { aiAllowanceWeek } from '@/lib/ai-allowance'
+import { DEFAULT_AI_PROVIDER } from '@/lib/ai-provider'
 import { loadAdminAiReport } from './admin-ai.server'
 import { loadAiAllowance, selectAiProvider } from './ai-allowance.server'
 import { extractBeanInfoFromImages } from './ai-image-extraction.server'
+import { saveAiProviderSettings } from './ai-provider-settings.server'
 import {
   completeAiRequestLog,
   failAiRequestLog,
@@ -33,8 +35,14 @@ const upstreamRequests: {
   limit: number
   authorization: string | null
 }[] = []
+const operatorKey =
+  process.env.AI_PROVIDED_API_KEY || process.env.OPENAI_API_KEY
+const operatorVisionModel =
+  process.env.AI_PROVIDED_VISION_MODEL ||
+  process.env.OPENAI_VISION_MODEL ||
+  DEFAULT_AI_PROVIDER.visionModel
 const provider =
-  process.env.TEST_DATABASE_URL && process.env.AI_PROVIDED_API_KEY
+  process.env.TEST_DATABASE_URL && operatorKey
     ? Bun.serve({
         port: 0,
         async fetch(request) {
@@ -62,13 +70,17 @@ const provider =
       })
     : undefined
 if (provider) {
-  process.env.AI_PROVIDED_BASE_URL = `http://127.0.0.1:${provider.port}/v1`
-  process.env.AI_ALLOWED_PRIVATE_ORIGINS = `http://127.0.0.1:${provider.port}`
+  const endpointVariable = process.env.AI_PROVIDED_API_KEY
+    ? 'AI_PROVIDED_BASE_URL'
+    : 'OPENAI_BASE_URL'
+  process.env[endpointVariable] = `http://127.0.0.1:${provider.port}/v1`
+  process.env.DEPLOYMENT_MODE = 'hosted'
+  process.env.AUTH_URL = 'https://coffee.example.test'
+  process.env.AUTH_ADMIN_EMAIL = 'owner@example.test'
+  delete process.env.AI_ALLOWED_PRIVATE_ORIGINS
 }
 const suite =
-  process.env.TEST_DATABASE_URL && process.env.AI_PROVIDED_API_KEY
-    ? describe
-    : describe.skip
+  process.env.TEST_DATABASE_URL && operatorKey ? describe : describe.skip
 const user: JournalIdentity = {
   id: `free-${randomUUID()}`,
   email: `${randomUUID()}@example.test`,
@@ -123,9 +135,9 @@ suite('provided AI accounting and administration', () => {
   test('selects the operator provider explicitly and never exposes its key through settings', async () => {
     const config = await asUser(getOpenAIConfig)
     expect(config.providerMode).toBe('provided')
-    expect(config.apiKey).toBe(process.env.AI_PROVIDED_API_KEY)
+    expect(config.apiKey).toBe(operatorKey)
     expect(JSON.stringify(await asUser(loadAiAllowance))).not.toContain(
-      process.env.AI_PROVIDED_API_KEY ?? 'fixture-key',
+      operatorKey ?? 'fixture-key',
     )
     await asUser(() => selectAiProvider('byo'))
     expect((await asUser(getOpenAIConfig)).apiKey).toBeUndefined()
@@ -135,6 +147,16 @@ suite('provided AI accounting and administration', () => {
         selectAiProvider('provided'),
       ),
     ).rejects.toThrow('unavailable')
+  })
+  test('rejects user-supplied credentials for the internal operator endpoint', async () => {
+    const config = await asUser(getOpenAIConfig)
+    await expect(
+      asUser(() =>
+        saveAiProviderSettings({ ...config, apiKey: 'fixture-user-key' }),
+      ),
+    ).rejects.toThrow('HTTPS')
+    expect((await asUser(getOpenAIConfig)).providerMode).toBe('provided')
+    expect(upstreamRequests).toHaveLength(0)
   })
   test('admits exactly ten concurrent requests and rejects the remainder before dispatch', async () => {
     const results = await asUser(() =>
@@ -268,9 +290,9 @@ suite('provided AI accounting and administration', () => {
     )
     expect(upstreamRequests).toHaveLength(1)
     expect(upstreamRequests[0]).toMatchObject({
-      model: process.env.AI_PROVIDED_VISION_MODEL,
+      model: operatorVisionModel,
       limit: 4096,
-      authorization: `Bearer ${process.env.AI_PROVIDED_API_KEY}`,
+      authorization: `Bearer ${operatorKey}`,
     })
     expect(
       (await withJournal(other, () => loadAiRequestStats('provided')))

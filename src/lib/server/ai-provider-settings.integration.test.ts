@@ -49,6 +49,7 @@ suite('private AI provider settings', () => {
           id: user.id,
           email: user.email,
           emailVerified: true,
+          aiProviderMode: 'byo' as const,
           journalInitializedAt: new Date(),
         })),
       )

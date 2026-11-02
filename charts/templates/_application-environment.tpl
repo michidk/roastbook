@@ -1,6 +1,9 @@
 {{- define "roastbook.applicationEnvironment" -}}
-{{- if and .Values.openai.providedExistingSecret (not .Values.auth.enabled) }}
+{{- if and (or .Values.openai.providedExistingSecret .Values.openai.existingSecret) (not .Values.auth.enabled) }}
 {{- fail "Provided AI requires auth.enabled=true" }}
+{{- end }}
+{{- if and .Values.openai.providedExistingSecret .Values.openai.existingSecret }}
+{{- fail "Choose openai.existingSecret or openai.providedExistingSecret, not both" }}
 {{- end }}
 {{- if .Values.auth.enabled }}
 envFrom:
@@ -59,11 +62,24 @@ env:
         key: {{ .Values.storage.s3.existingSecretSecretAccessKeyKey }}
   {{- end }}
   {{- if .Values.openai.existingSecret }}
-  - name: AI_CREDENTIAL_ENCRYPTION_KEY
+  - name: OPENAI_API_KEY
     valueFrom:
       secretKeyRef:
         name: {{ .Values.openai.existingSecret }}
         key: {{ .Values.openai.existingSecretKey }}
+  - name: OPENAI_BASE_URL
+    value: {{ .Values.openai.baseUrl | quote }}
+  - name: OPENAI_VISION_MODEL
+    value: {{ .Values.openai.visionModel | quote }}
+  - name: OPENAI_RESEARCH_MODEL
+    value: {{ .Values.openai.researchModel | quote }}
+  {{- end }}
+  {{- if .Values.openai.credentialExistingSecret }}
+  - name: AI_CREDENTIAL_ENCRYPTION_KEY
+    valueFrom:
+      secretKeyRef:
+        name: {{ .Values.openai.credentialExistingSecret }}
+        key: {{ .Values.openai.credentialExistingSecretKey }}
   {{- end }}
   {{- if .Values.openai.allowedPrivateOrigins }}
   - name: AI_ALLOWED_PRIVATE_ORIGINS

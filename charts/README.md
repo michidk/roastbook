@@ -77,17 +77,20 @@ storage class that supports `ReadWriteMany`.
 
 ## Optional AI configuration
 
-Users connect their own OpenAI-compatible endpoint, API key, and models in
-Settings > AI. The chart never supplies a shared provider API key.
+Users choose the provided AI allowance or connect their own OpenAI-compatible
+endpoint, API key, and models in Settings > AI.
 
-Set `openai.existingSecret` to a Secret containing a credential encryption key.
-The Secret key name defaults to `encryption-key`. Generate its value once with
+Set `openai.credentialExistingSecret` to a Secret containing a credential encryption
+key. Its `credentialExistingSecretKey` defaults to `encryption-key`. Generate its
+value once with
 `openssl rand -base64 32`, store it as a string in the Secret, and preserve it
-alongside database backups. Without it, AI connections are unavailable.
+alongside database backups. Without it, BYOAI connections are unavailable.
 `openai.allowedPrivateOrigins` optionally allows exact HTTP(S) origins for local
 providers on self-hosted instances; hosted mode rejects this exception.
-Remove old `baseUrl`, `visionModel`, and `researchModel` Helm values when upgrading,
-and replace any Secret that previously held a provider API key.
+`openai.existingSecret` retains its original meaning as the operator provider
+Secret. If you used the intermediate chart that assigned it to BYOAI encryption,
+move that reference to `openai.credentialExistingSecret` and move its key name to
+`openai.credentialExistingSecretKey` before upgrading.
 
 Detailed AI prompts and responses are disabled by default. Set
 `openai.telemetryStorePayloads=true` only for short-lived diagnostics and tune
@@ -179,10 +182,19 @@ helm lint charts \
 
 ## Provided AI
 
-Authenticated deployments can set `openai.providedExistingSecret` to a Secret
+Existing deployments can keep `openai.existingSecret`, `existingSecretKey`,
+`baseUrl`, `visionModel`, and `researchModel` to reuse the operator provider for
+the free tier. The key name defaults to `api-key`. These values map to the legacy
+`OPENAI_*` server configuration. Enable built-in authentication before upgrading;
+the chart rejects provider credentials in anonymous shared-journal mode.
+
+Alternatively, authenticated deployments can set `openai.providedExistingSecret`
+to a Secret
 containing `AI_PROVIDED_API_KEY`, `AI_PROVIDED_VISION_MODEL`, and
 `AI_PROVIDED_RESEARCH_MODEL`. Optional `AI_PROVIDED_BASE_URL` and
 `AI_PROVIDED_API` select an OpenAI-compatible operator provider. These variables
 are server-only. Users can switch between the weekly free allowance and BYOAI.
 See [AI configuration](../docs/configuration.md#openai-compatible-ai) for quota
-accounting, limits, and admin reporting. Never place provider keys in values.
+accounting, limits, and admin reporting. Choose one provider Secret format;
+the chart rejects configuring both. The operator endpoint may be an internal
+HTTP(S) service. Never place provider keys in values.

@@ -171,12 +171,20 @@ storage:
     existingSecretSecretAccessKeyKey: "secret-access-key"
 
 openai:
+  # Existing operator provider credentials, reused for the weekly free tier.
+  # Requires auth.enabled=true. Never store the API key in values.yaml.
   existingSecret: ""
-  # Secret containing a base64-encoded 32-byte credential encryption key.
-  existingSecretKey: "encryption-key"
+  existingSecretKey: "api-key"
+  baseUrl: ""
+  visionModel: "gpt-5.1-codex"
+  researchModel: "gpt-5.1-codex"
+  # Separate Secret for encrypting user-supplied BYOAI keys.
+  credentialExistingSecret: ""
+  credentialExistingSecretKey: "encryption-key"
   # Authenticated deployments only. Secret with AI_PROVIDED_API_KEY,
   # AI_PROVIDED_VISION_MODEL, AI_PROVIDED_RESEARCH_MODEL, and optional
   # AI_PROVIDED_BASE_URL / AI_PROVIDED_API. Never store keys in values.yaml.
+  # Alternative to existingSecret. Do not configure both provider Secrets.
   providedExistingSecret: ""
   allowedPrivateOrigins: []
   telemetryStorePayloads: false
