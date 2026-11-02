@@ -117,7 +117,8 @@ desktop where you dig through the numbers afterwards.
 - 🔒 **Yours, end to end.** Self-hosted on your own PostgreSQL and your own
   storage. Use private accounts with email codes and passkeys, or a shared
   journal behind your own auth proxy. After email sign-in, an optional prompt
-  helps you add a passkey for next time.
+  helps you add a passkey for next time. Your header avatar uses Gravatar with
+  an initials fallback and opens account settings and sign-out controls.
 - 📓 **A journal, not just a log.** Beans, roasters, gear, recipe templates,
   brewing methods, and café visits keep every brew's full story structured.
 - 🚀 **Deploys in one command.** Docker Compose for a home server, a Helm chart

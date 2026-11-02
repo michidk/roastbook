@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { AccountMenu } from '@/components/account-menu'
 import type { NavItem } from '@/components/app-navbar-items'
 import {
   BrandLink,
@@ -27,6 +28,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import type { AppSettings } from '@/lib/app-settings'
 import { cn } from '@/lib/utils'
 
 function useNavItemIsActive(item: NavItem): boolean {
@@ -210,7 +212,13 @@ function MobileMoreMenu() {
   )
 }
 
-export function AppNavbar({ demoMode = false }: { demoMode?: boolean }) {
+export function AppNavbar({
+  demoMode = false,
+  account,
+}: {
+  demoMode?: boolean
+  account?: AppSettings['account']
+}) {
   const [isMobileCreateOpen, setIsMobileCreateOpen] = useState(false)
 
   return (
@@ -242,6 +250,7 @@ export function AppNavbar({ demoMode = false }: { demoMode?: boolean }) {
             <ThemeToggle />
             <PwaConnectionStatus />
             {demoMode ? null : <DesktopCreateButton />}
+            {!demoMode && account ? <AccountMenu account={account} /> : null}
           </div>
         </div>
       </header>
@@ -254,6 +263,7 @@ export function AppNavbar({ demoMode = false }: { demoMode?: boolean }) {
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
             <PwaConnectionStatus />
+            {!demoMode && account ? <AccountMenu account={account} /> : null}
           </div>
         </div>
       </header>

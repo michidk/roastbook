@@ -13,6 +13,7 @@ import {
   requestDeletion,
   requestExport,
 } from '@/lib/server/account'
+import { signOutOfAccount } from '@/lib/sign-out'
 
 export const Route = createFileRoute('/settings/account')({
   loader: () => getCurrentAccount(),
@@ -65,28 +66,6 @@ function AccountPage() {
   async function checkResult(result: { error?: { message?: string } | null }) {
     if (result.error)
       throw new Error(result.error.message ?? 'The action failed')
-  }
-  async function signOut() {
-    const { listOperations } = await import('@/modules/offline/operation-queue')
-    const pending = (await listOperations()).filter(
-      (item) => !['acknowledged', 'cancelled'].includes(item.status),
-    )
-    if (pending.length) {
-      toast.error('Sync or discard your pending changes before signing out.')
-      return
-    }
-    await action(async () => {
-      const { deleteOfflineDatabase } = await import(
-        '@/modules/offline/storage'
-      )
-      await deleteOfflineDatabase()
-      await checkResult(await authClient.signOut())
-      localStorage.removeItem('roastbook-active-owner')
-      if ('caches' in window)
-        for (const key of await caches.keys())
-          if (key.startsWith('roastbook-documents-')) await caches.delete(key)
-      window.location.assign('/login')
-    }, 'Signed out')
   }
   return (
     <>
@@ -195,7 +174,7 @@ function AccountPage() {
           <Button
             disabled={busy}
             variant="outline"
-            onClick={() => void signOut()}
+            onClick={() => void action(signOutOfAccount, 'Signed out')}
           >
             Sign out
           </Button>

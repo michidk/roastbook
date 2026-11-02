@@ -58,7 +58,6 @@ export type AppSettings = {
   readonly journalOwner?: string
   readonly account?: {
     id: string
-    name: string
     email: string
     role: 'user' | 'admin'
   } | null

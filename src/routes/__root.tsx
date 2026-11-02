@@ -332,7 +332,7 @@ function RootComponent() {
   return (
     <TooltipProvider>
       <div className="flex h-[100dvh] flex-col overflow-hidden">
-        <AppNavbar demoMode={settings.demoMode} />
+        <AppNavbar demoMode={settings.demoMode} account={settings.account} />
         {settings.demoMode ? null : <OfflineStatusMount />}
         <OfflineBanner isOnline={isOnline} demoMode={settings.demoMode} />
         <ScrollArea
