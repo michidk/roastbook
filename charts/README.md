@@ -185,8 +185,8 @@ helm lint charts \
 Existing deployments can keep `openai.existingSecret`, `existingSecretKey`,
 `baseUrl`, `visionModel`, and `researchModel` to reuse the operator provider for
 the free tier. The key name defaults to `api-key`. These values map to the legacy
-`OPENAI_*` server configuration. Enable built-in authentication before upgrading;
-the chart rejects provider credentials in anonymous shared-journal mode.
+`OPENAI_*` server configuration. The chart supplies provider credentials only when
+built-in authentication is enabled. Anonymous shared journals use BYOAI only.
 
 Alternatively, authenticated deployments can set `openai.providedExistingSecret`
 to a Secret

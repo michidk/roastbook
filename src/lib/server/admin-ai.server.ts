@@ -2,6 +2,7 @@ import '@tanstack/react-start/server-only'
 import { and, desc, eq, gte, lt, sql } from 'drizzle-orm'
 import { getAiControlDb } from '@/db/connection.server'
 import { aiRequestLogs, authUsers } from '@/db/schema'
+import { providedAiConfig } from './ai-allowance.server'
 import { aiRequestStatsSelection } from './ai-request-logs.server'
 import { requireAdmin } from './auth/account.server'
 
@@ -15,6 +16,7 @@ export async function loadAdminAiReport({
   cursor?: number
 }) {
   requireAdmin()
+  if (!providedAiConfig()) throw new Error('Provided AI is unavailable')
   const database = getAiControlDb()
   const since = new Date(Date.now() - days * 86400_000)
   const filter = and(

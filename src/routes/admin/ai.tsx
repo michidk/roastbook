@@ -22,6 +22,8 @@ export const Route = createFileRoute('/admin/ai')({
   beforeLoad: async () => {
     const account = await getCurrentAccount()
     if (account.identity?.role !== 'admin') throw redirect({ to: '/settings' })
+    if (!account.providedAiAvailable)
+      throw redirect({ to: '/admin/users', search: { page: 0 } })
   },
   loaderDeps: ({ search }) => search,
   loader: ({ deps }) => getAdminAiReport({ data: deps }),
@@ -41,7 +43,7 @@ function AdminAiPage() {
         title="AI costs and requests"
         description="Provider spending and token usage across accounts. Estimates exclude tool fees and requests with unknown pricing."
       />
-      <AdminNavigation />
+      <AdminNavigation providedAiAvailable />
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4 rounded-2xl border bg-card p-4">
         <SelectField
           id="admin-ai-period"

@@ -1,7 +1,4 @@
 {{- define "roastbook.applicationEnvironment" -}}
-{{- if and (or .Values.openai.providedExistingSecret .Values.openai.existingSecret) (not .Values.auth.enabled) }}
-{{- fail "Provided AI requires auth.enabled=true" }}
-{{- end }}
 {{- if and .Values.openai.providedExistingSecret .Values.openai.existingSecret }}
 {{- fail "Choose openai.existingSecret or openai.providedExistingSecret, not both" }}
 {{- end }}
@@ -9,10 +6,10 @@
 envFrom:
   - secretRef:
       name: {{ required "auth.existingSecret is required for built-in authentication" .Values.auth.existingSecret }}
-{{- end }}
 {{- if .Values.openai.providedExistingSecret }}
   - secretRef:
       name: {{ .Values.openai.providedExistingSecret }}
+{{- end }}
 {{- end }}
 env:
   - name: AUTH_ENABLED
@@ -61,7 +58,7 @@ env:
         name: {{ .Values.storage.s3.existingSecret }}
         key: {{ .Values.storage.s3.existingSecretSecretAccessKeyKey }}
   {{- end }}
-  {{- if .Values.openai.existingSecret }}
+  {{- if and .Values.auth.enabled .Values.openai.existingSecret }}
   - name: OPENAI_API_KEY
     valueFrom:
       secretKeyRef:

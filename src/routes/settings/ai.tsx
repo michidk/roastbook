@@ -31,7 +31,10 @@ function AiSettingsSection() {
       {provider.allowance.mode === 'byo' ? (
         <AiProviderSettings key={provider.allowance.mode} settings={provider} />
       ) : null}
-      <AiSettings stats={stats} />
+      <AiSettings
+        stats={stats}
+        providedAvailable={provider.allowance.providedAvailable}
+      />
     </>
   )
 }

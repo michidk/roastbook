@@ -131,7 +131,9 @@ desktop where you dig through the numbers afterwards.
 > provided AI includes 10 free requests per week, resetting Monday at 00:00 UTC.
 > Administrators can adjust each user's allowance and review instance AI costs.
 > BYOAI uses your own endpoint and key, billed by your provider.
-> Existing operator `OPENAI_*` configuration supplies the provided free tier.
+> The free tier appears only with authentication enabled and an operator key in
+> environment variables, including existing `OPENAI_*` configuration. Otherwise,
+> users connect their own provider.
 > Self-hosted operators configure `AI_CREDENTIAL_ENCRYPTION_KEY` for BYOAI; see
 > [AI configuration](docs/configuration.md#openai-compatible-ai). Everything else
 > works without AI.

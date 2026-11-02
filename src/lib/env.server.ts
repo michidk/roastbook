@@ -189,7 +189,7 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
     isServer: true,
     createFinalSchema: (shape) =>
       z.object(shape).superRefine((environment, context) => {
-        if (environment.AI_PROVIDED_API_KEY) {
+        if (environment.AUTH_ENABLED && environment.AI_PROVIDED_API_KEY) {
           for (const name of [
             'AI_PROVIDED_VISION_MODEL',
             'AI_PROVIDED_RESEARCH_MODEL',
@@ -201,12 +201,6 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
                 message: 'Required when provided AI is configured',
               })
           }
-          if (!environment.AUTH_ENABLED)
-            context.addIssue({
-              code: 'custom',
-              path: ['AI_PROVIDED_API_KEY'],
-              message: 'Provided AI requires authentication',
-            })
         }
         const requireVariable = (name: string, present: unknown) => {
           if (!present)

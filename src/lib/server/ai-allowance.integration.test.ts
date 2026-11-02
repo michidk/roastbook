@@ -28,7 +28,11 @@ import {
   startAiRequestLog,
 } from './ai-request-logs.server'
 import { getOpenAIConfig } from './ai-runtime.server'
-import { changeUserAiLimit, listUsers } from './auth/account.server'
+import {
+  changeUserAiLimit,
+  getAccountState,
+  listUsers,
+} from './auth/account.server'
 
 const upstreamRequests: {
   model: string
@@ -135,6 +139,7 @@ suite('provided AI accounting and administration', () => {
   test('selects the operator provider explicitly and never exposes its key through settings', async () => {
     const config = await asUser(getOpenAIConfig)
     expect(config.providerMode).toBe('provided')
+    expect((await asUser(getAccountState)).providedAiAvailable).toBe(true)
     expect(config.apiKey).toBe(operatorKey)
     expect(JSON.stringify(await asUser(loadAiAllowance))).not.toContain(
       operatorKey ?? 'fixture-key',

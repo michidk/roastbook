@@ -23,15 +23,27 @@ function formatUsd(value: string, formatNumber: (value: string) => string) {
   return `$${formatNumber(amount.toFixed(amount < 0.01 ? 4 : 2))}`
 }
 
-export function AiSettings({ stats }: { stats: AiRequestStats }) {
+export function AiSettings({
+  stats,
+  providedAvailable,
+}: {
+  stats: AiRequestStats
+  providedAvailable: boolean
+}) {
   const [requestLogOpen, setRequestLogOpen] = useState(false)
   const formatNumber = useNumberFormatter()
 
   return (
     <>
       <SettingsPanelSection
-        title="BYOAI usage and costs"
-        description="Lifetime usage billed to your own provider. Free provided-AI requests are excluded."
+        title={
+          providedAvailable ? 'BYOAI usage and costs' : 'AI usage and costs'
+        }
+        description={
+          providedAvailable
+            ? 'Lifetime usage billed to your own provider. Free provided-AI requests are excluded.'
+            : 'Lifetime usage billed to your own provider.'
+        }
         action={<Bot className="h-5 w-5 text-link" aria-hidden="true" />}
       >
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">

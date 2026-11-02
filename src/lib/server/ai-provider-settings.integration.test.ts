@@ -5,6 +5,8 @@ import { getControlDb } from '@/db/connection.server'
 import { type JournalIdentity, withJournal } from '@/db/journal-context.server'
 import { aiProviderCredentials, authUsers } from '@/db/schema'
 import { DEFAULT_AI_PROVIDER } from '@/lib/ai-provider'
+import { loadAdminAiReport } from './admin-ai.server'
+import { loadAiAllowance, selectAiProvider } from './ai-allowance.server'
 import {
   loadAiProviderSettings,
   removeAiProviderSettings,
@@ -16,6 +18,7 @@ import {
   isResearchEnabled,
   isVisionEnabled,
 } from './ai-runtime.server'
+import { changeUserAiLimit, getAccountState } from './auth/account.server'
 
 const suite = process.env.TEST_DATABASE_URL ? describe : describe.skip
 const first: JournalIdentity = {
@@ -135,4 +138,38 @@ suite('private AI provider settings', () => {
         .where(eq(aiProviderCredentials.userId, first.id)),
     ).toHaveLength(0)
   })
+  test.skipIf(
+    process.env.AUTH_ENABLED === 'true' &&
+      !!(process.env.AI_PROVIDED_API_KEY || process.env.OPENAI_API_KEY),
+  )(
+    'keeps the free tier disabled after a user saves their own key',
+    async () => {
+      await asSecond(() => saveAiProviderSettings(connection))
+      await getControlDb()
+        .update(authUsers)
+        .set({ aiProviderMode: 'provided' })
+        .where(eq(authUsers.id, second.id))
+      expect(await asSecond(loadAiAllowance)).toMatchObject({
+        mode: 'byo',
+        providedAvailable: false,
+      })
+      expect(await asSecond(getOpenAIConfig)).toMatchObject({
+        providerMode: 'byo',
+        apiKey: key,
+      })
+      expect((await asSecond(getAccountState)).providedAiAvailable).toBe(false)
+      await expect(
+        asSecond(() => selectAiProvider('provided')),
+      ).rejects.toThrow('Provided AI is unavailable')
+      const admin = { ...second, role: 'admin' as const }
+      await expect(
+        withJournal(admin, () => changeUserAiLimit(second.id, 20)),
+      ).rejects.toThrow('Provided AI is unavailable')
+      await expect(
+        withJournal(admin, () =>
+          loadAdminAiReport({ includeByo: true, days: 7 }),
+        ),
+      ).rejects.toThrow('Provided AI is unavailable')
+    },
+  )
 })

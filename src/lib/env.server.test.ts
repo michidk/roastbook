@@ -242,10 +242,10 @@ describe('provided AI deployment configuration', () => {
       }).AI_PROVIDED_API_KEY,
     ).toBeUndefined()
   })
-  test('does not expose the existing operator key to anonymous shared journals', () => {
-    expect(() =>
-      parseServerEnv({ DATABASE_URL: databaseUrl, ...legacy }),
-    ).toThrow('Provided AI requires authentication')
+  test('accepts unused operator configuration when authentication is disabled', () => {
+    expect(
+      parseServerEnv({ DATABASE_URL: databaseUrl, ...legacy }).AUTH_ENABLED,
+    ).toBe(false)
     expect(() =>
       parseServerEnv({
         ...base,
@@ -254,13 +254,13 @@ describe('provided AI deployment configuration', () => {
       }),
     ).toThrow('AI_PROVIDED_BASE_URL')
   })
-  test('requires authentication and explicit models before enabling the operator key', () => {
-    expect(() =>
+  test('requires explicit models only when authentication enables the operator key', () => {
+    expect(
       parseServerEnv({
         DATABASE_URL: databaseUrl,
         AI_PROVIDED_API_KEY: 'fixture-key',
-      }),
-    ).toThrow('Provided AI requires authentication')
+      }).AUTH_ENABLED,
+    ).toBe(false)
     expect(() =>
       parseServerEnv({ ...base, AI_PROVIDED_API_KEY: 'fixture-key' }),
     ).toThrow('AI_PROVIDED_VISION_MODEL')

@@ -172,7 +172,7 @@ storage:
 
 openai:
   # Existing operator provider credentials, reused for the weekly free tier.
-  # Requires auth.enabled=true. Never store the API key in values.yaml.
+  # Used only with auth.enabled=true. Never store the API key in values.yaml.
   existingSecret: ""
   existingSecretKey: "api-key"
   baseUrl: ""

@@ -130,8 +130,12 @@ Existing operator configuration is reused for provided AI. If no nonempty
 configuration. The legacy defaults remain `https://api.openai.com/v1` and
 `gpt-5.1-codex` for both models, using the Responses API. Any explicit
 `AI_PROVIDED_*` configuration selects the new bundle as a whole; it never inherits
-the old key, endpoint, or models. Authentication is required for either format.
-Remove operator provider variables when running a shared anonymous journal.
+the old key, endpoint, or models. Provided AI is enabled only when authentication
+is enabled and an operator key is configured through environment variables in
+either format. Without both, users see only their own provider settings. A key
+saved in Settings never enables the free tier. Operator keys are ignored when
+authentication is disabled, and the free-tier controls and admin AI pages are
+hidden.
 
 Every account starts with 10 provided AI operations per week, resetting Monday
 at 00:00 UTC. Administrators can set each user's allowance to any nonnegative

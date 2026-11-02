@@ -25,12 +25,14 @@ export const Route = createFileRoute('/admin/users')({
   beforeLoad: async () => {
     const account = await getCurrentAccount()
     if (account.identity?.role !== 'admin') throw redirect({ to: '/settings' })
+    return { providedAiAvailable: account.providedAiAvailable }
   },
   loaderDeps: ({ search }) => ({ page: search.page }),
   loader: ({ deps }) => getUsers({ data: deps }),
   component: UsersPage,
 })
 function UsersPage() {
+  const { providedAiAvailable } = Route.useRouteContext()
   const state = Route.useLoaderData(),
     router = useRouter()
   const formatDate = useDateTimeFormatter()
@@ -52,9 +54,13 @@ function UsersPage() {
     <Page>
       <PageHeader
         title="Users"
-        description="Manage accounts, administrator access, and weekly free AI allowances."
+        description={
+          providedAiAvailable
+            ? 'Manage accounts, administrator access, and weekly free AI allowances.'
+            : 'Manage accounts and administrator access.'
+        }
       />
-      <AdminNavigation />
+      <AdminNavigation providedAiAvailable={providedAiAvailable} />
       <div className="space-y-4">
         {state.users.map((user) => (
           <div
@@ -78,7 +84,7 @@ function UsersPage() {
                 {user.brews} brews · {user.beans} beans · {user.visits} café
                 visits
               </p>
-              {!user.deletingAt ? (
+              {providedAiAvailable && !user.deletingAt ? (
                 <AdminUserAllowance
                   key={`${user.id}-${user.aiWeeklyLimit}`}
                   userId={user.id}

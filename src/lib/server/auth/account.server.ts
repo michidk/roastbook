@@ -19,6 +19,7 @@ import {
 import { aiAllowanceWeek } from '@/lib/ai-allowance'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { getServerEnv } from '@/lib/env.server'
+import { providedAiConfig } from '../ai-allowance.server'
 import { sendAccountEmail } from './email.server'
 import { createIntegrationToken } from './integrations.server'
 
@@ -48,6 +49,7 @@ export async function getAccountState() {
     return {
       ownerId: 'local',
       identity: null,
+      providedAiAvailable: false,
       exports: [],
     }
   const identity = requireIdentity()
@@ -55,6 +57,7 @@ export async function getAccountState() {
     return {
       ownerId: identity.id,
       identity: null,
+      providedAiAvailable: false,
       exports: [],
     }
   const db = getControlDb()
@@ -73,6 +76,7 @@ export async function getAccountState() {
     .limit(10)
   return {
     ownerId: identity.id,
+    providedAiAvailable: !!providedAiConfig(),
     identity: {
       id: identity.id,
       email: identity.email,
@@ -316,6 +320,7 @@ export async function listIntegrationTokens() {
 
 export async function changeUserAiLimit(userId: string, limit: number) {
   const actor = requireAdmin(true)
+  if (!providedAiConfig()) throw new Error('Provided AI is unavailable')
   await getControlDb().transaction(async (tx) => {
     await authorizeAdminMutation(tx, actor.id)
     const [target] = await tx
