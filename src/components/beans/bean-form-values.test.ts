@@ -30,6 +30,8 @@ describe('bean form payloads', () => {
       region: null,
       farm: null,
       variety: null,
+      altitudeMinMeters: null,
+      altitudeMaxMeters: null,
       process: null,
       notes: null,
     })
@@ -58,6 +60,22 @@ describe('bean form payloads', () => {
 
     expect(payload.roasterId).toBe(12)
     expect(payload.roastDate?.toISOString()).toBe('2026-08-14T00:00:00.000Z')
+  })
+
+  test('converts altitude inputs to whole meters', () => {
+    const values = {
+      ...createEmptyBeanFormValues(),
+      altitudeMinMeters: '1800',
+      altitudeMaxMeters: '2100.4',
+    }
+
+    expect(beanCreatePayload(values)).toMatchObject({
+      altitudeMinMeters: 1800,
+      altitudeMaxMeters: 2100,
+    })
+    expect(
+      beanUpdatePayload(1, { ...values, altitudeMaxMeters: ' ' }),
+    ).toMatchObject({ altitudeMinMeters: 1800, altitudeMaxMeters: null })
   })
 
   test('keeps the omni coffee type in the create payload', () => {

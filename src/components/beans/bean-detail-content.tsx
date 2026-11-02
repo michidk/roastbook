@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import type { Dispatch, SetStateAction } from 'react'
 import { AiActionHelp } from '@/components/ai-action-help'
+import { useAltitudeFormatter } from '@/components/beans/altitude-range-field'
 import { BeanFields } from '@/components/beans/bean-fields'
 import type { BeanFormValues } from '@/components/beans/bean-form-values'
 import { BeanPurchaseDialog } from '@/components/beans/bean-purchase-dialog'
@@ -58,6 +59,8 @@ type Bean = {
   region: string | null
   farm: string | null
   variety: string | null
+  altitudeMinMeters: number | null
+  altitudeMaxMeters: number | null
   process: string | null
   roastLevel: string | null
   roastDate: Date | string | null
@@ -361,6 +364,7 @@ export function BeanReadOnlyContent({
   const formatDate = useDateFormatter()
   const formatCurrency = useCurrencyFormatter()
   const formatNumber = useNumberFormatter()
+  const formatAltitude = useAltitudeFormatter()
   const showFlavorTags = useTasteProfile().flavorTags
   const showTasteProfile = showFlavorTags && topTasteTags.length > 0
   const showSidebar =
@@ -465,6 +469,10 @@ export function BeanReadOnlyContent({
               ['Region', bean.region],
               ['Farm/Producer', bean.farm],
               ['Variety', bean.variety],
+              [
+                'Altitude',
+                formatAltitude(bean.altitudeMinMeters, bean.altitudeMaxMeters),
+              ],
             ].map(([label, value]) => (
               <div key={label}>
                 <p className="text-sm text-muted-foreground">{label}</p>

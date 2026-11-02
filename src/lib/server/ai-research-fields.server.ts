@@ -27,6 +27,11 @@ import {
 } from '@/modules/ai/read-models'
 
 const aiText = z.string().trim().min(1).max(500)
+const aiAltitudeMeters = z
+  .union([z.number().int(), z.string().trim().regex(/^\d+$/)])
+  .transform(String)
+  .refine((value) => Number(value) <= 9_000)
+
 const aiBagWeightGrams = z
   .union([
     z.number().finite().positive(),
@@ -141,6 +146,22 @@ export const BEAN_INFO_FIELDS = defineStructuredResearchFields({
     jsonType: 'string',
     schema: aiText,
     examples: ['Bourbon', 'Gesha, Caturra'],
+  },
+  altitudeMinMeters: {
+    description:
+      'The lowest growing altitude in meters above sea level. Convert feet to meters. For a single altitude, return it as both the minimum and maximum.',
+    jsonType: 'string',
+    format: 'whole meters without a unit, up to 9000',
+    schema: aiAltitudeMeters,
+    examples: ['1800', '1950'],
+  },
+  altitudeMaxMeters: {
+    description:
+      'The highest growing altitude in meters above sea level. Convert feet to meters. For a single altitude, return it as both the minimum and maximum.',
+    jsonType: 'string',
+    format: 'whole meters without a unit, up to 9000',
+    schema: aiAltitudeMeters,
+    examples: ['2100', '1950'],
   },
   process: {
     description: 'The coffee processing method.',

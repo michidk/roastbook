@@ -16,6 +16,8 @@ export type BeanFormValues = {
   readonly region: string
   readonly farm: string
   readonly variety: string
+  readonly altitudeMinMeters: string
+  readonly altitudeMaxMeters: string
   readonly process: string
   readonly roastLevel: RoastLevel | ''
   readonly roastDate: string
@@ -36,6 +38,8 @@ type BeanFormValueSource = {
   readonly region: string | null
   readonly farm: string | null
   readonly variety: string | null
+  readonly altitudeMinMeters: number | null
+  readonly altitudeMaxMeters: number | null
   readonly process: string | null
   readonly roastLevel: RoastLevel | null
   readonly roastDate: string | Date | null
@@ -57,6 +61,8 @@ export function createEmptyBeanFormValues(initialName = ''): BeanFormValues {
     region: '',
     farm: '',
     variety: '',
+    altitudeMinMeters: '',
+    altitudeMaxMeters: '',
     process: '',
     roastLevel: '',
     roastDate: '',
@@ -79,11 +85,17 @@ export function toBeanFormValues(bean: BeanFormValueSource): BeanFormValues {
     region: bean.region ?? '',
     farm: bean.farm ?? '',
     variety: bean.variety ?? '',
+    altitudeMinMeters: bean.altitudeMinMeters?.toString() ?? '',
+    altitudeMaxMeters: bean.altitudeMaxMeters?.toString() ?? '',
     process: bean.process ?? '',
     roastLevel: bean.roastLevel ?? '',
     roastDate: formatRoastDate(bean.roastDate),
     notes: bean.notes ?? '',
   }
+}
+
+function optionalInteger(value: string): number | null {
+  return value.trim() ? Math.round(Number(value)) : null
 }
 
 function optionalDate(value: string): Date | undefined {
@@ -110,6 +122,8 @@ export function beanCreatePayload(
     region: blankToUndefined(values.region),
     farm: blankToUndefined(values.farm),
     variety: blankToUndefined(values.variety),
+    altitudeMinMeters: optionalInteger(values.altitudeMinMeters) ?? undefined,
+    altitudeMaxMeters: optionalInteger(values.altitudeMaxMeters) ?? undefined,
     process: blankToUndefined(values.process),
     roastLevel: values.roastLevel || undefined,
     roastDate: optionalDate(values.roastDate),
@@ -129,6 +143,8 @@ export function beanUpdatePayload(id: number, values: BeanFormValues) {
     region: blankToNull(values.region),
     farm: blankToNull(values.farm),
     variety: blankToNull(values.variety),
+    altitudeMinMeters: optionalInteger(values.altitudeMinMeters),
+    altitudeMaxMeters: optionalInteger(values.altitudeMaxMeters),
     process: blankToNull(values.process),
     roastLevel: values.roastLevel || null,
     notes: blankToNull(values.notes),

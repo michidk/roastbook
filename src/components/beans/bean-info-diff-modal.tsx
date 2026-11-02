@@ -35,6 +35,8 @@ type BeanDiffKey =
   | 'region'
   | 'farm'
   | 'variety'
+  | 'altitudeMinMeters'
+  | 'altitudeMaxMeters'
   | 'process'
   | 'roastLevel'
   | 'roastDate'
@@ -68,6 +70,18 @@ const FIELD_DEFINITIONS: FieldDef[] = [
   { key: 'region', sourceKey: 'region', label: 'Region' },
   { key: 'farm', sourceKey: 'farm', label: 'Farm/Producer' },
   { key: 'variety', sourceKey: 'variety', label: 'Variety' },
+  {
+    key: 'altitudeMinMeters',
+    sourceKey: 'altitudeMinMeters',
+    label: 'Altitude from',
+    format: (value) => `${value} m`,
+  },
+  {
+    key: 'altitudeMaxMeters',
+    sourceKey: 'altitudeMaxMeters',
+    label: 'Altitude to',
+    format: (value) => `${value} m`,
+  },
   {
     key: 'process',
     sourceKey: 'process',

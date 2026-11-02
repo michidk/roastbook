@@ -400,6 +400,8 @@ export const beans = pgTable(
     region: text('region'),
     farm: text('farm'),
     variety: text('variety'),
+    altitudeMinMeters: integer('altitude_min_meters'),
+    altitudeMaxMeters: integer('altitude_max_meters'),
     process: text('process'),
     roastLevel: roastLevelEnum('roast_level'),
     notes: text('notes'),
@@ -407,6 +409,12 @@ export const beans = pgTable(
   },
   (table) => [
     index('beans_owner_id_idx').on(table.ownerId),
+    check(
+      'beans_altitude_range_check',
+      sql`(${table.altitudeMinMeters} is null or ${table.altitudeMinMeters} between 0 and 9000)
+        and (${table.altitudeMaxMeters} is null or ${table.altitudeMaxMeters} between 0 and 9000)
+        and (${table.altitudeMinMeters} is null or ${table.altitudeMaxMeters} is null or ${table.altitudeMinMeters} <= ${table.altitudeMaxMeters})`,
+    ),
     index('beans_created_at_idx').on(table.createdAt),
     index('beans_roaster_id_idx').on(table.roasterId),
   ],

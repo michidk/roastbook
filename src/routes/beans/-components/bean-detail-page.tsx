@@ -177,6 +177,8 @@ export function BeanDetailPage() {
               region: formData.region,
               farm: formData.farm,
               variety: formData.variety,
+              altitudeMinMeters: optionalNumber(formData.altitudeMinMeters),
+              altitudeMaxMeters: optionalNumber(formData.altitudeMaxMeters),
               process: formData.process,
               roastLevel: formData.roastLevel || undefined,
               roastDate: formData.roastDate || undefined,
@@ -401,4 +403,8 @@ export function BeanDetailPage() {
       ) : null}
     </Page>
   )
+}
+
+function optionalNumber(value: string) {
+  return value ? Number(value) : undefined
 }

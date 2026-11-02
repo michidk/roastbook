@@ -39,6 +39,24 @@ import type { ExtractedBeanInfo } from '@/modules/ai/read-models'
 
 const beanTypeSchema = z.enum(BEAN_TYPE_VALUES)
 const roastLevelSchema = z.enum(ROAST_LEVEL_VALUES)
+const altitudeSchema = z.number().int().min(0).max(9_000)
+
+function checkAltitudeRange(
+  value: {
+    readonly altitudeMinMeters?: number | null
+    readonly altitudeMaxMeters?: number | null
+  },
+  context: z.RefinementCtx,
+) {
+  const { altitudeMinMeters: min, altitudeMaxMeters: max } = value
+  if (min != null && max != null && min > max) {
+    context.addIssue({
+      code: 'custom',
+      path: ['altitudeMaxMeters'],
+      message: 'Maximum altitude must not be below the minimum.',
+    })
+  }
+}
 
 const beanCreateSchema = z.object({
   name: nameSchema,
@@ -50,6 +68,8 @@ const beanCreateSchema = z.object({
   region: shortTextSchema.optional(),
   farm: shortTextSchema.optional(),
   variety: shortTextSchema.optional(),
+  altitudeMinMeters: altitudeSchema.optional(),
+  altitudeMaxMeters: altitudeSchema.optional(),
   process: shortTextSchema.optional(),
   roastLevel: roastLevelSchema.optional(),
   notes: notesSchema.optional(),
@@ -71,6 +91,8 @@ const beanUpdateSchema = beanCreateSchema.partial().extend({
   region: shortTextSchema.nullable().optional(),
   farm: shortTextSchema.nullable().optional(),
   variety: shortTextSchema.nullable().optional(),
+  altitudeMinMeters: altitudeSchema.nullable().optional(),
+  altitudeMaxMeters: altitudeSchema.nullable().optional(),
   process: shortTextSchema.nullable().optional(),
   roastLevel: roastLevelSchema.nullable().optional(),
   notes: notesSchema.nullable().optional(),
@@ -99,6 +121,8 @@ const researchBeanInfoSchema = z.object({
       region: shortTextSchema.optional(),
       farm: shortTextSchema.optional(),
       variety: shortTextSchema.optional(),
+      altitudeMinMeters: altitudeSchema.optional(),
+      altitudeMaxMeters: altitudeSchema.optional(),
       process: shortTextSchema.optional(),
       roastLevel: roastLevelSchema.optional(),
       roastDate: shortTextSchema.optional(),
@@ -323,7 +347,7 @@ export const getActiveBeanPurchases = createServerFn({ method: 'GET' }).handler(
 )
 
 export const createBean = createServerFn({ method: 'POST' })
-  .validator(beanCreateSchema)
+  .validator(beanCreateSchema.superRefine(checkAltitudeRange))
   .handler(async ({ data }) => {
     const {
       roastDate,
@@ -352,7 +376,7 @@ export const createBean = createServerFn({ method: 'POST' })
   })
 
 export const updateBean = createServerFn({ method: 'POST' })
-  .validator(beanUpdateSchema)
+  .validator(beanUpdateSchema.superRefine(checkAltitudeRange))
   .handler(async ({ data }) => {
     const {
       id,
