@@ -2,6 +2,10 @@ import { expect, spyOn } from 'bun:test'
 import { PGlite } from '@electric-sql/pglite'
 import { IDBFactory, IDBObjectStore } from 'fake-indexeddb'
 import { z } from 'zod'
+import { beanImages } from '@/db/schema'
+import { db } from '@/lib/demo/local/database'
+import { demoMedia } from '@/lib/demo/local/media'
+import { allocateJournalIds } from '@/lib/demo/local/mutations'
 import {
   DEMO_DATABASE_NAME,
   openDemoStorage,
@@ -9,6 +13,7 @@ import {
   saveDemoSnapshot,
 } from '@/lib/demo/local/persistence'
 import { executeDemoOperation } from '@/lib/demo/local/worker'
+import { getStoredImagePaths } from '@/lib/image-path'
 
 const originalFetch = globalThis.fetch
 const assetsDirectory = process.argv[2] ?? '.demo-build/client'
@@ -261,7 +266,30 @@ expect(await call('shots/getShot', brewId)).toHaveProperty(
 expect(await call('beans/deleteBean', beanId)).toEqual({ archived: true })
 expect(await call('shots/getShot', brewId)).toHaveProperty('beanId', beanId)
 await call('shots/deleteShot', brewId)
+// Reproduce purchase-cascade deletion with real image metadata and persisted blobs.
+const [imageId] = await allocateJournalIds(beanImages)
+const picturePath = 'demo-local/cascade-test.webp'
+await db.insert(beanImages).values({
+  id: imageId,
+  ownerId: 'local',
+  beanId,
+  beanPurchaseId: purchaseId,
+  storagePath: picturePath,
+  originalFilename: 'cascade-test.webp',
+  mimeType: 'image/webp',
+  sizeBytes: 7,
+  storageBytes: 21,
+})
+for (const path of getStoredImagePaths([picturePath]))
+  demoMedia.set(path, new Blob(['picture']))
+await call('beans/updateBean', {
+  id: beanId,
+  notes: 'Persist the picture with its parent',
+})
+expect((await readDemoSnapshot(storage))?.media).toHaveLength(3)
 await call('beans/deleteBean', beanId)
+expect((await readDemoSnapshot(storage))?.media).toHaveLength(0)
+expect(demoMedia.size).toBe(0)
 expect(await call('beans/getBean', beanId)).toBeUndefined()
 expect(await call('stats/getDashboardStats')).toHaveProperty(
   'totalShots',

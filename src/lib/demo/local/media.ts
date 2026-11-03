@@ -1,4 +1,14 @@
+import {
+  beanImages,
+  cafeVisitImages,
+  coffeeShopImages,
+  gearImages,
+  shotImages,
+} from '@/db/schema'
+import { getStoredImagePaths } from '@/lib/image-path'
 import type { StorageProvider } from '@/lib/storage/types'
+import { getDb } from './database'
+import { owned } from './scope'
 
 export const demoMedia = new Map<string, Blob>()
 
@@ -31,3 +41,21 @@ export const getStorage = (): StorageProvider => ({
     throw new Error('Streaming downloads are unavailable in the demo')
   },
 })
+
+/** Cascading parent deletions can remove image rows before domain cleanup runs. */
+export async function pruneDemoMedia() {
+  const groups = await Promise.all(
+    [beanImages, cafeVisitImages, coffeeShopImages, gearImages, shotImages].map(
+      (table) =>
+        getDb()
+          .select({ path: table.storagePath })
+          .from(table)
+          .where(owned(table)),
+    ),
+  )
+  const retained = new Set(
+    getStoredImagePaths(groups.flat().map(({ path }) => path)),
+  )
+  for (const path of demoMedia.keys())
+    if (!retained.has(path)) demoMedia.delete(path)
+}

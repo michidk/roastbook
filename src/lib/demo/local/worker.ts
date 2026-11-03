@@ -5,7 +5,7 @@ import { z } from 'zod'
 import * as schema from '@/db/schema'
 import { setDemoDatabase } from './database'
 import type { LocalOperation } from './function'
-import { demoMedia } from './media'
+import { demoMedia, pruneDemoMedia } from './media'
 import {
   DEMO_DATABASE_VERSION,
   type DemoSnapshot,
@@ -146,6 +146,7 @@ export async function executeDemoOperation(operation: string, data: unknown) {
         const changed =
           reset || !saved || pending.length > 0 || handler?.method === 'POST'
         if (changed) {
+          await pruneDemoMedia()
           const next: DemoSnapshot = {
             version: DEMO_DATABASE_VERSION,
             revision: crypto.randomUUID(),
