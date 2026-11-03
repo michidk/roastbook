@@ -152,6 +152,8 @@ a hard threshold. `test:integration` is strict and requires all of:
 
 The strict runner executes each integration suite in a separate process so
 cached authentication and provider configuration cannot leak between suites.
+It fixes image limits at three pictures per item and 1 MiB per journal so storage
+limit tests run independently of the installation's configuration.
 Always use isolated test services. CI provisions PostgreSQL and MinIO, applies
 the complete migration chain, and then runs all tests.
 
