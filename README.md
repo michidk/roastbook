@@ -138,6 +138,9 @@ white and black styling without textures.
   sign-in, an optional prompt helps you add a passkey for next time. Your header
   avatar uses Gravatar with
   an initials fallback and opens account settings and sign-out controls.
+  Demo and shared journals show a matching avatar menu for the demo user or
+  default user. Every avatar menu includes Settings and a System, Light, or Dark
+  theme submenu; account controls appear when authentication is enabled.
 - 📓 **A journal, not just a log.** Beans, roasters, gear, recipe templates,
   brewing methods, and café visits keep every brew's full story structured.
 - 🚀 **Deploys in one command.** Docker Compose for a home server, a Helm chart

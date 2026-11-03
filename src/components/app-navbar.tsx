@@ -21,7 +21,6 @@ import {
 } from '@/components/app-navbar-items'
 import { CommandPalette } from '@/components/command-palette'
 import { PwaConnectionStatus } from '@/components/pwa-connection-status'
-import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -247,10 +246,9 @@ export function AppNavbar({
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
-            <ThemeToggle />
             <PwaConnectionStatus />
             {demoMode ? null : <DesktopCreateButton />}
-            {!demoMode && account ? <AccountMenu account={account} /> : null}
+            <AccountMenu account={account} demoMode={demoMode} />
           </div>
         </div>
       </header>
@@ -261,9 +259,8 @@ export function AppNavbar({
         <div className="flex h-14 items-center px-4">
           <BrandLink />
           <div className="ml-auto flex items-center gap-2">
-            <ThemeToggle />
             <PwaConnectionStatus />
-            {!demoMode && account ? <AccountMenu account={account} /> : null}
+            <AccountMenu account={account} demoMode={demoMode} />
           </div>
         </div>
       </header>

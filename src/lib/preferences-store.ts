@@ -10,9 +10,9 @@ import {
 export type ThemePreference = 'light' | 'dark' | 'system'
 
 export const THEME_OPTIONS = [
+  { value: 'system', label: 'System' },
   { value: 'light', label: 'Light' },
   { value: 'dark', label: 'Dark' },
-  { value: 'system', label: 'Browser' },
 ] as const satisfies readonly {
   readonly value: ThemePreference
   readonly label: string

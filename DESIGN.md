@@ -65,9 +65,12 @@ miniature settings previews use those same tokens.
 
 Only color mode is a browser-local appearance preference. Palettes, coffee
 stains, and grain are stored in the server settings for the current journal.
-The header toggle and browser mode use the server-saved light/dark pair. Apply palette
-attributes before hydration to avoid a flash of the wrong colors, and update
-the browser/PWA theme color to the active palette's canvas.
+The avatar menu's Theme submenu offers System, Light, and Dark in every edition,
+using the server-saved light/dark pair. Demo and shared journals keep the same
+avatar menu with the names "demo user" and "default user"; account management,
+administrator controls, and sign-out appear only for authenticated accounts.
+Apply palette attributes before hydration to avoid a flash of the wrong colors.
+Update the browser/PWA theme color to the active palette's canvas.
 
 Add new semantic roles to `src/styles.css` before using them. Amber identifies
 interaction and current state, not decoration. Roast gradients, badges, taste
