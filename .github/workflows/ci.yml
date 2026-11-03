@@ -259,7 +259,7 @@ jobs:
         with:
           name: roastbook-cloudflare
           path: .output/cloudflare/
-          include-hidden-files: false
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 14
 
