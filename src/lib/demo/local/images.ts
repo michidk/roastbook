@@ -140,23 +140,29 @@ export const uploadEntityImageBase64 = createServerFn({ method: 'POST' })
     return store({ ...data, file: new Blob([bytes], { type: data.mimeType }) })
   })
 
+async function deleteDemoImage({
+  data,
+}: {
+  data: z.infer<typeof entityImageIdSchema>
+}) {
+  const { table, where } = entityImageSelection(data)
+  const [image] = await db.select().from(table).where(where)
+  if (!image) {
+    if (data.idempotent) return
+    throw new Error('Picture not found')
+  }
+  await db.delete(table).where(where)
+  for (const path of [
+    image.storagePath,
+    getThumbnailPath(image.storagePath),
+    getSmallThumbnailPath(image.storagePath),
+  ])
+    demoMedia.delete(path)
+}
+
 export const deleteEntityImage = createServerFn({ method: 'POST' })
   .validator(entityImageIdSchema)
-  .handler(async ({ data }) => {
-    const { table, where } = entityImageSelection(data)
-    const [image] = await db.select().from(table).where(where)
-    if (!image) {
-      if (data.idempotent) return
-      throw new Error('Picture not found')
-    }
-    await db.delete(table).where(where)
-    for (const path of [
-      image.storagePath,
-      getThumbnailPath(image.storagePath),
-      getSmallThumbnailPath(image.storagePath),
-    ])
-      demoMedia.delete(path)
-  })
+  .handler(deleteDemoImage)
 export const setImageAsThumbnail = createServerFn({ method: 'POST' })
   .validator(thumbnailImageIdSchema)
   .handler(({ data }) => setEntityImageThumbnail(data))
