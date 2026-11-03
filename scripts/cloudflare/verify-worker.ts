@@ -3,6 +3,7 @@ import {
   withCloudflareRuntime,
 } from '@/cloudflare/context.server'
 import { verifyAccounts } from './verify-accounts'
+import { verifyImageStorage } from './verify-image-storage'
 import { verifyJournalCases } from './verify-journal'
 import { verifyStatistics } from './verify-statistics'
 
@@ -12,6 +13,10 @@ const cases = [
     run: verifyAccounts,
   },
   ...verifyJournalCases,
+  {
+    name: 'atomic image limits, compressed storage, legacy measurement and owner isolation',
+    run: verifyImageStorage,
+  },
   {
     name: 'localized statistics and percentiles across paginated scans',
     run: verifyStatistics,

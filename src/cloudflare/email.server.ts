@@ -1,5 +1,4 @@
 import '@tanstack/react-start/server-only'
-import { getServerEnv } from '@/lib/env.server'
 import { requireCloudflareRuntime } from './context.server'
 
 export async function sendCloudflareAccountEmail(
@@ -7,15 +6,18 @@ export async function sendCloudflareAccountEmail(
   subject: string,
   text: string,
 ) {
-  const from = getServerEnv().EMAIL_FROM
-  if (!from) throw new Error('EMAIL_FROM is required')
   try {
-    await requireCloudflareRuntime().bindings.EMAIL.send({
-      from,
-      to,
-      subject,
-      text,
-    })
+    const response =
+      await requireCloudflareRuntime().bindings.ACCOUNT_EMAIL.fetch(
+        'https://account-email.internal/send',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ to, subject, text }),
+        },
+      )
+    await response.body?.cancel()
+    if (!response.ok) throw new Error('Email delivery failed')
   } catch {
     throw new Error('Email delivery failed')
   }

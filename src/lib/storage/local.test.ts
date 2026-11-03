@@ -31,6 +31,10 @@ describe('LocalStorageProvider', () => {
     await provider.upload(new Blob(['coffee']), storagePath)
 
     expect(await provider.exists(storagePath)).toBe(true)
+    expect(await provider.stat(storagePath)).toEqual({
+      path: storagePath,
+      sizeBytes: 6,
+    })
     expect(await provider.list()).toEqual([storagePath])
     expect(await provider.list('beans')).toEqual([storagePath])
     expect(await provider.listObjects()).toEqual([
@@ -40,6 +44,7 @@ describe('LocalStorageProvider', () => {
 
     await provider.delete(storagePath)
     expect(await provider.exists(storagePath)).toBe(false)
+    expect(await provider.stat(storagePath)).toBeNull()
   })
 
   test.each([

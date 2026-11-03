@@ -33,12 +33,19 @@ const serverSchema = {
     .string()
     .regex(/^[a-z0-9-]+$/)
     .default('x-real-ip'),
-  EMAIL_PROVIDER: z.enum(['smtp', 'resend', 'cloudflare']).default('smtp'),
+  EMAIL_PROVIDER: z.enum(['smtp', 'resend', 'service']).default('smtp'),
   EMAIL_FROM: optionalString,
   SMTP_URL: z.url().optional(),
   RESEND_API_KEY: optionalString,
   DATABASE_PROVIDER: z.enum(['postgres', 'd1']).default('postgres'),
   DATABASE_URL: z.string().trim().default(''),
+  IMAGE_MAX_PER_ITEM: z.coerce.number().int().min(1).max(100).default(3),
+  IMAGE_STORAGE_LIMIT_MIB: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(1_048_576)
+    .optional(),
   STORAGE_PROVIDER: z.enum(['local', 's3', 'r2']).default('local'),
   STORAGE_PATH: z.string().trim().min(1).default('./uploads'),
   STORAGE_URL: z.string().trim().min(1).default('/media'),
@@ -159,6 +166,8 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
       DATABASE_PROVIDER: runtimeEnvironment.DATABASE_PROVIDER,
       DATABASE_URL: runtimeEnvironment.DATABASE_URL,
       STORAGE_PROVIDER: runtimeEnvironment.STORAGE_PROVIDER,
+      IMAGE_MAX_PER_ITEM: runtimeEnvironment.IMAGE_MAX_PER_ITEM,
+      IMAGE_STORAGE_LIMIT_MIB: runtimeEnvironment.IMAGE_STORAGE_LIMIT_MIB,
       STORAGE_PATH: runtimeEnvironment.STORAGE_PATH,
       STORAGE_URL: runtimeEnvironment.STORAGE_URL,
       S3_BUCKET: runtimeEnvironment.S3_BUCKET,
@@ -277,7 +286,7 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
           requireVariable('AUTH_URL', environment.AUTH_URL)
           requireVariable('AUTH_SECRET', environment.AUTH_SECRET)
           requireVariable('EMAIL_FROM', environment.EMAIL_FROM)
-          if (environment.EMAIL_PROVIDER !== 'cloudflare')
+          if (environment.EMAIL_PROVIDER !== 'service')
             requireVariable(
               environment.EMAIL_PROVIDER === 'smtp'
                 ? 'SMTP_URL'
@@ -322,7 +331,7 @@ const cloudflareEnvironments = new WeakMap<object, ServerEnv>()
 export const getServerEnv = createServerOnlyFn((): ServerEnv => {
   const runtime = getCloudflareRuntime()
   if (runtime) {
-    const cached = cloudflareEnvironments.get(runtime)
+    const cached = cloudflareEnvironments.get(runtime.bindings)
     if (cached) return cached
     const variables = runtime.variables
     if (
@@ -334,20 +343,20 @@ export const getServerEnv = createServerOnlyFn((): ServerEnv => {
       ...variables,
       DATABASE_PROVIDER: 'd1',
       STORAGE_PROVIDER: 'r2',
-      EMAIL_PROVIDER: 'cloudflare',
+      EMAIL_PROVIDER: 'service',
       AUTH_IP_HEADER: 'x-real-ip',
     })
-    cloudflareEnvironments.set(runtime, environment)
+    cloudflareEnvironments.set(runtime.bindings, environment)
     return environment
   }
   cachedEnvironment ??= parseServerEnv(process.env)
   if (
     cachedEnvironment.DATABASE_PROVIDER === 'd1' ||
     cachedEnvironment.STORAGE_PROVIDER === 'r2' ||
-    cachedEnvironment.EMAIL_PROVIDER === 'cloudflare'
+    cachedEnvironment.EMAIL_PROVIDER === 'service'
   )
     throw new Error(
-      'Cloudflare bindings are required for D1, R2, or Cloudflare Email',
+      'Cloudflare bindings are required for D1, R2, or service email',
     )
   return cachedEnvironment
 })

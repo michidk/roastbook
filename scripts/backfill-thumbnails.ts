@@ -1,5 +1,6 @@
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+import { and, eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import {
@@ -71,13 +72,23 @@ async function main() {
   const counts = { wrote: 0, skip: 0, missing: 0, failed: 0 }
 
   for (const { name, table } of tables) {
-    const rows = await db.select({ storagePath: table.storagePath }).from(table)
+    const rows = await db
+      .select({
+        id: table.id,
+        ownerId: table.ownerId,
+        storagePath: table.storagePath,
+      })
+      .from(table)
     console.log(`[${name}] ${rows.length} rows`)
     for (const row of rows) {
       try {
         const result = await processOne(row.storagePath)
         counts[result.status]++
         if (result.status === 'wrote') {
+          await db
+            .update(table)
+            .set({ storageBytes: null })
+            .where(and(eq(table.id, row.id), eq(table.ownerId, row.ownerId)))
           process.stdout.write(
             `  + ${row.storagePath} (${result.bytes} bytes)\n`,
           )

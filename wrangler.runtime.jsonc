@@ -24,14 +24,40 @@
     }
   ],
   "r2_buckets": [
-    { "binding": "MEDIA", "bucket_name": "roastbook-local-media" }
+    {
+      "binding": "MEDIA",
+      "bucket_name": "roastbook-local-media"
+    }
   ],
-  "send_email": [{ "name": "EMAIL" }],
   "durable_objects": {
     "bindings": [
-      { "name": "OAUTH_COORDINATOR", "class_name": "OAuthCoordinator" }
+      {
+        "name": "OAUTH_COORDINATOR",
+        "class_name": "OAuthCoordinator"
+      },
+      {
+        "name": "ACCOUNT_JOBS",
+        "class_name": "AccountJobs"
+      }
     ]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["OAuthCoordinator"] }],
-  "images": { "binding": "IMAGES" }
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["OAuthCoordinator"]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["AccountJobs"]
+    }
+  ],
+  "images": {
+    "binding": "IMAGES"
+  },
+  "services": [
+    {
+      "binding": "ACCOUNT_EMAIL",
+      "service": "roastbook-local-email"
+    }
+  ]
 }

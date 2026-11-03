@@ -1,7 +1,7 @@
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 
-const assetsDirectory = '.output/public/assets'
+const assetsDirectory = join(process.argv[2] ?? '.output/public', 'assets')
 const GENERAL_CHUNK_BUDGET = 500 * 1024
 const MAP_CHUNK_BUDGET = 1_100 * 1024
 const forbiddenMarkers = [

@@ -1,0 +1,1 @@
+ALTER TABLE `account_jobs` ADD `progress_step` integer DEFAULT 0 NOT NULL;

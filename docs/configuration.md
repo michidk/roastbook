@@ -21,6 +21,8 @@ modules instead of reading the environment directly.
 | `STORAGE_PROVIDER` | `local` | No | `local` or `s3`; Workers selects `r2` |
 | `STORAGE_PATH` | `./uploads` | No | Filesystem upload root for local storage |
 | `STORAGE_URL` | `/media` | No | Application media URL base |
+| `IMAGE_MAX_PER_ITEM` | `3` | No | Pictures per item; 1–100 |
+| `IMAGE_STORAGE_LIMIT_MIB` | See below | No | MiB per journal; `0` unlimited |
 | `VITE_HEAD_HTML` | — | No | Trusted head markup (build time) |
 | `VITE_STORAGE_URL` | `/media` | No | Browser media URL base (build time) |
 
@@ -80,6 +82,35 @@ A reverse proxy must overwrite `AUTH_IP_HEADER`, remove client-supplied values,
 and keep the application port private. Terminate TLS at that proxy, preserve
 the canonical Host, and forward cookies. Do not cache authenticated HTML, RPC,
 media, or export responses. See [deployment](deployment.md) for examples.
+
+## Image storage and limits
+
+Each item accepts up to three pictures by default. Hosted accounts default to
+250 MiB each; self-hosted journals have no storage quota unless configured.
+The server enforces the count and storage allowance atomically, including
+concurrent uploads, URL imports, and
+API clients. Existing pictures remain accessible when a limit is lowered.
+
+Uploads may contain up to 10 MiB of image data, with at most 12,000 pixels per
+side and 50 million pixels overall. The server validates the actual image, then
+stores a WebP resized to at most 1,600 pixels, a 640-pixel thumbnail, and a
+128-pixel thumbnail. Full-resolution uploads are discarded. WebP output removes
+EXIF metadata, including GPS coordinates. Client compression reduces transfer
+size where supported, but server processing remains authoritative.
+
+Settings > Storage displays only the current journal's picture count and
+compressed storage usage. The 250 MiB hosted allowance includes the stored
+picture and both thumbnails. Temporary exports, shared favicon caches, database
+rows, and files awaiting deletion are outside this image allowance. Deleting
+pictures releases their allowance; failed object deletions enter the existing
+cleanup queue.
+
+For older pictures without measured storage metadata, each storage refresh or
+upload measures up to six pictures using object metadata, without listing other
+users' files or downloading the images. Use **Refresh usage** to continue large
+backfills. Quota-limited uploads wait until that journal's measurement is complete.
+Missing objects count as zero bytes; storage failures do not silently reduce
+usage. Self-hosted operators can set their own limits using the variables above.
 
 ## S3-compatible storage
 
@@ -244,7 +275,7 @@ and the external-secret contract.
 
 ## Hosted Cloudflare target
 
-See [Cloudflare runtime](cloudflare-runtime.md) for the separate Workers build,
+See [Cloudflare runtime](cloudflare-runtime.md) for the separate Workers Free build,
 D1/R2 bindings, Cloudflare Email Sending, and environment isolation. The hosted
 runtime always requires authentication. It uses platform bindings instead of a
 PostgreSQL URL, local files, S3 credentials, or SMTP credentials.

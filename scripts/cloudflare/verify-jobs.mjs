@@ -28,6 +28,9 @@ const worker = new Miniflare(
     compatibilityFlags: ['nodejs_compat'],
     d1Databases: ['DB'],
     r2Buckets: ['MEDIA'],
+    durableObjects: {
+      ACCOUNT_JOBS: { className: 'VerifyAccountJobs', useSQLite: true },
+    },
   }),
 )
 try {
@@ -48,6 +51,38 @@ try {
       if (sql) await db.prepare(sql).run()
     }
   }
+  const namespace = await worker.getDurableObjectNamespace('ACCOUNT_JOBS')
+  const coordinator = namespace.get(namespace.idFromName('account-jobs'))
+  const status = async () =>
+    (
+      await coordinator.fetch('https://account-jobs.internal/test/status')
+    ).json()
+  assert.equal(
+    (
+      await coordinator.fetch('https://account-jobs.internal/start', {
+        method: 'POST',
+      })
+    ).status,
+    204,
+  )
+  const initialAlarm = (await status()).alarm
+  assert(initialAlarm > Date.now())
+  assert.equal(
+    (
+      await coordinator.fetch('https://account-jobs.internal/start', {
+        method: 'POST',
+      })
+    ).status,
+    204,
+  )
+  assert.equal((await status()).alarm, initialAlarm)
+  assert.equal(
+    (await coordinator.fetch('https://account-jobs.internal/test/alarm'))
+      .status,
+    204,
+  )
+  assert((await status()).alarm > Date.now())
+  await coordinator.fetch('https://account-jobs.internal/test/pause')
   for (const id of ['alice', 'bob']) {
     await db
       .prepare('insert into auth_users(id,email,email_verified) values (?,?,1)')
@@ -262,8 +297,19 @@ try {
   assert.equal(await bucket.head('beans/1/alice.webp'), null)
   assert(await bucket.head('beans/2/bob.webp'))
   assert.equal((await bucket.list()).objects.length, 1)
+  assert(deletion.maximumQueries <= 45)
+  await db.prepare('drop table auth_rate_limits').run()
+  assert.equal(
+    (await coordinator.fetch('https://account-jobs.internal/test/alarm'))
+      .status,
+    503,
+  )
+  assert(
+    (await status()).alarm > Date.now(),
+    'failed jobs must retain the next alarm',
+  )
   console.log(
-    'Actual workerd jobs passed: concurrent claims, stale-attempt fencing, owner isolation, valid streamed ZIP/JSONL, secret exclusion, size limits, expiration, paged deletion and media cleanup',
+    'Actual workerd jobs passed: persistent alarms, failure recovery, bounded D1 requests, concurrent claims, stale-attempt fencing, owner isolation, valid streamed ZIP/JSONL, secret exclusion, size limits, expiration, paged deletion and media cleanup',
   )
 } finally {
   await worker.dispose()

@@ -52,6 +52,7 @@ const meta = {
           isThumbnail: true,
           originalFilename: 'kraft-orange.webp',
           mimeType: 'image/webp',
+          storageBytes: null,
           sizeBytes: 1000,
           createdAt: new Date('2026-10-01T00:00:00Z'),
         },

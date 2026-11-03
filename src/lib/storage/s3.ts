@@ -102,6 +102,24 @@ export class S3StorageProvider implements StorageProvider {
     return `/media/${path}`
   }
 
+  async stat(path: string): Promise<StoredObject | null> {
+    try {
+      const result = await this.client.send(
+        new HeadObjectCommand({ Bucket: this.bucket, Key: path }),
+      )
+      if (result.ContentLength === undefined)
+        throw new Error('Stored image size is unavailable')
+      return { path, sizeBytes: result.ContentLength }
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        (error.name === 'NotFound' || error.name === 'NoSuchKey')
+      )
+        return null
+      throw error
+    }
+  }
+
   async exists(path: string): Promise<boolean> {
     try {
       const command = new HeadObjectCommand({

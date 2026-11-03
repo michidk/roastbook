@@ -286,3 +286,31 @@ describe('provided AI deployment configuration', () => {
     }
   })
 })
+
+describe('image limit configuration', () => {
+  test('defaults to three pictures and permits operator storage limits', () => {
+    const defaults = parseServerEnv({ DATABASE_URL: databaseUrl })
+    expect(defaults.IMAGE_MAX_PER_ITEM).toBe(3)
+    expect(defaults.IMAGE_STORAGE_LIMIT_MIB).toBeUndefined()
+    const custom = parseServerEnv({
+      DATABASE_URL: databaseUrl,
+      IMAGE_MAX_PER_ITEM: '8',
+      IMAGE_STORAGE_LIMIT_MIB: '512',
+    })
+    expect(custom.IMAGE_MAX_PER_ITEM).toBe(8)
+    expect(custom.IMAGE_STORAGE_LIMIT_MIB).toBe(512)
+    for (const value of ['-1', '1.5', '101'])
+      expect(() =>
+        parseServerEnv({
+          DATABASE_URL: databaseUrl,
+          IMAGE_MAX_PER_ITEM: value,
+        }),
+      ).toThrow('IMAGE_MAX_PER_ITEM')
+    expect(() =>
+      parseServerEnv({
+        DATABASE_URL: databaseUrl,
+        IMAGE_STORAGE_LIMIT_MIB: '-1',
+      }),
+    ).toThrow('IMAGE_STORAGE_LIMIT_MIB')
+  })
+})

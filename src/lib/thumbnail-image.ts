@@ -54,7 +54,8 @@ const validateImageBufferImpl = async (
     !metadata.width ||
     !metadata.height ||
     metadata.width > 12_000 ||
-    metadata.height > 12_000
+    metadata.height > 12_000 ||
+    metadata.width * metadata.height > 50_000_000
   ) {
     throw new Error('The image dimensions are unsupported')
   }

@@ -47,6 +47,7 @@ const imageFile = () => ({
   originalFilename: text('original_filename'),
   mimeType: text('mime_type'),
   sizeBytes: integer('size_bytes'),
+  storageBytes: integer('storage_bytes'),
 })
 
 const createdAt = () => timestamp('created_at').defaultNow().notNull()
@@ -2278,6 +2279,7 @@ export const accountJobs = pgTable(
       .notNull()
       .default('pending'),
     storagePath: text('storage_path'),
+    progressStep: integer('progress_step').notNull().default(0),
     attempts: integer('attempts').notNull().default(0),
     availableAt: timestamp('available_at', { withTimezone: true })
       .notNull()

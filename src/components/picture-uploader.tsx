@@ -33,6 +33,7 @@ import { getImageUploadErrorMessage } from '@/lib/image-upload-error'
 import { cn } from '@/lib/utils'
 
 interface PictureUploaderProps {
+  readonly maxImages?: number
   readonly images: readonly ImageFile[]
   readonly fileInputRef: RefObject<HTMLInputElement | null>
   readonly onFilesAdded: (
@@ -107,6 +108,7 @@ function InlineError({
 }
 
 export function PictureUploader({
+  maxImages,
   images,
   fileInputRef,
   onFilesAdded,
@@ -370,7 +372,8 @@ export function PictureUploader({
               id={formatHintId}
               className="text-xs font-medium text-muted-foreground"
             >
-              Images up to 10 MB
+              {maxImages ? `Up to ${maxImages} pictures per item · ` : ''}10 MiB
+              per upload
               <span className="sr-only">
                 . Supported formats: JPG, PNG, WebP, HEIC, HEIF, GIF and AVIF.
               </span>

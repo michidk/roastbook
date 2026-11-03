@@ -82,6 +82,7 @@ export function EntityImageGallery({
   const [galleryError, setGalleryError] = useState<string | null>(null)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const {
+    maxImages,
     images: queuedImages,
     fileInputRef,
     addFiles,
@@ -89,7 +90,12 @@ export function EntityImageGallery({
     removeImage,
     removeImages,
     openFilePicker,
-  } = useImageUpload()
+  } = useImageUpload({
+    existingImageCount:
+      entityType === 'bean-purchases'
+        ? images.filter((image) => image.beanPurchaseId === entityId).length
+        : images.length,
+  })
 
   if (images.length === 0 && !editable) return null
 
@@ -348,6 +354,7 @@ export function EntityImageGallery({
         )}
         {editable && (
           <PictureUploader
+            maxImages={maxImages}
             images={queuedImages}
             fileInputRef={fileInputRef}
             onFilesAdded={async (files) => {

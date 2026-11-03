@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { IMAGE_MIME_TYPE_VALUES, MAX_IMAGE_BYTES } from '@/lib/domain-contracts'
 import type { ImageFile } from '@/lib/image-file'
+import { getImageUploadPolicy } from '@/lib/server/images'
 import { downloadRemoteImage } from '@/lib/server/remote-image'
 
 const IMAGE_MIME_TYPES = new Set<string>(IMAGE_MIME_TYPE_VALUES)
 const CLIENT_IMAGE_MAX_DIMENSION = 1_600
 const CLIENT_IMAGE_QUALITY = 0.8
-const CLIENT_IMAGE_COMPRESSION_THRESHOLD = 2 * 1024 * 1024
+const CLIENT_IMAGE_COMPRESSION_THRESHOLD = 256 * 1024
 const IMAGE_MIME_TYPE_BY_EXTENSION: Readonly<Record<string, string>> = {
   avif: 'image/avif',
   gif: 'image/gif',
@@ -171,7 +172,24 @@ function decodeBase64File(
   return new File([bytes], filename, { type: mimeType })
 }
 
-export function useImageUpload() {
+export function useImageUpload({
+  existingImageCount = 0,
+}: {
+  existingImageCount?: number
+} = {}) {
+  const [maxImages, setMaxImages] = useState(3)
+  const processing = useRef(false)
+  useEffect(() => {
+    let active = true
+    void getImageUploadPolicy()
+      .then((policy) => {
+        if (active) setMaxImages(policy.maxImagesPerItem)
+      })
+      .catch(() => undefined)
+    return () => {
+      active = false
+    }
+  }, [])
   const [images, setImages] = useState<readonly ImageFile[]>([])
   const imagesRef = useRef<readonly ImageFile[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -187,37 +205,65 @@ export function useImageUpload() {
     [],
   )
 
-  const addFiles = useCallback(async (files: readonly File[]) => {
-    const imageFiles = await prepareImageFiles(files)
+  const addFiles = useCallback(
+    async (files: readonly File[]) => {
+      if (processing.current)
+        throw new ImageUploadError(
+          'Pictures are still being prepared. Try again shortly.',
+        )
+      if (
+        existingImageCount + imagesRef.current.length + files.length >
+        maxImages
+      )
+        throw new ImageUploadError(
+          `Each item can have at most ${maxImages} pictures. Remove a picture before adding another.`,
+        )
+      processing.current = true
+      try {
+        const imageFiles = await prepareImageFiles(files)
 
-    const encodedImages = await Promise.all(
-      imageFiles.map(async (file) => {
-        const base64 = await readFileAsBase64(file)
-        return { file, base64 }
-      }),
-    )
-    const newImages = encodedImages.map(({ file, base64 }) => ({
-      file,
-      preview: URL.createObjectURL(file),
-      base64,
-    }))
-    setImages((current) => [...current, ...newImages])
-    if (fileInputRef.current) fileInputRef.current.value = ''
-    return newImages
-  }, [])
+        const encodedImages = await Promise.all(
+          imageFiles.map(async (file) => {
+            const base64 = await readFileAsBase64(file)
+            return { file, base64 }
+          }),
+        )
+        const newImages = encodedImages.map(({ file, base64 }) => ({
+          file,
+          preview: URL.createObjectURL(file),
+          base64,
+        }))
+        imagesRef.current = [...imagesRef.current, ...newImages]
+        setImages(imagesRef.current)
+        if (fileInputRef.current) fileInputRef.current.value = ''
+        return newImages
+      } finally {
+        processing.current = false
+      }
+    },
+    [existingImageCount, maxImages],
+  )
 
-  const importFromUrl = useCallback(async (url: string) => {
-    const remoteImage = await downloadRemoteImage({ data: { url } })
-    const file = decodeBase64File(
-      remoteImage.base64,
-      remoteImage.filename,
-      remoteImage.mimeType,
-    )
-    const preview = URL.createObjectURL(file)
-    const image = { file, preview, base64: remoteImage.base64 }
-    setImages((current) => [...current, image])
-    return image
-  }, [])
+  const importFromUrl = useCallback(
+    async (url: string) => {
+      if (existingImageCount + imagesRef.current.length >= maxImages)
+        throw new ImageUploadError(
+          `Each item can have at most ${maxImages} pictures. Remove a picture before adding another.`,
+        )
+      const remoteImage = await downloadRemoteImage({ data: { url } })
+      const added = await addFiles([
+        decodeBase64File(
+          remoteImage.base64,
+          remoteImage.filename,
+          remoteImage.mimeType,
+        ),
+      ])
+      const image = added[0]
+      if (!image) throw new ImageUploadError('Could not prepare this picture')
+      return image
+    },
+    [addFiles, existingImageCount, maxImages],
+  )
 
   const removeImage = useCallback((index: number) => {
     setImages((current) => {
@@ -249,6 +295,7 @@ export function useImageUpload() {
   const openFilePicker = useCallback(() => fileInputRef.current?.click(), [])
 
   return {
+    maxImages,
     images,
     fileInputRef,
     addFiles,

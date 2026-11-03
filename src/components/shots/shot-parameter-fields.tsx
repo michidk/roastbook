@@ -4,6 +4,7 @@ import { CreatableCombobox } from '@/components/form/creatable-combobox'
 import { InputField, SelectField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
 import { Toggle } from '@/components/ui/toggle'
+import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import {
   DISTRIBUTION_METHOD_OPTIONS,
   isDistributionMethod,
@@ -43,6 +44,17 @@ export function ShotParameterFields({
   onChange,
 }: ShotParameterFieldsProps) {
   const show = (key: ShotParameterKey) => enabledParameters.includes(key)
+  const formatNumber = useNumberFormatter()
+  const dose = Number(values.doseGrams)
+  const ratioNumerator = Number(
+    values.ratioBasis === 'brew_water'
+      ? values.brewWaterGrams
+      : values.yieldGrams,
+  )
+  const ratio =
+    show('doseGrams') && dose > 0 && ratioNumerator > 0
+      ? `1:${formatNumber((ratioNumerator / dose).toFixed(1))}`
+      : null
   const { brewers, grinders, baskets, accessories } = gearByEquipmentRole(gear)
   const selectedGrinder = grinders.find(
     (grinder) => String(grinder.id) === values.grinderId,
@@ -297,6 +309,14 @@ export function ShotParameterFields({
               />
             ) : null}
           </div>
+          {ratio ? (
+            <p className="text-sm text-muted-foreground" aria-live="polite">
+              Ratio{' '}
+              <span className="font-medium text-foreground tabular-nums">
+                {ratio}
+              </span>
+            </p>
+          ) : null}
         </FormSection>
       ) : null}
 
