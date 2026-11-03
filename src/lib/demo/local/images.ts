@@ -1,27 +1,25 @@
-import { and, count, eq, sql } from 'drizzle-orm'
+import { count, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import {
   beanImages,
-  beanPurchases,
   cafeVisitImages,
-  cafeVisits,
   coffeeShopImages,
-  coffeeShops,
-  gear,
   gearImages,
   shotImages,
-  shots,
 } from '@/db/schema'
 import { parseEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
 import { getSmallThumbnailPath, getThumbnailPath } from '@/lib/image-path'
 import {
-  entityTypeSchema,
-  imageBase64Schema,
-  imageFilenameSchema,
-  imageMimeTypeSchema,
-  MAX_IMAGE_BYTES,
-  positiveIdSchema,
-  thumbnailEntityTypeSchema,
+  entityImageSelection,
+  entityImageTarget,
+  requireEntityImageCapacity,
+  setEntityImageThumbnail,
+} from '@/lib/server/entity-image-records.server'
+import {
+  entityImageIdSchema,
+  type entityTypeSchema,
+  thumbnailImageIdSchema,
+  uploadEntityImageBase64Schema,
 } from '@/lib/server-validation'
 import { db } from './database'
 import { createServerFn } from './function'
@@ -33,33 +31,6 @@ const MAX_IMAGES = 3
 const MAX_STORED_BYTES = 50 * 1024 * 1024
 export function imageStoragePolicy() {
   return { maxImagesPerItem: MAX_IMAGES, limitBytes: MAX_STORED_BYTES }
-}
-
-function target(entityType: z.infer<typeof entityTypeSchema>) {
-  switch (entityType) {
-    case 'bean-purchases':
-      return {
-        table: beanImages,
-        foreignKey: beanImages.beanPurchaseId,
-        parent: beanPurchases,
-      }
-    case 'gear':
-      return { table: gearImages, foreignKey: gearImages.gearId, parent: gear }
-    case 'coffee-shops':
-      return {
-        table: coffeeShopImages,
-        foreignKey: coffeeShopImages.coffeeShopId,
-        parent: coffeeShops,
-      }
-    case 'shots':
-      return { table: shotImages, foreignKey: shotImages.shotId, parent: shots }
-    case 'visits':
-      return {
-        table: cafeVisitImages,
-        foreignKey: cafeVisitImages.cafeVisitId,
-        parent: cafeVisits,
-      }
-  }
 }
 
 async function compress(file: Blob) {
@@ -107,20 +78,8 @@ async function store(data: {
   filename: string
   file: Blob
 }) {
-  const { table, foreignKey, parent } = target(data.entityType)
-  const [record] = await db
-    .select({ id: parent.id })
-    .from(parent)
-    .where(owned(parent, eq(parent.id, data.entityId)))
-  if (!record) throw new Error('Record not found')
-  const [current] = await db
-    .select({ images: count() })
-    .from(table)
-    .where(owned(table, eq(foreignKey, data.entityId)))
-  if ((current?.images ?? 0) >= MAX_IMAGES)
-    throw new Error(
-      `Each item can have at most ${MAX_IMAGES} pictures. Remove a picture before adding another.`,
-    )
+  const { table, foreignKey } = entityImageTarget(data.entityType)
+  await requireEntityImageCapacity(data.entityType, data.entityId, MAX_IMAGES)
   const files = await compress(data.file)
   const original = files[0]
   if (!original) throw new Error('Could not process the image')
@@ -171,16 +130,7 @@ export const uploadEntityImage = createServerFn({ method: 'POST' })
   .handler(({ data }) => store(data))
 
 export const uploadEntityImageBase64 = createServerFn({ method: 'POST' })
-  .validator(
-    z.object({
-      entityType: entityTypeSchema,
-      entityId: positiveIdSchema,
-      fileBase64: imageBase64Schema,
-      filename: imageFilenameSchema,
-      mimeType: imageMimeTypeSchema,
-      sizeBytes: z.number().int().positive().max(MAX_IMAGE_BYTES),
-    }),
-  )
+  .validator(uploadEntityImageBase64Schema)
   .handler(({ data }) => {
     const bytes = Uint8Array.from(atob(data.fileBase64), (character) =>
       character.charCodeAt(0),
@@ -190,20 +140,10 @@ export const uploadEntityImageBase64 = createServerFn({ method: 'POST' })
     return store({ ...data, file: new Blob([bytes], { type: data.mimeType }) })
   })
 
-const imageId = z.object({
-  entityType: entityTypeSchema,
-  entityId: positiveIdSchema,
-  imageId: positiveIdSchema,
-  idempotent: z.boolean().optional(),
-})
 export const deleteEntityImage = createServerFn({ method: 'POST' })
-  .validator(imageId)
+  .validator(entityImageIdSchema)
   .handler(async ({ data }) => {
-    const { table, foreignKey } = target(data.entityType)
-    const where = owned(
-      table,
-      and(eq(table.id, data.imageId), eq(foreignKey, data.entityId)),
-    )
+    const { table, where } = entityImageSelection(data)
     const [image] = await db.select().from(table).where(where)
     if (!image) {
       if (data.idempotent) return
@@ -218,37 +158,8 @@ export const deleteEntityImage = createServerFn({ method: 'POST' })
       demoMedia.delete(path)
   })
 export const setImageAsThumbnail = createServerFn({ method: 'POST' })
-  .validator(imageId.extend({ entityType: thumbnailEntityTypeSchema }))
-  .handler(async ({ data }) => {
-    const table = data.entityType === 'bean-purchases' ? beanImages : gearImages
-    const foreignKey =
-      data.entityType === 'bean-purchases'
-        ? beanImages.beanPurchaseId
-        : gearImages.gearId
-    await runJournalMutations([
-      {
-        statement: db
-          .update(table)
-          .set({ isThumbnail: false })
-          .where(owned(table, eq(foreignKey, data.entityId)))
-          .getSQL(),
-      },
-      {
-        statement: db
-          .update(table)
-          .set({ isThumbnail: true })
-          .where(
-            owned(
-              table,
-              and(eq(table.id, data.imageId), eq(foreignKey, data.entityId)),
-            ),
-          )
-          .getSQL(),
-        expectedChanges: 1,
-        conflictMessage: 'Picture not found',
-      },
-    ])
-  })
+  .validator(thumbnailImageIdSchema)
+  .handler(({ data }) => setEntityImageThumbnail(data))
 export const getImageUploadPolicy = createServerFn({ method: 'GET' }).handler(
   imageStoragePolicy,
 )

@@ -25,7 +25,12 @@ server journal. It never enables this demo.
 A dedicated worker runs PGlite in memory. The demo build compiles an explicit
 allowlist of the existing journal server-function validators and domain queries
 into that worker. Database, identity, mutation, media, and integration adapters
-replace their server dependencies. Lists, details, relationships, pagination,
+replace their server dependencies. Image validation, scoped record queries, and
+thumbnail mutations share the same helpers as the server edition. PostgreSQL and
+PGlite also share identifier allocation and mutation assertions, with each
+adapter retaining its own transaction and identity boundary.
+
+Lists, details, relationships, pagination,
 filters, command search, overview, and statistics all query this same local
 database. The existing RxDB caches and synchronization queues are not the demo's
 data source and do not run in this edition.

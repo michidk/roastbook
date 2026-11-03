@@ -1,23 +1,16 @@
 import '@tanstack/react-start/server-only'
-import { and, count, eq, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import {
   allocateJournalIds,
   runJournalMutations,
 } from '@/db/journal-mutations.server'
 import { journalOwnerId, owned } from '@/db/journal-scope.server'
+import { beanPurchases, shotImages } from '@/db/schema'
 import {
-  beanImages,
-  beanPurchases,
-  cafeVisitImages,
-  cafeVisits,
-  coffeeShopImages,
-  coffeeShops,
-  gear,
-  gearImages,
-  shotImages,
-  shots,
-} from '@/db/schema'
+  entityImageTarget,
+  requireEntityImageCapacity,
+} from '@/lib/server/entity-image-records.server'
 import {
   imageStorageBytesSql,
   imageStorageMeasuredSql,
@@ -29,46 +22,6 @@ import type { EntityType } from '@/lib/server/images'
 import { cleanupUncommittedUpload } from '@/lib/server/media-lifecycle.server'
 import { prepareStoredImage } from '@/lib/server/stored-image.server'
 import { generateStoragePath, getStorage } from '@/lib/storage'
-
-export function entityImageTarget(entityType: EntityType) {
-  switch (entityType) {
-    case 'bean-purchases':
-      return {
-        table: beanImages,
-        foreignKey: beanImages.beanPurchaseId,
-        parent: beanPurchases,
-        storageType: 'beans' as const,
-      }
-    case 'gear':
-      return {
-        table: gearImages,
-        foreignKey: gearImages.gearId,
-        parent: gear,
-        storageType: 'gear' as const,
-      }
-    case 'coffee-shops':
-      return {
-        table: coffeeShopImages,
-        foreignKey: coffeeShopImages.coffeeShopId,
-        parent: coffeeShops,
-        storageType: 'coffee-shops' as const,
-      }
-    case 'shots':
-      return {
-        table: shotImages,
-        foreignKey: shotImages.shotId,
-        parent: shots,
-        storageType: 'shots' as const,
-      }
-    case 'visits':
-      return {
-        table: cafeVisitImages,
-        foreignKey: cafeVisitImages.cafeVisitId,
-        parent: cafeVisits,
-        storageType: 'cafe-visits' as const,
-      }
-  }
-}
 
 type EntityImageData = {
   entityType: EntityType
@@ -100,24 +53,13 @@ export async function storeEntityImage(data: EntityImageData) {
   if (existing)
     return { ...existing, url: storage.getUrl(existing.storagePath) }
 
-  const { table, foreignKey, parent, storageType } = entityImageTarget(
-    data.entityType,
-  )
+  const { storageType } = entityImageTarget(data.entityType)
   const policy = imageStoragePolicy()
-  const [record] = await db
-    .select({ id: parent.id })
-    .from(parent)
-    .where(owned(parent, eq(parent.id, data.entityId)))
-    .limit(1)
-  if (!record) throw new Error('Record not found')
-  const [current] = await db
-    .select({ images: count() })
-    .from(table)
-    .where(owned(table, eq(foreignKey, data.entityId)))
-  if (Number(current?.images ?? 0) >= policy.maxImagesPerItem)
-    throw new Error(
-      `Each item can have at most ${policy.maxImagesPerItem} pictures. Remove a picture before adding another.`,
-    )
+  await requireEntityImageCapacity(
+    data.entityType,
+    data.entityId,
+    policy.maxImagesPerItem,
+  )
 
   await measureLegacyImageStorage()
   const usage = await loadImageStorageUsage()

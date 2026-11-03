@@ -1,5 +1,6 @@
 import { expect, spyOn } from 'bun:test'
 import { PGlite } from '@electric-sql/pglite'
+import { eq } from 'drizzle-orm'
 import { IDBFactory, IDBObjectStore } from 'fake-indexeddb'
 import { z } from 'zod'
 import { beanImages } from '@/db/schema'
@@ -14,6 +15,7 @@ import {
 } from '@/lib/demo/local/persistence'
 import { executeDemoOperation } from '@/lib/demo/local/worker'
 import { getStoredImagePaths } from '@/lib/image-path'
+import { requireEntityImageCapacity } from '@/lib/server/entity-image-records.server'
 
 const originalFetch = globalThis.fetch
 const assetsDirectory = process.argv[2] ?? '.demo-build/client'
@@ -287,6 +289,40 @@ await call('beans/updateBean', {
   notes: 'Persist the picture with its parent',
 })
 expect((await readDemoSnapshot(storage))?.media).toHaveLength(3)
+if (!imageId) throw new Error('Missing test image identifier')
+await requireEntityImageCapacity('bean-purchases', purchaseId, 3)
+await expect(
+  requireEntityImageCapacity('bean-purchases', purchaseId, 1),
+).rejects.toThrow('at most 1')
+await expect(
+  requireEntityImageCapacity('bean-purchases', 999999, 3),
+).rejects.toThrow('Record not found')
+await call('images/setImageAsThumbnail', {
+  entityType: 'bean-purchases',
+  entityId: purchaseId,
+  imageId,
+})
+await expect(
+  call('images/setImageAsThumbnail', {
+    entityType: 'bean-purchases',
+    entityId: purchaseId,
+    imageId: 999999,
+  }),
+).rejects.toThrow('Image not found')
+await call('beans/getBean', beanId)
+const [thumbnail] = await db
+  .select({ isThumbnail: beanImages.isThumbnail })
+  .from(beanImages)
+  .where(eq(beanImages.id, imageId))
+expect(thumbnail?.isThumbnail).toBe(true)
+await expect(
+  call('images/deleteEntityImage', {
+    entityType: 'bean-purchases',
+    entityId: 999999,
+    imageId,
+  }),
+).rejects.toThrow('Picture not found')
+await call('beans/getBean', beanId)
 await call('beans/deleteBean', beanId)
 expect((await readDemoSnapshot(storage))?.media).toHaveLength(0)
 expect(demoMedia.size).toBe(0)

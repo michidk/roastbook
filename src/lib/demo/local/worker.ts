@@ -80,6 +80,23 @@ async function loadClient(snapshot: Blob) {
   return client
 }
 
+async function commitSnapshot(
+  storage: IDBDatabase,
+  database: PGlite,
+  schemaVersion: string,
+) {
+  await pruneDemoMedia()
+  const next: DemoSnapshot = {
+    version: DEMO_DATABASE_VERSION,
+    revision: crypto.randomUUID(),
+    schemaVersion,
+    snapshot: await database.dumpDataDir('gzip'),
+    media: [...demoMedia].map(([path, blob]) => ({ path, blob })),
+  }
+  await saveDemoSnapshot(storage, next)
+  return next.revision
+}
+
 export async function executeDemoOperation(operation: string, data: unknown) {
   if (operation === 'shottimer/getPendingShottimerShot') return { value: null }
   if (operation === 'passkey-prompt/getPasskeySetupOffer')
@@ -146,16 +163,7 @@ export async function executeDemoOperation(operation: string, data: unknown) {
         const changed =
           reset || !saved || pending.length > 0 || handler?.method === 'POST'
         if (changed) {
-          await pruneDemoMedia()
-          const next: DemoSnapshot = {
-            version: DEMO_DATABASE_VERSION,
-            revision: crypto.randomUUID(),
-            schemaVersion: latest,
-            snapshot: await client.dumpDataDir('gzip'),
-            media: [...demoMedia].map(([path, blob]) => ({ path, blob })),
-          }
-          await saveDemoSnapshot(storage, next)
-          revision = next.revision
+          revision = await commitSnapshot(storage, client, latest)
         }
         return {
           value,

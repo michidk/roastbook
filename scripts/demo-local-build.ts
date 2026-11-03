@@ -34,6 +34,7 @@ const domainHelpers = new Set([
   'bean-purchases.server',
   'client-operations.server',
   'drink-options.server',
+  'entity-image-records.server',
   'gear-properties.server',
   'media-lifecycle.server',
   'portable-query.server',
