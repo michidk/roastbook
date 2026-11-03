@@ -2,8 +2,8 @@ import { useRouter } from '@tanstack/react-router'
 import { Activity, Bot, ChevronLeft, ChevronRight, Copy } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { PanelSection } from '@/components/section-layout'
 import { McpConnections } from '@/components/settings/mcp-connections'
-import { SettingsPanelSection } from '@/components/settings/settings-shell'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -89,7 +89,7 @@ export function McpSettings({ state }: { readonly state: McpAdminState }) {
 
   return (
     <>
-      <SettingsPanelSection
+      <PanelSection
         title="AI access (MCP)"
         description="Add this URL to your MCP client. Manage connected applications, manual tokens, and tool access below."
         action={<Bot className="size-5 text-link" />}
@@ -124,11 +124,11 @@ export function McpSettings({ state }: { readonly state: McpAdminState }) {
             onCheckedChange={setEnabled}
           />
         </label>
-      </SettingsPanelSection>
+      </PanelSection>
 
       <McpConnections grants={state.grants} />
 
-      <SettingsPanelSection
+      <PanelSection
         title="Tools"
         description="Disabled tools disappear from MCP discovery. Applications can use only tools allowed by both these switches and the access you approved. Manual tokens allow all enabled tools."
       >
@@ -173,9 +173,9 @@ export function McpSettings({ state }: { readonly state: McpAdminState }) {
         >
           {saving ? 'Saving…' : 'Save AI access'}
         </Button>
-      </SettingsPanelSection>
+      </PanelSection>
 
-      <SettingsPanelSection
+      <PanelSection
         title="Recent activity"
         action={<Activity className="size-5 text-link" />}
       >
@@ -253,7 +253,7 @@ export function McpSettings({ state }: { readonly state: McpAdminState }) {
             ) : null}
           </>
         )}
-      </SettingsPanelSection>
+      </PanelSection>
     </>
   )
 }

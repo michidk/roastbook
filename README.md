@@ -152,6 +152,11 @@ white and black styling without textures.
 > Choose provided AI or BYOAI in Settings > AI. When enabled by your operator,
 > provided AI includes 10 free requests per week, resetting Monday at 00:00 UTC.
 > Administrators can adjust each user's allowance and review instance AI costs.
+
+Administrators use a dedicated Admin page with the same section navigation as
+Settings. Its Users table shows account roles, last sign-in, journal counts,
+and free AI usage when provided AI is enabled. Row actions manage administrator
+access, weekly allowances, and confirmed account deletion.
 > BYOAI uses your own endpoint and key, billed by your provider.
 > The free tier appears only with authentication enabled and an operator key in
 > environment variables, including existing `OPENAI_*` configuration. Otherwise,

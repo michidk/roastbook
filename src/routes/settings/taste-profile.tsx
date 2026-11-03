@@ -1,7 +1,7 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { Loader2, Sparkles, Tags } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { SettingsPanelSection } from '@/components/settings/settings-shell'
+import { PanelSection } from '@/components/section-layout'
 import {
   TasteProfileFieldToggle,
   TasteProfileSettings,
@@ -49,7 +49,7 @@ function TasteProfileSection() {
 
   return (
     <>
-      <SettingsPanelSection
+      <PanelSection
         title="Taste profile"
         description="Choose which tasting inputs Roastbook captures for brews and café visits. A disabled input is hidden everywhere, including on entries that already recorded it."
         action={
@@ -65,9 +65,9 @@ function TasteProfileSection() {
           disabled={tasteProfileMutation.isSaving}
           onToggle={toggleTasteProfileField}
         />
-      </SettingsPanelSection>
+      </PanelSection>
 
-      <SettingsPanelSection
+      <PanelSection
         title="Taste tags"
         description="Choose whether rating a brew or café visit offers taste tags, then manage the list. Removing a tag also removes it from existing entries."
         action={
@@ -91,7 +91,7 @@ function TasteProfileSection() {
             onChanged={() => router.invalidate()}
           />
         ) : null}
-      </SettingsPanelSection>
+      </PanelSection>
     </>
   )
 }

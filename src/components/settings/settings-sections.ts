@@ -12,7 +12,7 @@ import {
   Timer,
   UserRound,
 } from 'lucide-react'
-import type { SettingsSection } from '@/components/settings/settings-shell'
+import type { SectionNavigationItem } from '@/components/section-layout'
 
 /**
  * The settings sections, in sidebar order. Each one is its own route so a
@@ -32,4 +32,4 @@ export const SETTINGS_SECTIONS = [
   { to: '/settings/storage', label: 'Storage', icon: HardDrive },
   { to: '/settings/offline', label: 'Offline', icon: CloudOff },
   { to: '/settings/about', label: 'About', icon: Info },
-] as const satisfies readonly SettingsSection[]
+] as const satisfies readonly SectionNavigationItem[]

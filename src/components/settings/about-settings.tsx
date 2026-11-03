@@ -6,7 +6,7 @@ import {
   type LucideIcon,
   Scale,
 } from 'lucide-react'
-import { SettingsPanelSection } from '@/components/settings/settings-shell'
+import { PanelSection } from '@/components/section-layout'
 
 const projectUrl = 'https://github.com/michidk/roastbook'
 
@@ -49,7 +49,7 @@ function AboutLink({
 
 export function AboutSettings() {
   return (
-    <SettingsPanelSection
+    <PanelSection
       title="About Roastbook"
       action={<Info className="size-5 text-link" aria-hidden={true} />}
     >
@@ -84,6 +84,6 @@ export function AboutSettings() {
           description="Read the license for using and contributing"
         />
       </div>
-    </SettingsPanelSection>
+    </PanelSection>
   )
 }

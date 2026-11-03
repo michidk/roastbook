@@ -3,7 +3,7 @@ import { Coffee, Milk, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { DeleteConfirmation } from '@/components/delete-confirmation'
-import { SettingsPanelSection } from '@/components/settings/settings-shell'
+import { PanelSection } from '@/components/section-layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -85,7 +85,7 @@ function DrinkSettings() {
 
   return (
     <>
-      <SettingsPanelSection
+      <PanelSection
         title="Drink types"
         description="Choose the finished drinks available on brews and café visits. Enable milk only for types that should ask which milk was used."
         action={<Coffee className="size-5 text-link" aria-hidden="true" />}
@@ -160,10 +160,10 @@ function DrinkSettings() {
             }
           }}
         />
-      </SettingsPanelSection>
+      </PanelSection>
 
       {milkGroup ? (
-        <SettingsPanelSection
+        <PanelSection
           title="Milk types"
           description="These choices appear whenever the selected drink type uses milk."
           action={<Milk className="size-5 text-link" aria-hidden="true" />}
@@ -201,7 +201,7 @@ function DrinkSettings() {
               }
             }}
           />
-        </SettingsPanelSection>
+        </PanelSection>
       ) : null}
     </>
   )

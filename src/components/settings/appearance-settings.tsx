@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
+import { PanelSection } from '@/components/section-layout'
 import { ColorModePicker } from '@/components/settings/color-mode-picker'
-import { SettingsPanelSection } from '@/components/settings/settings-shell'
 import { ThemePalettePicker } from '@/components/settings/theme-palette-picker'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
@@ -96,7 +96,7 @@ export function AppearanceSettings({
     errorMessage: 'Could not save the background grain',
   })
   return (
-    <SettingsPanelSection title="Theme" contentClassName="space-y-7">
+    <PanelSection title="Theme" contentClassName="space-y-7">
       <ColorModePicker
         value={theme}
         disabled={!hasHydratedPreferences}
@@ -168,6 +168,6 @@ export function AppearanceSettings({
           </div>
         </div>
       </div>
-    </SettingsPanelSection>
+    </PanelSection>
   )
 }

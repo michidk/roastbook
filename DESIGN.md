@@ -520,6 +520,14 @@ centered.
 
 ### Page headings and sections
 
+Settings and Admin share `SectionLayout` for their desktop sidebar, mobile
+section tabs, and content surface. `PanelSection` provides their section headings
+and spacing. Keep offline behavior and authorization in the feature layouts.
+Admin's Users section uses a compact table at every width, with horizontal
+scrolling contained inside the table on phones. Put account actions in a row
+menu and edit weekly allowances in a dialog. Confirm account deletion before
+starting it.
+
 - Use `PageHeader` for headings, descriptions, back controls, and actions.
 - Use the default variant for collection and create pages.
 - Use the compact variant for record details and subordinate screens.
