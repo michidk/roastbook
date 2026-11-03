@@ -16,17 +16,15 @@ export function DemoNotice() {
         <p className="flex min-w-0 flex-1 items-start gap-2">
           <HardDrive className="mt-0.5 size-4 shrink-0" aria-hidden />
           <span>
-            Temporary demo. Changes and pictures stay in this browser only,
-            without backup or device sync, and can be lost if site storage is
-            cleared. Do not use this demo for data you need to keep.{' '}
+            Temporary demo. Data stays in this browser only, without backup or
+            sync. Clearing site storage deletes it.{' '}
             <a
               href="https://app.roastbook.coffee"
               className="underline underline-offset-4 font-medium"
             >
               Sign up for Roastbook
             </a>{' '}
-            for the full experience and a permanent account to keep your journal
-            safely beyond this browser. Integrations are unavailable here.
+            for the full experience and permanent storage.
           </span>
         </p>
         <DeleteConfirmation
