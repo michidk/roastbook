@@ -160,6 +160,13 @@ through the new address, passkey management, and
 signing out other devices. Admin users have a separate `/admin/users` page.
 The last active administrator cannot be demoted or deleted.
 
+Better Auth sessions last 30 days and renew after a day of activity. The journal
+request boundary forwards renewed and cleared cookies to the browser, including
+unauthenticated redirects. Renewal does not reset the ten-minute fresh-login
+requirement for sensitive account and administrator actions. MCP sign-in emails
+carry the provider's signed, expiring continuation from the login request body;
+continuation never depends on the browser sending a `Referer` header.
+
 Run `bun run worker` with the same database, email, and storage configuration as
 the app. The authenticated Compose example runs a worker service; Helm runs a
 worker sidecar when `auth.enabled=true`. Multiple workers claim jobs through

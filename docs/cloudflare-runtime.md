@@ -130,7 +130,8 @@ Exports batch owner-filtered queries across tables to reduce D1 calls.
 `bun run typecheck:cloudflare` checks the actual D1 schema and driver contracts.
 The standard TypeScript check continues to check PostgreSQL self-hosting.
 `bun run test:cloudflare` runs the actual shared domain operations inside workerd
-against isolated D1 and R2 bindings. `bun run test:cloudflare:jobs` checks archive,
+against isolated D1 and R2 bindings, including the same authentication contract
+used by PostgreSQL integration tests. `bun run test:cloudflare:jobs` checks archive,
 claim, expiry, deletion, and account isolation behavior.
 After building, `bun run test:cloudflare:release` boots the release artifact with
 D1, R2, and a real Durable Object. It checks signed sessions, OAuth PKCE, code

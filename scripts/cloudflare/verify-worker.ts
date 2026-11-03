@@ -3,11 +3,13 @@ import {
   withCloudflareRuntime,
 } from '@/cloudflare/context.server'
 import { verifyAccounts } from './verify-accounts'
+import { verifyAuthentication } from './verify-auth'
 import { verifyImageStorage } from './verify-image-storage'
 import { verifyJournalCases } from './verify-journal'
 import { verifyStatistics } from './verify-statistics'
 
 const cases = [
+  { name: 'shared authentication contract on D1', run: verifyAuthentication },
   {
     name: 'hosted account, authentication and AI quota invariants',
     run: verifyAccounts,

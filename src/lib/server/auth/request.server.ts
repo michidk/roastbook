@@ -13,18 +13,22 @@ import {
 } from '@/lib/server/auth/identity.server'
 import { validateMcpRequest } from '../mcp/http-policy.server'
 import { getAuth } from './auth.server'
-import {
-  authorizeMcpRequest,
-  OAUTH_DISCOVERY_PATHS,
-} from './mcp-authorization.server'
-import { handleOAuthTokenRequest } from './oauth-token.server'
+import { handleAuthRequest } from './http.server'
+import { authorizeMcpRequest } from './mcp-authorization.server'
 
 export function hashIntegrationToken(token: string) {
   return createHash('sha256').update(token).digest('hex')
 }
 
-export async function resolveIdentity(
+async function resolveIdentity(request: Request) {
+  const cookies: string[] = []
+  const identity = await resolveJournalIdentity(request, cookies)
+  return { identity, cookies }
+}
+
+async function resolveJournalIdentity(
   request: Request,
+  cookies: string[],
 ): Promise<JournalIdentity | null> {
   if (DEMO_MODE)
     return {
@@ -73,7 +77,11 @@ export async function resolveIdentity(
     }
   }
   if (!env.AUTH_ENABLED) return defaultIdentity()
-  const session = await getAuth().api.getSession({ headers: request.headers })
+  const { response: session, headers } = await getAuth().api.getSession({
+    headers: request.headers,
+    returnHeaders: true,
+  })
+  cookies.push(...headers.getSetCookie())
   if (!session || session.user.deletingAt || !session.user.emailVerified)
     return null
   await initializeUser(session.user)
@@ -97,66 +105,30 @@ export async function handleJournalRequest(
   if (DEMO_MODE) return next()
   const path = new URL(request.url).pathname
   if (path === '/api/health') return next()
-  if (OAUTH_DISCOVERY_PATHS.has(path)) {
-    if (!getServerEnv().AUTH_ENABLED)
-      return new Response('Not found', { status: 404 })
-    return getAuth().handler(request)
-  }
+  const authResponse = await handleAuthRequest(request)
+  if (authResponse) return authResponse
   if (path === '/api/mcp') {
     const rejected = await validateMcpRequest(request)
     if (rejected) return rejected
   }
-  if (path.startsWith('/api/auth/')) {
-    if (!getServerEnv().AUTH_ENABLED)
-      return new Response('Not found', { status: 404 })
-    const endpoint = path.slice('/api/auth'.length)
-    const allowed = new Set([
-      '/ok',
-      '/oauth2/authorize',
-      '/oauth2/token',
-      '/oauth2/register',
-      '/oauth2/revoke',
-      '/oauth2/consent',
-      '/oauth2/continue',
-      '/oauth2/public-client',
-      '/jwks',
-      '/get-session',
-      '/sign-out',
-      '/email-otp/send-verification-otp',
-      '/email-otp/resolve-sign-in-link',
-      '/sign-in/email-otp',
-      '/change-email',
-      '/verify-email',
-      '/send-verification-email',
-      '/list-sessions',
-      '/revoke-session',
-      '/revoke-sessions',
-      '/revoke-other-sessions',
-      '/passkey/generate-register-options',
-      '/passkey/verify-registration',
-      '/passkey/generate-authenticate-options',
-      '/passkey/verify-authentication',
-      '/passkey/list-user-passkeys',
-      '/passkey/delete-passkey',
-      '/passkey/update-passkey',
-    ])
-    if (!allowed.has(endpoint))
-      return new Response('Not found', { status: 404 })
-    const response = await (endpoint === '/oauth2/token'
-      ? handleOAuthTokenRequest(request)
-      : getAuth().handler(request))
-    const headers = new Headers(response.headers)
-    headers.set('Cache-Control', 'private, no-store')
-    headers.set('Referrer-Policy', 'no-referrer')
-    headers.set('X-Content-Type-Options', 'nosniff')
-    headers.append('Vary', 'Cookie, Origin')
-    return new Response(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers,
-    })
-  }
-  const identity = await resolveIdentity(request)
+  const { identity, cookies } = await resolveIdentity(request)
+  const response = await handlePrivateRequest(request, next, identity)
+  if (!cookies.length) return response
+  const headers = new Headers(response.headers)
+  for (const cookie of cookies) headers.append('Set-Cookie', cookie)
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  })
+}
+
+async function handlePrivateRequest(
+  request: Request,
+  next: () => Promise<Response>,
+  identity: JournalIdentity | null,
+) {
+  const path = new URL(request.url).pathname
   if (!identity) {
     if (path === '/api/mcp') return authorizeMcpRequest(request, next)
     if (path === '/login') return next()

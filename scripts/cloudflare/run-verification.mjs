@@ -3,16 +3,26 @@ import { convertV4MiniflareOptions, Miniflare } from 'miniflare'
 
 const scriptPath = process.argv[2]
 if (!scriptPath) throw new Error('A compiled verification worker is required')
+const messages = []
 const runtime = new Miniflare(
   convertV4MiniflareOptions({
     modules: true,
     scriptPath,
     compatibilityDate: '2026-11-02',
     compatibilityFlags: ['nodejs_compat'],
+    serviceBindings: {
+      ACCOUNT_EMAIL: async (request) => {
+        if (new URL(request.url).pathname === '/messages')
+          return Response.json(messages)
+        messages.push(await request.json())
+        return new Response(null, { status: 204 })
+      },
+    },
     d1Databases: ['DB'],
     r2Buckets: ['MEDIA'],
     bindings: {
       AUTH_ENABLED: 'true',
+      AUTH_SIGNUP_ENABLED: 'true',
       DEPLOYMENT_MODE: 'hosted',
       AUTH_URL: 'https://app.example.test',
       AUTH_SECRET: 'local-verification-secret-32-characters',

@@ -157,6 +157,14 @@ limit tests run independently of the installation's configuration.
 Always use isolated test services. CI provisions PostgreSQL and MinIO, applies
 the complete migration chain, and then runs all tests.
 
+The authentication contract in `scripts/auth-contract.ts` runs unchanged against
+PostgreSQL through `contract.integration.test.ts` and against D1 through
+`bun run test:cloudflare`. It exercises real Better Auth HTTP handlers, OTP
+expiry and reuse, signed OAuth continuation without a referrer, session-cookie
+renewal and revocation, administrator authorization, and confirmed account
+deletion. PostgreSQL delivery uses a local SMTP sink; D1 uses a test email service
+binding. Neither suite sends external email.
+
 GitHub Actions workflows with `@orcastrate` frontmatter are managed by
 [`michidk/workflows`](https://github.com/michidk/workflows). Change the canonical
 template alongside the rendered workflow so the next sync preserves the change.

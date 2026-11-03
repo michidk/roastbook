@@ -1,5 +1,4 @@
 import '@tanstack/react-start/server-only'
-import { verifyOAuthQueryParams } from '@better-auth/oauth-provider'
 import { passkey } from '@better-auth/passkey'
 import { betterAuth } from 'better-auth'
 import { APIError, createAuthMiddleware } from 'better-auth/api'
@@ -18,6 +17,7 @@ import {
   SIGN_IN_LIFETIME_MS,
 } from '@/modules/auth/sign-in-link'
 import { allowEmailAttempt } from './email-rate-limit.server'
+import { getEmailSignInOAuthQuery } from './email-sign-in-flow.server'
 import { mcpAuthPlugins } from './mcp-options.server'
 import { requirePasskeyUserVerification } from './passkey-policy.server'
 import {
@@ -179,23 +179,12 @@ function createAuth() {
         expiresIn: SIGN_IN_LIFETIME_MS / 1000,
         allowedAttempts: 3,
         storeOTP: 'hashed',
-        sendVerificationOTP: async ({ email, otp, type }, ctx) => {
+        sendVerificationOTP: async ({ email, otp, type }) => {
           if (type !== 'sign-in')
             throw new Error('This verification flow is unavailable')
           const url = new URL('/login', origin)
-          // Email OTP validation strips plugin-only body fields. The same-origin
-          // page referrer retains the signed query for a link opened in a new tab.
-          const referrer = ctx?.headers?.get('referer')
-          const page = referrer ? new URL(referrer, origin) : undefined
-          const query =
-            page?.origin === origin && page.pathname === '/login'
-              ? page.search.slice(1)
-              : undefined
-          if (
-            typeof query === 'string' &&
-            (await verifyOAuthQueryParams(query, env.AUTH_SECRET ?? ''))
-          )
-            url.search = query
+          const query = getEmailSignInOAuthQuery()
+          if (query) url.search = query
           const token = await createSignInLinkToken({
             origin,
             secret,
