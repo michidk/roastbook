@@ -48,7 +48,10 @@
 The public website is [roastbook.coffee](https://roastbook.coffee/). This repository
 serves the read-only demo, the self-hosted journal, and a Cloudflare Workers
 runtime for managed hosting. Hosted infrastructure stays in a separate private
-repository; this does not change the self-hosted installation.
+repository; this does not change the self-hosted installation. Hosted automation
+deploys successful main builds to staging and published
+GitHub releases to production. PR previews require a contributor with write access
+or a `preview` label applied by someone with that access.
 
 ## ☕ What it is
 

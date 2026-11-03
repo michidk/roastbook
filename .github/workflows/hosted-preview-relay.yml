@@ -1,4 +1,4 @@
-name: Hosted preview relay
+name: Hosted deployment relay
 
 on:
   workflow_run:
@@ -6,7 +6,9 @@ on:
     types: [completed]
   pull_request_target:
     branches: [main]
-    types: [closed]
+    types: [labeled, closed]
+  release:
+    types: [published]
 
 permissions:
   actions: read
@@ -14,8 +16,9 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: hosted-preview-relay-${{ github.event.pull_request.number || github.event.workflow_run.head_branch }}
+  group: hosted-relay-${{ github.event.pull_request.number || github.event.workflow_run.head_branch || github.event.release.id }}
   cancel-in-progress: false
+  queue: max
 
 jobs:
   relay:
@@ -23,41 +26,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      # This trusted workflow never checks out or executes a pull request.
-      - name: Validate event and current pull request
+      # Always load controller code from main, never the PR branch or release tag.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Select current source events
         id: validate
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
-            const {owner, repo} = context.repo;
-            if (context.eventName === 'pull_request_target') {
-              const pr = context.payload.pull_request;
-              if (!Number.isSafeInteger(pr.number) || pr.state !== 'closed' || pr.base.ref !== 'main') return;
-              core.setOutput('event', 'hosted-preview-cleanup');
-              core.setOutput('payload', JSON.stringify({pullRequest: pr.number}));
-              return;
-            }
-            const run = context.payload.workflow_run;
-            if (run.conclusion !== 'success' || run.event !== 'pull_request' ||
-                run.head_repository?.full_name !== `${owner}/${repo}`) return;
-            const {data: workflow} = await github.rest.actions.getWorkflow({owner, repo, workflow_id: 'ci.yml'});
-            if (run.workflow_id !== workflow.id || workflow.path !== '.github/workflows/ci.yml') return;
-            let candidates = run.pull_requests ?? [];
-            if (!candidates.length) {
-              const {data} = await github.rest.repos.listPullRequestsAssociatedWithCommit({owner, repo, commit_sha: run.head_sha});
-              candidates = data;
-            }
-            for (const candidate of candidates) {
-              const {data: pr} = await github.rest.pulls.get({owner, repo, pull_number: candidate.number});
-              if (pr.state !== 'open' || pr.base.ref !== 'main' || pr.base.repo.full_name !== `${owner}/${repo}` ||
-                  pr.head.repo?.full_name !== `${owner}/${repo}` || pr.head.sha !== run.head_sha) continue;
-              core.setOutput('event', 'hosted-preview');
-              core.setOutput('payload', JSON.stringify({pullRequest: pr.number, runId: run.id, revision: pr.head.sha}));
-              return;
-            }
-
+            const relay = require('./.github/scripts/hosted-relay.cjs');
+            const requests = await relay({github, context, core});
+            core.setOutput('requests', JSON.stringify(requests));
       - name: Create infrastructure dispatch token
-        if: steps.validate.outputs.event != ''
+        if: steps.validate.outputs.requests != '[]'
         id: token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
         with:
@@ -66,18 +49,17 @@ jobs:
           owner: michidk
           repositories: roastbook-infra
           permission-contents: write
-
       - name: Notify private infrastructure
-        if: steps.validate.outputs.event != ''
+        if: steps.validate.outputs.requests != '[]'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
-          DISPATCH_EVENT: ${{ steps.validate.outputs.event }}
-          DISPATCH_PAYLOAD: ${{ steps.validate.outputs.payload }}
+          DISPATCH_REQUESTS: ${{ steps.validate.outputs.requests }}
         with:
           github-token: ${{ steps.token.outputs.token }}
           script: |
-            await github.rest.repos.createDispatchEvent({
-              owner: 'michidk', repo: 'roastbook-infra',
-              event_type: process.env.DISPATCH_EVENT,
-              client_payload: JSON.parse(process.env.DISPATCH_PAYLOAD),
-            });
+            for (const request of JSON.parse(process.env.DISPATCH_REQUESTS)) {
+              await github.rest.repos.createDispatchEvent({
+                owner: 'michidk', repo: 'roastbook-infra',
+                event_type: request.event, client_payload: request.payload,
+              });
+            }
