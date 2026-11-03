@@ -2,11 +2,10 @@ import { describe, expect, test } from 'bun:test'
 import { featureAvailability } from './app-capabilities'
 
 describe('application capabilities', () => {
-  test('demo blocks installation, offline storage, and every server action even while online', () => {
+  test('demo permits local journal edits and blocks integrations and standard offline synchronization', () => {
     for (const feature of [
       'install',
       'offline',
-      'journal-write',
       'server-write',
       'ai',
     ] as const) {
@@ -18,6 +17,9 @@ describe('application capabilities', () => {
         }).available,
       ).toBe(false)
     }
+    expect(
+      featureAvailability('journal-write', { demo: true, online: false }),
+    ).toEqual({ available: true })
     expect(featureAvailability('install', { demo: true })).toMatchObject({
       reason: expect.stringContaining('not available in the demo'),
     })
@@ -47,7 +49,7 @@ describe('application capabilities', () => {
   })
 })
 
-test('the compiled demo cannot open local storage or queue a write through a direct call', () => {
+test('the compiled demo never opens synchronized storage or queues a local write', () => {
   const result = Bun.spawnSync(
     [
       process.execPath,
@@ -72,5 +74,5 @@ test('the compiled demo cannot open local storage or queue a write through a dir
   expect(result.stdout.toString()).toContain(
     'Offline support is not available in the demo.',
   )
-  expect(result.stdout.toString()).toEndWith('0\n')
+  expect(result.stdout.toString()).toEndWith('1\n')
 })

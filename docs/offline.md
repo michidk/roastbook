@@ -1,8 +1,9 @@
 # Offline journaling
 
 The standard edition can journal brews and recipes while the browser is
-offline. The demo disables installation, offline storage, queues, and
-replication. With authentication disabled, the app shell, reference data, and
+offline. The [demo edition](demo-mode.md) uses its own browser-local journal;
+it disables installation, the standard offline queue, and replication.
+With authentication disabled, the app shell, reference data, and
 visited detail
 routes are cached after an online visit. With built-in accounts, authenticated
 HTML is never cached by the service worker. Keep an authenticated tab open to

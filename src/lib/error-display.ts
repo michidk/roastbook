@@ -1,3 +1,4 @@
+import { DEMO_MODE } from '@/lib/build-mode'
 export interface ErrorDisplayState {
   title: string
   message: string
@@ -16,6 +17,16 @@ const DEFAULT_ERROR_STATE: ErrorDisplayState = {
 export function getErrorDisplayState(error: unknown): ErrorDisplayState {
   const rawMessage = getRawErrorMessage(error)
   const lowerMessage = rawMessage.toLowerCase()
+
+  if (
+    DEMO_MODE &&
+    (lowerMessage.includes('browser') || lowerMessage.includes('saved demo'))
+  )
+    return {
+      title: 'Browser demo unavailable',
+      message: rawMessage,
+      hint: 'Your saved data is preserved. Retry after checking site storage and updating your browser.',
+    }
 
   if (rawMessage.startsWith(DB_UNAVAILABLE_PREFIX)) {
     return {

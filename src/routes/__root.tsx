@@ -3,18 +3,19 @@ import {
   createRootRoute,
   HeadContent,
   Outlet,
+  redirect,
   Scripts,
   useRouter,
   useRouterState,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import type { ComponentType, FormEvent } from 'react'
+import type { ComponentType } from 'react'
 import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
 
 import '../styles.css'
-import { AlertTriangle, Home, LockKeyhole, RefreshCw } from 'lucide-react'
+import { AlertTriangle, Home, RefreshCw } from 'lucide-react'
 import { AppNavbar } from '@/components/app-navbar'
+import { DemoNotice } from '@/components/demo-notice'
 import { ErrorDetails } from '@/components/error-details'
 import { InstallAppHint } from '@/components/install-app-hint'
 import { OfflineBanner } from '@/components/offline-banner'
@@ -26,8 +27,9 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useOnlineStatus } from '@/hooks/use-online-status'
-import { DEMO_MODE, DEMO_MODE_READ_ONLY_MESSAGE } from '@/lib/build-mode'
+import { DEMO_MODE, PREFERENCES_STORAGE_KEY } from '@/lib/build-mode'
 import { DEFAULT_APP_SETTINGS } from '@/lib/default-app-settings'
+import { subscribeDemoChanges } from '@/lib/demo/local/client'
 import { getErrorDisplayState } from '@/lib/error-display'
 import { restoreOfflineOwner, selectOfflineOwner } from '@/lib/journal-owner'
 import { usePreferencesStore } from '@/lib/preferences-store'
@@ -46,6 +48,17 @@ import {
 } from '@/modules/offline/settings-cache'
 
 export const Route = createRootRoute({
+  ssr: !DEMO_MODE,
+  beforeLoad: ({ location }) => {
+    if (
+      DEMO_MODE &&
+      (location.pathname === '/login' ||
+        location.pathname.startsWith('/oauth/') ||
+        location.pathname.startsWith('/admin') ||
+        location.pathname === '/settings/account')
+    )
+      throw redirect({ to: '/settings' })
+  },
   loader: async ({ location }) => {
     if (
       location.pathname === '/login' ||
@@ -129,6 +142,16 @@ export const Route = createRootRoute({
     ],
   }),
   component: RootComponent,
+  pendingComponent: () => (
+    <div
+      role="status"
+      className="flex min-h-dvh items-center justify-center p-6 text-center"
+    >
+      {DEMO_MODE
+        ? 'Opening your browser journal… Your saved changes stay in this browser.'
+        : 'Loading Roastbook…'}
+    </div>
+  ),
   shellComponent: RootDocument,
   errorComponent: RootErrorComponent,
   notFoundComponent: () => <RouteNotFound />,
@@ -136,7 +159,8 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   const settings = Route.useLoaderData()
-  if (settings?.journalOwner) restoreOfflineOwner(settings.journalOwner)
+  if (!DEMO_MODE && settings?.journalOwner)
+    restoreOfflineOwner(settings.journalOwner)
 
   return (
     <html
@@ -208,6 +232,16 @@ function SettingsHydrator() {
   const hasHydrated = usePreferencesStore((state) => state.hasHydrated)
 
   useEffect(() => {
+    if (!DEMO_MODE) return
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === PREFERENCES_STORAGE_KEY)
+        void usePreferencesStore.persist.rehydrate()
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
+
+  useEffect(() => {
     void Promise.resolve(usePreferencesStore.persist.rehydrate())
       .catch(() => undefined)
       .then(() => usePreferencesStore.getState().markHydrated())
@@ -251,8 +285,8 @@ function RootErrorComponent({ error }: { error: unknown }) {
   return (
     <TooltipProvider>
       <div className="flex h-[100dvh] flex-col overflow-hidden">
-        <AppNavbar />
-        <OfflineStatusMount />
+        <AppNavbar demoMode={DEMO_MODE} />
+        {DEMO_MODE ? <DemoNotice /> : <OfflineStatusMount />}
         <OfflineBanner isOnline={isOnline} demoMode={DEMO_MODE} />
         <ScrollArea
           className="min-h-0 flex-1"
@@ -314,10 +348,13 @@ function RootComponent() {
     if (!login)
       void cacheSettingsData('general', settings).catch(() => undefined)
   }, [settings, login])
-  const preventDemoSubmit = (event: FormEvent<HTMLElement>) => {
-    event.preventDefault()
-    toast.info(DEMO_MODE_READ_ONLY_MESSAGE)
-  }
+  const router = useRouter()
+  useEffect(() => {
+    if (!DEMO_MODE) return
+    return subscribeDemoChanges(() => {
+      void router.invalidate()
+    })
+  }, [router])
 
   if (login)
     return (
@@ -340,21 +377,10 @@ function RootComponent() {
           viewportProps={{ id: 'app-scroll-area' }}
         >
           <div className="flex min-h-full flex-col">
-            {settings.demoMode ? (
-              <div className="border-b border-amber-300 bg-amber-50 px-4 py-2 text-amber-950 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
-                <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 text-sm font-medium">
-                  <LockKeyhole className="h-4 w-4" aria-hidden="true" />
-                  Demo mode: explore with sample data; changes are disabled.
-                  First loads may be slower while the demo wakes up.
-                </div>
-              </div>
-            ) : null}
+            {DEMO_MODE ? <DemoNotice /> : null}
             <InstallAppHint />
             <main
               id="main-content"
-              onSubmitCapture={
-                settings.demoMode ? preventDemoSubmit : undefined
-              }
               className="mx-auto w-full max-w-7xl flex-1 px-4 py-5 pb-[calc(6rem+env(safe-area-inset-bottom))] md:px-8 md:py-8 md:pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8"
             >
               <Outlet />

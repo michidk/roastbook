@@ -63,10 +63,11 @@ and Pure omit paper grain and coffee stains. All themes retain visible card
 and control boundaries. Palette overrides live in `src/styles.css`; their
 miniature settings previews use those same tokens.
 
-Only color mode is a browser-local appearance preference. Palettes, coffee
-stains, and grain are stored in the server settings for the current journal.
+Color mode is a browser-local appearance preference. Palettes, coffee stains,
+and grain are stored in the server settings for a standard journal and in the
+local database for the demo. Demo preferences use a separate browser key.
 The avatar menu's Theme submenu offers System, Light, and Dark in every edition,
-using the server-saved light/dark pair. Demo and shared journals keep the same
+using the journal's saved light/dark pair. Demo and shared journals keep the same
 avatar menu with the names "demo user" and "default user"; account management,
 administrator controls, and sign-out appear only for authenticated accounts.
 Apply palette attributes before hydration to avoid a flash of the wrong colors.
@@ -398,7 +399,7 @@ stays an icon-only labelled button below it.
 The palette is a dialog holding one search field and a grouped, always-visible
 list: navigation destinations, the same create actions as the New menu, and the
 theme choices. Groups come from the navigation items, so a new destination
-appears in both places. Read-only demo mode drops the create group.
+appears in both places. The editable demo includes the create group.
 
 Destinations are real links, so modifier-click still opens a new tab. The first
 match is highlighted, the arrow keys move the highlight, Enter runs it, and
@@ -575,3 +576,13 @@ instead of as plain prose.
 - Give icon-only controls accessible labels and hide decorative icons.
 - Give every dialog a title and explain its task or consequences.
 - Route styles must preserve the shared visible focus treatment.
+
+## Browser-local demo
+
+Keep the demo notice visible above page content. Explain that changes and pictures
+stay in this browser, do not sync across devices, and disappear when site storage
+is cleared. Offer a confirmed Reset demo action that restores samples and local
+appearance. Allow ordinary forms and journal actions; integration settings explain
+why those features are unavailable. During initialization, show a browser-journal
+loading message. Storage errors retain the saved data and offer retry and confirmed
+reset from the error page. The error page uses the same demo avatar menu.

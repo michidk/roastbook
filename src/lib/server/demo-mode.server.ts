@@ -16,3 +16,16 @@ export function demoModeReadOnlyResponse(): Response {
     headers: { 'content-type': 'text/plain; charset=utf-8' },
   })
 }
+
+export function isDemoServerRequestBlocked(
+  demoMode: boolean,
+  method: string,
+  pathname: string,
+): boolean {
+  return (
+    isDemoModeWriteRequest(demoMode, method) ||
+    (demoMode &&
+      ((pathname.startsWith('/api/') && pathname !== '/api/health') ||
+        pathname.startsWith('/_serverFn/')))
+  )
+}

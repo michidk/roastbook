@@ -1,4 +1,5 @@
 import { requireFeature } from '@/lib/app-capabilities'
+import { DEMO_MODE } from '@/lib/build-mode'
 import { isConnectionOnline } from '@/lib/connection-status'
 import { isNetworkError } from './errors'
 
@@ -17,6 +18,7 @@ export async function runJournalMutation<T>({
   readonly online?: () => boolean
 }): Promise<JournalMutationResult<T>> {
   requireFeature('journal-write')
+  if (DEMO_MODE) return { kind: 'saved', value: await send() }
   if (!online()) return { kind: 'queued', operationId: await enqueue() }
   try {
     return { kind: 'saved', value: await send() }

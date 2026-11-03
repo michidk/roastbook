@@ -6,6 +6,7 @@
     "src/server.ts",
     "src/start.ts",
     "src/lib/demo/*.ts",
+    "src/lib/demo/local/*.ts",
     "src/db/demo.ts",
     "src/lib/server/media-handler.ts",
     "src/**/*.test.ts",
@@ -47,6 +48,6 @@
     "src/components/ui/tooltip.tsx": ["exports"]
   },
   "ignoreExportsUsedInFile": true,
-  "ignoreDependencies": ["tailwindcss"],
+  "ignoreDependencies": ["tailwindcss", "demo-local-registry"],
   "ignoreBinaries": ["wait"]
 }

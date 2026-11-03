@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { DEMO_MODE } from '@/lib/build-mode'
 import { IMAGE_MIME_TYPE_VALUES, MAX_IMAGE_BYTES } from '@/lib/domain-contracts'
 import type { ImageFile } from '@/lib/image-file'
 import { getImageUploadPolicy } from '@/lib/server/images'
@@ -246,6 +247,10 @@ export function useImageUpload({
 
   const importFromUrl = useCallback(
     async (url: string) => {
+      if (DEMO_MODE)
+        throw new ImageUploadError(
+          'Remote picture imports are unavailable in the demo. Choose a file from this device.',
+        )
       if (existingImageCount + imagesRef.current.length >= maxImages)
         throw new ImageUploadError(
           `Each item can have at most ${maxImages} pictures. Remove a picture before adding another.`,

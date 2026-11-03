@@ -41,7 +41,12 @@ user input or another untrusted source. Leave it unset to inject nothing.
 
 Demo mode is selected when the application is built rather than through runtime
 configuration. See [Demo mode](demo-mode.md) for build instructions and the
-database-free architecture.
+browser-local architecture. Demo journal data and pictures use isolated browser
+storage. Server database, authentication, email, AI, remote media, geocoding,
+and device integration settings do not enable integrations in this edition.
+`VITE_STORAGE_URL` is ignored for demo pictures; bundled images stay same-origin.
+Demo image limits are fixed at three pictures per item and 50 MiB total, with
+the shared 10 MiB input-file limit.
 
 ## Authentication and email
 
@@ -73,8 +78,8 @@ account and administrator actions require a session created within ten minutes.
 
 With authentication disabled, one persistent default identity owns the journal.
 Account and administrator controls are hidden. This setting is independent of
-the read-only demo build. The application refuses to disable authentication on
-a database containing multiple accounts.
+the browser-local demo build. The application refuses to disable authentication
+on a database containing multiple accounts.
 
 The first verified self-hosted account becomes administrator and claims the
 existing journal. Restrict network access during this initial setup. Hosted

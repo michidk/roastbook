@@ -4,6 +4,7 @@ import { InputField } from '@/components/form/form-field'
 import { Button } from '@/components/ui/button'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import type { DefaultMapLocation } from '@/lib/app-settings'
+import { DEMO_MODE } from '@/lib/build-mode'
 import { geocodeDefaultMapLocation } from '@/lib/server/geocoding'
 
 type MapLocationSettingsProps = {
@@ -41,6 +42,7 @@ export function MapLocationSettings({
 
   const lookupLocation = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (DEMO_MODE) return
     if (query.trim().length < 3 || isLookingUp) return
     setIsLookingUp(true)
     setError(null)
@@ -85,20 +87,28 @@ export function MapLocationSettings({
 
   return (
     <div className="space-y-4">
+      {DEMO_MODE && (
+        <p className="text-sm text-muted-foreground">
+          Location lookup is unavailable in the demo. Enter coordinates
+          manually.
+        </p>
+      )}
       <form onSubmit={lookupLocation} className="space-y-3">
         <InputField
           id="map-location-query"
           label="Location"
           value={query}
           placeholder="e.g. München"
-          disabled={disabled || isLookingUp}
+          disabled={DEMO_MODE || disabled || isLookingUp}
           onChange={setQuery}
         />
         <Button
           type="submit"
           variant="secondary"
           className="min-h-11 w-full sm:w-auto"
-          disabled={disabled || isLookingUp || query.trim().length < 3}
+          disabled={
+            DEMO_MODE || disabled || isLookingUp || query.trim().length < 3
+          }
           aria-busy={isLookingUp}
         >
           {isLookingUp ? <Loader2 className="animate-spin" /> : <Search />}

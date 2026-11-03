@@ -23,7 +23,6 @@ export function AppearanceSettings({
   readonly onSaved: () => void
 }) {
   const savedSettings = useAppSettings()
-  const demoMode = savedSettings.demoMode
   const isOnline = useOnlineStatus()
   const savedBackgroundTextureEnabled = savedSettings.backgroundTextureEnabled
   const [backgroundTextureEnabled, setBackgroundTextureEnabled] = useState(
@@ -106,7 +105,9 @@ export function AppearanceSettings({
         <div>
           <h3 className="font-display text-base font-bold">Your palettes</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Saved to your journal across devices.
+            {savedSettings.demoMode
+              ? 'Saved only in this browser’s temporary demo journal.'
+              : 'Saved to your journal across devices.'}
           </p>
         </div>
         <ThemePalettePicker
@@ -114,14 +115,14 @@ export function AppearanceSettings({
           options={LIGHT_THEMES}
           value={lightTheme}
           onChange={(value) => void lightThemeMutation.save(value)}
-          disabled={demoMode || !isOnline || lightThemeMutation.isSaving}
+          disabled={!isOnline || lightThemeMutation.isSaving}
         />
         <ThemePalettePicker
           mode="dark"
           options={DARK_THEMES}
           value={darkTheme}
           onChange={(value) => void darkThemeMutation.save(value)}
-          disabled={demoMode || !isOnline || darkThemeMutation.isSaving}
+          disabled={!isOnline || darkThemeMutation.isSaving}
         />
         <div className="grid gap-5 rounded-xl bg-secondary/40 p-4 sm:grid-cols-2 sm:gap-6">
           <div className="flex items-center justify-between gap-4">
@@ -137,9 +138,7 @@ export function AppearanceSettings({
               id="background-texture"
               aria-labelledby="background-stains-label"
               checked={backgroundTextureEnabled}
-              disabled={
-                demoMode || !isOnline || backgroundTextureMutation.isSaving
-              }
+              disabled={!isOnline || backgroundTextureMutation.isSaving}
               onCheckedChange={(checked) =>
                 void backgroundTextureMutation.save(checked)
               }
@@ -158,9 +157,7 @@ export function AppearanceSettings({
               id="background-grain"
               aria-labelledby="background-grain-label"
               checked={backgroundGrainEnabled}
-              disabled={
-                demoMode || !isOnline || backgroundGrainEnabledMutation.isSaving
-              }
+              disabled={!isOnline || backgroundGrainEnabledMutation.isSaving}
               onCheckedChange={(value) =>
                 void backgroundGrainEnabledMutation.save(value)
               }

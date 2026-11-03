@@ -172,7 +172,7 @@ Renovate inherits that repository's preset from `.github/renovate.json5`, with
 local rules for the tested TypeScript version and coordinated Better Auth updates.
 
 CI checks both database schemas against their committed migration snapshots,
-including newly generated files. It builds the database-free demo separately
+including newly generated files. It builds the browser-local demo separately
 and runs D1 ownership, concurrency, account-job, and OAuth tests inside workerd.
 Hosted and demo browser bundles use the same server-code and asset-size checks
 as the self-hosted build. Workflow validation runs actionlint with shell checks;
@@ -231,8 +231,13 @@ boot. Brews created offline are queued in IndexedDB and synchronized; see
 [Offline journaling](offline.md).
 
 `bun run check:pwa` validates the manifest, icons, offline page, and built
-service worker after a build. The demo disables PWA installation and offline
-storage. Validate its output with
+service worker after a build. The demo disables PWA installation and server
+synchronization. Its editable journal and pictures persist in isolated browser
+storage. Run `bun run dev:demo`
+to prepare its worker and sample snapshot, or `bun run build:demo` for production.
+The compiled-worker behavioral test covers local journal persistence, relations,
+reset, visitor isolation, and integration rejection. See
+[Browser-local demo](demo-mode.md). Validate its PWA restrictions with
 `bun run scripts/check-pwa.ts --demo .vercel/output/static`.
 The worker's runtime behavior
 (offline fallback, precache serving, request exclusions, and update handling) is

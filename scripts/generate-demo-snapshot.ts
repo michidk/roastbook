@@ -19,7 +19,7 @@ for (const filename of migrationFiles) {
 await seedDemoDatabase(drizzle(client, { schema }))
 
 const snapshot = await client.dumpDataDir('gzip')
-const outputDirectory = resolve('.demo-build')
+const outputDirectory = resolve(process.argv[2] ?? '.demo-build')
 await mkdir(outputDirectory, { recursive: true })
 await writeFile(
   resolve(outputDirectory, 'demo-db.tar.gz'),

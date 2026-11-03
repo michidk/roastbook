@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { PREFERENCES_STORAGE_KEY } from '@/lib/build-mode'
 import {
   COLLECTION_KEYS,
   type CollectionKey,
@@ -86,7 +87,7 @@ export const usePreferencesStore = create<PreferencesState>()(
     }),
     {
       // Keep the existing key so current theme choices survive this migration.
-      name: 'roastbook-settings',
+      name: PREFERENCES_STORAGE_KEY,
       version: 10,
       skipHydration: true,
       partialize: ({

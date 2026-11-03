@@ -10,6 +10,7 @@ import {
   InputGroupInput,
 } from '@/components/ui/input-group'
 import { Label } from '@/components/ui/label'
+import { DEMO_MODE } from '@/lib/build-mode'
 import { searchCoffeeShopCandidates } from '@/lib/server/geocoding'
 
 export type CoffeeShopSearchResult = Awaited<
@@ -34,6 +35,14 @@ export function CoffeeShopOsmSearch({
   const [selectedSearchResultId, setSelectedSearchResultId] = useState<
     number | null
   >(null)
+
+  if (DEMO_MODE)
+    return (
+      <p className="text-sm text-muted-foreground">
+        Place search is unavailable in the browser demo. Enter café details
+        manually below.
+      </p>
+    )
 
   const handleSearch = async () => {
     if (isSearching) return

@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, count, desc, eq, sql } from 'drizzle-orm'
+import { and, count, desc, eq, inArray, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
 import {
@@ -109,8 +109,14 @@ export const getCafeVisitPage = createServerFn({ method: 'GET' })
       VISITS_PAGE_SIZE,
     )
     const { page } = pagination
+    // Keep correlated search SQL in a select subquery. Relational-query aliasing
+    // otherwise rewrites columns belonging to the nested café/bean/drink tables.
+    const matchingIds = db
+      .select({ id: cafeVisits.id })
+      .from(cafeVisits)
+      .where(owned(cafeVisits, where))
     const items = await db.query.cafeVisits.findMany({
-      where: owned(cafeVisits, where),
+      where: owned(cafeVisits, inArray(cafeVisits.id, matchingIds)),
       orderBy: [desc(cafeVisits.visitedAt), desc(cafeVisits.id)],
       limit: VISITS_PAGE_SIZE,
       offset: (page - 1) * VISITS_PAGE_SIZE,

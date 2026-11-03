@@ -1,4 +1,5 @@
 import { requireFeature } from '@/lib/app-capabilities'
+import { DEMO_MODE } from '@/lib/build-mode'
 import { isConnectionOnline } from '@/lib/connection-status'
 import { createEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
 import type { ImageFile } from '@/lib/image-file'
@@ -26,7 +27,9 @@ export async function addJournalPicture(
   picture: ImageFile,
 ) {
   requireFeature(
-    target.entityType === 'shots' ? 'journal-write' : 'server-write',
+    DEMO_MODE || target.entityType === 'shots'
+      ? 'journal-write'
+      : 'server-write',
     { online: isConnectionOnline() },
   )
   const clientOperationId = crypto.randomUUID()
@@ -74,7 +77,9 @@ export async function removeJournalPicture(
   target: ImageTarget & { readonly imageId: number },
 ) {
   requireFeature(
-    target.entityType === 'shots' ? 'journal-write' : 'server-write',
+    DEMO_MODE || target.entityType === 'shots'
+      ? 'journal-write'
+      : 'server-write',
     { online: isConnectionOnline() },
   )
   const send = () =>
@@ -96,6 +101,8 @@ export function chooseJournalThumbnail(target: {
   readonly entityId: number
   readonly imageId: number
 }) {
-  requireFeature('server-write', { online: isConnectionOnline() })
+  requireFeature(DEMO_MODE ? 'journal-write' : 'server-write', {
+    online: isConnectionOnline(),
+  })
   return setImageAsThumbnail({ data: target })
 }

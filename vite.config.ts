@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { cloudflare } from '@cloudflare/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
@@ -6,8 +5,9 @@ import { devtools } from '@tanstack/devtools-vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact from '@vitejs/plugin-react'
 import { nitro } from 'nitro/vite'
-import sharp from 'sharp'
 import { defineConfig } from 'vite'
+import { demoAssets } from './scripts/vite-demo-assets'
+import { demoLocalPlugin } from './scripts/vite-demo-local'
 import { devMigrations } from './scripts/vite-dev-migrations'
 
 const cloudflareRuntime = process.env.ROASTBOOK_RUNTIME === 'cloudflare'
@@ -104,56 +104,6 @@ const cloudflareAliases = [
   },
 ]
 
-const demoAssets = () => ({
-  name: 'roastbook-demo-assets',
-  async generateBundle(this: { emitFile: (asset: object) => void }) {
-    for (const filename of [
-      'kraft-orange.webp',
-      'forest-botanical.webp',
-      'cobalt-sunburst.webp',
-      'plum-orbit.webp',
-      'teal-contours.webp',
-    ]) {
-      const source = readFileSync(
-        resolve('scripts/seed-assets/bean-packaging', filename),
-      )
-      this.emitFile({
-        type: 'asset',
-        fileName: `media/demo/${filename}`,
-        source,
-      })
-      this.emitFile({
-        type: 'asset',
-        fileName: `media/demo/${filename.replace('.webp', '.thumb.webp')}`,
-        source,
-      })
-      this.emitFile({
-        type: 'asset',
-        fileName: `media/demo/${filename.replace('.webp', '.small.webp')}`,
-        source: await sharp(source)
-          .resize({ width: 128, withoutEnlargement: true })
-          .webp({ quality: 72 })
-          .toBuffer(),
-      })
-    }
-    for (const filename of [
-      'terracotta-wave.webp',
-      'cobalt-arches.webp',
-      'forest-diamond.webp',
-      'plum-crescent.webp',
-      'coral-pinwheel.webp',
-    ]) {
-      this.emitFile({
-        type: 'asset',
-        fileName: `media/demo-favicons/${filename}`,
-        source: readFileSync(
-          resolve('scripts/seed-assets/demo-favicons', filename),
-        ),
-      })
-    }
-  },
-})
-
 const config = defineConfig({
   // Dev/preview servers run behind sandbox proxies that forward arbitrary
   // hostnames, which Vite's host check would otherwise reject.
@@ -162,7 +112,22 @@ const config = defineConfig({
     watch: { ignored: ['**/.artifacts/**', '**/.output/**'] },
   },
   preview: { allowedHosts: true },
-  build: { reportCompressedSize: false },
+  build: {
+    reportCompressedSize: false,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            { name: 'validation', test: /node_modules\/zod\// },
+            {
+              name: 'router-runtime',
+              test: /node_modules\/@tanstack\/(?:router-core|react-router)\//,
+            },
+          ],
+        },
+      },
+    },
+  },
   define: {
     __ROASTBOOK_DEMO_MODE__: JSON.stringify(roastbookEdition === 'demo'),
   },
@@ -171,6 +136,10 @@ const config = defineConfig({
       ? cloudflareAliases
       : roastbookEdition === 'demo'
         ? [
+            {
+              find: /^@\/lib\/server\/auth\/request.server$/,
+              replacement: resolve('src/lib/demo/request.server.ts'),
+            },
             { find: /^@\/db$/, replacement: resolve('src/db/demo.ts') },
             {
               find: /^@\/lib\/storage$/,
@@ -237,8 +206,10 @@ const config = defineConfig({
           return { code, moduleSideEffects: false }
       },
     },
-    ...(roastbookEdition === 'demo' ? [demoAssets()] : []),
-    ...(!cloudflareRuntime ? [devtools(), devMigrations()] : []),
+    ...(roastbookEdition === 'demo' ? [demoAssets(), demoLocalPlugin()] : []),
+    ...(!cloudflareRuntime
+      ? [devtools(), ...(roastbookEdition === 'demo' ? [] : [devMigrations()])]
+      : []),
     ...(cloudflareRuntime
       ? [
           cloudflare({
@@ -270,6 +241,13 @@ const config = defineConfig({
           nitro({
             preset: roastbookEdition === 'demo' ? 'vercel' : 'bun',
             routeRules: {
+              ...(roastbookEdition === 'demo'
+                ? {
+                    '/demo-local/**': {
+                      headers: { 'cache-control': 'no-cache' },
+                    },
+                  }
+                : {}),
               '/sw.js': {
                 headers: {
                   'cache-control': 'no-cache, no-store, must-revalidate',

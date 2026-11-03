@@ -109,7 +109,7 @@ const themeActions: readonly CommandAction[] = [
  * to the navbar is reachable from the palette without a second edit.
  */
 export function buildCommandGroups({
-  demoMode = false,
+  demoMode: _demoMode = false,
 }: {
   readonly demoMode?: boolean
 } = {}): readonly CommandActionGroup[] {
@@ -123,8 +123,6 @@ export function buildCommandGroups({
     label: 'Appearance',
     items: themeActions,
   }
-
-  if (demoMode) return [navigate, appearance]
 
   return [
     navigate,

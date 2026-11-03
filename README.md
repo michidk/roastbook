@@ -42,11 +42,12 @@
 
 > [!TIP]
 > **Try it in ten seconds.** The
-> [read-only demo](https://demo.roastbook.coffee/overview) runs entirely from bundled
-> sample data — no account, no database, nothing to install.
+> [editable demo](https://demo.roastbook.coffee/overview) starts with fictional
+> sample data. Changes and pictures stay in this browser, without an account or
+> server database. They do not sync and disappear if site storage is cleared.
 
 The public website is [roastbook.coffee](https://roastbook.coffee/). This repository
-serves the read-only demo, the self-hosted journal, and a Cloudflare Workers
+serves the browser-local demo, the self-hosted journal, and a Cloudflare Workers
 runtime for managed hosting. Hosted infrastructure stays in a separate private
 repository; this does not change the self-hosted installation.
 
@@ -279,7 +280,7 @@ as MIME type and byte count, not the image payload itself.
   a configurable storage allowance.
 - Manage users, export data and stored images, and confirm account deletion
   through email.
-- Explore a database-free, read-only demo backed by ephemeral PGlite seed data.
+- Explore an editable demo with a browser-local PGlite journal and pictures.
 
 </details>
 
@@ -295,7 +296,7 @@ from the database row to the rendered field:
 | Routing | TanStack Router, file-based and fully typed |
 | UI | React 19, shadcn/ui, Radix and Base UI, Tailwind CSS v4 |
 | Icons and maps | Lucide, MapLibre GL |
-| Database | PostgreSQL, hosted Cloudflare D1, demo PGlite |
+| Database | PostgreSQL, hosted Cloudflare D1, browser-local demo PGlite |
 | Media storage | Local filesystem, S3-compatible buckets, hosted R2 |
 | AI | TanStack AI with any OpenAI-compatible endpoint |
 | Validation | Zod at every boundary, including environment variables |
@@ -366,7 +367,8 @@ running.
 | `bun run test:integration` | Require PostgreSQL and S3 integration tests |
 | `bun run lint:deadcode` | Find unused code and dependencies with Knip |
 | `bun run build` | Build production assets |
-| `bun run build:demo` | Build the database-free Vercel demo |
+| `bun run dev:demo` | Prepare and run the browser-local demo |
+| `bun run build:demo` | Build the browser-local Vercel demo |
 | `bun run verify` | Run the complete local quality gate |
 | `bun run db:generate` | Generate a Drizzle migration after a schema change |
 | `bun run db:migrate` | Apply committed migrations |
@@ -382,7 +384,7 @@ running.
 | --- | --- |
 | [Development and testing](docs/development.md) | Workflow, tests, tooling |
 | [Configuration reference](docs/configuration.md) | Every environment variable |
-| [Read-only demo mode](docs/demo-mode.md) | How the PGlite demo is built |
+| [Browser-local demo](docs/demo-mode.md) | Local persistence, reset, restrictions, and builds |
 | [Offline journaling](docs/offline.md) | Offline brew/recipe work, conflicts, and sync |
 | [Client data boundaries](docs/client-data.md) | Feature commands, caching, and mode policies |
 | [Deployment](docs/deployment.md) | Docker, Helm, security boundary |

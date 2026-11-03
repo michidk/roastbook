@@ -4,29 +4,8 @@ import type * as schema from './schema'
 
 type Database = PgliteDatabase<typeof schema>
 
-let instance: Database | undefined
-
-if (import.meta.env.SSR) {
-  const [{ readFile }, { PGlite }, { drizzle }, schema] = await Promise.all([
-    import('node:fs/promises'),
-    import('@electric-sql/pglite'),
-    import('drizzle-orm/pglite'),
-    import('./schema'),
-  ])
-  const snapshot = await readFile(
-    new URL(/* @vite-ignore */ '../_libs/demo-db.tar.gz', import.meta.url),
-  )
-  const client = await PGlite.create({
-    dataDir: 'memory://',
-    loadDataDir: new Blob([snapshot]),
-  })
-  instance = drizzle(client, { schema })
-}
-
 export const getDb = createServerOnlyFn((): Database => {
-  if (!instance)
-    throw new Error('Demo database is only available on the server')
-  return instance
+  throw new Error('The demo journal is available only in the visitor’s browser')
 })
 
 /**

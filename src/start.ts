@@ -9,7 +9,7 @@ import { fetchWithConnectionStatus } from '@/lib/connection-status'
 import { handleJournalRequest } from '@/lib/server/auth/request.server'
 import {
   demoModeReadOnlyResponse,
-  isDemoModeWriteRequest,
+  isDemoServerRequestBlocked,
 } from '@/lib/server/demo-mode.server'
 
 const identityRequestMiddleware = createMiddleware().server(
@@ -26,7 +26,8 @@ const identityRequestMiddleware = createMiddleware().server(
 
 const demoReadOnlyRequestMiddleware = createMiddleware().server(
   async ({ next, request }) => {
-    if (isDemoModeWriteRequest(DEMO_MODE, request.method))
+    const path = new URL(request.url).pathname
+    if (isDemoServerRequestBlocked(DEMO_MODE, request.method, path))
       return demoModeReadOnlyResponse()
     return next()
   },
