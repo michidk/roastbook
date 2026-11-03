@@ -31,6 +31,8 @@ for (const file of files.sort()) {
       ...process.env,
       SSR: 'true',
       AI_CREDENTIAL_ENCRYPTION_KEY: Buffer.alloc(32, 31).toString('base64'),
+      IMAGE_MAX_PER_ITEM: '3',
+      IMAGE_STORAGE_LIMIT_MIB: '1',
     },
     stdout: 'inherit',
     stderr: 'inherit',
