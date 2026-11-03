@@ -123,6 +123,7 @@ export async function handleJournalRequest(
       '/get-session',
       '/sign-out',
       '/email-otp/send-verification-otp',
+      '/email-otp/resolve-sign-in-link',
       '/sign-in/email-otp',
       '/change-email',
       '/verify-email',

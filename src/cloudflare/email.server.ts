@@ -1,10 +1,10 @@
 import '@tanstack/react-start/server-only'
+import type { AccountEmail } from '@/lib/account-email'
 import { requireCloudflareRuntime } from './context.server'
 
 export async function sendCloudflareAccountEmail(
   to: string,
-  subject: string,
-  text: string,
+  message: AccountEmail,
 ) {
   try {
     const response =
@@ -13,7 +13,7 @@ export async function sendCloudflareAccountEmail(
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ to, subject, text }),
+          body: JSON.stringify({ to, ...message }),
         },
       )
     await response.body?.cancel()

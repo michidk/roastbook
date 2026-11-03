@@ -4,6 +4,10 @@ import { authClient } from '@/lib/auth-client'
 import { selectOfflineOwner } from '@/lib/journal-owner'
 import { getPasskeySetupOffer } from '@/lib/server/passkey-prompt'
 import {
+  SIGN_IN_CODE_LENGTH,
+  signInLinkPayloadSchema,
+} from '@/modules/auth/sign-in-link'
+import {
   LOGIN_DRAFT_KEY,
   type LoginStep,
   RESEND_DELAY_MS,
@@ -36,14 +40,13 @@ export function useLoginForm() {
     initialized.current = true
     const time = Date.now()
     const link = readMagicLink(window.location.hash)
-    if (link.kind === 'valid') {
-      setStep({
-        kind: 'confirm',
-        email: link.email,
-        code: link.code,
-        sentAt: time,
-      })
-    } else {
+    if (window.location.hash)
+      window.history.replaceState(
+        window.history.state,
+        '',
+        window.location.pathname + window.location.search,
+      )
+    async function initialize() {
       try {
         setStep(
           restoreLoginDraft(sessionStorage.getItem(LOGIN_DRAFT_KEY), time),
@@ -51,17 +54,27 @@ export function useLoginForm() {
       } catch {
         // Storage is optional; sign-in still works in memory.
       }
-      if (link.kind === 'invalid')
+      if (link.kind === 'valid') {
+        try {
+          const result = await authClient.$fetch(
+            '/email-otp/resolve-sign-in-link',
+            { method: 'POST', body: { token: link.token } },
+          )
+          const payload = signInLinkPayloadSchema.safeParse(result.data)
+          if (result.error || !payload.success) throw new Error('Invalid link')
+          setStep({ kind: 'confirm', ...payload.data })
+        } catch {
+          setError(
+            'This sign-in link is invalid or expired. Request a new email.',
+          )
+        }
+      } else if (link.kind === 'invalid') {
         setError('This sign-in link is incomplete. Request a new email below.')
+      }
+      setNow(Date.now())
+      setReady(true)
     }
-    if (window.location.hash)
-      window.history.replaceState(
-        window.history.state,
-        '',
-        window.location.pathname + window.location.search,
-      )
-    setNow(time)
-    setReady(true)
+    void initialize()
   }, [])
 
   useEffect(() => {
@@ -213,7 +226,10 @@ export function useLoginForm() {
   }
   function setCode(value: string) {
     if (step.kind !== 'code') return
-    setStep({ ...step, code: value.replace(/\D/g, '').slice(0, 8) })
+    setStep({
+      ...step,
+      code: value.replace(/\D/g, '').slice(0, SIGN_IN_CODE_LENGTH),
+    })
     if (error) setError('')
   }
 

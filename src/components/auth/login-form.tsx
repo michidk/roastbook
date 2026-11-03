@@ -1,3 +1,4 @@
+import { REGEXP_ONLY_DIGITS } from 'input-otp'
 import {
   AlertCircle,
   ArrowRight,
@@ -9,7 +10,14 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSeparator,
+  InputOTPSlot,
+} from '@/components/ui/input-otp'
 import { Label } from '@/components/ui/label'
+import { SIGN_IN_CODE_LENGTH } from '@/modules/auth/sign-in-link'
 import { PasskeySetupDialog } from './passkey-setup-dialog'
 import { useLoginForm } from './use-login-form'
 
@@ -105,24 +113,47 @@ export function LoginForm() {
                   Open the link in your email, or enter your code here.
                 </p>
                 <Label htmlFor="code">8-digit sign-in code</Label>
-                <Input
+                <InputOTP
                   ref={login.codeInput}
                   id="code"
                   name="code"
-                  type="text"
                   inputMode="numeric"
                   autoComplete="one-time-code"
-                  pattern="[0-9]{8}"
-                  maxLength={17}
+                  pattern={REGEXP_ONLY_DIGITS}
+                  maxLength={SIGN_IN_CODE_LENGTH}
+                  pasteTransformer={(value) => value.replace(/\D/g, '')}
                   required
                   value={step.code}
-                  onChange={(event) => login.setCode(event.target.value)}
+                  onChange={login.setCode}
                   aria-invalid={error ? true : undefined}
                   aria-describedby={
                     error ? 'code-help login-error' : 'code-help'
                   }
-                  className="text-center font-display text-2xl font-semibold tracking-[0.25em] tabular-nums [@media(hover:hover)_and_(pointer:fine)]:h-14 md:text-2xl"
-                />
+                  containerClassName="w-full justify-center gap-2"
+                >
+                  <InputOTPGroup aria-hidden="true">
+                    {[0, 1, 2, 3].map((index) => (
+                      <InputOTPSlot
+                        key={index}
+                        index={index}
+                        aria-invalid={!!error}
+                      />
+                    ))}
+                  </InputOTPGroup>
+                  <InputOTPSeparator
+                    aria-hidden="true"
+                    className="w-2 justify-center text-muted-foreground"
+                  />
+                  <InputOTPGroup aria-hidden="true">
+                    {[4, 5, 6, 7].map((index) => (
+                      <InputOTPSlot
+                        key={index}
+                        index={index}
+                        aria-invalid={!!error}
+                      />
+                    ))}
+                  </InputOTPGroup>
+                </InputOTP>
                 <p id="code-help" className="text-sm text-muted-foreground">
                   Your link and code expire in 10 minutes.
                 </p>
@@ -146,7 +177,9 @@ export function LoginForm() {
               type="submit"
               size="lg"
               className="w-full"
-              disabled={step.kind === 'code' && step.code.length !== 8}
+              disabled={
+                step.kind === 'code' && step.code.length !== SIGN_IN_CODE_LENGTH
+              }
             >
               {activity === 'sending' || activity === 'verifying' ? (
                 <LoaderCircle

@@ -8,19 +8,29 @@ import { and, eq, isNull } from 'drizzle-orm'
 import { getCloudflareRuntime } from '@/cloudflare/context.server'
 import { getControlDb } from '@/db/connection.server'
 import { authUsers, instanceIdentity } from '@/db/schema'
+import { renderAccountEmail } from '@/lib/account-email'
 import { getServerEnv } from '@/lib/env.server'
 import { createAuthDatabaseAdapter } from '@/lib/server/auth/database-adapter.server'
 import { sendAccountEmail } from '@/lib/server/auth/email.server'
 import { initializeUser } from '@/lib/server/auth/identity.server'
+import {
+  SIGN_IN_CODE_LENGTH,
+  SIGN_IN_LIFETIME_MS,
+} from '@/modules/auth/sign-in-link'
 import { allowEmailAttempt } from './email-rate-limit.server'
 import { mcpAuthPlugins } from './mcp-options.server'
 import { requirePasskeyUserVerification } from './passkey-policy.server'
+import {
+  createSignInLinkToken,
+  emailSignInLinkPlugin,
+} from './sign-in-link.server'
 
 function createAuth() {
   const env = getServerEnv()
   if (!env.AUTH_ENABLED || !env.AUTH_URL || !env.AUTH_SECRET)
     throw new Error('Authentication is disabled or incomplete')
   const origin = new URL(env.AUTH_URL).origin
+  const secret = env.AUTH_SECRET
   return betterAuth({
     appName: 'Roastbook',
     baseURL: origin,
@@ -45,8 +55,7 @@ function createAuth() {
         sendChangeEmailConfirmation: async ({ user, newEmail, url }) => {
           await sendAccountEmail(
             user.email,
-            'Approve your Roastbook email change',
-            `Approve changing your email to ${newEmail}:\n\n${url}\n\nIf you did not request this, ignore this email.`,
+            renderAccountEmail({ kind: 'change-email', newEmail, url }),
           )
         },
       },
@@ -55,8 +64,7 @@ function createAuth() {
       sendVerificationEmail: async ({ user, url }) => {
         await sendAccountEmail(
           user.email,
-          'Verify your Roastbook email',
-          `Verify this email address:\n\n${url}`,
+          renderAccountEmail({ kind: 'verify-email', url }),
         )
       },
     },
@@ -73,6 +81,7 @@ function createAuth() {
       max: 60,
       customRules: {
         '/email-otp/send-verification-otp': { window: 60, max: 3 },
+        '/email-otp/resolve-sign-in-link': { window: 60, max: 20 },
         '/sign-in/email-otp': { window: 60, max: 5 },
         '/oauth2/register': { window: 3600, max: 10 },
         '/oauth2/authorize': { window: 60, max: 30 },
@@ -164,16 +173,15 @@ function createAuth() {
     },
     plugins: [
       ...mcpAuthPlugins(origin),
+      emailSignInLinkPlugin({ origin, secret }),
       emailOTP({
-        otpLength: 8,
-        expiresIn: 600,
+        otpLength: SIGN_IN_CODE_LENGTH,
+        expiresIn: SIGN_IN_LIFETIME_MS / 1000,
         allowedAttempts: 3,
         storeOTP: 'hashed',
         sendVerificationOTP: async ({ email, otp, type }, ctx) => {
           if (type !== 'sign-in')
             throw new Error('This verification flow is unavailable')
-          // A fragment never reaches the server or email scanner. The confirmation button
-          // submits the same OTP as manual entry, so both choices consume one challenge.
           const url = new URL('/login', origin)
           // Email OTP validation strips plugin-only body fields. The same-origin
           // page referrer retains the signed query for a link opened in a new tab.
@@ -188,11 +196,17 @@ function createAuth() {
             (await verifyOAuthQueryParams(query, env.AUTH_SECRET ?? ''))
           )
             url.search = query
-          url.hash = new URLSearchParams({ email, code: otp }).toString()
+          const token = await createSignInLinkToken({
+            origin,
+            secret,
+            email,
+            code: otp,
+            sentAt: Date.now(),
+          })
+          url.hash = new URLSearchParams({ 'sign-in': token }).toString()
           await sendAccountEmail(
             email,
-            'Sign in to Roastbook',
-            `Your sign-in code is ${otp}.\n\nOr open this link and confirm sign-in:\n${url}\n\nThis code expires in 10 minutes. If you did not request it, ignore this email.`,
+            renderAccountEmail({ kind: 'sign-in', url: url.href, code: otp }),
           )
         },
       }),

@@ -61,11 +61,14 @@ database-free architecture.
 
 Authentication uses Better Auth 1.7.15 with its email OTP plugin and the
 separate `@better-auth/passkey` package. Emails contain an eight-digit code and
-a link that prefills the same code. Users explicitly confirm sign-in. Codes
-expire after ten minutes and allow three attempts. Shared database limits also
-restrict each address to three code emails and eight sign-in attempts per ten
-minutes, in addition to IP limits. Passkeys require device
-verification. There are no passwords. Sessions expire after 30 days; sensitive
+a link that resolves the same code. The link contains a short-lived encrypted
+token instead of an email address or readable code. The browser removes it from
+the address bar before resolving it through a POST request. Users explicitly
+confirm sign-in, and the link and manually entered code consume the same
+challenge. Codes expire after ten minutes and allow three attempts. Shared
+database limits also restrict each address to three code emails and eight
+sign-in attempts per ten minutes, in addition to IP limits. Passkeys require
+device verification. There are no passwords. Sessions expire after 30 days; sensitive
 account and administrator actions require a session created within ten minutes.
 
 With authentication disabled, one persistent default identity owns the journal.
@@ -141,8 +144,9 @@ or configure a public media CDN for private journals.
 | `AI_TELEMETRY_RETENTION_DAYS` | `1` | No | Retention (1–30 days) |
 | `AI_TELEMETRY_MAX_PAYLOAD_BYTES` | `65536` | No | Cap (1 KiB–1 MiB) |
 
-Settings > AI offers provided AI and a **BYOAI** switch. Operators enable provided
-AI by setting its key and both model IDs above. It requires authentication and
+Settings > AI puts the **Included / BYOAI** switch in the AI provider card.
+BYOAI reveals your endpoint and key settings. Operators enable included AI
+by setting its key and both model IDs above. It requires authentication and
 is unavailable in the demo or shared-journal mode. Its credentials never reach
 the browser. The operator endpoint may use an internal HTTP(S) service such as
 OmniRoute, including in hosted mode. Requests stay pinned to that configured base

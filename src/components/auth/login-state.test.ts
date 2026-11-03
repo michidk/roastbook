@@ -59,13 +59,11 @@ describe('sign-in recovery', () => {
 })
 
 describe('email sign-in links', () => {
-  test('reads an encoded address and full code for explicit confirmation', () => {
-    expect(
-      readMagicLink('#email=coffee%2Btest%40example.test&code=01234567'),
-    ).toEqual({
+  test('reads only an opaque token for explicit confirmation', () => {
+    const token = `v1.${'ab'.repeat(120)}`
+    expect(readMagicLink(`#sign-in=${token}`)).toEqual({
       kind: 'valid',
-      email: 'coffee+test@example.test',
-      code: '01234567',
+      token,
     })
   })
 
@@ -75,6 +73,9 @@ describe('email sign-in links', () => {
       '#email=coffee%40example.test',
       '#email=invalid&code=01234567',
       '#email=coffee%40example.test&code=1234',
+      '#sign-in=',
+      '#sign-in=not-a-token',
+      `#sign-in=v1.${'ab'.repeat(1025)}`,
     ])
       expect(readMagicLink(hash)).toEqual({ kind: 'invalid' })
   })

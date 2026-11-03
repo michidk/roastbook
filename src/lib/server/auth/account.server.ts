@@ -16,6 +16,7 @@ import {
   integrationTokens,
   shots,
 } from '@/db/schema'
+import { renderAccountEmail } from '@/lib/account-email'
 import { aiAllowanceWeek } from '@/lib/ai-allowance'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { getServerEnv } from '@/lib/env.server'
@@ -236,8 +237,7 @@ export async function requestAccountDeletion() {
   url.hash = new URLSearchParams({ delete: token }).toString()
   await sendAccountEmail(
     identity.email,
-    'Confirm deleting your Roastbook account',
-    `Open this link and confirm deletion of your account, journal, and images:\n\n${url}\n\nThis link expires in 10 minutes. If you did not request this, ignore this email.`,
+    renderAccountEmail({ kind: 'delete-account', url: url.href }),
   )
 }
 export async function confirmAccountDeletion(token: string) {

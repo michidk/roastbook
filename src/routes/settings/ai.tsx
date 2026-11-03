@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { AiModeSettings } from '@/components/settings/ai-mode-settings'
+import { AiAllowanceSettings } from '@/components/settings/ai-allowance-settings'
 import { AiProviderSettings } from '@/components/settings/ai-provider-settings'
 import { AiSettings } from '@/components/settings/ai-settings'
 import { getAiProviderSettings } from '@/lib/server/ai-provider-settings'
@@ -27,10 +27,11 @@ function AiSettingsSection() {
   const { stats, provider, providedStats } = Route.useLoaderData()
   return (
     <>
-      <AiModeSettings allowance={provider.allowance} stats={providedStats} />
-      {provider.allowance.mode === 'byo' ? (
-        <AiProviderSettings key={provider.allowance.mode} settings={provider} />
-      ) : null}
+      <AiProviderSettings settings={provider} />
+      <AiAllowanceSettings
+        allowance={provider.allowance}
+        stats={providedStats}
+      />
       <AiSettings
         stats={stats}
         providedAvailable={provider.allowance.providedAvailable}

@@ -185,13 +185,56 @@ try {
   assert.equal(messages[0].to, loginEmail)
   const otp = /sign-in code is (\d{8})/.exec(messages[0].text)?.[1]
   assert(otp)
+  assert(messages[0].html.includes('<!doctype html>'))
+  assert(messages[0].html.includes(otp))
+  const link = new URL(
+    /https:\/\/app\.example\.test\/login[^\s]*/.exec(messages[0].text)?.[0] ??
+      '',
+  )
+  assert(!link.href.includes(loginEmail))
+  const fields = new URLSearchParams(link.hash.slice(1))
+  assert.deepEqual([...fields.keys()], ['sign-in'])
+  const linkToken = fields.get('sign-in')
+  assert(linkToken && !linkToken.includes(otp))
+  const resolved = await json(
+    await api('/email-otp/resolve-sign-in-link', { token: linkToken }),
+  )
+  assert.equal(resolved.email, loginEmail)
+  assert.equal(resolved.code, otp)
+  assert.equal(
+    (await api('/email-otp/resolve-sign-in-link', { token: 'v1.invalid' }))
+      .status,
+    400,
+  )
+  assert.equal(
+    (
+      await dispatch('/api/auth/email-otp/resolve-sign-in-link', {
+        method: 'POST',
+        headers: {
+          origin: 'https://attacker.example.test',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ token: linkToken }),
+      })
+    ).status,
+    403,
+  )
   const signedIn = await json(
     await api('/sign-in/email-otp', { email: loginEmail, otp }),
   )
   assert.equal(signedIn.user.email, loginEmail)
   assert.equal(signedIn.user.emailVerified, true)
+  assert.equal(
+    (
+      await api('/sign-in/email-otp', {
+        email: resolved.email,
+        otp: resolved.code,
+      })
+    ).status,
+    400,
+  )
   console.log(
-    'PASS real email OTP signup through the private email service binding',
+    'PASS branded email, opaque encrypted link, CSRF protection and single-use email OTP signup',
   )
 
   const userId = 'release-oauth-user'
@@ -250,6 +293,14 @@ try {
     }
     const consent = new URL(redirectUrl ?? '', origin)
     assert.equal(consent.pathname, '/oauth/consent')
+    const resolvedWithOAuth = await json(
+      await api('/email-otp/resolve-sign-in-link', {
+        token: linkToken,
+        oauth_query: consent.search.slice(1),
+      }),
+    )
+    assert.equal(resolvedWithOAuth.email, loginEmail)
+    assert.equal(resolvedWithOAuth.code, otp)
     const decision = await json(
       await api(
         '/oauth2/consent',
