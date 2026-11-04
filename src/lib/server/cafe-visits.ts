@@ -1,6 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
 import { and, count, desc, eq, inArray, sql } from 'drizzle-orm'
-import { z } from 'zod'
 import { db } from '@/db'
 import {
   allocateJournalIds,
@@ -20,61 +19,24 @@ import {
   resolvePagination,
 } from '@/lib/collection-query'
 import { expectReturnedRow } from '@/lib/domain-errors'
-import { DECIMAL_CONSTRAINTS } from '@/lib/measurement-constraints'
 import { toDisplayableDatabaseError } from '@/lib/server/database-error.server'
 import {
   assertDrinkSelection,
   replaceCafeVisitDrinkOptions,
 } from '@/lib/server/drink-options.server'
 import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
-import {
-  boundedDecimalStringSchema,
-  currencySchema,
-  notesSchema,
-  notFutureDateSchema,
-  optionalNullablePositiveIdSchema,
-  optionalNullableRatingSchema,
-  positiveIdSchema,
-} from '@/lib/server-validation'
+import { positiveIdSchema } from '@/lib/server-validation'
 import {
   assertValidUpdate,
   getCafeVisitUpdateErrors,
 } from '@/lib/update-validation'
-
-const cafeVisitSchema = z.object({
-  coffeeShopId: optionalNullablePositiveIdSchema,
-  beanId: optionalNullablePositiveIdSchema,
-  drinkTypeId: optionalNullablePositiveIdSchema,
-  drinkOptionValueIds: z.array(positiveIdSchema).max(20).optional(),
-  price: boundedDecimalStringSchema(
-    DECIMAL_CONSTRAINTS.cafeVisitPrice.maximum,
-    DECIMAL_CONSTRAINTS.cafeVisitPrice.fractionDigits,
-  ).optional(),
-  currency: currencySchema.optional(),
-  rating: optionalNullableRatingSchema,
-  notes: notesSchema.optional(),
-  visitedAt: notFutureDateSchema.optional(),
-  tasteTagIds: z.array(positiveIdSchema).max(100).optional(),
-})
-
-const cafeVisitUpdateSchema = cafeVisitSchema.partial().extend({
-  id: positiveIdSchema,
-  drinkTypeId: optionalNullablePositiveIdSchema,
-  price: boundedDecimalStringSchema(
-    DECIMAL_CONSTRAINTS.cafeVisitPrice.maximum,
-    DECIMAL_CONSTRAINTS.cafeVisitPrice.fractionDigits,
-  )
-    .nullable()
-    .optional(),
-  currency: currencySchema.nullable().optional(),
-  notes: notesSchema.nullable().optional(),
-})
+import {
+  cafeVisitListSchema,
+  cafeVisitSchema,
+  cafeVisitUpdateSchema,
+} from '@/modules/journal/cafe-visits-input'
 
 const VISITS_PAGE_SIZE = 18
-const cafeVisitListSchema = z.object({
-  page: z.number().int().min(1).max(100_000).default(1),
-  query: z.string().trim().max(200).default(''),
-})
 
 const cafeVisitRelations = {
   coffeeShop: true,

@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { DemoIntegrationNotice } from '@/components/demo-integration-notice'
+import { DemoIntegrationNotice } from '@/components/edition-ui'
 import { McpSettings } from '@/components/settings/mcp-settings'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { getMcpAdminState } from '@/lib/mcp/settings'

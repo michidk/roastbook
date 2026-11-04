@@ -6,6 +6,7 @@ import { verifyAccounts } from './verify-accounts'
 import { verifyAuthentication } from './verify-auth'
 import { verifyImageStorage } from './verify-image-storage'
 import { verifyJournalCases } from './verify-journal'
+import { verifyJournalSync } from './verify-journal-sync'
 import { verifyStatistics } from './verify-statistics'
 
 const cases = [
@@ -15,6 +16,10 @@ const cases = [
     run: verifyAccounts,
   },
   ...verifyJournalCases,
+  {
+    name: 'shared local journal commands, receipts, conflicts and owner isolation',
+    run: verifyJournalSync,
+  },
   {
     name: 'atomic image limits, compressed storage, legacy measurement and owner isolation',
     run: verifyImageStorage,

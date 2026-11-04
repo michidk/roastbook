@@ -14,6 +14,13 @@ export default {
     context: ExecutionContext,
   ): Promise<Response> {
     try {
+      // The public, data-free SPA shell is also rendered at build time, before
+      // deployment bindings such as AUTH_URL are available.
+      if (
+        request.method === 'GET' &&
+        /^\/offline-shell\/?$/.test(new URL(request.url).pathname)
+      )
+        return secureResponse(await app.fetch(request))
       const canonical = canonicalRequest(request, bindings)
       if (canonical instanceof Response) return secureResponse(canonical)
       if (new URL(canonical.url).pathname === '/api/health') {

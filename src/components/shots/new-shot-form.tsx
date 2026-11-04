@@ -41,7 +41,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { StarRating } from '@/components/ui/star-rating'
-import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import {
   useCurrentLocalDateTimeLimit,
   useLocalDateTimeInput,
@@ -50,6 +49,20 @@ import { useOnlineStatus } from '@/hooks/use-online-status'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes'
 import { addBrew, editBrew } from '@/lib/client/journal'
+import type { getActiveBeanPurchases } from '@/lib/client/journal/beans'
+import type { getBrewingMethods } from '@/lib/client/journal/brewing-methods'
+import type { getGear } from '@/lib/client/journal/gear'
+import type { getGearSets } from '@/lib/client/journal/gear-sets'
+import type { getRecipes } from '@/lib/client/journal/recipes'
+import { getLastShotForBeanAndMethod } from '@/lib/client/journal/shots'
+import type {
+  getBeanSuggestions,
+  getBrewingMethodSuggestions,
+  getDrinkTypeSuggestions,
+  getLastBeansByBrewingMethod,
+  getTasteTagSuggestions,
+} from '@/lib/client/journal/suggestions'
+import type { getTasteTags } from '@/lib/client/journal/taste-tags'
 import {
   type DrinkConfiguration,
   drinkConfigurationForBrewingMethod,
@@ -61,20 +74,6 @@ import {
   newShotPayload,
   newShotRecommendationRequest,
 } from '@/lib/new-shot-payload'
-import type { getActiveBeanPurchases } from '@/lib/server/beans'
-import type { getBrewingMethods } from '@/lib/server/brewing-methods'
-import type { getGear } from '@/lib/server/gear'
-import type { getGearSets } from '@/lib/server/gear-sets'
-import type { getRecipes } from '@/lib/server/recipes'
-import { getLastShotForBeanAndMethod } from '@/lib/server/shots'
-import type {
-  getBeanSuggestions,
-  getBrewingMethodSuggestions,
-  getDrinkTypeSuggestions,
-  getLastBeansByBrewingMethod,
-  getTasteTagSuggestions,
-} from '@/lib/server/suggestions'
-import type { getTasteTags } from '@/lib/server/taste-tags'
 import { SHOT_SENSORY_RATING_KEYS } from '@/lib/shot-sensory'
 import {
   enabledSensoryRatingKeys,
@@ -122,7 +121,6 @@ type NewShotFormData = {
   readonly recommendationEnabled: boolean
   readonly shottimerEnabled: boolean
   readonly defaultBrewedAt: string
-  readonly offlineSnapshotSavedAt?: string
 }
 
 type NewShotFormProps = {
@@ -202,11 +200,9 @@ export function NewShotForm({
     recommendationEnabled,
     shottimerEnabled,
     defaultBrewedAt,
-    offlineSnapshotSavedAt,
   } = data
   const tasteProfile = useTasteProfile()
   const isOnline = useOnlineStatus()
-  const formatDateTime = useDateTimeFormatter()
   const [values, setValues] = useState<ShotFormValues>(() => {
     const brewingMethodId = brewingMethodSuggestions[0]
       ? String(brewingMethodSuggestions[0].id)
@@ -609,7 +605,7 @@ export function NewShotForm({
         />
       ) : null}
       <div className="space-y-5">
-        {!isOnline || offlineSnapshotSavedAt ? (
+        {!isOnline ? (
           <div
             role="status"
             className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100"
@@ -617,9 +613,6 @@ export function NewShotForm({
             <p className="font-semibold">Offline mode</p>
             <p className="mt-1">
               Brews saved now stay on this device and sync when you reconnect.
-              {offlineSnapshotSavedAt
-                ? ` Using lists saved ${formatDateTime(offlineSnapshotSavedAt)}.`
-                : ''}
             </p>
           </div>
         ) : null}

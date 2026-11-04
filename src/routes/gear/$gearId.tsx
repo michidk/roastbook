@@ -7,8 +7,12 @@ import { GearDetailPage } from '@/components/gear/gear-detail-page'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import type { ShotsTableServerPagination } from '@/components/shots/shots-table'
-import { useEntitySnapshot } from '@/hooks/use-entity-snapshot'
-import { loadEntityDetail } from '@/lib/client/cached-reads'
+
+import {
+  checkGearResearchEnabled,
+  getGearById,
+} from '@/lib/client/journal/gear'
+import { getGearShotPage } from '@/lib/client/journal/shots'
 import { nextSortDirection } from '@/lib/collection-sort'
 import { parseEditModeSearch } from '@/lib/edit-mode'
 import { parseIdParam } from '@/lib/route-params'
@@ -18,8 +22,6 @@ import {
   searchRecord,
   searchValidator,
 } from '@/lib/search-params'
-import { checkGearResearchEnabled, getGearById } from '@/lib/server/gear'
-import { getGearShotPage } from '@/lib/server/shots'
 
 type GearDetailSearch = {
   readonly brewPage: number
@@ -28,9 +30,7 @@ type GearDetailSearch = {
 }
 
 type GearDetailData = Awaited<ReturnType<typeof loadGearDetail>>
-type GearDetailLoaderData = GearDetailData & {
-  readonly offlineSnapshotSavedAt?: string
-}
+type GearDetailLoaderData = GearDetailData & {}
 
 const parseGearDetailSearch = (input: unknown) => {
   const search = searchRecord(input)
@@ -81,19 +81,10 @@ export const Route = createFileRoute('/gear/$gearId')({
   loader: async ({ params, deps }): Promise<GearDetailLoaderData> => {
     const gearId = parseIdParam(params.gearId)
 
-    return loadEntityDetail({
-      entityType: 'gear',
-      id: gearId,
-      load: async () => ({
-        ...(await loadGearDetail(gearId, deps)),
-        query: deps,
-      }),
-      accepts: (data) =>
-        !data.query ||
-        (data.query.brewPage === deps.brewPage &&
-          data.query.brewSort === deps.brewSort &&
-          data.query.brewDirection === deps.brewDirection),
-    })
+    return (async () => ({
+      ...(await loadGearDetail(gearId, deps)),
+      query: deps,
+    }))()
   },
   component: GearDetailRoute,
   pendingComponent: DetailPending,
@@ -104,11 +95,9 @@ export const Route = createFileRoute('/gear/$gearId')({
 
 function GearDetailRoute() {
   const detailData = Route.useLoaderData()
-  const { gear, shotPage, researchEnabled, offlineSnapshotSavedAt } = detailData
+  const { gear, shotPage, researchEnabled } = detailData
   const search = Route.useSearch()
   const navigate = useNavigate({ from: '/gear/$gearId' })
-
-  useEntitySnapshot('gear', gear?.id, detailData, offlineSnapshotSavedAt)
 
   const updateShotSearch = (values: Partial<typeof search>) =>
     navigate({ search: (current) => ({ ...current, ...values }) })
@@ -145,7 +134,6 @@ function GearDetailRoute() {
       shotsPagination={shotsPagination}
       researchEnabled={researchEnabled}
       isEditing={search.edit ?? false}
-      offlineSnapshotSavedAt={offlineSnapshotSavedAt}
       onFinishEditing={() =>
         navigate({ search: (current) => ({ ...current, edit: undefined }) })
       }

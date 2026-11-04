@@ -16,7 +16,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { createTasteTag, deleteTasteTag } from '@/lib/server/taste-tags'
+import { createTasteTag, deleteTasteTag } from '@/lib/client/journal/taste-tags'
 import { isNegativeTasteTag } from '@/lib/taste-tags'
 
 type TasteTag = {

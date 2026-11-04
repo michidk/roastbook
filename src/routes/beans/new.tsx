@@ -11,7 +11,7 @@ import { Page } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import { Button } from '@/components/ui/button'
-import { getRoasters } from '@/lib/server/roasters'
+import { getRoasters } from '@/lib/client/journal/roasters'
 
 export const Route = createFileRoute('/beans/new')({
   loader: () => getRoasters(),

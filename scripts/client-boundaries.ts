@@ -32,7 +32,7 @@ export function checkClientBoundaries(path: string, source: string): string[] {
     return []
   const file = parse(source, {
     sourceType: 'module',
-    plugins: ['typescript', 'jsx'],
+    plugins: path.endsWith('.tsx') ? ['typescript', 'jsx'] : ['typescript'],
   })
   const failures: string[] = []
   for (const node of file.program.body) {

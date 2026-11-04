@@ -1,11 +1,11 @@
-import { createEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
-import type { ImageFile } from '@/lib/image-file'
-import { isImageUploadNetworkError } from '@/lib/image-upload-error'
 import {
   type EntityType,
   uploadEntityImage,
   uploadEntityImageBase64,
-} from '@/lib/server/images'
+} from '@/lib/client/journal/images'
+import { createEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
+import type { ImageFile } from '@/lib/image-file'
+import { isImageUploadNetworkError } from '@/lib/image-upload-error'
 
 export type EntityImageUploadFailure = {
   readonly image: ImageFile

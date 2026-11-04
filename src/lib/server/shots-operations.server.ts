@@ -180,7 +180,7 @@ async function loadShotPage(data: Omit<ShotListInput, 'beanId'>, scope?: SQL) {
     .select({ value: count() })
     .from(shots)
     .where(owned(shots, where))
-  const totalItems = countRows[0]?.value ?? 0
+  const totalItems = Number(countRows[0]?.value ?? 0)
   const pagination = resolvePagination(totalItems, data.page, SHOTS_PAGE_SIZE)
   const { page } = pagination
   const sortExpression = shotSortExpression(scoped.sort)
@@ -322,7 +322,7 @@ export async function getShotGroupsOperation(data: ShotGroupListInput) {
     .select({ value: sql<number>`count(distinct ${groupKey})` })
     .from(shots)
     .where(owned(shots, where))
-  const totalItems = countRows[0]?.value ?? 0
+  const totalItems = Number(countRows[0]?.value ?? 0)
   const pagination = resolvePagination(
     totalItems,
     data.page,
@@ -351,7 +351,7 @@ export async function getShotGroupsOperation(data: ShotGroupListInput) {
         ? { id: summary.beanId, name: summary.beanName ?? 'Unknown beans' }
         : null,
       label: summary.beanName ?? 'No bean recorded',
-      totalShots: summary.totalShots,
+      totalShots: Number(summary.totalShots),
       shots: await db.query.shots.findMany({
         where: owned(
           shots,

@@ -9,7 +9,10 @@ import {
 import { Button } from '@/components/ui/button'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
-import { type getGearSetById, updateGearSet } from '@/lib/server/gear-sets'
+import {
+  type getGearSetById,
+  updateGearSet,
+} from '@/lib/client/journal/gear-sets'
 import type { GearOption } from '@/modules/brews/shot-form-values'
 
 type GearSet = NonNullable<Awaited<ReturnType<typeof getGearSetById>>>

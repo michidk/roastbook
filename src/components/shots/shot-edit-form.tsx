@@ -16,6 +16,11 @@ import {
   useLocalDateTimeInput,
 } from '@/hooks/use-local-date-time-input'
 import { editBrew } from '@/lib/client/journal'
+import type { getActiveBeanPurchases } from '@/lib/client/journal/beans'
+import type { getBrewingMethods } from '@/lib/client/journal/brewing-methods'
+import type { getGear } from '@/lib/client/journal/gear'
+import type { getShot } from '@/lib/client/journal/shots'
+import type { getTasteTags } from '@/lib/client/journal/taste-tags'
 import { localDateTimeInputToDate } from '@/lib/date-input'
 import {
   type DrinkConfiguration,
@@ -24,11 +29,6 @@ import {
 } from '@/lib/drink-options'
 import { focusFirstInvalidControl } from '@/lib/form-validation'
 import { shotDrinkPayload, shotParameterPayload } from '@/lib/new-shot-payload'
-import type { getActiveBeanPurchases } from '@/lib/server/beans'
-import type { getBrewingMethods } from '@/lib/server/brewing-methods'
-import type { getGear } from '@/lib/server/gear'
-import type { getShot } from '@/lib/server/shots'
-import type { getTasteTags } from '@/lib/server/taste-tags'
 import { shotSensoryPayload } from '@/lib/shot-sensory'
 import { isLegacySensoryTasteTag } from '@/lib/taste-tags'
 import { getShotUpdateErrors } from '@/lib/update-validation'

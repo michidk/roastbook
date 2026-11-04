@@ -13,13 +13,13 @@ import { Page, PageHeader } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import { Button } from '@/components/ui/button'
-import { getErrorMessage } from '@/lib/error-message'
-import { parseIdParam } from '@/lib/route-params'
 import {
   deleteBrewingMethod,
   getBrewingMethod,
-} from '@/lib/server/brewing-methods'
-import { getDrinkConfiguration } from '@/lib/server/drink-options'
+} from '@/lib/client/journal/brewing-methods'
+import { getDrinkConfiguration } from '@/lib/client/journal/drink-options'
+import { getErrorMessage } from '@/lib/error-message'
+import { parseIdParam } from '@/lib/route-params'
 
 export const Route = createFileRoute('/brewing-methods/$brewingMethodId')({
   loader: async ({ params }) => {

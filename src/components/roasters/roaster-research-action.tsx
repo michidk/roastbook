@@ -6,11 +6,11 @@ import type { RoasterFormValues } from '@/components/roasters/roaster-form-value
 import { RoasterInfoDiffModal } from '@/components/roasters/roaster-info-diff-modal'
 import { Button } from '@/components/ui/button'
 import { useOnlineStatus } from '@/hooks/use-online-status'
-import { getErrorMessage } from '@/lib/error-message'
 import {
   checkRoasterResearchEnabled,
   researchRoasterInfo,
-} from '@/lib/server/roasters'
+} from '@/lib/client/journal/roasters'
+import { getErrorMessage } from '@/lib/error-message'
 import type { ExtractedRoasterInfo } from '@/modules/ai/read-models'
 
 export function RoasterResearchAction({

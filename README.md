@@ -88,14 +88,15 @@ face when you don't.
 
 Roastbook is designed for desktop first, with full support for phones and
 tablets. Use the browser or install it as a Progressive Web App (PWA) on your
-phone or desktop. Its offline mode lets you log brews, work on recipes, and
-attach pictures without a connection, then sync when you reconnect.
+phone or desktop. After the first complete download, its offline mode lets you
+read and edit your journal, customize its appearance, and attach pictures without
+a connection, then sync when you reconnect.
 [See what works offline.](docs/offline.md)
 
 Choose your look in **Settings → Appearance**: three light palettes and three
 dark palettes, each with a live miniature preview. Light Roast and Dark Roast
 are the defaults. Palettes, coffee stains, and background grain save to your
-journal on the server and apply across devices. Only the Light, Dark, or Browser
+local journal and sync across devices in the product. Only the Light, Dark, or System
 color-mode choice stays on this device. The header switch uses your saved
 palettes. The Roast pair keeps
 paper grain and coffee-ring backgrounds, with separate controls for each.
@@ -129,8 +130,8 @@ white and black styling without textures.
   navigation. Responsive layouts, large touch targets, and compact cards
   support phones and tablets next to the coffee machine.
 - 📴 **An installable app with offline mode.** Install Roastbook as a PWA on
-  your phone or desktop, keep brewing and recipe
-  work on the device without a connection, and sync it when you reconnect.
+  your phone or desktop, read and edit the downloaded journal without a
+  connection, and sync it when you reconnect.
   [See what works offline.](docs/offline.md)
 - 🤖 **AI-native, not AI-bolted-on.** Research and extraction are wired into the
   forms you already use and return typed, validated fields you confirm before
@@ -275,8 +276,8 @@ as MIME type and byte count, not the image payload itself.
 - Search beans, cafés, and gear directly; jump to any page; start a new brew,
   bean, or visit; and switch theme from the command palette (<kbd>⌘</kbd>
   <kbd>K</kbd> or <kbd>Ctrl</kbd> <kbd>K</kbd>).
-- Install Roastbook as a PWA on your phone or desktop. Journal brews and
-  recipes, attach pictures, and review pending changes offline; everything
+- Install Roastbook as a PWA on your phone or desktop. Read and edit your downloaded
+  journal, attach pictures, and review pending changes offline; everything
   stays on the device and syncs when you reconnect.
 
 ### Self-hosting
@@ -288,7 +289,7 @@ as MIME type and byte count, not the image payload itself.
   a configurable storage allowance.
 - Manage users, export data and stored images, and confirm account deletion
   through email.
-- Explore an editable demo with a browser-local PGlite journal and pictures.
+- Explore an editable demo with a shared RxDB browser journal and pictures.
 
 </details>
 
@@ -304,10 +305,11 @@ from the database row to the rendered field:
 | Routing | TanStack Router, file-based and fully typed |
 | UI | React 19, shadcn/ui, Radix and Base UI, Tailwind CSS v4 |
 | Icons and maps | Lucide, MapLibre GL |
-| Database | PostgreSQL, hosted Cloudflare D1, browser-local demo PGlite |
+| Database | PostgreSQL or hosted Cloudflare D1; RxDB/IndexedDB client journal |
 | Media storage | Local filesystem, S3-compatible buckets, hosted R2 |
 | AI | TanStack AI with any OpenAI-compatible endpoint |
 | Validation | Zod at every boundary, including environment variables |
+| Reactive queries | TanStack DB over committed RxDB journal revisions |
 | PWA | Web app manifest and a hand-written service worker |
 | Tooling | Vite, Biome, Knip, `bun test` |
 | Authentication | Better Auth 1.7, email codes and passkeys; optional Hodor |
@@ -393,7 +395,7 @@ running.
 | [Development and testing](docs/development.md) | Workflow, tests, tooling |
 | [Configuration reference](docs/configuration.md) | Every environment variable |
 | [Browser-local demo](docs/demo-mode.md) | Local persistence, reset, restrictions, and builds |
-| [Offline journaling](docs/offline.md) | Offline brew/recipe work, conflicts, and sync |
+| [Offline journaling](docs/offline.md) | Local journal coverage, conflicts, and sync |
 | [Client data boundaries](docs/client-data.md) | Feature commands, caching, and mode policies |
 | [Deployment](docs/deployment.md) | Docker, Helm, security boundary |
 | [Cloudflare runtime](docs/cloudflare-runtime.md) | Workers Free target, D1, R2, private Resend relay, hosted security boundary |

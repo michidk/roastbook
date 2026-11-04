@@ -1,30 +1,49 @@
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { PGlite } from '@electric-sql/pglite'
+import { journalTableNames } from '@roastbook/journal-domain/model'
+import { journalStateSchema } from '@roastbook/journal-domain/state'
 import { drizzle } from 'drizzle-orm/pglite'
 import { seedDemoDatabase } from '@/db/demo-seed.server'
 import * as schema from '@/db/schema'
 
+// PostgreSQL is used only to generate fixtures. No database engine is shipped.
 const client = await PGlite.create('memory://')
-const migrationDirectory = resolve('drizzle')
-const migrationFiles = (await readdir(migrationDirectory))
-  .filter((filename) => filename.endsWith('.sql'))
-  .sort()
-
-for (const filename of migrationFiles) {
-  const sql = await readFile(resolve(migrationDirectory, filename), 'utf8')
-  await client.exec(sql.replaceAll('--> statement-breakpoint', ''))
+try {
+  for (const filename of (await readdir('drizzle'))
+    .filter((name) => name.endsWith('.sql'))
+    .sort()) {
+    await client.exec(
+      (await readFile(resolve('drizzle', filename), 'utf8')).replaceAll(
+        '--> statement-breakpoint',
+        '',
+      ),
+    )
+  }
+  const database = drizzle(client, { schema })
+  await seedDemoDatabase(database)
+  const tables = Object.fromEntries(
+    await Promise.all(
+      journalTableNames.map(async (name) => [
+        name,
+        (await database.select().from(schema[name])).map(
+          ({ ownerId: _owner, ...row }) => row,
+        ),
+      ]),
+    ),
+  )
+  const state = journalStateSchema.parse({
+    format: 1,
+    revision: 0,
+    serverRevision: 0,
+    tables: JSON.parse(JSON.stringify(tables)),
+    media: {},
+    pending: [],
+  })
+  const directory = resolve(process.argv[2] ?? '.demo-build/client')
+  await rm(directory, { recursive: true, force: true })
+  await mkdir(directory, { recursive: true })
+  await writeFile(resolve(directory, 'journal.json'), JSON.stringify(state))
+} finally {
+  await client.close()
 }
-
-await seedDemoDatabase(drizzle(client, { schema }))
-
-const snapshot = await client.dumpDataDir('gzip')
-const outputDirectory = resolve(process.argv[2] ?? '.demo-build')
-await mkdir(outputDirectory, { recursive: true })
-await writeFile(
-  resolve(outputDirectory, 'demo-db.tar.gz'),
-  new Uint8Array(await snapshot.arrayBuffer()),
-)
-await client.close()
-// PGlite uses PostgreSQL's internal shutdown code even after a clean close.
-process.exitCode = 0

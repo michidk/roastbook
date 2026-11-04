@@ -5,15 +5,14 @@ import { ThemePalettePicker } from '@/components/settings/theme-palette-picker'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { useAppSettings } from '@/hooks/use-app-settings'
-import { useOnlineStatus } from '@/hooks/use-online-status'
 import { useSettingMutation } from '@/hooks/use-setting-mutation'
-import { usePreferencesStore } from '@/lib/preferences-store'
 import {
   updateBackgroundGrainEnabled,
   updateBackgroundTextureEnabled,
   updateDarkTheme,
   updateLightTheme,
-} from '@/lib/server/settings'
+} from '@/lib/client/journal/settings'
+import { usePreferencesStore } from '@/lib/preferences-store'
 import { DARK_THEMES, LIGHT_THEMES } from '@/lib/theme'
 
 /** The theme and page background settings sections. */
@@ -23,7 +22,6 @@ export function AppearanceSettings({
   readonly onSaved: () => void
 }) {
   const savedSettings = useAppSettings()
-  const isOnline = useOnlineStatus()
   const savedBackgroundTextureEnabled = savedSettings.backgroundTextureEnabled
   const [backgroundTextureEnabled, setBackgroundTextureEnabled] = useState(
     savedBackgroundTextureEnabled,
@@ -115,14 +113,14 @@ export function AppearanceSettings({
           options={LIGHT_THEMES}
           value={lightTheme}
           onChange={(value) => void lightThemeMutation.save(value)}
-          disabled={!isOnline || lightThemeMutation.isSaving}
+          disabled={lightThemeMutation.isSaving}
         />
         <ThemePalettePicker
           mode="dark"
           options={DARK_THEMES}
           value={darkTheme}
           onChange={(value) => void darkThemeMutation.save(value)}
-          disabled={!isOnline || darkThemeMutation.isSaving}
+          disabled={darkThemeMutation.isSaving}
         />
         <div className="grid gap-5 rounded-xl bg-secondary/40 p-4 sm:grid-cols-2 sm:gap-6">
           <div className="flex items-center justify-between gap-4">
@@ -138,7 +136,7 @@ export function AppearanceSettings({
               id="background-texture"
               aria-labelledby="background-stains-label"
               checked={backgroundTextureEnabled}
-              disabled={!isOnline || backgroundTextureMutation.isSaving}
+              disabled={backgroundTextureMutation.isSaving}
               onCheckedChange={(checked) =>
                 void backgroundTextureMutation.save(checked)
               }
@@ -157,7 +155,7 @@ export function AppearanceSettings({
               id="background-grain"
               aria-labelledby="background-grain-label"
               checked={backgroundGrainEnabled}
-              disabled={!isOnline || backgroundGrainEnabledMutation.isSaving}
+              disabled={backgroundGrainEnabledMutation.isSaving}
               onCheckedChange={(value) =>
                 void backgroundGrainEnabledMutation.save(value)
               }

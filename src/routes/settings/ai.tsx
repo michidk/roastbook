@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { DemoIntegrationNotice } from '@/components/demo-integration-notice'
+import { DemoIntegrationNotice } from '@/components/edition-ui'
 import { AiAllowanceSettings } from '@/components/settings/ai-allowance-settings'
 import { AiProviderSettings } from '@/components/settings/ai-provider-settings'
 import { AiSettings } from '@/components/settings/ai-settings'

@@ -25,7 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { StarRating } from '@/components/ui/star-rating'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
-import { useEntitySnapshot } from '@/hooks/use-entity-snapshot'
+
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useOnlineStatus } from '@/hooks/use-online-status'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
@@ -59,13 +59,7 @@ function ShotDataFields({
 export function BrewDetailPage() {
   const formatDateTime = useDateTimeFormatter()
   const detailData = routeApi.useLoaderData()
-  const {
-    shot,
-    recipes,
-    editData,
-    recommendationEnabled,
-    offlineSnapshotSavedAt,
-  } = detailData
+  const { shot, recipes, editData, recommendationEnabled } = detailData
   const { edit: isEditing = false } = routeApi.useSearch()
   const formatNumber = useNumberFormatter()
   const tasteProfile = useTasteProfile()
@@ -75,8 +69,6 @@ export function BrewDetailPage() {
 
   const [isSavingRecipe, setIsSavingRecipe] = useState(false)
   const editButtonRef = useRef<HTMLAnchorElement>(null)
-
-  useEntitySnapshot('brew', shot?.id, detailData, offlineSnapshotSavedAt)
 
   if (!shot) {
     return (
@@ -304,12 +296,6 @@ export function BrewDetailPage() {
           </>
         }
       />
-
-      {offlineSnapshotSavedAt ? (
-        <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-          Showing a saved copy from {formatDateTime(offlineSnapshotSavedAt)}.
-        </p>
-      ) : null}
 
       <EntityImageGallery
         entityType="shots"

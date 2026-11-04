@@ -9,7 +9,7 @@ export const shotListSchema = z.object({
   direction: z.enum(['asc', 'desc']).default('desc'),
   methodId: positiveIdSchema.optional(),
   rating: z.number().int().min(0).max(5).optional(),
-  beanId: z.number().int().min(0).max(100_000).optional(),
+  beanId: z.number().int().min(0).optional(),
 })
 
 export const relatedShotListSchema = shotListSchema

@@ -2527,3 +2527,17 @@ export const jwks = pgTable('jwks', {
   alg: text('alg'),
   crv: text('crv'),
 })
+
+export const journalSyncRevisions = pgTable('journal_sync_revisions', {
+  ownerId: journalOwner().primaryKey(),
+  value: bigint('value', { mode: 'number' }).notNull().default(0),
+})
+export const journalCommandReceipts = pgTable(
+  'journal_command_receipts',
+  {
+    ownerId: journalOwner(),
+    commandId: text('command_id').notNull(),
+    appliedAt: timestamp('applied_at').notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.ownerId, table.commandId] })],
+)

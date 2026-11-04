@@ -27,6 +27,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
+import { getGearPage } from '@/lib/client/journal/gear'
 import { nextSortDirection } from '@/lib/collection-sort'
 import { GEAR_TYPE_LABELS } from '@/lib/constants'
 import { imageUrl } from '@/lib/image-url'
@@ -37,7 +38,6 @@ import {
   searchString,
   searchValidator,
 } from '@/lib/search-params'
-import { getGearPage } from '@/lib/server/gear'
 import { cn } from '@/lib/utils'
 
 const parseGearSearch = (input: unknown) => {

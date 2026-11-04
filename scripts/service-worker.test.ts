@@ -141,6 +141,7 @@ async function createHarness(options: HarnessOptions = {}) {
       return new Response('icon', { headers: { 'content-type': 'image/png' } })
     }
     if (
+      url.endsWith('/offline-shell.html') ||
       url.endsWith('/overview') ||
       url.endsWith('/brews/new') ||
       url.endsWith('/brews/pending')
@@ -346,7 +347,7 @@ describe('service worker', () => {
     const uncached = await harness.dispatch('fetch', {
       request: request('/brews/uncached', 'navigate'),
     })
-    expect(await (uncached as Response).text()).toContain('Offline | Roastbook')
+    expect(await (uncached as Response).text()).toBe('app-document')
   })
 
   test('clears cached documents on logout', async () => {

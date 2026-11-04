@@ -23,14 +23,17 @@ import { VisitEditForm } from '@/components/visits/visit-edit-form'
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
+import { getBeans } from '@/lib/client/journal/beans'
+import { deleteCafeVisit, getCafeVisit } from '@/lib/client/journal/cafe-visits'
+import {
+  getCoffeeShop,
+  getCoffeeShops,
+} from '@/lib/client/journal/coffee-shops'
+import { getDrinkConfiguration } from '@/lib/client/journal/drink-options'
+import { getTasteTags } from '@/lib/client/journal/taste-tags'
 import { parseEditModeSearch } from '@/lib/edit-mode'
 import { parseIdParam } from '@/lib/route-params'
 import { searchValidator } from '@/lib/search-params'
-import { getBeans } from '@/lib/server/beans'
-import { deleteCafeVisit, getCafeVisit } from '@/lib/server/cafe-visits'
-import { getCoffeeShop, getCoffeeShops } from '@/lib/server/coffee-shops'
-import { getDrinkConfiguration } from '@/lib/server/drink-options'
-import { getTasteTags } from '@/lib/server/taste-tags'
 import { isNegativeTasteTag } from '@/lib/taste-tags'
 import { cn } from '@/lib/utils'
 

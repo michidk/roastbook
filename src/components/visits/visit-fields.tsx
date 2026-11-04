@@ -6,10 +6,10 @@ import { CurrencyField, CurrencyInputField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
 import { TastingFields } from '@/components/form/tasting-fields'
 import type { CafeVisitFormValues } from '@/lib/cafe-visit-payload'
+import type { getBeans } from '@/lib/client/journal/beans'
+import type { getCoffeeShops } from '@/lib/client/journal/coffee-shops'
+import type { getTasteTags } from '@/lib/client/journal/taste-tags'
 import type { DrinkConfiguration } from '@/lib/drink-options'
-import type { getBeans } from '@/lib/server/beans'
-import type { getCoffeeShops } from '@/lib/server/coffee-shops'
-import type { getTasteTags } from '@/lib/server/taste-tags'
 
 export type VisitFieldValues = CafeVisitFormValues & {
   readonly coffeeShopId: string

@@ -30,13 +30,13 @@ import {
 import { Label } from '@/components/ui/label'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useImageUpload } from '@/hooks/use-image-upload'
-import { getErrorMessage } from '@/lib/error-message'
-import type { ImageFile } from '@/lib/image-file'
 import {
   createBeanPurchase,
   updateBeanPurchase,
-} from '@/lib/server/bean-purchases'
-import { extractBeanInfo } from '@/lib/server/beans'
+} from '@/lib/client/journal/bean-purchases'
+import { extractBeanInfo } from '@/lib/client/journal/beans'
+import { getErrorMessage } from '@/lib/error-message'
+import type { ImageFile } from '@/lib/image-file'
 import {
   type EntityImageUploadFailure,
   uploadEntityImages,

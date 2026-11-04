@@ -9,8 +9,8 @@ import {
 import { RoasterResearchAction } from '@/components/roasters/roaster-research-action'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
+import { createRoaster } from '@/lib/client/journal/roasters'
 import { getErrorMessage } from '@/lib/error-message'
-import { createRoaster } from '@/lib/server/roasters'
 
 type CreatedRoaster = Awaited<ReturnType<typeof createRoaster>>
 

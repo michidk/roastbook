@@ -32,6 +32,8 @@ const imageTables = [
 const excludedExports = new Set([
   'client_operations',
   'media_cleanup_jobs',
+  'journal_sync_revisions',
+  'journal_command_receipts',
   'replication_changes',
   'shottimer',
 ])
@@ -87,6 +89,8 @@ const deleteOrder = [
   'ai_request_logs',
   'ai_usage',
   'media_cleanup_jobs',
+  'journal_sync_revisions',
+  'journal_command_receipts',
 ] as const satisfies readonly (typeof journalTables)[number][]
 const tableColumns = new Map(
   Object.values(schema)

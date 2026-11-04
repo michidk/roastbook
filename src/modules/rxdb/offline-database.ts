@@ -90,8 +90,6 @@ export async function getOfflineRxDatabase(): Promise<OfflineRxDatabase> {
 }
 
 export async function resetOfflineRxDatabase(): Promise<void> {
-  const { stopRecipeReplication } = await import('./replication')
-  await stopRecipeReplication()
   const database = await databasePromise?.catch(() => undefined)
   if (database) await database.close()
   databasePromise = undefined
@@ -101,8 +99,6 @@ export async function resetOfflineRxDatabase(): Promise<void> {
 }
 
 export async function closeOfflineRxDatabase(): Promise<void> {
-  const { stopRecipeReplication } = await import('./replication')
-  await stopRecipeReplication()
   const database = await databasePromise?.catch(() => undefined)
   if (database) await database.close()
   databasePromise = undefined

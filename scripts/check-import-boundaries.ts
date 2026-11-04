@@ -2,21 +2,34 @@ import { readdir, readFile } from 'node:fs/promises'
 import { dirname, normalize, relative, resolve } from 'node:path'
 
 import { checkClientBoundaries } from './client-boundaries'
+import { checkJournalImports } from './journal-boundaries'
 
-const sourceRoot = 'src'
 const importPattern = /(?:from\s+|import\s*\()(['"])([^'"]+)\1/g
 const failures: string[] = []
 
 const files = (
-  await readdir(sourceRoot, { recursive: true, withFileTypes: true })
+  await Promise.all(
+    ['src', 'packages'].map(async (root) =>
+      (
+        await readdir(root, { recursive: true, withFileTypes: true })
+      )
+        .filter((entry) => entry.isFile() && /\.[cm]?[jt]sx?$/.test(entry.name))
+        .map((entry) => relative('.', `${entry.parentPath}/${entry.name}`)),
+    ),
+  )
 )
-  .filter((entry) => entry.isFile() && /\.[cm]?[jt]sx?$/.test(entry.name))
-  .map((entry) => relative('.', `${entry.parentPath}/${entry.name}`))
-  .filter((path) => path !== 'src/routeTree.gen.ts')
+  .flat()
+  .filter(
+    (path) =>
+      path !== 'src/routeTree.gen.ts' && !path.includes('/node_modules/'),
+  )
 
 for (const path of files) {
   const source = await readFile(path, 'utf8')
-  failures.push(...checkClientBoundaries(path, source))
+  failures.push(
+    ...checkClientBoundaries(path, source),
+    ...checkJournalImports(path, source),
+  )
   for (const match of source.matchAll(importPattern)) {
     const target = match[2]
     if (!target) continue

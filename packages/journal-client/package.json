@@ -1,0 +1,15 @@
+{
+  "name": "@roastbook/journal-client",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./journal": "./src/journal.ts",
+    "./queries": "./src/queries.ts"
+  },
+  "dependencies": {
+    "@tanstack/db": "1.0.0-rc.1.2",
+    "@roastbook/journal-domain": "workspace:*",
+    "rxdb": "17.6.0",
+    "zod": "^4.4.3"
+  }
+}

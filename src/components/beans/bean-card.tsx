@@ -9,13 +9,13 @@ import {
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { estimateRemainingBeanWeight } from '@/lib/bean-weight'
+import type { getBeans } from '@/lib/client/journal/beans'
 import {
   BEAN_TYPE_LABELS,
   getProcessMethodLabel,
   getRoastLevelLabel,
 } from '@/lib/constants'
 import { thumbnailUrl } from '@/lib/image-url'
-import type { getBeans } from '@/lib/server/beans'
 import { cn } from '@/lib/utils'
 
 type BeanRecord = Awaited<ReturnType<typeof getBeans>>[number] & {

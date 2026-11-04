@@ -19,16 +19,16 @@ import {
   NUMBER_FORMAT_OPTIONS,
 } from '@/lib/app-settings'
 import {
-  COLLECTION_VIEW_OPTIONS,
-  isCollectionView,
-} from '@/lib/collection-view'
-import {
   updateDateFormat,
   updateDefaultCurrency,
   updateDefaultListView,
   updateNumberFormat,
   updateTimeZone,
-} from '@/lib/server/settings'
+} from '@/lib/client/journal/settings'
+import {
+  COLLECTION_VIEW_OPTIONS,
+  isCollectionView,
+} from '@/lib/collection-view'
 
 /** The currency, formatting, time zone, and list view settings sections. */
 export function GeneralSettings({ onSaved }: { readonly onSaved: () => void }) {

@@ -7,7 +7,7 @@ import {
 } from '@/components/gear-sets/gear-set-form-values'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
-import { createGearSet } from '@/lib/server/gear-sets'
+import { createGearSet } from '@/lib/client/journal/gear-sets'
 import type { GearOption } from '@/modules/brews/shot-form-values'
 
 type GearSetFormProps = {

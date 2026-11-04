@@ -96,7 +96,7 @@ export async function fetchWithConnectionStatus(
     const headers = new Headers(
       init?.headers ?? (input instanceof Request ? input.headers : undefined),
     )
-    if (method.toUpperCase() !== 'GET')
+    if (method.toUpperCase() !== 'GET' && !headers.has('X-Roastbook-Owner'))
       headers.set('X-Roastbook-Owner', getOfflineOwner())
     const response = await fetch(input, {
       ...init,

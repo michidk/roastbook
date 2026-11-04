@@ -2,43 +2,43 @@ import { expect, test } from 'bun:test'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { buildDemoJournal, prepareDemoAssets } from './demo-local-build'
+import { journalStateSchema } from '@roastbook/journal-domain/state'
+import { executeCommand } from '@/modules/journal/commands'
+import { readJournal } from '@/modules/journal/reads'
 
-test('the compiled local journal preserves data, relations, derived reads and visitor isolation', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'roastbook-demo-test-'))
+test('generated fictional fixtures support the shared journal without a runtime SQL engine', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'roastbook-fixtures-'))
   try {
-    const seed = Bun.spawn(
-      [
-        process.execPath,
-        'scripts/generate-demo-snapshot.ts',
-        join(directory, 'seed'),
-      ],
+    const process = Bun.spawn(
+      ['bun', 'scripts/generate-demo-snapshot.ts', directory],
       { stdout: 'pipe', stderr: 'pipe' },
     )
-    expect(await seed.exited).toBe(0)
-    const assets = join(directory, 'assets')
-    await prepareDemoAssets({
-      outdir: assets,
-      snapshot: join(directory, 'seed/demo-db.tar.gz'),
-    })
-    await buildDemoJournal({
-      entrypoint: 'scripts/test-demo-local.ts',
-      target: 'bun',
-      outdir: directory,
-    })
-    const result = Bun.spawn(
-      [process.execPath, join(directory, 'test-demo-local.js'), assets],
-      { stdout: 'pipe', stderr: 'pipe' },
-    )
-    const [code, stdout, stderr] = await Promise.all([
-      result.exited,
-      new Response(result.stdout).text(),
-      new Response(result.stderr).text(),
+    const [code, stderr] = await Promise.all([
+      process.exited,
+      new Response(process.stderr).text(),
     ])
-    expect(stderr).toBe('')
-    expect(code).toBe(0)
-    expect(stdout).toContain('integration restrictions passed')
+    if (code !== 0) throw new Error(stderr)
+    const seed = journalStateSchema.parse(
+      await Bun.file(join(directory, 'journal.json')).json(),
+    )
+    expect(seed.tables.beans.length).toBeGreaterThan(2)
+    const result = executeCommand(seed, {
+      id: crypto.randomUUID(),
+      operation: 'beans/createBean',
+      data: { name: 'Local sample', weight: '250' },
+      createdAt: new Date().toISOString(),
+      allocations: {},
+    })
+    expect(
+      readJournal(result.state, 'beans/getBeanCollection', {
+        query: 'Local sample',
+      }),
+    ).toHaveProperty('totalItems', 1)
+    expect(seed.tables.beans).not.toContainEqual(
+      expect.objectContaining({ name: 'Local sample' }),
+    )
+    expect(seed.pending).toEqual([])
   } finally {
     await rm(directory, { recursive: true, force: true })
   }
-}, 90_000)
+}, 90000)

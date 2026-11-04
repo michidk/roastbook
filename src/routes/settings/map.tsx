@@ -5,7 +5,7 @@ import { PanelSection } from '@/components/section-layout'
 import { MapLocationSettings } from '@/components/settings/map-location-settings'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useSettingMutation } from '@/hooks/use-setting-mutation'
-import { updateDefaultMapLocation } from '@/lib/server/settings'
+import { updateDefaultMapLocation } from '@/lib/client/journal/settings'
 
 export const Route = createFileRoute('/settings/map')({
   component: MapSettingsSection,

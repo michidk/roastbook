@@ -1,13 +1,13 @@
 import { DEMO_MODE } from '@/lib/build-mode'
-import { localDemoImageUrl } from '@/lib/demo/local/client'
+import { localJournalImageUrl } from '@/lib/client/local-journal'
 import { publicEnv } from '@/lib/env'
 import { getSmallThumbnailPath, getThumbnailPath } from '@/lib/image-path'
 
 const STORAGE_BASE_URL = publicEnv.VITE_STORAGE_URL
 
 function storageUrl(storagePath: string, fallbackPath?: string): string {
-  if (DEMO_MODE && storagePath.startsWith('demo-local/'))
-    return localDemoImageUrl(storagePath)
+  const local = localJournalImageUrl(storagePath)
+  if (local) return local
   if (DEMO_MODE)
     return `/media/${storagePath.split('/').map(encodeURIComponent).join('/')}`
   const encodedPath = storagePath.split('/').map(encodeURIComponent).join('/')

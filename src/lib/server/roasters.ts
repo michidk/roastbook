@@ -20,34 +20,16 @@ import {
 import { caseInsensitiveLike } from '@/lib/server/portable-query.server'
 import { withResourceLimits } from '@/lib/server/resource-limits.server'
 import {
-  nameSchema,
   notesSchema,
-  optionalUrlSchema,
   positiveIdSchema,
   shortTextSchema,
 } from '@/lib/server-validation'
 import type { ExtractedRoasterInfo } from '@/modules/ai/read-models'
-
-const roasterCreateSchema = z.object({
-  name: nameSchema,
-  location: shortTextSchema.optional(),
-  country: shortTextSchema.optional(),
-  website: optionalUrlSchema,
-  instagramHandle: z.string().trim().max(100).optional(),
-  notes: notesSchema.optional(),
-})
-
-const roasterUpdateSchema = roasterCreateSchema.partial().extend({
-  id: positiveIdSchema,
-  location: shortTextSchema.nullable().optional(),
-  country: shortTextSchema.nullable().optional(),
-  website: z
-    .union([z.url().max(2_048), z.literal('')])
-    .nullable()
-    .optional(),
-  instagramHandle: z.string().trim().max(100).nullable().optional(),
-  notes: notesSchema.nullable().optional(),
-})
+import {
+  roasterCreateSchema,
+  roasterListSchema,
+  roasterUpdateSchema,
+} from '@/modules/journal/roasters-input'
 
 const researchRoasterInfoSchema = z
   .object({
@@ -67,12 +49,6 @@ const researchRoasterInfoSchema = z
   })
 
 const ROASTERS_PAGE_SIZE = 25
-const roasterListSchema = z.object({
-  page: z.number().int().min(1).max(100_000).default(1),
-  query: z.string().trim().max(200).default(''),
-  sort: z.enum(['name', 'location', 'beans']).default('name'),
-  direction: z.enum(['asc', 'desc']).default('asc'),
-})
 
 export const getRoasters = createServerFn({ method: 'GET' }).handler(
   async () => {

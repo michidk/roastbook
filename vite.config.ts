@@ -6,9 +6,11 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact from '@vitejs/plugin-react'
 import { nitro } from 'nitro/vite'
 import { defineConfig } from 'vite'
+import { demoServiceAliases } from './scripts/demo-aliases'
 import { demoAssets } from './scripts/vite-demo-assets'
 import { demoLocalPlugin } from './scripts/vite-demo-local'
 import { devMigrations } from './scripts/vite-dev-migrations'
+import { journalBoundaries } from './scripts/vite-journal-boundaries'
 
 const cloudflareRuntime = process.env.ROASTBOOK_RUNTIME === 'cloudflare'
 const roastbookEdition = process.env.ROASTBOOK_EDITION ?? 'standard'
@@ -136,30 +138,52 @@ const config = defineConfig({
       ? cloudflareAliases
       : roastbookEdition === 'demo'
         ? [
+            ...demoServiceAliases,
+            {
+              find: /^@\/lib\/edition-journal$/,
+              replacement: resolve('packages/journal-demo/src/journal.ts'),
+            },
+            {
+              find: /^@\/components\/edition-ui$/,
+              replacement: resolve('packages/journal-demo/src/ui.tsx'),
+            },
             {
               find: /^@\/lib\/server\/auth\/request.server$/,
-              replacement: resolve('src/lib/demo/request.server.ts'),
+              replacement: resolve(
+                'packages/journal-demo/src/request.server.ts',
+              ),
             },
-            { find: /^@\/db$/, replacement: resolve('src/db/demo.ts') },
+            {
+              find: /^@\/db$/,
+              replacement: resolve(
+                'packages/journal-demo/src/database.server.ts',
+              ),
+            },
             {
               find: /^@\/lib\/storage$/,
-              replacement: resolve('src/lib/demo/storage.ts'),
+              replacement: resolve('packages/journal-demo/src/storage.ts'),
             },
             {
               find: /^@\/lib\/thumbnail-image$/,
-              replacement: resolve('src/lib/demo/thumbnail-image.ts'),
+              replacement: resolve(
+                'packages/journal-demo/src/thumbnail-image.ts',
+              ),
             },
             {
               find: /^@tanstack\/ai$/,
-              replacement: resolve('src/lib/demo/tanstack-ai.ts'),
+              replacement: resolve('packages/journal-demo/src/tanstack-ai.ts'),
             },
             {
               find: /^@tanstack\/ai-openai(?:\/compatible)?$/,
-              replacement: resolve('src/lib/demo/tanstack-ai-openai.ts'),
+              replacement: resolve(
+                'packages/journal-demo/src/tanstack-ai-openai.ts',
+              ),
             },
             {
               find: /^@tanstack\/ai-openai\/tools$/,
-              replacement: resolve('src/lib/demo/tanstack-ai-openai-tools.ts'),
+              replacement: resolve(
+                'packages/journal-demo/src/tanstack-ai-openai-tools.ts',
+              ),
             },
           ]
         : [],
@@ -194,12 +218,15 @@ const config = defineConfig({
     ],
   },
   plugins: [
+    journalBoundaries(roastbookEdition === 'demo'),
     {
       name: 'roastbook-schema-declarations',
       transform(code, id) {
         // Schema construction has no external effects. Allow unused server
         // imports to disappear after Start removes server-function handlers.
         if (
+          id === resolve('src/db/index.ts') ||
+          id === resolve('src/db/d1/index.ts') ||
           id === resolve('src/db/schema.ts') ||
           id === resolve('src/db/d1/schema.ts')
         )
@@ -220,6 +247,15 @@ const config = defineConfig({
       : []),
     tailwindcss(),
     tanstackStart({
+      ...(roastbookEdition === 'demo'
+        ? {}
+        : {
+            spa: {
+              enabled: true,
+              maskPath: '/offline-shell',
+              prerender: { outputPath: '/offline-shell.html' },
+            },
+          }),
       router: {
         codeSplittingOptions: {
           // Keep route loaders in the critical route bundle so client-side

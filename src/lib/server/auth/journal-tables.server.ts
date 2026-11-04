@@ -30,6 +30,8 @@ export const journalTables = [
   'gear_sets',
   'grinder_details',
   'kettle_details',
+  'journal_sync_revisions',
+  'journal_command_receipts',
   'mcp_audit_events',
   'mcp_settings',
   'media_cleanup_jobs',

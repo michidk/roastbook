@@ -227,14 +227,15 @@ PWA installation requires a secure context: HTTPS in production, or
 check the manifest and service worker, then switch the network to offline and
 reload to see the offline behaviour. The worker caches the offline page,
 manifest, icons, hashed `/assets/*` files, and bounded app documents for offline
-boot. Brews created offline are queued in IndexedDB and synchronized; see
+boot. Journal edits and pictures commit to RxDB with their durable
+synchronization commands; see
 [Offline journaling](offline.md).
 
 `bun run check:pwa` validates the manifest, icons, offline page, and built
 service worker after a build. The demo disables PWA installation and server
 synchronization. Its editable journal and pictures persist in isolated browser
 storage. Run `bun run dev:demo`
-to prepare its worker and sample snapshot, or `bun run build:demo` for production.
+to prepare its sample JSON, or `bun run build:demo` for production.
 The compiled-worker behavioral test covers local journal persistence, relations,
 reset, visitor isolation, and integration rejection. See
 [Browser-local demo](demo-mode.md). Validate its PWA restrictions with
@@ -256,3 +257,23 @@ runs the OpenPencil editor for them. See `design/README.md`.
 - Run `bun run generate-routes` after route-file changes.
 - Never edit `src/routeTree.gen.ts` manually.
 - Commit a schema migration and its matching `drizzle/meta` changes together.
+
+## Shared client journal
+
+See [Client journal architecture](client-data.md) for package boundaries and
+[Offline journaling](offline.md) for actual coverage. Ordinary client operations
+use `src/lib/client/journal`; portable commands and reads live in
+`src/modules/journal`. Never import server implementations into shared packages.
+
+After a PostgreSQL schema change, regenerate portable model metadata with
+`bun run generate:journal-model`. `bun run check:boundaries` verifies generated
+models, synchronization revision triggers, and import ownership. New journal
+tables must participate in owner revision tracking on both PostgreSQL and D1.
+The schema has its normal committed server migrations; browser format versions
+are independent and unsupported versions must preserve saved data.
+
+Run standard, demo, and hosted builds sequentially in a checkout because Nitro
+build state is shared. The standard build runs Vite under Bun so SPA-shell
+prerendering uses the Bun runtime selected by the Nitro preset. Product builds
+must emit `offline-shell.html`; service-worker generation fails if it is missing.
+Demo builds emit no SQL engine, install manifest, or product offline shell.

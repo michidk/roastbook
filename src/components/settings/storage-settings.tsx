@@ -2,7 +2,7 @@ import { HardDrive, Images } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { PanelSection } from '@/components/section-layout'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
-import type { getInternalStats } from '@/lib/server/internal-stats'
+import type { getInternalStats } from '@/lib/client/journal/internal-stats'
 import { formatBytes } from '@/lib/utils'
 
 type StorageStats = Awaited<ReturnType<typeof getInternalStats>>['storage']

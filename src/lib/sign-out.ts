@@ -3,10 +3,13 @@ export async function signOutOfAccount() {
   const pending = (await listOperations()).some(
     (item) => !['acknowledged', 'cancelled'].includes(item.status),
   )
-  if (pending)
+  const { getClientJournal } = await import('@/lib/client/local-journal')
+  const journal = await getClientJournal()
+  if (pending || (await journal.read()).pending.length)
     throw new Error('Sync or discard your pending changes before signing out.')
 
   const { deleteOfflineDatabase } = await import('@/modules/offline/storage')
+  await journal.remove()
   await deleteOfflineDatabase()
   const { authClient } = await import('@/lib/auth-client')
   const result = await authClient.signOut()

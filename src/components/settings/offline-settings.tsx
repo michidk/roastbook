@@ -1,3 +1,4 @@
+import type { JournalState } from '@roastbook/journal-domain/state'
 import { Link } from '@tanstack/react-router'
 import {
   AlertTriangle,
@@ -15,11 +16,17 @@ import type { ComponentType } from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { DeleteConfirmation } from '@/components/delete-confirmation'
+import { JournalSyncNotice } from '@/components/journal-sync-notice'
 import { PanelSection } from '@/components/section-layout'
 import { Button } from '@/components/ui/button'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useOnlineStatus } from '@/hooks/use-online-status'
+import {
+  getClientJournal,
+  subscribeJournalChanges,
+  synchronizeJournal,
+} from '@/lib/client/local-journal'
 import { getErrorMessage } from '@/lib/error-message'
 import { formatBytes } from '@/lib/utils'
 import {
@@ -44,6 +51,7 @@ import {
 import { getOfflineRxDatabase } from '@/modules/rxdb/offline-database'
 
 interface OfflineSnapshot {
+  readonly journal: JournalState | null
   readonly operations: OfflineOperation[]
   readonly metadata: OfflineSyncMetadata
   readonly usageBytes: number | null
@@ -100,14 +108,18 @@ export function OfflineSettings() {
   const loadSnapshot = useCallback(async () => {
     setIsLoading(true)
     try {
-      const [operations, metadata, estimate] = await Promise.all([
+      const [operations, metadata, estimate, journal] = await Promise.all([
         listOperations(),
         readOfflineSyncMetadata(),
         typeof navigator !== 'undefined' && navigator.storage?.estimate
           ? navigator.storage.estimate().catch(() => null)
           : Promise.resolve(null),
+        getClientJournal()
+          .then((journal) => journal.read())
+          .catch(() => null),
       ])
       setSnapshot({
+        journal,
         operations,
         metadata,
         usageBytes: estimate?.usage ?? null,
@@ -125,9 +137,16 @@ export function OfflineSettings() {
 
   useEffect(() => {
     void loadSnapshot()
-    return subscribeToPendingSyncFinished(() => {
+    const unsubscribeSync = subscribeToPendingSyncFinished(() => {
       void loadSnapshot()
     })
+    const unsubscribeJournal = subscribeJournalChanges(() => {
+      void loadSnapshot()
+    })
+    return () => {
+      unsubscribeSync()
+      unsubscribeJournal()
+    }
   }, [loadSnapshot])
 
   useEffect(() => {
@@ -171,16 +190,17 @@ export function OfflineSettings() {
     snapshot?.operations.filter((operation) =>
       isVisibleOperationStatus(operation.status),
     ) ?? []
-  const waiting = countStatus(visibleOperations, [
-    'pending',
-    'in-flight',
-    'retryable',
-  ])
-  const needsAttention = countStatus(visibleOperations, [
-    'permanent',
-    'conflict',
-  ])
-  const signInRequired = countStatus(visibleOperations, ['auth-required'])
+  const journalPending = snapshot?.journal?.pending ?? []
+  const waiting =
+    journalPending.filter((entry) => entry.status === 'pending').length +
+    countStatus(visibleOperations, ['pending', 'in-flight', 'retryable'])
+  const needsAttention =
+    journalPending.filter((entry) =>
+      ['conflict', 'failed'].includes(entry.status),
+    ).length + countStatus(visibleOperations, ['permanent', 'conflict'])
+  const signInRequired =
+    journalPending.filter((entry) => entry.status === 'auth-required').length +
+    countStatus(visibleOperations, ['auth-required'])
   const unsynced = waiting + needsAttention + signInRequired
 
   const storageValue =
@@ -212,10 +232,15 @@ export function OfflineSettings() {
       return
     }
     try {
+      if (journalPending.length)
+        throw new Error(
+          'Sync or resolve the journal changes above before clearing local data.',
+        )
+      await (await getClientJournal()).remove()
       await deleteOfflineDatabase()
       await usePendingBrewsStore.getState().refresh()
       await loadSnapshot()
-      toast.success('Local offline data cleared')
+      window.location.reload()
     } catch (error) {
       toast.error(getErrorMessage(error, 'Could not clear local offline data'))
     }
@@ -242,8 +267,8 @@ export function OfflineSettings() {
         title="Offline"
         description={
           isOnline
-            ? 'This browser stores pending brew and recipe changes, pictures, and saved copies for offline use. You are online.'
-            : 'You are offline. Pending brew creates stay on this device and sync when the connection returns.'
+            ? 'This browser stores your downloaded journal, pictures, settings, and pending changes. You are online.'
+            : 'You are offline. Journal changes stay on this device until the server confirms them after reconnecting.'
         }
         action={
           isOnline ? (
@@ -325,8 +350,10 @@ export function OfflineSettings() {
         ) : null}
 
         <p className="text-sm text-muted-foreground">
-          Brew and recipe creates, edits, and deletes, save-to-recipe, and brew
-          pictures are queued offline today.
+          Journal lists, details, search, statistics, ordinary edits, settings,
+          and added pictures use the same local journal in a tab or installed
+          app. AI, external services, and account operations need a connection.
+          Earlier offline work remains available in Pending changes.
         </p>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -336,7 +363,14 @@ export function OfflineSettings() {
             size="sm"
             disabled={!isOnline || isSyncing || unsynced === 0}
             aria-busy={isSyncing}
-            onClick={() => requestPendingSync()}
+            onClick={() => {
+              requestPendingSync()
+              void synchronizeJournal().catch((error) =>
+                toast.error(
+                  getErrorMessage(error, 'Could not synchronize journal'),
+                ),
+              )
+            }}
           >
             <RefreshCw
               className={isSyncing ? 'animate-spin' : undefined}
@@ -361,6 +395,7 @@ export function OfflineSettings() {
         </div>
       </PanelSection>
 
+      <JournalSyncNotice />
       <PanelSection
         title="App shell"
         description="Re-download the cached application shell and static assets. Pending operations and local data are preserved."
@@ -383,7 +418,7 @@ export function OfflineSettings() {
 
       <PanelSection
         title="Cached data"
-        description="Saved brew detail copies and the new-brew reference snapshot. Pending operations are kept."
+        description="Earlier saved detail copies and reference snapshots. The shared journal and pending operations are kept."
       >
         <DeleteConfirmation
           title="Clear cached offline data?"
@@ -407,14 +442,14 @@ export function OfflineSettings() {
 
       <PanelSection
         title="Local data"
-        description="The operation log, cached entities, reference data, and sync metadata stored in this browser."
+        description="The downloaded journal, pictures, earlier operation log, and caches for this account in this browser. Pending journal changes must be resolved first."
       >
         <DeleteConfirmation
           title="Clear all local offline data?"
           description={
             unsynced > 0
               ? `${unsynced} unsynced operation${unsynced === 1 ? '' : 's'} will be discarded permanently. This cannot be undone.`
-              : 'Operation history, cached entities, reference data, and sync metadata will be removed from this browser.'
+              : 'The downloaded journal, local pictures, operation history, and caches will be removed. The journal will download again on your next online visit.'
           }
           confirmLabel="Clear all data"
           busyLabel="Clearing…"
@@ -423,7 +458,7 @@ export function OfflineSettings() {
               type="button"
               variant="destructive"
               size="sm"
-              disabled={isSyncing}
+              disabled={isSyncing || journalPending.length > 0 || !isOnline}
             >
               <Trash2 aria-hidden="true" />
               Clear all local data

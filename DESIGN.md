@@ -594,3 +594,12 @@ appearance. Allow ordinary forms and journal actions; integration settings expla
 why those features are unavailable. During initialization, show a browser-journal
 loading message. Storage errors retain the saved data and offer retry and confirmed
 reset from the error page. The error page uses the same demo avatar menu.
+
+## Shared journal confirmation
+
+Ordinary journal actions save to this device first. The product pending banner
+must distinguish local persistence from server confirmation and offer visible
+recovery for conflicts, failed commands, and expired authentication. Never label
+a demo operation as queued for synchronization. A missing initial journal is an
+error, not an empty collection. Browser quota and unsupported-format errors must
+preserve saved work and offer retry without automatic reseeding.

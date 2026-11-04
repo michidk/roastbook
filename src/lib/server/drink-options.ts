@@ -1,6 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
 import { and, asc, eq, ne } from 'drizzle-orm'
-import { z } from 'zod'
 import { db } from '@/db'
 import {
   allocateJournalIds,
@@ -14,7 +13,11 @@ import {
   drinkTypeOptionGroups,
   drinkTypes,
 } from '@/db/schema'
-import { nameSchema, positiveIdSchema } from '@/lib/server-validation'
+import { positiveIdSchema } from '@/lib/server-validation'
+import {
+  drinkTypeWriteSchema,
+  optionValueWriteSchema,
+} from '@/modules/journal/drink-options-input'
 
 export const getDrinkConfiguration = createServerFn({ method: 'GET' }).handler(
   async () => {
@@ -47,12 +50,6 @@ export const getDrinkConfiguration = createServerFn({ method: 'GET' }).handler(
     }
   },
 )
-
-const drinkTypeWriteSchema = z.object({
-  id: positiveIdSchema.optional(),
-  name: nameSchema,
-  optionGroupIds: z.array(positiveIdSchema).max(20).default([]),
-})
 
 export const saveDrinkType = createServerFn({ method: 'POST' })
   .validator(drinkTypeWriteSchema)
@@ -147,11 +144,6 @@ export const archiveDrinkType = createServerFn({ method: 'POST' })
       .set({ isArchived: true, updatedAt: new Date() })
       .where(owned(drinkTypes, eq(drinkTypes.id, id)))
   })
-
-const optionValueWriteSchema = z.object({
-  groupId: positiveIdSchema,
-  name: nameSchema,
-})
 
 export const createDrinkOptionValue = createServerFn({ method: 'POST' })
   .validator(optionValueWriteSchema)

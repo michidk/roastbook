@@ -21,6 +21,7 @@ import {
   CardTitle,
   interactiveCardLinkClassName,
 } from '@/components/ui/card'
+import { getGearSetPage } from '@/lib/client/journal/gear-sets'
 import { nextSortDirection } from '@/lib/collection-sort'
 import {
   searchEnum,
@@ -29,7 +30,6 @@ import {
   searchString,
   searchValidator,
 } from '@/lib/search-params'
-import { getGearSetPage } from '@/lib/server/gear-sets'
 import { cn } from '@/lib/utils'
 
 const parseGearSetSearch = (input: unknown) => {

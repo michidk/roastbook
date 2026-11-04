@@ -1,6 +1,5 @@
 import 'fake-indexeddb/auto'
 import { afterAll, beforeEach, describe, expect, test } from 'bun:test'
-import { loadEntityDetail } from '@/lib/client/cached-reads'
 import { loadCached } from './cached-read'
 import {
   cacheEntityDetail,
@@ -31,20 +30,22 @@ const failNetwork = async (): Promise<{ name: string; page: number }> => {
   throw new TypeError('Failed to fetch Roastbook')
 }
 
-describe('cached route reads', () => {
+describe('legacy cached reads', () => {
   test('persists successful route data and recovers it when the server cannot be reached', async () => {
     const data = { name: 'Morning', page: 1 }
     expect(
-      await loadEntityDetail({
-        entityType: 'recipe',
-        id: 4,
+      await loadCached({
+        read: () =>
+          readCachedEntityDetail<{ name: string; page: number }>('recipe', 4),
+        write: (data) => cacheEntityDetail('recipe', 4, data),
         load: async () => data,
       }),
     ).toEqual(data)
     expect(
-      await loadEntityDetail({
-        entityType: 'recipe',
-        id: 4,
+      await loadCached({
+        read: () =>
+          readCachedEntityDetail<{ name: string; page: number }>('recipe', 4),
+        write: (data) => cacheEntityDetail('recipe', 4, data),
         load: failNetwork,
       }),
     ).toMatchObject({ ...data, offlineSnapshotSavedAt: expect.any(String) })
@@ -53,17 +54,17 @@ describe('cached route reads', () => {
   test('does not substitute a saved page for different search parameters or a domain error', async () => {
     await cacheEntityDetail('bean', 4, { name: 'Konga', page: 1 })
     await expect(
-      loadEntityDetail({
-        entityType: 'bean',
-        id: 4,
+      loadCached({
+        read: () =>
+          readCachedEntityDetail<{ name: string; page: number }>('bean', 4),
         load: failNetwork,
         accepts: (data) => data.page === 2,
       }),
     ).rejects.toThrow('Failed to fetch')
     await expect(
-      loadEntityDetail({
-        entityType: 'bean',
-        id: 4,
+      loadCached({
+        read: () =>
+          readCachedEntityDetail<{ name: string; page: number }>('bean', 4),
         load: async () => {
           throw new Error('Permission denied')
         },

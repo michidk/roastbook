@@ -28,6 +28,10 @@ for (const directory of outputDirs) {
     throw new Error(`Static output directory does not exist: ${directory}`)
   }
 
+  if (!existsSync(join(directory, 'offline-shell.html')))
+    throw new Error(
+      'The public offline shell was not generated. Fix prerender errors before publishing.',
+    )
   const clientAssets = await readClientAssetNames(directory)
   const directoryBuildId = await createServiceWorkerBuildId(
     template,

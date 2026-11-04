@@ -28,15 +28,15 @@ import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
 import { useImageUpload } from '@/hooks/use-image-upload'
 import { useOnlineStatus } from '@/hooks/use-online-status'
-import { getErrorMessage } from '@/lib/error-message'
-import type { ImageFile } from '@/lib/image-file'
-import { getExtractedRoasterAction } from '@/lib/roaster-match'
 import {
   checkVisionEnabled,
   createBean,
   extractBeanInfo,
-} from '@/lib/server/beans'
-import { getRoasters } from '@/lib/server/roasters'
+} from '@/lib/client/journal/beans'
+import { getRoasters } from '@/lib/client/journal/roasters'
+import { getErrorMessage } from '@/lib/error-message'
+import type { ImageFile } from '@/lib/image-file'
+import { getExtractedRoasterAction } from '@/lib/roaster-match'
 import {
   type EntityImageUploadFailure,
   uploadEntityImages,

@@ -40,6 +40,7 @@ import {
   subscribeToPendingSync,
 } from '@/modules/offline/sync-trigger'
 import { isPendingBrewHeldForTasting } from '@/modules/offline/tasting-holds'
+import { synchronizeJournal } from './local-journal'
 
 const PREFETCH_TIMEOUT_MS = 3000
 let activeSyncOwner: object | null = null
@@ -196,6 +197,8 @@ export function useJournalSync() {
               ) {
                 await recordSuccessfulSync().catch(() => undefined)
               }
+              if (!syncResult.authRequired && !syncResult.stoppedByNetwork)
+                await synchronizeJournal()
               return syncResult
             } finally {
               if (activeSyncOwner === syncOwner) {

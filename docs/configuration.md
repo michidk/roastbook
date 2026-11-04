@@ -48,6 +48,12 @@ and device integration settings do not enable integrations in this edition.
 Demo image limits are fixed at three pictures per item and 50 MiB total, with
 the shared 10 MiB input-file limit.
 
+The product also keeps an account-scoped browser journal for offline use and
+synchronizes it through authenticated endpoints. This needs no additional runtime
+setting. Apply committed database migrations before deploying its client.
+See [Client journal architecture](client-data.md) for storage scope, identifier
+reservations, pending-change recovery, and browser storage limits.
+
 ## Authentication and email
 
 | Variable | Default | Required | Description |

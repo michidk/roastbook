@@ -533,6 +533,13 @@
       "when": 1793655734650,
       "tag": "0075_brief_shiver_man",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1793745639213,
+      "tag": "0076_steep_mentor",
+      "breakpoints": true
     }
   ]
 }

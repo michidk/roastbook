@@ -2,11 +2,10 @@ import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { StorageSettings } from '@/components/settings/storage-settings'
 import { Button } from '@/components/ui/button'
-import { getInternalStats } from '@/lib/server/internal-stats'
-import { loadOfflineSettingsData } from '@/modules/offline/settings-cache'
+import { getInternalStats } from '@/lib/client/journal/internal-stats'
 
 export const Route = createFileRoute('/settings/storage')({
-  loader: () => loadOfflineSettingsData('storage', () => getInternalStats()),
+  loader: () => getInternalStats(),
   component: StorageSettingsSection,
 })
 

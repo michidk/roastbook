@@ -12,7 +12,7 @@ import {
   sql,
 } from 'drizzle-orm'
 import { db } from '@/db'
-import { owned } from '@/db/journal-scope.server'
+import { journalOwnerId, owned } from '@/db/journal-scope.server'
 import {
   beanPurchases,
   beans,
@@ -312,7 +312,7 @@ export async function loadStatsExploration({
         id: beans.id,
         name: beans.name,
         isArchived:
-          sql<boolean>`not exists (select 1 from ${beanPurchases} where ${owned(beanPurchases)} and ${beanPurchases.beanId} = ${beans.id} and ${beanPurchases.isArchived} = false)`.mapWith(
+          sql<boolean>`not exists (select 1 from "bean_purchases" as "available_purchases" where "available_purchases"."owner_id" = ${journalOwnerId()} and "available_purchases"."bean_id" = "beans"."id" and "available_purchases"."is_archived" = false)`.mapWith(
             Boolean,
           ),
       })

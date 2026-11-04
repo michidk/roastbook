@@ -7,11 +7,11 @@ import { InputField, TextareaField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
 import { Button } from '@/components/ui/button'
 import { Toggle } from '@/components/ui/toggle'
-import type { DrinkTypeOption } from '@/lib/drink-options'
 import {
   type getBrewingMethod,
   updateBrewingMethod,
-} from '@/lib/server/brewing-methods'
+} from '@/lib/client/journal/brewing-methods'
+import type { DrinkTypeOption } from '@/lib/drink-options'
 import {
   SHOT_PARAMETER_KEYS,
   SHOT_PARAMETER_META,

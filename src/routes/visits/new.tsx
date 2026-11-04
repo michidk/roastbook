@@ -26,6 +26,11 @@ import {
 } from '@/hooks/use-local-date-time-input'
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes'
 import { cafeVisitCreatePayload } from '@/lib/cafe-visit-payload'
+import { getBeans } from '@/lib/client/journal/beans'
+import { createCafeVisit } from '@/lib/client/journal/cafe-visits'
+import { getCoffeeShops } from '@/lib/client/journal/coffee-shops'
+import { getDrinkConfiguration } from '@/lib/client/journal/drink-options'
+import { getTasteTags } from '@/lib/client/journal/taste-tags'
 import { localDateTimeInputToDate } from '@/lib/date-input'
 import { getErrorMessage } from '@/lib/error-message'
 import { focusFirstInvalidControl } from '@/lib/form-validation'
@@ -35,11 +40,6 @@ import {
   searchRecord,
   searchValidator,
 } from '@/lib/search-params'
-import { getBeans } from '@/lib/server/beans'
-import { createCafeVisit } from '@/lib/server/cafe-visits'
-import { getCoffeeShops } from '@/lib/server/coffee-shops'
-import { getDrinkConfiguration } from '@/lib/server/drink-options'
-import { getTasteTags } from '@/lib/server/taste-tags'
 import { getCafeVisitUpdateErrors } from '@/lib/update-validation'
 
 const parseNewVisitSearch = (input: unknown) => {

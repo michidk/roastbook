@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as OfflineShellRouteImport } from './routes/offline-shell'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as DotwellKnownSplatRouteImport } from './routes/[.]well-known/$'
@@ -88,6 +89,11 @@ const AdminRoute = AdminRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OfflineShellRoute = OfflineShellRouteImport.update({
+  id: '/offline-shell',
+  path: '/offline-shell',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -406,6 +412,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
+  '/offline-shell': typeof OfflineShellRoute
   '/settings': typeof SettingsRouteWithChildren
   '/stats': typeof StatsRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
@@ -472,6 +479,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/offline-shell': typeof OfflineShellRoute
   '/stats': typeof StatsRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
   '/admin/ai': typeof AdminAiRoute
@@ -539,6 +547,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
+  '/offline-shell': typeof OfflineShellRoute
   '/settings': typeof SettingsRouteWithChildren
   '/stats': typeof StatsRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
@@ -608,6 +617,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/login'
+    | '/offline-shell'
     | '/settings'
     | '/stats'
     | '/.well-known/$'
@@ -674,6 +684,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/offline-shell'
     | '/stats'
     | '/.well-known/$'
     | '/admin/ai'
@@ -740,6 +751,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/login'
+    | '/offline-shell'
     | '/settings'
     | '/stats'
     | '/.well-known/$'
@@ -808,6 +820,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   LoginRoute: typeof LoginRoute
+  OfflineShellRoute: typeof OfflineShellRoute
   SettingsRoute: typeof SettingsRouteWithChildren
   StatsRoute: typeof StatsRoute
   DotwellKnownSplatRoute: typeof DotwellKnownSplatRoute
@@ -878,6 +891,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/offline-shell': {
+      id: '/offline-shell'
+      path: '/offline-shell'
+      fullPath: '/offline-shell'
+      preLoaderRoute: typeof OfflineShellRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -1369,6 +1389,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   LoginRoute: LoginRoute,
+  OfflineShellRoute: OfflineShellRoute,
   SettingsRoute: SettingsRouteWithChildren,
   StatsRoute: StatsRoute,
   DotwellKnownSplatRoute: DotwellKnownSplatRoute,

@@ -28,6 +28,17 @@ export function getErrorDisplayState(error: unknown): ErrorDisplayState {
       hint: 'Your saved data is preserved. Retry after checking site storage and updating your browser.',
     }
 
+  if (
+    /local journal|saved journal|browser storage|sample journal|unsupported format|record identifiers/i.test(
+      rawMessage,
+    )
+  )
+    return {
+      title: 'Local journal unavailable',
+      message: rawMessage,
+      hint: 'Your saved data has not been reset. Retry, or review earlier pending changes in Settings → Offline.',
+    }
+
   if (rawMessage.startsWith(DB_UNAVAILABLE_PREFIX)) {
     return {
       title: 'Database unavailable',

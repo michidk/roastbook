@@ -42,13 +42,13 @@ import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useFormState } from '@/hooks/use-form-state'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
-import { getErrorMessage } from '@/lib/error-message'
-import { toNullableRating, toRatingInput } from '@/lib/rating'
 import {
   deleteCoffeeShop,
   type getCoffeeShop,
   updateCoffeeShop,
-} from '@/lib/server/coffee-shops'
+} from '@/lib/client/journal/coffee-shops'
+import { getErrorMessage } from '@/lib/error-message'
+import { toNullableRating, toRatingInput } from '@/lib/rating'
 import { cn } from '@/lib/utils'
 
 type CoffeeShop = NonNullable<Awaited<ReturnType<typeof getCoffeeShop>>>

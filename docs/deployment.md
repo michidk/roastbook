@@ -1,6 +1,6 @@
 # Deployment
 
-A read-only demo build deploys to Vercel — see
+An editable browser-local demo build deploys to Vercel. See
 [docs/demo-mode.md](demo-mode.md).
 
 ## Security boundary
@@ -205,15 +205,23 @@ The application serves `/sw.js`, `/manifest.json`, and `/offline.html` with
 `Cache-Control: no-cache`. Keep those responses uncached at any additional CDN
 or reverse proxy. Hodor passes them through without special configuration.
 
-Offline pending brews and reference data live in the browser's IndexedDB. No
-server configuration is required, but apply the committed migrations before
-deploying a client that queues brews so the idempotency column exists.
+The service worker caches the public, data-free `/offline-shell.html` for offline
+navigation. Private HTML and authentication routes remain excluded. Do not inject
+private information into the public shell through `VITE_HEAD_HTML`.
+
+The complete downloaded journal, local pictures, and pending commands live in
+account-scoped IndexedDB. Apply the committed migrations before deploying the
+client; synchronization uses journal revisions, command receipts, and triggers
+that also track writes from existing integrations. Earlier pending operations
+remain available for recovery. See [Client journal architecture](client-data.md).
 
 ## Docker image
 
 The Docker build compiles JavaScript on the build host architecture and installs
 runtime dependencies for the target architecture. Nitro's traced dependencies
 are removed so native modules such as Sharp resolve from that target install.
+`tslib` is an explicit runtime dependency because Nitro's extracted certificate
+modules import it directly from the production dependency directory.
 
 Build and run the application directly when an external database and reverse
 proxy are already available:

@@ -11,11 +11,12 @@ import {
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import type { ComponentType } from 'react'
 import { useEffect, useState } from 'react'
+import { JournalSyncNotice } from '@/components/journal-sync-notice'
 
 import '../styles.css'
 import { AlertTriangle, Home, RefreshCw } from 'lucide-react'
 import { AppNavbar } from '@/components/app-navbar'
-import { DemoNotice } from '@/components/demo-notice'
+import { DemoNotice } from '@/components/edition-ui'
 import { ErrorDetails } from '@/components/error-details'
 import { InstallAppHint } from '@/components/install-app-hint'
 import { OfflineBanner } from '@/components/offline-banner'
@@ -28,13 +29,20 @@ import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useOnlineStatus } from '@/hooks/use-online-status'
 import { DEMO_MODE, PREFERENCES_STORAGE_KEY } from '@/lib/build-mode'
+import { getAppSettings } from '@/lib/client/journal/app-settings'
+import {
+  subscribeJournalChanges,
+  synchronizeJournal,
+} from '@/lib/client/local-journal'
 import { DEFAULT_APP_SETTINGS } from '@/lib/default-app-settings'
-import { subscribeDemoChanges } from '@/lib/demo/local/client'
 import { getErrorDisplayState } from '@/lib/error-display'
-import { restoreOfflineOwner, selectOfflineOwner } from '@/lib/journal-owner'
+import {
+  getOfflineOwner,
+  restoreOfflineOwner,
+  selectOfflineOwner,
+} from '@/lib/journal-owner'
 import { usePreferencesStore } from '@/lib/preferences-store'
 import { getCurrentAccount } from '@/lib/server/account'
-import { getAppSettings } from '@/lib/server/app-settings'
 import {
   isDarkTheme,
   THEME_BOOTSTRAP_SCRIPT,
@@ -42,13 +50,9 @@ import {
   themeColor,
 } from '@/lib/theme'
 import { cn } from '@/lib/utils'
-import {
-  cacheSettingsData,
-  loadOfflineSettingsData,
-} from '@/modules/offline/settings-cache'
 
 export const Route = createRootRoute({
-  ssr: !DEMO_MODE,
+  ssr: false,
   beforeLoad: ({ location }) => {
     if (
       DEMO_MODE &&
@@ -62,6 +66,7 @@ export const Route = createRootRoute({
   loader: async ({ location }) => {
     if (
       location.pathname === '/login' ||
+      location.pathname === '/offline-shell' ||
       location.pathname === '/oauth/consent'
     )
       return DEFAULT_APP_SETTINGS
@@ -73,7 +78,17 @@ export const Route = createRootRoute({
         if (!(error instanceof TypeError)) throw error
       }
     }
-    return loadOfflineSettingsData('general', getAppSettings)
+    try {
+      return await getAppSettings()
+    } catch (error) {
+      // Existing pending work remains accessible before the first complete download.
+      if (
+        !DEMO_MODE &&
+        ['/brews/pending', '/settings/offline'].includes(location.pathname)
+      )
+        return { ...DEFAULT_APP_SETTINGS, journalOwner: getOfflineOwner() }
+      throw error
+    }
   },
   head: () => ({
     meta: [
@@ -344,17 +359,31 @@ function RootComponent() {
   })
   const settings = Route.useLoaderData()
   const isOnline = useOnlineStatus()
-  useEffect(() => {
-    if (!login)
-      void cacheSettingsData('general', settings).catch(() => undefined)
-  }, [settings, login])
+
   const router = useRouter()
   useEffect(() => {
-    if (!DEMO_MODE) return
-    return subscribeDemoChanges(() => {
+    return subscribeJournalChanges(() => {
       void router.invalidate()
     })
   }, [router])
+  useEffect(() => {
+    if (login || DEMO_MODE) return
+    const refresh = () => {
+      if (document.visibilityState === 'visible')
+        void synchronizeJournal().catch(() => undefined)
+    }
+    refresh()
+    window.addEventListener('online', refresh)
+    window.addEventListener('focus', refresh)
+    document.addEventListener('visibilitychange', refresh)
+    const timer = window.setInterval(refresh, 30000)
+    return () => {
+      window.removeEventListener('online', refresh)
+      window.removeEventListener('focus', refresh)
+      document.removeEventListener('visibilitychange', refresh)
+      window.clearInterval(timer)
+    }
+  }, [login])
 
   if (login)
     return (
@@ -370,7 +399,12 @@ function RootComponent() {
     <TooltipProvider>
       <div className="flex h-[100dvh] flex-col overflow-hidden">
         <AppNavbar demoMode={settings.demoMode} account={settings.account} />
-        {settings.demoMode ? null : <OfflineStatusMount />}
+        {settings.demoMode ? null : (
+          <>
+            <JournalSyncNotice />
+            <OfflineStatusMount />
+          </>
+        )}
         <OfflineBanner isOnline={isOnline} demoMode={settings.demoMode} />
         <ScrollArea
           className="min-h-0 flex-1"

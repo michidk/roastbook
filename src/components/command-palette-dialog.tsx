@@ -16,12 +16,12 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import { DialogFooter, DialogHeader } from '@/components/ui/dialog'
+import { searchCommandEntities } from '@/lib/client/journal/command-search'
 import {
   COMMAND_ENTITY_SEARCH_MIN_LENGTH,
   type CommandEntitySearchResults,
 } from '@/lib/command-search-contract'
 import { usePreferencesStore } from '@/lib/preferences-store'
-import { searchCommandEntities } from '@/lib/server/command-search'
 
 const EMPTY_ENTITY_RESULTS: CommandEntitySearchResults = {
   beans: [],

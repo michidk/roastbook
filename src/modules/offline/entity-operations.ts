@@ -174,32 +174,6 @@ export async function enqueueRecipeCreate(
   return operation.id
 }
 
-export async function enqueueSavedBrewToRecipe(input: {
-  readonly shotId: number
-  readonly target: { readonly name: string } | { readonly recipeId: number }
-  readonly details: EntityMutationSummary
-  readonly clientOperationId?: string
-}): Promise<string> {
-  const operation = newOperation({
-    id: input.clientOperationId,
-    entityType: 'brew',
-    operationType: 'save-to-recipe',
-    entityLocalId: String(input.shotId),
-    entityServerId: String(input.shotId),
-    payload: {
-      shotId: input.shotId,
-      target: input.target,
-      clientOperationId: input.clientOperationId,
-    },
-    details: input.details,
-    dependencyIds: [],
-    baseRevision: null,
-  })
-  await putOperation(operation)
-  requestPendingSync()
-  return operation.id
-}
-
 export async function enqueueBrewSaveToRecipe(
   clientOperationId: string,
   payload: unknown,

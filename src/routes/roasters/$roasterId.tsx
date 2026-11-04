@@ -23,12 +23,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { WebsiteLogo } from '@/components/website-logo'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
+import {
+  deleteRoaster,
+  getRoaster,
+  updateRoaster,
+} from '@/lib/client/journal/roasters'
 import { getRoastLevelLabel } from '@/lib/constants'
 import { parseEditModeSearch } from '@/lib/edit-mode'
 import { getErrorMessage } from '@/lib/error-message'
 import { parseIdParam } from '@/lib/route-params'
 import { searchValidator } from '@/lib/search-params'
-import { deleteRoaster, getRoaster, updateRoaster } from '@/lib/server/roasters'
 
 export const Route = createFileRoute('/roasters/$roasterId')({
   validateSearch: searchValidator(parseEditModeSearch),

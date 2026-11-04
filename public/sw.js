@@ -4,6 +4,7 @@ const DOCUMENT_CACHE = `roastbook-documents-${BUILD_ID}`
 const ASSET_CACHE = 'roastbook-assets-v2'
 const LEGACY_ASSET_CACHES = ['roastbook-assets']
 const OFFLINE_URL = '/offline.html'
+const JOURNAL_SHELL_URL = '/offline-shell.html'
 const MAX_ASSET_ENTRIES = 100
 const MAX_DOCUMENT_ENTRIES = 20
 const MAX_ASSET_BYTES = 2097152
@@ -101,6 +102,8 @@ async function precache() {
     }
   }
   await Promise.allSettled(DOCUMENT_PRECACHE_URLS.map(cacheDocument))
+  // The dedicated public shell has no account data. Private documents stay uncached.
+  await cacheDocument(JOURNAL_SHELL_URL)
 }
 
 async function precacheStatic(cache, url) {
@@ -164,6 +167,9 @@ async function networkFirstNavigation(request) {
       ignoreSearch: true,
     })
     if (cachedDocument) return cachedDocument
+
+    const shell = await documentCache.match(JOURNAL_SHELL_URL)
+    if (shell) return shell
 
     const cache = await caches.open(PRECACHE_CACHE)
     const offlinePage = await cache.match(OFFLINE_URL)

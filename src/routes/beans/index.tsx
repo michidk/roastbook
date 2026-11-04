@@ -18,13 +18,13 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
+import { getBeanCollection } from '@/lib/client/journal/beans'
 import {
   searchInteger,
   searchRecord,
   searchString,
   searchValidator,
 } from '@/lib/search-params'
-import { getBeanCollection } from '@/lib/server/beans'
 
 const parseBeanSearch = (input: unknown) => {
   const search = searchRecord(input)

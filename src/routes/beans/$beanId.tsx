@@ -1,7 +1,17 @@
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
-import { loadEntityDetail } from '@/lib/client/cached-reads'
+
+import {
+  checkResearchEnabled,
+  checkVisionEnabled,
+  getBean,
+} from '@/lib/client/journal/beans'
+import { getRoasters } from '@/lib/client/journal/roasters'
+import {
+  getBeanShotAnalytics,
+  getBeanShotPage,
+} from '@/lib/client/journal/shots'
 import { parseEditModeSearch } from '@/lib/edit-mode'
 import { parseIdParam } from '@/lib/route-params'
 import {
@@ -10,13 +20,6 @@ import {
   searchRecord,
   searchValidator,
 } from '@/lib/search-params'
-import {
-  checkResearchEnabled,
-  checkVisionEnabled,
-  getBean,
-} from '@/lib/server/beans'
-import { getRoasters } from '@/lib/server/roasters'
-import { getBeanShotAnalytics, getBeanShotPage } from '@/lib/server/shots'
 import { BeanDetailPage } from '@/routes/beans/-components/bean-detail-page'
 
 type BeanDetailSearch = {
@@ -26,9 +29,7 @@ type BeanDetailSearch = {
 }
 
 type BeanDetailData = Awaited<ReturnType<typeof loadBeanDetail>>
-type BeanDetailLoaderData = BeanDetailData & {
-  readonly offlineSnapshotSavedAt?: string
-}
+type BeanDetailLoaderData = BeanDetailData & {}
 
 function parseBeanDetailSearch(input: unknown) {
   const search = searchRecord(input)
@@ -96,19 +97,10 @@ export const Route = createFileRoute('/beans/$beanId')({
   loader: async ({ params, deps }): Promise<BeanDetailLoaderData> => {
     const beanId = parseIdParam(params.beanId)
 
-    return loadEntityDetail({
-      entityType: 'bean',
-      id: beanId,
-      load: async () => ({
-        ...(await loadBeanDetail(beanId, deps)),
-        query: deps,
-      }),
-      accepts: (data) =>
-        !data.query ||
-        (data.query.brewPage === deps.brewPage &&
-          data.query.brewSort === deps.brewSort &&
-          data.query.brewDirection === deps.brewDirection),
-    })
+    return (async () => ({
+      ...(await loadBeanDetail(beanId, deps)),
+      query: deps,
+    }))()
   },
   component: BeanDetailPage,
   pendingComponent: DetailPending,

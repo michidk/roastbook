@@ -1,6 +1,6 @@
 import { createServerFn, createServerOnlyFn } from '@tanstack/react-start'
 import { and, asc, count, desc, eq, ne, sql } from 'drizzle-orm'
-import { z } from 'zod'
+import type { z } from 'zod'
 import { db } from '@/db'
 import {
   allocateJournalIds,
@@ -14,12 +14,12 @@ import {
 } from '@/lib/collection-query'
 import { expectReturnedRow } from '@/lib/domain-errors'
 import { replaceGearSetAccessoryGear } from '@/lib/server/accessory-gear.server'
+import { positiveIdSchema } from '@/lib/server-validation'
 import {
-  nameSchema,
-  notesSchema,
-  nullablePositiveIdSchema,
-  positiveIdSchema,
-} from '@/lib/server-validation'
+  gearSetListSchema,
+  gearSetUpdateSchema,
+  gearSetWriteSchema,
+} from '@/modules/journal/gear-sets-input'
 
 class GearSetInputError extends Error {
   constructor(message: string) {
@@ -27,19 +27,6 @@ class GearSetInputError extends Error {
     this.name = 'GearSetInputError'
   }
 }
-
-const gearSetWriteSchema = z.object({
-  name: nameSchema,
-  description: notesSchema.nullable(),
-  machineId: nullablePositiveIdSchema,
-  grinderId: nullablePositiveIdSchema,
-  basketId: nullablePositiveIdSchema,
-  accessoryGearIds: z.array(positiveIdSchema).max(100),
-})
-
-const gearSetUpdateSchema = gearSetWriteSchema.extend({
-  id: positiveIdSchema,
-})
 
 type GearSetWrite = z.infer<typeof gearSetWriteSchema>
 
@@ -109,12 +96,6 @@ export const getGearSets = createServerFn({ method: 'GET' }).handler(
 )
 
 const GEAR_SETS_PAGE_SIZE = 12
-const gearSetListSchema = z.object({
-  page: z.number().int().min(1).max(100_000).default(1),
-  query: z.string().trim().max(200).default(''),
-  sort: z.enum(['name', 'added']).default('name'),
-  direction: z.enum(['asc', 'desc']).default('asc'),
-})
 
 export const getGearSetPage = createServerFn({ method: 'GET' })
   .validator(gearSetListSchema)

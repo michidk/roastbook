@@ -9,8 +9,8 @@ import type { CoffeeShopSearchResult } from '@/components/coffee-shops/coffee-sh
 import { EntityForm } from '@/components/form/form-shell'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
+import { createCoffeeShop } from '@/lib/client/journal/coffee-shops'
 import { getErrorMessage } from '@/lib/error-message'
-import { createCoffeeShop } from '@/lib/server/coffee-shops'
 
 type CreatedCoffeeShop = Awaited<ReturnType<typeof createCoffeeShop>>
 

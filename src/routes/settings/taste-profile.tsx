@@ -9,17 +9,16 @@ import {
 import { TasteTagSettings } from '@/components/settings/taste-tag-settings'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useSettingMutation } from '@/hooks/use-setting-mutation'
-import { updateTasteProfileFields } from '@/lib/server/settings'
-import { getTasteTags } from '@/lib/server/taste-tags'
+import { updateTasteProfileFields } from '@/lib/client/journal/settings'
+import { getTasteTags } from '@/lib/client/journal/taste-tags'
 import {
   enabledTasteProfileFields,
   type TasteProfileConfig,
   type TasteProfileField,
 } from '@/lib/taste-profile'
-import { loadOfflineSettingsData } from '@/modules/offline/settings-cache'
 
 export const Route = createFileRoute('/settings/taste-profile')({
-  loader: () => loadOfflineSettingsData('taste-tags', () => getTasteTags()),
+  loader: () => getTasteTags(),
   component: TasteProfileSection,
 })
 

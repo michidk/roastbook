@@ -11,28 +11,16 @@ import { RecipeForm } from '@/components/recipes/recipe-form'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import { Button } from '@/components/ui/button'
-import { useReferenceSnapshot } from '@/hooks/use-reference-snapshot'
-import { loadReferenceData } from '@/lib/client/cached-reads'
-import { getActiveBeans } from '@/lib/server/beans'
-import { getBrewingMethods } from '@/lib/server/brewing-methods'
-import { getDrinkConfiguration } from '@/lib/server/drink-options'
-import { getGear } from '@/lib/server/gear'
-import { getGearSets } from '@/lib/server/gear-sets'
-import { getDrinkTypeSuggestions } from '@/lib/server/suggestions'
+
+import { getActiveBeans } from '@/lib/client/journal/beans'
+import { getBrewingMethods } from '@/lib/client/journal/brewing-methods'
+import { getDrinkConfiguration } from '@/lib/client/journal/drink-options'
+import { getGear } from '@/lib/client/journal/gear'
+import { getGearSets } from '@/lib/client/journal/gear-sets'
+import { getDrinkTypeSuggestions } from '@/lib/client/journal/suggestions'
 
 type RecipeNewData = Awaited<ReturnType<typeof loadRecipeNewData>>
-type CachedRecipeReferenceData = RecipeNewData & {
-  readonly offlineSnapshotSavedAt?: string
-}
-
-type CachedNewBrewReferenceData = {
-  readonly beans: RecipeNewData['beans']
-  readonly methods: RecipeNewData['methods']
-  readonly gear: RecipeNewData['gear']
-  readonly gearSets: RecipeNewData['gearSets']
-  readonly drinks: RecipeNewData['drinks']
-  readonly drinkTypeSuggestions: RecipeNewData['drinkTypeSuggestions']
-}
+type CachedRecipeReferenceData = RecipeNewData & {}
 
 async function loadRecipeNewData() {
   const [beans, methods, gear, gearSets, drinks, drinkTypeSuggestions] =
@@ -49,16 +37,7 @@ async function loadRecipeNewData() {
 
 export const Route = createFileRoute('/recipes/new')({
   loader: async (): Promise<CachedRecipeReferenceData> => {
-    return loadReferenceData({
-      key: 'recipe-new',
-      load: loadRecipeNewData,
-      fallback: async () => {
-        const { readCachedNewBrewReferenceData } = await import(
-          '@/modules/offline/reference-data'
-        )
-        return readCachedNewBrewReferenceData<CachedNewBrewReferenceData>()
-      },
-    })
+    return loadRecipeNewData()
   },
   component: NewRecipePage,
   pendingComponent: DetailPending,
@@ -69,7 +48,7 @@ export const Route = createFileRoute('/recipes/new')({
 
 function NewRecipePage() {
   const data = Route.useLoaderData()
-  useReferenceSnapshot('recipe-new', data, data.offlineSnapshotSavedAt)
+
   const { beans, methods, gear, gearSets, drinks, drinkTypeSuggestions } = data
   const navigate = useNavigate()
   const router = useRouter()

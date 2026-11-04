@@ -1,164 +1,74 @@
 import 'fake-indexeddb/auto'
-import { afterAll, beforeEach, expect, test } from 'bun:test'
-import { newShotPayload } from '@/lib/new-shot-payload'
-import { EMPTY_SHOT_FORM_VALUES } from '@/modules/brews/shot-form-values'
+import { expect, test } from 'bun:test'
+import { ClientJournal } from '@roastbook/journal-client/journal'
 import {
-  cacheEntityDetail,
-  readCachedEntityDetail,
-} from '@/modules/offline/entity-detail-cache'
-import { getOperation, listOperations } from '@/modules/offline/operation-queue'
-import { updateQueuedBrewPayload } from '@/modules/offline/pending-store'
-import { resetOfflineDatabaseForTests } from '@/modules/offline/storage'
-import {
-  isPendingBrewHeldForTasting,
-  releasePendingBrewForTasting,
-} from '@/modules/offline/tasting-holds'
-import {
-  addBrew,
-  addRecipe,
-  editBrew,
-  editRecipe,
-  removeJournalEntity,
-  saveBrewToRecipe,
-} from './journal'
-import { addJournalPicture, removeJournalPicture } from './journal-images'
+  emptyJournalTables,
+  JournalTransaction,
+  journalStateSchema,
+} from '@roastbook/journal-domain/state'
+import { executeCommand } from '@/modules/journal/commands'
+import { readJournal } from '@/modules/journal/reads'
 
-const oldWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
-const oldOnline = Object.getOwnPropertyDescriptor(navigator, 'onLine')
-beforeEach(async () => {
-  Object.defineProperty(globalThis, 'window', { configurable: true, value: {} })
-  Object.defineProperty(navigator, 'onLine', {
-    configurable: true,
-    value: false,
+test('the product local journal saves a brew, tasting and a recipe before reconnecting', async () => {
+  const tx = new JournalTransaction(emptyJournalTables())
+  tx.insert('settings', { id: 1 })
+  const method = tx.insert('brewingMethods', {
+    name: 'Espresso',
+    enabledParameters: ['doseGrams', 'yieldGrams'],
+    timerEnabled: false,
   })
-  await resetOfflineDatabaseForTests()
-})
-afterAll(async () => {
-  await resetOfflineDatabaseForTests()
-  if (oldWindow) Object.defineProperty(globalThis, 'window', oldWindow)
-  else Reflect.deleteProperty(globalThis, 'window')
-  if (oldOnline) Object.defineProperty(navigator, 'onLine', oldOnline)
-  else Reflect.deleteProperty(navigator, 'onLine')
-})
-
-test('recipe commands persist validated creates, revisioned edits, and deletes through one boundary', async () => {
-  const result = await addRecipe(
-    { name: 'Morning', brewingMethodId: 1 },
-    { label: 'Morning' },
-  )
-  expect(result.kind).toBe('queued')
-  await expect(
-    Promise.resolve().then(() =>
-      addRecipe({ name: '', brewingMethodId: 1 }, { label: 'Invalid' }),
-    ),
-  ).rejects.toThrow()
-  expect(await listOperations()).toHaveLength(1)
-  await cacheEntityDetail('recipe', 4, {
-    recipe: { id: 4, name: 'Morning', revision: 3 },
+  const bootstrap = journalStateSchema.parse({
+    format: 1,
+    revision: 0,
+    serverRevision: 0,
+    tables: tx.finish(),
+    media: {},
+    pending: [],
   })
-  const edit = await editRecipe(
-    { id: 4, name: 'Afternoon', brewingMethodId: 1, baseRevision: 3 },
-    { label: 'Afternoon' },
-  )
-  expect(edit.kind).toBe('queued')
-  expect(await readCachedEntityDetail('recipe', 4)).toMatchObject({
-    data: { recipe: { name: 'Afternoon' } },
-  })
-  await removeJournalEntity({
-    entityType: 'recipe',
-    id: 4,
-    revision: 3,
-    details: { label: 'Afternoon' },
-  })
-  expect(await readCachedEntityDetail('recipe', 4)).toBeUndefined()
-  expect(await listOperations()).toMatchObject([
-    { operationType: 'create' },
-    { operationType: 'update', baseRevision: '3' },
-    { operationType: 'delete', baseRevision: '3' },
-  ])
-})
-
-test('brew creation holds its queued write for tasting and preserves the same idempotency key', async () => {
-  const data = newShotPayload(
-    { ...EMPTY_SHOT_FORM_VALUES, brewingMethodId: '1' },
-    [],
-    { brewedAt: '2026-10-25T09:30' },
-  )
-  const result = await addBrew({
-    data,
-    target: null,
-    holdForTasting: true,
-    summary: {
-      beanName: null,
-      methodName: 'Espresso',
-      brewedAt: new Date().toISOString(),
-      doseGrams: null,
-      yieldGrams: null,
-      shotTimeSeconds: null,
+  const journal = await ClientJournal.open({
+    name: `journal${crypto.randomUUID().replaceAll('-', '')}`,
+    bootstrap: async () => bootstrap,
+    execute: executeCommand,
+    transport: {
+      load: async () => bootstrap,
+      send: async () => {
+        throw new TypeError('Offline')
+      },
     },
   })
-  if (result.kind !== 'queued')
-    throw new Error('Expected a durable queued brew')
-  expect(isPendingBrewHeldForTasting(result.operationId)).toBe(true)
-  await updateQueuedBrewPayload(result.operationId, {
-    ...data,
-    rating: 4,
-    clientOperationId: result.operationId,
-  })
-  expect(await getOperation(result.operationId)).toMatchObject({
-    idempotencyKey: result.operationId,
-    payload: {
-      rating: 4,
-      clientOperationId: result.operationId,
-      brewedAt: data.brewedAt,
-    },
-  })
-  releasePendingBrewForTasting(result.operationId)
-  expect(isPendingBrewHeldForTasting(result.operationId)).toBe(false)
-})
-
-test('tasting after a saved brew and save-to-recipe both queue without a connection', async () => {
-  const edit = await editBrew(
-    { id: 8, brewingMethodId: 1, rating: 5 },
-    { label: 'Brew', detail: 'Tasting' },
-  )
-  expect(edit.kind).toBe('queued')
-  expect((await listOperations())[0]).toMatchObject({
-    entityServerId: '8',
-    operationType: 'update',
-    payload: { rating: 5 },
-  })
-  expect(
-    (
-      await saveBrewToRecipe(
-        { shotId: 8, name: 'Afternoon' },
-        { label: 'Brew' },
-      )
-    ).kind,
-  ).toBe('queued')
-})
-
-test('brew pictures use the same durable queue while other entity pictures stay online-only', async () => {
-  const file = new File(['coffee'], 'brew.webp', { type: 'image/webp' })
-  const picture = { file, preview: 'blob:qa', base64: 'Y29mZmVl' }
-  expect(
-    (await addJournalPicture({ entityType: 'shots', entityId: 8 }, picture))
-      .kind,
-  ).toBe('queued')
-  expect(
-    (
-      await removeJournalPicture({
-        entityType: 'shots',
-        entityId: 8,
-        imageId: 9,
-      })
-    ).kind,
-  ).toBe('queued')
-  await expect(
-    addJournalPicture({ entityType: 'gear', entityId: 8 }, picture),
-  ).rejects.toThrow('Connect to the server')
-  expect(await listOperations()).toMatchObject([
-    { operationType: 'upload', blobKeys: [expect.any(String)] },
-    { operationType: 'remove-image' },
-  ])
+  try {
+    await journal.command('shots/createShot', {
+      brewingMethodId: method.id,
+      doseGrams: '18',
+      yieldGrams: '36',
+    })
+    const brew = (await journal.read()).tables.shots[0]
+    if (!brew) throw new Error('Brew was not saved')
+    await journal.command('shots/updateShot', {
+      id: brew.id,
+      brewingMethodId: method.id,
+      doseGrams: '18',
+      yieldGrams: '36',
+      rating: 5,
+      baseRevision: brew.revision,
+    })
+    await journal.command('recipes/saveShotAsRecipe', {
+      shotId: brew.id,
+      name: 'Morning recipe',
+    })
+    const state = await journal.read()
+    expect(state.tables.recipes).toHaveLength(1)
+    expect(
+      readJournal(state, 'stats/getDashboardStats', undefined),
+    ).toHaveProperty('totalShots', 1)
+    expect(readJournal(state, 'shots/getShot', brew.id)).toHaveProperty(
+      'rating',
+      5,
+    )
+    expect(state.pending).toHaveLength(3)
+    await expect(journal.synchronize()).rejects.toThrow('Offline')
+    expect((await journal.read()).pending).toHaveLength(3)
+  } finally {
+    await journal.close()
+  }
 })

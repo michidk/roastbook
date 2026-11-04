@@ -25,6 +25,10 @@ import { WebsiteLogo } from '@/components/website-logo'
 import { useCollectionView } from '@/hooks/use-collection-view'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
+import {
+  getCoffeeShopMapOverview,
+  getCoffeeShopPage,
+} from '@/lib/client/journal/coffee-shops'
 import { thumbnailUrl } from '@/lib/image-url'
 import {
   searchEnum,
@@ -33,10 +37,6 @@ import {
   searchString,
   searchValidator,
 } from '@/lib/search-params'
-import {
-  getCoffeeShopMapOverview,
-  getCoffeeShopPage,
-} from '@/lib/server/coffee-shops'
 import { cn } from '@/lib/utils'
 
 const parsePlacesSearch = (input: unknown) => {

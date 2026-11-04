@@ -8,14 +8,17 @@ import {
   useLocalDateTimeInput,
 } from '@/hooks/use-local-date-time-input'
 import { cafeVisitUpdatePayload } from '@/lib/cafe-visit-payload'
+import type { getBeans } from '@/lib/client/journal/beans'
+import {
+  type getCafeVisit,
+  updateCafeVisit,
+} from '@/lib/client/journal/cafe-visits'
+import type { getCoffeeShops } from '@/lib/client/journal/coffee-shops'
+import type { getTasteTags } from '@/lib/client/journal/taste-tags'
 import { localDateTimeInputToDate } from '@/lib/date-input'
 import type { DrinkConfiguration } from '@/lib/drink-options'
 import { focusFirstInvalidControl } from '@/lib/form-validation'
 import { toNullableRating, toRatingInput } from '@/lib/rating'
-import type { getBeans } from '@/lib/server/beans'
-import { type getCafeVisit, updateCafeVisit } from '@/lib/server/cafe-visits'
-import type { getCoffeeShops } from '@/lib/server/coffee-shops'
-import type { getTasteTags } from '@/lib/server/taste-tags'
 import { getCafeVisitUpdateErrors } from '@/lib/update-validation'
 
 type Visit = NonNullable<Awaited<ReturnType<typeof getCafeVisit>>>

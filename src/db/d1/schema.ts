@@ -3609,3 +3609,17 @@ export const jwks = sqliteTable('jwks', {
   alg: text('alg'),
   crv: text('crv'),
 })
+
+export const journalSyncRevisions = sqliteTable('journal_sync_revisions', {
+  ownerId: journalOwner().primaryKey(),
+  value: integer('value').notNull().default(0),
+})
+export const journalCommandReceipts = sqliteTable(
+  'journal_command_receipts',
+  {
+    ownerId: journalOwner(),
+    commandId: text('command_id').notNull(),
+    appliedAt: timestamp('applied_at').notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.ownerId, table.commandId] })],
+)

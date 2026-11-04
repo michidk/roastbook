@@ -15,15 +15,14 @@ import { RecipeFields } from '@/components/recipes/recipe-fields'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
-import { useEntitySnapshot } from '@/hooks/use-entity-snapshot'
+
 import { useFormSubmission } from '@/hooks/use-form-submission'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { editRecipe, removeJournalEntity } from '@/lib/client/journal'
+import type { getGear } from '@/lib/client/journal/gear'
+import type { getRecipe } from '@/lib/client/journal/recipes'
 import { getErrorMessage } from '@/lib/error-message'
 import { recipePayload } from '@/lib/new-shot-payload'
-import type { getGear } from '@/lib/server/gear'
-import type { getRecipe } from '@/lib/server/recipes'
 import { getShotUpdateErrors } from '@/lib/update-validation'
 import {
   EMPTY_SHOT_FORM_VALUES,
@@ -43,19 +42,11 @@ function createFormValues(recipe?: Recipe): ShotFormValues {
 
 export function RecipeDetailPage() {
   const detailData = routeApi.useLoaderData()
-  const {
-    recipe,
-    beans,
-    methods,
-    gear,
-    drinks,
-    drinkTypeSuggestions,
-    offlineSnapshotSavedAt,
-  } = detailData
+  const { recipe, beans, methods, gear, drinks, drinkTypeSuggestions } =
+    detailData
   const { edit: isEditing = false } = routeApi.useSearch()
   const navigate = useNavigate({ from: '/recipes/$recipeId' })
   const router = useRouter()
-  const formatDateTime = useDateTimeFormatter()
   const [name, setName] = useState(recipe?.name ?? '')
   const [values, setValues] = useState(() => createFormValues(recipe))
   const [fieldErrors, setFieldErrors] = useState<
@@ -67,8 +58,6 @@ export function RecipeDetailPage() {
     setName(recipe.name)
     setValues(createFormValues(recipe))
   }, [recipe])
-
-  useEntitySnapshot('recipe', recipe?.id, detailData, offlineSnapshotSavedAt)
 
   const recipeBaseRevision = recipe ? String(recipe.revision) : null
   const recipeUpdateData = () =>
@@ -233,12 +222,6 @@ export function RecipeDetailPage() {
           )
         }
       />
-
-      {offlineSnapshotSavedAt ? (
-        <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-          Showing a saved copy from {formatDateTime(offlineSnapshotSavedAt)}.
-        </p>
-      ) : null}
 
       {isEditing ? (
         <form

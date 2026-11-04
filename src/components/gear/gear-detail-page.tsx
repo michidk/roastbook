@@ -25,16 +25,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/dialog'
-import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useOnlineStatus } from '@/hooks/use-online-status'
-import { getErrorMessage } from '@/lib/error-message'
 import {
   deleteGear,
   type getGearById,
   researchMachineSettings,
   updateGear,
-} from '@/lib/server/gear'
-import type { getGearShotPage } from '@/lib/server/shots'
+} from '@/lib/client/journal/gear'
+import type { getGearShotPage } from '@/lib/client/journal/shots'
+import { getErrorMessage } from '@/lib/error-message'
 import type { ExtractedMachineResearch } from '@/modules/ai/read-models'
 
 type Gear = Awaited<ReturnType<typeof getGearById>>
@@ -46,7 +45,6 @@ export function GearDetailPage({
   shotsPagination,
   researchEnabled,
   isEditing,
-  offlineSnapshotSavedAt,
   onFinishEditing,
 }: {
   gear: Gear
@@ -54,12 +52,11 @@ export function GearDetailPage({
   shotsPagination: ShotsTableServerPagination
   researchEnabled: boolean
   isEditing: boolean
-  offlineSnapshotSavedAt?: string
+
   onFinishEditing: () => void | Promise<void>
 }) {
   const navigate = useNavigate()
   const router = useRouter()
-  const formatDateTime = useDateTimeFormatter()
   const isOnline = useOnlineStatus()
   const [isSaving, setIsSaving] = useState(false)
   const [isResearching, setIsResearching] = useState(false)
@@ -182,11 +179,7 @@ export function GearDetailPage({
           await navigate({ to: '/gear' })
         }}
       />
-      {offlineSnapshotSavedAt ? (
-        <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-          Showing a saved copy from {formatDateTime(offlineSnapshotSavedAt)}.
-        </p>
-      ) : null}
+
       {isEditing ? (
         <>
           <EntityImageGallery

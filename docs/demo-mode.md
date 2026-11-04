@@ -22,47 +22,40 @@ server journal. It never enables this demo.
 
 ## Local data boundary
 
-A dedicated worker runs PGlite in memory. The demo build compiles an explicit
-allowlist of the existing journal server-function validators and domain queries
-into that worker. Database, identity, mutation, media, and integration adapters
-replace their server dependencies. Image validation, scoped record queries, and
-thumbnail mutations share the same helpers as the server edition. PostgreSQL and
-PGlite also share identifier allocation and mutation assertions, with each
-adapter retaining its own transaction and identity boundary.
+The demo selects the shared RxDB journal from `packages/journal-client` and
+portable commands/read models from `src/modules/journal`. TanStack DB subscribes
+to committed journal revisions. No SQL engine, Drizzle driver, server domain
+implementation, or synchronization transport runs in the browser. PGlite is a
+development dependency used only to generate fixtures from committed migrations.
 
-Lists, details, relationships, pagination,
-filters, command search, overview, and statistics all query this same local
-database. The existing RxDB caches and synchronization queues are not the demo's
-data source and do not run in this edition.
+Lists, details, relations, pagination, search, filters, overview, statistics, and
+counts all read the same local journal. The product and installed product PWA
+use these operations too, with an authenticated synchronization adapter.
+See [Client journal architecture](client-data.md).
 
-On first use, the worker restores the build-generated snapshot made from the
-committed PostgreSQL migrations and deterministic seed fixtures. It commits a
-compressed database snapshot and local picture blobs together in IndexedDB,
-under `roastbook-browser-demo`. Existing records are never automatically
-reseeded. Each operation acquires an origin-wide Web Lock, checks the saved
-revision, and reloads changes made by another tab before continuing.
-BroadcastChannel refreshes open tabs after commits. Color-mode preferences use
-`roastbook-demo-preferences`, separate from the standard preference key.
+The first visit downloads `/demo-local/journal.json` and inserts it only if no
+journal exists. RxDB stores journal tables, local image bytes, and settings in one
+atomic document in the isolated `roastbook-demo-journal` database. Another tab
+seeding first wins; existing changes are never automatically reseeded. RxDB
+propagates committed document changes between tabs. Color-mode preferences use
+`roastbook-demo-preferences`, separate from standard preferences.
 
-Committed schema migrations upgrade saved journals transactionally. The record
-also has a storage-format version. A newer, unsupported, corrupt, or failed
-upgrade does not replace the saved record. Failed writes, including quota
-failures, discard the attempted in-memory change and retain the last committed
-snapshot. The UI reports the error and offers retry; confirmed reset is also
-available from the error page. Reset intentionally replaces the demo data.
+The record has an explicit format version. Unsupported or invalid data fails
+without overwriting the saved record. A failed write, including browser quota
+failure, preserves the previous commit. Confirmed Reset demo restores fixtures,
+removes added images, and resets demo appearance preferences. It never clears
+product account storage.
 
-Use a current browser over HTTPS or localhost with IndexedDB, Web Locks,
-BroadcastChannel, WebAssembly, and worker support. Image processing also needs
-createImageBitmap and OffscreenCanvas. Browser storage must be enabled and have
-space for the database and pictures. The initial visit downloads the database
-engine and sample snapshot, so it can take longer than subsequent navigation.
-The demo is intended for exploration, not durable backups or large journals;
-each successful mutation saves a full compressed database snapshot.
+Use a current browser over HTTPS or localhost with IndexedDB and browser image
+decoding/canvas support. Browser storage must be enabled and have free space.
+The journal currently saves an aggregate document and recomputes derived reads
+after changes. Large journals and many pictures increase memory and write cost.
+The demo is temporary, unbacked-up exploration data.
 
 ## Pictures and integrations
 
 Local file selection uses the normal image intake and compression controls.
-The worker validates the file and parent record, decodes the image, and creates
+The browser validates the file and parent record, decodes the image, and creates
 WebP versions bounded to 1600, 640, and 128 pixels. The demo permits three
 pictures per item, up to 10 MiB per input file and 50 MiB of compressed browser
 pictures including thumbnails. Browser quota may impose a lower limit.
@@ -74,8 +67,8 @@ static same-origin assets.
 AI, web research, remote image import, geocoding, map tiles, MCP/OAuth, email,
 authentication, account administration, external devices, remote media storage,
 and synchronization are unavailable. Enter cafés and coordinates manually.
-Integration settings explain the restriction. The worker rejects operations
-outside its journal allowlist, and disabled integration adapters fail before
+Integration settings explain the restriction. Shared commands reject operations
+outside its journal allowlist, and explicit unavailable-service modules fail before
 network access. No changes are queued for eventual server synchronization.
 
 The demo backend has no journal database. Its database accessor throws, all
@@ -96,14 +89,13 @@ bun run build:demo
 bun run check:client-assets .vercel/output/static
 ```
 
-The development command prepares the snapshot and worker before starting Vite.
-Restart it after changing worker domain code or migrations. The production
-command emits `.vercel/output`, including `/demo-local/*` worker, database-engine,
-snapshot, and migration assets, and `/media/*` fictional images. The client
-asset check scans both application and worker JavaScript for forbidden server
-markers and size budgets. The worker build rejects unapproved server modules
-and integration dependencies. `scripts/demo-local.test.ts` runs the compiled
-worker's real PGlite domain behavior with isolated IndexedDB factories.
+The development command prepares the sample JSON before starting Vite. Restart
+after changing fixture generation or migrations. Production emits `.vercel/output`,
+including `/demo-local/journal.json` and `/media/*` fictional images. Demo service
+aliases select explicit modules that reject integration calls. The asset and
+module checks reject browser server code and SQL engines, and product builds
+reject demo modules and fixtures. `scripts/demo-local.test.ts` exercises generated
+fixtures through shared journal commands without a runtime SQL engine.
 
 Deploy the prebuilt output with `vercel deploy --prebuilt`. `vercel.json`
 selects `build:demo` for Git-connected deployments. Standard `bun run build`,

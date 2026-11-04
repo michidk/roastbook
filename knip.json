@@ -1,43 +1,5 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": [
-    "src/routes/**/*.tsx",
-    "src/router.tsx",
-    "src/server.ts",
-    "src/start.ts",
-    "src/lib/demo/*.ts",
-    "src/lib/demo/local/*.ts",
-    "src/db/demo.ts",
-    "src/lib/server/media-handler.ts",
-    "src/**/*.test.ts",
-    "scripts/**/*.ts",
-    "src/cloudflare/worker.ts",
-    "src/cloudflare/ai-request-accounting.server.ts",
-    "src/cloudflare/ai-provider-fetch.server.ts",
-    "src/cloudflare/auth-email.server.ts",
-    "src/cloudflare/auth/identity.server.ts",
-    "src/cloudflare/auth/account.server.ts",
-    "src/cloudflare/auth/integrations.server.ts",
-    "src/cloudflare/auth/jobs.server.ts",
-    "src/cloudflare/database-error.server.ts",
-    "src/cloudflare/health.server.ts",
-    "src/cloudflare/images.server.ts",
-    "src/cloudflare/oauth-coordination.server.ts",
-    "src/cloudflare/remote-image.server.ts",
-    "src/cloudflare/remote-url-policy.server.ts",
-    "src/cloudflare/storage.server.ts",
-    "src/db/d1/index.ts",
-    "src/db/d1/schema.ts",
-    "src/db/d1/connection.server.ts",
-    "src/db/d1/journal-context.server.ts",
-    "src/db/d1/journal-mutations.server.ts",
-    "src/db/d1/sql-dialect.server.ts",
-    "src/db/d1/auth-database-adapter.server.ts",
-    "drizzle.d1.config.ts",
-    "scripts/**/*.mjs",
-    "src/cloudflare/cimd-fetch.server.ts"
-  ],
-  "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{ts,mjs}", "*.config.ts"],
   "ignoreIssues": {
     "src/components/ui/card.tsx": ["exports"],
     "src/components/ui/combobox.tsx": ["exports"],
@@ -48,6 +10,56 @@
     "src/components/ui/tooltip.tsx": ["exports"]
   },
   "ignoreExportsUsedInFile": true,
-  "ignoreDependencies": ["tailwindcss", "demo-local-registry"],
-  "ignoreBinaries": ["wait"]
+  "ignoreDependencies": ["tailwindcss", "@roastbook/journal-demo", "tslib"],
+  "workspaces": {
+    "packages/journal-demo": {
+      "entry": ["src/**/*.ts", "src/**/*.tsx"],
+      "project": ["src/**/*.{ts,tsx}"]
+    },
+    "packages/journal-client": {
+      "entry": ["src/*.test.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "packages/journal-domain": {
+      "project": ["src/**/*.ts"]
+    },
+    ".": {
+      "entry": [
+        "src/routes/**/*.tsx",
+        "src/router.tsx",
+        "src/server.ts",
+        "src/start.ts",
+        "src/lib/server/media-handler.ts",
+        "src/**/*.test.ts",
+        "scripts/**/*.ts",
+        "src/cloudflare/worker.ts",
+        "src/cloudflare/ai-request-accounting.server.ts",
+        "src/cloudflare/ai-provider-fetch.server.ts",
+        "src/cloudflare/auth-email.server.ts",
+        "src/cloudflare/auth/identity.server.ts",
+        "src/cloudflare/auth/account.server.ts",
+        "src/cloudflare/auth/integrations.server.ts",
+        "src/cloudflare/auth/jobs.server.ts",
+        "src/cloudflare/database-error.server.ts",
+        "src/cloudflare/health.server.ts",
+        "src/cloudflare/images.server.ts",
+        "src/cloudflare/oauth-coordination.server.ts",
+        "src/cloudflare/remote-image.server.ts",
+        "src/cloudflare/remote-url-policy.server.ts",
+        "src/cloudflare/storage.server.ts",
+        "src/db/d1/index.ts",
+        "src/db/d1/schema.ts",
+        "src/db/d1/connection.server.ts",
+        "src/db/d1/journal-context.server.ts",
+        "src/db/d1/journal-mutations.server.ts",
+        "src/db/d1/sql-dialect.server.ts",
+        "src/db/d1/auth-database-adapter.server.ts",
+        "drizzle.d1.config.ts",
+        "scripts/**/*.mjs",
+        "src/cloudflare/cimd-fetch.server.ts",
+        "src/components/edition-ui.tsx"
+      ],
+      "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{ts,mjs}", "*.config.ts"]
+    }
+  }
 }

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { DEMO_MODE } from '@/lib/build-mode'
+import { resizeBrowserImage } from '@/lib/client/image-compression'
+import { getImageUploadPolicy } from '@/lib/client/journal/images'
 import { IMAGE_MIME_TYPE_VALUES, MAX_IMAGE_BYTES } from '@/lib/domain-contracts'
 import type { ImageFile } from '@/lib/image-file'
-import { getImageUploadPolicy } from '@/lib/server/images'
 import { downloadRemoteImage } from '@/lib/server/remote-image'
 
 const IMAGE_MIME_TYPES = new Set<string>(IMAGE_MIME_TYPE_VALUES)
@@ -42,14 +43,6 @@ function normalizeImageType(file: File): File | null {
   })
 }
 
-function canvasToBlob(
-  canvas: HTMLCanvasElement,
-  type: string,
-  quality: number,
-): Promise<Blob | null> {
-  return new Promise((resolve) => canvas.toBlob(resolve, type, quality))
-}
-
 async function compressLargeImage(file: File): Promise<File> {
   if (file.size < CLIENT_IMAGE_COMPRESSION_THRESHOLD) {
     return file
@@ -59,22 +52,11 @@ async function compressLargeImage(file: File): Promise<File> {
     const bitmap = await createImageBitmap(file, {
       imageOrientation: 'from-image',
     })
-    const scale = Math.min(
-      1,
-      CLIENT_IMAGE_MAX_DIMENSION / Math.max(bitmap.width, bitmap.height),
-    )
-    const canvas = document.createElement('canvas')
-    canvas.width = Math.max(1, Math.round(bitmap.width * scale))
-    canvas.height = Math.max(1, Math.round(bitmap.height * scale))
-    const context = canvas.getContext('2d')
-    if (!context) {
-      bitmap.close()
-      return file
-    }
-
-    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
-    bitmap.close()
-    const blob = await canvasToBlob(canvas, 'image/webp', CLIENT_IMAGE_QUALITY)
+    const blob = await resizeBrowserImage(
+      bitmap,
+      CLIENT_IMAGE_MAX_DIMENSION,
+      CLIENT_IMAGE_QUALITY,
+    ).finally(() => bitmap.close())
     if (!blob || blob.size >= file.size) return file
 
     const basename = file.name.replace(/\.[^.]+$/, '') || 'image'

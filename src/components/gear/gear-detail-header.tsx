@@ -11,8 +11,8 @@ import type { GearFormValues } from '@/components/gear/gear-form-values'
 import { PageHeader } from '@/components/page-layout'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import type { getGearById } from '@/lib/client/journal/gear'
 import { GEAR_TYPE_LABELS } from '@/lib/constants'
-import type { getGearById } from '@/lib/server/gear'
 
 type Gear = NonNullable<Awaited<ReturnType<typeof getGearById>>>
 

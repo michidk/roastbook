@@ -1,240 +1,92 @@
 # Offline journaling
 
-The standard edition can journal brews and recipes while the browser is
-offline. The [demo edition](demo-mode.md) uses its own browser-local journal;
-it disables installation, the standard offline queue, and replication.
-With authentication disabled, the app shell, reference data, and
-visited detail
-routes are cached after an online visit. With built-in accounts, authenticated
-HTML is never cached by the service worker. Keep an authenticated tab open to
-continue journaling offline; a cold offline launch shows the offline fallback.
-Pending work lives in IndexedDB and syncs when connectivity returns.
+The standard product uses one account-scoped browser journal in a normal tab and
+an installed PWA. After the first complete online download, journal reads and
+ordinary edits use local IndexedDB data. Changes survive reloads and wait for
+server confirmation. The [demo](demo-mode.md) uses the same journal implementation
+with fictional data and no synchronization or installation support.
 
-## What works offline
+## Coverage
 
-- Creating, editing, and deleting brews.
-- Creating, copying, editing, and deleting recipes, including saving a brew
-  into a recipe.
-- Attaching and removing brew pictures.
-- Logging a brew with the new-brew form, including the tasting step.
-- Reopening brew, recipe, bean, or gear detail pages that were viewed online,
-  with a saved-copy notice.
-- Reviewing pending changes and resolving edits that conflict with server data.
-- Viewing Settings → Offline for pending counts, the last successful sync,
-  browser storage usage, re-sync, and local-data clearing.
-- Pending work survives reloads and app restarts.
-- Pending work is labeled on the pending page and in the app banner.
-- Sync runs when the app opens, when connectivity returns, and from the manual
-  retry action.
+Local operations cover brews, recipes, beans and bags, gear and gear sets,
+roasters, cafés and visits, brewing methods, drinks and options, taste tags,
+journal settings, appearance settings, and added pictures. Lists, details,
+relationships, filters, search, counts, overview, and statistics derive from the
+same committed local data. Records need not have been individually visited first.
 
-## What stays online-only
+AI, web research, geocoding, remote image import, external devices, account
+administration, email, and authentication require their normal server services.
+Existing remote pictures are not downloaded into IndexedDB automatically. Pictures
+added on this device stay available locally after synchronization while referenced
+by the journal. An uncached remote picture can be unavailable offline.
 
-- Editing or deleting beans, gear, roasters, cafés, and visits.
-- AI label scanning, research, and recommendations.
-- The shottimer integration.
-- Server-backed settings controls; the browser theme remains editable.
+The first complete journal download requires an online authorized session. A
+failure shows an error and preserves saved work. It never pretends that a partial
+or missing journal is an empty one. New numeric records consume reserved IDs;
+reconnect if the saved per-table identifier pool runs out.
 
-Those actions are disabled or show an error while offline. Brew and recipe
-journaling, pictures, and sync-later behavior work without a connection.
+## Synchronization and recovery
 
-The connection indicator combines browser network events with server-request
-failures and a reachability check when the app resumes. A failed network request
-can open a saved brew even when the browser still reports an online connection.
-Read requests stop waiting after ten seconds; queued writes stay on the device.
+A local commit saves the domain changes, picture bytes, and durable command
+together. The pending banner distinguishes device storage from server
+confirmation. Synchronization runs at startup, after reconnecting, and on manual
+retry. The server validates commands independently and applies them inside the
+existing authenticated journal boundary.
 
-## Sync behavior
+Commands carry UUID idempotency keys and a base journal revision. Lost responses
+retry one logical write. Another device or integration changing the journal can
+cause a conflict. Your local journal stays intact until you choose a recovery
+action. Review changes lets you download a local copy, retry, explicitly apply
+your edits to the latest server revision, or discard pending edits and use the
+server journal. Signing out requires resolving pending work first.
 
-- Each queued brew and recipe create has a client operation ID.
-- `brews.client_operation_id` and `recipes.client_operation_id` have unique
-  indexes. Repeating a create with the same ID returns the existing row instead
-  of inserting another one.
-- A queued item is marked acknowledged only after a successful server response.
-  If the app closes after the server commits but before the response arrives,
-  the next retry returns the same row and acknowledges the operation.
-- Edits carry the entity's numeric revision as a base revision. If the server
-row
-  changed in the meantime, the operation becomes `conflict` and the pending
-  page offers **Keep local** or **Accept server**.
-- Deletes are idempotent; a retry after a lost delete response succeeds when
-  the row is already gone.
-- The sync runner claims one runnable operation at a time as `in-flight`. An
-  operation runs only after all of its dependency IDs are acknowledged.
-- Picture uploads store the file in the local blob store until the server
-  acknowledges it. Removing a picture is queued separately, and the cached
-  detail is refreshed after either operation syncs.
-- A sync flush is single-flight within a tab and serialized across tabs with
-  the Web Locks API. Browsers without Web Locks fall back to the in-tab guard.
-- Operations left `in-flight` by a closed tab become `retryable` on the next
-  flush instead of staying stuck.
-- If authentication expires, the queue is kept and marked “sign in to sync.”
-  After signing in, sync resumes.
-- If the server rejects a queued operation (for example, its bean was deleted),
-  the item stays on the device with the error and Retry/Discard actions.
+Earlier versions' pending brew/recipe operations and caches remain available.
+Resolve or sync that work in Pending changes before making new journal edits.
+The old queue drains through its original idempotent endpoints; new forms use
+only the shared journal command path. If the first complete download is
+unavailable, the pending page and Settings → Offline remain accessible for
+recovery.
 
-## Storage architecture
+Settings → Offline reports local pending counts and estimated browser storage.
+The shared-journal banner opens its recovery actions. Clearing earlier caches
+preserves the new journal and pending work. Clearing all local data requires a
+connection and no pending shared-journal commands; the next online visit downloads
+the journal again. Repair app shell refreshes application files without deleting
+journal data.
 
-The offline write path uses a generic operation log rather than a queue per
-feature. A stored operation has:
+## Offline startup and privacy
 
-- an operation ID and deterministic idempotency key;
-- an owner key, entity type, operation type, local entity ID, and optional
-  server ID;
-- the full payload and presentation details needed to retry without reading a
-  mutable UI snapshot;
-- dependency IDs for operations that must wait for another entity to exist;
-- created and updated timestamps, attempt count, next retry time, last error,
-  base revision, blob references, and an explicit status.
+The product build prerenders a public, data-free SPA shell at
+`/offline-shell.html`. The service worker caches it and hashed application assets
+for cold offline navigation. Client loaders open the previously selected account's
+local journal. No authenticated journal HTML enters the document cache. First
+load, asset download failure, browser cache eviction, or unsupported service
+workers can prevent cold startup. Keep an online visit long enough for downloads
+to finish before relying on offline use.
 
-Statuses are `pending`, `in-flight`, `retryable`, `permanent`,
-`auth-required`, `conflict`, `cancelled`, and `acknowledged`. Acknowledged and
-cancelled records remain in IndexedDB as local audit or tombstone records but
-are hidden from the pending UI. The operation log is owner-scoped. The current
-shared Hodor deployment uses the `local` owner key. Built-in accounts use
-their user ID and separate RxDB databases. Every queued mutation and replication
-request includes its original owner; the server rejects a cookie for a different
-account. Signing out checks for pending work and clears that account's local
-database. A sign-in change in another tab reloads existing tabs. Legacy `local`
-caches stay separate when enabling accounts; sync them before upgrading.
+Browser storage is specific to a profile and origin. It is not encrypted by
+Roastbook and can be removed by the user, browser eviction, or private browsing.
+Clearing site storage removes unconfirmed edits and pictures. Download a local
+copy before destructive conflict recovery. An unsupported saved format reports
+an error without silently resetting it; use a compatible application version or
+contact support.
 
-Pending brew and recipe creates, brew/recipe edits and deletes, image
-operations, and save-to-recipe operations are stored in this log. Existing
-version-1 `pending-brews` records migrate to `operations` when the database
-upgrades.
-
-The local data layer provides an owner-scoped store for brews, recipes, beans,
-gear, drinks, and tags, with a schema version, local and server IDs, revision,
-sync state, and deletion tombstones. A separate sync-metadata record stores the
-last successful sync time. A queued brew also creates a local entity record;
-the sync runner marks it synced with the server ID returned by the create. Brew,
-recipe, bean, and gear detail pages cache their loaded data and look it up by
-server ID. A separate owner-scoped blob store holds queued picture files until
-the server acknowledges the upload.
-
-## Settings and local data
-
-Settings pages show an offline banner and make server-backed controls read-only
-while offline. The browser theme preference and the PWA app settings page stay
-available; the server-backed page background control is disabled.
-
-Settings → Offline shows waiting, attention, and auth-required operation counts,
-the last successful sync, and browser storage usage. It offers a re-sync action,
-a cached-data clear that preserves pending operations, and a full local-data
-clear. The full clear warns explicitly when unsynced operations would be
-discarded. Server-backed controls are disabled while offline; if a mutation
-still reaches the server and fails, the optimistic value rolls back.
-
-Server-backed settings loaders cache their last successful response. Drinks,
-taste tags, AI usage, shottimer status, and storage statistics therefore render
-read-only from the local cache when offline instead of showing a loader error.
-
-AI research and image extraction actions check connectivity before calling the
-server, and shottimer enable/token actions do the same. The new-brew form
-already hides the shottimer integration and AI recommendation action offline.
-
-## Planned offline coverage
-
-Brew and recipe create/edit/delete, brew pictures, save-to-recipe, and conflict
-resolution are now queued. The same operation log can be extended to beans,
-gear, roasters, cafés, and visits later. AI, shottimer, server-backed settings,
-and account actions remain online-only.
-
-## PWA recovery
-
-- The worker validates asset content types before caching. An HTML login or
-  error page served under a script, stylesheet, or font URL is not cached, and
-  a corrupt cached entry is removed and refetched.
-- Client assets above 2 MiB are not precached or added to the runtime cache.
-  `bun run check:pwa` enforces the same limit against the build output.
-- Settings → Offline → Repair app shell clears the worker's shell caches and
-  unregisters it without touching IndexedDB. The page reloads and re-registers
-  the worker online, preserving pending operations.
-- API routes, server functions, auth gate paths, media, and writes stay outside
-  the worker cache.
-
-## Storage and privacy
-
-- Pending operations, cached local data, picture blobs, and reference data live
-  in IndexedDB in this browser. They are per-device and are not encrypted by
-  Roastbook.
-- The service worker caches app HTML for offline boot. Cached documents are
-  versioned by build, bounded, and cleared on logout.
-- Clearing site data removes pending work and queued pictures. Discarding a
-  pending operation is permanent from the UI and leaves a cancelled tombstone.
-- Queued creates are independent across devices. Edits carry a base revision,
-  so a concurrent server change is surfaced as a conflict instead of being
-  silently overwritten.
-- IndexedDB migrations are forward-only. After a newer build has upgraded the
-  local schema, rolling back to an older build can fail with `VersionError`.
-  Recover by clearing site data for the origin, which also removes pending
-  local work.
-
-## Offline readiness
-
-- After an online app load, the app idle-prefetches the new-brew route and its
-  reference data, then saves the data in IndexedDB.
-- When `/brews/new` is opened through client-side navigation while offline, its
-  loader falls back to the saved data and shows an offline notice.
-- Brew, recipe, bean, and gear detail loaders save their loaded data after an
-  online visit. If a detail loader fails while offline, it returns the saved
-  copy and shows the saved-copy notice.
-- The service worker's document cache lets the installed app reopen offline.
-  Routes that were never visited online may still show the offline page.
-- The new-brew form queues brews and save-to-recipe operations; the recipe
-  create/edit forms and brew detail edit/delete actions queue changes too. The
-  tasting dialog updates the queued payload in place.
-- Brew picture uploads keep a local blob until the server acknowledges them.
-  Picture removals are queued as operations without a local blob.
+The journal currently stores an aggregate document and recomputes reads when its
+revision changes. Large journals and many local images increase memory use and
+write cost. See [Client journal architecture](client-data.md) for the package,
+transaction, synchronization, and identifier contracts.
 
 ## Verification
 
-- Unit tests: `src/modules/offline/*.test.ts` and
-  `scripts/service-worker.test.ts`. The operation-log tests cover state
-  transitions, dependency ordering and execution, acknowledgement and
-  cancellation, interrupted-flush recovery, legacy queue migration, local
-  entity persistence and edit merging, brew/recipe/bean/gear detail caching,
-  picture blob limits, conflict status, sync metadata, cache clearing, database
-  deletion, and cross-tab lock fallback. The worker tests cover precache, asset
-  validation and repair, size limits, and shell reset.
-- `bun run test:integration` covers the duplicate-operation-ID contract and
-  server-side edit/delete revision checks.
-- Manual check: create, edit, delete, and attach a picture to a brew offline;
-  reload or close and reopen the app, reconnect, and confirm exactly one server
-  record with the expected values. Also exercise an interrupted sync, a
-  conflict, and an expired session.
+`packages/journal-client/src/journal.test.ts` exercises actual RxDB/Dexie storage
+with fake IndexedDB. Shared command tests cover relationships, derived results,
+images, and settings. PostgreSQL integration tests compare local results to SQL
+and verify replay, ownership, stale revisions, and rollback. Hosted verification
+runs the same transport against D1. Service-worker tests exercise shell fallback,
+private-document exclusions, application assets, and recovery.
 
-## Recipe replication
-
-RxDB stores local journal operations and cached data using the Dexie storage
-adapter. The operation log is the sole local write path for brew and recipe
-forms, including recipe duplication and tasting recorded after a connection
-is lost. Server-only actions remain listed above.
-
-Recipe replication pulls the server projection from `/api/replication/pull`.
-Received changes refresh active route data; it resumes pulling when connectivity
-returns. Local recipe writes use the operation log and existing server
-functions. They never write through a second client replication push path.
-The server replication endpoints retain their validated revision contracts.
-
-Dates in queued payloads and saved responses retain their types when stored
-in RxDB, so delayed sync and saved edit forms keep the original brew time.
-
-Client schema versions remain independent of Drizzle migrations. Preserve
-pending local writes when migrating client storage. Database recovery cancels
-replication before closing or resetting RxDB.
-
-Feature components use the shared commands and cached loaders described in
-[Client data boundaries](client-data.md).
-
-## Installed app status
-
-In the installed PWA, the Wi-Fi icon beside the theme switcher combines browser
-network status with actual server reachability. A red crossed-out icon means
-offline or unreachable. Reachability is checked while the app is visible and
-when it resumes; it does not guarantee database or AI provider health. The icon
-opens
-Settings → Offline, which is visible only in the installed app.
-
-The page shows queued operations, synchronization activity, failures, last sync,
-and estimated browser storage. It also offers manual sync and local recovery
-controls. AI capability checks retry when connectivity returns. AI calls still
-require the server and its configured AI provider to be available.
+For a browser acceptance pass, download a journal, go offline, create and edit
+related entities and a picture, reload, reconnect, and confirm exactly one server
+result. Also test cold startup, two tabs, account switching, expired sessions,
+quota errors, and conflict recovery. Automated storage tests do not substitute
+for these browser checks.
