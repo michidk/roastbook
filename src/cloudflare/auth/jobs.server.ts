@@ -30,16 +30,17 @@ const imageTables = [
   'cafe_visit_images',
 ] as const
 const excludedExports = new Set([
-  'client_operations',
   'media_cleanup_jobs',
-  'replication_changes',
+  'journal_sync_revisions',
+  'journal_command_receipts',
+  'journal_id_reservations',
+  'journal_changes',
   'shottimer',
 ])
 const exportedTables = journalTables.filter(
   (table) => !excludedExports.has(table),
 )
 const deleteOrder = [
-  'client_operations',
   'brew_drink_options',
   'brew_taste_tags',
   'brew_accessory_gear',
@@ -83,10 +84,13 @@ const deleteOrder = [
   'shottimer',
   'mcp_settings',
   'mcp_audit_events',
-  'replication_changes',
   'ai_request_logs',
   'ai_usage',
   'media_cleanup_jobs',
+  'journal_sync_revisions',
+  'journal_command_receipts',
+  'journal_id_reservations',
+  'journal_changes',
 ] as const satisfies readonly (typeof journalTables)[number][]
 const tableColumns = new Map(
   Object.values(schema)
@@ -401,7 +405,8 @@ async function deleteJournal(job: Job) {
       fullPage = page.results.length === 90
     } else {
       const hasFavicons = table === 'coffee_shops' || table === 'roasters'
-      const limit = hasFavicons ? 100 : 250
+      // Change records hold one small row per journal row ever changed.
+      const limit = hasFavicons ? 100 : table === 'journal_changes' ? 2000 : 250
       if (hasFavicons) {
         const page = await database()
           .prepare(

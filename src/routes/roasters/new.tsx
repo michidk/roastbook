@@ -1,9 +1,4 @@
-import {
-  createFileRoute,
-  Link,
-  useNavigate,
-  useRouter,
-} from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import { FormPageHeader } from '@/components/form/form-shell'
 import { Page } from '@/components/page-layout'
@@ -16,7 +11,6 @@ export const Route = createFileRoute('/roasters/new')({
 
 function NewRoasterPage() {
   const navigate = useNavigate()
-  const router = useRouter()
 
   return (
     <Page width="form">
@@ -32,7 +26,6 @@ function NewRoasterPage() {
       />
       <RoasterForm
         onCreated={async (roaster) => {
-          await router.invalidate()
           await navigate({
             to: '/roasters/$roasterId',
             params: { roasterId: String(roaster.id) },

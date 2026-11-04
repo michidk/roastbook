@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import { withResourceLimits } from '@/lib/server/resource-limits.server'
+import { withResourceLimits } from '@/journal/domain/resource-limits'
 
 export const downloadRemoteImage = createServerFn({ method: 'POST' })
   .validator(z.object({ url: z.url().max(2_048) }))

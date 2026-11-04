@@ -17,13 +17,13 @@ import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
 import { useImageUpload } from '@/hooks/use-image-upload'
 import { useOnlineStatus } from '@/hooks/use-online-status'
-import { getErrorMessage } from '@/lib/error-message'
-import type { ImageFile } from '@/lib/image-file'
+import { createGear } from '@/journal/gear'
 import {
   checkGearResearchEnabled,
-  createGear,
   researchMachineSettings,
-} from '@/lib/server/gear'
+} from '@/lib/client/research'
+import { getErrorMessage } from '@/lib/error-message'
+import type { ImageFile } from '@/lib/image-file'
 import {
   type EntityImageUploadFailure,
   uploadEntityImages,

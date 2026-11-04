@@ -28,6 +28,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import { Input } from '@/components/ui/input'
+import { DEMO_MODE } from '@/lib/build-mode'
 import type { ImageFile } from '@/lib/image-file'
 import { getImageUploadErrorMessage } from '@/lib/image-upload-error'
 import { cn } from '@/lib/utils'
@@ -389,11 +390,16 @@ export function PictureUploader({
                 Take photo
               </button>
               <CollapsibleTrigger
-                disabled={intakeBusy}
+                disabled={DEMO_MODE || intakeBusy}
+                title={
+                  DEMO_MODE
+                    ? 'Remote imports are unavailable. Choose a file from this device.'
+                    : undefined
+                }
                 className="group flex min-h-11 shrink-0 items-center gap-2 rounded-full px-3 font-display text-sm font-bold text-link transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <Link2 className="size-4" />
-                From URL
+                {DEMO_MODE ? 'Local files only' : 'From URL'}
                 <ChevronDown
                   className={cn(
                     'size-4 transition-transform',

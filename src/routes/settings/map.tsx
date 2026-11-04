@@ -1,18 +1,17 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { Loader2, MapPinned } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { PanelSection } from '@/components/section-layout'
 import { MapLocationSettings } from '@/components/settings/map-location-settings'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useSettingMutation } from '@/hooks/use-setting-mutation'
-import { updateDefaultMapLocation } from '@/lib/server/settings'
+import { updateDefaultMapLocation } from '@/journal/settings'
 
 export const Route = createFileRoute('/settings/map')({
   component: MapSettingsSection,
 })
 
 function MapSettingsSection() {
-  const router = useRouter()
   const savedSettings = useAppSettings()
   const savedLatitude = savedSettings.defaultMapLocation?.latitude
   const savedLongitude = savedSettings.defaultMapLocation?.longitude
@@ -43,7 +42,6 @@ function MapSettingsSection() {
     mutate: (defaultMapLocation) =>
       updateDefaultMapLocation({ data: defaultMapLocation }),
     selectValue: (updated) => updated.defaultMapLocation,
-    onSaved: () => void router.invalidate(),
     errorMessage: 'Could not save the default map location',
   })
 

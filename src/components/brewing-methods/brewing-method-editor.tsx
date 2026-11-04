@@ -1,4 +1,3 @@
-import { useRouter } from '@tanstack/react-router'
 import { Save, Timer } from 'lucide-react'
 import { type SyntheticEvent, useState } from 'react'
 import { toast } from 'sonner'
@@ -7,11 +6,11 @@ import { InputField, TextareaField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
 import { Button } from '@/components/ui/button'
 import { Toggle } from '@/components/ui/toggle'
-import type { DrinkTypeOption } from '@/lib/drink-options'
 import {
   type getBrewingMethod,
   updateBrewingMethod,
-} from '@/lib/server/brewing-methods'
+} from '@/journal/brewing-methods'
+import type { DrinkTypeOption } from '@/lib/drink-options'
 import {
   SHOT_PARAMETER_KEYS,
   SHOT_PARAMETER_META,
@@ -28,7 +27,6 @@ export function BrewingMethodEditor({
   readonly method: BrewingMethod
   readonly drinkTypes: readonly DrinkTypeOption[]
 }) {
-  const router = useRouter()
   const [name, setName] = useState(method.name)
   const [description, setDescription] = useState(method.description ?? '')
   const [enabledParameters, setEnabledParameters] = useState<
@@ -63,7 +61,6 @@ export function BrewingMethodEditor({
           drinkTypeIds,
         },
       })
-      await router.invalidate()
       toast.success(`${name.trim()} saved`)
     } catch (error) {
       toast.error(

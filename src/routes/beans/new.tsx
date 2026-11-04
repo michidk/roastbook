@@ -1,9 +1,4 @@
-import {
-  createFileRoute,
-  Link,
-  useNavigate,
-  useRouter,
-} from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import { BeanForm } from '@/components/beans/bean-form'
 import { FormPageHeader } from '@/components/form/form-shell'
@@ -11,7 +6,7 @@ import { Page } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import { Button } from '@/components/ui/button'
-import { getRoasters } from '@/lib/server/roasters'
+import { getRoasters } from '@/journal/roasters'
 
 export const Route = createFileRoute('/beans/new')({
   loader: () => getRoasters(),
@@ -25,7 +20,6 @@ export const Route = createFileRoute('/beans/new')({
 function NewBeanPage() {
   const roasters = Route.useLoaderData()
   const navigate = useNavigate()
-  const router = useRouter()
 
   return (
     <Page width="form">
@@ -43,7 +37,6 @@ function NewBeanPage() {
       <BeanForm
         roasters={roasters}
         onCreated={async (bean) => {
-          await router.invalidate()
           await navigate({
             to: '/beans/$beanId',
             params: { beanId: String(bean.id) },

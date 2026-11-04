@@ -8,17 +8,17 @@
   },
   "scripts": {
     "dev": "vite dev --port 3000",
+    "dev:demo": "bun run scripts/generate-demo-snapshot.ts && ROASTBOOK_EDITION=demo vite dev --port 3000",
     "dev:log": "mkdir -p logs && bun run dev 2>&1 | tee logs/dev.log",
     "generate-routes": "tsr generate",
-    "build": "vite build && bun run scripts/build-service-worker.ts .output/public",
-    "build:demo": "bun run scripts/generate-demo-snapshot.ts & snapshot=$!; ROASTBOOK_EDITION=demo vite build && wait $snapshot && bun run scripts/copy-pglite-assets.ts && bun run scripts/build-demo-pwa.ts .vercel/output/static && bun run scripts/check-pwa.ts --demo .vercel/output/static",
+    "build": "bun --bun vite build && bun run scripts/build-service-worker.ts .output/public",
+    "build:demo": "bun run scripts/generate-demo-snapshot.ts && ROASTBOOK_EDITION=demo vite build && bun run scripts/build-demo-pwa.ts .vercel/output/static && bun run scripts/check-pwa.ts --demo .vercel/output/static",
     "start": "bun .output/server/index.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "check": "bun run check:code && bun run check:docs",
-    "check:code": "biome check . && bun run check:boundaries && bun run check:ai-pricing",
-    "check:boundaries": "bun run scripts/check-import-boundaries.ts",
-    "check:ai-pricing": "bun run scripts/sync-ai-pricing.ts --check",
+    "check:code": "biome check . && bun run check:boundaries",
+    "check:boundaries": "bun run scripts/check-import-boundaries.ts && bun scripts/generate-journal-sync-triggers.ts --check",
     "check:docs": "markdownlint-cli2 \"README.md\" \"AGENTS.md\" \"DESIGN.md\" \"docs/**/*.md\" \"charts/**/*.md\"",
     "check:client-assets": "bun run scripts/check-client-assets.ts",
     "check:pwa": "bun run scripts/check-pwa.ts",
@@ -26,9 +26,10 @@
     "format": "biome format --write .",
     "lint": "biome lint .",
     "lint:deadcode": "knip",
-    "test": "bun test",
-    "test:unit": "bun test --path-ignore-patterns='**/*.integration.test.ts'",
-    "test:coverage": "bun test --coverage --path-ignore-patterns='**/*.integration.test.ts'",
+    "test": "bun test --path-ignore-patterns='**/*.browser.test.ts' && bun run test:browser-runtime",
+    "test:browser-runtime": "JOURNAL_PLATFORM=browser bun test .browser.test.ts",
+    "test:unit": "bun test --path-ignore-patterns='**/*.integration.test.ts' --path-ignore-patterns='**/*.browser.test.ts' && bun run test:browser-runtime",
+    "test:coverage": "bun test --coverage --path-ignore-patterns='**/*.integration.test.ts' --path-ignore-patterns='**/*.browser.test.ts'",
     "test:integration": "bun run scripts/test-integration.ts",
     "verify": "bun run check && bun run typecheck && bun run test && bun run lint:deadcode && bun run build && bun run check:client-assets && bun run check:pwa",
     "db:generate": "bun --bun drizzle-kit generate",
@@ -40,7 +41,6 @@
     "db:duplicate-roasters": "bun run scripts/find-duplicate-roasters.ts",
     "storage:orphans": "bun run scripts/report-media-orphans.ts",
     "storage:backfill-thumbnails": "bun run scripts/backfill-thumbnails.ts",
-    "sync:ai-pricing": "bun run scripts/sync-ai-pricing.ts",
     "storybook": "storybook dev --port 6006 --no-open --disable-telemetry",
     "build:storybook": "storybook build --disable-telemetry",
     "worker": "bun run scripts/account-worker.ts",
@@ -82,17 +82,15 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "recharts": "^3.8.1",
-    "rxdb": "17.6.0",
-    "rxjs": "7.8.2",
     "sharp": "^0.35.4",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.1.18",
+    "tslib": "^2.9.1",
     "zod": "^4.4.3",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@babel/parser": "8.1.0",
     "@biomejs/biome": "2.6.4",
     "@cloudflare/vite-plugin": "1.67.0",
     "@cloudflare/workers-types": "5.20261102.1",
@@ -113,7 +111,6 @@
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
     "drizzle-kit": "0.31.11",
-    "fake-indexeddb": "6.2.7",
     "knip": "6.44.1",
     "markdownlint-cli2": "0.24.0",
     "miniflare": "5.20261101.0-beta",
@@ -121,15 +118,18 @@
     "storybook": "10.6.5",
     "typescript": "7.0.2",
     "vite": "8.3.5",
-    "wrangler": "4.156.2"
+    "wrangler": "4.156.2",
+    "@roastbook/journal-demo": "workspace:*"
   },
   "overrides": {
     "esbuild": "^0.28.2",
     "smol-toml": "^1.8.0",
-    "rxdb": "17.6.0",
     "glob": "^14.0.2",
     "minimatch": "^11.0.1",
     "re2js": "^2.8.7",
     "katex": "^0.19.0"
-  }
+  },
+  "workspaces": [
+    "packages/*"
+  ]
 }

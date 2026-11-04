@@ -23,7 +23,6 @@ export const recipeTargetSchema = z
 export const shotRecipeTargetSchema = z
   .object({
     shotId: positiveIdSchema,
-    clientOperationId: z.uuid().optional(),
     ...recipeTargetFields,
   })
   .refine(hasExactlyOneTarget, 'Choose an existing recipe or name a new one')

@@ -4,8 +4,7 @@ import { DEMO_MODE } from '@/lib/build-mode'
 
 export const probeDatabase = createServerOnlyFn(async () => {
   if (DEMO_MODE) {
-    const { db } = await import('@/db')
-    await db.execute(sql`select 1`)
+    return
   } else {
     const { getControlDb } = await import('@/db/connection.server')
     await getControlDb().execute(sql`select 1`)

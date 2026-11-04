@@ -41,7 +41,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { StarRating } from '@/components/ui/star-rating'
-import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import {
   useCurrentLocalDateTimeLimit,
   useLocalDateTimeInput,
@@ -49,7 +48,25 @@ import {
 import { useOnlineStatus } from '@/hooks/use-online-status'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes'
-import { addBrew, editBrew } from '@/lib/client/journal'
+import type { getActiveBeanPurchases } from '@/journal/beans'
+import type { getBrewingMethods } from '@/journal/brewing-methods'
+import type { getGear } from '@/journal/gear'
+import type { getGearSets } from '@/journal/gear-sets'
+import type { getRecipes } from '@/journal/recipes'
+import {
+  createShot,
+  createShotAndSaveRecipe,
+  getLastShotForBeanAndMethod,
+  updateShot,
+} from '@/journal/shots'
+import type {
+  getBeanSuggestions,
+  getBrewingMethodSuggestions,
+  getDrinkTypeSuggestions,
+  getLastBeansByBrewingMethod,
+  getTasteTagSuggestions,
+} from '@/journal/suggestions'
+import type { getTasteTags } from '@/journal/taste-tags'
 import {
   type DrinkConfiguration,
   drinkConfigurationForBrewingMethod,
@@ -61,20 +78,6 @@ import {
   newShotPayload,
   newShotRecommendationRequest,
 } from '@/lib/new-shot-payload'
-import type { getActiveBeanPurchases } from '@/lib/server/beans'
-import type { getBrewingMethods } from '@/lib/server/brewing-methods'
-import type { getGear } from '@/lib/server/gear'
-import type { getGearSets } from '@/lib/server/gear-sets'
-import type { getRecipes } from '@/lib/server/recipes'
-import { getLastShotForBeanAndMethod } from '@/lib/server/shots'
-import type {
-  getBeanSuggestions,
-  getBrewingMethodSuggestions,
-  getDrinkTypeSuggestions,
-  getLastBeansByBrewingMethod,
-  getTasteTagSuggestions,
-} from '@/lib/server/suggestions'
-import type { getTasteTags } from '@/lib/server/taste-tags'
 import { SHOT_SENSORY_RATING_KEYS } from '@/lib/shot-sensory'
 import {
   enabledSensoryRatingKeys,
@@ -94,9 +97,6 @@ import {
   shotFormValuesWithGearSet,
   shotFormValuesWithRecipe,
 } from '@/modules/brews/shot-form-values'
-import { updateQueuedBrewPayload } from '@/modules/offline/pending-store'
-import { requestPendingSync } from '@/modules/offline/sync-trigger'
-import { releasePendingBrewForTasting } from '@/modules/offline/tasting-holds'
 
 type NewShotFormData = {
   readonly beans: Awaited<ReturnType<typeof getActiveBeanPurchases>>
@@ -122,7 +122,6 @@ type NewShotFormData = {
   readonly recommendationEnabled: boolean
   readonly shottimerEnabled: boolean
   readonly defaultBrewedAt: string
-  readonly offlineSnapshotSavedAt?: string
 }
 
 type NewShotFormProps = {
@@ -134,8 +133,6 @@ type NewShotFormProps = {
   }
   /** Called after the brew was created, before the form unmounts. */
   readonly onSaved: () => Promise<void>
-  /** Called after the brew was queued on this device, before the form unmounts. */
-  readonly onQueued: () => Promise<void>
 }
 
 function requestedBeanSelection(
@@ -180,12 +177,7 @@ function tastingValues(values: ShotFormValues) {
   }
 }
 
-export function NewShotForm({
-  data,
-  initialBean,
-  onSaved,
-  onQueued,
-}: NewShotFormProps) {
+export function NewShotForm({ data, initialBean, onSaved }: NewShotFormProps) {
   const {
     beans,
     methods,
@@ -202,11 +194,9 @@ export function NewShotForm({
     recommendationEnabled,
     shottimerEnabled,
     defaultBrewedAt,
-    offlineSnapshotSavedAt,
   } = data
   const tasteProfile = useTasteProfile()
   const isOnline = useOnlineStatus()
-  const formatDateTime = useDateTimeFormatter()
   const [values, setValues] = useState<ShotFormValues>(() => {
     const brewingMethodId = brewingMethodSuggestions[0]
       ? String(brewingMethodSuggestions[0].id)
@@ -234,21 +224,11 @@ export function NewShotForm({
     Readonly<Record<string, string>>
   >({})
   const [isDirty, setIsDirty] = useState(false)
-  const operationIdRef = useRef<string | null>(null)
-  // The saved or queued brew the tasting dialog completes, with its saved values.
-  const [tasting, setTasting] = useState<
-    | {
-        readonly kind: 'saved'
-        readonly id: number
-        readonly values: ShotFormValues
-      }
-    | {
-        readonly kind: 'pending'
-        readonly operationId: string
-        readonly values: ShotFormValues
-      }
-    | null
-  >(null)
+  // The saved brew the tasting dialog completes, with its saved values.
+  const [tasting, setTasting] = useState<{
+    readonly id: number
+    readonly values: ShotFormValues
+  } | null>(null)
   const [timerKey, setTimerKey] = useState(0)
   const [inlineTimerVisible, setInlineTimerVisible] = useState(true)
   const isInitializing = useRef(true)
@@ -259,14 +239,6 @@ export function NewShotForm({
   }, [])
 
   useUnsavedChanges(isDirty && !isSubmitting)
-
-  useEffect(() => {
-    return () => {
-      if (tasting?.kind === 'pending') {
-        releasePendingBrewForTasting(tasting.operationId)
-      }
-    }
-  }, [tasting])
 
   const selectedMethod = methods.find(
     (method) => String(method.id) === values.brewingMethodId,
@@ -432,52 +404,25 @@ export function NewShotForm({
       return false
     }
 
-    const operationId = operationIdRef.current ?? crypto.randomUUID()
-    operationIdRef.current = operationId
-
     setIsSubmitting(true)
     try {
       const shouldTaste = hasEnabledTasteProfileField(tasteProfile)
-      const result = await addBrew({
-        data: { ...baseData, clientOperationId: operationId },
-        summary: {
-          beanName: selectedBean?.name ?? null,
-          methodName: selectedMethod?.name ?? 'Brew',
-          brewedAt:
-            baseData.brewedAt instanceof Date
-              ? baseData.brewedAt.toISOString()
-              : new Date().toISOString(),
-          doseGrams: baseData.doseGrams ?? null,
-          yieldGrams: baseData.yieldGrams ?? null,
-          shotTimeSeconds: baseData.shotTimeSeconds ?? null,
-        },
-        target: targetRecipe
-          ? targetRecipe.kind === 'new'
-            ? { name: targetRecipe.name }
-            : { recipeId: targetRecipe.recipeId }
-          : null,
-        holdForTasting: shouldTaste,
-      })
-      operationIdRef.current = null
+      const shot = targetRecipe
+        ? (
+            await createShotAndSaveRecipe({
+              data: {
+                shot: baseData,
+                target:
+                  targetRecipe.kind === 'new'
+                    ? { name: targetRecipe.name }
+                    : { recipeId: targetRecipe.recipeId },
+              },
+            })
+          ).shot
+        : await createShot({ data: baseData })
       setIsDirty(false)
-      if (result.kind === 'queued') {
-        toast.success(
-          'Saved on this device. Your brew will sync when you reconnect.',
-        )
-        if (shouldTaste)
-          setTasting({
-            kind: 'pending',
-            operationId: result.operationId,
-            values: submittedValues,
-          })
-        else await onQueued()
-      } else if (shouldTaste) {
-        setTasting({
-          kind: 'saved',
-          id: result.value.id,
-          values: submittedValues,
-        })
-      } else await onSaved()
+      if (shouldTaste) setTasting({ id: shot.id, values: submittedValues })
+      else await onSaved()
       return true
     } catch (error) {
       toast.error(
@@ -489,7 +434,7 @@ export function NewShotForm({
     }
   }
 
-  // Saves the tasting onto the brew just created, or updates the queued payload.
+  // Saves the tasting onto the brew just created.
   const saveTasting = async () => {
     if (!tasting) return
     setIsSubmitting(true)
@@ -500,27 +445,8 @@ export function NewShotForm({
         { brewedAt },
       )
 
-      if (tasting.kind === 'saved') {
-        const result = await editBrew(
-          { id: tasting.id, ...data },
-          {
-            label: selectedBean?.name ?? 'Brew',
-            detail: selectedMethod?.name ?? 'Tasting',
-          },
-        )
-        if (result.kind === 'queued') {
-          toast.success('Tasting saved on this device')
-          await onQueued()
-        } else await onSaved()
-      } else {
-        await updateQueuedBrewPayload(tasting.operationId, {
-          ...data,
-          clientOperationId: tasting.operationId,
-        })
-        releasePendingBrewForTasting(tasting.operationId)
-        requestPendingSync()
-        await onQueued()
-      }
+      await updateShot({ data: { id: tasting.id, ...data } })
+      await onSaved()
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Could not save the tasting',
@@ -531,12 +457,6 @@ export function NewShotForm({
   }
 
   const finishWithoutTasting = () => {
-    if (tasting?.kind === 'pending') {
-      releasePendingBrewForTasting(tasting.operationId)
-      requestPendingSync()
-      void onQueued()
-      return
-    }
     void onSaved()
   }
 
@@ -609,7 +529,7 @@ export function NewShotForm({
         />
       ) : null}
       <div className="space-y-5">
-        {!isOnline || offlineSnapshotSavedAt ? (
+        {!isOnline ? (
           <div
             role="status"
             className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100"
@@ -617,9 +537,6 @@ export function NewShotForm({
             <p className="font-semibold">Offline mode</p>
             <p className="mt-1">
               Brews saved now stay on this device and sync when you reconnect.
-              {offlineSnapshotSavedAt
-                ? ` Using lists saved ${formatDateTime(offlineSnapshotSavedAt)}.`
-                : ''}
             </p>
           </div>
         ) : null}
@@ -833,9 +750,8 @@ export function NewShotForm({
           <DialogHeader>
             <DialogTitle>How did it taste?</DialogTitle>
             <DialogDescription>
-              {tasting?.kind === 'pending'
-                ? 'The brew is saved on this device. Add a tasting now, or skip and add it later after it syncs.'
-                : 'The brew is saved. Add a tasting now, or skip and add it later from the brew.'}
+              The brew is saved. Add a tasting now, or skip and add it later
+              from the brew.
             </DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-4">

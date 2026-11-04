@@ -1,4 +1,4 @@
-import { Link, useLocation } from '@tanstack/react-router'
+import { useLocation } from '@tanstack/react-router'
 import { CloudOff } from 'lucide-react'
 import type { ReactNode } from 'react'
 import {
@@ -6,7 +6,6 @@ import {
   type SectionNavigationItem,
 } from '@/components/section-layout'
 import { useOnlineStatus } from '@/hooks/use-online-status'
-import { usePwaMode } from '@/hooks/use-pwa-mode'
 
 export function SettingsShell({
   sections,
@@ -17,11 +16,16 @@ export function SettingsShell({
 }) {
   const { pathname } = useLocation()
   const isOnline = useOnlineStatus()
-  const isPwa = usePwaMode()
   const disableServerControls =
     !isOnline &&
-    pathname !== '/settings/appearance' &&
-    pathname !== '/settings/offline'
+    ![
+      '/settings',
+      '/settings/appearance',
+      '/settings/offline',
+      '/settings/map',
+      '/settings/drinks',
+      '/settings/taste-profile',
+    ].includes(pathname)
 
   return (
     <SectionLayout label="Settings" sections={sections}>
@@ -35,18 +39,8 @@ export function SettingsShell({
           <div className="min-w-0 space-y-1">
             <p className="font-semibold">You’re offline</p>
             <p className="text-muted-foreground">
-              Server-backed settings are read-only. The browser theme and{' '}
-              {isPwa ? (
-                <Link
-                  to="/settings/offline"
-                  className="font-semibold text-link underline underline-offset-2"
-                >
-                  PWA settings
-                </Link>
-              ) : (
-                'cached data'
-              )}{' '}
-              remain available.
+              Journal settings remain editable and save on this device. Account
+              and integration settings need a connection.
             </p>
           </div>
         </div>

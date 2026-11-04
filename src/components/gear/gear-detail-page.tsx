@@ -1,4 +1,4 @@
-import { Link, useNavigate, useRouter } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import type { FormEvent } from 'react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -25,16 +25,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/dialog'
-import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useOnlineStatus } from '@/hooks/use-online-status'
+import { deleteGear, type getGearById, updateGear } from '@/journal/gear'
+import type { getGearShotPage } from '@/journal/shots'
+import { researchMachineSettings } from '@/lib/client/research'
 import { getErrorMessage } from '@/lib/error-message'
-import {
-  deleteGear,
-  type getGearById,
-  researchMachineSettings,
-  updateGear,
-} from '@/lib/server/gear'
-import type { getGearShotPage } from '@/lib/server/shots'
 import type { ExtractedMachineResearch } from '@/modules/ai/read-models'
 
 type Gear = Awaited<ReturnType<typeof getGearById>>
@@ -46,7 +41,6 @@ export function GearDetailPage({
   shotsPagination,
   researchEnabled,
   isEditing,
-  offlineSnapshotSavedAt,
   onFinishEditing,
 }: {
   gear: Gear
@@ -54,12 +48,10 @@ export function GearDetailPage({
   shotsPagination: ShotsTableServerPagination
   researchEnabled: boolean
   isEditing: boolean
-  offlineSnapshotSavedAt?: string
+
   onFinishEditing: () => void | Promise<void>
 }) {
   const navigate = useNavigate()
-  const router = useRouter()
-  const formatDateTime = useDateTimeFormatter()
   const isOnline = useOnlineStatus()
   const [isSaving, setIsSaving] = useState(false)
   const [isResearching, setIsResearching] = useState(false)
@@ -80,7 +72,6 @@ export function GearDetailPage({
     )
   }
 
-  const invalidateDetail = () => router.invalidate()
   const resetForm = () => setFormData(gearFormValuesFrom(gear))
 
   const handleResearch = async () => {
@@ -132,7 +123,6 @@ export function GearDetailPage({
       })
       setFormData((current) => ({ ...current, propertyEvidence: [] }))
       await onFinishEditing()
-      await invalidateDetail()
     } catch (error) {
       toast.error(getErrorMessage(error, 'Could not save this gear'))
     } finally {
@@ -154,7 +144,6 @@ export function GearDetailPage({
       await updateGear({
         data: { id: gear.id, isArchived: !gear.isArchived },
       })
-      await invalidateDetail()
     } catch (error) {
       toast.error(getErrorMessage(error, 'Could not update this gear'))
     }
@@ -174,26 +163,16 @@ export function GearDetailPage({
         }}
         onDelete={async () => {
           await deleteGear({ data: gear.id })
-          const { removeCachedEntityDetail } = await import(
-            '@/modules/offline/entity-detail-cache'
-          )
-          await removeCachedEntityDetail('gear', gear.id).catch(() => undefined)
-          await router.invalidate()
           await navigate({ to: '/gear' })
         }}
       />
-      {offlineSnapshotSavedAt ? (
-        <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-          Showing a saved copy from {formatDateTime(offlineSnapshotSavedAt)}.
-        </p>
-      ) : null}
+
       {isEditing ? (
         <>
           <EntityImageGallery
             entityType="gear"
             entityId={gear.id}
             images={gear.images}
-            onImagesChange={invalidateDetail}
             editable
           />
           <GearEditForm
@@ -212,7 +191,6 @@ export function GearDetailPage({
               entityType="gear"
               entityId={gear.id}
               images={gear.images}
-              onImagesChange={invalidateDetail}
             />
           )}
           <GearReadOnlyContent

@@ -1,0 +1,501 @@
+import { and, asc, desc, eq, gt, isNotNull, type SQL, sql } from 'drizzle-orm'
+import {
+  beanPurchases,
+  beans,
+  brewingMethods,
+  settings,
+  shots,
+} from '@/db/schema'
+import { loadStatsExploration } from '@/journal/domain/stats-exploration'
+import {
+  STATS_SCAN_PAGE_SIZE,
+  scanStatsRows,
+} from '@/journal/domain/stats-scan'
+import { localDateRangeCondition } from '@/journal/domain/stats-sql'
+import { getVisitsAndPlacesStats } from '@/journal/domain/stats-visits'
+import {
+  db,
+  owned,
+  toDisplayableDatabaseError,
+} from '@/journal/platform/database'
+import { calculateStreaks, fillBucketSeries } from '@/lib/stats-analysis'
+import {
+  dateKeyInTimeZone,
+  daysBetween,
+  resolveStatsRange,
+  type StatsBucket,
+  type StatsFilter,
+} from '@/lib/stats-filters'
+import { continuousPercentiles, createLocalActivity } from '@/lib/stats-local'
+import { toNullableNumber } from '@/lib/stats-number'
+import type { DetailedStats } from '@/modules/stats/read-models'
+
+const shotCountSql = sql<number>`cast(count(*) as integer)`
+const averageShotRatingSql = sql<
+  string | number | null
+>`round(cast(avg(${shots.rating}) as numeric), 2)`
+const ratioSql = sql<string | number | null>`case
+  when ${shots.doseGrams} is null or cast(${shots.doseGrams} as numeric) = 0 then null
+  when ${shots.ratioBasis} = 'brew_water' then
+    (1.0 * cast(${shots.brewWaterGrams} as numeric)) / nullif(cast(${shots.doseGrams} as numeric), 0)
+  else (1.0 * cast(${shots.yieldGrams} as numeric)) / nullif(cast(${shots.doseGrams} as numeric), 0)
+end`
+
+async function loadBrewActivity(
+  where: SQL,
+  timeZone: string,
+  bucket: StatsBucket,
+) {
+  const activity = createLocalActivity(timeZone, bucket)
+  const dose: number[] = []
+  const yieldValues: number[] = []
+  const time: number[] = []
+  const ratio: number[] = []
+  await scanStatsRows(
+    (afterId) =>
+      db
+        .select({
+          id: shots.id,
+          brewedAt: shots.brewedAt,
+          rating: shots.rating,
+          dose: shots.doseGrams,
+          yield: shots.yieldGrams,
+          time: shots.shotTimeSeconds,
+          ratio: ratioSql,
+        })
+        .from(shots)
+        .where(
+          owned(
+            shots,
+            and(
+              where,
+              afterId === undefined ? undefined : gt(shots.id, afterId),
+            ),
+          ),
+        )
+        .orderBy(asc(shots.id))
+        .limit(STATS_SCAN_PAGE_SIZE),
+    (row) => {
+      activity.add(row.brewedAt, row.rating)
+      if (row.dose !== null) dose.push(Number(row.dose))
+      if (row.yield !== null) yieldValues.push(Number(row.yield))
+      if (row.time !== null) time.push(Number(row.time))
+      if (row.ratio !== null) ratio.push(Number(row.ratio))
+    },
+  )
+  const d = continuousPercentiles(dose)
+  const y = continuousPercentiles(yieldValues)
+  const t = continuousPercentiles(time)
+  const r = continuousPercentiles(ratio)
+  return {
+    ...activity.result(),
+    consistency: {
+      doseCount: d.count,
+      doseMedian: d.median,
+      doseP25: d.p25,
+      doseP75: d.p75,
+      yieldCount: y.count,
+      yieldMedian: y.median,
+      yieldP25: y.p25,
+      yieldP75: y.p75,
+      timeCount: t.count,
+      timeMedian: t.median,
+      timeP25: t.p25,
+      timeP75: t.p75,
+      ratioCount: r.count,
+      ratioMedian: r.median,
+      ratioP25: r.p25,
+      ratioP75: r.p75,
+    },
+  }
+}
+
+async function loadActivityCalendar(where: SQL, timeZone: string) {
+  const activity = createLocalActivity(timeZone, 'day')
+  await scanStatsRows(
+    (afterId) =>
+      db
+        .select({ id: shots.id, brewedAt: shots.brewedAt })
+        .from(shots)
+        .where(
+          owned(
+            shots,
+            and(
+              where,
+              afterId === undefined ? undefined : gt(shots.id, afterId),
+            ),
+          ),
+        )
+        .orderBy(asc(shots.id))
+        .limit(STATS_SCAN_PAGE_SIZE),
+    (row) => activity.add(row.brewedAt),
+  )
+  return activity.result().activityDates
+}
+
+function shotCondition({
+  timeZone,
+  start,
+  end,
+  method,
+  bean,
+}: {
+  readonly timeZone: string
+  readonly start: string | null
+  readonly end: string
+  readonly method?: number
+  readonly bean?: number
+}): SQL<unknown> {
+  const condition = and(
+    localDateRangeCondition(shots.brewedAt, timeZone, start, end),
+    method ? eq(shots.brewingMethodId, method) : undefined,
+    bean ? eq(shots.beanId, bean) : undefined,
+  )
+  if (!condition) throw new Error('Could not build brew statistics range')
+  return condition
+}
+
+export async function loadDetailedStats(
+  filter: StatsFilter,
+  options: { readonly now?: Date } = {},
+): Promise<DetailedStats> {
+  try {
+    const now = options.now ?? new Date()
+    const installationSettings = await db.query.settings.findFirst({
+      columns: { timeZone: true },
+      where: owned(settings, eq(settings.id, 1)),
+    })
+    const timeZone = installationSettings?.timeZone ?? 'UTC'
+    const range = resolveStatsRange(filter, now, timeZone)
+    const today = dateKeyInTimeZone(now, timeZone)
+    const currentWhere = shotCondition({
+      timeZone,
+      start: range.start,
+      end: range.end,
+      method: filter.method,
+      bean: filter.bean,
+    })
+    const activityCalendarWhere = shotCondition({
+      timeZone,
+      start: null,
+      end: today,
+      method: filter.method,
+      bean: filter.bean,
+    })
+    const previousWhere =
+      range.previousStart && range.previousEnd
+        ? shotCondition({
+            timeZone,
+            start: range.previousStart,
+            end: range.previousEnd,
+            method: filter.method,
+            bean: filter.bean,
+          })
+        : null
+    const localScanPromise = loadBrewActivity(
+      currentWhere,
+      timeZone,
+      range.bucket,
+    )
+    const calendarPromise = loadActivityCalendar(
+      activityCalendarWhere,
+      timeZone,
+    )
+    const explorationPromise = loadStatsExploration({
+      where: currentWhere,
+      timeZone,
+    })
+    const [
+      summaryRows,
+      previousSummaryRows,
+      topBeansByShots,
+      topBeansByRating,
+      brewerUsage,
+      grinderUsage,
+      accessoryUsage,
+      qualityTrend,
+      methodUsage,
+      tasteProfile,
+      consistencyRows,
+      dialInRows,
+      rhythmRows,
+      activityDates,
+      activityCalendarDates,
+      roasterUsage,
+      originUsage,
+      processUsage,
+      roastLevelUsage,
+      roastAgeUsage,
+      homeSpend,
+      availableMethods,
+      availableBeans,
+      visitsAndPlaces,
+    ] = await Promise.all([
+      db
+        .select({
+          total: shotCountSql,
+          totalGrams: sql<
+            string | number
+          >`coalesce(sum(cast(${shots.doseGrams} as numeric)), 0)`,
+          uniqueBeans: sql<number>`cast(count(distinct ${shots.beanId}) as integer)`,
+          avgRating: averageShotRatingSql,
+          totalRated: sql<number>`cast(count(${shots.rating}) as integer)`,
+          highRated: sql<number>`cast(count(*) filter (where ${shots.rating} >= 4) as integer)`,
+          rating1: sql<number>`cast(count(*) filter (where ${shots.rating} = 1) as integer)`,
+          rating2: sql<number>`cast(count(*) filter (where ${shots.rating} = 2) as integer)`,
+          rating3: sql<number>`cast(count(*) filter (where ${shots.rating} = 3) as integer)`,
+          rating4: sql<number>`cast(count(*) filter (where ${shots.rating} = 4) as integer)`,
+          rating5: sql<number>`cast(count(*) filter (where ${shots.rating} = 5) as integer)`,
+          avgDose: sql<
+            string | number | null
+          >`round(avg(cast(${shots.doseGrams} as numeric)), 1)`,
+          avgYield: sql<
+            string | number | null
+          >`round(avg(cast(${shots.yieldGrams} as numeric)), 1)`,
+          avgTime: sql<
+            string | number | null
+          >`round(avg(cast(${shots.shotTimeSeconds} as numeric)), 0)`,
+          avgRatio: sql<string | number | null>`round(avg(${ratioSql}), 2)`,
+        })
+        .from(shots)
+        .where(owned(shots, currentWhere)),
+
+      previousWhere
+        ? db
+            .select({
+              total: shotCountSql,
+              totalGrams: sql<
+                string | number
+              >`coalesce(sum(cast(${shots.doseGrams} as numeric)), 0)`,
+              avgRating: averageShotRatingSql,
+              totalRated: sql<number>`cast(count(${shots.rating}) as integer)`,
+            })
+            .from(shots)
+            .where(owned(shots, previousWhere))
+        : Promise.resolve([]),
+
+      explorationPromise.then(({ beans }) => beans.topByShots),
+      explorationPromise.then(({ beans }) => beans.topByRating),
+      explorationPromise.then(({ gear }) => gear.brewers),
+      explorationPromise.then(({ gear }) => gear.grinders),
+      explorationPromise.then(({ gear }) => gear.accessories),
+
+      localScanPromise.then((row) => row.trend),
+
+      explorationPromise.then(({ methods }) => methods),
+      explorationPromise.then(({ tasteProfile }) => tasteProfile),
+
+      localScanPromise.then((row) => [row.consistency]),
+
+      db
+        .select({
+          id: shots.id,
+          brewedAt: shots.brewedAt,
+          beanId: beans.id,
+          beanName: beans.name,
+          methodId: brewingMethods.id,
+          methodName: brewingMethods.name,
+          rating: shots.rating,
+          ratio: ratioSql,
+          time: shots.shotTimeSeconds,
+          temperature: shots.brewTemperatureCelsius,
+        })
+        .from(shots)
+        .innerJoin(beans, eq(shots.beanId, beans.id))
+        .innerJoin(brewingMethods, eq(shots.brewingMethodId, brewingMethods.id))
+        .where(owned(shots, and(currentWhere, isNotNull(shots.rating))))
+        .orderBy(desc(shots.brewedAt))
+        .limit(250),
+
+      localScanPromise.then((row) => row.rhythm),
+      localScanPromise.then((row) => row.activityDates),
+      calendarPromise,
+
+      explorationPromise.then(({ exploration }) => exploration.roasters),
+      explorationPromise.then(({ exploration }) => exploration.origins),
+      explorationPromise.then(({ exploration }) => exploration.processes),
+      explorationPromise.then(({ exploration }) => exploration.roastLevels),
+      explorationPromise.then(({ exploration }) => exploration.roastAge),
+
+      db
+        .select({
+          currency: beanPurchases.priceCurrency,
+          total: sql<
+            string | number
+          >`round(sum(((1.0 * cast(${beanPurchases.price} as numeric)) / nullif(cast(${beanPurchases.initialWeightGrams} as numeric), 0)) * cast(${shots.doseGrams} as numeric)), 2)`,
+          average: sql<
+            string | number
+          >`round(avg(((1.0 * cast(${beanPurchases.price} as numeric)) / nullif(cast(${beanPurchases.initialWeightGrams} as numeric), 0)) * cast(${shots.doseGrams} as numeric)), 2)`,
+          count: shotCountSql,
+        })
+        .from(shots)
+        .innerJoin(beans, eq(shots.beanId, beans.id))
+        .innerJoin(beanPurchases, eq(shots.beanPurchaseId, beanPurchases.id))
+        .where(
+          owned(
+            shots,
+            and(
+              currentWhere,
+              isNotNull(shots.doseGrams),
+              isNotNull(beanPurchases.price),
+              isNotNull(beanPurchases.initialWeightGrams),
+              sql`cast(${beanPurchases.initialWeightGrams} as numeric) > 0`,
+            ),
+          ),
+        )
+        .groupBy(beanPurchases.priceCurrency)
+        .orderBy(beanPurchases.priceCurrency),
+
+      explorationPromise.then(({ available }) => available.methods),
+      explorationPromise.then(({ available }) => available.beans),
+
+      getVisitsAndPlacesStats({ range, timeZone, now }),
+    ])
+
+    const localized = await localScanPromise
+    const summary = summaryRows[0]
+    const previous = previousSummaryRows[0]
+    const total = summary?.total ?? 0
+    const periodDays =
+      range.days ??
+      (localized.firstDate
+        ? daysBetween(localized.firstDate, range.end)
+        : total > 0
+          ? 1
+          : 0)
+    const consistency = consistencyRows[0]
+    const metric = (
+      count: number | undefined,
+      median: string | number | null | undefined,
+      p25: string | number | null | undefined,
+      p75: string | number | null | undefined,
+    ) => ({
+      count: count ?? 0,
+      median: toNullableNumber(median),
+      p25: toNullableNumber(p25),
+      p75: toNullableNumber(p75),
+    })
+
+    return {
+      filter: { ...filter, timeZone, range },
+      available: { methods: availableMethods, beans: availableBeans },
+      shots: {
+        total,
+        previousTotal: previous?.total ?? null,
+        avgPerDay:
+          periodDays > 0 ? Math.round((total / periodDays) * 10) / 10 : 0,
+      },
+      beans: {
+        totalGramsUsed: Math.round(Number(summary?.totalGrams) || 0),
+        previousTotalGramsUsed: previous
+          ? Math.round(Number(previous.totalGrams) || 0)
+          : null,
+        uniqueBeansUsed: summary?.uniqueBeans ?? 0,
+        topByShots: topBeansByShots,
+        topByRating: topBeansByRating,
+      },
+      brewing: {
+        avgDose: toNullableNumber(summary?.avgDose),
+        avgYield: toNullableNumber(summary?.avgYield),
+        avgTime: toNullableNumber(summary?.avgTime),
+        avgRatio: toNullableNumber(summary?.avgRatio),
+      },
+      consistency: {
+        dose: metric(
+          consistency?.doseCount,
+          consistency?.doseMedian,
+          consistency?.doseP25,
+          consistency?.doseP75,
+        ),
+        yield: metric(
+          consistency?.yieldCount,
+          consistency?.yieldMedian,
+          consistency?.yieldP25,
+          consistency?.yieldP75,
+        ),
+        time: metric(
+          consistency?.timeCount,
+          consistency?.timeMedian,
+          consistency?.timeP25,
+          consistency?.timeP75,
+        ),
+        ratio: metric(
+          consistency?.ratioCount,
+          consistency?.ratioMedian,
+          consistency?.ratioP25,
+          consistency?.ratioP75,
+        ),
+      },
+      gear: {
+        brewers: brewerUsage,
+        grinders: grinderUsage,
+        accessories: accessoryUsage,
+      },
+      ratings: {
+        average: toNullableNumber(summary?.avgRating),
+        previousAverage: toNullableNumber(previous?.avgRating),
+        totalRated: summary?.totalRated ?? 0,
+        previousTotalRated: previous?.totalRated ?? null,
+        highRated: summary?.highRated ?? 0,
+        distribution: {
+          1: summary?.rating1 ?? 0,
+          2: summary?.rating2 ?? 0,
+          3: summary?.rating3 ?? 0,
+          4: summary?.rating4 ?? 0,
+          5: summary?.rating5 ?? 0,
+        },
+      },
+      trend: fillBucketSeries(
+        qualityTrend.map((row) => ({
+          ...row,
+          averageRating: toNullableNumber(row.averageRating),
+        })),
+        range.start ?? localized.firstDate ?? null,
+        range.end,
+        range.bucket,
+        (date) => ({
+          date,
+          count: 0,
+          averageRating: null,
+          totalRated: 0,
+          highRated: 0,
+        }),
+      ),
+      activityCalendar: {
+        end: today,
+        days: activityCalendarDates,
+      },
+      methods: methodUsage,
+      tasteProfile,
+      dialIn: dialInRows.map((row) => ({
+        ...row,
+        rating: row.rating ?? 0,
+        ratio: toNullableNumber(row.ratio),
+        time: toNullableNumber(row.time),
+        temperature: toNullableNumber(row.temperature),
+      })),
+      rhythm: {
+        cells: rhythmRows,
+        streaks: calculateStreaks(activityDates, today),
+      },
+      exploration: {
+        roasters: roasterUsage,
+        origins: originUsage,
+        processes: processUsage,
+        roastLevels: roastLevelUsage,
+        roastAge: roastAgeUsage,
+      },
+      cost: {
+        home: homeSpend.map((row) => ({
+          currency: row.currency ?? 'EUR',
+          total: Number(row.total),
+          average: Number(row.average),
+          count: row.count,
+        })),
+      },
+      ...visitsAndPlaces,
+    }
+  } catch (error) {
+    throw await toDisplayableDatabaseError(error)
+  }
+}

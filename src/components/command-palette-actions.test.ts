@@ -47,10 +47,14 @@ describe('command palette actions', () => {
     )
   })
 
-  it('drops create actions in demo mode but keeps navigation and themes', () => {
+  it('offers local create actions in the editable demo', () => {
     const groups = buildCommandGroups({ demoMode: true })
 
-    expect(groups.map((group) => group.label)).toEqual(['Go to', 'Appearance'])
+    expect(groups.map((group) => group.label)).toEqual([
+      'Go to',
+      'Create',
+      'Appearance',
+    ])
     expect(flatten(groups).some((action) => action.kind === 'theme')).toBe(true)
     expect(
       flatten(groups).find((action) => action.label === 'Overview'),

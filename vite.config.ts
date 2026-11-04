@@ -1,4 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { cloudflare } from '@cloudflare/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
@@ -6,9 +5,14 @@ import { devtools } from '@tanstack/devtools-vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact from '@vitejs/plugin-react'
 import { nitro } from 'nitro/vite'
-import sharp from 'sharp'
 import { defineConfig } from 'vite'
+import { aiPricing } from './scripts/ai-pricing'
+import { demoServiceAliases } from './scripts/demo-aliases'
+import { demoAssets } from './scripts/vite-demo-assets'
+import { demoLocalPlugin } from './scripts/vite-demo-local'
+import { demoServices } from './scripts/vite-demo-services'
 import { devMigrations } from './scripts/vite-dev-migrations'
+import { journalPlatform } from './scripts/vite-journal-platform'
 
 const cloudflareRuntime = process.env.ROASTBOOK_RUNTIME === 'cloudflare'
 const roastbookEdition = process.env.ROASTBOOK_EDITION ?? 'standard'
@@ -104,61 +108,6 @@ const cloudflareAliases = [
   },
 ]
 
-const demoAssets = () => ({
-  name: 'roastbook-demo-assets',
-  async generateBundle(this: { emitFile: (asset: object) => void }) {
-    for (const filename of [
-      'kraft-orange.webp',
-      'forest-botanical.webp',
-      'cobalt-sunburst.webp',
-      'plum-orbit.webp',
-      'teal-contours.webp',
-      ...readdirSync(resolve('scripts/seed-assets/gear')).map(
-        (name) => `gear/${name}`,
-      ),
-    ]) {
-      const source = readFileSync(
-        filename.startsWith('gear/')
-          ? resolve('scripts/seed-assets', filename)
-          : resolve('scripts/seed-assets/bean-packaging', filename),
-      )
-      this.emitFile({
-        type: 'asset',
-        fileName: `media/demo/${filename}`,
-        source,
-      })
-      this.emitFile({
-        type: 'asset',
-        fileName: `media/demo/${filename.replace('.webp', '.thumb.webp')}`,
-        source,
-      })
-      this.emitFile({
-        type: 'asset',
-        fileName: `media/demo/${filename.replace('.webp', '.small.webp')}`,
-        source: await sharp(source)
-          .resize({ width: 128, withoutEnlargement: true })
-          .webp({ quality: 72 })
-          .toBuffer(),
-      })
-    }
-    for (const filename of [
-      'terracotta-wave.webp',
-      'cobalt-arches.webp',
-      'forest-diamond.webp',
-      'plum-crescent.webp',
-      'coral-pinwheel.webp',
-    ]) {
-      this.emitFile({
-        type: 'asset',
-        fileName: `media/demo-favicons/${filename}`,
-        source: readFileSync(
-          resolve('scripts/seed-assets/demo-favicons', filename),
-        ),
-      })
-    }
-  },
-})
-
 const config = defineConfig({
   // Dev/preview servers run behind sandbox proxies that forward arbitrary
   // hostnames, which Vite's host check would otherwise reject.
@@ -167,7 +116,24 @@ const config = defineConfig({
     watch: { ignored: ['**/.artifacts/**', '**/.output/**'] },
   },
   preview: { allowedHosts: true },
-  build: { reportCompressedSize: false },
+  build: {
+    reportCompressedSize: false,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            { name: 'validation', test: /node_modules\/zod\// },
+            // Journal functions run on every page; keep them in one shared chunk.
+            { name: 'journal', test: /\/src\/journal\// },
+            {
+              name: 'router-runtime',
+              test: /node_modules\/@tanstack\/(?:router-core|react-router)\//,
+            },
+          ],
+        },
+      },
+    },
+  },
   define: {
     __ROASTBOOK_DEMO_MODE__: JSON.stringify(roastbookEdition === 'demo'),
   },
@@ -176,26 +142,48 @@ const config = defineConfig({
       ? cloudflareAliases
       : roastbookEdition === 'demo'
         ? [
-            { find: /^@\/db$/, replacement: resolve('src/db/demo.ts') },
+            ...demoServiceAliases,
+            {
+              find: /^@\/components\/edition-ui$/,
+              replacement: resolve('packages/journal-demo/src/ui.tsx'),
+            },
+            {
+              find: /^@\/lib\/server\/auth\/request.server$/,
+              replacement: resolve(
+                'packages/journal-demo/src/request.server.ts',
+              ),
+            },
+            {
+              find: /^@\/db$/,
+              replacement: resolve(
+                'packages/journal-demo/src/database.server.ts',
+              ),
+            },
             {
               find: /^@\/lib\/storage$/,
-              replacement: resolve('src/lib/demo/storage.ts'),
+              replacement: resolve('packages/journal-demo/src/storage.ts'),
             },
             {
               find: /^@\/lib\/thumbnail-image$/,
-              replacement: resolve('src/lib/demo/thumbnail-image.ts'),
+              replacement: resolve(
+                'packages/journal-demo/src/thumbnail-image.ts',
+              ),
             },
             {
               find: /^@tanstack\/ai$/,
-              replacement: resolve('src/lib/demo/tanstack-ai.ts'),
+              replacement: resolve('packages/journal-demo/src/tanstack-ai.ts'),
             },
             {
               find: /^@tanstack\/ai-openai(?:\/compatible)?$/,
-              replacement: resolve('src/lib/demo/tanstack-ai-openai.ts'),
+              replacement: resolve(
+                'packages/journal-demo/src/tanstack-ai-openai.ts',
+              ),
             },
             {
               find: /^@tanstack\/ai-openai\/tools$/,
-              replacement: resolve('src/lib/demo/tanstack-ai-openai-tools.ts'),
+              replacement: resolve(
+                'packages/journal-demo/src/tanstack-ai-openai-tools.ts',
+              ),
             },
           ]
         : [],
@@ -230,20 +218,28 @@ const config = defineConfig({
     ],
   },
   plugins: [
+    aiPricing(),
+    journalPlatform(roastbookEdition === 'demo' ? 'demo' : 'standard'),
     {
       name: 'roastbook-schema-declarations',
       transform(code, id) {
         // Schema construction has no external effects. Allow unused server
         // imports to disappear after Start removes server-function handlers.
         if (
+          id === resolve('src/db/index.ts') ||
+          id === resolve('src/db/d1/index.ts') ||
           id === resolve('src/db/schema.ts') ||
           id === resolve('src/db/d1/schema.ts')
         )
           return { code, moduleSideEffects: false }
       },
     },
-    ...(roastbookEdition === 'demo' ? [demoAssets()] : []),
-    ...(!cloudflareRuntime ? [devtools(), devMigrations()] : []),
+    ...(roastbookEdition === 'demo'
+      ? [demoServices(), demoAssets(), demoLocalPlugin()]
+      : []),
+    ...(!cloudflareRuntime
+      ? [devtools(), ...(roastbookEdition === 'demo' ? [] : [devMigrations()])]
+      : []),
     ...(cloudflareRuntime
       ? [
           cloudflare({
@@ -254,18 +250,23 @@ const config = defineConfig({
       : []),
     tailwindcss(),
     tanstackStart({
+      ...(roastbookEdition === 'demo'
+        ? {}
+        : {
+            spa: {
+              enabled: true,
+              maskPath: '/offline-shell',
+              prerender: { outputPath: '/offline-shell.html' },
+            },
+          }),
       router: {
         codeSplittingOptions: {
-          // Keep route loaders in the critical route bundle so client-side
-          // navigation can start data fetching immediately. Group the route
-          // UI into one lazy chunk instead of creating a request per property.
+          // Loaders query the local journal, so each route's loader and page
+          // load together in one lazy chunk. Pending and error screens stay
+          // separate so they can render while that chunk downloads.
           defaultBehavior: [
-            [
-              'component',
-              'pendingComponent',
-              'errorComponent',
-              'notFoundComponent',
-            ],
+            ['loader', 'component'],
+            ['pendingComponent', 'errorComponent', 'notFoundComponent'],
           ],
         },
       },
@@ -275,6 +276,13 @@ const config = defineConfig({
           nitro({
             preset: roastbookEdition === 'demo' ? 'vercel' : 'bun',
             routeRules: {
+              ...(roastbookEdition === 'demo'
+                ? {
+                    '/demo-local/**': {
+                      headers: { 'cache-control': 'no-cache' },
+                    },
+                  }
+                : {}),
               '/sw.js': {
                 headers: {
                   'cache-control': 'no-cache, no-store, must-revalidate',

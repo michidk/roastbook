@@ -8,7 +8,6 @@ import {
   X,
 } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
-import { toast } from 'sonner'
 import { ImageWithFallback } from '@/components/image-with-fallback'
 import { PictureUploader } from '@/components/picture-uploader'
 import { Button } from '@/components/ui/button'
@@ -29,10 +28,11 @@ import {
 } from '@/components/ui/dialog'
 import { useImageUpload } from '@/hooks/use-image-upload'
 import {
-  addJournalPicture,
-  chooseJournalThumbnail,
-  removeJournalPicture,
-} from '@/lib/client/journal-images'
+  deleteEntityImage,
+  setImageAsThumbnail,
+  uploadEntityImage,
+} from '@/journal/images'
+import { createEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
 import { getErrorMessage } from '@/lib/error-message'
 import type { ImageFile } from '@/lib/image-file'
 import { imageUrl, thumbnailUrl } from '@/lib/image-url'
@@ -58,7 +58,6 @@ interface EntityImageGalleryProps {
   readonly entityType: 'bean-purchases' | 'gear' | 'shots'
   readonly entityId: number
   readonly images: readonly EntityImage[]
-  readonly onImagesChange: () => void | Promise<void>
   readonly imageAction?: EntityImageAction
   readonly editable?: boolean
 }
@@ -67,7 +66,6 @@ export function EntityImageGallery({
   entityType,
   entityId,
   images,
-  onImagesChange,
   imageAction,
   editable = false,
 }: EntityImageGalleryProps) {
@@ -110,47 +108,30 @@ export function EntityImageGallery({
     setIsUploading(true)
 
     const uploaded: ImageFile[] = []
-    const queued: ImageFile[] = []
     const failures: EntityImageUploadFailure[] = []
 
     try {
       for (const picture of pictures) {
         try {
-          const result = await addJournalPicture(
-            { entityType, entityId },
-            picture,
-          )
-          if (result.kind === 'queued') queued.push(picture)
-          else uploaded.push(picture)
+          await uploadEntityImage({
+            data: createEntityImageUploadFormData(
+              entityType,
+              entityId,
+              picture.file,
+              picture,
+            ),
+          })
+          uploaded.push(picture)
         } catch (error) {
           failures.push({ image: picture, error })
         }
       }
 
-      removeImages([...uploaded, ...queued])
+      removeImages(uploaded)
       setUploadFailures((current) => [
         ...current.filter(({ image }) => !attemptedPreviews.has(image.preview)),
         ...failures,
       ])
-      if (queued.length > 0) {
-        toast.success(
-          queued.length === 1
-            ? 'Picture saved on this device'
-            : 'Pictures saved on this device',
-        )
-      }
-      if (uploaded.length > 0) {
-        try {
-          await onImagesChange()
-        } catch (error) {
-          setGalleryError(
-            getErrorMessage(
-              error,
-              'Pictures were uploaded, but the gallery could not refresh',
-            ),
-          )
-        }
-      }
     } catch (error) {
       setGalleryError(getErrorMessage(error, 'Could not save these pictures'))
     } finally {
@@ -169,21 +150,15 @@ export function EntityImageGallery({
     setIsSettingThumbnail(image.id)
     try {
       try {
-        await chooseJournalThumbnail({
-          entityType,
-          entityId: entityIdForImage(image),
-          imageId: image.id,
+        await setImageAsThumbnail({
+          data: {
+            entityType,
+            entityId: entityIdForImage(image),
+            imageId: image.id,
+          },
         })
       } catch (error) {
         setGalleryError(getErrorMessage(error, 'Failed to set thumbnail'))
-        return
-      }
-      try {
-        await onImagesChange()
-      } catch (error) {
-        setGalleryError(
-          getErrorMessage(error, 'Thumbnail changed, but the gallery is stale'),
-        )
       }
     } finally {
       setIsSettingThumbnail(null)
@@ -195,26 +170,16 @@ export function EntityImageGallery({
     setIsDeletingImage(image.id)
     try {
       try {
-        const result = await removeJournalPicture({
-          entityType,
-          entityId: entityIdForImage(image),
-          imageId: image.id,
+        await deleteEntityImage({
+          data: {
+            entityType,
+            entityId: entityIdForImage(image),
+            imageId: image.id,
+            idempotent: true,
+          },
         })
-        if (result.kind === 'queued') {
-          toast.success('Picture removal saved on this device')
-          await Promise.resolve(onImagesChange()).catch(() => undefined)
-          return
-        }
       } catch (error) {
         setGalleryError(getErrorMessage(error, 'Failed to delete image'))
-        return
-      }
-      try {
-        await onImagesChange()
-      } catch (error) {
-        setGalleryError(
-          getErrorMessage(error, 'Picture deleted, but the gallery is stale'),
-        )
       }
     } finally {
       setIsDeletingImage(null)

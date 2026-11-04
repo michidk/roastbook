@@ -1,0 +1,1 @@
+ALTER TABLE "journal_sync_revisions" ADD COLUMN "pruned_through" bigint DEFAULT 0 NOT NULL;

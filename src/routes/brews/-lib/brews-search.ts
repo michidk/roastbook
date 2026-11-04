@@ -10,7 +10,7 @@ export function parseBrewsSearch(input: unknown) {
     view: searchEnum(search.view, ['list', 'grouped'], 'list'),
     methodId: searchInteger(search.methodId, undefined, 1),
     rating: searchInteger(search.rating, undefined, 0, 5),
-    beanId: searchInteger(search.beanId, undefined, 0, 100_000),
+    beanId: searchInteger(search.beanId, undefined, 0),
   }
 }
 

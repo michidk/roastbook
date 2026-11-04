@@ -4,6 +4,9 @@ import { createServer } from 'node:net'
 export async function startAuthEmailFixture() {
   const messages: { to: string; text: string }[] = []
   const server = createServer((socket) => {
+    // Nodemailer may drop a pooled connection while a reply is in flight; the
+    // test reads delivered messages, so a closed socket is not a failure.
+    socket.on('error', () => socket.destroy())
     socket.write('220 localhost ESMTP\r\n')
     let buffered = ''
     let recipient = ''

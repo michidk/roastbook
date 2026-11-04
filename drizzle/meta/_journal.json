@@ -533,6 +533,34 @@
       "when": 1793655734650,
       "tag": "0075_brief_shiver_man",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1793745639213,
+      "tag": "0076_steep_mentor",
+      "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1793808146884,
+      "tag": "0077_receipts_replace_operation_ids",
+      "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1793814429806,
+      "tag": "0078_journal_changes",
+      "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "7",
+      "when": 1793818785922,
+      "tag": "0079_journal_changes_pruning",
+      "breakpoints": true
     }
   ]
 }

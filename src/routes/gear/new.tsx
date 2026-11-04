@@ -1,9 +1,4 @@
-import {
-  createFileRoute,
-  Link,
-  useNavigate,
-  useRouter,
-} from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import { FormPageHeader } from '@/components/form/form-shell'
 import { GearForm } from '@/components/gear/gear-form'
@@ -22,7 +17,6 @@ export const Route = createFileRoute('/gear/new')({
 
 function NewGearPage() {
   const navigate = useNavigate()
-  const router = useRouter()
 
   return (
     <Page width="form">
@@ -39,7 +33,6 @@ function NewGearPage() {
       />
       <GearForm
         onCreated={async (item) => {
-          await router.invalidate()
           await navigate({
             to: '/gear/$gearId',
             params: { gearId: String(item.id) },

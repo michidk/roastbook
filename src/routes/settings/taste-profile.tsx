@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { Loader2, Sparkles, Tags } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { PanelSection } from '@/components/section-layout'
@@ -9,23 +9,21 @@ import {
 import { TasteTagSettings } from '@/components/settings/taste-tag-settings'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useSettingMutation } from '@/hooks/use-setting-mutation'
-import { updateTasteProfileFields } from '@/lib/server/settings'
-import { getTasteTags } from '@/lib/server/taste-tags'
+import { updateTasteProfileFields } from '@/journal/settings'
+import { getTasteTags } from '@/journal/taste-tags'
 import {
   enabledTasteProfileFields,
   type TasteProfileConfig,
   type TasteProfileField,
 } from '@/lib/taste-profile'
-import { loadOfflineSettingsData } from '@/modules/offline/settings-cache'
 
 export const Route = createFileRoute('/settings/taste-profile')({
-  loader: () => loadOfflineSettingsData('taste-tags', () => getTasteTags()),
+  loader: () => getTasteTags(),
   component: TasteProfileSection,
 })
 
 function TasteProfileSection() {
   const tasteTags = Route.useLoaderData()
-  const router = useRouter()
   const savedTasteProfile = useAppSettings().tasteProfile
   const [tasteProfile, setTasteProfile] = useState(savedTasteProfile)
 
@@ -39,7 +37,6 @@ function TasteProfileSection() {
         data: enabledTasteProfileFields(nextTasteProfile),
       }),
     selectValue: (updated) => updated.tasteProfile,
-    onSaved: () => void router.invalidate(),
     errorMessage: 'Could not save the taste profile fields',
   })
   const toggleTasteProfileField = (
@@ -85,12 +82,7 @@ function TasteProfileSection() {
           onToggle={toggleTasteProfileField}
         />
 
-        {tasteProfile.flavorTags ? (
-          <TasteTagSettings
-            tags={tasteTags}
-            onChanged={() => router.invalidate()}
-          />
-        ) : null}
+        {tasteProfile.flavorTags ? <TasteTagSettings tags={tasteTags} /> : null}
       </PanelSection>
     </>
   )

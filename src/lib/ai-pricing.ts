@@ -1,11 +1,11 @@
-import type { TokenUsage } from '@tanstack/ai'
 import {
   MODEL_PRICING_FALLBACK_MODELS,
   MODEL_PRICING_SOURCE,
   MODEL_PRICING_VERSION,
   MODEL_TOKEN_RATES,
   type ModelTokenRates,
-} from '@/lib/ai-model-pricing'
+} from 'virtual:roastbook/ai-model-pricing'
+import type { TokenUsage } from '@tanstack/ai'
 
 export type TokenCostEstimate = {
   readonly usd: number

@@ -1,6 +1,7 @@
 import '@tanstack/react-start/server-only'
 import type { ImagesBinding } from '@cloudflare/workers-types'
 import { createServerOnlyFn } from '@tanstack/react-start'
+import { type PictureSize, pictureSizes } from '@/lib/picture-sizes'
 import { MAX_IMAGE_BYTES } from '@/lib/server-validation'
 import { requireCloudflareRuntime } from './context.server'
 
@@ -15,7 +16,10 @@ function source(buffer: Uint8Array): Parameters<ImagesBinding['info']>[0] {
   }) as unknown as Parameters<ImagesBinding['info']>[0]
 }
 export const validateImageBuffer = createServerOnlyFn(
-  async (buffer: Buffer, mimeType: string): Promise<void> => {
+  async (
+    buffer: Buffer,
+    mimeType: string,
+  ): Promise<{ width: number; height: number }> => {
     if (!buffer.byteLength || buffer.byteLength > MAX_IMAGE_BYTES)
       throw new Error('The image must be smaller than 10 MB')
     const metadata = await requireCloudflareRuntime().bindings.IMAGES.info(
@@ -43,6 +47,7 @@ export const validateImageBuffer = createServerOnlyFn(
       metadata.width * metadata.height > 50_000_000
     )
       throw new Error('The image dimensions are unsupported')
+    return { width: metadata.width, height: metadata.height }
   },
 )
 async function transform(
@@ -82,14 +87,18 @@ async function transform(
     throw error
   }
 }
+const encode = (buffer: Buffer, size: PictureSize) => {
+  const { maxDimension, quality } = pictureSizes[size]
+  return transform(buffer, maxDimension, quality, 'image/webp', maxDimension)
+}
+export const createStoredImage = createServerOnlyFn((buffer: Buffer) =>
+  encode(buffer, 'stored'),
+)
 export const createThumbnail = createServerOnlyFn((buffer: Buffer) =>
-  transform(buffer, 640, 78, 'image/webp'),
+  encode(buffer, 'thumbnail'),
 )
 export const createSmallThumbnail = createServerOnlyFn((buffer: Buffer) =>
-  transform(buffer, 128, 72, 'image/webp'),
-)
-export const createStoredImage = createServerOnlyFn((buffer: Buffer) =>
-  transform(buffer, 1600, 80, 'image/webp', 1600),
+  encode(buffer, 'small'),
 )
 export const createAiImage = createServerOnlyFn((buffer: Buffer) =>
   transform(buffer, 2048, 85, 'image/jpeg', 2048),

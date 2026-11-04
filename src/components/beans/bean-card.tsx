@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/card'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import type { getBeans } from '@/journal/beans'
 import { estimateRemainingBeanWeight } from '@/lib/bean-weight'
 import {
   BEAN_TYPE_LABELS,
@@ -15,7 +16,6 @@ import {
   getRoastLevelLabel,
 } from '@/lib/constants'
 import { thumbnailUrl } from '@/lib/image-url'
-import type { getBeans } from '@/lib/server/beans'
 import { cn } from '@/lib/utils'
 
 type BeanRecord = Awaited<ReturnType<typeof getBeans>>[number] & {

@@ -1,13 +1,15 @@
-import { useNavigate, useRouter } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import { Copy, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { copyRecipe } from '@/lib/client/journal'
+import { createRecipe, type getRecipe } from '@/journal/recipes'
 import { getErrorMessage } from '@/lib/error-message'
+import { recipePayload } from '@/lib/new-shot-payload'
+import { shotFormValuesFrom } from '@/modules/brews/shot-form-values'
 
 type RecipeDuplicateButtonProps = {
-  readonly recipe: Parameters<typeof copyRecipe>[0]
+  readonly recipe: NonNullable<Awaited<ReturnType<typeof getRecipe>>>
   readonly compact?: boolean
 }
 
@@ -16,21 +18,18 @@ export function RecipeDuplicateButton({
   compact = false,
 }: RecipeDuplicateButtonProps) {
   const navigate = useNavigate()
-  const router = useRouter()
   const [isDuplicating, setIsDuplicating] = useState(false)
 
   const handleDuplicate = async () => {
     if (isDuplicating) return
     setIsDuplicating(true)
     try {
-      const result = await copyRecipe(recipe)
-      if (result.kind === 'queued') {
-        toast.success('Recipe copy saved on this device')
-        await navigate({ to: '/brews/pending' })
-        return
-      }
-      const duplicate = result.value
-      await router.invalidate()
+      const duplicate = await createRecipe({
+        data: {
+          name: `${recipe.name} (copy)`,
+          ...recipePayload(shotFormValuesFrom(recipe)),
+        },
+      })
       toast.success('Recipe duplicated')
       await navigate({
         to: '/recipes/$recipeId',

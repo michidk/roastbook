@@ -7,6 +7,9 @@ export const SOURCE_SERVICE_WORKER = 'public/sw.js'
 export const BUILD_ID_PLACEHOLDER = '__BUILD_ID__'
 export const ASSET_LIST_PLACEHOLDER = '__PRECACHE_ASSETS__'
 export const MAX_PRECACHE_ASSET_BYTES = 2 * 1024 * 1024
+// The journal database engine is larger; it is cached when first used.
+export const MAX_PRECACHE_ENGINE_BYTES = 16 * 1024 * 1024
+export const ENGINE_ASSET = /^(?:pglite|initdb)-[\w-]+\.(?:wasm|data)$/
 export const PRECACHED_FILES = [
   'offline.html',
   'manifest.json',
@@ -64,10 +67,14 @@ export function createServiceWorkerSource(
   buildId: string,
   clientAssets: readonly string[] = [],
 ): string {
-  return template
-    .replaceAll(BUILD_ID_PLACEHOLDER, buildId)
-    .replaceAll(
-      ASSET_LIST_PLACEHOLDER,
-      JSON.stringify(clientAssets.map((asset) => `/assets/${asset}`)),
-    )
+  return template.replaceAll(BUILD_ID_PLACEHOLDER, buildId).replaceAll(
+    ASSET_LIST_PLACEHOLDER,
+    JSON.stringify(
+      clientAssets
+        // Only devices that keep the journal load the engine; the asset
+        // cache keeps it after that first use.
+        .filter((asset) => !ENGINE_ASSET.test(asset))
+        .map((asset) => `/assets/${asset}`),
+    ),
+  )
 }

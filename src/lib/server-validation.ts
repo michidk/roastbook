@@ -95,6 +95,17 @@ export const entityTypeSchema = z.enum(ENTITY_TYPE_VALUES)
 
 export const thumbnailEntityTypeSchema = z.enum(THUMBNAIL_ENTITY_TYPE_VALUES)
 
+export const entityImageIdSchema = z.object({
+  entityType: entityTypeSchema,
+  entityId: positiveIdSchema,
+  imageId: positiveIdSchema,
+  idempotent: z.boolean().optional(),
+})
+
+export const thumbnailImageIdSchema = entityImageIdSchema.extend({
+  entityType: thumbnailEntityTypeSchema,
+})
+
 const nullableShotDecimal = boundedDecimalStringSchema(
   DECIMAL_CONSTRAINTS.preinfusionTimeSeconds.maximum,
   DECIMAL_CONSTRAINTS.preinfusionTimeSeconds.fractionDigits,
@@ -104,7 +115,6 @@ const nullableShotDecimal = boundedDecimalStringSchema(
 
 export const shotCreateSchema = z.object({
   brewingMethodId: positiveIdSchema,
-  clientOperationId: z.uuid().optional(),
   brewedAt: notFutureDateSchema.optional(),
   beanId: optionalNullablePositiveIdSchema,
   beanPurchaseId: optionalNullablePositiveIdSchema,

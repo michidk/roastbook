@@ -8,10 +8,10 @@ import { Page, PageHeader } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import { Button } from '@/components/ui/button'
+import { getGear } from '@/journal/gear'
+import { deleteGearSet, getGearSetById } from '@/journal/gear-sets'
 import { getErrorMessage } from '@/lib/error-message'
 import { parseIdParam } from '@/lib/route-params'
-import { getGear } from '@/lib/server/gear'
-import { deleteGearSet, getGearSetById } from '@/lib/server/gear-sets'
 
 export const Route = createFileRoute('/gear-sets/$gearSetId')({
   loader: async ({ params }) => {

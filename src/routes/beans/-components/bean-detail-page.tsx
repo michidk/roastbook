@@ -1,4 +1,4 @@
-import { getRouteApi, useNavigate, useRouter } from '@tanstack/react-router'
+import { getRouteApi, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import {
@@ -26,23 +26,18 @@ import type { RoasterOption } from '@/components/roasters/roaster-picker'
 import { ShotParameterCharts } from '@/components/shots/shot-parameter-charts'
 import { ShotsTable } from '@/components/shots/shots-table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
-import { useEntitySnapshot } from '@/hooks/use-entity-snapshot'
+
 import { useFormState } from '@/hooks/use-form-state'
 import { useOnlineStatus } from '@/hooks/use-online-status'
+import { setBeanPurchaseArchived } from '@/journal/bean-purchases'
+import { deleteBean, updateBean } from '@/journal/beans'
 import { estimateRemainingBeanWeight } from '@/lib/bean-weight'
+import { extractBeanInfo, researchBeanInfo } from '@/lib/client/research'
 import { nextSortDirection } from '@/lib/collection-sort'
 import { getErrorMessage } from '@/lib/error-message'
 import { fetchImageAsBase64 } from '@/lib/image-base64'
 import { imageUrl } from '@/lib/image-url'
 import { getExtractedRoasterAction } from '@/lib/roaster-match'
-import { setBeanPurchaseArchived } from '@/lib/server/bean-purchases'
-import {
-  deleteBean,
-  extractBeanInfo,
-  researchBeanInfo,
-  updateBean,
-} from '@/lib/server/beans'
 import type { ExtractedBeanInfo } from '@/modules/ai/read-models'
 
 const routeApi = getRouteApi('/beans/$beanId')
@@ -56,13 +51,10 @@ export function BeanDetailPage() {
     roasters,
     visionEnabled,
     researchEnabled,
-    offlineSnapshotSavedAt,
   } = detailData
   const search = routeApi.useSearch()
   const isEditing = search.edit ?? false
   const navigate = useNavigate({ from: '/beans/$beanId' })
-  const router = useRouter()
-  const formatDateTime = useDateTimeFormatter()
   const isOnline = useOnlineStatus()
   const [isSaving, setIsSaving] = useState(false)
   const [isResearching, setIsResearching] = useState(false)
@@ -101,8 +93,6 @@ export function BeanDetailPage() {
     setAvailableRoasters(roasters)
   }, [roasters])
 
-  useEntitySnapshot('bean', bean?.id, detailData, offlineSnapshotSavedAt)
-
   const currentPurchase =
     bean?.purchases.find((purchase) => !purchase.isArchived) ??
     bean?.purchases[0]
@@ -130,7 +120,6 @@ export function BeanDetailPage() {
         data: beanUpdatePayload(bean.id, formData),
       })
       await updateSearch({ edit: undefined }, { replace: true })
-      await router.invalidate()
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to update bean'))
     } finally {
@@ -234,11 +223,9 @@ export function BeanDetailPage() {
         onToggleArchive={() => {
           void updateBean({
             data: { id: bean.id, isArchived: !bean.isArchived },
+          }).catch((error) => {
+            toast.error(getErrorMessage(error, 'Could not update this bean'))
           })
-            .then(() => router.invalidate())
-            .catch((error) => {
-              toast.error(getErrorMessage(error, 'Could not update this bean'))
-            })
         }}
         onCancelEdit={() => {
           setFormData(toBeanFormValues(bean))
@@ -247,15 +234,6 @@ export function BeanDetailPage() {
         onSave={handleSave}
         onDelete={async () => {
           const result = await deleteBean({ data: bean.id })
-          if (!result.archived) {
-            const { removeCachedEntityDetail } = await import(
-              '@/modules/offline/entity-detail-cache'
-            )
-            await removeCachedEntityDetail('bean', bean.id).catch(
-              () => undefined,
-            )
-          }
-          await router.invalidate()
           if (result.archived) {
             toast.success(
               'This coffee is in your history, so it was moved to the archive',
@@ -265,11 +243,7 @@ export function BeanDetailPage() {
           }
         }}
       />
-      {offlineSnapshotSavedAt ? (
-        <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-          Showing a saved copy from {formatDateTime(offlineSnapshotSavedAt)}.
-        </p>
-      ) : null}
+
       {!isEditing ? (
         <div className="flex justify-end">
           <BeanPurchaseDialog
@@ -277,7 +251,6 @@ export function BeanDetailPage() {
             beanName={bean.name}
             visionEnabled={visionEnabled}
             previous={bean.purchases[0]}
-            onSaved={() => router.invalidate()}
           />
         </div>
       ) : null}
@@ -294,7 +267,6 @@ export function BeanDetailPage() {
           isExtracting={isExtracting}
           onResearch={handleResearchOnline}
           onExtractFromImages={handleExtractFromImages}
-          onImagesChange={() => router.invalidate()}
         />
       ) : (
         <BeanReadOnlyContent
@@ -302,17 +274,12 @@ export function BeanDetailPage() {
           shotCount={shotAnalytics.totalShots}
           topTasteTags={shotAnalytics.topTasteTags}
           weightStats={weightStats}
-          onImagesChange={() => router.invalidate()}
           onTogglePurchase={(purchaseId, isArchived) => {
             void setBeanPurchaseArchived({
               data: { id: purchaseId, beanId: bean.id, isArchived },
-            })
-              .then(() => router.invalidate())
-              .catch((error) =>
-                toast.error(
-                  getErrorMessage(error, 'Could not update this bag'),
-                ),
-              )
+            }).catch((error) =>
+              toast.error(getErrorMessage(error, 'Could not update this bag')),
+            )
           }}
         />
       )}

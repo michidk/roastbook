@@ -6,6 +6,7 @@ import { verifyAccounts } from './verify-accounts'
 import { verifyAuthentication } from './verify-auth'
 import { verifyImageStorage } from './verify-image-storage'
 import { verifyJournalCases } from './verify-journal'
+import { verifyJournalSync } from './verify-journal-sync'
 import { verifyStatistics } from './verify-statistics'
 
 const cases = [
@@ -15,6 +16,10 @@ const cases = [
     run: verifyAccounts,
   },
   ...verifyJournalCases,
+  {
+    name: 'browser writes replay on D1 once, with recorded identifiers',
+    run: verifyJournalSync,
+  },
   {
     name: 'atomic image limits, compressed storage, legacy measurement and owner isolation',
     run: verifyImageStorage,
@@ -26,7 +31,14 @@ const cases = [
 ]
 
 export default {
-  async fetch(_request: Request, bindings: CloudflareRuntimeBindings) {
+  async fetch(request: Request, bindings: CloudflareRuntimeBindings) {
+    // Only the runner's request runs the cases: any other request reaching the
+    // worker would run them again against the same database.
+    if (
+      request.method !== 'POST' ||
+      new URL(request.url).pathname !== '/verify'
+    )
+      return new Response(null, { status: 404 })
     return withCloudflareRuntime(bindings, async () => {
       const results = []
       for (const item of cases) {

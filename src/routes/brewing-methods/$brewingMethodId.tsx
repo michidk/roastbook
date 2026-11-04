@@ -1,9 +1,4 @@
-import {
-  createFileRoute,
-  Link,
-  useNavigate,
-  useRouter,
-} from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { BrewingMethodEditor } from '@/components/brewing-methods/brewing-method-editor'
@@ -13,13 +8,13 @@ import { Page, PageHeader } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import { Button } from '@/components/ui/button'
-import { getErrorMessage } from '@/lib/error-message'
-import { parseIdParam } from '@/lib/route-params'
 import {
   deleteBrewingMethod,
   getBrewingMethod,
-} from '@/lib/server/brewing-methods'
-import { getDrinkConfiguration } from '@/lib/server/drink-options'
+} from '@/journal/brewing-methods'
+import { getDrinkConfiguration } from '@/journal/drink-options'
+import { getErrorMessage } from '@/lib/error-message'
+import { parseIdParam } from '@/lib/route-params'
 
 export const Route = createFileRoute('/brewing-methods/$brewingMethodId')({
   loader: async ({ params }) => {
@@ -43,7 +38,6 @@ export const Route = createFileRoute('/brewing-methods/$brewingMethodId')({
 function BrewingMethodDetailPage() {
   const { method, drinks } = Route.useLoaderData()
   const navigate = useNavigate()
-  const router = useRouter()
 
   if (!method) {
     return (
@@ -58,7 +52,6 @@ function BrewingMethodDetailPage() {
   const handleDelete = async () => {
     try {
       await deleteBrewingMethod({ data: method.id })
-      await router.invalidate()
       toast.success('Brewing method deleted')
       await navigate({ to: '/brewing-methods' })
     } catch (error) {

@@ -141,9 +141,9 @@ async function createHarness(options: HarnessOptions = {}) {
       return new Response('icon', { headers: { 'content-type': 'image/png' } })
     }
     if (
+      url.endsWith('/offline-shell.html') ||
       url.endsWith('/overview') ||
-      url.endsWith('/brews/new') ||
-      url.endsWith('/brews/pending')
+      url.endsWith('/brews/new')
     ) {
       return htmlResponse('app-document', url)
     }
@@ -320,7 +320,6 @@ describe('service worker', () => {
       expect.arrayContaining([
         absoluteUrl('/overview'),
         absoluteUrl('/brews/new'),
-        absoluteUrl('/brews/pending'),
       ]),
     )
   })
@@ -346,7 +345,7 @@ describe('service worker', () => {
     const uncached = await harness.dispatch('fetch', {
       request: request('/brews/uncached', 'navigate'),
     })
-    expect(await (uncached as Response).text()).toContain('Offline | Roastbook')
+    expect(await (uncached as Response).text()).toBe('app-document')
   })
 
   test('clears cached documents on logout', async () => {
@@ -361,6 +360,27 @@ describe('service worker', () => {
       request: request('/_gate/logout', 'navigate'),
     })
     expect(harness.getDocumentCache()).toBeUndefined()
+  })
+
+  test('keeps viewed pictures offline until the session ends', async () => {
+    const harness = await createHarness()
+    const picture = '/media/beans/1/1-photo.webp'
+    harness.setAssetResponse(
+      picture,
+      new Response('picture', { headers: { 'content-type': 'image/webp' } }),
+    )
+    await harness.dispatch('fetch', { request: request(picture) })
+    harness.setOffline(true)
+    const offline = await harness.dispatch('fetch', {
+      request: request(picture),
+    })
+    expect(await (offline as Response).text()).toBe('picture')
+
+    harness.setOffline(false)
+    await harness.dispatch('fetch', {
+      request: request('/_gate/logout', 'navigate'),
+    })
+    expect(harness.hasCache('roastbook-documents-media')).toBe(false)
   })
 
   test('serves a precached icon while offline', async () => {
@@ -512,11 +532,6 @@ describe('service worker', () => {
       { method: 'GET', url: absoluteUrl('/api/health'), mode: 'cors' },
       { method: 'GET', url: absoluteUrl('/_serverFn/abc'), mode: 'cors' },
       { method: 'GET', url: absoluteUrl('/_gate/login'), mode: 'navigate' },
-      {
-        method: 'GET',
-        url: absoluteUrl('/media/photo.webp'),
-        mode: 'no-cors',
-      },
       { method: 'GET', url: absoluteUrl('/sw.js'), mode: 'cors' },
     ]
 

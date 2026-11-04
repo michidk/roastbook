@@ -1,9 +1,4 @@
-import {
-  getRouteApi,
-  Link,
-  useNavigate,
-  useRouter,
-} from '@tanstack/react-router'
+import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
@@ -15,15 +10,14 @@ import { RecipeFields } from '@/components/recipes/recipe-fields'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
-import { useEntitySnapshot } from '@/hooks/use-entity-snapshot'
+
 import { useFormSubmission } from '@/hooks/use-form-submission'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
-import { editRecipe, removeJournalEntity } from '@/lib/client/journal'
+import type { getGear } from '@/journal/gear'
+import type { getRecipe } from '@/journal/recipes'
+import { deleteRecipe, updateRecipe } from '@/journal/recipes'
 import { getErrorMessage } from '@/lib/error-message'
 import { recipePayload } from '@/lib/new-shot-payload'
-import type { getGear } from '@/lib/server/gear'
-import type { getRecipe } from '@/lib/server/recipes'
 import { getShotUpdateErrors } from '@/lib/update-validation'
 import {
   EMPTY_SHOT_FORM_VALUES,
@@ -43,19 +37,10 @@ function createFormValues(recipe?: Recipe): ShotFormValues {
 
 export function RecipeDetailPage() {
   const detailData = routeApi.useLoaderData()
-  const {
-    recipe,
-    beans,
-    methods,
-    gear,
-    drinks,
-    drinkTypeSuggestions,
-    offlineSnapshotSavedAt,
-  } = detailData
+  const { recipe, beans, methods, gear, drinks, drinkTypeSuggestions } =
+    detailData
   const { edit: isEditing = false } = routeApi.useSearch()
   const navigate = useNavigate({ from: '/recipes/$recipeId' })
-  const router = useRouter()
-  const formatDateTime = useDateTimeFormatter()
   const [name, setName] = useState(recipe?.name ?? '')
   const [values, setValues] = useState(() => createFormValues(recipe))
   const [fieldErrors, setFieldErrors] = useState<
@@ -67,8 +52,6 @@ export function RecipeDetailPage() {
     setName(recipe.name)
     setValues(createFormValues(recipe))
   }, [recipe])
-
-  useEntitySnapshot('recipe', recipe?.id, detailData, offlineSnapshotSavedAt)
 
   const recipeBaseRevision = recipe ? String(recipe.revision) : null
   const recipeUpdateData = () =>
@@ -93,26 +76,11 @@ export function RecipeDetailPage() {
       submit: async () => {
         const data = recipeUpdateData()
         if (!data || !recipe || !recipeBaseRevision) return
-        const updateOperationId = crypto.randomUUID()
-        const updateData = {
-          ...data,
-          clientOperationId: updateOperationId,
-        }
-
-        const result = await editRecipe(updateData, {
-          label: name.trim(),
-          detail: 'Recipe',
-        })
-        if (result.kind === 'queued') {
-          toast.success('Recipe changes saved on this device')
-          await navigate({ to: '/brews/pending' })
-          return
-        }
+        await updateRecipe({ data })
         await navigate({
           search: (current) => ({ ...current, edit: undefined }),
           replace: true,
         })
-        await router.invalidate()
         toast.success('Recipe updated')
       },
       onError: (error) =>
@@ -198,20 +166,15 @@ export function RecipeDetailPage() {
                 description="This template will be removed permanently. Existing brews keep their copied values and are not affected."
                 onConfirm={async () => {
                   try {
-                    const result = await removeJournalEntity({
-                      entityType: 'recipe',
-                      id: recipe.id,
-                      revision: recipe.revision,
-                      details: { label: recipe.name, detail: 'Recipe' },
+                    await deleteRecipe({
+                      data: {
+                        id: recipe.id,
+                        baseRevision: recipe.revision,
+                        idempotent: true,
+                      },
                     })
-                    if (result.kind === 'queued') {
-                      toast.success('Recipe deletion saved on this device')
-                      await navigate({ to: '/brews/pending' })
-                    } else {
-                      await router.invalidate()
-                      toast.success('Recipe deleted')
-                      await navigate({ to: '/recipes' })
-                    }
+                    toast.success('Recipe deleted')
+                    await navigate({ to: '/recipes' })
                   } catch (error) {
                     toast.error(
                       getErrorMessage(error, 'Could not delete recipe'),
@@ -233,12 +196,6 @@ export function RecipeDetailPage() {
           )
         }
       />
-
-      {offlineSnapshotSavedAt ? (
-        <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-          Showing a saved copy from {formatDateTime(offlineSnapshotSavedAt)}.
-        </p>
-      ) : null}
 
       {isEditing ? (
         <form

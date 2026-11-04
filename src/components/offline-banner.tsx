@@ -22,8 +22,8 @@ export function OfflineBanner({
       {hidden ? null : (
         <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 text-sm font-medium">
           <WifiOff className="h-4 w-4" aria-hidden="true" />
-          You're offline. Brews logged while offline stay on this device and
-          sync when you reconnect.
+          You're offline. Journal changes stay on this device and sync when you
+          reconnect.
         </div>
       )}
     </div>

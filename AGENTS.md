@@ -3,59 +3,68 @@
 Roastbook is a self-hosted coffee journal built with Bun, TanStack Start,
 React 19, shadcn/ui, and Drizzle. Self-hosting uses PostgreSQL with local or
 S3-compatible storage; hosted builds use Cloudflare Workers, D1, and R2.
-Production deployments use Docker or the Helm chart. Built-in Better Auth
-provides private accounts; Hodor remains optional for a shared journal.
+Deploy with Docker or the Helm chart. Better Auth provides private accounts;
+Hodor is optional for a shared journal.
 
 ## Sources of truth
 
-- Product setup and entry points: `README.md`
+- Setup and entry points: `README.md`
 - Local development and verification: `docs/development.md`
 - Runtime configuration: `docs/configuration.md`
 - Docker, Helm, and security boundary: `docs/deployment.md`
 - Demo edition and Vercel build: `docs/demo-mode.md`
-- Hosted Workers target and release artifact: `docs/cloudflare-runtime.md`
+- Workers target and release artifact: `docs/cloudflare-runtime.md`
 - Visual and interaction rules: `DESIGN.md`
-- OpenPencil design files, capture, and editor: `design/README.md`
+- Design files, capture, and editor: `design/README.md`
 - Database schemas: `src/db/schema.ts` (PostgreSQL), `src/db/d1/schema.ts` (D1)
+- Journal functions, local database, and sync: `docs/client-data.md`
+- Journal architecture decision: `docs/adr/0001-sql-journal.md`
 - Helm defaults: `charts/values.yaml`
 
 Do not duplicate configuration tables or deployment examples here. Update the
-source-of-truth document alongside behavior changes.
-
-Update `README.md` when a change affects what it advertises or documents: new or
-removed features, changed setup or commands, new documentation entry points, or
-a changed technology stack. Keep its claims accurate — do not describe planned
-work as shipped.
+source-of-truth document with each behavior change. Update `README.md` when a
+change affects what it documents (features, setup, commands, documentation
+entry points, stack); never describe planned work as shipped.
 
 ## Architecture boundaries
 
-- Routes live in `src/routes/` and use TanStack Router file-based routing.
+- Routes live in `src/routes/` (TanStack Router file-based routing).
 - Shared UI primitives live in `src/components/ui/`; extend them with `cn()`
-  instead of recreating their behavior in route components.
+  instead of recreating their behavior in routes.
 - Reusable page, form, dialog, and entity components live in
   `src/components/`.
-- Reusable client-side feature contracts and pure feature logic live in
-  `src/modules/<feature>/` after they have at least two consumers. Modules may
-  import shared `src/lib/` primitives, but never routes or server modules.
-- Server-side domain operations live in `src/lib/server/`. There, files with a
-  `.server.ts` suffix are internal server modules; unsuffixed files export
+- Client-side feature contracts and pure feature logic move to
+  `src/modules/<feature>/` once they have two consumers. Modules may import
+  `src/lib/` primitives, never routes or server modules.
+- Journal reads and writes are SQL journal functions in `src/journal/`
+  (`journalRead`/`journalWrite`, named `<module>/<export>`), run in the browser
+  on PGlite and on the server for sync replay and MCP. Never write a second
+  implementation of a journal query.
+  - Journal code reaches the database, storage, images, configuration, and side
+    effects only through `src/journal/platform/*`; time and UUIDs come from
+    `@/journal/platform/clock`.
+  - Register new modules in `src/journal/registry.ts`. Records that other
+    records reference take identifiers from `allocateJournalIds`.
+  - A journal write refreshes open pages itself; do not call
+    `router.invalidate()` after one.
+- Integrations and other server-only operations live in `src/lib/server/`:
+  `.server.ts` files are internal modules, unsuffixed files export
   `createServerFn` boundaries.
-- `src/lib/server/ai-runtime.server.ts`, database access, storage providers, and
-  secrets are
-  server-only. Never import them into browser code or expose non-`VITE_`
-  environment variables to the client.
-- Define and validate server variables in `src/lib/env.server.ts`. Define
-  browser-visible `VITE_` variables in `src/lib/env.ts`; do not read application
-  configuration directly from `process.env` or `import.meta.env` elsewhere.
-- All private requests must pass through the journal request boundary. Journal
-  database access on PostgreSQL uses a transaction-local identity and the
-  restricted RLS role. D1 uses explicit owner predicates, owner values, and
-  composite owner foreign keys. Related writes use `runJournalMutations` with
-  compare-and-swap assertions inside the same atomic batch. Never emulate an
-  interactive transaction on D1. Reserve control access for authentication and
-  account administration.
-- With AUTH_ENABLED=false the default journal is shared. Protect that mode with
-  Hodor, an equivalent proxy, or a private network.
+- `src/lib/server/ai-runtime.server.ts`, database access, storage providers,
+  and secrets are server-only. Never import them into browser code or expose
+  non-`VITE_` environment variables to the client.
+- Define and validate server variables in `src/lib/env.server.ts` and `VITE_`
+  variables in `src/lib/env.ts`; read configuration from `process.env` or
+  `import.meta.env` nowhere else.
+- All private requests pass through the journal request boundary.
+  - PostgreSQL: transaction-local identity and the restricted RLS role.
+  - D1: explicit owner predicates, owner values, and composite owner foreign
+    keys; never emulate an interactive transaction.
+  - Related writes use `runJournalMutations` with compare-and-swap assertions
+    in one atomic batch.
+  - Reserve control access for authentication and account administration.
+- With AUTH_ENABLED=false the default journal is shared; protect it with Hodor,
+  an equivalent proxy, or a private network.
 
 ## Generated and stateful files
 

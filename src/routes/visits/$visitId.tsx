@@ -1,9 +1,4 @@
-import {
-  createFileRoute,
-  Link,
-  useNavigate,
-  useRouter,
-} from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, Pencil } from 'lucide-react'
 import { useRef } from 'react'
 import { CoffeeShopCard } from '@/components/coffee-shops/coffee-shop-card'
@@ -23,14 +18,14 @@ import { VisitEditForm } from '@/components/visits/visit-edit-form'
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
+import { getBeans } from '@/journal/beans'
+import { deleteCafeVisit, getCafeVisit } from '@/journal/cafe-visits'
+import { getCoffeeShop, getCoffeeShops } from '@/journal/coffee-shops'
+import { getDrinkConfiguration } from '@/journal/drink-options'
+import { getTasteTags } from '@/journal/taste-tags'
 import { parseEditModeSearch } from '@/lib/edit-mode'
 import { parseIdParam } from '@/lib/route-params'
 import { searchValidator } from '@/lib/search-params'
-import { getBeans } from '@/lib/server/beans'
-import { deleteCafeVisit, getCafeVisit } from '@/lib/server/cafe-visits'
-import { getCoffeeShop, getCoffeeShops } from '@/lib/server/coffee-shops'
-import { getDrinkConfiguration } from '@/lib/server/drink-options'
-import { getTasteTags } from '@/lib/server/taste-tags'
 import { isNegativeTasteTag } from '@/lib/taste-tags'
 import { cn } from '@/lib/utils'
 
@@ -74,7 +69,6 @@ function VisitDetailPage() {
     Route.useLoaderData()
   const { edit: isEditing = false } = Route.useSearch()
   const navigate = useNavigate({ from: '/visits/$visitId' })
-  const router = useRouter()
   const editButtonRef = useRef<HTMLAnchorElement>(null)
 
   if (!visit) {
@@ -89,7 +83,6 @@ function VisitDetailPage() {
 
   const handleDelete = async () => {
     await deleteCafeVisit({ data: visit.id })
-    await router.invalidate()
     await navigate({ to: '/visits' })
   }
 
@@ -98,7 +91,6 @@ function VisitDetailPage() {
       search: (current) => ({ ...current, edit: undefined }),
       replace: true,
     })
-    await router.invalidate()
     requestAnimationFrame(() => editButtonRef.current?.focus())
   }
 

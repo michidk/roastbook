@@ -1,9 +1,4 @@
-import {
-  getRouteApi,
-  Link,
-  useNavigate,
-  useRouter,
-} from '@tanstack/react-router'
+import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -25,11 +20,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { StarRating } from '@/components/ui/star-rating'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
-import { useEntitySnapshot } from '@/hooks/use-entity-snapshot'
+
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useOnlineStatus } from '@/hooks/use-online-status'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
-import { removeJournalEntity, saveBrewToRecipe } from '@/lib/client/journal'
+import { saveShotAsRecipe } from '@/journal/recipes'
+import { deleteShot } from '@/journal/shots'
 import { getErrorMessage } from '@/lib/error-message'
 import { hasExtractionBalance } from '@/lib/extraction-balance'
 import {
@@ -59,24 +55,15 @@ function ShotDataFields({
 export function BrewDetailPage() {
   const formatDateTime = useDateTimeFormatter()
   const detailData = routeApi.useLoaderData()
-  const {
-    shot,
-    recipes,
-    editData,
-    recommendationEnabled,
-    offlineSnapshotSavedAt,
-  } = detailData
+  const { shot, recipes, editData, recommendationEnabled } = detailData
   const { edit: isEditing = false } = routeApi.useSearch()
   const formatNumber = useNumberFormatter()
   const tasteProfile = useTasteProfile()
   const navigate = useNavigate({ from: '/brews/$shotId' })
-  const router = useRouter()
   const isOnline = useOnlineStatus()
 
   const [isSavingRecipe, setIsSavingRecipe] = useState(false)
   const editButtonRef = useRef<HTMLAnchorElement>(null)
-
-  useEntitySnapshot('brew', shot?.id, detailData, offlineSnapshotSavedAt)
 
   if (!shot) {
     return (
@@ -86,22 +73,10 @@ export function BrewDetailPage() {
 
   const handleDelete = async () => {
     try {
-      const result = await removeJournalEntity({
-        entityType: 'brew',
-        id: shot.id,
-        revision: shot.revision,
-        details: {
-          label: shot.bean?.name ?? 'Brew',
-          detail: shot.brewingMethod.name,
-        },
+      await deleteShot({
+        data: { id: shot.id, baseRevision: shot.revision, idempotent: true },
       })
-      if (result.kind === 'queued') {
-        toast.success('Brew deletion saved on this device')
-        await navigate({ to: '/brews/pending' })
-      } else {
-        await router.invalidate()
-        await navigate({ to: '/brews' })
-      }
+      await navigate({ to: '/brews' })
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to delete brew'))
     }
@@ -113,13 +88,8 @@ export function BrewDetailPage() {
   }
 
   const handleSaved = async () => {
-    await router.invalidate()
     await navigate({ search: (current) => ({ ...current, edit: undefined }) })
     requestAnimationFrame(() => editButtonRef.current?.focus())
-  }
-
-  const handleQueued = async () => {
-    await navigate({ to: '/brews/pending' })
   }
 
   const handleSaveRecipe = async (target: SaveToRecipeTarget) => {
@@ -129,25 +99,13 @@ export function BrewDetailPage() {
       : { recipeId: target.recipeId }
     setIsSavingRecipe(true)
     try {
-      const result = await saveBrewToRecipe(
-        { shotId: shot.id, ...targetPayload },
-        {
-          label: shot.bean?.name ?? 'Brew',
-          detail: isNewRecipe
-            ? `New recipe: ${target.name}`
-            : 'Existing recipe',
-        },
-      )
-      if (result.kind === 'queued') {
-        toast.success('Recipe save queued on this device')
-        await navigate({ to: '/brews/pending' })
-        return true
-      }
-      if (!result.value) {
+      const result = await saveShotAsRecipe({
+        data: { shotId: shot.id, ...targetPayload },
+      })
+      if (!result) {
         toast.error('Could not save this recipe')
         return false
       }
-      await router.invalidate()
       toast.success(isNewRecipe ? 'Recipe created' : 'Recipe updated')
       return true
     } catch (error) {
@@ -305,18 +263,11 @@ export function BrewDetailPage() {
         }
       />
 
-      {offlineSnapshotSavedAt ? (
-        <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-          Showing a saved copy from {formatDateTime(offlineSnapshotSavedAt)}.
-        </p>
-      ) : null}
-
       <EntityImageGallery
         entityType="shots"
         entityId={shot.id}
         images={shot.images}
         editable
-        onImagesChange={() => router.invalidate()}
       />
 
       {isEditing && editData ? (
@@ -325,7 +276,6 @@ export function BrewDetailPage() {
           editData={editData}
           onCancel={handleCancel}
           onSaved={handleSaved}
-          onQueued={handleQueued}
         />
       ) : (
         <>

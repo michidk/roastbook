@@ -42,21 +42,15 @@
 
 > [!TIP]
 > **Try it in ten seconds.** The
-> [read-only demo](https://demo.roastbook.coffee/overview) runs entirely from bundled
-> sample data — no account, no database, nothing to install.
-
-The public website is [roastbook.coffee](https://roastbook.coffee/). This repository
-serves the read-only demo, the self-hosted journal, and a Cloudflare Workers
-runtime for managed hosting. Hosted infrastructure stays in a separate private
-repository; this does not change the self-hosted installation. Hosted automation
-deploys successful main builds to staging and published
-GitHub releases to production. PR previews require a contributor with write access
-or a `preview` label applied by someone with that access.
+> [editable demo](https://demo.roastbook.coffee/overview) runs entirely in your
+> browser with fictional sample data — no account, no server database. Changes
+> stay in this browser only.
 
 ## ☕ What it is
 
-Roastbook is a self-hosted home for your brews, beans, recipes, café visits,
-roasters, brewing methods, and gear — and it fills itself in for you.
+Roastbook is a self-hosted journal for your brews, beans, recipes, café visits,
+roasters, brewing methods, and gear. Website:
+[roastbook.coffee](https://roastbook.coffee/).
 
 <p align="center">
   <img src=".github/images/overview-desktop.png"
@@ -64,19 +58,27 @@ roasters, brewing methods, and gear — and it fills itself in for you.
     width="1200">
 </p>
 
-- 📷 **Photograph a bag** and Roastbook reads the label: origin, region, farm,
-  variety, altitude, process, roast level, decaf, roast date, tasting notes.
-- 🔎 **Type a roaster's name** and it researches the website, location, and
-  background.
-- ⚙️ **Add an espresso machine** and it looks up documented capabilities and
-  factory defaults from exact-model manuals and manufacturer sources.
-
-Every accepted value keeps its source, and factory facts stay separate from
-your current setup.
-
-Logging coffee should take seconds, not minutes. Log a brew with dose, yield,
-and time and you are done; the depth is there when you want it, not in your
-face when you don't.
+- 🎚️ **Simple first, deep when you ask.** Each brewing method shows only its
+  own fields; a quick entry takes dose, yield, and time. Pre-infusion,
+  pressure, flow, temperature, grind, tamp, basket, puck screen, and filter
+  position are there when you want them.
+- 🤖 **AI where you already type.** Photograph a bag to read its label,
+  research roasters and espresso machines, and get brew recommendations. Every
+  value is validated, keeps its source, and is confirmed by you before saving.
+- 🫘 **One coffee, every bag.** Repeat purchases add a bag to the same coffee;
+  roast date, weight, price, and shop stay per bag while brew history and
+  photos belong to the coffee.
+- 📈 **Numbers that answer questions.** An activity calendar, filterable
+  statistics, and parameter charts connect quality to beans, methods, gear,
+  timing, and cost.
+- 📴 **Installable and offline.** Use it in the browser or install it as a
+  PWA. The installed app keeps the journal on the device, works without a
+  connection, and syncs only what changed when you reconnect. [See what works offline.](docs/offline.md)
+- 🔒 **Yours, end to end.** Your own PostgreSQL and storage. Private accounts
+  with email codes and passkeys, or one shared journal behind your own auth
+  proxy.
+- 🚀 **Deploys in one command.** Docker Compose for a home server, a Helm chart
+  for a cluster.
 
 <p align="center">
   <img src=".github/images/new-brew-desktop.png"
@@ -85,115 +87,22 @@ face when you don't.
     width="900">
 </p>
 
-Roastbook is designed for desktop first, with full support for phones and
-tablets. Use the browser or install it as a Progressive Web App (PWA) on your
-phone or desktop. Its offline mode lets you log brews, work on recipes, and
-attach pictures without a connection, then sync when you reconnect.
-[See what works offline.](docs/offline.md)
-
-Choose your look in **Settings → Appearance**: three light palettes and three
-dark palettes, each with a live miniature preview. Light Roast and Dark Roast
-are the defaults. Palettes, coffee stains, and background grain save to your
-journal on the server and apply across devices. Only the Light, Dark, or Browser
-color-mode choice stays on this device. The header switch uses your saved
-palettes. The Roast pair keeps
-paper grain and coffee-ring backgrounds, with separate controls for each.
-Classic Light and Classic Dark use
-ivory and charcoal with copper accents. Pure Light and Pure Dark offer minimal
-white and black styling without textures.
-
-## ✨ Why Roastbook
-
-- 🎚️ **Simple first, deep when you ask.** Each brewing method shows only the
-  fields that apply to it, so an espresso form is not a pour-over form. A quick
-  entry takes three numbers.
-- 🔬 **Serious when you want to be.** Pre-infusion time and pressure, brew
-  pressure, flow rate, brew temperature, grind setting, tamp force, basket,
-  puck screen, and paper filter position per brew — plus typed capabilities for
-  each equipment type and revisioned espresso-machine settings that preserve
-  old brew context.
-- 📈 **Numbers that answer questions.** A year-long coffee activity calendar and
-  filterable statistics connect brew quality to beans, methods, taste,
-  consistency, timing, gear, and cost, while parameter charts show what a change
-  to grind, dose, or pressure actually did.
-- 🫘 **One coffee, every bag.** Buying the same beans again adds a new bag to
-  the existing coffee profile, prefilled with the weight, price, and shop of the
-  latest bag. Roast date, starting weight, price, shop (name and optional URL),
-  shelf state, and remaining-weight estimates stay bag-specific, while brew
-  history and AI recommendations learn across every purchase of that coffee.
-  Edit an existing bag to update its roast and purchase details. Pictures
-  belong to the coffee, not the bag, so every bag shows the same photos.
-- 📱 **Desktop first, fully mobile-friendly.** Full data tables, charts, and
-  maps at the desk, with a <kbd>⌘</kbd> <kbd>K</kbd> command palette for keyboard
-  navigation. Responsive layouts, large touch targets, and compact cards
-  support phones and tablets next to the coffee machine.
-- 📴 **An installable app with offline mode.** Install Roastbook as a PWA on
-  your phone or desktop, keep brewing and recipe
-  work on the device without a connection, and sync it when you reconnect.
-  [See what works offline.](docs/offline.md)
-- 🤖 **AI-native, not AI-bolted-on.** Research and extraction are wired into the
-  forms you already use and return typed, validated fields you confirm before
-  anything is saved.
-- 🔒 **Yours, end to end.** Self-hosted on your own PostgreSQL and your own
-  storage. Use private accounts with email codes and passkeys, or a shared
-  journal behind your own auth proxy. Branded emails include a sign-in code and
-  an encrypted link that keeps your email address out of the URL. After email
-  sign-in, an optional prompt helps you add a passkey for next time. Your header
-  avatar uses Gravatar with
-  an initials fallback and opens account settings and sign-out controls.
-  Demo and shared journals show a matching avatar menu for the demo user or
-  default user. Every avatar menu includes Settings and a System, Light, or Dark
-  theme submenu; account controls appear when authentication is enabled.
-- 📓 **A journal, not just a log.** Beans, roasters, gear, recipe templates,
-  brewing methods, and café visits keep every brew's full story structured.
-- 🚀 **Deploys in one command.** Docker Compose for a home server, a Helm chart
-  for a cluster.
-
 ## 🧠 AI features
 
-> [!NOTE]
-> Choose provided AI or BYOAI in Settings > AI. When enabled by your operator,
-> provided AI includes 10 free requests per week, resetting Monday at 00:00 UTC.
-> Administrators can adjust each user's allowance and review instance AI costs.
+AI is optional; everything else works without it. Users choose provided AI
+(an operator key, with a weekly free allowance administrators can adjust) or
+bring their own OpenAI-compatible endpoint in **Settings → AI**. See
+[AI configuration](docs/configuration.md).
 
-Administrators use a dedicated Admin page with the same section navigation as
-Settings. Its Users table shows account roles, last sign-in, journal counts,
-and free AI usage when provided AI is enabled. Row actions manage administrator
-access, weekly allowances, and confirmed account deletion.
-> BYOAI uses your own endpoint and key, billed by your provider.
-> The free tier appears only with authentication enabled and an operator key in
-> environment variables, including existing `OPENAI_*` configuration. Otherwise,
-> users connect their own provider.
-> Self-hosted operators configure `AI_CREDENTIAL_ENCRYPTION_KEY` for BYOAI; see
-> [AI configuration](docs/configuration.md#openai-compatible-ai). Everything else
-> works without AI.
-
-- **Label scanning** — extract bean details from up to six pictures of the bag
-  together, using one analysis when adding or editing a coffee.
-- **Bean research** — fill in origin, process, roast level, and tasting notes
-  from the roaster's own sources.
-- **Roaster research** — resolve official website, Instagram, location, and a
-  factual profile.
-- **Machine research** — pull sourced capabilities and factory espresso settings
-  for your specific model, with strict rules against weak evidence, pump-rating
-  guesses, or values from similar machines.
-- **Brew recommendations** — compare a new-brew draft or one specific logged
-  brew with up to 50 brews for the same bean, method, and exact gear setup, then
-  choose a historical brew type and equipment setup when beans have multiple
-  combinations, with the latest brew preselected. Only matching history is
-  used to get a confidence-rated opinion that recognizes when recent brews
-  are already good, or proposes one explained adjustment or controlled
-  experiment. The
-  prompt accounts for human entry errors and subjective taste-profile outliers,
-  and favors bean-appropriate classic starting recipes for unbrewed drafts
-  without reliable matching taste evidence. The recommendation also
-  suggests three follow-up questions that open a chat beside it, where you can
-  ask, for example, whether another setting such as the grind could help.
-  Answers reuse the recommendation's blocks, with parameter chips, change cards,
-  and keep-constant cards; the conversation is not saved.
-- **Request debugging** — review lifetime token usage and estimated token cost,
-  then inspect every raw AI input, response event, error, and unparsed output
-  from Settings.
+- **Label scanning** — extract bean details from up to six pictures of a bag.
+- **Bean, roaster, and machine research** — fill in origin, process, tasting
+  notes, a roaster's website and location, or a machine's sourced capabilities
+  and factory settings, with strict rules against weak evidence.
+- **Brew recommendations** — compare a draft or logged brew with up to 50
+  matching brews for the same bean, method, and gear, get one explained
+  adjustment or experiment, and ask follow-up questions in a chat.
+- **Request debugging** — inspect raw inputs, responses, errors, token usage,
+  and estimated cost in Settings.
 
 <p align="center">
   <img src=".github/images/ai-opinion-desktop.png"
@@ -202,19 +111,14 @@ access, weekly allowances, and confirmed account deletion.
     width="1000">
 </p>
 
-Every AI call is optional, server-side only, rate-limited, schema-validated,
-and recorded in PostgreSQL for local debugging. Image logs retain metadata such
-as MIME type and byte count, not the image payload itself.
+AI calls run server-side only and are rate-limited, schema-validated, and
+logged in the database without image payloads.
 
 > [!IMPORTANT]
-> **MCP server for your own agents.** `/api/mcp` is a stateless Streamable HTTP
-> endpoint (protocol 2026-07-28) with ten read tools and one write tool
-> (`create_brew`; nothing deletes or edits data). Ask what your last ten Gesha
-> brews had in common, or have an assistant log this morning's espresso. It has
-> browser sign-in and scoped OAuth consent with private accounts, plus manual
-> tokens for shared installations and other clients. Manage connections and
-> tokens in Settings > AI access (MCP). Keep device endpoints private when
-> public access is unnecessary. See [MCP deployment](docs/deployment.md#mcp).
+> **MCP server for your own agents.** `/api/mcp` is a Streamable HTTP endpoint
+> with ten read tools and one write tool (`create_brew`). Connect with browser
+> sign-in and OAuth consent, or with manual tokens; manage them in
+> **Settings → AI access (MCP)**. See [Deployment](docs/deployment.md).
 
 ## 📦 Features
 
@@ -223,38 +127,23 @@ as MIME type and byte count, not the image payload itself.
 
 ### Brewing
 
-- Log brews with dose, yield, time, equipment, overall and sensory ratings, and
-  flavor notes.
-- Load a recipe as editable template values, create recipes from scratch,
-  duplicate variants, or reuse a brew's values in a new or existing recipe.
-  Brews keep their own snapshot and are never linked back to the template.
-- Recipes preserve drink options such as milk type. Loading a recipe also
-  selects a gear set when its equipment matches.
-- A recipe can set a target brew time, which the brew timer then counts against.
+- Log brews with dose, yield, time, equipment, ratings, and flavor notes.
+- Recipes as editable templates with drink options, gear-set matching, and a
+  target brew time for the brew timer. Brews keep their own snapshot.
 - Optionally receive brew times from a Wi-Fi
-  [shottimer](https://github.com/michidk/shottimer) and share the target time
-  with it.
+  [shottimer](https://github.com/michidk/shottimer).
 
 ### Taste
 
-- Tailor the taste profile in settings: switch the overall rating, each sensory
-  factor, flavor tags, and tasting notes on or off. Disabled inputs disappear
-  from rating forms and from every place they were shown.
-- Or pick the simple taste profile, which replaces the individual factors with
-  one sour-to-bitter scale — sour points at under-extraction and bitter at
-  over-extraction, the usual first dial-in move.
+- Switch the overall rating, each sensory factor, flavor tags, and tasting
+  notes on or off, or use a single sour-to-bitter scale.
 
 ### Your coffee world
 
-- Catalog coffees with repeat-purchase bag history, roasters, brewing methods,
-  coffee shops, and typed gear
-  details, and group equipment into reusable gear sets that fill new brew and
-  recipe equipment fields in one tap.
-- Track café visits and explore visited locations on a map.
-- Configure drink and milk types in Settings, assign drink types to brewing
-  methods to keep new-brew choices relevant, then record the finished drink and
-  its applicable milk choice on both brews and café visits.
-- Keep a Places list of saved cafés, from favorites to a want-to-visit wishlist.
+- Coffees with bag history, roasters, brewing methods, coffee shops, typed
+  gear, and reusable gear sets.
+- Café visits on a map and a Places list from favorites to wishlist.
+- Configurable drink and milk types per brewing method.
 
 <p align="center">
   <img src=".github/images/beans-desktop.png"
@@ -262,64 +151,43 @@ as MIME type and byte count, not the image payload itself.
     width="1200">
 </p>
 
-### Insight
+### Insight and navigation
 
-- Review filterable brew and café trends, quality, consistency, taste, rhythm,
-  exploration, recipe performance, gear usage, and costs.
-- Scan labels and research beans, roasters, and sourced machine properties with
-  AI, with local request logs and token-cost estimates.
-
-### Getting around
-
-- Search beans, cafés, and gear directly; jump to any page; start a new brew,
-  bean, or visit; and switch theme from the command palette (<kbd>⌘</kbd>
-  <kbd>K</kbd> or <kbd>Ctrl</kbd> <kbd>K</kbd>).
-- Install Roastbook as a PWA on your phone or desktop. Journal brews and
-  recipes, attach pictures, and review pending changes offline; everything
-  stays on the device and syncs when you reconnect.
+- Filterable trends for quality, consistency, taste, rhythm, recipes, gear,
+  and cost.
+- A <kbd>⌘</kbd> <kbd>K</kbd> / <kbd>Ctrl</kbd> <kbd>K</kbd> command palette
+  for search, navigation, and quick actions.
+- Six light and dark palettes, with optional paper grain and coffee stains, in
+  **Settings → Appearance**.
 
 ### Self-hosting
 
-- Store media locally or in S3-compatible object storage.
-- Choose built-in passwordless accounts with private journals, or one shared
-  journal behind the optional Hodor reverse proxy.
-- Track compressed image storage per journal, with three pictures per item and
-  a configurable storage allowance.
-- Manage users, export data and stored images, and confirm account deletion
-  through email.
-- Explore a database-free, read-only demo backed by ephemeral PGlite seed data.
+- Local or S3-compatible media storage with a per-journal storage allowance.
+- Passwordless private accounts or one shared journal behind Hodor.
+- An Admin page for users, roles, and AI allowances; data export and confirmed
+  account deletion.
 
 </details>
 
 ## 🧱 Tech stack
 
-A modern, boring-where-it-counts TypeScript stack with full-stack type safety
-from the database row to the rendered field:
-
 | Layer | Choice |
 | --- | --- |
 | Runtime and package manager | Bun 1.4.4 |
-| Full-stack framework | TanStack Start with server functions |
-| Routing | TanStack Router, file-based and fully typed |
-| UI | React 19, shadcn/ui, Radix and Base UI, Tailwind CSS v4 |
-| Icons and maps | Lucide, MapLibre GL |
-| Database | PostgreSQL, hosted Cloudflare D1, demo PGlite |
-| Media storage | Local filesystem, S3-compatible buckets, hosted R2 |
+| Framework and routing | TanStack Start and TanStack Router |
+| UI | React 19, shadcn/ui, Tailwind CSS v4, Lucide, MapLibre GL |
+| Database | PostgreSQL or Cloudflare D1 on the server; PGlite in the browser |
+| Media storage | Local filesystem, S3-compatible buckets, or R2 |
 | AI | TanStack AI with any OpenAI-compatible endpoint |
-| Validation | Zod at every boundary, including environment variables |
-| PWA | Web app manifest and a hand-written service worker |
+| Validation | Zod at every boundary |
+| Authentication | Better Auth (email codes, passkeys); optional Hodor |
 | Tooling | Vite, Biome, Knip, `bun test` |
-| Authentication | Better Auth 1.7, email codes and passkeys; optional Hodor |
-| Deployment | Docker Compose or Helm, optional account worker |
-
-Server-only concerns — database access, storage providers, AI calls, and secrets
-— never cross into browser code, and configuration is validated lazily on first
-use, reporting the affected variable names.
+| Deployment | Docker Compose, Helm, or Cloudflare Workers |
 
 ## 🚀 Quick start
 
-Docker Compose starts PostgreSQL, applies committed migrations, starts
-Roastbook, and exposes it through Hodor.
+Docker Compose starts PostgreSQL, applies migrations, and serves Roastbook
+behind Hodor.
 
 ```bash
 cp .env.example .env
@@ -328,20 +196,17 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Open <http://localhost:3000> after the database migration completes.
+Open <http://localhost:3000> after the migration completes.
 
-For private accounts, configure `AUTH_URL`, `AUTH_SECRET`, and email delivery in
-`.env`, then use `docker compose -f docker-compose.auth.yaml up --build`. This
-example includes the export/deletion worker and does not require Hodor. The
-first verified self-hosted user becomes administrator and claims the journal.
-See [authentication configuration](docs/configuration.md#authentication-and-email)
-and [upgrade instructions](docs/deployment.md#upgrading-an-existing-journal)
-before enabling accounts on an existing installation.
+For private accounts, set `AUTH_URL`, `AUTH_SECRET`, and email delivery in
+`.env`, then run `docker compose -f docker-compose.auth.yaml up --build`. The
+first verified user becomes administrator. See
+[Configuration](docs/configuration.md) and [Deployment](docs/deployment.md),
+including upgrade steps for an existing journal.
 
 ## 🔧 Local development
 
-Roastbook uses Bun 1.4.4. With PostgreSQL available at the `DATABASE_URL` from
-`.env`:
+With PostgreSQL available at the `DATABASE_URL` from `.env`:
 
 ```bash
 bun install --frozen-lockfile
@@ -349,37 +214,30 @@ cp .env.example .env
 bun run dev
 ```
 
-Run `bun run storybook` to browse the reusable UI library, including journal
-cards, brewing and tasting inputs, charts, dialogs, and form states. See
-[Component stories](docs/development.md#component-stories) for coverage and
-service boundaries.
-
-The development server listens on <http://localhost:3000>. Authentication is
-controlled by `AUTH_ENABLED`, with the same request boundary as production.
-It applies pending migrations before accepting requests, repeats the check on
-Vite configuration reloads, and watches for newly generated migrations while
-running.
+The development server listens on <http://localhost:3000> and applies pending
+migrations on start. See [Development and testing](docs/development.md).
 
 <details>
 <summary><b>All available commands</b></summary>
 
 | Command | Purpose |
 | --- | --- |
-| `bun run dev` | Apply migrations and start the watched development server |
-| `bun run storybook` | Browse interactive component stories on port 6006 |
+| `bun run dev` | Apply migrations and start the development server |
+| `bun run storybook` | Browse component stories on port 6006 |
 | `bun run build:storybook` | Build the static component library |
-| `bun run check` | Check source formatting, lint, and Markdown |
+| `bun run check` | Check formatting, lint, and Markdown |
 | `bun run typecheck` | Run TypeScript without emitting files |
 | `bun run test` | Run tests; report unavailable integrations as skipped |
 | `bun run test:integration` | Require PostgreSQL and S3 integration tests |
 | `bun run lint:deadcode` | Find unused code and dependencies with Knip |
 | `bun run build` | Build production assets |
-| `bun run build:demo` | Build the database-free Vercel demo |
+| `bun run dev:demo` | Run the browser-local demo |
+| `bun run build:demo` | Build the browser-local demo for Vercel |
 | `bun run verify` | Run the complete local quality gate |
 | `bun run db:generate` | Generate a Drizzle migration after a schema change |
 | `bun run db:migrate` | Apply committed migrations |
 | `bun run db:studio` | Open Drizzle Studio |
-| `bun run db:seed` | Seed the same fictional dataset as the public demo |
+| `bun run db:seed` | Seed the demo's fictional dataset |
 | `bun run storage:orphans` | Report media drift without changing data |
 
 </details>
@@ -390,15 +248,14 @@ running.
 | --- | --- |
 | [Development and testing](docs/development.md) | Workflow, tests, tooling |
 | [Configuration reference](docs/configuration.md) | Every environment variable |
-| [Read-only demo mode](docs/demo-mode.md) | How the PGlite demo is built |
-| [Offline journaling](docs/offline.md) | Offline brew/recipe work, conflicts, and sync |
-| [Client data boundaries](docs/client-data.md) | Feature commands, caching, and mode policies |
-| [Deployment](docs/deployment.md) | Docker, Helm, security boundary |
-| [Cloudflare runtime](docs/cloudflare-runtime.md) | Workers Free target, D1, R2, private Resend relay, hosted security boundary |
+| [Deployment](docs/deployment.md) | Docker, Helm, security boundary, MCP |
+| [Offline journaling](docs/offline.md) | Offline coverage, sync, and conflicts |
+| [Browser-local demo](docs/demo-mode.md) | Demo data, restrictions, and builds |
+| [Journal architecture](docs/client-data.md) | Journal functions, local database, sync |
+| [Cloudflare runtime](docs/cloudflare-runtime.md) | Workers build with D1 and R2 |
 | [Shottimer API](docs/shottimer.md) | Device integration endpoints |
 | [Design system](DESIGN.md) | Layout contract and UI conventions |
-| [Design files](design/README.md) | Editable OpenPencil views and editor |
-| [Instagram campaign studio](marketing/README.md) | Demo captures, AI scenes, carousel and video exports |
+| [Design files](design/README.md) | Editable OpenPencil views |
 | [Helm chart reference](charts/README.md) | Chart values and defaults |
 
 ## 📁 Project layout
@@ -407,29 +264,15 @@ running.
 src/routes/          TanStack Router file routes and server endpoints
 src/components/      Shared application and domain UI
 src/components/ui/   shadcn/ui primitives
+src/journal/         SQL journal functions, shared by browser and server
 src/lib/server/      Server-side domain operations
 src/lib/storage/     Local and S3-compatible storage providers
-src/db/              Drizzle schema and database connection
+src/db/              Drizzle schemas and database connection
+packages/            Demo edition package
 drizzle/             Committed migrations and metadata
 charts/              Helm chart
 ```
 
-> [!WARNING]
-> `src/routeTree.gen.ts` is generated. Run `bun run generate-routes` instead of
-> editing it manually.
-
 ## 📄 License
 
 [MIT](LICENSE)
-
----
-
-<p align="center">
-  Open-source software for people who care about coffee. ☕<br>
-  <sub><a href="https://demo.roastbook.coffee/overview">Try the demo</a> ·
-  <a href="https://github.com/michidk/roastbook">Star it on GitHub</a></sub>
-</p>
-
-Installed PWA apps show a connection indicator beside the theme switcher. Open it
-to view PWA settings, queued changes, sync status, and local storage controls.
-AI integrations remain available while the installed app is online.

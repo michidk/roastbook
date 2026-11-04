@@ -15,7 +15,12 @@ import {
   useCurrentLocalDateTimeLimit,
   useLocalDateTimeInput,
 } from '@/hooks/use-local-date-time-input'
-import { editBrew } from '@/lib/client/journal'
+import type { getActiveBeanPurchases } from '@/journal/beans'
+import type { getBrewingMethods } from '@/journal/brewing-methods'
+import type { getGear } from '@/journal/gear'
+import type { getShot } from '@/journal/shots'
+import { updateShot } from '@/journal/shots'
+import type { getTasteTags } from '@/journal/taste-tags'
 import { localDateTimeInputToDate } from '@/lib/date-input'
 import {
   type DrinkConfiguration,
@@ -24,11 +29,6 @@ import {
 } from '@/lib/drink-options'
 import { focusFirstInvalidControl } from '@/lib/form-validation'
 import { shotDrinkPayload, shotParameterPayload } from '@/lib/new-shot-payload'
-import type { getActiveBeanPurchases } from '@/lib/server/beans'
-import type { getBrewingMethods } from '@/lib/server/brewing-methods'
-import type { getGear } from '@/lib/server/gear'
-import type { getShot } from '@/lib/server/shots'
-import type { getTasteTags } from '@/lib/server/taste-tags'
 import { shotSensoryPayload } from '@/lib/shot-sensory'
 import { isLegacySensoryTasteTag } from '@/lib/taste-tags'
 import { getShotUpdateErrors } from '@/lib/update-validation'
@@ -53,7 +53,6 @@ type ShotEditFormProps = {
   readonly editData: ShotEditData
   readonly onCancel: () => void
   readonly onSaved: () => Promise<void>
-  readonly onQueued?: () => Promise<void> | void
 }
 
 export function ShotEditForm({
@@ -61,7 +60,6 @@ export function ShotEditForm({
   editData,
   onCancel,
   onSaved,
-  onQueued,
 }: ShotEditFormProps) {
   const [values, setValues] = useState<ShotFormValues>(() => ({
     ...shotFormValuesFrom(shot),
@@ -91,10 +89,8 @@ export function ShotEditForm({
   const handleSave = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault()
     const formElement = event.currentTarget
-    const updateOperationId = crypto.randomUUID()
     const data = {
       id: shot.id,
-      clientOperationId: updateOperationId,
       baseRevision: shot.revision,
       ...shotParameterPayload(values),
       ...shotDrinkPayload(values),
@@ -114,17 +110,8 @@ export function ShotEditForm({
 
     setIsSaving(true)
     try {
-      const result = await editBrew(data, {
-        label: shot.bean?.name ?? 'Brew',
-        detail: shot.brewingMethod.name,
-      })
-      if (result.kind === 'queued') {
-        toast.success('Changes saved on this device')
-        if (onQueued) await onQueued()
-        else await onSaved()
-      } else {
-        await onSaved()
-      }
+      await updateShot({ data })
+      await onSaved()
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Failed to update brew',

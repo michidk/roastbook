@@ -1,3 +1,4 @@
+import { PREFERENCES_STORAGE_KEY } from '@/lib/build-mode'
 export const LIGHT_THEMES = [
   {
     id: 'light-roast',
@@ -93,7 +94,7 @@ export function themeColor(
 export const THEME_BOOTSTRAP_SCRIPT = `(function () {
   var state = {}
   try {
-    var raw = localStorage.getItem('roastbook-settings')
+    var raw = localStorage.getItem('${PREFERENCES_STORAGE_KEY}')
     var stored = raw ? JSON.parse(raw) : null
     if (stored && stored.state && typeof stored.state === 'object') state = stored.state
   } catch (error) {}

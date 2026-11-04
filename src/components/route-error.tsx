@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useOnlineStatus } from '@/hooks/use-online-status'
 import { getErrorDisplayState } from '@/lib/error-display'
-import { isNetworkError } from '@/modules/offline/errors'
+import { isNetworkError } from '@/lib/network-error'
 
 interface RouteErrorProps {
   error: unknown

@@ -1,3 +1,4 @@
+import { DEMO_MODE } from '@/lib/build-mode'
 import { getOfflineOwner } from '@/lib/journal-owner'
 
 const listeners = new Set<() => void>()
@@ -7,7 +8,9 @@ let stopMonitoring: (() => void) | undefined
 
 export function isConnectionOnline(): boolean {
   return (
-    typeof window === 'undefined' || (navigator.onLine !== false && reachable)
+    DEMO_MODE ||
+    typeof window === 'undefined' ||
+    (navigator.onLine !== false && reachable)
   )
 }
 
@@ -58,7 +61,7 @@ function monitorConnection(): () => void {
 
 export function subscribeToConnection(listener: () => void): () => void {
   listeners.add(listener)
-  stopMonitoring ??= monitorConnection()
+  if (!DEMO_MODE) stopMonitoring ??= monitorConnection()
   return () => {
     listeners.delete(listener)
     if (listeners.size === 0) {
@@ -93,7 +96,7 @@ export async function fetchWithConnectionStatus(
     const headers = new Headers(
       init?.headers ?? (input instanceof Request ? input.headers : undefined),
     )
-    if (method.toUpperCase() !== 'GET')
+    if (method.toUpperCase() !== 'GET' && !headers.has('X-Roastbook-Owner'))
       headers.set('X-Roastbook-Owner', getOfflineOwner())
     const response = await fetch(input, {
       ...init,

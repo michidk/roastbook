@@ -3,8 +3,8 @@ import { toast } from 'sonner'
 import { BrewingMethodDrinkTypesField } from '@/components/brewing-methods/brewing-method-drink-types-field'
 import { InputField, TextareaField } from '@/components/form/form-field'
 import { EntityForm, FormSection } from '@/components/form/form-shell'
+import { createBrewingMethod } from '@/journal/brewing-methods'
 import type { DrinkTypeOption } from '@/lib/drink-options'
-import { createBrewingMethod } from '@/lib/server/brewing-methods'
 
 type BrewingMethodFormProps = {
   readonly drinkTypes: readonly DrinkTypeOption[]

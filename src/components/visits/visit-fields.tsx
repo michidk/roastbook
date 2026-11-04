@@ -5,11 +5,11 @@ import { DateTimeField } from '@/components/form/date-field'
 import { CurrencyField, CurrencyInputField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
 import { TastingFields } from '@/components/form/tasting-fields'
+import type { getBeans } from '@/journal/beans'
+import type { getCoffeeShops } from '@/journal/coffee-shops'
+import type { getTasteTags } from '@/journal/taste-tags'
 import type { CafeVisitFormValues } from '@/lib/cafe-visit-payload'
 import type { DrinkConfiguration } from '@/lib/drink-options'
-import type { getBeans } from '@/lib/server/beans'
-import type { getCoffeeShops } from '@/lib/server/coffee-shops'
-import type { getTasteTags } from '@/lib/server/taste-tags'
 
 export type VisitFieldValues = CafeVisitFormValues & {
   readonly coffeeShopId: string

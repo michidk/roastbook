@@ -45,6 +45,8 @@ const meta = {
                     }
                     resolve({
                       file,
+                      thumbnail: file,
+                      small: file,
                       preview: reader.result,
                       base64: reader.result.split(',')[1] ?? '',
                     })

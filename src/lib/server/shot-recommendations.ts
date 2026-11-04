@@ -9,12 +9,12 @@ import {
   gear,
   shots,
 } from '@/db/schema'
+import { withResourceLimits } from '@/journal/domain/resource-limits'
 import {
   answerShotRecommendationQuestion,
   isRecommendationsEnabled,
   recommendShotFromHistory,
 } from '@/lib/server/ai-operations.server'
-import { withResourceLimits } from '@/lib/server/resource-limits.server'
 import {
   recommendationBeanEvidence,
   recommendationGearEvidence,

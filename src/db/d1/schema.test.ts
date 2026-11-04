@@ -59,8 +59,8 @@ describe('D1 journal schema', () => {
         expect(columns.ownerId?.hasDefault).toBe(false)
       }
     }
-    expect(ownedCount).toBe(48)
-    expect(sqliteTables.size).toBe(70)
+    expect(ownedCount).toBe(50)
+    expect(sqliteTables.size).toBe(72)
     expect(() =>
       sqlite.exec("insert into beans (name) values ('Ownerless')"),
     ).toThrow('Journal owner is unavailable')
@@ -298,16 +298,16 @@ describe('D1 journal schema', () => {
     expect(settings.tasteProfileFields).toContain('overallRating')
     const payload = { nested: ['text', 2, true, null], value: { coffee: '☕' } }
     const event = db
-      .insert(schema.replicationChanges)
+      .insert(schema.aiRequestLogs)
       .values({
         ownerId: 'alice',
-        entity: 'brews',
-        documentId: 'one',
-        document: payload,
+        requestType: 'brews',
+        model: 'one',
+        requestPayload: payload,
       })
       .returning()
       .get()
-    expect(event.document).toEqual(payload)
+    expect(event.requestPayload).toEqual(payload)
   })
 
   test('rejects invalid enum, boolean, decimal, JSON and enum-array storage', () => {
@@ -473,29 +473,29 @@ describe('D1 journal schema', () => {
     ).toThrow('Array elements must be strings')
   })
 
-  test('never reuses a deleted replication sequence', () => {
+  test('never reuses a deleted autoincrement identifier', () => {
     const event = db
-      .insert(schema.replicationChanges)
+      .insert(schema.aiRequestLogs)
       .values({
         ownerId: 'alice',
-        entity: 'brews',
-        documentId: 'one',
-        document: {},
+        requestType: 'brews',
+        model: 'one',
+        requestPayload: {},
       })
       .returning()
       .get()
-    db.delete(schema.replicationChanges).run()
+    db.delete(schema.aiRequestLogs).run()
     const next = db
-      .insert(schema.replicationChanges)
+      .insert(schema.aiRequestLogs)
       .values({
         ownerId: 'alice',
-        entity: 'brews',
-        documentId: 'two',
-        document: {},
+        requestType: 'brews',
+        model: 'two',
+        requestPayload: {},
       })
       .returning()
       .get()
-    expect(next.sequence).toBeGreaterThan(event.sequence)
+    expect(next.id).toBeGreaterThan(event.id)
   })
 
   test('accepts Better Auth serialized arrays and JSON without changing journal strings', () => {
@@ -518,16 +518,16 @@ describe('D1 journal schema', () => {
     ).toThrow()
     const journalString = JSON.stringify(metadata)
     const event = db
-      .insert(schema.replicationChanges)
+      .insert(schema.aiRequestLogs)
       .values({
         ownerId: 'alice',
-        entity: 'test',
-        documentId: 'string',
-        document: journalString,
+        requestType: 'test',
+        model: 'string',
+        requestPayload: journalString,
       })
       .returning()
       .get()
-    expect(event.document).toBe(journalString)
+    expect(event.requestPayload).toBe(journalString)
   })
 
   test('fails a batch assertion and rolls back preceding writes', () => {

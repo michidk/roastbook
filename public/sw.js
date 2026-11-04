@@ -2,11 +2,19 @@ const BUILD_ID = '__BUILD_ID__'
 const PRECACHE_CACHE = `roastbook-precache-${BUILD_ID}`
 const DOCUMENT_CACHE = `roastbook-documents-${BUILD_ID}`
 const ASSET_CACHE = 'roastbook-assets-v2'
+// Pictures this browser showed stay available offline. They are private, so
+// the cache goes with the session, like documents.
+const MEDIA_CACHE = 'roastbook-documents-media'
 const LEGACY_ASSET_CACHES = ['roastbook-assets']
 const OFFLINE_URL = '/offline.html'
+const JOURNAL_SHELL_URL = '/offline-shell.html'
 const MAX_ASSET_ENTRIES = 100
 const MAX_DOCUMENT_ENTRIES = 20
+const MAX_MEDIA_ENTRIES = 400
 const MAX_ASSET_BYTES = 2097152
+// The journal database engine is larger; it is cached when first used.
+const MAX_ENGINE_BYTES = 16777216
+const ENGINE_ASSET = /^\/assets\/(?:pglite|initdb)-[\w-]+\.(?:wasm|data)$/
 const EXCLUDED_PATHS = new Set(['/sw.js'])
 const EXCLUDED_PREFIXES = ['/api/', '/_serverFn/', '/_gate/', '/media/']
 const PRECACHE_ASSETS = __PRECACHE_ASSETS__
@@ -26,7 +34,7 @@ const PRECACHE_URLS = [
   '/coffee-stains-dark.svg',
 ]
 const PRECACHE_PATHS = new Set([...PRECACHE_URLS, ...PRECACHE_ASSETS])
-const DOCUMENT_PRECACHE_URLS = ['/overview', '/brews/new', '/brews/pending']
+const DOCUMENT_PRECACHE_URLS = ['/overview', '/brews/new']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(precache())
@@ -45,6 +53,11 @@ self.addEventListener('fetch', (event) => {
 
   if (url.pathname === '/_gate/logout' || url.pathname === '/login') {
     event.respondWith(fetch(request).finally(clearDocumentCaches))
+    return
+  }
+
+  if (url.pathname.startsWith('/media/')) {
+    event.respondWith(cacheFirstMedia(request))
     return
   }
 
@@ -101,6 +114,8 @@ async function precache() {
     }
   }
   await Promise.allSettled(DOCUMENT_PRECACHE_URLS.map(cacheDocument))
+  // The dedicated public shell has no account data. Private documents stay uncached.
+  await cacheDocument(JOURNAL_SHELL_URL)
 }
 
 async function precacheStatic(cache, url) {
@@ -137,7 +152,9 @@ async function activate() {
       .filter(
         (key) =>
           (key.startsWith('roastbook-precache-') && key !== PRECACHE_CACHE) ||
-          (key.startsWith('roastbook-documents-') && key !== DOCUMENT_CACHE) ||
+          (key.startsWith('roastbook-documents-') &&
+            key !== DOCUMENT_CACHE &&
+            key !== MEDIA_CACHE) ||
           LEGACY_ASSET_CACHES.includes(key),
       )
       .map((key) => caches.delete(key)),
@@ -164,6 +181,9 @@ async function networkFirstNavigation(request) {
       ignoreSearch: true,
     })
     if (cachedDocument) return cachedDocument
+
+    const shell = await documentCache.match(JOURNAL_SHELL_URL)
+    if (shell) return shell
 
     const cache = await caches.open(PRECACHE_CACHE)
     const offlinePage = await cache.match(OFFLINE_URL)
@@ -202,6 +222,24 @@ async function clearDocumentCaches() {
       .filter((key) => key.startsWith('roastbook-documents-'))
       .map((key) => caches.delete(key)),
   )
+}
+
+// A picture's path names one immutable file, so a cached copy never goes stale.
+async function cacheFirstMedia(request) {
+  const cache = await caches.open(MEDIA_CACHE)
+  const cached = await cache.match(request)
+  if (cached) return cached
+  const response = await fetch(request)
+  const type = response.headers.get('content-type') ?? ''
+  if (response.ok && type.startsWith('image/')) {
+    try {
+      await cache.put(request, response.clone())
+      await trimCache(cache, MAX_MEDIA_ENTRIES)
+    } catch {
+      // A cache write failure must not block the picture.
+    }
+  }
+  return response
 }
 
 async function cacheFirstPrecache(request) {
@@ -298,13 +336,16 @@ async function isCacheableStaticResponse(
   if (contentType.includes('text/html')) return pathname.endsWith('.html')
 
   if (options.checkSize) {
+    const limit = ENGINE_ASSET.test(pathname)
+      ? MAX_ENGINE_BYTES
+      : MAX_ASSET_BYTES
     const declaredLength = declaredContentLength(response)
     if (declaredLength !== null) {
-      if (declaredLength > MAX_ASSET_BYTES) return false
+      if (declaredLength > limit) return false
     } else {
       try {
         const body = await response.clone().blob()
-        if (body.size > MAX_ASSET_BYTES) return false
+        if (body.size > limit) return false
       } catch {
         return false
       }

@@ -1,0 +1,341 @@
+import '@tanstack/react-start/server-only'
+import {
+  and,
+  count,
+  eq,
+  getTableColumns,
+  getTableName,
+  gt,
+  inArray,
+  lte,
+  or,
+  sql,
+} from 'drizzle-orm'
+import { db } from '@/db'
+import { JournalBusyError } from '@/db/journal-admission.server'
+import { getJournalContext } from '@/db/journal-context.server'
+import { allocateJournalIds } from '@/db/journal-mutations.server'
+import {
+  type RecordedValues,
+  withRecordedValues,
+} from '@/db/journal-replay.server'
+import { journalInsertValues, owned } from '@/db/journal-scope.server'
+import {
+  journalChanges,
+  journalCommandReceipts,
+  journalIdReservations,
+  journalSyncRevisions,
+} from '@/db/schema'
+import { decodeInput } from '@/journal/codec'
+import { getJournalFunction } from '@/journal/function'
+import '@/journal/registry'
+import { rejectedPrefix } from '@/journal/codec'
+import { journalConfig } from '@/journal/platform/config'
+import { journalTables, reservedIdTables } from '@/journal/tables'
+
+type JournalValue =
+  | string
+  | number
+  | boolean
+  | null
+  | Date
+  | JournalValue[]
+  | { [key: string]: JournalValue }
+/** Rows of each journal table, keyed by table name. */
+export type JournalRows = Record<string, Array<Record<string, JournalValue>>>
+
+export const journalWriteName = /^([a-z-]+)\/[A-Za-z0-9]+$/
+
+async function revisions() {
+  const [row] = await db
+    .select({
+      value: journalSyncRevisions.value,
+      prunedThrough: journalSyncRevisions.prunedThrough,
+    })
+    .from(journalSyncRevisions)
+    .where(owned(journalSyncRevisions))
+  return { current: row?.value ?? 0, prunedThrough: row?.prunedThrough ?? 0 }
+}
+
+async function revision() {
+  return (await revisions()).current
+}
+
+// Change records stay for the latest revisions; a device further behind
+// downloads the whole journal, which costs less than keeping every deletion.
+const keptRevisions = 5000
+
+/** Drops old change records after writes, so the table stays bounded. */
+async function pruneJournalChanges() {
+  const { current, prunedThrough } = await revisions()
+  if (current - prunedThrough <= 2 * keptRevisions) return
+  const through = current - keptRevisions
+  // Raised first: if the delete fails, older devices only download more.
+  await db
+    .update(journalSyncRevisions)
+    .set({ prunedThrough: through })
+    .where(owned(journalSyncRevisions))
+  await db
+    .delete(journalChanges)
+    .where(owned(journalChanges, lte(journalChanges.revision, through)))
+}
+
+function account() {
+  const identity = getJournalContext()?.identity
+  return identity?.authentication
+    ? { id: identity.id, email: identity.email, role: identity.role }
+    : null
+}
+
+/** Rows changed in one table since a revision: their keys and current contents. */
+export type JournalTableChanges = {
+  keys: Array<Record<string, JournalValue>>
+  rows: Array<Record<string, JournalValue>>
+}
+// Past this many changed rows, one full download is cheaper.
+const maxChangedRows = 5000
+
+/** What changed since a revision; a key without a row was deleted. */
+async function loadJournalChanges(since: number) {
+  const changed = await db
+    .select({ table: journalChanges.tableName, key: journalChanges.rowKey })
+    .from(journalChanges)
+    .where(owned(journalChanges, gt(journalChanges.revision, since)))
+    .limit(maxChangedRows + 1)
+  if (changed.length > maxChangedRows) return undefined
+  const keysByTable = new Map<string, Array<Record<string, JournalValue>>>()
+  for (const { table, key } of changed)
+    keysByTable.set(table, [...(keysByTable.get(table) ?? []), JSON.parse(key)])
+  const changes: Record<string, JournalTableChanges> = {}
+  for (const table of journalTables) {
+    const keys = keysByTable.get(getTableName(table))
+    if (!keys) continue
+    const rows: Array<Record<string, JournalValue>> = []
+    // 40 keys keep each statement within D1's bound-parameter limit.
+    for (let start = 0; start < keys.length; start += 40)
+      rows.push(
+        ...((await db
+          .select()
+          .from(table)
+          .where(
+            owned(
+              table as never,
+              or(...keys.slice(start, start + 40).map(rowKeyCondition)),
+            ),
+          )) as Array<Record<string, JournalValue>>),
+      )
+    changes[getTableName(table)] = { keys, rows }
+  }
+  return changes
+}
+
+function rowKeyCondition(key: Record<string, JournalValue>) {
+  return and(
+    ...Object.entries(key).map(
+      ([column, value]) => sql`${sql.identifier(column)} = ${value}`,
+    ),
+  )
+}
+
+/**
+ * The owner's journal: nothing when the browser has this revision, the rows
+ * changed since its revision when it can apply them, or every row.
+ */
+export async function loadJournalRows(
+  since: number | null,
+  incremental = false,
+) {
+  const { current, prunedThrough } = await revisions()
+  const config = journalConfig()
+  const base = { revision: current, account: account(), config }
+  if (since === current) return { ...base, tables: null, changes: null }
+  if (
+    incremental &&
+    since !== null &&
+    since >= prunedThrough &&
+    since < current
+  ) {
+    const changes = await loadJournalChanges(since)
+    if (changes) return { ...base, tables: null, changes }
+  }
+  const tables: JournalRows = {}
+  for (const table of journalTables)
+    tables[getTableName(table)] = (await db
+      .select()
+      .from(table)
+      .where(owned(table as never))) as Array<Record<string, JournalValue>>
+  return { ...base, tables, changes: null }
+}
+
+/**
+ * Runs a journal function for a browser that keeps no device copy: the same
+ * function, validated and executed in this request's journal scope.
+ */
+export async function callJournalFunction(name: string, input: unknown) {
+  const call = getJournalFunction(name)
+  if (!call) throw new Error('This journal operation is not available')
+  const result = (await call.execute(decodeInput(input))) as JournalValue
+  if (call.kind === 'write') await pruneJournalChanges()
+  return result
+}
+
+/**
+ * Replays one write recorded by a browser, with the identifiers and paths the
+ * browser chose. Each write applies once; the request transaction makes the
+ * write and its receipt atomic on PostgreSQL.
+ */
+export async function replayJournalWrite(data: {
+  name: string
+  input: unknown
+  recorded: RecordedValues
+  key: string
+  revision: number
+}) {
+  const [receipt] = await db
+    .select({ key: journalCommandReceipts.commandId })
+    .from(journalCommandReceipts)
+    .where(
+      owned(
+        journalCommandReceipts,
+        eq(journalCommandReceipts.commandId, data.key),
+      ),
+    )
+  if (receipt) return { revision: await revision(), unchanged: false }
+  const before = await revision()
+  try {
+    const write = getJournalFunction(data.name)
+    if (write?.kind !== 'write')
+      throw new Error('This change is not supported by this server version')
+    await withRecordedValues(data.recorded, () =>
+      write.execute(decodeInput(data.input)),
+    )
+  } catch (error) {
+    if (await alreadyApplied(data).catch(() => false)) {
+      await db
+        .insert(journalCommandReceipts)
+        .values(journalInsertValues({ commandId: data.key }))
+        .onConflictDoNothing()
+      return { revision: await revision(), unchanged: false }
+    }
+    if (isTransient(error)) throw error
+    // The browser keeps this change for review instead of retrying it.
+    throw new Error(
+      `${rejectedPrefix}${error instanceof Error ? error.message : String(error)}`,
+    )
+  }
+  await db
+    .insert(journalCommandReceipts)
+    .values(journalInsertValues({ commandId: data.key }))
+  await pruneJournalChanges()
+  return { revision: await revision(), unchanged: before === data.revision }
+}
+
+const reservationBatch = 256
+// shortcut: past this many unused identifiers per table (several devices or
+// lost browser storage), the oldest are handed out again instead of new ones.
+const reservationLimit = 1024
+
+/**
+ * Whether a failed replay had in fact applied: a simultaneous push of the same
+ * change committed first, or a D1 replay stopped between its write and its
+ * receipt. Identifiers are reserved per owner, so recorded rows prove it.
+ */
+async function alreadyApplied(data: { key: string; recorded: RecordedValues }) {
+  const [receipt] = await db
+    .select({ key: journalCommandReceipts.commandId })
+    .from(journalCommandReceipts)
+    .where(
+      owned(
+        journalCommandReceipts,
+        eq(journalCommandReceipts.commandId, data.key),
+      ),
+    )
+  if (receipt) return true
+  const created = Object.entries(data.recorded).filter(([kind]) =>
+    kind.startsWith('id:'),
+  )
+  if (!created.length) return false
+  for (const [kind, ids] of created) {
+    const table = reservedIdTables.find(
+      (candidate) => `id:${getTableName(candidate)}` === kind,
+    )
+    const id = table && getTableColumns(table).id
+    if (!table || !id || !ids.every((value) => Number.isSafeInteger(value)))
+      return false
+    for (let start = 0; start < ids.length; start += 90) {
+      const chunk = ids.slice(start, start + 90) as number[]
+      const [found] = await db
+        .select({ value: count() })
+        .from(table)
+        .where(owned(table as never, inArray(id, chunk)))
+      if (found?.value !== chunk.length) return false
+    }
+  }
+  return true
+}
+
+/** Infrastructure failures that a later attempt can get past. */
+function isTransient(error: unknown): boolean {
+  for (let cause = error; cause instanceof Error; cause = cause.cause) {
+    if (cause instanceof JournalBusyError) return true
+    const code = (cause as { code?: unknown }).code
+    // PostgreSQL connection, concurrency, resource and system errors.
+    if (typeof code === 'string' && /^(08|40|53|57|58|XX)/.test(code))
+      return true
+    if (
+      /ECONN|socket|network|timed? ?out|D1_ERROR: .*(reset|overloaded|internal error)/i.test(
+        cause.message,
+      )
+    )
+      return true
+  }
+  return false
+}
+
+/** Identifiers this device may assign to records it creates offline. */
+export async function reserveJournalIdentifiers(names: readonly string[]) {
+  const reserved: Record<string, number[]> = {}
+  for (const table of reservedIdTables) {
+    const name = getTableName(table)
+    if (!names.includes(name)) continue
+    const forTable = owned(
+      journalIdReservations,
+      eq(journalIdReservations.tableName, name),
+    )
+    // Reservations that a record now uses are spent.
+    await db
+      .delete(journalIdReservations)
+      .where(
+        and(
+          forTable,
+          sql`exists (select 1 from ${table} where ${getTableColumns(table).id} = ${journalIdReservations.id})`,
+        ),
+      )
+    const [unused] = await db
+      .select({ value: count() })
+      .from(journalIdReservations)
+      .where(forTable)
+    if ((unused?.value ?? 0) >= reservationLimit) {
+      const oldest = await db
+        .select({ id: journalIdReservations.id })
+        .from(journalIdReservations)
+        .where(forTable)
+        .orderBy(journalIdReservations.id)
+        .limit(reservationBatch)
+      reserved[name] = oldest.map((row) => row.id)
+      continue
+    }
+    const ids = await allocateJournalIds(table, reservationBatch)
+    // 30 rows keep each statement within D1's bound-parameter limit.
+    for (let start = 0; start < ids.length; start += 30)
+      await db
+        .insert(journalIdReservations)
+        .values(
+          ids
+            .slice(start, start + 30)
+            .map((id) => journalInsertValues({ tableName: name, id })),
+        )
+    reserved[name] = ids
+  }
+  return reserved
+}

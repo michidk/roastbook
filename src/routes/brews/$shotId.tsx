@@ -1,32 +1,22 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
-import { loadEntityDetail } from '@/lib/client/cached-reads'
+import { getActiveBeanPurchases } from '@/journal/beans'
+import { getBrewingMethods } from '@/journal/brewing-methods'
+import { getDrinkConfiguration } from '@/journal/drink-options'
+import { getGear } from '@/journal/gear'
+import { getRecipeOptions } from '@/journal/recipes'
+import { getShot } from '@/journal/shots'
+import { getTasteTags } from '@/journal/taste-tags'
+import { integrationCapability } from '@/lib/client/integration-capability'
 import { parseEditModeSearch } from '@/lib/edit-mode'
 import { parseIdParam } from '@/lib/route-params'
 import { searchValidator } from '@/lib/search-params'
-import { getActiveBeanPurchases } from '@/lib/server/beans'
-import { getBrewingMethods } from '@/lib/server/brewing-methods'
-import { getDrinkConfiguration } from '@/lib/server/drink-options'
-import { getGear } from '@/lib/server/gear'
-import { getRecipeOptions } from '@/lib/server/recipes'
 import { checkShotRecommendationEnabled } from '@/lib/server/shot-recommendations'
-import { getShot } from '@/lib/server/shots'
-import { getTasteTags } from '@/lib/server/taste-tags'
 import { BrewDetailPage } from '@/routes/brews/-components/brew-detail-page'
 
 type BrewDetailData = Awaited<ReturnType<typeof loadBrewDetail>>
-type BrewDetailLoaderData = BrewDetailData & {
-  readonly offlineSnapshotSavedAt?: string
-}
-
-type CachedBrewEditData = {
-  readonly beans: Awaited<ReturnType<typeof getActiveBeanPurchases>>
-  readonly tasteTags: Awaited<ReturnType<typeof getTasteTags>>
-  readonly gear: Awaited<ReturnType<typeof getGear>>
-  readonly methods: Awaited<ReturnType<typeof getBrewingMethods>>
-  readonly drinks: Awaited<ReturnType<typeof getDrinkConfiguration>>
-}
+type BrewDetailLoaderData = BrewDetailData & {}
 
 async function loadBrewDetail(shotId: number, edit: boolean) {
   const [shot, recipes, editData, recommendation] = await Promise.all([
@@ -47,7 +37,7 @@ async function loadBrewDetail(shotId: number, edit: boolean) {
           drinks,
         }))
       : null,
-    checkShotRecommendationEnabled(),
+    integrationCapability(() => checkShotRecommendationEnabled())(),
   ])
   return {
     shot,
@@ -63,33 +53,7 @@ export const Route = createFileRoute('/brews/$shotId')({
   loader: async ({ params, deps }): Promise<BrewDetailLoaderData> => {
     const shotId = parseIdParam(params.shotId)
 
-    return loadEntityDetail({
-      entityType: 'brew',
-      id: shotId,
-      load: () => loadBrewDetail(shotId, deps.edit),
-      restore: async (data) => {
-        if (!deps.edit || data.editData) return data
-        const { readCachedNewBrewReferenceData } = await import(
-          '@/modules/offline/reference-data'
-        )
-        const reference =
-          await readCachedNewBrewReferenceData<CachedBrewEditData>().catch(
-            () => undefined,
-          )
-        return reference
-          ? {
-              ...data,
-              editData: {
-                beans: reference.data.beans,
-                tasteTags: reference.data.tasteTags,
-                gear: reference.data.gear,
-                methods: reference.data.methods,
-                drinks: reference.data.drinks,
-              },
-            }
-          : data
-      },
-    })
+    return (() => loadBrewDetail(shotId, deps.edit))()
   },
   component: BrewDetailPage,
   pendingComponent: DetailPending,

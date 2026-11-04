@@ -1,68 +1,108 @@
-# Client data boundaries
+# Journal architecture
 
-Roastbook has standard and demo build editions. Installing the standard app
-uses the same routes and components as a browser tab. Connectivity is a runtime
-condition, independent of installation. The demo supports neither installation
-nor offline storage, queued changes, or replication.
+Every journal read and write is one SQL journal function in `src/journal/`. It
+runs on the server on PostgreSQL or D1, and in browsers that keep a device copy
+on PGlite (sync replay, MCP and browser tabs without a copy use the server).
+`src/journal/local/device-copy.ts` decides: the demo and the installed app
+always keep a copy, a browser tab only when chosen in Settings → Offline;
+other tabs call `callJournal` in `src/lib/server/journal-sync.ts`. See
+[ADR 0001](adr/0001-sql-journal.md) for the
+decision.
 
-## Adding a component
+## Journal functions
 
-Presentation components receive data and callbacks. They do not choose between
-server writes and browser storage. For brew and recipe actions, import commands
-from `src/lib/client/journal.ts`. Picture actions use `journal-images.ts` and AI
-recommendations use `ai-recommendations.ts` in the same directory.
+```ts
+export const getBean = journalRead('beans/getBean')
+  .validator(positiveIdSchema)
+  .handler(async ({ data: id }) => db.query.beans.findFirst(/* … */))
+```
 
-Journal commands validate inputs, assign an operation ID, and return one of:
+- Name functions `<module>/<export>` and register the module in
+  `src/journal/registry.ts`; `src/journal/function.test.ts` checks both.
+- Callers use `getBean({ data })`. Inputs are validated wherever the function
+  runs, including replay.
+- Journal code reaches the database, storage, images, configuration, time and
+  side effects only through `src/journal/platform/*`; the import-boundary check
+  enforces this.
+- Integrations (AI research, accounts, geocoding, email, shottimer) are
+  ordinary server functions in `src/lib/server/` and need a connection.
 
-- `saved`, with the server response in `value`;
-- `queued`, with the durable local `operationId`.
+## Platform modules
 
-Handle that result with the appropriate confirmation and navigation. Run UI
-callbacks after the command returns. A failed refresh must never queue a second
-write after the server already committed the first one. Validation, permission,
-and conflict errors propagate without switching to offline persistence.
+Each module has a server version and a `*.browser.ts` version, selected for the
+client build by `scripts/vite-journal-platform.ts` (the demo build also selects
+`packages/journal-demo/src/edition.ts`).
 
-`featureAvailability` in `src/lib/app-capabilities.ts` defines which actions
-are available. `useFeatureAvailability` supplies current connectivity to UI
-controls. Journal writes can queue offline; AI and server-only actions require
-a connection. Every demo write is blocked, including direct local queue calls.
-The server request middleware remains the demo's server-side enforcement.
+- `database`: request scope with RLS (PostgreSQL) or owner predicates (D1); in
+  the browser, a PGlite transaction as the owner with the same role and RLS.
+- `storage`: disk, S3 or R2; in the browser, picture bytes in the local
+  database, in the record's transaction.
+- `images`: sharp or Cloudflare Images; in the browser, canvas. Sizes come from
+  `src/lib/picture-sizes.ts`. Pictures the browser encoded arrive with their
+  thumbnails and are only checked, never encoded again.
+- `config`: environment; in the browser, cached server limits or demo defaults.
+- `clock`: `journalNow`, `journalUuid` and schema timestamp defaults. Never use
+  `new Date()` or `crypto.randomUUID()` in journal code; browser values are
+  recorded so replay writes identical rows.
+- `effects`: website icon fetches; none in the browser (the server fetches on
+  replay).
+- `runtime`: runs in the journal scope; in the browser, also records the outbox
+  entry.
 
-## Adding a cached route
+## Local journal
 
-Use `loadEntityDetail` or `loadReferenceData` from
-`src/lib/client/cached-reads.ts`. Declare the entity or reference key and the
-normal loader. Use `accepts` when a snapshot must match search parameters, and
-`restore` when a saved detail needs supplementary cached reference data.
+`src/journal/local/`:
 
-For the initial server-rendered visit, use `useEntitySnapshot` or
-`useReferenceSnapshot` with the stable loader result. These hooks save the
-hydrated response and skip saved-copy responses. Cache failures do not prevent
-an online page from loading. Only network failures permit a saved response;
-server permission and validation errors remain visible.
+- `worker.ts` opens `idb://roastbook-journal-<owner>` (or `roastbook-demo`),
+  applies the server migrations (`migrate.ts`) and creates the
+  `roastbook_local` schema (migrations, state, outbox, reserved identifiers,
+  picture bytes). Only the worker loads the database engine.
+- `client.ts` shares one database across tabs via PGlite's leader worker (Web
+  Locks; HTTPS or localhost). One function runs at a time per tab, with
+  `roastbook.user_id` set and the `roastbook_journal` role.
+- A write resolves after IndexedDB holds the change and its outbox entry and
+  open pages have reloaded; pages never refresh by hand after a write.
+- Each owner has a separate database; sign-out removes it once everything has
+  synced.
 
-## Persistence and synchronization
+## Synchronization
 
-RxDB stores the operation log, entity/reference snapshots, and picture blobs.
-The operation log is the sole client write path for queued journal changes.
-It owns idempotency IDs, revisions, dependencies, retries, and conflicts.
-`journal-sync.ts` runs synchronization; `journal-sync-operations.ts` adapts each
-operation to the existing server domain boundary.
+`src/journal/local/sync.ts` talks to `src/lib/server/journal-sync.ts`.
 
-Recipe replication only pulls server changes. Received changes invalidate
-active route data so another device's edits become visible. Local recipe
-commands use the same operation log as brews, never a second replication push
-path. The replicated recipe collection remains compatible with existing local
-data, and recovery/reset cancels replication before closing its database.
+- **Outbox.** A local write stores, in the same transaction, the function name,
+  its encoded input (`src/journal/codec.ts`), a UUID key, and its generated
+  values: reserved identifiers, picture paths, UUIDs and time.
+- **Push.** Writes replay strictly in order with the recorded values. A
+  receipt makes each key apply once. Recorded identifiers must be reserved for
+  the owner; recorded paths must have the expected shape and not exist yet. A
+  failed replay deletes only objects it uploaded.
+- **Pull.** Triggers on every journal table advance the owner's revision and
+  record the changed row's key in `journal_changes`, so MCP and integrations
+  count. A device without pending writes downloads only the rows changed since
+  its revision (a key without a row was deleted); otherwise, or past 5,000
+  changes, it replaces the owner's rows and reruns pending writes on top.
+- **Reservations.** The server reserves 256 identifiers per table and device
+  (`journal_id_reservations`), reusing the oldest once more than 1024 are
+  unused. Every insert into a table with a serial `id` takes it from
+  `allocateJournalIds`; synced local journals exhaust their sequences, so a
+  database default fails instead of diverging from the server.
+- **Conflicts.** A write the server can never apply, one that no longer applies
+  after a pull, or one that failed 12 times becomes a conflict with Try again
+  and Discard in the sync banner; later writes continue. Infrastructure
+  failures retry with backoff. A pull for a different account is refused.
+- **D1.** Without transactions, a replay counts as applied when its receipt or
+  all of its recorded identifiers already exist.
 
-## Enforcement and verification
+RxDB queues from earlier versions are replayed once as journal writes by
+`legacy-offline.ts`, keeping their original operation ids as outbox keys.
 
-`bun run check:boundaries` rejects direct brew/recipe server mutations and raw
-queue insertion imports in components, routes, and hooks, including aliases.
-Feature adapters live in `src/lib/client/` because reusable pure modules must
-not import application server functions.
+## Verification
 
-Run `bun run verify` for source, type, unit, production-build, and PWA checks.
-Also run `bun run build:demo` to verify the demo artifact has no install
-manifest or offline page and only a retiring service worker. Use isolated
-PostgreSQL and S3 services for `bun run test:integration`.
+- `bun run test:browser-runtime`: `*.browser.test.ts` on in-process PGlite.
+- `src/lib/server/journal-sync.integration.test.ts`: replay on PostgreSQL.
+- `bun run test:cloudflare`: replay on D1.
+- `bun run check:client-assets`: database engine only in the worker, no
+  secrets in client assets.
+
+User-facing behavior: [Offline journaling](offline.md) and
+[Browser-local demo](demo-mode.md).

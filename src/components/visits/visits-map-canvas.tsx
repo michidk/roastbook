@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { DEMO_MODE } from '@/lib/build-mode'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
 import { MapLibreMap } from '@/components/map/maplibre-map'
@@ -56,6 +57,14 @@ export function VisitsMapCanvas({
     shouldFocusRetryRef.current = false
     retryButtonRef.current?.focus()
   }, [status])
+
+  if (DEMO_MODE)
+    return (
+      <p className="p-6 text-sm text-muted-foreground">
+        Map tiles and location services are unavailable in this demo. Your saved
+        cafés and visits remain available in the lists.
+      </p>
+    )
 
   return (
     <MapLibreMap

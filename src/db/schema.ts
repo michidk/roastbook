@@ -1,4 +1,3 @@
-import '@tanstack/react-start/server-only'
 import { relations, sql } from 'drizzle-orm'
 import {
   bigint,
@@ -18,6 +17,7 @@ import {
   timestamp,
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
+import { journalNow } from '@/journal/platform/clock'
 import {
   BEAN_TYPE_VALUES,
   GEAR_TYPE_VALUES,
@@ -33,8 +33,14 @@ const journalOwner = () =>
     )
 
 const timestamps = () => ({
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at')
+    .defaultNow()
+    .$defaultFn(journalNow)
+    .notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .$defaultFn(journalNow)
+    .notNull(),
 })
 
 const archiveState = () => ({
@@ -50,7 +56,8 @@ const imageFile = () => ({
   storageBytes: integer('storage_bytes'),
 })
 
-const createdAt = () => timestamp('created_at').defaultNow().notNull()
+const createdAt = () =>
+  timestamp('created_at').defaultNow().$defaultFn(journalNow).notNull()
 
 export const gearTypeEnum = pgEnum('gear_type', GEAR_TYPE_VALUES)
 
@@ -177,7 +184,10 @@ export const mcpAuditEvents = pgTable(
     event: text('event').notNull(),
     outcome: text('outcome').notNull(),
     toolName: text('tool_name'),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
+    createdAt: timestamp('created_at')
+      .defaultNow()
+      .$defaultFn(journalNow)
+      .notNull(),
   },
   (table) => [
     index('mcp_audit_events_owner_id_idx').on(table.ownerId),
@@ -698,7 +708,10 @@ export const espressoMachineSettingRevisions = pgTable(
       precision: 4,
       scale: 2,
     }),
-    effectiveFrom: timestamp('effective_from').defaultNow().notNull(),
+    effectiveFrom: timestamp('effective_from')
+      .defaultNow()
+      .$defaultFn(journalNow)
+      .notNull(),
     supersededAt: timestamp('superseded_at'),
     createdAt: createdAt(),
   },
@@ -1009,8 +1022,14 @@ export const gearPropertyEvidence = pgTable(
     sourceKind: text('source_kind').notNull(),
     rawValue: text('raw_value'),
     rawUnit: text('raw_unit'),
-    retrievedAt: timestamp('retrieved_at').defaultNow().notNull(),
-    acceptedAt: timestamp('accepted_at').defaultNow().notNull(),
+    retrievedAt: timestamp('retrieved_at')
+      .defaultNow()
+      .$defaultFn(journalNow)
+      .notNull(),
+    acceptedAt: timestamp('accepted_at')
+      .defaultNow()
+      .$defaultFn(journalNow)
+      .notNull(),
   },
   (table) => [
     index('gear_property_evidence_owner_id_idx').on(table.ownerId),
@@ -1346,7 +1365,6 @@ export const recipes = pgTable(
     ownerId: journalOwner(),
     id: serial('id').primaryKey(),
     name: text('name').notNull(),
-    clientOperationId: text('client_operation_id'),
     syncId: text('sync_id')
       .default(sql`md5(random()::text || clock_timestamp()::text)`)
       .notNull(),
@@ -1360,10 +1378,6 @@ export const recipes = pgTable(
   },
   (table) => [
     index('recipes_owner_id_idx').on(table.ownerId),
-    uniqueIndex('recipes_client_operation_id_unique').on(
-      table.ownerId,
-      table.clientOperationId,
-    ),
     uniqueIndex('recipes_sync_id_unique').on(table.ownerId, table.syncId),
     check(
       'recipes_ratio_basis_check',
@@ -1498,7 +1512,10 @@ export const shots = pgTable(
   {
     ownerId: journalOwner(),
     id: serial('id').primaryKey(),
-    brewedAt: timestamp('brewed_at').defaultNow().notNull(),
+    brewedAt: timestamp('brewed_at')
+      .defaultNow()
+      .$defaultFn(journalNow)
+      .notNull(),
     revision: integer('revision').default(0).notNull(),
     ...shotContextColumns(),
     beanPurchaseId: integer('bean_purchase_id'),
@@ -1518,7 +1535,6 @@ export const shots = pgTable(
     body: integer('body'),
     astringency: integer('astringency'),
     notes: text('notes'),
-    clientOperationId: text('client_operation_id'),
     ...timestamps(),
   },
   (table) => [
@@ -1580,52 +1596,6 @@ export const shots = pgTable(
     index('brews_machine_id_idx').on(table.machineId),
     index('brews_grinder_id_idx').on(table.grinderId),
     index('brews_basket_id_idx').on(table.basketId),
-    uniqueIndex('brews_client_operation_id_unique').on(
-      table.ownerId,
-      table.clientOperationId,
-    ),
-  ],
-)
-
-export const replicationChanges = pgTable(
-  'replication_changes',
-  {
-    ownerId: journalOwner(),
-    sequence: serial('sequence').primaryKey(),
-    entity: text('entity').notNull(),
-    documentId: text('document_id').notNull(),
-    document: jsonb('document').notNull(),
-    deleted: boolean('deleted').default(false).notNull(),
-    createdAt: createdAt(),
-  },
-  (table) => [
-    index('replication_changes_owner_id_idx').on(table.ownerId),
-    index('replication_changes_entity_sequence_idx').on(
-      table.entity,
-      table.sequence,
-    ),
-  ],
-)
-
-export const clientOperations = pgTable(
-  'client_operations',
-  {
-    ownerId: journalOwner(),
-    operationId: text('operation_id').notNull(),
-    brewId: integer('brew_id').references(() => shots.id, {
-      onDelete: 'set null',
-    }),
-    recipeId: integer('recipe_id').references(() => recipes.id, {
-      onDelete: 'set null',
-    }),
-    createdAt: createdAt(),
-  },
-  (table) => [
-    primaryKey({ columns: [table.ownerId, table.operationId] }),
-    index('client_operations_owner_id_idx').on(table.ownerId),
-    index('client_operations_brew_id_idx').on(table.brewId),
-    index('client_operations_recipe_id_idx').on(table.recipeId),
-    index('client_operations_created_at_idx').on(table.createdAt),
   ],
 )
 
@@ -1837,17 +1807,12 @@ export const shotImages = pgTable(
     shotId: integer('brew_id')
       .references(() => shots.id, { onDelete: 'cascade' })
       .notNull(),
-    clientOperationId: text('client_operation_id'),
     ...imageFile(),
     createdAt: createdAt(),
   },
   (table) => [
     index('brew_images_owner_id_idx').on(table.ownerId),
     index('brew_images_brew_id_idx').on(table.shotId),
-    uniqueIndex('brew_images_client_operation_id_unique').on(
-      table.ownerId,
-      table.clientOperationId,
-    ),
   ],
 )
 
@@ -1940,7 +1905,10 @@ export const cafeVisits = pgTable(
     currency: text('currency').default('EUR'),
     rating: integer('rating'),
     notes: text('notes'),
-    visitedAt: timestamp('visited_at').defaultNow().notNull(),
+    visitedAt: timestamp('visited_at')
+      .defaultNow()
+      .$defaultFn(journalNow)
+      .notNull(),
     ...timestamps(),
   },
   (table) => [
@@ -2106,6 +2074,7 @@ export const mediaCleanupJobs = pgTable(
     lastError: text('last_error'),
     nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true })
       .defaultNow()
+      .$defaultFn(journalNow)
       .notNull(),
     ...timestamps(),
   },
@@ -2283,7 +2252,8 @@ export const accountJobs = pgTable(
     attempts: integer('attempts').notNull().default(0),
     availableAt: timestamp('available_at', { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow()
+      .$defaultFn(journalNow),
     expiresAt: timestamp('expires_at', { withTimezone: true }),
     ...timestamps(),
   },
@@ -2527,3 +2497,48 @@ export const jwks = pgTable('jwks', {
   alg: text('alg'),
   crv: text('crv'),
 })
+
+export const journalSyncRevisions = pgTable('journal_sync_revisions', {
+  ownerId: journalOwner().primaryKey(),
+  value: bigint('value', { mode: 'number' }).notNull().default(0),
+  /** Change records up to this revision were pruned; older devices download everything. */
+  prunedThrough: bigint('pruned_through', { mode: 'number' })
+    .notNull()
+    .default(0),
+})
+/** The latest change to each journal row; devices download only what changed. */
+export const journalChanges = pgTable(
+  'journal_changes',
+  {
+    ownerId: journalOwner(),
+    tableName: text('table_name').notNull(),
+    rowKey: text('row_key').notNull(),
+    revision: bigint('revision', { mode: 'number' }).notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.ownerId, table.tableName, table.rowKey] }),
+    index('journal_changes_revision_idx').on(table.ownerId, table.revision),
+  ],
+)
+/** Identifiers reserved for an owner's offline creates; replays may only use these. */
+export const journalIdReservations = pgTable(
+  'journal_id_reservations',
+  {
+    ownerId: journalOwner(),
+    tableName: text('table_name').notNull(),
+    id: integer('id').notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.tableName, table.id] })],
+)
+export const journalCommandReceipts = pgTable(
+  'journal_command_receipts',
+  {
+    ownerId: journalOwner(),
+    commandId: text('command_id').notNull(),
+    appliedAt: timestamp('applied_at')
+      .notNull()
+      .defaultNow()
+      .$defaultFn(journalNow),
+  },
+  (table) => [primaryKey({ columns: [table.ownerId, table.commandId] })],
+)

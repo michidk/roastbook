@@ -8,28 +8,29 @@ import {
   beanPurchases,
   beans,
   brewingMethods,
-  clientOperations,
   gear,
+  journalCommandReceipts,
   mediaCleanupJobs,
   recipes,
-  replicationChanges,
   settings,
   shotImages,
   shots,
   tasteTags,
 } from '@/db/schema'
-import { pullRecipes } from '@/lib/server/replication-pull'
-import { pushRecipes } from '@/lib/server/replication-push'
-import { toDocument } from '@/lib/server/replication-shared'
-import { createShotAndSaveRecipeSchema } from '@/lib/server/shot-list-contract.server'
-import { saveShotToRecipe } from '@/lib/server/shot-recipes.server'
+import { encodeInput } from '@/journal/codec'
+import { createShotAndSaveRecipeSchema } from '@/journal/domain/shot-list-contract'
+import { saveShotToRecipe } from '@/journal/domain/shot-recipes'
 import {
   createShotAndSaveRecipeOperation,
   createShotOperation,
   deleteShotOperation,
   getShotOperation,
   updateShotOperation,
-} from '@/lib/server/shots-operations.server'
+} from '@/journal/domain/shots-operations'
+import {
+  replayJournalWrite,
+  reserveJournalIdentifiers,
+} from '@/lib/server/journal-sync.server'
 import { shotCreateSchema, shotUpdateSchema } from '@/lib/server-validation'
 import { SHOT_PARAMETER_KEYS } from '@/lib/shot-parameters'
 
@@ -124,14 +125,6 @@ async function brewAndRecipe(bindings: CloudflareRuntimeBindings) {
       recipeId: both.recipe.id,
     })
     assert.equal(overwritten.doseGrams, '19.00')
-    const initial = await pullRecipes({})
-    assert(
-      initial.documents.some(
-        (document) =>
-          document.serverId === overwritten.id &&
-          document.serverRevision === overwritten.revision,
-      ),
-    )
   })
 }
 
@@ -200,12 +193,10 @@ async function ownershipRollback(bindings: CloudflareRuntimeBindings) {
     return row
   })
   await alice.run(async () => {
-    const operationId = crypto.randomUUID()
     await assert.rejects(
       createShotOperation(
         shotInput(alice, {
           accessoryGearIds: [privateGear.id],
-          clientOperationId: operationId,
         }),
       ),
       /FOREIGN KEY/,
@@ -213,15 +204,6 @@ async function ownershipRollback(bindings: CloudflareRuntimeBindings) {
     assert.equal(
       (await db.select({ value: count() }).from(shots).where(owned(shots)))[0]
         ?.value,
-      0,
-    )
-    assert.equal(
-      (
-        await db
-          .select({ value: count() })
-          .from(clientOperations)
-          .where(owned(clientOperations))
-      )[0]?.value,
       0,
     )
     const brew = await createShotOperation(shotInput(alice))
@@ -262,35 +244,60 @@ async function ownershipRollback(bindings: CloudflareRuntimeBindings) {
 
 async function concurrentIdempotency(bindings: CloudflareRuntimeBindings) {
   const journal = await fixture(bindings)
-  const operationId = crypto.randomUUID()
-  const results = await Promise.all(
+  // Simultaneous pushes of one browser write apply it once.
+  const write = await journal.run(async () => {
+    const reserved = await reserveJournalIdentifiers([
+      'beans',
+      'bean_purchases',
+    ])
+    return {
+      name: 'beans/createBean',
+      input: await encodeInput({ name: 'Pushed once', weight: '250' }),
+      recorded: {
+        'id:beans': reserved.beans?.slice(0, 1) ?? [],
+        'id:bean_purchases': reserved.bean_purchases?.slice(0, 1) ?? [],
+      },
+      key: crypto.randomUUID(),
+      revision: 0,
+    }
+  })
+  const pushes = await Promise.allSettled(
     Array.from({ length: 8 }, () =>
-      journal.run(() =>
-        createShotOperation(
-          shotInput(journal, { clientOperationId: operationId }),
-        ),
-      ),
+      journal.run(() => replayJournalWrite(write)),
     ),
   )
-  assert.equal(new Set(results.map((row) => row.id)).size, 1)
+  assert.deepEqual(
+    pushes.filter((push) => push.status === 'rejected'),
+    [],
+  )
   await journal.run(async () => {
     assert.equal(
-      (await db.select({ value: count() }).from(shots).where(owned(shots)))[0]
-        ?.value,
+      (
+        await db
+          .select({ value: count() })
+          .from(beans)
+          .where(owned(beans, eq(beans.name, 'Pushed once')))
+      )[0]?.value,
       1,
     )
     assert.equal(
       (
         await db
           .select({ value: count() })
-          .from(clientOperations)
-          .where(owned(clientOperations))
+          .from(journalCommandReceipts)
+          .where(
+            owned(
+              journalCommandReceipts,
+              eq(journalCommandReceipts.commandId, write.key),
+            ),
+          )
       )[0]?.value,
       1,
     )
   })
-  const original = results[0]
-  if (!original) throw new Error('Missing concurrent brew result')
+  const original = await journal.run(() =>
+    createShotOperation(shotInput(journal)),
+  )
   const updates = await Promise.allSettled(
     ['19', '20'].map((doseGrams) =>
       journal.run(() =>
@@ -316,93 +323,6 @@ async function concurrentIdempotency(bindings: CloudflareRuntimeBindings) {
   await journal.run(async () => {
     const updated = await getShotOperation(original.id)
     assert.equal(updated?.revision, original.revision + 1)
-  })
-}
-
-async function replicationCheckpoints(bindings: CloudflareRuntimeBindings) {
-  const journal = await fixture(bindings)
-  await journal.run(async () => {
-    const initial = await createShotAndSaveRecipeOperation(
-      createShotAndSaveRecipeSchema.parse({
-        shot: shotInput(journal),
-        target: { name: 'First' },
-      }),
-    )
-    await createShotAndSaveRecipeOperation(
-      createShotAndSaveRecipeSchema.parse({
-        shot: shotInput(journal),
-        target: { name: 'Second' },
-      }),
-    )
-    if (!initial.recipe) throw new Error('Initial recipe missing')
-    const firstPage = await pullRecipes({ batchSize: 1 })
-    assert(firstPage.checkpoint.recipeId)
-    const original = toDocument(initial.recipe)
-    assert.deepEqual(
-      await pushRecipes({
-        rows: [
-          {
-            assumedMasterState: original,
-            newDocumentState: { ...original, name: 'First updated' },
-          },
-        ],
-      }),
-      [],
-    )
-    await createShotAndSaveRecipeOperation(
-      createShotAndSaveRecipeSchema.parse({
-        shot: shotInput(journal),
-        target: { name: 'Third' },
-      }),
-    )
-    const seen = [...firstPage.documents]
-    let checkpoint = firstPage.checkpoint
-    while (checkpoint.recipeId) {
-      const page = await pullRecipes({ checkpoint, batchSize: 1 })
-      seen.push(...page.documents)
-      checkpoint = page.checkpoint
-    }
-    for (let pageIndex = 0; pageIndex < 10; pageIndex++) {
-      const page = await pullRecipes({ checkpoint, batchSize: 1 })
-      seen.push(...page.documents)
-      assert(page.checkpoint.sequence >= checkpoint.sequence)
-      checkpoint = page.checkpoint
-      if (!page.documents.length) break
-    }
-    const latest = new Map(seen.map((document) => [document.syncId, document]))
-    assert.equal(latest.size, 3)
-    assert.equal(latest.get(original.syncId)?.name, 'First updated')
-    const master = latest.get(original.syncId)
-    if (!master) throw new Error('Updated recipe was lost')
-    const concurrent = await Promise.all(
-      ['Version A', 'Version B'].map((name) =>
-        pushRecipes({
-          rows: [
-            {
-              assumedMasterState: master,
-              newDocumentState: { ...master, name },
-            },
-          ],
-        }),
-      ),
-    )
-    assert.equal(
-      concurrent.filter((conflicts) => conflicts.length === 0).length,
-      1,
-    )
-    assert.equal(
-      concurrent.filter((conflicts) => conflicts.length === 1).length,
-      1,
-    )
-    const stored = await db.query.recipes.findFirst({
-      where: owned(recipes, eq(recipes.syncId, original.syncId)),
-    })
-    assert.equal(stored?.revision, master.serverRevision + 1)
-    const changes = await db
-      .select()
-      .from(replicationChanges)
-      .where(owned(replicationChanges))
-    assert(changes.length >= 5)
   })
 }
 
@@ -492,10 +412,6 @@ export const verifyJournalCases = [
   {
     name: 'simultaneous idempotency and stale integer revisions',
     run: concurrentIdempotency,
-  },
-  {
-    name: 'recipe replication checkpoints and concurrent conflicts',
-    run: replicationCheckpoints,
   },
   {
     name: 'R2 media cleanup, deletion rollback, and owner isolation',

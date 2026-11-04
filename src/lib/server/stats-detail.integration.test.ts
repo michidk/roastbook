@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { brewingMethods, shots } from '@/db/schema'
-import { loadDetailedStats } from '@/lib/server/stats-detail.server'
+import { loadDetailedStats } from '@/journal/domain/stats-detail'
 
 const integrationDescribe = process.env.TEST_DATABASE_URL
   ? describe

@@ -247,7 +247,7 @@ export function AppNavbar({
 
           <div className="ml-auto flex items-center gap-2">
             <PwaConnectionStatus />
-            {demoMode ? null : <DesktopCreateButton />}
+            <DesktopCreateButton />
             <AccountMenu account={account} demoMode={demoMode} />
           </div>
         </div>
@@ -280,26 +280,13 @@ export function AppNavbar({
           >
             <DropdownMenuTrigger
               aria-label="Create new item"
-              disabled={demoMode}
               className={cn(
                 'flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg py-2 text-foreground transition-colors',
                 isMobileCreateOpen && 'bg-accent',
-                demoMode &&
-                  'cursor-not-allowed text-muted-foreground opacity-60',
               )}
             >
-              <div
-                className={cn(
-                  '-mt-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary shadow-lg',
-                  demoMode && 'bg-muted shadow-none',
-                )}
-              >
-                <Plus
-                  className={cn(
-                    'h-6 w-6 text-primary-foreground',
-                    demoMode && 'text-muted-foreground',
-                  )}
-                />
+              <div className="-mt-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary shadow-lg">
+                <Plus className="h-6 w-6 text-primary-foreground" />
               </div>
               <span className="text-[10px] font-semibold">Create</span>
             </DropdownMenuTrigger>

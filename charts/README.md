@@ -1,10 +1,13 @@
 # Roastbook Helm chart
 
-This chart deploys Roastbook, an optional Hodor authentication sidecar, a
-migration Job, and either an external or opt-in bundled PostgreSQL database.
-Values are documented in `values.yaml` and validated by `values.schema.json`.
+Deploys Roastbook, an optional Hodor sidecar, a migration Job, and an external
+or bundled PostgreSQL database. Values are documented in `values.yaml` and
+validated by `values.schema.json`. Variables and the security boundary are
+described in `docs/configuration.md` and `docs/deployment.md`.
 
-## Install with external PostgreSQL
+## Install
+
+External PostgreSQL (the default):
 
 ```bash
 helm install roastbook ./charts \
@@ -14,22 +17,7 @@ helm install roastbook ./charts \
   --set postgresql.external.url="postgresql://roastbook:password@postgres.example:5432/roastbook"
 ```
 
-Instead of putting a URL in Helm values, provide a Secret containing the full
-connection URL:
-
-```bash
-helm install roastbook ./charts \
-  --set image.tag="latest" \
-  --set hodor.existingSecret="roastbook-hodor" \
-  --set postgresql.existingSecret="roastbook-database" \
-  --set postgresql.existingSecretKey="url"
-```
-
-The Hodor Secret must contain `password` and `secret` by default. Override the
-key names with `hodor.existingSecretPasswordKey` and
-`hodor.existingSecretSecretKey`.
-
-## Install with bundled PostgreSQL
+Bundled PostgreSQL StatefulSet, for simple installations:
 
 ```bash
 helm install roastbook ./charts \
@@ -40,26 +28,28 @@ helm install roastbook ./charts \
   --set postgresql.auth.password="database-password"
 ```
 
-The bundled database is intended for simple self-hosted installations. Use an
-externally managed PostgreSQL service when database lifecycle, backups, or high
-availability are managed separately.
+## Existing Secrets
+
+Prefer existing Secrets over credentials in values. Never put provider keys in
+values.
+
+| Value | Secret keys (defaults) |
+| --- | --- |
+| `postgresql.existingSecret` | `url` (full `DATABASE_URL`) |
+| `hodor.existingSecret` | `password`, `secret` |
+| `storage.s3.existingSecret` | `access-key-id`, `secret-access-key` |
+| `openai.credentialExistingSecret` | `encryption-key` |
+| `openai.existingSecret` | `api-key` |
+| `openai.providedExistingSecret` | `AI_PROVIDED_*` variables |
+| `auth.existingSecret` | Authentication variables, see below |
+
+Key names can be overridden with the matching `*Key` values.
 
 ## Storage
 
-Local storage is the default and creates a persistent volume:
-
-```yaml
-storage:
-  provider: local
-  local:
-    path: /data/uploads
-    size: 10Gi
-    storageClass: ""
-    accessMode: ReadWriteOnce
-```
-
-For S3-compatible storage, provide the bucket and an existing credentials
-Secret:
+Local storage is the default and creates a `ReadWriteOnce` volume, which uses
+the `Recreate` strategy and cannot serve multiple replicas. Use S3 or a
+`ReadWriteMany` storage class to scale:
 
 ```yaml
 storage:
@@ -71,60 +61,7 @@ storage:
     existingSecret: roastbook-s3
 ```
 
-The Secret keys default to `access-key-id` and `secret-access-key`. Local
-`ReadWriteOnce` storage cannot be used with multiple replicas; use S3 or a
-storage class that supports `ReadWriteMany`.
-
-## Optional AI configuration
-
-Users choose the provided AI allowance or connect their own OpenAI-compatible
-endpoint, API key, and models in Settings > AI.
-
-Set `openai.credentialExistingSecret` to a Secret containing a credential encryption
-key. Its `credentialExistingSecretKey` defaults to `encryption-key`. Generate its
-value once with
-`openssl rand -base64 32`, store it as a string in the Secret, and preserve it
-alongside database backups. Without it, BYOAI connections are unavailable.
-`openai.allowedPrivateOrigins` optionally allows exact HTTP(S) origins for local
-providers on self-hosted instances; hosted mode rejects this exception.
-`openai.existingSecret` retains its original meaning as the operator provider
-Secret. If you used the intermediate chart that assigned it to BYOAI encryption,
-move that reference to `openai.credentialExistingSecret` and move its key name to
-`openai.credentialExistingSecretKey` before upgrading.
-
-Detailed AI prompts and responses are disabled by default. Set
-`openai.telemetryStorePayloads=true` only for short-lived diagnostics and tune
-the bounded retention and payload size with `telemetryRetentionDays` and
-`telemetryMaxPayloadBytes`.
-
-## Migrations
-
-The migration Job is enabled by default. With hooks enabled, external databases
-use `pre-install,pre-upgrade`; bundled PostgreSQL uses
-`post-install,pre-upgrade` so the database exists before the first migration.
-
-Set `migrations.enabled=false` when migrations are managed outside Helm, or
-`migrations.hook.enabled=false` to render an ordinary revision-suffixed Job.
-
-## Scaling and availability
-
-- `autoscaling.enabled=true` creates a CPU-based HorizontalPodAutoscaler.
-- The PodDisruptionBudget renders only for a multi-replica deployment.
-- `networkPolicy.enabled=true` restricts ingress to the active public container
-  port on application pods. The bundled PostgreSQL and migration pods are not
-  selected by this web-ingress policy.
-- Local `ReadWriteOnce` storage uses the `Recreate` deployment strategy.
-- S3 and shared `ReadWriteMany` storage use the configured rolling strategy.
-
 ## Built-in accounts
-
-Set `auth.enabled=true`, `auth.existingSecret=roastbook-auth`, and
-`hodor.enabled=false` to use private accounts without Hodor. The referenced
-Secret supplies `AUTH_URL`, `AUTH_SECRET`, `EMAIL_FROM`, and either `SMTP_URL`
-or `EMAIL_PROVIDER=resend` with `RESEND_API_KEY`. It may also contain
-`AUTH_SIGNUP_ENABLED`, `DEPLOYMENT_MODE`, `AUTH_ADMIN_EMAIL`, and
-`AUTH_IP_HEADER`. The chart explicitly sets `AUTH_ENABLED` from `auth.enabled`.
-Use an HTTPS origin and a trusted ingress that overwrites the client IP header.
 
 ```yaml
 auth:
@@ -134,25 +71,33 @@ hodor:
   enabled: false
 ```
 
-A worker sidecar processes exports and deletion with the same database and
-storage configuration. Give it temporary disk capacity for ZIP archives.
-Migration credentials must own the application tables and be able to create
-and grant the restricted `roastbook_journal` role. Hosted mode also requires
-`DEPLOYMENT_MODE=hosted` and `AUTH_ADMIN_EMAIL`. See the
-[upgrade guide](../docs/deployment.md#upgrading-an-existing-journal).
+The Secret supplies `AUTH_URL`, `AUTH_SECRET`, `EMAIL_FROM`, and `SMTP_URL` or
+`EMAIL_PROVIDER=resend` with `RESEND_API_KEY`; optionally
+`AUTH_SIGNUP_ENABLED`, `DEPLOYMENT_MODE`, `AUTH_ADMIN_EMAIL`, and
+`AUTH_IP_HEADER`. The chart sets `AUTH_ENABLED` from `auth.enabled` and adds a
+worker sidecar for exports and deletion; give it temporary disk for ZIP
+archives.
+
+## AI
+
+- `openai.credentialExistingSecret` holds the key that encrypts users' own
+  provider keys; without it, BYOAI is unavailable.
+- Provided AI (authenticated deployments only) uses either
+  `openai.existingSecret` with `baseUrl`, `visionModel`, and `researchModel`
+  (the `OPENAI_*` variables) or `openai.providedExistingSecret` with
+  `AI_PROVIDED_*` keys. The chart rejects both at once.
+- `openai.allowedPrivateOrigins` allows exact private origins (self-hosted).
+- `openai.telemetryStorePayloads`, `telemetryRetentionDays`, and
+  `telemetryMaxPayloadBytes` control diagnostic payload logging.
 
 ## MCP
 
-MCP requires an owner-bound bearer token in both authentication modes. Create
-and revoke it in Settings > AI access (MCP). It expires in one year. Account
-removal revokes it immediately. Host and Origin validation also applies.
-
-Set `mcp.enabled=true` to create a private `<release>-mcp` ClusterIP Service
-and a NetworkPolicy rule admitting only `mcp.allowedCidrs` and
-`mcp.allowedNamespaces`. At least one is required, and `networkPolicy.enabled`
-must stay on. The application additionally allows the Service hostnames and
-configured extra hosts/origins. Built-in auth can also serve MCP on its public
-origin when that hostname is included in its allowlist.
+`mcp.enabled=true` creates a private `<release>-mcp` ClusterIP Service and a
+NetworkPolicy rule admitting only `mcp.allowedCidrs` and
+`mcp.allowedNamespaces` (at least one is required; keep
+`networkPolicy.enabled`). OAuth sign-in for MCP clients uses the public
+`AUTH_URL` origin and needs `hodor.enabled=false` or a proxy that lets native
+clients through.
 
 ```yaml
 mcp:
@@ -163,13 +108,21 @@ mcp:
   allowedOrigins: []
 ```
 
-Configure the client with `/api/mcp` and an `Authorization: Bearer` header.
-With built-in accounts, MCP clients can discover OAuth and request browser
-consent through the public `AUTH_URL` origin. This needs `hodor.enabled=false`
-or a proxy configuration that permits native OAuth clients. The private MCP
-Service is optional and does not enable or disable OAuth on the public app.
-Tool policy and audit history belong to the authorized account. See
-[MCP deployment](../docs/deployment.md#mcp) for discovery paths and scopes.
+## Migrations
+
+The migration Job is enabled by default as a hook: `pre-install,pre-upgrade`
+for external databases, `post-install,pre-upgrade` for bundled PostgreSQL. Set
+`migrations.enabled=false` to migrate outside Helm, or
+`migrations.hook.enabled=false` for a revision-suffixed Job. Migration
+credentials must own the tables and be able to create the `roastbook_journal`
+role.
+
+## Scaling
+
+- `autoscaling.enabled=true` adds a CPU-based HorizontalPodAutoscaler.
+- A PodDisruptionBudget renders for multi-replica deployments.
+- `networkPolicy.enabled=true` restricts ingress to the application's public
+  port.
 
 ## Validate changes
 
@@ -179,22 +132,3 @@ helm lint charts \
   --set hodor.secret=audit-secret \
   --set postgresql.external.url=postgresql://roastbook:password@postgres.example:5432/roastbook
 ```
-
-## Provided AI
-
-Existing deployments can keep `openai.existingSecret`, `existingSecretKey`,
-`baseUrl`, `visionModel`, and `researchModel` to reuse the operator provider for
-the free tier. The key name defaults to `api-key`. These values map to the legacy
-`OPENAI_*` server configuration. The chart supplies provider credentials only when
-built-in authentication is enabled. Anonymous shared journals use BYOAI only.
-
-Alternatively, authenticated deployments can set `openai.providedExistingSecret`
-to a Secret
-containing `AI_PROVIDED_API_KEY`, `AI_PROVIDED_VISION_MODEL`, and
-`AI_PROVIDED_RESEARCH_MODEL`. Optional `AI_PROVIDED_BASE_URL` and
-`AI_PROVIDED_API` select an OpenAI-compatible operator provider. These variables
-are server-only. Users can switch between the weekly free allowance and BYOAI.
-See [AI configuration](../docs/configuration.md#openai-compatible-ai) for quota
-accounting, limits, and admin reporting. Choose one provider Secret format;
-the chart rejects configuring both. The operator endpoint may be an internal
-HTTP(S) service. Never place provider keys in values.

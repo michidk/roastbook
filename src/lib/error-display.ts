@@ -1,3 +1,4 @@
+import { DEMO_MODE } from '@/lib/build-mode'
 export interface ErrorDisplayState {
   title: string
   message: string
@@ -16,6 +17,27 @@ const DEFAULT_ERROR_STATE: ErrorDisplayState = {
 export function getErrorDisplayState(error: unknown): ErrorDisplayState {
   const rawMessage = getRawErrorMessage(error)
   const lowerMessage = rawMessage.toLowerCase()
+
+  if (
+    DEMO_MODE &&
+    (lowerMessage.includes('browser') || lowerMessage.includes('saved demo'))
+  )
+    return {
+      title: 'Browser demo unavailable',
+      message: rawMessage,
+      hint: 'Your saved data is preserved. Retry after checking site storage and updating your browser.',
+    }
+
+  if (
+    /local journal|saved journal|browser storage|sample journal|unsupported format|record identifiers/i.test(
+      rawMessage,
+    )
+  )
+    return {
+      title: 'Local journal unavailable',
+      message: rawMessage,
+      hint: 'Your saved data has not been reset. Retry, or review earlier pending changes in Settings → Offline.',
+    }
 
   if (rawMessage.startsWith(DB_UNAVAILABLE_PREFIX)) {
     return {

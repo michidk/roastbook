@@ -85,9 +85,11 @@ async function exportJournal(job: Job) {
     for (const table of journalTables) {
       if (
         [
-          'client_operations',
+          'journal_command_receipts',
+          'journal_id_reservations',
+          'journal_changes',
+          'journal_sync_revisions',
           'media_cleanup_jobs',
-          'replication_changes',
           'shottimer',
         ].includes(table)
       )
@@ -192,7 +194,8 @@ async function deleteJournal(job: Job) {
     )
   // Remove dependents first, including restrictive foreign keys and gear subtypes.
   const order = [
-    'client_operations',
+    'journal_command_receipts',
+    'journal_id_reservations',
     'brew_drink_options',
     'brew_taste_tags',
     'brew_accessory_gear',
@@ -236,10 +239,12 @@ async function deleteJournal(job: Job) {
     'shottimer',
     'mcp_settings',
     'mcp_audit_events',
-    'replication_changes',
     'ai_request_logs',
     'ai_usage',
     'media_cleanup_jobs',
+    'journal_sync_revisions',
+    // Last: deleting journal rows above records their changes here.
+    'journal_changes',
   ]
   for (const table of order)
     await db.execute(sql`delete from ${sql.identifier(table)}`)

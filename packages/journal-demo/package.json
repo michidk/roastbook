@@ -1,0 +1,9 @@
+{
+  "name": "@roastbook/journal-demo",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts",
+    "./ui": "./src/ui.tsx"
+  }
+}

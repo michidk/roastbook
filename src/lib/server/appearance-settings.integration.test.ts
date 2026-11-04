@@ -4,7 +4,7 @@ import { inArray } from 'drizzle-orm'
 import { getControlDb } from '@/db/connection.server'
 import { type JournalIdentity, withJournal } from '@/db/journal-context.server'
 import { authUsers } from '@/db/schema'
-import { loadAppSettings, updateSettings } from './settings.server'
+import { loadAppSettings, updateSettings } from '@/journal/domain/settings'
 
 const suite = process.env.TEST_DATABASE_URL ? describe : describe.skip
 const first: JournalIdentity = {

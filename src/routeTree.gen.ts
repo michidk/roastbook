@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as OfflineShellRouteImport } from './routes/offline-shell'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as DotwellKnownSplatRouteImport } from './routes/[.]well-known/$'
@@ -30,7 +31,6 @@ import { Route as BrewingMethodsNewRouteImport } from './routes/brewing-methods/
 import { Route as BrewsIndexRouteImport } from './routes/brews/index'
 import { Route as BrewsShotIdRouteImport } from './routes/brews/$shotId'
 import { Route as BrewsNewRouteImport } from './routes/brews/new'
-import { Route as BrewsPendingRouteImport } from './routes/brews/pending'
 import { Route as GearSetsIndexRouteImport } from './routes/gear-sets/index'
 import { Route as GearSetsGearSetIdRouteImport } from './routes/gear-sets/$gearSetId'
 import { Route as GearSetsNewRouteImport } from './routes/gear-sets/new'
@@ -69,8 +69,6 @@ import { Route as ShotsNewRouteImport } from './routes/shots/new'
 import { Route as VisitsIndexRouteImport } from './routes/visits/index'
 import { Route as VisitsVisitIdRouteImport } from './routes/visits/$visitId'
 import { Route as VisitsNewRouteImport } from './routes/visits/new'
-import { Route as ApiReplicationPullRouteImport } from './routes/api/replication/pull'
-import { Route as ApiReplicationPushRouteImport } from './routes/api/replication/push'
 import { Route as ApiShottimerShotsRouteImport } from './routes/api/shottimer/shots'
 import { Route as ApiShottimerTargetRouteImport } from './routes/api/shottimer/target'
 import { Route as ApiAccountExportsJobIdRouteImport } from './routes/api/account/exports/$jobId'
@@ -88,6 +86,11 @@ const AdminRoute = AdminRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OfflineShellRoute = OfflineShellRouteImport.update({
+  id: '/offline-shell',
+  path: '/offline-shell',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -179,11 +182,6 @@ const BrewsShotIdRoute = BrewsShotIdRouteImport.update({
 const BrewsNewRoute = BrewsNewRouteImport.update({
   id: '/brews/new',
   path: '/brews/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BrewsPendingRoute = BrewsPendingRouteImport.update({
-  id: '/brews/pending',
-  path: '/brews/pending',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GearSetsIndexRoute = GearSetsIndexRouteImport.update({
@@ -376,16 +374,6 @@ const VisitsNewRoute = VisitsNewRouteImport.update({
   path: '/visits/new',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiReplicationPullRoute = ApiReplicationPullRouteImport.update({
-  id: '/api/replication/pull',
-  path: '/api/replication/pull',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiReplicationPushRoute = ApiReplicationPushRouteImport.update({
-  id: '/api/replication/push',
-  path: '/api/replication/push',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiShottimerShotsRoute = ApiShottimerShotsRouteImport.update({
   id: '/api/shottimer/shots',
   path: '/api/shottimer/shots',
@@ -406,6 +394,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
+  '/offline-shell': typeof OfflineShellRoute
   '/settings': typeof SettingsRouteWithChildren
   '/stats': typeof StatsRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
@@ -420,7 +409,6 @@ export interface FileRoutesByFullPath {
   '/brewing-methods/new': typeof BrewingMethodsNewRoute
   '/brews/$shotId': typeof BrewsShotIdRoute
   '/brews/new': typeof BrewsNewRoute
-  '/brews/pending': typeof BrewsPendingRoute
   '/gear-sets/$gearSetId': typeof GearSetsGearSetIdRoute
   '/gear-sets/new': typeof GearSetsNewRoute
   '/gear/$gearId': typeof GearGearIdRoute
@@ -463,8 +451,6 @@ export interface FileRoutesByFullPath {
   '/shops/': typeof ShopsIndexRoute
   '/shots/': typeof ShotsIndexRoute
   '/visits/': typeof VisitsIndexRoute
-  '/api/replication/pull': typeof ApiReplicationPullRoute
-  '/api/replication/push': typeof ApiReplicationPushRoute
   '/api/shottimer/shots': typeof ApiShottimerShotsRoute
   '/api/shottimer/target': typeof ApiShottimerTargetRoute
   '/api/account/exports/$jobId': typeof ApiAccountExportsJobIdRoute
@@ -472,6 +458,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/offline-shell': typeof OfflineShellRoute
   '/stats': typeof StatsRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
   '/admin/ai': typeof AdminAiRoute
@@ -485,7 +472,6 @@ export interface FileRoutesByTo {
   '/brewing-methods/new': typeof BrewingMethodsNewRoute
   '/brews/$shotId': typeof BrewsShotIdRoute
   '/brews/new': typeof BrewsNewRoute
-  '/brews/pending': typeof BrewsPendingRoute
   '/gear-sets/$gearSetId': typeof GearSetsGearSetIdRoute
   '/gear-sets/new': typeof GearSetsNewRoute
   '/gear/$gearId': typeof GearGearIdRoute
@@ -528,8 +514,6 @@ export interface FileRoutesByTo {
   '/shops': typeof ShopsIndexRoute
   '/shots': typeof ShotsIndexRoute
   '/visits': typeof VisitsIndexRoute
-  '/api/replication/pull': typeof ApiReplicationPullRoute
-  '/api/replication/push': typeof ApiReplicationPushRoute
   '/api/shottimer/shots': typeof ApiShottimerShotsRoute
   '/api/shottimer/target': typeof ApiShottimerTargetRoute
   '/api/account/exports/$jobId': typeof ApiAccountExportsJobIdRoute
@@ -539,6 +523,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
+  '/offline-shell': typeof OfflineShellRoute
   '/settings': typeof SettingsRouteWithChildren
   '/stats': typeof StatsRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
@@ -553,7 +538,6 @@ export interface FileRoutesById {
   '/brewing-methods/new': typeof BrewingMethodsNewRoute
   '/brews/$shotId': typeof BrewsShotIdRoute
   '/brews/new': typeof BrewsNewRoute
-  '/brews/pending': typeof BrewsPendingRoute
   '/gear-sets/$gearSetId': typeof GearSetsGearSetIdRoute
   '/gear-sets/new': typeof GearSetsNewRoute
   '/gear/$gearId': typeof GearGearIdRoute
@@ -596,8 +580,6 @@ export interface FileRoutesById {
   '/shops/': typeof ShopsIndexRoute
   '/shots/': typeof ShotsIndexRoute
   '/visits/': typeof VisitsIndexRoute
-  '/api/replication/pull': typeof ApiReplicationPullRoute
-  '/api/replication/push': typeof ApiReplicationPushRoute
   '/api/shottimer/shots': typeof ApiShottimerShotsRoute
   '/api/shottimer/target': typeof ApiShottimerTargetRoute
   '/api/account/exports/$jobId': typeof ApiAccountExportsJobIdRoute
@@ -608,6 +590,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/login'
+    | '/offline-shell'
     | '/settings'
     | '/stats'
     | '/.well-known/$'
@@ -622,7 +605,6 @@ export interface FileRouteTypes {
     | '/brewing-methods/new'
     | '/brews/$shotId'
     | '/brews/new'
-    | '/brews/pending'
     | '/gear-sets/$gearSetId'
     | '/gear-sets/new'
     | '/gear/$gearId'
@@ -665,8 +647,6 @@ export interface FileRouteTypes {
     | '/shops/'
     | '/shots/'
     | '/visits/'
-    | '/api/replication/pull'
-    | '/api/replication/push'
     | '/api/shottimer/shots'
     | '/api/shottimer/target'
     | '/api/account/exports/$jobId'
@@ -674,6 +654,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/offline-shell'
     | '/stats'
     | '/.well-known/$'
     | '/admin/ai'
@@ -687,7 +668,6 @@ export interface FileRouteTypes {
     | '/brewing-methods/new'
     | '/brews/$shotId'
     | '/brews/new'
-    | '/brews/pending'
     | '/gear-sets/$gearSetId'
     | '/gear-sets/new'
     | '/gear/$gearId'
@@ -730,8 +710,6 @@ export interface FileRouteTypes {
     | '/shops'
     | '/shots'
     | '/visits'
-    | '/api/replication/pull'
-    | '/api/replication/push'
     | '/api/shottimer/shots'
     | '/api/shottimer/target'
     | '/api/account/exports/$jobId'
@@ -740,6 +718,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/login'
+    | '/offline-shell'
     | '/settings'
     | '/stats'
     | '/.well-known/$'
@@ -754,7 +733,6 @@ export interface FileRouteTypes {
     | '/brewing-methods/new'
     | '/brews/$shotId'
     | '/brews/new'
-    | '/brews/pending'
     | '/gear-sets/$gearSetId'
     | '/gear-sets/new'
     | '/gear/$gearId'
@@ -797,8 +775,6 @@ export interface FileRouteTypes {
     | '/shops/'
     | '/shots/'
     | '/visits/'
-    | '/api/replication/pull'
-    | '/api/replication/push'
     | '/api/shottimer/shots'
     | '/api/shottimer/target'
     | '/api/account/exports/$jobId'
@@ -808,6 +784,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   LoginRoute: typeof LoginRoute
+  OfflineShellRoute: typeof OfflineShellRoute
   SettingsRoute: typeof SettingsRouteWithChildren
   StatsRoute: typeof StatsRoute
   DotwellKnownSplatRoute: typeof DotwellKnownSplatRoute
@@ -820,7 +797,6 @@ export interface RootRouteChildren {
   BrewingMethodsNewRoute: typeof BrewingMethodsNewRoute
   BrewsShotIdRoute: typeof BrewsShotIdRoute
   BrewsNewRoute: typeof BrewsNewRoute
-  BrewsPendingRoute: typeof BrewsPendingRoute
   GearSetsGearSetIdRoute: typeof GearSetsGearSetIdRoute
   GearSetsNewRoute: typeof GearSetsNewRoute
   GearGearIdRoute: typeof GearGearIdRoute
@@ -850,8 +826,6 @@ export interface RootRouteChildren {
   ShopsIndexRoute: typeof ShopsIndexRoute
   ShotsIndexRoute: typeof ShotsIndexRoute
   VisitsIndexRoute: typeof VisitsIndexRoute
-  ApiReplicationPullRoute: typeof ApiReplicationPullRoute
-  ApiReplicationPushRoute: typeof ApiReplicationPushRoute
   ApiShottimerShotsRoute: typeof ApiShottimerShotsRoute
   ApiShottimerTargetRoute: typeof ApiShottimerTargetRoute
   ApiAccountExportsJobIdRoute: typeof ApiAccountExportsJobIdRoute
@@ -878,6 +852,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/offline-shell': {
+      id: '/offline-shell'
+      path: '/offline-shell'
+      fullPath: '/offline-shell'
+      preLoaderRoute: typeof OfflineShellRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -1004,13 +985,6 @@ declare module '@tanstack/react-router' {
       path: '/brews/new'
       fullPath: '/brews/new'
       preLoaderRoute: typeof BrewsNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/brews/pending': {
-      id: '/brews/pending'
-      path: '/brews/pending'
-      fullPath: '/brews/pending'
-      preLoaderRoute: typeof BrewsPendingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gear-sets/': {
@@ -1279,20 +1253,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VisitsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/replication/pull': {
-      id: '/api/replication/pull'
-      path: '/api/replication/pull'
-      fullPath: '/api/replication/pull'
-      preLoaderRoute: typeof ApiReplicationPullRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/replication/push': {
-      id: '/api/replication/push'
-      path: '/api/replication/push'
-      fullPath: '/api/replication/push'
-      preLoaderRoute: typeof ApiReplicationPushRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/shottimer/shots': {
       id: '/api/shottimer/shots'
       path: '/api/shottimer/shots'
@@ -1369,6 +1329,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   LoginRoute: LoginRoute,
+  OfflineShellRoute: OfflineShellRoute,
   SettingsRoute: SettingsRouteWithChildren,
   StatsRoute: StatsRoute,
   DotwellKnownSplatRoute: DotwellKnownSplatRoute,
@@ -1381,7 +1342,6 @@ const rootRouteChildren: RootRouteChildren = {
   BrewingMethodsNewRoute: BrewingMethodsNewRoute,
   BrewsShotIdRoute: BrewsShotIdRoute,
   BrewsNewRoute: BrewsNewRoute,
-  BrewsPendingRoute: BrewsPendingRoute,
   GearSetsGearSetIdRoute: GearSetsGearSetIdRoute,
   GearSetsNewRoute: GearSetsNewRoute,
   GearGearIdRoute: GearGearIdRoute,
@@ -1411,8 +1371,6 @@ const rootRouteChildren: RootRouteChildren = {
   ShopsIndexRoute: ShopsIndexRoute,
   ShotsIndexRoute: ShotsIndexRoute,
   VisitsIndexRoute: VisitsIndexRoute,
-  ApiReplicationPullRoute: ApiReplicationPullRoute,
-  ApiReplicationPushRoute: ApiReplicationPushRoute,
   ApiShottimerShotsRoute: ApiShottimerShotsRoute,
   ApiShottimerTargetRoute: ApiShottimerTargetRoute,
   ApiAccountExportsJobIdRoute: ApiAccountExportsJobIdRoute,

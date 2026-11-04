@@ -20,13 +20,13 @@ import { ListPending } from '@/components/route-pending'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useCollectionView } from '@/hooks/use-collection-view'
+import { getBrewingMethodPage } from '@/journal/brewing-methods'
 import {
   searchInteger,
   searchRecord,
   searchString,
   searchValidator,
 } from '@/lib/search-params'
-import { getBrewingMethodPage } from '@/lib/server/brewing-methods'
 
 const parseBrewingMethodSearch = (input: unknown) => {
   const search = searchRecord(input)

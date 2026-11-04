@@ -1,4 +1,4 @@
-import { Link, useNavigate, useRouter } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import {
   ArrowLeft,
   Award,
@@ -42,13 +42,13 @@ import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useFormState } from '@/hooks/use-form-state'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
-import { getErrorMessage } from '@/lib/error-message'
-import { toNullableRating, toRatingInput } from '@/lib/rating'
 import {
   deleteCoffeeShop,
   type getCoffeeShop,
   updateCoffeeShop,
-} from '@/lib/server/coffee-shops'
+} from '@/journal/coffee-shops'
+import { getErrorMessage } from '@/lib/error-message'
+import { toNullableRating, toRatingInput } from '@/lib/rating'
 import { cn } from '@/lib/utils'
 
 type CoffeeShop = NonNullable<Awaited<ReturnType<typeof getCoffeeShop>>>
@@ -72,7 +72,6 @@ export function CoffeeShopDetailPage({
   onFinishEditing: () => void | Promise<void>
 }) {
   const navigate = useNavigate()
-  const router = useRouter()
   const [isSaving, setIsSaving] = useState(false)
   const [updatingList, setUpdatingList] = useState<
     'favorite' | 'want-to-visit' | null
@@ -106,7 +105,6 @@ export function CoffeeShopDetailPage({
         },
       })
       await onFinishEditing()
-      await router.invalidate()
       toast.success('Café updated')
     } catch (error) {
       toast.error(getErrorMessage(error, 'Could not save this café'))
@@ -130,7 +128,6 @@ export function CoffeeShopDetailPage({
             await updateCoffeeShop({
               data: { id: coffeeShop.id, isFavorite: !coffeeShop.isFavorite },
             })
-            await router.invalidate()
           } catch (error) {
             toast.error(getErrorMessage(error, 'Could not update favorites'))
           } finally {
@@ -146,7 +143,6 @@ export function CoffeeShopDetailPage({
                 wantsToVisit: !coffeeShop.wantsToVisit,
               },
             })
-            await router.invalidate()
           } catch (error) {
             toast.error(
               getErrorMessage(
@@ -165,7 +161,6 @@ export function CoffeeShopDetailPage({
         onSave={handleSave}
         onDelete={async () => {
           await deleteCoffeeShop({ data: coffeeShop.id })
-          await router.invalidate()
           await navigate({ to: '/places' })
         }}
       />

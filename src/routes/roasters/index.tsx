@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { WebsiteLogo } from '@/components/website-logo'
 import { useCollectionView } from '@/hooks/use-collection-view'
+import { getRoasterPage } from '@/journal/roasters'
 import { nextSortDirection } from '@/lib/collection-sort'
 import {
   searchEnum,
@@ -29,7 +30,6 @@ import {
   searchString,
   searchValidator,
 } from '@/lib/search-params'
-import { getRoasterPage } from '@/lib/server/roasters'
 
 const SORT_KEYS = ['name', 'location', 'beans'] as const
 

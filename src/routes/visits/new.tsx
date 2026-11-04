@@ -1,9 +1,4 @@
-import {
-  createFileRoute,
-  Link,
-  useNavigate,
-  useRouter,
-} from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import { type SyntheticEvent, useEffect, useState } from 'react'
 import { toast } from 'sonner'
@@ -25,6 +20,11 @@ import {
   useLocalDateTimeInput,
 } from '@/hooks/use-local-date-time-input'
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes'
+import { getBeans } from '@/journal/beans'
+import { createCafeVisit } from '@/journal/cafe-visits'
+import { getCoffeeShops } from '@/journal/coffee-shops'
+import { getDrinkConfiguration } from '@/journal/drink-options'
+import { getTasteTags } from '@/journal/taste-tags'
 import { cafeVisitCreatePayload } from '@/lib/cafe-visit-payload'
 import { localDateTimeInputToDate } from '@/lib/date-input'
 import { getErrorMessage } from '@/lib/error-message'
@@ -35,11 +35,6 @@ import {
   searchRecord,
   searchValidator,
 } from '@/lib/search-params'
-import { getBeans } from '@/lib/server/beans'
-import { createCafeVisit } from '@/lib/server/cafe-visits'
-import { getCoffeeShops } from '@/lib/server/coffee-shops'
-import { getDrinkConfiguration } from '@/lib/server/drink-options'
-import { getTasteTags } from '@/lib/server/taste-tags'
 import { getCafeVisitUpdateErrors } from '@/lib/update-validation'
 
 const parseNewVisitSearch = (input: unknown) => {
@@ -77,7 +72,6 @@ function NewVisitPage() {
     Route.useLoaderData()
   const search = Route.useSearch()
   const navigate = useNavigate()
-  const router = useRouter()
   const initialCoffeeShopId =
     search.coffeeShopId !== undefined &&
     coffeeShops.some((coffeeShop) => coffeeShop.id === search.coffeeShopId)
@@ -142,7 +136,6 @@ function NewVisitPage() {
     try {
       await createCafeVisit({ data })
       setIsDirty(false)
-      await router.invalidate()
       await navigate({ to: '/visits' })
     } catch (error) {
       toast.error(getErrorMessage(error, 'Could not save this visit'))

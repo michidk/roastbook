@@ -5,26 +5,19 @@ import { ThemePalettePicker } from '@/components/settings/theme-palette-picker'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { useAppSettings } from '@/hooks/use-app-settings'
-import { useOnlineStatus } from '@/hooks/use-online-status'
 import { useSettingMutation } from '@/hooks/use-setting-mutation'
-import { usePreferencesStore } from '@/lib/preferences-store'
 import {
   updateBackgroundGrainEnabled,
   updateBackgroundTextureEnabled,
   updateDarkTheme,
   updateLightTheme,
-} from '@/lib/server/settings'
+} from '@/journal/settings'
+import { usePreferencesStore } from '@/lib/preferences-store'
 import { DARK_THEMES, LIGHT_THEMES } from '@/lib/theme'
 
 /** The theme and page background settings sections. */
-export function AppearanceSettings({
-  onSaved,
-}: {
-  readonly onSaved: () => void
-}) {
+export function AppearanceSettings() {
   const savedSettings = useAppSettings()
-  const demoMode = savedSettings.demoMode
-  const isOnline = useOnlineStatus()
   const savedBackgroundTextureEnabled = savedSettings.backgroundTextureEnabled
   const [backgroundTextureEnabled, setBackgroundTextureEnabled] = useState(
     savedBackgroundTextureEnabled,
@@ -54,7 +47,6 @@ export function AppearanceSettings({
     applyValue: setBackgroundTextureEnabled,
     mutate: (enabled) => updateBackgroundTextureEnabled({ data: enabled }),
     selectValue: (updated) => updated.backgroundTextureEnabled,
-    onSaved,
     errorMessage: 'Could not save the page background setting',
   })
 
@@ -67,7 +59,6 @@ export function AppearanceSettings({
     applyValue: setLightTheme,
     mutate: (value) => updateLightTheme({ data: value }),
     selectValue: (updated) => updated.lightTheme,
-    onSaved,
     errorMessage: 'Could not save the light theme',
   })
   useEffect(
@@ -79,7 +70,6 @@ export function AppearanceSettings({
     applyValue: setDarkTheme,
     mutate: (value) => updateDarkTheme({ data: value }),
     selectValue: (updated) => updated.darkTheme,
-    onSaved,
     errorMessage: 'Could not save the dark theme',
   })
   useEffect(
@@ -92,7 +82,6 @@ export function AppearanceSettings({
     applyValue: setBackgroundGrainEnabled,
     mutate: (value) => updateBackgroundGrainEnabled({ data: value }),
     selectValue: (updated) => updated.backgroundGrainEnabled,
-    onSaved,
     errorMessage: 'Could not save the background grain',
   })
   return (
@@ -106,7 +95,9 @@ export function AppearanceSettings({
         <div>
           <h3 className="font-display text-base font-bold">Your palettes</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Saved to your journal across devices.
+            {savedSettings.demoMode
+              ? 'Saved only in this browser’s temporary demo journal.'
+              : 'Saved to your journal across devices.'}
           </p>
         </div>
         <ThemePalettePicker
@@ -114,14 +105,14 @@ export function AppearanceSettings({
           options={LIGHT_THEMES}
           value={lightTheme}
           onChange={(value) => void lightThemeMutation.save(value)}
-          disabled={demoMode || !isOnline || lightThemeMutation.isSaving}
+          disabled={lightThemeMutation.isSaving}
         />
         <ThemePalettePicker
           mode="dark"
           options={DARK_THEMES}
           value={darkTheme}
           onChange={(value) => void darkThemeMutation.save(value)}
-          disabled={demoMode || !isOnline || darkThemeMutation.isSaving}
+          disabled={darkThemeMutation.isSaving}
         />
         <div className="grid gap-5 rounded-xl bg-secondary/40 p-4 sm:grid-cols-2 sm:gap-6">
           <div className="flex items-center justify-between gap-4">
@@ -137,9 +128,7 @@ export function AppearanceSettings({
               id="background-texture"
               aria-labelledby="background-stains-label"
               checked={backgroundTextureEnabled}
-              disabled={
-                demoMode || !isOnline || backgroundTextureMutation.isSaving
-              }
+              disabled={backgroundTextureMutation.isSaving}
               onCheckedChange={(checked) =>
                 void backgroundTextureMutation.save(checked)
               }
@@ -158,9 +147,7 @@ export function AppearanceSettings({
               id="background-grain"
               aria-labelledby="background-grain-label"
               checked={backgroundGrainEnabled}
-              disabled={
-                demoMode || !isOnline || backgroundGrainEnabledMutation.isSaving
-              }
+              disabled={backgroundGrainEnabledMutation.isSaving}
               onCheckedChange={(value) =>
                 void backgroundGrainEnabledMutation.save(value)
               }

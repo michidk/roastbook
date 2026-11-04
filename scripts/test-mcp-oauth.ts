@@ -407,7 +407,7 @@ try {
     403,
   )
   assert.equal(
-    (await rpc('tools/list', {}, issued.access_token.slice(0, -8) + 'tampered'))
+    (await rpc('tools/list', {}, `${issued.access_token.slice(0, -8)}tampered`))
       .status,
     401,
   )

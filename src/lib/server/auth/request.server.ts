@@ -104,7 +104,11 @@ export async function handleJournalRequest(
 ): Promise<Response> {
   if (DEMO_MODE) return next()
   const path = new URL(request.url).pathname
-  if (path === '/api/health') return next()
+  if (
+    path === '/api/health' ||
+    (/^\/offline-shell\/?$/.test(path) && request.method === 'GET')
+  )
+    return next()
   const authResponse = await handleAuthRequest(request)
   if (authResponse) return authResponse
   if (path === '/api/mcp') {

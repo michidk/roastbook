@@ -7,13 +7,13 @@ import { getControlDb } from '@/db/connection.server'
 import { type JournalIdentity, withJournal } from '@/db/journal-context.server'
 import { journalInsertValues, owned } from '@/db/journal-scope.server'
 import { authUsers, gear, gearImages } from '@/db/schema'
-import { getStoredImagePaths } from '@/lib/image-path'
-import { storeEntityImage } from '@/lib/server/entity-image-store.server'
+import { storeEntityImage } from '@/journal/domain/entity-image-store'
 import {
   imageStoragePolicy,
   loadImageStorageUsage,
-} from '@/lib/server/image-storage.server'
-import { deleteEntityWithMedia } from '@/lib/server/media-lifecycle.server'
+} from '@/journal/domain/image-storage'
+import { deleteEntityWithMedia } from '@/journal/domain/media-lifecycle'
+import { getStoredImagePaths } from '@/lib/image-path'
 import { getStorage } from '@/lib/storage'
 
 const suite = process.env.TEST_DATABASE_URL ? describe : describe.skip

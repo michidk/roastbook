@@ -27,6 +27,7 @@ export function featureAvailability(
     readonly configured?: boolean
   } = {},
 ): FeatureAvailability {
+  if (demo && feature === 'journal-write') return { available: true }
   if (demo)
     return {
       available: false,

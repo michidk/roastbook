@@ -1,84 +1,65 @@
-# Demo mode
+# Browser-local demo
 
-The demo remains read-only and database-free. It has no login, accounts, admin
-page, or account worker. `AUTH_ENABLED=false` in the standard edition selects
-a writable shared journal and never turns on the demo.
-The header shows a "demo user" avatar menu with Settings and a System, Light,
-or Dark theme submenu. Account settings, administrator actions, and sign-out
-controls are hidden.
+The demo edition is an editable journal seeded with fictional sample data. Every
+journal record and setting can be created, edited, and deleted.
 
-Roastbook supports a read-only demo edition. The edition is compiled into the
-client and server bundles, so a standard production artifact cannot be changed
-into a demo by altering its runtime environment. The public demo runs from its
-deployed demo host.
+## Local data
 
-## Database-free demo
+The demo runs the product's SQL journal functions on the visitor's own PGlite
+database in a browser worker (see [Journal architecture](client-data.md)). The
+edition (`packages/journal-demo/src/edition.ts`) seeds the journal from
+fixtures, allocates identifiers locally, and never syncs. Its bean-package and
+gear pictures come from `scripts/seed-assets/` (gear images are named after the
+slugged gear name) and are emitted as static files by the demo build.
 
-The demo uses an ephemeral PGlite database loaded from a build-generated
-snapshot. The snapshot is derived from the bundled migrations and deterministic
-seed fixtures. The same fixtures back `bun run db:seed` for an empty PostgreSQL
-database, so local seeded environments and the public demo stay aligned. Demo
-cold starts do not need to migrate and seed a new database, and the edition
-needs neither `DATABASE_URL` nor writable media storage. Build its Vercel output
-with:
+- The first visit downloads `/demo-local/journal.json` (plus the database
+  engine, about 5 MB compressed) into the empty `roastbook-demo` database.
+  Existing data is never reseeded; newer demo builds migrate it in place.
+- Data stays in this browser profile on the demo origin. It survives reloads
+  but never syncs, and disappears when site storage is cleared or evicted.
+- Tabs share one database through a leader worker. A failed write rolls back
+  and keeps earlier changes.
+- **Reset demo** (after confirmation) restores the fixtures and removes added
+  pictures and demo appearance preferences.
+- It needs a current browser over HTTPS or localhost with IndexedDB and Web
+  Locks.
+
+The avatar menu offers Settings and a theme choice only. `AUTH_ENABLED=false` in
+the standard edition selects a shared server journal; it never enables the demo.
+
+## Pictures
+
+Uploads use the normal image pipeline in the browser (WebP at 2048, 800 and
+256 pixels), three pictures per item, up to 10 MiB per file and
+50 MiB in total (browser quota may be lower). Picture bytes are stored in the
+demo database and removed with their record or on reset.
+
+## Restrictions
+
+AI, web research, remote image import, geocoding, map tiles, MCP/OAuth, email,
+authentication, administration, external devices, remote storage, and sync are
+unavailable; enter cafés and coordinates manually. The demo build replaces
+integration server functions with stubs that fail before any network access
+(`scripts/vite-demo-services.ts`). The server has no journal database: API and
+server-function requests are rejected except the health check, so visitor edits
+never reach the backend.
+
+The demo is not installable and has no offline shell. Its service worker only
+removes earlier Roastbook workers and caches.
+
+## Build and deploy
+
+The edition is fixed at build time with `ROASTBOOK_EDITION=demo` and needs no
+database, storage, or credentials.
 
 ```bash
+bun run dev:demo
 bun run build:demo
+bun run check:client-assets .vercel/output/static
 ```
 
-The build emits `.vercel/output` and copies the demo snapshot plus the PGlite
-runtime data and WASM needed to restore it into the server function. Demo-only
-aliases replace disabled storage, image-processing, and AI integrations so
-their production dependencies are not shipped in the read-only function.
-Deploy that prebuilt output with:
-
-```bash
-vercel deploy --prebuilt
-```
-
-`vercel.json` also selects `build:demo` for Git-connected deployments.
-Standard `bun run build` and Docker builds use PostgreSQL, compile demo mode to
-`false`, and do not install the PGlite development dependency in the production
-image. The edition cannot be toggled at runtime.
-
-The enforcement boundary is server-side request middleware. With demo mode enabled,
-GET and HEAD requests proceed. Journal writes, uploads, settings changes, AI
-actions, and POST endpoints fail with a plain-text 403 that the UI shows as a
-"this is just a demo" message wherever the action was attempted. The UI also
-shows a persistent banner, prevents form submissions, and disables its global
-create controls. Both demo and standard editions redirect `/` to `/overview`.
-The bean-package and gear seed images are emitted as static
-assets during the demo build. Gear images in `scripts/seed-assets/gear/` are
-named after the slugged gear name. All demo business and product records are fictional.
-Roasters and cafés have no website URLs, and five bundled abstract favicon
-marks are reused across them without making network requests.
-
-Do not rely on hidden buttons as the security boundary. TanStack server
-functions are directly callable endpoints, so the server middleware remains
-required even when every visible write control is unavailable.
-
-Each serverless instance initializes its own read-only copy. Existing Drizzle
-queries, joins, pagination, and statistics therefore keep the same abstraction
-as the PostgreSQL edition while the deployment remains stateless. The public
-demo warns that its first request may be slower while a serverless instance
-starts and restores the database snapshot.
-
-## Installation and offline behavior
-
-The demo has no install manifest or offline page and does not open the local
-journal database, queue changes, or start replication. Its install banner
-explains the self-hosted app's offline support. Selecting Install shows a toast
-that installation is unavailable in the demo.
-
-A retiring service worker replaces workers published by older demo builds. It
-removes Roastbook shell caches and unregisters itself without handling network
-requests or deleting journal data. The runtime also unregisters old Roastbook
-workers when visiting the demo online.
-
-## Brewing and drink defaults
-
-The sample journal uses brewing methods such as Espresso, Pour over, AeroPress,
-French press, and Moka pot with method-specific field selections. Pour over is
-a brewing method; its finished drink is Filter. The fixture uses the same
-defaults as a new standard installation. Cold brew and Other remain available
-for additional workflows.
+`dev:demo` regenerates the sample JSON before starting Vite; restart it after
+changing fixtures or migrations. `build:demo` writes `.vercel/output`; deploy it
+with `vercel deploy --prebuilt` (`vercel.json` uses `build:demo` for Git
+deployments). Do not run a Vite dev server and a production build at the same
+time in one checkout; they share Nitro build state.

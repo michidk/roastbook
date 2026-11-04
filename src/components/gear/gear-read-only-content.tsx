@@ -14,6 +14,8 @@ import {
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import type { getGearById } from '@/journal/gear'
+import type { getGearShotPage } from '@/journal/shots'
 import {
   BASKET_KIND_OPTIONS,
   BREWER_FLOW_CONTROL_OPTIONS,
@@ -42,8 +44,6 @@ import {
   TAMPER_FORCE_CONTROL_OPTIONS,
   WDT_DEPTH_CONTROL_OPTIONS,
 } from '@/lib/gear-properties'
-import type { getGearById } from '@/lib/server/gear'
-import type { getGearShotPage } from '@/lib/server/shots'
 
 type Gear = NonNullable<Awaited<ReturnType<typeof getGearById>>>
 

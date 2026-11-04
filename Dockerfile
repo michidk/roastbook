@@ -10,6 +10,7 @@ ARG VITE_HEAD_HTML
 
 # Copy package files
 COPY package.json bun.lock ./
+COPY packages/journal-demo/package.json packages/journal-demo/package.json
 
 # Install dependencies
 RUN bun install --frozen-lockfile
@@ -37,6 +38,7 @@ RUN groupadd --system --gid 1001 nodejs && \
 # Copy runtime dependencies and built application
 COPY --from=builder --chown=app:nodejs /app/package.json /app/package.json
 COPY --from=builder /app/bun.lock /app/bun.lock
+COPY --from=builder --chown=app:nodejs /app/packages/journal-demo/package.json /app/packages/journal-demo/package.json
 RUN bun install --frozen-lockfile --production
 COPY --from=builder --chown=app:nodejs /app/.output /app/.output
 COPY --from=builder --chown=app:nodejs /app/drizzle /app/drizzle

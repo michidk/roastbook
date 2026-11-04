@@ -18,13 +18,13 @@ import { WebsiteLogo } from '@/components/website-logo'
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
+import { getCafeVisitPage } from '@/journal/cafe-visits'
 import {
   searchInteger,
   searchRecord,
   searchString,
   searchValidator,
 } from '@/lib/search-params'
-import { getCafeVisitPage } from '@/lib/server/cafe-visits'
 import { isNegativeTasteTag } from '@/lib/taste-tags'
 
 const parseVisitSearch = (input: unknown) => {

@@ -1,0 +1,4 @@
+preload = ["./scripts/bun-preload.ts"]
+
+[test]
+preload = ["./scripts/bun-preload.ts"]
