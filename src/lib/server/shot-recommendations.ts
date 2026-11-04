@@ -9,6 +9,7 @@ import {
   gear,
   shots,
 } from '@/db/schema'
+import { trackEvent } from '@/extension-points/analytics.server'
 import { withResourceLimits } from '@/journal/domain/resource-limits'
 import {
   answerShotRecommendationQuestion,
@@ -446,6 +447,7 @@ export const getShotRecommendation = createServerFn({ method: 'POST' })
     const recommendation = await withResourceLimits('shot-recommendation', () =>
       recommendShotFromHistory(context),
     )
+    trackEvent('ai_recommendation_created')
     return { recommendation, basis }
   })
 

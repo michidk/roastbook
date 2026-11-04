@@ -222,7 +222,7 @@ export async function requestAccountDeletion() {
   url.hash = new URLSearchParams({ delete: token }).toString()
   await sendAccountEmail(
     identity.email,
-    renderAccountEmail({ kind: 'delete-account', url: url.href }),
+    await renderAccountEmail({ kind: 'delete-account', url: url.href }),
   )
 }
 export async function confirmAccountDeletion(token: string) {

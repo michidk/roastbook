@@ -53,6 +53,7 @@ import {
   owned,
   runJournalMutations,
 } from '@/journal/platform/database'
+import { trackEvent } from '@/journal/platform/effects'
 import { resolvePagination } from '@/lib/collection-query'
 import { expectReturnedRow } from '@/lib/domain-errors'
 import type {
@@ -487,6 +488,7 @@ async function loadPersistedShot(id: number) {
 export async function createShotOperation(data: ShotCreateCandidate) {
   const plan = await prepareShotCreate(data)
   await runJournalMutations(plan.mutations)
+  trackEvent('brew_created')
   return loadPersistedShot(plan.id)
 }
 
@@ -496,6 +498,7 @@ export async function createShotAndSaveRecipeOperation(
   const shot = await prepareShotCreate(data.shot)
   const recipe = await prepareRecipeFromShot(shot.source, data.target)
   await runJournalMutations([...shot.mutations, ...recipe.mutations])
+  trackEvent('brew_created')
   return {
     shot: await loadPersistedShot(shot.id),
     recipe: expectReturnedRow(

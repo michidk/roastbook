@@ -55,7 +55,7 @@ function createAuth() {
         sendChangeEmailConfirmation: async ({ user, newEmail, url }) => {
           await sendAccountEmail(
             user.email,
-            renderAccountEmail({ kind: 'change-email', newEmail, url }),
+            await renderAccountEmail({ kind: 'change-email', newEmail, url }),
           )
         },
       },
@@ -64,7 +64,7 @@ function createAuth() {
       sendVerificationEmail: async ({ user, url }) => {
         await sendAccountEmail(
           user.email,
-          renderAccountEmail({ kind: 'verify-email', url }),
+          await renderAccountEmail({ kind: 'verify-email', url }),
         )
       },
     },
@@ -195,7 +195,11 @@ function createAuth() {
           url.hash = new URLSearchParams({ 'sign-in': token }).toString()
           await sendAccountEmail(
             email,
-            renderAccountEmail({ kind: 'sign-in', url: url.href, code: otp }),
+            await renderAccountEmail({
+              kind: 'sign-in',
+              url: url.href,
+              code: otp,
+            }),
           )
         },
       }),

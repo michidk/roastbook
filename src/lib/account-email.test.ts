@@ -4,8 +4,12 @@ import { renderAccountEmail } from './account-email'
 const url = 'https://journal.example.test/login#sign-in=opaque-token'
 
 describe('account email templates', () => {
-  test('keeps the code in the message body and provides HTML and plain text', () => {
-    const email = renderAccountEmail({ kind: 'sign-in', url, code: '01234567' })
+  test('keeps the code in the message body and provides HTML and plain text', async () => {
+    const email = await renderAccountEmail({
+      kind: 'sign-in',
+      url,
+      code: '01234567',
+    })
     expect(email.subject).not.toContain('01234567')
     expect(email.html).toContain('lang="en"')
     expect(email.html).toContain('01234567')
@@ -19,9 +23,9 @@ describe('account email templates', () => {
     expect(preheader).not.toContain('01234567')
   })
 
-  test('escapes dynamic HTML and links without changing plain-text content', () => {
+  test('escapes dynamic HTML and links without changing plain-text content', async () => {
     const newEmail = '<img src=x onerror=alert(1)>@example.test'
-    const email = renderAccountEmail({
+    const email = await renderAccountEmail({
       kind: 'change-email',
       url: 'https://journal.example.test/verify?token=opaque&continue=%22',
       newEmail,
@@ -32,10 +36,10 @@ describe('account email templates', () => {
     expect(email.text).toContain(newEmail)
   })
 
-  test('uses distinct verification and deletion actions with safe deletion copy', () => {
-    const verification = renderAccountEmail({ kind: 'verify-email', url })
+  test('uses distinct verification and deletion actions with safe deletion copy', async () => {
+    const verification = await renderAccountEmail({ kind: 'verify-email', url })
     expect(verification.text).toContain('Verify email address')
-    const deletion = renderAccountEmail({ kind: 'delete-account', url })
+    const deletion = await renderAccountEmail({ kind: 'delete-account', url })
     expect(deletion.text).toContain('Review account deletion')
     expect(deletion.text).toContain(
       'Opening this email or link does not delete anything.',
@@ -45,10 +49,10 @@ describe('account email templates', () => {
 
   test.each(['javascript:alert(1)', 'https://user:password@example.test'])(
     'rejects unsafe action links',
-    (unsafeUrl) => {
-      expect(() =>
+    async (unsafeUrl) => {
+      await expect(
         renderAccountEmail({ kind: 'verify-email', url: unsafeUrl }),
-      ).toThrow('Invalid account email link')
+      ).rejects.toThrow('Invalid account email link')
     },
   )
 })

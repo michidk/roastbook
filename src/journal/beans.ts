@@ -22,6 +22,7 @@ import {
   owned,
   runJournalMutations,
 } from '@/journal/platform/database'
+import { trackEvent } from '@/journal/platform/effects'
 import {
   escapedContainsPattern,
   resolvePagination,
@@ -287,6 +288,7 @@ export const createBean = journalWrite('beans/createBean')
       }),
       'Bean',
     )
+    trackEvent('bean_created')
     return { ...savedBean, purchaseId: purchase.id }
   })
 
