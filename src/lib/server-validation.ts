@@ -95,15 +95,6 @@ export const entityTypeSchema = z.enum(ENTITY_TYPE_VALUES)
 
 export const thumbnailEntityTypeSchema = z.enum(THUMBNAIL_ENTITY_TYPE_VALUES)
 
-export const uploadEntityImageBase64Schema = z.object({
-  entityType: entityTypeSchema,
-  entityId: positiveIdSchema,
-  fileBase64: imageBase64Schema,
-  filename: imageFilenameSchema,
-  mimeType: imageMimeTypeSchema,
-  sizeBytes: z.number().int().positive().max(MAX_IMAGE_BYTES),
-})
-
 export const entityImageIdSchema = z.object({
   entityType: entityTypeSchema,
   entityId: positiveIdSchema,

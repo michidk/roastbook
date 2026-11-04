@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getImageUploadPolicy } from '@/journal/images'
+import { decodeBase64 } from '@/lib/base64'
 import { DEMO_MODE } from '@/lib/build-mode'
-import { resizeBrowserImage } from '@/lib/client/image-compression'
+import {
+  type PreparedPicture,
+  preparePicture,
+} from '@/lib/client/image-compression'
+import { isConnectionOnline } from '@/lib/connection-status'
 import { IMAGE_MIME_TYPE_VALUES, MAX_IMAGE_BYTES } from '@/lib/domain-contracts'
 import type { ImageFile } from '@/lib/image-file'
+import { convertPicture } from '@/lib/server/pictures'
 import { downloadRemoteImage } from '@/lib/server/remote-image'
 
 const IMAGE_MIME_TYPES = new Set<string>(IMAGE_MIME_TYPE_VALUES)
-const CLIENT_IMAGE_MAX_DIMENSION = 1_600
-const CLIENT_IMAGE_QUALITY = 0.8
-const CLIENT_IMAGE_COMPRESSION_THRESHOLD = 256 * 1024
 const IMAGE_MIME_TYPE_BY_EXTENSION: Readonly<Record<string, string>> = {
   avif: 'image/avif',
   gif: 'image/gif',
@@ -43,55 +46,40 @@ function normalizeImageType(file: File): File | null {
   })
 }
 
-async function compressLargeImage(file: File): Promise<File> {
-  if (file.size < CLIENT_IMAGE_COMPRESSION_THRESHOLD) {
-    return file
-  }
-
-  try {
-    const bitmap = await createImageBitmap(file, {
-      imageOrientation: 'from-image',
-    })
-    const blob = await resizeBrowserImage(
-      bitmap,
-      CLIENT_IMAGE_MAX_DIMENSION,
-      CLIENT_IMAGE_QUALITY,
-    ).finally(() => bitmap.close())
-    if (!blob || blob.size >= file.size) return file
-
-    const basename = file.name.replace(/\.[^.]+$/, '') || 'image'
-    return new File([blob], `${basename}.webp`, {
+/**
+ * Encodes each picture once, in the sizes the journal stores. A picture this
+ * browser cannot decode (HEIC outside Safari) is encoded by the server.
+ */
+async function preparePictureFile(file: File): Promise<PreparedPicture> {
+  const prepared = await preparePicture(file)
+  if (prepared) return prepared
+  if (DEMO_MODE || !isConnectionOnline())
+    throw new ImageUploadError(
+      `This browser cannot read ${file.name}. Connect to the internet to convert it, or choose a JPEG, PNG or WebP picture.`,
+    )
+  const data = new FormData()
+  data.set('file', file, file.name)
+  const converted = await convertPicture({ data })
+  const name = file.name.replace(/\.[^.]+$/, '') || 'picture'
+  const webp = (base64: string, suffix: string) =>
+    new File([decodeBase64(base64) as BlobPart], `${name}${suffix}.webp`, {
       type: 'image/webp',
-      lastModified: file.lastModified,
     })
-  } catch {
-    // Some browsers cannot decode every image they can select (notably HEIC).
-    // The original still goes through the normal size and format validation.
-    return file
+  return {
+    file: webp(converted.stored, ''),
+    thumbnail: webp(converted.thumbnail, '.thumb'),
+    small: webp(converted.small, '.small'),
   }
 }
 
 async function prepareImageFiles(
   files: readonly File[],
-): Promise<readonly File[]> {
-  if (files.length === 0) return validateImageFiles(files)
-
-  const normalizedFiles = files.map((file) => {
-    const imageFile = normalizeImageType(file)
-    if (!imageFile) {
-      throw new ImageUploadError(
-        `${file.name || 'That file'} is not a supported image. Use JPG, PNG, WebP, HEIC/HEIF, GIF or AVIF.`,
-      )
-    }
-    if (imageFile.size === 0) {
-      throw new ImageUploadError(`${imageFile.name} is empty`)
-    }
-    return imageFile
-  })
-
-  return validateImageFiles(
-    await Promise.all(normalizedFiles.map(compressLargeImage)),
-  )
+): Promise<readonly PreparedPicture[]> {
+  const imageFiles = validateImageFiles(files)
+  const prepared: PreparedPicture[] = []
+  // One at a time: each decoded photo holds tens of megabytes.
+  for (const file of imageFiles) prepared.push(await preparePictureFile(file))
+  return prepared
 }
 
 export function validateImageFiles(files: readonly File[]): readonly File[] {
@@ -203,19 +191,14 @@ export function useImageUpload({
         )
       processing.current = true
       try {
-        const imageFiles = await prepareImageFiles(files)
-
-        const encodedImages = await Promise.all(
-          imageFiles.map(async (file) => {
-            const base64 = await readFileAsBase64(file)
-            return { file, base64 }
-          }),
+        const pictures = await prepareImageFiles(files)
+        const newImages = await Promise.all(
+          pictures.map(async (picture) => ({
+            ...picture,
+            preview: URL.createObjectURL(picture.file),
+            base64: await readFileAsBase64(picture.file),
+          })),
         )
-        const newImages = encodedImages.map(({ file, base64 }) => ({
-          file,
-          preview: URL.createObjectURL(file),
-          base64,
-        }))
         imagesRef.current = [...imagesRef.current, ...newImages]
         setImages(imagesRef.current)
         if (fileInputRef.current) fileInputRef.current.value = ''

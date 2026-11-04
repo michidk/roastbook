@@ -5,6 +5,7 @@ import { getControlDb } from '@/db/connection.server'
 import { type JournalIdentity, withJournal } from '@/db/journal-context.server'
 import { authUsers, beans, journalCommandReceipts } from '@/db/schema'
 import { encodeInput } from '@/journal/codec'
+import { createEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
 import {
   loadJournalRows,
   replayJournalWrite,
@@ -207,18 +208,22 @@ suite('journal sync replays browser writes on PostgreSQL', () => {
     if (!purchase) throw new Error('Expected a bean purchase')
     const [imageId] = await reserved('bean_images')
     const path = `beans/${purchase.id}/${Date.now()}-${randomUUID()}.webp`
+    // The browser sends the picture with its encoded thumbnails.
+    const webp = (name: string) =>
+      new File([new Uint8Array(bytes)], name, { type: 'image/webp' })
+    const input = await encodeInput(
+      createEntityImageUploadFormData(
+        'bean-purchases',
+        Number(purchase.id),
+        webp('bag.webp'),
+        { thumbnail: webp('bag.thumb.webp'), small: webp('bag.small.webp') },
+      ),
+    )
     const upload = (recordedPath: string, id = imageId) =>
       withJournal(first, () =>
         replayJournalWrite({
-          name: 'images/uploadEntityImageBase64',
-          input: {
-            entityType: 'bean-purchases',
-            entityId: purchase.id,
-            fileBase64: bytes.toString('base64'),
-            filename: 'bag.webp',
-            mimeType: 'image/webp',
-            sizeBytes: bytes.byteLength,
-          },
+          name: 'images/uploadEntityImage',
+          input,
           recorded: {
             storagePath: [recordedPath],
             'id:bean_images': [id],
@@ -238,6 +243,10 @@ suite('journal sync replays browser writes on PostgreSQL', () => {
     expect(
       stored.tables?.bean_images?.map((image) => image.storagePath),
     ).toEqual([path])
+    // Stored as the browser encoded it, without encoding it again.
+    const { getStorage: storage } = await import('@/lib/storage')
+    const saved = await storage().download(path)
+    expect(Buffer.from(await saved.arrayBuffer()).equals(bytes)).toBe(true)
     // Replaying the same path for another record must neither overwrite nor delete it.
     const [otherImageId] = await reserved('bean_images')
     await expect(upload(path, otherImageId)).rejects.toThrow()

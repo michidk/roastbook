@@ -10,12 +10,10 @@ import {
 } from '@/journal/domain/media-lifecycle'
 import { journalRead, journalWrite } from '@/journal/function'
 import { db, runJournalMutations } from '@/journal/platform/database'
-import { decodeBase64 } from '@/lib/base64'
 import { parseEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
 import {
   entityImageIdSchema,
   thumbnailImageIdSchema,
-  uploadEntityImageBase64Schema,
 } from '@/lib/server-validation'
 
 export type EntityType =
@@ -27,23 +25,15 @@ export type EntityType =
 export const uploadEntityImage = journalWrite('images/uploadEntityImage')
   .validator(parseEntityImageUploadFormData)
   .handler(async ({ data }) => {
+    const bytes = async (file: File) => new Uint8Array(await file.arrayBuffer())
     return storeEntityImage({
       ...data,
-      binaryData: new Uint8Array(await data.file.arrayBuffer()),
+      binaryData: await bytes(data.file),
+      sizes: data.sizes && {
+        thumbnail: await bytes(data.sizes.thumbnail),
+        small: await bytes(data.sizes.small),
+      },
     })
-  })
-
-export const uploadEntityImageBase64 = journalWrite(
-  'images/uploadEntityImageBase64',
-)
-  .validator(uploadEntityImageBase64Schema)
-  .handler(async ({ data }) => {
-    const binaryData = decodeBase64(data.fileBase64)
-    if (binaryData.byteLength !== data.sizeBytes) {
-      throw new Error('Image size does not match the uploaded data')
-    }
-
-    return storeEntityImage({ ...data, binaryData })
   })
 
 export const setImageAsThumbnail = journalWrite('images/setImageAsThumbnail')

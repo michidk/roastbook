@@ -1,6 +1,7 @@
 // Browser platform: the browser decodes and encodes pictures with the same
 // limits and output sizes as the server.
-import { resizeBrowserImage } from '@/lib/client/image-compression'
+import { encodePicture } from '@/lib/client/image-compression'
+import type { PictureSize } from '@/lib/picture-sizes'
 import { MAX_IMAGE_BYTES } from '@/lib/server-validation'
 
 async function decode(bytes: Uint8Array, type?: string) {
@@ -16,7 +17,7 @@ async function decode(bytes: Uint8Array, type?: string) {
 export async function validateImageBuffer(
   bytes: Uint8Array,
   mimeType: string,
-): Promise<void> {
+): Promise<{ width: number; height: number }> {
   if (bytes.byteLength === 0 || bytes.byteLength > MAX_IMAGE_BYTES)
     throw new Error('The image must be smaller than 10 MB')
   const bitmap = await decode(bytes, mimeType)
@@ -27,22 +28,23 @@ export async function validateImageBuffer(
       bitmap.width * bitmap.height > 50_000_000
     )
       throw new Error('The image dimensions are unsupported')
+    return { width: bitmap.width, height: bitmap.height }
   } finally {
     bitmap.close()
   }
 }
 
-async function resize(bytes: Uint8Array, width: number, quality: number) {
+async function resize(bytes: Uint8Array, size: PictureSize) {
   const bitmap = await decode(bytes)
   try {
-    const blob = await resizeBrowserImage(bitmap, width, quality)
+    const blob = await encodePicture(bitmap, size)
     return new Uint8Array(await blob.arrayBuffer())
   } finally {
     bitmap.close()
   }
 }
 
-export const createStoredImage = (bytes: Uint8Array) => resize(bytes, 1600, 0.8)
-export const createThumbnail = (bytes: Uint8Array) => resize(bytes, 640, 0.78)
+export const createStoredImage = (bytes: Uint8Array) => resize(bytes, 'stored')
+export const createThumbnail = (bytes: Uint8Array) => resize(bytes, 'thumbnail')
 export const createSmallThumbnail = (bytes: Uint8Array) =>
-  resize(bytes, 128, 0.72)
+  resize(bytes, 'small')

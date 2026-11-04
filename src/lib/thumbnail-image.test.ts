@@ -24,8 +24,8 @@ describe('createSmallThumbnail', () => {
     const metadata = await sharp(result).metadata()
 
     expect(metadata.format).toBe('webp')
-    expect(metadata.width).toBe(128)
-    expect(metadata.height).toBe(96)
+    expect(metadata.width).toBe(256)
+    expect(metadata.height).toBe(192)
   })
 })
 
@@ -42,9 +42,10 @@ describe('validateImageBuffer', () => {
       .png()
       .toBuffer()
 
-    await expect(
-      validateImageBuffer(image, 'image/png'),
-    ).resolves.toBeUndefined()
+    await expect(validateImageBuffer(image, 'image/png')).resolves.toEqual({
+      width: 2,
+      height: 2,
+    })
   })
 
   test('rejects mismatched MIME types and non-image data', async () => {
@@ -108,8 +109,8 @@ describe('createStoredImage', () => {
     const metadata = await sharp(result).metadata()
 
     expect(metadata.format).toBe('webp')
-    expect(metadata.width).toBe(1_201)
-    expect(metadata.height).toBe(1_600)
+    expect(metadata.width).toBe(1_538)
+    expect(metadata.height).toBe(2_048)
     expect(metadata.orientation).toBeUndefined()
     expect(result.byteLength).toBeLessThan(image.byteLength)
   })

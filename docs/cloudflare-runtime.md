@@ -95,8 +95,9 @@ for the outbound guarantee.
 
 The Images binding rejects SVGs, mismatched MIME types, files over 10 MiB,
 dimensions over 12,000 pixels and images over 50 million pixels. It produces
-WebP full and thumbnail images (three transformations per picture) and JPEG
-inputs for AI. All outputs are prepared before storage; their actual sizes count
+the WebP sizes only for pictures the browser could not read (three
+transformations each; browser-encoded pictures need none) and JPEG inputs for
+AI. All outputs are prepared before storage; their actual sizes count
 toward the journal allowance, checked with the per-item count by a conditional
 INSERT in the same batch, so concurrent uploads cannot exceed either limit. If
 Images transformations are unavailable, uploads fail without storing originals

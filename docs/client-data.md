@@ -33,7 +33,9 @@ client build by `scripts/vite-journal-platform.ts` (the demo build also selects
   the browser, a PGlite transaction as the owner with the same role and RLS.
 - `storage`: disk, S3 or R2; in the browser, picture bytes in the local
   database, in the record's transaction.
-- `images`: sharp; in the browser, canvas with the same sizes and limits.
+- `images`: sharp or Cloudflare Images; in the browser, canvas. Sizes come from
+  `src/lib/picture-sizes.ts`. Pictures the browser encoded arrive with their
+  thumbnails and are only checked, never encoded again.
 - `config`: environment; in the browser, cached server limits or demo defaults.
 - `clock`: `journalNow`, `journalUuid` and schema timestamp defaults. Never use
   `new Date()` or `crypto.randomUUID()` in journal code; browser values are

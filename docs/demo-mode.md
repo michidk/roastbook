@@ -27,8 +27,8 @@ the standard edition selects a shared server journal; it never enables the demo.
 
 ## Pictures
 
-Uploads use the normal image pipeline in the browser: WebP versions bounded to
-1600, 640, and 128 pixels, three pictures per item, up to 10 MiB per file and
+Uploads use the normal image pipeline in the browser (WebP at 2048, 800 and
+256 pixels), three pictures per item, up to 10 MiB per file and
 50 MiB in total (browser quota may be lower). Picture bytes are stored in the
 demo database and removed with their record or on reset.
 

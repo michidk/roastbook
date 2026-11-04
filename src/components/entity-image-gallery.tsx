@@ -118,6 +118,7 @@ export function EntityImageGallery({
               entityType,
               entityId,
               picture.file,
+              picture,
             ),
           })
           uploaded.push(picture)

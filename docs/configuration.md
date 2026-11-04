@@ -30,9 +30,12 @@ it as trusted executable configuration and never put private data in it.
 The image storage limit (`0` is unlimited) counts each stored picture and its
 thumbnails; existing pictures stay accessible when a limit is lowered. Uploads
 may contain up to 10 MiB of image data and 12,000 pixels per side (50 million
-total). The server
-stores a WebP of at most 1,600 pixels plus two thumbnails, discards the
-original, and strips EXIF metadata including GPS coordinates.
+total). Each picture is stored as WebP at most 2,048 pixels on its long edge,
+with 800- and 256-pixel thumbnails (`src/lib/picture-sizes.ts`); the original
+and its EXIF metadata, including GPS coordinates, are discarded. The browser
+encodes these once and the server checks and stores them unchanged; the
+server encodes only pictures the browser cannot read, such as HEIC outside
+Safari. Self-hosted servers cannot read HEIC.
 
 The demo edition is selected at build time and ignores server settings; see
 [Demo mode](demo-mode.md). Browsers keep a copy of each journal in PGlite and

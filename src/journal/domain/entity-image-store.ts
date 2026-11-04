@@ -12,7 +12,10 @@ import {
   measureLegacyImageStorage,
 } from '@/journal/domain/image-storage'
 import { cleanupUncommittedUpload } from '@/journal/domain/media-lifecycle'
-import { prepareStoredImage } from '@/journal/domain/stored-image'
+import {
+  type PreparedSizes,
+  prepareStoredImage,
+} from '@/journal/domain/stored-image'
 import type { EntityType } from '@/journal/images'
 import { journalNow } from '@/journal/platform/clock'
 import {
@@ -30,6 +33,8 @@ type EntityImageData = {
   filename: string
   mimeType: string
   binaryData: Uint8Array
+  /** Thumbnails the browser encoded with the stored picture. */
+  sizes?: PreparedSizes
 }
 
 export async function storeEntityImage(data: EntityImageData) {
@@ -61,6 +66,7 @@ export async function storeEntityImage(data: EntityImageData) {
     data.binaryData,
     data.mimeType,
     storagePath,
+    data.sizes,
   )
   if (
     policy.limitBytes !== null &&
