@@ -1,57 +1,46 @@
 import * as remote from '@/lib/server/settings'
-import { journalFunction } from '../journal-function'
-export const updateDefaultCurrency = journalFunction(
+import { journalWrite } from '../journal-function'
+export const updateDefaultCurrency = journalWrite(
   remote.updateDefaultCurrency,
   'settings/updateDefaultCurrency',
-  true,
 )
-export const updateBackgroundTextureEnabled = journalFunction(
+export const updateBackgroundTextureEnabled = journalWrite(
   remote.updateBackgroundTextureEnabled,
   'settings/updateBackgroundTextureEnabled',
-  true,
 )
-export const updateDateFormat = journalFunction(
+export const updateDateFormat = journalWrite(
   remote.updateDateFormat,
   'settings/updateDateFormat',
-  true,
 )
-export const updateNumberFormat = journalFunction(
+export const updateNumberFormat = journalWrite(
   remote.updateNumberFormat,
   'settings/updateNumberFormat',
-  true,
 )
-export const updateTimeZone = journalFunction(
+export const updateTimeZone = journalWrite(
   remote.updateTimeZone,
   'settings/updateTimeZone',
-  true,
 )
-export const updateDefaultListView = journalFunction(
+export const updateDefaultListView = journalWrite(
   remote.updateDefaultListView,
   'settings/updateDefaultListView',
-  true,
 )
-export const updateTasteProfileFields = journalFunction(
+export const updateTasteProfileFields = journalWrite(
   remote.updateTasteProfileFields,
   'settings/updateTasteProfileFields',
-  true,
 )
-export const updateDefaultMapLocation = journalFunction(
+export const updateDefaultMapLocation = journalWrite(
   remote.updateDefaultMapLocation,
   'settings/updateDefaultMapLocation',
-  true,
 )
-export const updateLightTheme = journalFunction(
+export const updateLightTheme = journalWrite(
   remote.updateLightTheme,
   'settings/updateLightTheme',
-  true,
 )
-export const updateDarkTheme = journalFunction(
+export const updateDarkTheme = journalWrite(
   remote.updateDarkTheme,
   'settings/updateDarkTheme',
-  true,
 )
-export const updateBackgroundGrainEnabled = journalFunction(
+export const updateBackgroundGrainEnabled = journalWrite(
   remote.updateBackgroundGrainEnabled,
   'settings/updateBackgroundGrainEnabled',
-  true,
 )

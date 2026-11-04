@@ -1,27 +1,22 @@
 import * as remote from '@/lib/server/drink-options'
-import { journalFunction } from '../journal-function'
-export const getDrinkConfiguration = journalFunction(
+import { journalRead, journalWrite } from '../journal-function'
+export const getDrinkConfiguration = journalRead(
   remote.getDrinkConfiguration,
   'drink-options/getDrinkConfiguration',
-  false,
 )
-export const saveDrinkType = journalFunction(
+export const saveDrinkType = journalWrite(
   remote.saveDrinkType,
   'drink-options/saveDrinkType',
-  true,
 )
-export const archiveDrinkType = journalFunction(
+export const archiveDrinkType = journalWrite(
   remote.archiveDrinkType,
   'drink-options/archiveDrinkType',
-  true,
 )
-export const createDrinkOptionValue = journalFunction(
+export const createDrinkOptionValue = journalWrite(
   remote.createDrinkOptionValue,
   'drink-options/createDrinkOptionValue',
-  true,
 )
-export const archiveDrinkOptionValue = journalFunction(
+export const archiveDrinkOptionValue = journalWrite(
   remote.archiveDrinkOptionValue,
   'drink-options/archiveDrinkOptionValue',
-  true,
 )

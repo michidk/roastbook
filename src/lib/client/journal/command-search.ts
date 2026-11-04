@@ -1,8 +1,7 @@
 import { searchCommandEntities as remote } from '@/lib/server/command-search'
-import { journalFunction } from '../journal-function'
+import { journalRead } from '../journal-function'
 
-export const searchCommandEntities = journalFunction(
+export const searchCommandEntities = journalRead(
   remote,
   'command-search/searchCommandEntities',
-  false,
 )

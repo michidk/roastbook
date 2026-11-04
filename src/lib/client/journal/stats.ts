@@ -1,17 +1,14 @@
 import * as remote from '@/lib/server/stats'
-import { journalFunction } from '../journal-function'
-export const getDashboardStats = journalFunction(
+import { journalRead } from '../journal-function'
+export const getDashboardStats = journalRead(
   remote.getDashboardStats,
   'stats/getDashboardStats',
-  false,
 )
-export const getRecentShots = journalFunction(
+export const getRecentShots = journalRead(
   remote.getRecentShots,
   'stats/getRecentShots',
-  false,
 )
-export const getDetailedStats = journalFunction(
+export const getDetailedStats = journalRead(
   remote.getDetailedStats,
   'stats/getDetailedStats',
-  false,
 )

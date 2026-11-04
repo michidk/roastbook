@@ -1,27 +1,22 @@
 import * as remote from '@/lib/server/suggestions'
-import { journalFunction } from '../journal-function'
-export const getBeanSuggestions = journalFunction(
+import { journalRead } from '../journal-function'
+export const getBeanSuggestions = journalRead(
   remote.getBeanSuggestions,
   'suggestions/getBeanSuggestions',
-  false,
 )
-export const getBrewingMethodSuggestions = journalFunction(
+export const getBrewingMethodSuggestions = journalRead(
   remote.getBrewingMethodSuggestions,
   'suggestions/getBrewingMethodSuggestions',
-  false,
 )
-export const getDrinkTypeSuggestions = journalFunction(
+export const getDrinkTypeSuggestions = journalRead(
   remote.getDrinkTypeSuggestions,
   'suggestions/getDrinkTypeSuggestions',
-  false,
 )
-export const getTasteTagSuggestions = journalFunction(
+export const getTasteTagSuggestions = journalRead(
   remote.getTasteTagSuggestions,
   'suggestions/getTasteTagSuggestions',
-  false,
 )
-export const getLastBeansByBrewingMethod = journalFunction(
+export const getLastBeansByBrewingMethod = journalRead(
   remote.getLastBeansByBrewingMethod,
   'suggestions/getLastBeansByBrewingMethod',
-  false,
 )

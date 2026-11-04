@@ -1,53 +1,31 @@
 import * as remote from '@/lib/server/shots'
-import { journalFunction } from '../journal-function'
-export const getShotPage = journalFunction(
-  remote.getShotPage,
-  'shots/getShotPage',
-  false,
-)
-export const getBeanShotPage = journalFunction(
+import { journalRead, journalWrite } from '../journal-function'
+export const getShotPage = journalRead(remote.getShotPage, 'shots/getShotPage')
+export const getBeanShotPage = journalRead(
   remote.getBeanShotPage,
   'shots/getBeanShotPage',
-  false,
 )
-export const getGearShotPage = journalFunction(
+export const getGearShotPage = journalRead(
   remote.getGearShotPage,
   'shots/getGearShotPage',
-  false,
 )
-export const getBeanShotAnalytics = journalFunction(
+export const getBeanShotAnalytics = journalRead(
   remote.getBeanShotAnalytics,
   'shots/getBeanShotAnalytics',
-  false,
 )
-export const getShotGroups = journalFunction(
+export const getShotGroups = journalRead(
   remote.getShotGroups,
   'shots/getShotGroups',
-  false,
 )
-export const getShot = journalFunction(remote.getShot, 'shots/getShot', false)
-export const createShot = journalFunction(
-  remote.createShot,
-  'shots/createShot',
-  true,
-)
-export const createShotAndSaveRecipe = journalFunction(
+export const getShot = journalRead(remote.getShot, 'shots/getShot')
+export const createShot = journalWrite(remote.createShot, 'shots/createShot')
+export const createShotAndSaveRecipe = journalWrite(
   remote.createShotAndSaveRecipe,
   'shots/createShotAndSaveRecipe',
-  true,
 )
-export const updateShot = journalFunction(
-  remote.updateShot,
-  'shots/updateShot',
-  true,
-)
-export const deleteShot = journalFunction(
-  remote.deleteShot,
-  'shots/deleteShot',
-  true,
-)
-export const getLastShotForBeanAndMethod = journalFunction(
+export const updateShot = journalWrite(remote.updateShot, 'shots/updateShot')
+export const deleteShot = journalWrite(remote.deleteShot, 'shots/deleteShot')
+export const getLastShotForBeanAndMethod = journalRead(
   remote.getLastShotForBeanAndMethod,
   'shots/getLastShotForBeanAndMethod',
-  false,
 )

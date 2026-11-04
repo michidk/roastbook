@@ -1,27 +1,22 @@
 import * as remote from '@/lib/server/cafe-visits'
-import { journalFunction } from '../journal-function'
-export const getCafeVisitPage = journalFunction(
+import { journalRead, journalWrite } from '../journal-function'
+export const getCafeVisitPage = journalRead(
   remote.getCafeVisitPage,
   'cafe-visits/getCafeVisitPage',
-  false,
 )
-export const getCafeVisit = journalFunction(
+export const getCafeVisit = journalRead(
   remote.getCafeVisit,
   'cafe-visits/getCafeVisit',
-  false,
 )
-export const createCafeVisit = journalFunction(
+export const createCafeVisit = journalWrite(
   remote.createCafeVisit,
   'cafe-visits/createCafeVisit',
-  true,
 )
-export const updateCafeVisit = journalFunction(
+export const updateCafeVisit = journalWrite(
   remote.updateCafeVisit,
   'cafe-visits/updateCafeVisit',
-  true,
 )
-export const deleteCafeVisit = journalFunction(
+export const deleteCafeVisit = journalWrite(
   remote.deleteCafeVisit,
   'cafe-visits/deleteCafeVisit',
-  true,
 )

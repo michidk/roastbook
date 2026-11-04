@@ -8,8 +8,12 @@ import { z } from 'zod'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { openEditionJournal, resetEditionJournal } from '@/lib/edition-journal'
 import { getOfflineOwner, registerOwnerCleanup } from '@/lib/journal-owner'
-import { executeCommand } from '@/modules/journal/commands'
-import { readJournal } from '@/modules/journal/reads'
+import {
+  executeCommand,
+  type JournalCommandOperation,
+} from '@/modules/journal/commands'
+import { type JournalReadOperation, readJournal } from '@/modules/journal/reads'
+import { journalDates, storedValues } from '@/modules/journal/serialization'
 import { localAppSettings } from '@/modules/journal/settings'
 
 let collection: ReturnType<typeof journalCollection> | undefined
@@ -54,7 +58,10 @@ export async function getClientJournal() {
   }
   return journal
 }
-export async function readLocalJournal(operation: string, input?: unknown) {
+export async function readLocalJournal(
+  operation: JournalReadOperation | 'app-settings/getAppSettings',
+  input?: unknown,
+) {
   const journal = await getClientJournal()
   const state = await journal.read()
   if (operation === 'app-settings/getAppSettings') {
@@ -79,7 +86,10 @@ export async function readLocalJournal(operation: string, input?: unknown) {
     await query.cleanup()
   }
 }
-export async function writeLocalJournal(operation: string, input: unknown) {
+export async function writeLocalJournal(
+  operation: JournalCommandOperation,
+  input: unknown,
+) {
   if (!DEMO_MODE) {
     const { assertEarlierChangesResolved } = await import(
       '@/modules/offline/legacy-recovery'
@@ -89,12 +99,12 @@ export async function writeLocalJournal(operation: string, input: unknown) {
   const journal = await getClientJournal()
   const result = await journal.command(
     operation,
-    z.json().parse(JSON.parse(JSON.stringify(input ?? null))),
+    z.json().parse(storedValues(input ?? null)),
   )
   void synchronizeJournal().catch(() => undefined)
   if (operation.startsWith('settings/'))
     return readLocalJournal('app-settings/getAppSettings')
-  return reviveResult(result)
+  return journalDates(result)
 }
 export function subscribeJournalChanges(listener: () => void) {
   listeners.add(listener)
@@ -124,20 +134,6 @@ export function synchronizeJournal() {
       synchronizing = undefined
     })
   return synchronizing
-}
-function reviveResult(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(reviveResult)
-  if (!value || typeof value !== 'object') return value
-  return Object.fromEntries(
-    Object.entries(value).map(([key, child]) => [
-      key,
-      typeof child === 'string' &&
-      /(?:At|Date|From)$/.test(key) &&
-      /^\d{4}-\d{2}-\d{2}T/.test(child)
-        ? new Date(child)
-        : reviveResult(child),
-    ]),
-  )
 }
 registerOwnerCleanup(async () => {
   unsubscribe?.()

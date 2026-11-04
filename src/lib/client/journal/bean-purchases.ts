@@ -1,17 +1,14 @@
 import * as remote from '@/lib/server/bean-purchases'
-import { journalFunction } from '../journal-function'
-export const createBeanPurchase = journalFunction(
+import { journalWrite } from '../journal-function'
+export const createBeanPurchase = journalWrite(
   remote.createBeanPurchase,
   'bean-purchases/createBeanPurchase',
-  true,
 )
-export const setBeanPurchaseArchived = journalFunction(
+export const setBeanPurchaseArchived = journalWrite(
   remote.setBeanPurchaseArchived,
   'bean-purchases/setBeanPurchaseArchived',
-  true,
 )
-export const updateBeanPurchase = journalFunction(
+export const updateBeanPurchase = journalWrite(
   remote.updateBeanPurchase,
   'bean-purchases/updateBeanPurchase',
-  true,
 )

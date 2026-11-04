@@ -1,32 +1,12 @@
 import * as remote from '@/lib/server/gear'
 import { integrationCapability } from '../integration-capability'
-import { journalFunction } from '../journal-function'
-export const getGear = journalFunction(remote.getGear, 'gear/getGear', false)
-export const getGearPage = journalFunction(
-  remote.getGearPage,
-  'gear/getGearPage',
-  false,
-)
-export const getGearById = journalFunction(
-  remote.getGearById,
-  'gear/getGearById',
-  false,
-)
-export const createGear = journalFunction(
-  remote.createGear,
-  'gear/createGear',
-  true,
-)
-export const updateGear = journalFunction(
-  remote.updateGear,
-  'gear/updateGear',
-  true,
-)
-export const deleteGear = journalFunction(
-  remote.deleteGear,
-  'gear/deleteGear',
-  true,
-)
+import { journalRead, journalWrite } from '../journal-function'
+export const getGear = journalRead(remote.getGear, 'gear/getGear')
+export const getGearPage = journalRead(remote.getGearPage, 'gear/getGearPage')
+export const getGearById = journalRead(remote.getGearById, 'gear/getGearById')
+export const createGear = journalWrite(remote.createGear, 'gear/createGear')
+export const updateGear = journalWrite(remote.updateGear, 'gear/updateGear')
+export const deleteGear = journalWrite(remote.deleteGear, 'gear/deleteGear')
 export { researchMachineSettings } from '@/lib/server/gear'
 
 export const checkGearResearchEnabled = integrationCapability(() =>

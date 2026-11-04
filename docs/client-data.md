@@ -21,6 +21,8 @@ caching; it does not select another database or synchronization path.
   The demo build selects its own entry point through Vite aliases.
 - `src/lib/server/journal-snapshot.server.ts` authorizes and applies synchronized
   commands through Drizzle and the existing PostgreSQL/D1 journal boundary.
+  `journal-mutation-plan.server.ts` constructs its atomic SQL batch, including
+  relationship ordering, the revision assertion, receipt, and queued media cleanup.
 
 Shared packages cannot import application or server implementations. Product
 output cannot include demo modules or fixtures. Browser output cannot include
@@ -29,6 +31,12 @@ and emitted-module checks enforce these rules. Demo service aliases point to
 ordinary modules; they do not compile server implementations into the browser.
 
 ## Read and write behavior
+
+Client adapters declare `journalRead` or `journalWrite` with an operation name
+checked against the shared registry. Suggestions use the same read registry.
+JSON storage conversion and date restoration live in
+`src/modules/journal/serialization.ts`. The server transport remains responsible
+for authorization and delivery; it does not decide domain behavior.
 
 After a complete first download, local data is the source for lists, details,
 relations, pagination, search, counts, overview, statistics, suggestions, settings,

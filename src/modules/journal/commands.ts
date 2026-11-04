@@ -14,6 +14,7 @@ export const journalCommands = {
   ...brewCommands,
   ...settingsCommands,
 }
+export type JournalCommandOperation = keyof typeof journalCommands
 export function executeCommand(state: JournalState, command: JournalCommand) {
   return executeJournalCommand(state, command, journalCommands)
 }

@@ -1,37 +1,30 @@
 import * as remote from '@/lib/server/coffee-shops'
-import { journalFunction } from '../journal-function'
-export const getCoffeeShops = journalFunction(
+import { journalRead, journalWrite } from '../journal-function'
+export const getCoffeeShops = journalRead(
   remote.getCoffeeShops,
   'coffee-shops/getCoffeeShops',
-  false,
 )
-export const getCoffeeShopMapOverview = journalFunction(
+export const getCoffeeShopMapOverview = journalRead(
   remote.getCoffeeShopMapOverview,
   'coffee-shops/getCoffeeShopMapOverview',
-  false,
 )
-export const getCoffeeShopPage = journalFunction(
+export const getCoffeeShopPage = journalRead(
   remote.getCoffeeShopPage,
   'coffee-shops/getCoffeeShopPage',
-  false,
 )
-export const getCoffeeShop = journalFunction(
+export const getCoffeeShop = journalRead(
   remote.getCoffeeShop,
   'coffee-shops/getCoffeeShop',
-  false,
 )
-export const createCoffeeShop = journalFunction(
+export const createCoffeeShop = journalWrite(
   remote.createCoffeeShop,
   'coffee-shops/createCoffeeShop',
-  true,
 )
-export const updateCoffeeShop = journalFunction(
+export const updateCoffeeShop = journalWrite(
   remote.updateCoffeeShop,
   'coffee-shops/updateCoffeeShop',
-  true,
 )
-export const deleteCoffeeShop = journalFunction(
+export const deleteCoffeeShop = journalWrite(
   remote.deleteCoffeeShop,
   'coffee-shops/deleteCoffeeShop',
-  true,
 )

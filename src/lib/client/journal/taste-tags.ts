@@ -1,17 +1,14 @@
 import * as remote from '@/lib/server/taste-tags'
-import { journalFunction } from '../journal-function'
-export const getTasteTags = journalFunction(
+import { journalRead, journalWrite } from '../journal-function'
+export const getTasteTags = journalRead(
   remote.getTasteTags,
   'taste-tags/getTasteTags',
-  false,
 )
-export const createTasteTag = journalFunction(
+export const createTasteTag = journalWrite(
   remote.createTasteTag,
   'taste-tags/createTasteTag',
-  true,
 )
-export const deleteTasteTag = journalFunction(
+export const deleteTasteTag = journalWrite(
   remote.deleteTasteTag,
   'taste-tags/deleteTasteTag',
-  true,
 )

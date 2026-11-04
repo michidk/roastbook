@@ -1,32 +1,26 @@
 import * as remote from '@/lib/server/gear-sets'
-import { journalFunction } from '../journal-function'
-export const getGearSets = journalFunction(
+import { journalRead, journalWrite } from '../journal-function'
+export const getGearSets = journalRead(
   remote.getGearSets,
   'gear-sets/getGearSets',
-  false,
 )
-export const getGearSetPage = journalFunction(
+export const getGearSetPage = journalRead(
   remote.getGearSetPage,
   'gear-sets/getGearSetPage',
-  false,
 )
-export const getGearSetById = journalFunction(
+export const getGearSetById = journalRead(
   remote.getGearSetById,
   'gear-sets/getGearSetById',
-  false,
 )
-export const createGearSet = journalFunction(
+export const createGearSet = journalWrite(
   remote.createGearSet,
   'gear-sets/createGearSet',
-  true,
 )
-export const updateGearSet = journalFunction(
+export const updateGearSet = journalWrite(
   remote.updateGearSet,
   'gear-sets/updateGearSet',
-  true,
 )
-export const deleteGearSet = journalFunction(
+export const deleteGearSet = journalWrite(
   remote.deleteGearSet,
   'gear-sets/deleteGearSet',
-  true,
 )

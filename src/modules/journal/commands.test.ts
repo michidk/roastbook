@@ -28,6 +28,31 @@ function seed(): JournalState {
     policy: { maxImagesPerItem: 3, limitBytes: 50 * 1024 * 1024 },
   }
 }
+
+test('unknown queries and commands fail at the shared journal boundary', () => {
+  const state = seed()
+  const before = structuredClone(state)
+  for (const operation of [
+    'toString',
+    '__proto__',
+    'suggestions/unknown',
+    'beans/unknown',
+  ]) {
+    expect(() => readJournal(state, operation, undefined)).toThrow(
+      'unavailable',
+    )
+    expect(() =>
+      executeCommand(state, {
+        id: crypto.randomUUID(),
+        operation,
+        data: null,
+        allocations: {},
+        createdAt: new Date().toISOString(),
+      }),
+    ).toThrow('unavailable')
+  }
+  expect(state).toEqual(before)
+})
 test('local CRUD updates relationships, search, counts and complete statistics', () => {
   let state = seed()
   const call = (operation: string, data: unknown) => {

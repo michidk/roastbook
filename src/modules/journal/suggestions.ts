@@ -4,11 +4,17 @@ import {
 } from '@/lib/taste-tags'
 import type { JournalViews } from './views'
 
-export function journalSuggestions(view: JournalViews, operation: string) {
-  const shots = view
+type SuggestionContext = { view: JournalViews }
+
+function recentShots(view: JournalViews) {
+  return view
     .shots()
     .sort((a, b) => b.brewedAt.getTime() - a.brewedAt.getTime() || b.id - a.id)
-  if (operation === 'suggestions/getBeanSuggestions') {
+}
+
+export const journalSuggestions = {
+  'suggestions/getBeanSuggestions': ({ view }: SuggestionContext) => {
+    const shots = recentShots(view)
     const purchases = view.activePurchases()
     const recent = shots.flatMap((shot) => {
       const purchase = purchases.find(
@@ -35,8 +41,9 @@ export function journalSuggestions(view: JournalViews, operation: string) {
       ],
       (row) => row.purchaseId,
     )
-  }
-  if (operation === 'suggestions/getBrewingMethodSuggestions')
+  },
+  'suggestions/getBrewingMethodSuggestions': ({ view }: SuggestionContext) => {
+    const shots = recentShots(view)
     return unique(
       shots.flatMap((shot) =>
         shot.brewingMethod
@@ -52,7 +59,9 @@ export function journalSuggestions(view: JournalViews, operation: string) {
       ),
       (row) => row.id,
     ).slice(0, 5)
-  if (operation === 'suggestions/getDrinkTypeSuggestions')
+  },
+  'suggestions/getDrinkTypeSuggestions': ({ view }: SuggestionContext) => {
+    const shots = recentShots(view)
     return view
       .all('drinkTypes')
       .filter((row) => !row.isArchived)
@@ -64,7 +73,8 @@ export function journalSuggestions(view: JournalViews, operation: string) {
       .filter((row) => row.uses > 0)
       .sort((a, b) => b.uses - a.uses || a.name.localeCompare(b.name))
       .slice(0, 5)
-  if (operation === 'suggestions/getTasteTagSuggestions')
+  },
+  'suggestions/getTasteTagSuggestions': ({ view }: SuggestionContext) => {
     return view
       .all('tasteTags')
       .filter(
@@ -80,7 +90,9 @@ export function journalSuggestions(view: JournalViews, operation: string) {
       .filter((row) => row.uses > 0)
       .sort((a, b) => b.uses - a.uses)
       .slice(0, FREQUENT_TASTE_TAG_LIMIT)
-  if (operation === 'suggestions/getLastBeansByBrewingMethod')
+  },
+  'suggestions/getLastBeansByBrewingMethod': ({ view }: SuggestionContext) => {
+    const shots = recentShots(view)
     return unique(
       shots.filter(
         (row) =>
@@ -96,7 +108,7 @@ export function journalSuggestions(view: JournalViews, operation: string) {
       beanId: row.beanId,
       beanPurchaseId: row.beanPurchaseId,
     }))
-  throw new Error('This suggestion is unavailable')
+  },
 }
 function unique<T>(rows: T[], key: (row: T) => number) {
   const seen = new Set<number>()

@@ -6,6 +6,7 @@ import {
 } from '@roastbook/journal-domain/state'
 import { z } from 'zod'
 import { getSmallThumbnailPath, getThumbnailPath } from '@/lib/image-path'
+import { journalDates, storedValues } from './serialization'
 
 export type CommandContext = {
   tx: JournalTransaction
@@ -23,25 +24,6 @@ export function defineCommand<S extends z.ZodType, R>(
     run: (context: CommandContext, input: unknown) =>
       run(context, schema.parse(input)),
   }
-}
-
-export function journalDates(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(journalDates)
-  if (!value || typeof value !== 'object') return value
-  return Object.fromEntries(
-    Object.entries(value).map(([key, child]) => [
-      key,
-      typeof child === 'string' &&
-      /(?:At|Date|From)$/.test(key) &&
-      /^\d{4}-\d{2}-\d{2}T/.test(child)
-        ? new Date(child)
-        : journalDates(child),
-    ]),
-  )
-}
-
-export function storedValues(value: unknown): unknown {
-  return value === undefined ? undefined : JSON.parse(JSON.stringify(value))
 }
 
 export function replaceLinks<T extends JournalTable>(
@@ -79,7 +61,9 @@ export function executeJournalCommand(
     { run: (context: CommandContext, input: unknown) => unknown }
   >,
 ) {
-  const operation = commands[command.operation]
+  const operation = Object.hasOwn(commands, command.operation)
+    ? commands[command.operation]
+    : undefined
   if (!operation)
     throw new Error('This operation is unavailable in the local journal')
   const offsets = new Map<JournalTable, number>()

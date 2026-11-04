@@ -122,6 +122,7 @@ const recipeListSchema = listSchema.extend({
 })
 
 export const journalReads = {
+  ...journalSuggestions,
   'beans/getBeans': read(none, ({ view }) =>
     sort(view.beans(), (row) => row.createdAt, 'desc'),
   ),
@@ -649,17 +650,22 @@ function sortPlaces<
       a.name.localeCompare(b.name),
   )
 }
+export type JournalReadOperation = keyof typeof journalReads
+const readOperations: Readonly<
+  Record<string, (context: ReadContext, input: unknown) => unknown>
+> = journalReads
+
 export function readJournal(
   state: JournalState,
   operation: string,
   input: unknown,
   now = new Date(),
 ) {
-  if (operation.startsWith('suggestions/'))
-    return journalSuggestions(new JournalViews(state.tables), operation)
-  if (!(operation in journalReads))
+  const readOperation = Object.hasOwn(readOperations, operation)
+    ? readOperations[operation]
+    : undefined
+  if (!readOperation)
     throw new Error('This query is unavailable in the local journal')
-  const readOperation = Reflect.get(journalReads, operation)
   return readOperation(
     { view: new JournalViews(state.tables), state, now },
     input,

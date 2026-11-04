@@ -236,7 +236,7 @@ service worker after a build. The demo disables PWA installation and server
 synchronization. Its editable journal and pictures persist in isolated browser
 storage. Run `bun run dev:demo`
 to prepare its sample JSON, or `bun run build:demo` for production.
-The compiled-worker behavioral test covers local journal persistence, relations,
+Shared journal behavioral tests cover local persistence, relations,
 reset, visitor isolation, and integration rejection. See
 [Browser-local demo](demo-mode.md). Validate its PWA restrictions with
 `bun run scripts/check-pwa.ts --demo .vercel/output/static`.

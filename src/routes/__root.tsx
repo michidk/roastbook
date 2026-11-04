@@ -52,7 +52,9 @@ import {
 import { cn } from '@/lib/utils'
 
 export const Route = createRootRoute({
-  ssr: false,
+  ssr: ({ location }) =>
+    !DEMO_MODE &&
+    (location.pathname === '/login' || location.pathname === '/oauth/consent'),
   beforeLoad: ({ location }) => {
     if (
       DEMO_MODE &&

@@ -4,7 +4,7 @@ import { journalImageDigest } from '@/lib/journal-image-digest'
 import * as remote from '@/lib/server/images'
 import { uploadEntityImageBase64Schema } from '@/lib/server-validation'
 import { compressJournalImage } from '../image-compression'
-import { journalFunction } from '../journal-function'
+import { journalWrite } from '../journal-function'
 import { getClientJournal, writeLocalJournal } from '../local-journal'
 
 export type { EntityType } from '@/lib/server/images'
@@ -47,15 +47,13 @@ export const uploadEntityImageBase64 = createIsomorphicFn()
       return uploadEntityImage({ data: form })
     },
   )
-export const deleteEntityImage = journalFunction(
+export const deleteEntityImage = journalWrite(
   remote.deleteEntityImage,
   'images/deleteEntityImage',
-  true,
 )
-export const setImageAsThumbnail = journalFunction(
+export const setImageAsThumbnail = journalWrite(
   remote.setImageAsThumbnail,
   'images/setImageAsThumbnail',
-  true,
 )
 export const getImageUploadPolicy = createIsomorphicFn()
   .server(remote.getImageUploadPolicy)

@@ -1,35 +1,26 @@
 import * as remote from '@/lib/server/roasters'
 import { integrationCapability } from '../integration-capability'
-import { journalFunction } from '../journal-function'
-export const getRoasters = journalFunction(
+import { journalRead, journalWrite } from '../journal-function'
+export const getRoasters = journalRead(
   remote.getRoasters,
   'roasters/getRoasters',
-  false,
 )
-export const getRoasterPage = journalFunction(
+export const getRoasterPage = journalRead(
   remote.getRoasterPage,
   'roasters/getRoasterPage',
-  false,
 )
-export const getRoaster = journalFunction(
-  remote.getRoaster,
-  'roasters/getRoaster',
-  false,
-)
-export const createRoaster = journalFunction(
+export const getRoaster = journalRead(remote.getRoaster, 'roasters/getRoaster')
+export const createRoaster = journalWrite(
   remote.createRoaster,
   'roasters/createRoaster',
-  true,
 )
-export const updateRoaster = journalFunction(
+export const updateRoaster = journalWrite(
   remote.updateRoaster,
   'roasters/updateRoaster',
-  true,
 )
-export const deleteRoaster = journalFunction(
+export const deleteRoaster = journalWrite(
   remote.deleteRoaster,
   'roasters/deleteRoaster',
-  true,
 )
 export { researchRoasterInfo } from '@/lib/server/roasters'
 

@@ -1,42 +1,28 @@
 import * as remote from '@/lib/server/recipes'
-import { journalFunction } from '../journal-function'
-export const getRecipes = journalFunction(
-  remote.getRecipes,
-  'recipes/getRecipes',
-  false,
-)
-export const getRecipeOptions = journalFunction(
+import { journalRead, journalWrite } from '../journal-function'
+export const getRecipes = journalRead(remote.getRecipes, 'recipes/getRecipes')
+export const getRecipeOptions = journalRead(
   remote.getRecipeOptions,
   'recipes/getRecipeOptions',
-  false,
 )
-export const getRecipePage = journalFunction(
+export const getRecipePage = journalRead(
   remote.getRecipePage,
   'recipes/getRecipePage',
-  false,
 )
-export const getRecipe = journalFunction(
-  remote.getRecipe,
-  'recipes/getRecipe',
-  false,
-)
-export const updateRecipe = journalFunction(
+export const getRecipe = journalRead(remote.getRecipe, 'recipes/getRecipe')
+export const updateRecipe = journalWrite(
   remote.updateRecipe,
   'recipes/updateRecipe',
-  true,
 )
-export const createRecipe = journalFunction(
+export const createRecipe = journalWrite(
   remote.createRecipe,
   'recipes/createRecipe',
-  true,
 )
-export const saveShotAsRecipe = journalFunction(
+export const saveShotAsRecipe = journalWrite(
   remote.saveShotAsRecipe,
   'recipes/saveShotAsRecipe',
-  true,
 )
-export const deleteRecipe = journalFunction(
+export const deleteRecipe = journalWrite(
   remote.deleteRecipe,
   'recipes/deleteRecipe',
-  true,
 )

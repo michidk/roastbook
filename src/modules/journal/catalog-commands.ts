@@ -26,7 +26,6 @@ import {
   type CommandContext,
   defineCommand,
   replaceLinks,
-  storedValues,
 } from './command-context'
 import {
   drinkTypeWriteSchema,
@@ -37,6 +36,7 @@ import { gearCreateSchema, gearUpdateSchema } from './gear-input'
 import { syncLocalGearProperties } from './gear-properties'
 import { gearSetUpdateSchema, gearSetWriteSchema } from './gear-sets-input'
 import { roasterCreateSchema, roasterUpdateSchema } from './roasters-input'
+import { storedValues } from './serialization'
 
 function saveMethod(
   { tx }: CommandContext,

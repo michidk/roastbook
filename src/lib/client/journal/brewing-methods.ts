@@ -1,32 +1,26 @@
 import * as remote from '@/lib/server/brewing-methods'
-import { journalFunction } from '../journal-function'
-export const getBrewingMethods = journalFunction(
+import { journalRead, journalWrite } from '../journal-function'
+export const getBrewingMethods = journalRead(
   remote.getBrewingMethods,
   'brewing-methods/getBrewingMethods',
-  false,
 )
-export const getBrewingMethodPage = journalFunction(
+export const getBrewingMethodPage = journalRead(
   remote.getBrewingMethodPage,
   'brewing-methods/getBrewingMethodPage',
-  false,
 )
-export const getBrewingMethod = journalFunction(
+export const getBrewingMethod = journalRead(
   remote.getBrewingMethod,
   'brewing-methods/getBrewingMethod',
-  false,
 )
-export const createBrewingMethod = journalFunction(
+export const createBrewingMethod = journalWrite(
   remote.createBrewingMethod,
   'brewing-methods/createBrewingMethod',
-  true,
 )
-export const updateBrewingMethod = journalFunction(
+export const updateBrewingMethod = journalWrite(
   remote.updateBrewingMethod,
   'brewing-methods/updateBrewingMethod',
-  true,
 )
-export const deleteBrewingMethod = journalFunction(
+export const deleteBrewingMethod = journalWrite(
   remote.deleteBrewingMethod,
   'brewing-methods/deleteBrewingMethod',
-  true,
 )

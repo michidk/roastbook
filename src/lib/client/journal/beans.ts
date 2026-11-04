@@ -1,42 +1,23 @@
 import * as remote from '@/lib/server/beans'
 import { integrationCapability } from '../integration-capability'
-import { journalFunction } from '../journal-function'
-export const getBeans = journalFunction(
-  remote.getBeans,
-  'beans/getBeans',
-  false,
-)
-export const getBeanCollection = journalFunction(
+import { journalRead, journalWrite } from '../journal-function'
+export const getBeans = journalRead(remote.getBeans, 'beans/getBeans')
+export const getBeanCollection = journalRead(
   remote.getBeanCollection,
   'beans/getBeanCollection',
-  false,
 )
-export const getBean = journalFunction(remote.getBean, 'beans/getBean', false)
-export const getActiveBeans = journalFunction(
+export const getBean = journalRead(remote.getBean, 'beans/getBean')
+export const getActiveBeans = journalRead(
   remote.getActiveBeans,
   'beans/getActiveBeans',
-  false,
 )
-export const getActiveBeanPurchases = journalFunction(
+export const getActiveBeanPurchases = journalRead(
   remote.getActiveBeanPurchases,
   'beans/getActiveBeanPurchases',
-  false,
 )
-export const createBean = journalFunction(
-  remote.createBean,
-  'beans/createBean',
-  true,
-)
-export const updateBean = journalFunction(
-  remote.updateBean,
-  'beans/updateBean',
-  true,
-)
-export const deleteBean = journalFunction(
-  remote.deleteBean,
-  'beans/deleteBean',
-  true,
-)
+export const createBean = journalWrite(remote.createBean, 'beans/createBean')
+export const updateBean = journalWrite(remote.updateBean, 'beans/updateBean')
+export const deleteBean = journalWrite(remote.deleteBean, 'beans/deleteBean')
 export {
   extractBeanInfo,
   researchBeanInfo,

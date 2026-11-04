@@ -1,7 +1,6 @@
 import * as remote from '@/lib/server/app-settings'
-import { journalFunction } from '../journal-function'
-export const getAppSettings = journalFunction(
+import { journalRead } from '../journal-function'
+export const getAppSettings = journalRead(
   remote.getAppSettings,
   'app-settings/getAppSettings',
-  false,
 )
