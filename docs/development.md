@@ -187,9 +187,12 @@ bun run check:client-assets .vercel/output/static
 
 ## Maintenance scripts
 
-- `bun run sync:ai-pricing` refreshes the committed AI pricing snapshot from
-  the packaged models.dev catalog. The application reads that snapshot at
-  runtime, so deployments do not depend on a live pricing request.
+- AI pricing is generated at build time from the packaged models.dev catalog
+  (`scripts/ai-pricing.ts`), so deployments do not depend on a live pricing
+  request. Vite and Bun (through `bunfig.toml` preload) both provide it as
+  `virtual:roastbook/ai-model-pricing`. Updating `@opencode-ai/models` refreshes
+  rates. A supported model missing from that catalog fails the build unless
+  `scripts/ai-pricing.fallbacks.json` has a reviewed rate for it.
 - `bun run storage:backfill-thumbnails` (`scripts/backfill-thumbnails.ts`) is a
   one-shot backfill that generates missing standard and small thumbnails for
   existing images

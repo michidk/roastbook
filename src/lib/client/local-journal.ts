@@ -29,14 +29,13 @@ export async function getClientJournal() {
     unsubscribe?.()
     active = journal
     collection = journalCollection(journal)
-    unsubscribe = journal.subscribe((state) => {
-      const live = new Set(Object.keys(state.media))
+    unsubscribe = journal.subscribeMedia((media) => {
       for (const [path, entry] of mediaUrls)
-        if (!live.has(path)) {
+        if (!Object.hasOwn(media, path)) {
           URL.revokeObjectURL(entry.url)
           mediaUrls.delete(path)
         }
-      for (const [path, file] of Object.entries(state.media))
+      for (const [path, file] of Object.entries(media))
         if (mediaUrls.get(path)?.data !== file.data) {
           const previous = mediaUrls.get(path)
           if (previous) URL.revokeObjectURL(previous.url)

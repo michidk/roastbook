@@ -6,9 +6,11 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact from '@vitejs/plugin-react'
 import { nitro } from 'nitro/vite'
 import { defineConfig } from 'vite'
+import { aiPricing } from './scripts/ai-pricing'
 import { demoServiceAliases } from './scripts/demo-aliases'
 import { demoAssets } from './scripts/vite-demo-assets'
 import { demoLocalPlugin } from './scripts/vite-demo-local'
+import { demoServices } from './scripts/vite-demo-services'
 import { devMigrations } from './scripts/vite-dev-migrations'
 import { journalBoundaries } from './scripts/vite-journal-boundaries'
 
@@ -218,6 +220,7 @@ const config = defineConfig({
     ],
   },
   plugins: [
+    aiPricing(),
     journalBoundaries(roastbookEdition === 'demo'),
     {
       name: 'roastbook-schema-declarations',
@@ -233,7 +236,9 @@ const config = defineConfig({
           return { code, moduleSideEffects: false }
       },
     },
-    ...(roastbookEdition === 'demo' ? [demoAssets(), demoLocalPlugin()] : []),
+    ...(roastbookEdition === 'demo'
+      ? [demoServices(), demoAssets(), demoLocalPlugin()]
+      : []),
     ...(!cloudflareRuntime
       ? [devtools(), ...(roastbookEdition === 'demo' ? [] : [devMigrations()])]
       : []),

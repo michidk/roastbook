@@ -27,7 +27,9 @@ try {
       journalTableNames.map(async (name) => [
         name,
         (await database.select().from(schema[name])).map(
-          ({ ownerId: _owner, ...row }) => row,
+          ({ ownerId: _owner, ...row }) =>
+            // Sample pictures are site assets, not the visitor's browser storage.
+            'storageBytes' in row ? { ...row, storageBytes: 0 } : row,
         ),
       ]),
     ),

@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test'
-import { OPENAI_CHAT_MODELS } from '@tanstack/ai-openai'
 import {
   MODEL_PRICING_SOURCE,
   MODEL_PRICING_VERSION,
   MODEL_TOKEN_RATES,
-} from '@/lib/ai-model-pricing'
+} from 'virtual:roastbook/ai-model-pricing'
+import { OPENAI_CHAT_MODELS } from '@tanstack/ai-openai'
 import { estimateTokenCost, estimateTokenCostUsd } from '@/lib/ai-pricing'
 
 describe('AI token cost estimates', () => {

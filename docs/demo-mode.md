@@ -34,8 +34,9 @@ use these operations too, with an authenticated synchronization adapter.
 See [Client journal architecture](client-data.md).
 
 The first visit downloads `/demo-local/journal.json` and inserts it only if no
-journal exists. RxDB stores journal tables, local image bytes, and settings in one
-atomic document in the isolated `roastbook-demo-journal` database. Another tab
+journal exists. RxDB stores journal tables and settings in one atomic document,
+and added image bytes in a separate collection, in the isolated
+`roastbook-demo-journal` database. Another tab
 seeding first wins; existing changes are never automatically reseeded. RxDB
 propagates committed document changes between tabs. Color-mode preferences use
 `roastbook-demo-preferences`, separate from standard preferences.
@@ -48,8 +49,8 @@ product account storage.
 
 Use a current browser over HTTPS or localhost with IndexedDB and browser image
 decoding/canvas support. Browser storage must be enabled and have free space.
-The journal currently saves an aggregate document and recomputes derived reads
-after changes. Large journals and many pictures increase memory and write cost.
+The journal currently saves its records in an aggregate document and recomputes
+derived reads after changes. Large journals increase memory and write cost.
 The demo is temporary, unbacked-up exploration data.
 
 ## Pictures and integrations
@@ -91,8 +92,10 @@ bun run check:client-assets .vercel/output/static
 
 The development command prepares the sample JSON before starting Vite. Restart
 after changing fixture generation or migrations. Production emits `.vercel/output`,
-including `/demo-local/journal.json` and `/media/*` fictional images. Demo service
-aliases select explicit modules that reject integration calls. The asset and
+including `/demo-local/journal.json` and `/media/*` fictional images. The demo build
+replaces server-function modules with generated exports that reject integration
+calls (`scripts/vite-demo-services.ts`); a few aliases cover HTTP handlers and
+the auth client. The asset and
 module checks reject browser server code and SQL engines, and product builds
 reject demo modules and fixtures. `scripts/demo-local.test.ts` exercises generated
 fixtures through shared journal commands without a runtime SQL engine.

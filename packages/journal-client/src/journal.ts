@@ -12,7 +12,12 @@ const documentSchema = z.strictObject({
   value: journalStateSchema,
 })
 type JournalDocument = z.infer<typeof documentSchema>
-type JournalDatabase = RxDatabase<{ journal: RxCollection<JournalDocument> }>
+type MediaDocument = { id: string; mimeType: string; data: string }
+type JournalDatabase = RxDatabase<{
+  journal: RxCollection<JournalDocument>
+  media: RxCollection<MediaDocument>
+}>
+export type JournalMedia = JournalState['media']
 const schema: RxJsonSchema<JournalDocument> = {
   version: 0,
   primaryKey: 'id',
@@ -24,13 +29,30 @@ const schema: RxJsonSchema<JournalDocument> = {
   required: ['id', 'value'],
   additionalProperties: false,
 }
+const mediaSchema: RxJsonSchema<MediaDocument> = {
+  version: 0,
+  primaryKey: 'id',
+  type: 'object',
+  properties: {
+    id: { type: 'string', maxLength: 500 },
+    mimeType: { type: 'string' },
+    data: { type: 'string' },
+  },
+  required: ['id', 'mimeType', 'data'],
+  additionalProperties: false,
+}
 export type JournalExecutor = (
   state: JournalState,
   command: JournalCommand,
 ) => { state: JournalState; result: unknown }
 export type JournalTransport = {
-  load(state?: JournalState): Promise<JournalState>
-  send(command: JournalCommand, revision: number): Promise<JournalState>
+  /** Resolves null when the server journal is unchanged since `state`. */
+  load(state?: JournalState): Promise<JournalState | null>
+  /** `state` is null when nothing else changed the server journal. */
+  send(
+    command: JournalCommand,
+    revision: number,
+  ): Promise<{ serverRevision: number; state: JournalState | null }>
 }
 export type JournalOptions = {
   name: string
@@ -39,7 +61,11 @@ export type JournalOptions = {
   transport?: JournalTransport
 }
 
-/** The journal, its images and its outbox are one atomic RxDB document. */
+/**
+ * The journal and its outbox are one atomic RxDB document. New image bytes are
+ * staged in that document's `media` and then moved to a separate collection, so
+ * ordinary changes do not copy every picture.
+ */
 export class ClientJournal {
   private synchronizing: Promise<void> | undefined
   private constructor(
@@ -70,7 +96,9 @@ export class ClientJournal {
             { cause: parsed.error },
           )
       }
-      return new ClientJournal(database, options)
+      const journal = new ClientJournal(database, options)
+      await journal.storeStagedMedia().catch(() => undefined)
+      return journal
     } catch (error) {
       await database.close()
       throw storageError(error)
@@ -91,6 +119,7 @@ export class ClientJournal {
           value: seed,
         }))
       else await database.journal.insert({ id: 'journal', value: seed })
+      await database.media.find().remove()
     } catch (error) {
       throw storageError(error)
     } finally {
@@ -105,6 +134,27 @@ export class ClientJournal {
         'The local journal is unavailable. Your saved data has not been reset.',
       )
     return journalStateSchema.parse(document.toJSON().value)
+  }
+
+  /** Stored and staged image bytes by storage path. */
+  subscribeMedia(listener: (media: JournalMedia) => void): () => void {
+    let staged: JournalMedia = {}
+    let stored: JournalMedia = {}
+    const emit = () => listener({ ...stored, ...staged })
+    const journal = this.subscribe((state) => {
+      staged = state.media
+      emit()
+    })
+    const media = this.database.media.find().$.subscribe((documents) => {
+      stored = Object.fromEntries(
+        documents.map(({ id, mimeType, data }) => [id, { mimeType, data }]),
+      )
+      emit()
+    })
+    return () => {
+      journal()
+      media.unsubscribe()
+    }
   }
 
   subscribe(listener: (state: JournalState) => void): () => void {
@@ -141,6 +191,8 @@ export class ClientJournal {
           : [],
       }
     })
+    // On failure the bytes stay staged and move after a later command.
+    await this.storeStagedMedia().catch(() => undefined)
     return result
   }
 
@@ -162,28 +214,31 @@ export class ClientJournal {
   private async flush(): Promise<void> {
     const transport = this.options.transport
     if (!transport) return
+    // Each write reports whether another device changed the journal, so a
+    // refresh after this device's own writes is a cheap revision check.
     for (;;) {
       const state = await this.read()
       const next = state.pending[0]
       if (!next) {
         const remote = await transport.load(state)
-        await this.change((current) =>
-          current.pending.length ||
-          current.revision !== state.revision ||
-          remote.serverRevision < current.serverRevision
-            ? current
-            : {
-                ...remote,
-                media: retainMedia(current, remote),
-                identifiers: mergeIdentifiers(current, remote),
-                revision: current.revision + 1,
-              },
-        )
+        if (remote)
+          await this.change((current) =>
+            current.pending.length ||
+            current.revision !== state.revision ||
+            remote.serverRevision < current.serverRevision
+              ? current
+              : {
+                  ...remote,
+                  media: retainMedia(current, remote),
+                  identifiers: mergeIdentifiers(current, remote),
+                  revision: current.revision + 1,
+                },
+          )
         return
       }
       if (next.status !== 'pending') return
       try {
-        const remote = await transport.send(next.command, state.serverRevision)
+        const reply = await transport.send(next.command, state.serverRevision)
         await this.change((current) => {
           if (
             !current.pending.some(
@@ -194,6 +249,15 @@ export class ClientJournal {
           const remaining = current.pending.filter(
             (entry) => entry.command.id !== next.command.id,
           )
+          const remote = reply.state
+          // Same base, same command: the local tables already equal the server's.
+          if (!remote)
+            return {
+              ...current,
+              serverRevision: reply.serverRevision,
+              pending: remaining,
+              revision: current.revision + 1,
+            }
           let rebased = {
             ...remote,
             media: retainMedia(current, remote),
@@ -259,7 +323,9 @@ export class ClientJournal {
       return
     }
     const before = await this.read()
-    const remote = await transport.load(before)
+    // Resolution needs the complete server journal, not a revision check.
+    const remote = await transport.load()
+    if (!remote) throw new Error('The server journal is unavailable')
     await this.change((current) => {
       if (current.revision !== before.revision)
         throw new Error(
@@ -302,6 +368,7 @@ export class ClientJournal {
       throw new Error('Product journals cannot be reset as demos')
     const seed = journalStateSchema.parse(await this.options.bootstrap())
     await this.change((state) => ({ ...seed, revision: state.revision + 1 }))
+    await this.database.media.find().remove()
   }
 
   async remove(): Promise<void> {
@@ -321,16 +388,41 @@ export class ClientJournal {
   ): Promise<void> {
     const document = await this.database.journal.findOne('journal').exec()
     if (!document) throw new Error('Local journal not found')
+    let removed: string[] = []
     try {
-      await document.incrementalModify((current) => ({
-        ...current,
-        value: journalStateSchema.parse(
-          update(journalStateSchema.parse(current.value)),
-        ),
-      }))
+      await document.incrementalModify((current) => {
+        const before = journalStateSchema.parse(current.value)
+        const after = journalStateSchema.parse(update(before))
+        const live = imagePaths(after)
+        removed = [...imagePaths(before)].filter((path) => !live.has(path))
+        return { ...current, value: after }
+      })
     } catch (error) {
       throw storageError(error)
     }
+    // Removing orphaned bytes is best effort; the journal change is committed.
+    if (removed.length)
+      await this.database.media.bulkRemove(removed).catch(() => undefined)
+  }
+
+  /** Move staged bytes out of the journal document. On failure they stay staged. */
+  private async storeStagedMedia(): Promise<void> {
+    const staged = (await this.read()).media
+    const paths = Object.keys(staged)
+    if (!paths.length) return
+    try {
+      await this.database.media.bulkUpsert(
+        Object.entries(staged).map(([id, file]) => ({ id, ...file })),
+      )
+    } catch (error) {
+      throw storageError(error)
+    }
+    await this.change((current) => ({
+      ...current,
+      media: Object.fromEntries(
+        Object.entries(current.media).filter(([path]) => !paths.includes(path)),
+      ),
+    }))
   }
 }
 
@@ -354,13 +446,10 @@ function mergeIdentifiers(
   return result
 }
 
-function retainMedia(
-  current: JournalState,
-  remote: JournalState,
-): JournalState['media'] {
-  const paths = new Set(
+function imagePaths(state: JournalState): Set<string> {
+  return new Set(
     getStoredImagePaths(
-      Object.values(remote.tables).flatMap((rows) =>
+      Object.values(state.tables).flatMap((rows) =>
         rows.flatMap((row) =>
           'storagePath' in row && typeof row.storagePath === 'string'
             ? [row.storagePath]
@@ -369,6 +458,14 @@ function retainMedia(
       ),
     ),
   )
+}
+
+/** Keep staged bytes that the incoming journal still references. */
+function retainMedia(
+  current: JournalState,
+  remote: JournalState,
+): JournalState['media'] {
+  const paths = imagePaths(remote)
   return Object.fromEntries(
     Object.entries({ ...current.media, ...remote.media }).filter(([path]) =>
       paths.has(path),
@@ -401,7 +498,10 @@ async function openDatabase(name: string): Promise<JournalDatabase> {
       multiInstance: true,
     })
     try {
-      await database.addCollections({ journal: { schema } })
+      await database.addCollections({
+        journal: { schema },
+        media: { schema: mediaSchema },
+      })
       return database
     } catch (error) {
       await database.close()

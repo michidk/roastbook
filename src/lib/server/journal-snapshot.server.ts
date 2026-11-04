@@ -31,19 +31,11 @@ import {
   drainMediaCleanupQueue,
 } from './media-lifecycle.server'
 
+/** Read-only. Writes create the owner's settings and revision rows first. */
 export async function loadJournalSnapshot(): Promise<JournalState> {
   if (DEMO_MODE) throw new Error('The demo journal is browser-only')
-  await measureLegacyImageStorage()
-  await db
-    .insert(schema.settings)
-    .values(journalInsertValues({ id: 1 }))
-    .onConflictDoNothing()
-  await db
-    .insert(schema.journalSyncRevisions)
-    .values(journalInsertValues({ value: 0 }))
-    .onConflictDoNothing()
   for (let attempt = 0; attempt < 4; attempt++) {
-    const before = await revision()
+    const before = await journalRevision()
     const tables = Object.fromEntries(
       await Promise.all(
         journalTableNames.map(async (name) => [
@@ -54,7 +46,7 @@ export async function loadJournalSnapshot(): Promise<JournalState> {
         ]),
       ),
     )
-    const after = await revision()
+    const after = await journalRevision()
     if (before === after) {
       const identity = getJournalContext()?.identity
       return journalStateSchema.parse({
@@ -74,23 +66,42 @@ export async function loadJournalSnapshot(): Promise<JournalState> {
   }
   throw new Error('The journal is changing. Try again in a moment.')
 }
-async function revision() {
-  const [row] = await db
-    .select()
-    .from(schema.journalSyncRevisions)
-    .where(owned(schema.journalSyncRevisions))
-  if (!row) throw new Error('Journal revision unavailable')
-  return row.value
-}
 
-export async function applyJournalCommand(
-  command: JournalCommand,
-  expectedRevision: number,
-) {
+/** Create the owner's journal rows and finish deferred storage work. POST only. */
+export async function prepareJournalWrite() {
   if (DEMO_MODE) throw new Error('Demo server writes are disabled')
   // Only drain jobs from earlier committed requests. Newly queued deletions
   // must survive the enclosing PostgreSQL transaction before removing bytes.
   await drainMediaCleanupQueue()
+  await measureLegacyImageStorage()
+  await db
+    .insert(schema.settings)
+    .values(journalInsertValues({ id: 1 }))
+    .onConflictDoNothing()
+  await db
+    .insert(schema.journalSyncRevisions)
+    .values(journalInsertValues({ value: 0 }))
+    .onConflictDoNothing()
+}
+
+/** A missing row means the owner has never written through sync. */
+export async function journalRevision() {
+  const [row] = await db
+    .select()
+    .from(schema.journalSyncRevisions)
+    .where(owned(schema.journalSyncRevisions))
+  return row?.value ?? 0
+}
+
+/**
+ * Replays a command on the latest server journal. Unrelated changes from other
+ * devices are merged; a command that no longer applies is a conflict.
+ */
+export async function applyJournalCommand(
+  command: JournalCommand,
+  expectedRevision: number,
+): Promise<JournalState> {
+  await prepareJournalWrite()
   if (await commandWasApplied(command.id)) return loadJournalSnapshot()
   if (command.operation === 'images/uploadEntityImage') {
     const image = localImageUploadSchema.parse(command.data)
@@ -98,12 +109,17 @@ export async function applyJournalCommand(
       throw new Error('Image data does not match its content digest')
   }
   const before = await loadJournalSnapshot()
-  if (before.serverRevision !== expectedRevision)
-    throw new Error(
-      'JOURNAL_CONFLICT: Your journal changed on another device. Keep these local changes and resolve the conflict before syncing.',
-    )
   const allocations = JSON.stringify(command.allocations)
-  const { state: after } = executeCommand(before, command)
+  let after: JournalState
+  try {
+    after = executeCommand(before, command).state
+  } catch (error) {
+    if (before.serverRevision === expectedRevision) throw error
+    throw new Error(
+      `JOURNAL_CONFLICT: ${error instanceof Error ? error.message : 'Your change no longer applies to the latest journal.'}`,
+      { cause: error },
+    )
+  }
   if (JSON.stringify(command.allocations) !== allocations)
     throw new Error('Incomplete journal identifier reservations')
   const mutations = planJournalMutations({
@@ -124,27 +140,16 @@ export async function applyJournalCommand(
     }
     await runJournalMutations(mutations)
   } catch (error) {
-    const completed = await commandWasApplied(command.id)
-    const snapshot = completed ? await loadJournalSnapshot() : undefined
-    const referenced = new Set(
-      Object.values(snapshot?.tables ?? {}).flatMap((rows) =>
-        rows.flatMap((row) =>
-          'storagePath' in row && typeof row.storagePath === 'string'
-            ? [row.storagePath]
-            : [],
-        ),
-      ),
-    )
+    if (await commandWasApplied(command.id)) return loadJournalSnapshot()
+    // Cleaning an original also removes its thumbnails.
     for (const path of uploaded.filter(
-      (path) =>
-        !path.includes('.thumb.') &&
-        !path.includes('.small.') &&
-        !referenced.has(path),
+      (path) => !path.includes('.thumb.') && !path.includes('.small.'),
     ))
       await cleanupUncommittedUpload(path)
-    if (!completed) throw error
+    throw error
   }
-  return loadJournalSnapshot()
+  // The planned SQL writes exactly these rows, so the database now matches them.
+  return { ...after, media: {}, serverRevision: before.serverRevision + 1 }
 }
 
 async function commandWasApplied(commandId: string) {

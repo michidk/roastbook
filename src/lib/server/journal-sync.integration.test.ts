@@ -20,6 +20,7 @@ import { localImageUploadSchema } from '@/modules/journal/images'
 import {
   applyJournalCommand,
   loadJournalSnapshot,
+  prepareJournalWrite,
 } from './journal-snapshot.server'
 import { drainMediaCleanupQueue } from './media-lifecycle.server'
 
@@ -63,11 +64,15 @@ suite('shared journal transport with real PostgreSQL and journal RLS', () => {
       .where(inArray(journalSyncRevisions.ownerId, owners))
     await getControlDb().delete(authUsers).where(inArray(authUsers.id, owners))
   })
-  test('commits related records once after a lost response, isolates owners and rejects stale writes', async () => {
-    const initial = await withJournal(first, loadJournalSnapshot)
+  test('commits related records once after a lost response, isolates owners, merges unrelated changes and rejects stale writes', async () => {
+    // Like the client, which reserves identifiers before its first download.
+    const initial = await withJournal(first, async () => {
+      await prepareJournalWrite()
+      return loadJournalSnapshot()
+    })
     const ids = await withJournal(first, async () => ({
-      beans: await allocateJournalIds(beans),
-      beanPurchases: await allocateJournalIds(beanPurchases),
+      beans: await allocateJournalIds(beans, 2),
+      beanPurchases: await allocateJournalIds(beanPurchases, 2),
     }))
     const command: JournalCommand = {
       id: crypto.randomUUID(),
@@ -85,6 +90,9 @@ suite('shared journal transport with real PostgreSQL and journal RLS', () => {
     expect(committed.tables.beanPurchases).toEqual(
       local.state.tables.beanPurchases,
     )
+    expect(committed.serverRevision).toBe(initial.serverRevision + 1)
+    // The returned journal is what a fresh read sees.
+    expect(committed).toEqual(await withJournal(first, loadJournalSnapshot))
     const repeated = await withJournal(first, () =>
       applyJournalCommand(command, initial.serverRevision),
     )
@@ -93,23 +101,69 @@ suite('shared journal transport with real PostgreSQL and journal RLS', () => {
     expect(
       (await withJournal(second, loadJournalSnapshot)).tables.beans,
     ).toEqual([])
-    const changed = {
+    const beanId = ids.beans[0] ?? 0
+    // An older base revision is merged when the command still applies.
+    const renamed = await withJournal(first, () =>
+      applyJournalCommand(
+        {
+          ...command,
+          id: crypto.randomUUID(),
+          operation: 'beans/updateBean',
+          data: { id: beanId, name: 'Renamed elsewhere' },
+        },
+        initial.serverRevision,
+      ),
+    )
+    expect(renamed.tables.beans[0]?.name).toBe('Renamed elsewhere')
+    expect(renamed.serverRevision).toBe(committed.serverRevision + 1)
+    // A command whose record was deleted on another device is a conflict.
+    const removedId = ids.beans[1] ?? 0
+    const created = await withJournal(first, () =>
+      applyJournalCommand(
+        {
+          ...command,
+          id: crypto.randomUUID(),
+          data: { name: 'Deleted elsewhere', weight: '250' },
+          allocations: {
+            beans: [removedId],
+            beanPurchases: [ids.beanPurchases[1] ?? 0],
+          },
+        },
+        renamed.serverRevision,
+      ),
+    )
+    await withJournal(first, () =>
+      applyJournalCommand(
+        {
+          ...command,
+          id: crypto.randomUUID(),
+          operation: 'beans/deleteBean',
+          data: removedId,
+          allocations: {},
+        },
+        created.serverRevision,
+      ),
+    )
+    const stale = {
       ...command,
       id: crypto.randomUUID(),
       operation: 'beans/updateBean',
-      data: { id: ids.beans[0] ?? 0, name: 'Conflict' },
+      data: { id: removedId, name: 'Conflict' },
+      allocations: {},
     }
     await expect(
       withJournal(first, () =>
-        applyJournalCommand(changed, initial.serverRevision),
+        applyJournalCommand(stale, created.serverRevision),
       ),
     ).rejects.toThrow('JOURNAL_CONFLICT')
     await expect(
-      withJournal(second, () => applyJournalCommand(changed, 0)),
+      withJournal(second, () => applyJournalCommand(stale, 0)),
     ).rejects.toThrow()
     expect(
-      (await withJournal(first, loadJournalSnapshot)).tables.beans[0]?.name,
-    ).toBe('Offline journal bean')
+      (await withJournal(first, loadJournalSnapshot)).tables.beans.map(
+        (bean) => bean.name,
+      ),
+    ).toEqual(['Renamed elsewhere'])
   })
   test('a failed relationship never persists a receipt or partial records', async () => {
     const before = await withJournal(first, loadJournalSnapshot)

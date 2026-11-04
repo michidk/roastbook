@@ -16,7 +16,7 @@ import {
 import * as schema from '@/db/schema'
 import { queueMediaCleanup } from './media-lifecycle.server'
 
-/** Plan one owner-scoped atomic batch, including its revision and replay receipt. */
+/** Plan one owner-scoped atomic batch that moves the revision from `before` to `before + 1`. */
 export function planJournalMutations({
   before,
   after,
@@ -80,13 +80,26 @@ export function planJournalMutations({
         deletedMedia.push(row.storagePath)
     }
   }
-  mutations.push(...queueMediaCleanup(deletedMedia), {
-    statement: db
-      .insert(schema.journalCommandReceipts)
-      .values(journalInsertValues({ commandId: commandId }))
-      .getSQL(),
-    expectedChanges: 1,
-  })
+  mutations.push(
+    ...queueMediaCleanup(deletedMedia),
+    {
+      statement: db
+        .insert(schema.journalCommandReceipts)
+        .values(journalInsertValues({ commandId: commandId }))
+        .getSQL(),
+      expectedChanges: 1,
+    },
+    {
+      // Row triggers bumped the revision inside this atomic batch. Settle it on
+      // a value the caller knows without another read.
+      statement: db
+        .update(schema.journalSyncRevisions)
+        .set({ value: before.serverRevision + 1 })
+        .where(owned(schema.journalSyncRevisions))
+        .getSQL(),
+      expectedChanges: 1,
+    },
+  )
   return mutations
 }
 

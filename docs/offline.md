@@ -34,11 +34,13 @@ retry. The server validates commands independently and applies them inside the
 existing authenticated journal boundary.
 
 Commands carry UUID idempotency keys and a base journal revision. Lost responses
-retry one logical write. Another device or integration changing the journal can
-cause a conflict. Your local journal stays intact until you choose a recovery
-action. Review changes lets you download a local copy, retry, explicitly apply
-your edits to the latest server revision, or discard pending edits and use the
-server journal. Signing out requires resolving pending work first.
+retry one logical write. Changes from another device or integration are merged
+when your command still applies to the latest journal. A command that no longer
+applies, such as an edit to a record deleted elsewhere, is a conflict. Your
+local journal stays intact until you choose a recovery action. Review changes
+lets you download a local copy, retry, explicitly apply your edits to the latest
+server revision, or discard pending edits and use the server journal. Signing
+out requires resolving pending work first.
 
 Earlier versions' pending brew/recipe operations and caches remain available.
 Resolve or sync that work in Pending changes before making new journal edits.
@@ -71,10 +73,12 @@ copy before destructive conflict recovery. An unsupported saved format reports
 an error without silently resetting it; use a compatible application version or
 contact support.
 
-The journal currently stores an aggregate document and recomputes reads when its
-revision changes. Large journals and many local images increase memory use and
-write cost. See [Client journal architecture](client-data.md) for the package,
-transaction, synchronization, and identifier contracts.
+The journal currently stores its records in an aggregate document and recomputes
+reads when its revision changes. Pictures are stored separately, but journals
+with many records still increase memory use and local write cost. Background
+refreshes download the journal only when it changed on the server. See [Client
+journal architecture](client-data.md) for the package, transaction,
+synchronization, and identifier contracts.
 
 ## Verification
 

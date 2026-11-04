@@ -14,6 +14,7 @@ import { readJournal } from '@/modules/journal/reads'
 import {
   applyJournalCommand,
   loadJournalSnapshot,
+  prepareJournalWrite,
 } from './journal-snapshot.server'
 import { shotListSchema } from './shot-list-contract.server'
 import {
@@ -41,7 +42,11 @@ suite('shared read contracts match PostgreSQL after local mutations', () => {
       emailVerified: true,
       journalInitializedAt: new Date(),
     })
-    state = await withJournal(identity, loadJournalSnapshot)
+    // Like the client, which reserves identifiers before its first download.
+    state = await withJournal(identity, async () => {
+      await prepareJournalWrite()
+      return loadJournalSnapshot()
+    })
     state.identifiers = {}
     await withJournal(identity, async () => {
       for (const name of [

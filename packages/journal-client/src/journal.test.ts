@@ -26,6 +26,11 @@ const execute: JournalOptions['execute'] = (state, command) => {
   const result = tx.insert('beans', { name: String(command.data) })
   return { state: { ...state, tables: tx.finish() }, result }
 }
+/** Mirrors the server: the journal is returned only when something else changed it. */
+const reply = (remote: JournalState, revision: number) => ({
+  serverRevision: remote.serverRevision,
+  state: remote.serverRevision === revision + 1 ? null : remote,
+})
 const options = (name: string): JournalOptions => ({
   name,
   bootstrap: async () => seed(),
@@ -203,7 +208,7 @@ test('a lost reply retries one logical command and preserves edits made during t
     ...options(name),
     transport: {
       load: async () => remote,
-      send: async (command) => {
+      send: async (command, revision) => {
         if (!receipts.has(command.id)) {
           remote = {
             ...execute(remote, command).state,
@@ -215,7 +220,7 @@ test('a lost reply retries one logical command and preserves edits made during t
           loseReply = false
           throw new TypeError('Reply lost')
         }
-        return remote
+        return reply(remote, revision)
       },
     },
   })
@@ -242,7 +247,10 @@ test('a remote refresh cannot overwrite a concurrent local commit', async () => 
   })
   const journal = await ClientJournal.open({
     ...options(`journal${crypto.randomUUID().replaceAll('-', '')}`),
-    transport: { load: () => response, send: async () => seed() },
+    transport: {
+      load: () => response,
+      send: async () => ({ serverRevision: 1, state: seed() }),
+    },
   })
   try {
     const refreshing = journal.synchronize()
@@ -353,14 +361,14 @@ test('concurrent sync requests share a single delivery without Web Locks', async
     ...options(`journal${crypto.randomUUID().replaceAll('-', '')}`),
     transport: {
       load: async () => remote,
-      send: async (command) => {
+      send: async (command, revision) => {
         sent++
         await new Promise((resolve) => setTimeout(resolve, 5))
         remote = {
           ...execute(remote, command).state,
           serverRevision: remote.serverRevision + 1,
         }
-        return remote
+        return reply(remote, revision)
       },
     },
   })
@@ -480,10 +488,147 @@ test('reset replaces added image bytes and journal data together', async () => {
   })
   try {
     await journal.command('beans/createBean', 'Local with image')
-    expect(Object.keys((await journal.read()).media)).toHaveLength(1)
-    await journal.reset()
+    // The bytes leave the journal document for the separate media collection.
     expect((await journal.read()).media).toEqual({})
+    await waitForMedia(journal, ['local.webp'])
+    await journal.reset()
+    await waitForMedia(journal, [])
     expect((await journal.read()).tables).toEqual(seed().tables)
+  } finally {
+    await journal.close()
+  }
+})
+
+function waitForMedia(journal: ClientJournal, paths: string[]) {
+  return new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      unsubscribe()
+      reject(new Error(`Media did not become ${paths.join(', ')}`))
+    }, 2000)
+    const unsubscribe = journal.subscribeMedia((media) => {
+      if (JSON.stringify(Object.keys(media).sort()) !== JSON.stringify(paths))
+        return
+      clearTimeout(timeout)
+      queueMicrotask(() => {
+        unsubscribe()
+        resolve()
+      })
+    })
+  })
+}
+
+test('deleting an image row removes its stored bytes, thumbnails included', async () => {
+  const path = 'journal/demo/1-a.webp'
+  const files = {
+    [path]: { mimeType: 'image/webp', data: 'YQ==' },
+    'journal/demo/1-a.thumb.webp': { mimeType: 'image/webp', data: 'Yg==' },
+    'journal/demo/1-a.small.webp': { mimeType: 'image/webp', data: 'Yw==' },
+  }
+  const journal = await ClientJournal.open({
+    ...options(`journal${crypto.randomUUID().replaceAll('-', '')}`),
+    execute: (state, command) => {
+      const tx = new JournalTransaction(state.tables)
+      if (command.data === 'add') {
+        const bean = tx.insert('beans', { name: 'Pictured' })
+        const purchase = tx.insert('beanPurchases', { beanId: bean.id })
+        tx.insert('beanImages', {
+          beanId: bean.id,
+          beanPurchaseId: purchase.id,
+          storagePath: path,
+          originalFilename: 'a.webp',
+          mimeType: 'image/webp',
+        })
+        return {
+          state: { ...state, tables: tx.finish(), media: files },
+          result: null,
+        }
+      }
+      for (const image of tx.rows('beanImages'))
+        tx.delete('beanImages', image.id)
+      return { state: { ...state, tables: tx.finish() }, result: null }
+    },
+  })
+  try {
+    await journal.command('images/upload', 'add')
+    await waitForMedia(journal, Object.keys(files).sort())
+    await journal.command('images/delete', 'remove')
+    await waitForMedia(journal, [])
+  } finally {
+    await journal.close()
+  }
+})
+
+test('acknowledged writes and unchanged refreshes never download the journal', async () => {
+  let remote = seed()
+  let downloads = 0
+  const journal = await ClientJournal.open({
+    ...options(`journal${crypto.randomUUID().replaceAll('-', '')}`),
+    transport: {
+      load: async (state) => {
+        if (state && state.serverRevision === remote.serverRevision) return null
+        downloads++
+        return remote
+      },
+      send: async (command, revision) => {
+        remote = {
+          ...execute(remote, command).state,
+          serverRevision: remote.serverRevision + 1,
+        }
+        return reply(remote, revision)
+      },
+    },
+  })
+  try {
+    await journal.command('beans/createBean', 'One')
+    await journal.command('beans/createBean', 'Two')
+    await journal.synchronize()
+    await journal.synchronize()
+    expect(downloads).toBe(0)
+    expect((await journal.read()).serverRevision).toBe(2)
+    expect((await journal.read()).tables.beans.map((bean) => bean.id)).toEqual(
+      remote.tables.beans.map((bean) => bean.id),
+    )
+  } finally {
+    await journal.close()
+  }
+})
+
+test('a write after another device changed the journal rebases onto the returned journal', async () => {
+  let remote = seed()
+  const journal = await ClientJournal.open({
+    ...options(`journal${crypto.randomUUID().replaceAll('-', '')}`),
+    transport: {
+      load: async () => remote,
+      send: async (command, revision) => {
+        remote = {
+          ...execute(remote, command).state,
+          serverRevision: remote.serverRevision + 1,
+        }
+        return reply(remote, revision)
+      },
+    },
+  })
+  try {
+    // Another device writes directly to the server.
+    remote = {
+      ...execute(remote, {
+        id: crypto.randomUUID(),
+        operation: 'beans/createBean',
+        data: 'Other device',
+        createdAt: new Date().toISOString(),
+        allocations: {},
+      }).state,
+      serverRevision: 1,
+    }
+    await journal.command('beans/createBean', 'This device')
+    await journal.synchronize()
+    const saved = await journal.read()
+    expect(saved.pending).toEqual([])
+    expect(saved.serverRevision).toBe(2)
+    expect(saved.tables.beans.map((bean) => bean.name).sort()).toEqual([
+      'Other device',
+      'This device',
+    ])
   } finally {
     await journal.close()
   }

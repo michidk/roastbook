@@ -31,15 +31,20 @@ export async function verifyJournalSync(bindings: CloudflareRuntimeBindings) {
     assert.deepEqual(saved.tables.beanPurchases, local.tables.beanPurchases)
     const replayed = await applyJournalCommand(command, before.serverRevision)
     assert.equal(replayed.serverRevision, saved.serverRevision)
+    assert.equal(saved.serverRevision, before.serverRevision + 1)
+    assert.deepEqual(await loadJournalSnapshot(), saved)
     const rename = {
       ...command,
       id: crypto.randomUUID(),
       operation: 'beans/updateBean',
       data: { id: allocations.beans[0] ?? 0, name: 'Renamed' },
     }
-    await assert.rejects(
-      () => applyJournalCommand(rename, before.serverRevision),
-      /JOURNAL_CONFLICT/,
+    // An older base revision still applies when nothing it touches changed.
+    const renamed = await applyJournalCommand(rename, before.serverRevision)
+    assert.equal(
+      renamed.tables.beans.find((bean) => bean.id === allocations.beans[0])
+        ?.name,
+      'Renamed',
     )
     const invalid = {
       ...rename,
@@ -47,9 +52,13 @@ export async function verifyJournalSync(bindings: CloudflareRuntimeBindings) {
       data: { ...rename.data, roasterId: 999999999 },
     }
     await assert.rejects(() =>
-      applyJournalCommand(invalid, saved.serverRevision),
+      applyJournalCommand(invalid, renamed.serverRevision),
     )
-    assert.deepEqual((await loadJournalSnapshot()).tables, saved.tables)
+    await assert.rejects(
+      () => applyJournalCommand(invalid, before.serverRevision),
+      /JOURNAL_CONFLICT/,
+    )
+    assert.deepEqual((await loadJournalSnapshot()).tables, renamed.tables)
     return { saved, rename }
   })
   const other = await second.run(loadJournalSnapshot)

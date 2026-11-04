@@ -9,6 +9,7 @@ import {
 } from '@roastbook/journal-domain/model'
 import type { JournalState } from '@roastbook/journal-domain/state'
 import { journalStateSchema } from '@roastbook/journal-domain/state'
+import { z } from 'zod'
 import { getOfflineOwner, registerOwnerCleanup } from '@/lib/journal-owner'
 import {
   getJournalSnapshot,
@@ -27,32 +28,37 @@ export function openEditionJournal(execute: JournalExecutor) {
         'The active account changed. Reopen the journal before syncing.',
       )
   }
+  // Reserve first: that POST also creates a new owner's journal rows.
   const snapshot = async (current?: JournalState) => {
     assertOwner()
-    const remote = journalStateSchema.parse(
-      await getJournalSnapshot({ headers }),
-    )
+    const identifiers = await reserveIdentifiers(owner, current)
     assertOwner()
-    const result = await withIdentifiers(remote, owner, current)
+    const remote = await getJournalSnapshot({
+      data: { since: current?.serverRevision ?? null },
+      headers,
+    })
     assertOwner()
-    return result
+    if (remote) return { ...journalStateSchema.parse(remote), identifiers }
+    return current && Object.keys(identifiers).length
+      ? { ...current, identifiers }
+      : null
   }
   opening ??= ClientJournal.open({
     name: `roastbook-journal-${Array.from(getOfflineOwner())
       .map((character) => character.codePointAt(0)?.toString(16))
       .join('_')}`,
-    bootstrap: () => snapshot(),
+    bootstrap: async () => journalStateSchema.parse(await snapshot()),
     execute,
     transport: {
       load: snapshot,
       async send(command, revision) {
         try {
           assertOwner()
-          const remote = journalStateSchema.parse(
+          const reply = sendReplySchema.parse(
             await sendJournalCommand({ data: { command, revision }, headers }),
           )
           assertOwner()
-          return remote
+          return reply
         } catch (error) {
           if (
             error instanceof Error &&
@@ -87,24 +93,27 @@ registerOwnerCleanup(async () => {
   await journal?.close()
 })
 
-async function withIdentifiers(
-  remote: JournalState,
+const sendReplySchema = z.object({
+  serverRevision: z.number().int().nonnegative(),
+  state: journalStateSchema.nullable(),
+})
+
+async function reserveIdentifiers(
   owner: string,
   current?: JournalState,
-): Promise<JournalState> {
+): Promise<Record<string, number[]>> {
   const missing = journalTableNames.filter(
     (name) =>
       name !== 'settings' &&
       journalTableMetadata[name].primaryKey === 'id' &&
       (current?.identifiers?.[name]?.length ?? 0) < 128,
   )
-  const reserved = missing.length
+  return missing.length
     ? await reserveJournalIdentifiers({
         data: missing,
         headers: { 'X-Roastbook-Owner': owner },
       })
     : {}
-  return { ...remote, identifiers: reserved }
 }
 
 export async function resetEditionJournal(): Promise<void> {
