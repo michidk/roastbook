@@ -21,6 +21,7 @@ import { InstallAppHint } from '@/components/install-app-hint'
 import { OfflineBanner } from '@/components/offline-banner'
 import { PwaManager } from '@/components/pwa-manager'
 import { RouteNotFound } from '@/components/route-not-found'
+import { AppPending } from '@/components/route-pending'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -152,16 +153,7 @@ export const Route = createRootRoute({
     ],
   }),
   component: RootComponent,
-  pendingComponent: () => (
-    <div
-      role="status"
-      className="flex min-h-dvh items-center justify-center p-6 text-center"
-    >
-      {DEMO_MODE
-        ? 'Opening your browser journal… Your saved changes stay in this browser.'
-        : 'Loading Roastbook…'}
-    </div>
-  ),
+  pendingComponent: AppPending,
   shellComponent: RootDocument,
   errorComponent: RootErrorComponent,
   notFoundComponent: () => <RouteNotFound />,

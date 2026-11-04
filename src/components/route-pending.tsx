@@ -96,3 +96,14 @@ export function DetailPending() {
     </Page>
   )
 }
+
+/** The app frame while the app and its journal open: navigation and a page. */
+export function AppPending() {
+  return (
+    <div role="status">
+      <span className="sr-only">Loading</span>
+      <div className="h-14 border-b border-border bg-card lg:h-[68px]" />
+      <RoutePending />
+    </div>
+  )
+}
