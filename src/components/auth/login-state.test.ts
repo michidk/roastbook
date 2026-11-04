@@ -20,10 +20,10 @@ describe('sign-in recovery', () => {
       const saved = serializeLoginDraft({
         kind,
         email: 'coffee@example.test',
-        code: '92741586',
+        code: '927415',
         sentAt: now - 30_000,
       })
-      expect(saved).not.toContain('92741586')
+      expect(saved).not.toContain('927415')
       expect(restoreLoginDraft(saved, now)).toEqual({
         kind: 'code',
         email: 'coffee@example.test',
@@ -71,7 +71,7 @@ describe('email sign-in links', () => {
     expect(readMagicLink('')).toEqual({ kind: 'none' })
     for (const hash of [
       '#email=coffee%40example.test',
-      '#email=invalid&code=01234567',
+      '#email=invalid&code=012345',
       '#email=coffee%40example.test&code=1234',
       '#sign-in=',
       '#sign-in=not-a-token',

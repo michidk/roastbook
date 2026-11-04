@@ -117,7 +117,9 @@ export function LoginForm() {
                 <p className="text-sm leading-relaxed text-muted-foreground">
                   Open the link in your email, or enter your code here.
                 </p>
-                <Label htmlFor="code">8-digit sign-in code</Label>
+                <Label htmlFor="code">
+                  {SIGN_IN_CODE_LENGTH}-digit sign-in code
+                </Label>
                 <InputOTP
                   ref={login.codeInput}
                   id="code"
@@ -137,7 +139,7 @@ export function LoginForm() {
                   containerClassName="w-full justify-center gap-2"
                 >
                   <InputOTPGroup aria-hidden="true">
-                    {[0, 1, 2, 3].map((index) => (
+                    {[0, 1, 2].map((index) => (
                       <InputOTPSlot
                         key={index}
                         index={index}
@@ -150,7 +152,7 @@ export function LoginForm() {
                     className="w-2 justify-center text-muted-foreground"
                   />
                   <InputOTPGroup aria-hidden="true">
-                    {[4, 5, 6, 7].map((index) => (
+                    {[3, 4, 5].map((index) => (
                       <InputOTPSlot
                         key={index}
                         index={index}
