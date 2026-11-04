@@ -59,8 +59,8 @@ describe('D1 journal schema', () => {
         expect(columns.ownerId?.hasDefault).toBe(false)
       }
     }
-    expect(ownedCount).toBe(50)
-    expect(sqliteTables.size).toBe(72)
+    expect(ownedCount).toBe(51)
+    expect(sqliteTables.size).toBe(73)
     expect(() =>
       sqlite.exec("insert into beans (name) values ('Ownerless')"),
     ).toThrow('Journal owner is unavailable')

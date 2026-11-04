@@ -1,13 +1,11 @@
 import { getTableColumns, getTableName, sql } from 'drizzle-orm'
-import { journalTables } from '@/journal/tables'
+import { journalTables, reservedIdTables } from '@/journal/tables'
 import { getStoredImagePaths } from '@/lib/image-path'
 import type { LocalJournal } from './client'
 import { forgetLocalMedia } from './media'
 
 const tablesByName = new Map(journalTables.map((t) => [getTableName(t), t]))
-export const serialTables = journalTables
-  .filter((table) => getTableColumns(table).id?.columnType.endsWith('Serial'))
-  .map((table) => getTableName(table))
+export const serialTables = reservedIdTables.map((table) => getTableName(table))
 const imageTables = [
   'bean_images',
   'gear_images',
@@ -16,13 +14,16 @@ const imageTables = [
   'cafe_visit_images',
 ]
 
-/** Replaces the owner's journal rows, keyed by table name. */
+/**
+ * Replaces the owner's journal rows, keyed by table name. Returns the last
+ * outbox entry the replaced rows do not include yet.
+ */
 export async function replaceJournalRows(
   journal: LocalJournal,
   tables: Record<string, readonly object[]>,
 ) {
   const owner = journal.options.identity().id
-  await journal.db.transaction(async (tx) => {
+  const pendingUpTo = await journal.db.transaction(async (tx) => {
     // The rows already satisfy every constraint; load them in any order.
     await tx.execute(sql`set local session_replication_role = replica`)
     for (const [name, table] of tablesByName) {
@@ -44,8 +45,13 @@ export async function replaceJournalRows(
       await tx.execute(
         sql`select setval(pg_get_serial_sequence(${name}, 'id'), coalesce((select max(id) from ${sql.identifier(name)}), 0) + 1, false)`,
       )
+    const last = await tx.execute<{ seq: number }>(
+      sql`select coalesce(max(seq), 0)::int as seq from roastbook_local.outbox`,
+    )
+    return Number(last.rows[0]?.seq ?? 0)
   })
   await collectMedia(journal)
+  return pendingUpTo
 }
 
 /** Removes stored pictures that no record references any more. */

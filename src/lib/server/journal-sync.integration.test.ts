@@ -5,7 +5,11 @@ import { getControlDb } from '@/db/connection.server'
 import { type JournalIdentity, withJournal } from '@/db/journal-context.server'
 import { authUsers, beans, journalCommandReceipts } from '@/db/schema'
 import { encodeInput } from '@/journal/codec'
-import { loadJournalRows, replayJournalWrite } from './journal-sync.server'
+import {
+  loadJournalRows,
+  replayJournalWrite,
+  reserveJournalIdentifiers,
+} from './journal-sync.server'
 
 const suite = process.env.TEST_DATABASE_URL ? describe : describe.skip
 const identity = (): JournalIdentity => ({
@@ -18,11 +22,10 @@ const identity = (): JournalIdentity => ({
 const first = identity()
 const second = identity()
 
-async function reserved(count: number) {
-  const rows = await getControlDb().execute<{ id: string }>(
-    `select nextval(pg_get_serial_sequence('beans', 'id'))::text as id from generate_series(1, ${count})` as never,
-  )
-  return rows.map((row) => Number(row.id))
+/** Identifiers the server reserves for this owner, as a browser would get them. */
+async function reserved(table: string) {
+  const ids = await withJournal(first, () => reserveJournalIdentifiers([table]))
+  return ids[table] ?? []
 }
 
 suite('journal sync replays browser writes on PostgreSQL', () => {
@@ -45,12 +48,8 @@ suite('journal sync replays browser writes on PostgreSQL', () => {
   })
 
   test('a recorded create keeps its identifiers, applies once and reports other changes', async () => {
-    const [beanId] = await reserved(1)
-    const [purchaseId] = await getControlDb()
-      .execute<{ id: string }>(
-        "select nextval(pg_get_serial_sequence('bean_purchases', 'id'))::text as id" as never,
-      )
-      .then((rows) => rows.map((row) => Number(row.id)))
+    const [beanId] = await reserved('beans')
+    const [purchaseId] = await reserved('bean_purchases')
     const write = {
       name: 'beans/createBean',
       input: await encodeInput({ name: 'Offline bean', weight: '250' }),
@@ -137,6 +136,28 @@ suite('journal sync replays browser writes on PostgreSQL', () => {
     ).rejects.toThrow()
   })
 
+  test('identifiers the server did not reserve for this owner never replay', async () => {
+    const [purchaseId] = await reserved('bean_purchases')
+    const [othersBean] = await withJournal(second, () =>
+      reserveJournalIdentifiers(['beans']),
+    ).then((ids) => ids.beans ?? [])
+    for (const beanId of [othersBean, 2_000_000_000])
+      await expect(
+        withJournal(first, () =>
+          replayJournalWrite({
+            name: 'beans/createBean',
+            input: { name: 'Unreserved' },
+            recorded: {
+              'id:beans': [beanId],
+              'id:bean_purchases': [purchaseId],
+            },
+            key: randomUUID(),
+            revision: 0,
+          }),
+        ),
+      ).rejects.toThrow('Invalid replayed identifier')
+  })
+
   test('unknown or read operations are never replayed', async () => {
     for (const name of ['beans/getBeans', 'nothing/here', '../../db/index'])
       await expect(
@@ -162,11 +183,7 @@ suite('journal sync replays browser writes on PostgreSQL', () => {
     const rows = await withJournal(first, () => loadJournalRows(null))
     const purchase = rows.tables?.bean_purchases?.[0]
     if (!purchase) throw new Error('Expected a bean purchase')
-    const [imageId] = await getControlDb()
-      .execute<{ id: string }>(
-        "select nextval(pg_get_serial_sequence('bean_images', 'id'))::text as id" as never,
-      )
-      .then((result) => result.map((row) => Number(row.id)))
+    const [imageId] = await reserved('bean_images')
     const path = `beans/${purchase.id}/${Date.now()}-${randomUUID()}.webp`
     const upload = (recordedPath: string) =>
       withJournal(first, () =>
@@ -199,7 +216,10 @@ suite('journal sync replays browser writes on PostgreSQL', () => {
     expect(
       stored.tables?.bean_images?.map((image) => image.storagePath),
     ).toEqual([path])
-    // Replaying the same path for another record must not overwrite it.
+    // Replaying the same path for another record must neither overwrite nor delete it.
     await expect(upload(path)).rejects.toThrow()
+    const { getStorage } = await import('@/lib/storage')
+    for (const stored of [path, path.replace(/\.webp$/, '.thumb.webp')])
+      expect(await getStorage().exists(stored)).toBe(true)
   })
 })

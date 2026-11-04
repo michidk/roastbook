@@ -7,7 +7,7 @@ import { seedDemoDatabase } from '@/db/demo-seed.server'
 import * as schema from '@/db/schema'
 import { journalTables } from '@/journal/tables'
 
-// PostgreSQL is used only to generate fixtures. No database engine is shipped.
+// The demo's sample journal, generated with the same migrations the browser applies.
 const client = await PGlite.create('memory://')
 try {
   for (const filename of (await readdir('drizzle'))

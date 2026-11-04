@@ -69,3 +69,5 @@ export function decodeInput(value: EncodedInput): unknown {
     Object.entries(value).map(([key, entry]) => [key, decodeInput(entry)]),
   )
 }
+/** Starts the message of a change the server can never apply as recorded. */
+export const rejectedPrefix = 'Change rejected: '

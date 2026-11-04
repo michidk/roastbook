@@ -1,5 +1,5 @@
 {
-  "id": "767f66d7-c829-4322-9b93-b9d1db0c52d4",
+  "id": "d6f1718f-17e7-4065-aeab-31ac14e3b016",
   "prevId": "90bf89ff-049d-4a57-819d-f7fb20a00bfe",
   "version": "7",
   "dialect": "postgresql",
@@ -5053,6 +5053,46 @@
           "columns": [
             "owner_id",
             "command_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.journal_id_reservations": {
+      "name": "journal_id_reservations",
+      "schema": "",
+      "columns": {
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "coalesce(nullif(current_setting('roastbook.user_id', true), ''), 'local')"
+        },
+        "table_name": {
+          "name": "table_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "journal_id_reservations_table_name_id_pk": {
+          "name": "journal_id_reservations_table_name_id_pk",
+          "columns": [
+            "table_name",
+            "id"
           ]
         }
       },

@@ -32,7 +32,8 @@ const lastShotSchema = z.object({
   brewingMethodId: positiveIdSchema,
 })
 
-function validateShotCreate(input: unknown) {
+/** Shared with MCP so both reject the same brews. */
+export function validateShotCreate(input: z.input<typeof shotCreateSchema>) {
   const data = shotCreateSchema.parse(input)
   assertValidUpdate(getShotUpdateErrors({ id: 0, ...data }))
   return data
@@ -69,14 +70,14 @@ export const createShot = journalWrite('shots/createShot')
 export const createShotAndSaveRecipe = journalWrite(
   'shots/createShotAndSaveRecipe',
 )
-  .validator((input: unknown) => {
+  .validator((input: z.input<typeof createShotAndSaveRecipeSchema>) => {
     const data = createShotAndSaveRecipeSchema.parse(input)
     return { ...data, shot: validateShotCreate(data.shot) }
   })
   .handler(({ data }) => createShotAndSaveRecipeOperation(data))
 
 export const updateShot = journalWrite('shots/updateShot')
-  .validator((input: unknown) => {
+  .validator((input: z.input<typeof shotUpdateSchema>) => {
     const data = shotUpdateSchema.parse(input)
     assertValidUpdate(getShotUpdateErrors(data))
     return data
@@ -84,7 +85,7 @@ export const updateShot = journalWrite('shots/updateShot')
   .handler(({ data }) => updateShotOperation(data))
 
 export const deleteShot = journalWrite('shots/deleteShot')
-  .validator((input: unknown) => {
+  .validator((input: z.input<typeof deleteRecordSchema>) => {
     const data = deleteRecordSchema.parse(input)
     return typeof data === 'number' ? { id: data } : data
   })

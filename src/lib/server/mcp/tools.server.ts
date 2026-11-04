@@ -5,19 +5,18 @@ import { z } from 'zod'
 import { getBean, getBeans } from '@/journal/beans'
 import { getBrewingMethods } from '@/journal/brewing-methods'
 import { shotListSchema } from '@/journal/domain/shot-list-contract'
-import {
-  createShotOperation,
-  getShotOperation,
-  getShotPageOperation,
-} from '@/journal/domain/shots-operations'
-import { loadDetailedStats } from '@/journal/domain/stats-detail'
 import { getGear } from '@/journal/gear'
 import { getRecipe, getRecipes } from '@/journal/recipes'
 import { getRoasters } from '@/journal/roasters'
+import {
+  createShot,
+  getShot,
+  getShotPage,
+  validateShotCreate,
+} from '@/journal/shots'
+import { getDetailedStats } from '@/journal/stats'
 import { MCP_TOOL_CATALOG, type McpToolName } from '@/lib/mcp/catalog'
 import { positiveIdSchema, shotCreateSchema } from '@/lib/server-validation'
-import { parseStatsFilter } from '@/lib/stats-filters'
-import { assertValidUpdate, getShotUpdateErrors } from '@/lib/update-validation'
 import { applyToolPolicy, type ToolAudit } from './tool-policy.server'
 
 const MAX_LIMIT = 50
@@ -83,9 +82,10 @@ function failed(message: string) {
   }
 }
 
+// Tests replace the journal functions behind these two tools.
 export type McpLoaders = {
-  listBrews?: typeof getShotPageOperation
-  createBrew?: typeof createShotOperation
+  listBrews?: (data: z.infer<typeof shotListSchema>) => Promise<unknown>
+  createBrew?: (data: ReturnType<typeof validateShotCreate>) => Promise<unknown>
 }
 
 export function createRoastbookMcpServer(
@@ -135,9 +135,9 @@ export function createRoastbookMcpServer(
   }
 
   register('list_brews', shotListSchema, (args) =>
-    (loaders.listBrews ?? getShotPageOperation)(args),
+    loaders.listBrews ? loaders.listBrews(args) : getShotPage({ data: args }),
   )
-  register('get_brew', idInput, ({ id }) => getShotOperation(id))
+  register('get_brew', idInput, ({ id }) => getShot({ data: id }))
   // The same journal functions the app uses; MCP pages through their results.
   const page = <T>(
     rows: readonly T[],
@@ -156,16 +156,13 @@ export function createRoastbookMcpServer(
     page(await getRoasters(), args),
   )
   register('list_brewing_methods', emptyInput, () => getBrewingMethods())
-  register('get_stats', statsInput, (args) =>
-    loadDetailedStats(parseStatsFilter(args)),
-  )
+  register('get_stats', statsInput, (args) => getDetailedStats({ data: args }))
   register('create_brew', brewInput, (args) => {
-    const data = shotCreateSchema.parse({
+    const data = validateShotCreate({
       ...args,
       brewedAt: args.brewedAt ? new Date(args.brewedAt) : undefined,
     })
-    assertValidUpdate(getShotUpdateErrors({ id: 0, ...data }))
-    return (loaders.createBrew ?? createShotOperation)(data)
+    return loaders.createBrew ? loaders.createBrew(data) : createShot({ data })
   })
 
   return server

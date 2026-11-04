@@ -3614,6 +3614,16 @@ export const journalSyncRevisions = sqliteTable('journal_sync_revisions', {
   ownerId: journalOwner().primaryKey(),
   value: integer('value').notNull().default(0),
 })
+/** Identifiers reserved for an owner's offline creates; replays may only use these. */
+export const journalIdReservations = sqliteTable(
+  'journal_id_reservations',
+  {
+    ownerId: journalOwner(),
+    tableName: text('table_name').notNull(),
+    id: integer('id').notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.tableName, table.id] })],
+)
 export const journalCommandReceipts = sqliteTable(
   'journal_command_receipts',
   {

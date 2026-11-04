@@ -111,10 +111,8 @@ export function OfflineSettings() {
 
   const handleClear = async () => {
     try {
-      const journal = await openEditionJournal()
-      const database = journal.options.database
-      await journal.close()
-      indexedDB.deleteDatabase(`/pglite/${database}`)
+      const { deleteLocalJournal } = await import('@/journal/local/client')
+      await deleteLocalJournal(await openEditionJournal())
       toast.success('This browser’s copy was removed. Downloading it again…')
       window.location.reload()
     } catch (error) {
@@ -199,9 +197,11 @@ export function OfflineSettings() {
         </div>
         {legacyFailed ? (
           <p className="mt-4 text-sm text-destructive-text">
-            {legacyFailed} change{legacyFailed === 1 ? '' : 's'} saved offline
-            by an earlier version could not be moved into your journal. They
-            remain in this browser’s storage.
+            {legacyFailed > 0
+              ? `${legacyFailed} change${legacyFailed === 1 ? '' : 's'}`
+              : 'Changes'}{' '}
+            saved offline by an earlier version could not be moved into your
+            journal. They remain in this browser’s storage.
           </p>
         ) : null}
       </PanelSection>

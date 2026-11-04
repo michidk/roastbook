@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict'
 import type { CloudflareRuntimeBindings } from '@/cloudflare/context.server'
-import { allocateJournalIds } from '@/db/journal-mutations.server'
-import { beanPurchases, beans } from '@/db/schema'
 import { encodeInput } from '@/journal/codec'
 import {
   loadJournalRows,
   replayJournalWrite,
+  reserveJournalIdentifiers,
 } from '@/lib/server/journal-sync.server'
 import { fixture } from './verify-journal'
 
@@ -15,10 +14,30 @@ export async function verifyJournalSync(bindings: CloudflareRuntimeBindings) {
   const second = await fixture(bindings)
   const created = await first.run(async () => {
     const before = await loadJournalRows(null)
+    const reserved = await reserveJournalIdentifiers([
+      'beans',
+      'bean_purchases',
+    ])
+    assert.equal(reserved.beans?.length, 256)
     const recorded = {
-      'id:beans': await allocateJournalIds(beans),
-      'id:bean_purchases': await allocateJournalIds(beanPurchases),
+      'id:beans': reserved.beans?.slice(0, 1) ?? [],
+      'id:bean_purchases': reserved.bean_purchases?.slice(0, 1) ?? [],
     }
+    // Identifiers the server did not reserve for this owner never replay.
+    await assert.rejects(
+      () =>
+        replayJournalWrite({
+          name: 'beans/createBean',
+          input: { name: 'Unreserved' },
+          recorded: {
+            'id:beans': [9_007_199_254_740_000],
+            'id:bean_purchases': recorded['id:bean_purchases'],
+          },
+          key: crypto.randomUUID(),
+          revision: before.revision,
+        }),
+      /Invalid replayed identifier/,
+    )
     const write = {
       name: 'beans/createBean',
       input: await encodeInput({ name: 'Offline on D1', weight: '250' }),

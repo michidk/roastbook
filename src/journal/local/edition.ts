@@ -30,7 +30,36 @@ function identity(owner: string): LocalIdentity {
 }
 
 let syncScheduled: ReturnType<typeof setTimeout> | undefined
-let watching: LocalJournal | undefined
+let setup: { journal: LocalJournal; ready: Promise<void> } | undefined
+
+/** Prepares an opened journal once; every caller waits for the same setup. */
+async function prepare(journal: LocalJournal) {
+  // Every local write is followed by a sync once the burst of edits settles.
+  subscribeLocalChanges(() => {
+    void refreshSyncStatus(journal).catch(() => undefined)
+    clearTimeout(syncScheduled)
+    syncScheduled = setTimeout(() => void synchronizeJournal(journal), 800)
+  })
+  account = await loadAccount(journal)
+  const config = await journal.getState<JournalConfig>('config')
+  if (config) setJournalConfig(config)
+  await refreshSyncStatus(journal)
+  // Runs once, in one tab: repeating it would apply moved changes twice.
+  const moveLegacy = async () => {
+    if (await journal.getState('legacyMoved')) return
+    await journal.setState('legacyMoved', true)
+    const failed = await migrateLegacyOffline(
+      journal.options.identity().id,
+    ).catch(() => -1) // Unknown count; Settings → Offline reports it.
+    if (failed) await journal.setState('legacyFailed', failed)
+  }
+  await (navigator.locks
+    ? navigator.locks.request(
+        `roastbook-legacy-${journal.options.database}`,
+        moveLegacy,
+      )
+    : moveLegacy())
+}
 
 export async function openEditionJournal() {
   const journal = await openLocalJournal((owner) => ({
@@ -45,25 +74,8 @@ export async function openEditionJournal() {
       await downloadJournal(opened)
     },
   }))
-  if (watching !== journal) {
-    watching = journal
-    account = await loadAccount(journal)
-    const config = await journal.getState<JournalConfig>('config')
-    if (config) setJournalConfig(config)
-    await refreshSyncStatus(journal)
-    // Runs once: repeating it would apply moved changes twice.
-    if (!(await journal.getState('legacyMoved'))) {
-      await journal.setState('legacyMoved', true)
-      const failed = await migrateLegacyOffline(journal.options.identity().id)
-      if (failed) await journal.setState('legacyFailed', failed)
-    }
-    // Every local write is followed by a sync once the burst of edits settles.
-    subscribeLocalChanges(() => {
-      void refreshSyncStatus(journal)
-      clearTimeout(syncScheduled)
-      syncScheduled = setTimeout(() => void synchronizeJournal(journal), 800)
-    })
-  }
+  if (setup?.journal !== journal) setup = { journal, ready: prepare(journal) }
+  await setup.ready
   return journal
 }
 

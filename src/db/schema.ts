@@ -2531,6 +2531,16 @@ export const journalSyncRevisions = pgTable('journal_sync_revisions', {
   ownerId: journalOwner().primaryKey(),
   value: bigint('value', { mode: 'number' }).notNull().default(0),
 })
+/** Identifiers reserved for an owner's offline creates; replays may only use these. */
+export const journalIdReservations = pgTable(
+  'journal_id_reservations',
+  {
+    ownerId: journalOwner(),
+    tableName: text('table_name').notNull(),
+    id: integer('id').notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.tableName, table.id] })],
+)
 export const journalCommandReceipts = pgTable(
   'journal_command_receipts',
   {

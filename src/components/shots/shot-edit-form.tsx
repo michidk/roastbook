@@ -19,8 +19,8 @@ import type { getActiveBeanPurchases } from '@/journal/beans'
 import type { getBrewingMethods } from '@/journal/brewing-methods'
 import type { getGear } from '@/journal/gear'
 import type { getShot } from '@/journal/shots'
+import { updateShot } from '@/journal/shots'
 import type { getTasteTags } from '@/journal/taste-tags'
-import { editBrew } from '@/lib/client/journal'
 import { localDateTimeInputToDate } from '@/lib/date-input'
 import {
   type DrinkConfiguration,
@@ -112,7 +112,7 @@ export function ShotEditForm({
 
     setIsSaving(true)
     try {
-      await editBrew(data)
+      await updateShot({ data })
       await onSaved()
     } catch (error) {
       toast.error(

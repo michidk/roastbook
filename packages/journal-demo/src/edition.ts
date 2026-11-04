@@ -7,10 +7,6 @@ import {
 } from '@/journal/local/client'
 import { forgetLocalMedia } from '@/journal/local/media'
 import { replaceJournalRows } from '@/journal/local/snapshot'
-import { setJournalConfig } from '@/journal/platform/config.browser'
-
-// Three pictures per item and 50 MiB of browser storage.
-setJournalConfig({ imageMaxPerItem: 3, imageStorageLimitMib: 50 })
 
 async function loadSample(journal: LocalJournal) {
   const response = await fetch('/demo-local/journal.json').catch(() => null)

@@ -8,6 +8,7 @@ const serverOnly = new Set([
   'ai_usage',
   'client_operations',
   'journal_command_receipts',
+  'journal_id_reservations',
   'journal_sync_revisions',
   'mcp_audit_events',
   'mcp_settings',
@@ -25,3 +26,9 @@ export const journalTables: Table[] = Object.values(
     'ownerId' in getTableColumns(table) &&
     !serverOnly.has(getTableName(table)),
 )
+
+/** Tables whose integer `id` the server assigns; offline creates use reserved ones. */
+export const reservedIdTables = journalTables.filter((table) => {
+  const id = getTableColumns(table).id
+  return id?.primary === true && id.dataType === 'number'
+})

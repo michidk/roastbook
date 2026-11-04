@@ -86,6 +86,7 @@ async function exportJournal(job: Job) {
       if (
         [
           'journal_command_receipts',
+          'journal_id_reservations',
           'journal_sync_revisions',
           'client_operations',
           'media_cleanup_jobs',
@@ -195,6 +196,7 @@ async function deleteJournal(job: Job) {
   // Remove dependents first, including restrictive foreign keys and gear subtypes.
   const order = [
     'journal_command_receipts',
+    'journal_id_reservations',
     'client_operations',
     'brew_drink_options',
     'brew_taste_tags',

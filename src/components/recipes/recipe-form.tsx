@@ -9,7 +9,7 @@ import type { getBrewingMethods } from '@/journal/brewing-methods'
 import type { getDrinkConfiguration } from '@/journal/drink-options'
 import type { getGear } from '@/journal/gear'
 import type { getGearSets } from '@/journal/gear-sets'
-import { addRecipe } from '@/lib/client/journal'
+import { createRecipe } from '@/journal/recipes'
 import { getErrorMessage } from '@/lib/error-message'
 import { recipePayload } from '@/lib/new-shot-payload'
 import { getShotUpdateErrors } from '@/lib/update-validation'
@@ -75,7 +75,9 @@ export function RecipeForm({
       )
     },
     submit: async () => {
-      const recipe = await addRecipe({ name, ...recipePayload(values) })
+      const recipe = await createRecipe({
+        data: { name, ...recipePayload(values) },
+      })
       toast.success('Recipe created')
       await onCreated(recipe)
     },

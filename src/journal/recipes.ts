@@ -247,7 +247,9 @@ async function validateRecipeSelection(data: RecipeCreateInput) {
 }
 
 export const updateRecipe = journalWrite('recipes/updateRecipe')
-  .validator((input: unknown) => validateRecipeInput(recipeUpdateSchema, input))
+  .validator((input: z.input<typeof recipeUpdateSchema>) =>
+    validateRecipeInput(recipeUpdateSchema, input),
+  )
   .handler(async ({ data }) => {
     const completed = await completedRecipe(data.clientOperationId)
     if (completed) return completed
@@ -277,7 +279,9 @@ export const updateRecipe = journalWrite('recipes/updateRecipe')
   })
 
 export const createRecipe = journalWrite('recipes/createRecipe')
-  .validator((input: unknown) => validateRecipeInput(recipeCreateSchema, input))
+  .validator((input: z.input<typeof recipeCreateSchema>) =>
+    validateRecipeInput(recipeCreateSchema, input),
+  )
   .handler(async ({ data }) => {
     const completed = await completedRecipe(data.clientOperationId)
     if (completed) return completed
@@ -305,7 +309,7 @@ export const saveShotAsRecipe = journalWrite('recipes/saveShotAsRecipe')
   })
 
 export const deleteRecipe = journalWrite('recipes/deleteRecipe')
-  .validator((input: unknown) => {
+  .validator((input: z.input<typeof deleteRecordSchema>) => {
     const data = deleteRecordSchema.parse(input)
     return typeof data === 'number' ? { id: data } : data
   })

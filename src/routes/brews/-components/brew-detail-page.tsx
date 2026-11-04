@@ -29,7 +29,8 @@ import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useOnlineStatus } from '@/hooks/use-online-status'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
-import { removeJournalEntity, saveBrewToRecipe } from '@/lib/client/journal'
+import { saveShotAsRecipe } from '@/journal/recipes'
+import { deleteShot } from '@/journal/shots'
 import { getErrorMessage } from '@/lib/error-message'
 import { hasExtractionBalance } from '@/lib/extraction-balance'
 import {
@@ -78,10 +79,8 @@ export function BrewDetailPage() {
 
   const handleDelete = async () => {
     try {
-      await removeJournalEntity({
-        entityType: 'brew',
-        id: shot.id,
-        revision: shot.revision,
+      await deleteShot({
+        data: { id: shot.id, baseRevision: shot.revision, idempotent: true },
       })
       await router.invalidate()
       await navigate({ to: '/brews' })
@@ -108,9 +107,8 @@ export function BrewDetailPage() {
       : { recipeId: target.recipeId }
     setIsSavingRecipe(true)
     try {
-      const result = await saveBrewToRecipe({
-        shotId: shot.id,
-        ...targetPayload,
+      const result = await saveShotAsRecipe({
+        data: { shotId: shot.id, ...targetPayload },
       })
       if (!result) {
         toast.error('Could not save this recipe')

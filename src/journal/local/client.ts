@@ -89,7 +89,7 @@ function flushWorker(database: string) {
       () =>
         done(
           new Error(
-            'The change was saved but this browser has not stored it yet. Keep this tab open and try again.',
+            'The change was saved, but this browser has not stored it permanently yet. Keep this tab open so it can sync; do not enter it again.',
           ),
         ),
       30_000,
@@ -170,12 +170,16 @@ export class LocalJournal {
       }
     })
     // A write returns only after IndexedDB has it, outbox entry included.
-    if (info.kind === 'write')
+    for (const effect of committed) effect()
+    if (info.kind !== 'write') return value
+    try {
       await (this.options.client
         ? this.client.syncToFs()
         : flushWorker(this.options.database))
-    for (const effect of committed) effect()
-    if (info.kind === 'write') notifyLocalChange()
+    } finally {
+      // Committed either way: pages refresh and the change syncs.
+      notifyLocalChange()
+    }
     return value
   }
 
@@ -194,12 +198,22 @@ export class LocalJournal {
     )
   }
 
+  closed = false
   close() {
+    this.closed = true
     return this.client.close()
   }
 }
 
 export type Replay = { recorded: Record<string, unknown[]> }
+
+/** Closes a journal and removes its database from this browser. */
+export async function deleteLocalJournal(journal: LocalJournal) {
+  const { database } = journal.options
+  await journal.close()
+  // PGlite keeps `idb://<name>` in the IndexedDB database `/pglite/<name>`.
+  indexedDB.deleteDatabase(`/pglite/${database}`)
+}
 
 async function openWorker(database: string) {
   // Tabs share one database through Web Locks, available only on HTTPS.

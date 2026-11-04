@@ -72,7 +72,7 @@ export function newShotPayload(
     extractionBalance: toNullableRating(values.extractionBalance),
     ...shotSensoryPayload(values),
     notes: values.notes || null,
-    tasteTagIds,
+    tasteTagIds: [...tasteTagIds],
   }
 }
 

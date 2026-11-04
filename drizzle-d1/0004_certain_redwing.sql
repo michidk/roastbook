@@ -5,6 +5,13 @@ CREATE TABLE `journal_command_receipts` (
 	PRIMARY KEY(`owner_id`, `command_id`)
 );
 --> statement-breakpoint
+CREATE TABLE `journal_id_reservations` (
+	`owner_id` text NOT NULL,
+	`table_name` text NOT NULL,
+	`id` integer NOT NULL,
+	PRIMARY KEY(`table_name`, `id`)
+);
+--> statement-breakpoint
 CREATE TABLE `journal_sync_revisions` (
 	`owner_id` text PRIMARY KEY NOT NULL,
 	`value` integer DEFAULT 0 NOT NULL
@@ -24,6 +31,14 @@ WHEN NOT EXISTS (SELECT 1 FROM auth_users WHERE id = NEW.owner_id AND deleting_a
 BEGIN SELECT RAISE(ABORT, 'Journal owner is unavailable'); END;
 --> statement-breakpoint
 CREATE TRIGGER "journal_command_receipts_active_owner_update" BEFORE UPDATE ON "journal_command_receipts"
+WHEN NOT EXISTS (SELECT 1 FROM auth_users WHERE id = NEW.owner_id AND deleting_at IS NULL)
+BEGIN SELECT RAISE(ABORT, 'Journal owner is unavailable'); END;
+--> statement-breakpoint
+CREATE TRIGGER "journal_id_reservations_active_owner_insert" BEFORE INSERT ON "journal_id_reservations"
+WHEN NOT EXISTS (SELECT 1 FROM auth_users WHERE id = NEW.owner_id AND deleting_at IS NULL)
+BEGIN SELECT RAISE(ABORT, 'Journal owner is unavailable'); END;
+--> statement-breakpoint
+CREATE TRIGGER "journal_id_reservations_active_owner_update" BEFORE UPDATE ON "journal_id_reservations"
 WHEN NOT EXISTS (SELECT 1 FROM auth_users WHERE id = NEW.owner_id AND deleting_at IS NULL)
 BEGIN SELECT RAISE(ABORT, 'Journal owner is unavailable'); END;
 --> statement-breakpoint

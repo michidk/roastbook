@@ -53,7 +53,12 @@ import type { getBrewingMethods } from '@/journal/brewing-methods'
 import type { getGear } from '@/journal/gear'
 import type { getGearSets } from '@/journal/gear-sets'
 import type { getRecipes } from '@/journal/recipes'
-import { getLastShotForBeanAndMethod } from '@/journal/shots'
+import {
+  createShot,
+  createShotAndSaveRecipe,
+  getLastShotForBeanAndMethod,
+  updateShot,
+} from '@/journal/shots'
 import type {
   getBeanSuggestions,
   getBrewingMethodSuggestions,
@@ -62,7 +67,6 @@ import type {
   getTasteTagSuggestions,
 } from '@/journal/suggestions'
 import type { getTasteTags } from '@/journal/taste-tags'
-import { addBrew, editBrew } from '@/lib/client/journal'
 import {
   type DrinkConfiguration,
   drinkConfigurationForBrewingMethod,
@@ -403,14 +407,19 @@ export function NewShotForm({ data, initialBean, onSaved }: NewShotFormProps) {
     setIsSubmitting(true)
     try {
       const shouldTaste = hasEnabledTasteProfileField(tasteProfile)
-      const shot = await addBrew({
-        data: baseData,
-        target: targetRecipe
-          ? targetRecipe.kind === 'new'
-            ? { name: targetRecipe.name }
-            : { recipeId: targetRecipe.recipeId }
-          : null,
-      })
+      const shot = targetRecipe
+        ? (
+            await createShotAndSaveRecipe({
+              data: {
+                shot: baseData,
+                target:
+                  targetRecipe.kind === 'new'
+                    ? { name: targetRecipe.name }
+                    : { recipeId: targetRecipe.recipeId },
+              },
+            })
+          ).shot
+        : await createShot({ data: baseData })
       setIsDirty(false)
       if (shouldTaste) setTasting({ id: shot.id, values: submittedValues })
       else await onSaved()
@@ -436,7 +445,7 @@ export function NewShotForm({ data, initialBean, onSaved }: NewShotFormProps) {
         { brewedAt },
       )
 
-      await editBrew({ id: tasting.id, ...data })
+      await updateShot({ data: { id: tasting.id, ...data } })
       await onSaved()
     } catch (error) {
       toast.error(

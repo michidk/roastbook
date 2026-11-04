@@ -27,17 +27,18 @@ async function loadSync() {
 /** Changes saved in this browser that the server has not confirmed yet. */
 export function JournalSyncStatus() {
   const status = useSyncStatus()
-  const [changes, setChanges] = useState<PendingChange[]>([])
+  const [changes, setChanges] = useState<PendingChange[] | 'failed'>([])
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reload when the counts change, so resolved changes leave the list
   useEffect(() => {
     if (!open) return
     void loadSync()
       .then(async ({ journal, sync }) => sync.listPendingChanges(journal))
       .then(setChanges)
-      .catch(() => undefined)
-  }, [open])
+      .catch(() => setChanges('failed'))
+  }, [open, status.pending, status.conflicts])
 
   if (!status.pending && !status.conflicts && !status.authRequired) return null
 
@@ -86,8 +87,14 @@ export function JournalSyncStatus() {
                 edited on another device, needs your decision.
               </DialogDescription>
             </DialogHeader>
+            {changes === 'failed' ? (
+              <p className="text-sm text-destructive-text" role="alert">
+                The saved changes could not be read. Reload the page to try
+                again; they stay saved in this browser.
+              </p>
+            ) : null}
             <ul className="space-y-2 text-sm">
-              {changes.map((change) => (
+              {(changes === 'failed' ? [] : changes).map((change) => (
                 <li key={change.seq} className="rounded-md border p-3">
                   <p className="font-medium">{describe(change.name)}</p>
                   <p className="text-muted-foreground">
@@ -127,9 +134,13 @@ export function JournalSyncStatus() {
   )
 }
 
-/** `beans/createBean` → "Create bean". */
+/** `beans/createBean` → "Create bean"; shots are brews to users. */
 function describe(name: string) {
   const action = name.split('/')[1] ?? name
-  const words = action.replace(/([A-Z])/g, ' $1').toLowerCase()
+  const words = action
+    .replace(/([A-Z])/g, ' $1')
+    .toLowerCase()
+    .replace(/\bshot(s?)\b/g, 'brew$1')
+    .replace(/\bentity /g, '')
   return words.charAt(0).toUpperCase() + words.slice(1)
 }

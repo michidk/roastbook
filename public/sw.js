@@ -30,7 +30,7 @@ const PRECACHE_URLS = [
   '/coffee-stains-dark.svg',
 ]
 const PRECACHE_PATHS = new Set([...PRECACHE_URLS, ...PRECACHE_ASSETS])
-const DOCUMENT_PRECACHE_URLS = ['/overview', '/brews/new', '/brews/pending']
+const DOCUMENT_PRECACHE_URLS = ['/overview', '/brews/new']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(precache())

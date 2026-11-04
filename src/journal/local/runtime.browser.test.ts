@@ -1,10 +1,10 @@
 // Runs with the browser platform (`bun run test:browser-runtime`): the real
 // journal functions execute against an in-process PGlite journal.
-import { afterEach, expect, test } from 'bun:test'
+import { afterEach, expect, mock, test } from 'bun:test'
 import { readdir, readFile } from 'node:fs/promises'
 import { PGlite } from '@electric-sql/pglite'
 import { createBean, getBeanCollection, updateBean } from '@/journal/beans'
-import { decodeInput } from '@/journal/codec'
+import { decodeInput, rejectedPrefix } from '@/journal/codec'
 import { getJournalFunction } from '@/journal/function'
 import { currentScope, LocalJournal } from './client'
 import { loadLocalMedia, localMediaObjectUrl } from './media'
@@ -48,7 +48,6 @@ async function openTestJournal(client: PGlite, sync: boolean) {
   return journal
 }
 // The runtime opens the edition journal; tests route it to the open journal.
-const { mock } = await import('bun:test')
 mock.module('@/journal/local/edition', () => ({
   openEditionJournal: async () => current,
 }))
@@ -151,47 +150,105 @@ test('a refreshed journal reapplies pending writes with their recorded identifie
   expect(ids.rows[0]?.id).toBe(900)
 })
 
-test('a sync requested offline never blocks the next one', async () => {
-  const pushed: string[] = []
-  mock.module('@/lib/server/journal-sync', () => ({
-    pullJournal: async () => ({
-      revision: 1,
-      tables: null,
-      account: null,
-      config: {
-        imageMaxPerItem: 3,
-        imageStorageLimitMib: 0,
-        storageProvider: 'local',
-      },
-    }),
-    pushJournalWrite: async ({ data }: { data: { name: string } }) => {
-      pushed.push(data.name)
-      return { revision: 1, unchanged: true }
+// Sync runs only online; tests that need offline override this.
+const setOnline = (value: boolean) =>
+  Object.defineProperty(globalThis.navigator, 'onLine', {
+    configurable: true,
+    get: () => value,
+  })
+setOnline(true)
+
+const pushed: string[] = []
+let push = async (_name: string) => ({ revision: 1, unchanged: true })
+mock.module('@/lib/server/journal-sync', () => ({
+  pullJournal: async () => ({
+    revision: 1,
+    tables: null,
+    account: null,
+    config: {
+      imageMaxPerItem: 3,
+      imageStorageLimitMib: 0,
+      storageProvider: 'local',
     },
-    reserveJournalIds: async () => ({}),
-  }))
-  const { synchronizeJournal } = await import('./sync')
-  const journal = await openJournal(true)
+  }),
+  pushJournalWrite: async ({ data }: { data: { name: string } }) => {
+    pushed.push(data.name)
+    return push(data.name)
+  },
+  reserveJournalIds: async () => ({}),
+}))
+const sync = await import('./sync')
+
+async function pendingBeans(journal: LocalJournal, names: string[]) {
   await journal.client.query(
-    "insert into roastbook_local.id_pool (table_name, id) values ('beans', 600), ('bean_purchases', 601)",
+    "insert into roastbook_local.id_pool (table_name, id) select 'beans', g from generate_series(600, 610) g union all select 'bean_purchases', g from generate_series(600, 610) g",
   )
-  await createBean({ data: { name: 'Saved offline' } })
-  const setOnline = (value: boolean) =>
-    Object.defineProperty(globalThis.navigator, 'onLine', {
-      configurable: true,
-      get: () => value,
-    })
+  for (const name of names) await createBean({ data: { name } })
+  pushed.length = 0
+}
+
+test('a sync requested offline never blocks the next one', async () => {
+  const journal = await openJournal(true)
+  await pendingBeans(journal, ['Saved offline'])
   try {
     setOnline(false)
-    await synchronizeJournal(journal)
+    await sync.synchronizeJournal(journal)
     expect(pushed).toEqual([])
     setOnline(true)
-    await synchronizeJournal(journal)
+    await sync.synchronizeJournal(journal)
     expect(pushed).toEqual(['beans/createBean'])
     expect(await outbox(journal)).toEqual([])
   } finally {
     setOnline(true)
   }
+})
+
+test('a later change never overtakes one waiting to retry', async () => {
+  const journal = await openJournal(true)
+  await pendingBeans(journal, ['First', 'Second'])
+  await journal.client.query(
+    "update roastbook_local.outbox set next_attempt_at = now() + interval '1 minute' where seq = (select min(seq) from roastbook_local.outbox)",
+  )
+  await sync.synchronizeJournal(journal)
+  expect(pushed).toEqual([])
+  expect(await outbox(journal)).toHaveLength(2)
+})
+
+test('rejected changes wait for review; failures retry in order', async () => {
+  const journal = await openJournal(true)
+  await pendingBeans(journal, ['Rejected', 'Retried'])
+  let calls = 0
+  push = async () => {
+    calls += 1
+    if (calls === 1) throw new Error(`${rejectedPrefix}Bean not found`)
+    throw new Error('Your journal is busy. Try again shortly.')
+  }
+  try {
+    await sync.synchronizeJournal(journal)
+  } finally {
+    push = async () => ({ revision: 1, unchanged: true })
+  }
+  const rows = await journal.client.query<{
+    status: string
+    error: string
+    attempts: number
+  }>('select status, error, attempts from roastbook_local.outbox order by seq')
+  expect(rows.rows).toEqual([
+    { status: 'conflict', error: 'Bean not found', attempts: 0 },
+    {
+      status: 'pending',
+      error: 'Your journal is busy. Try again shortly.',
+      attempts: 1,
+    },
+  ])
+  // Retrying a reviewed change downloads the journal after it applies.
+  const [conflict] = await sync.listPendingChanges(journal)
+  await journal.setState('revision', 1)
+  await journal.client.query(
+    'update roastbook_local.outbox set next_attempt_at = now()',
+  )
+  await sync.retryChange(journal, conflict?.seq ?? 0)
+  expect(await outbox(journal)).toEqual([])
 })
 
 test('concurrent calls each run in their own transaction', async () => {

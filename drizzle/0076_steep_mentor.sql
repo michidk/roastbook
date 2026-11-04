@@ -5,6 +5,13 @@ CREATE TABLE "journal_command_receipts" (
 	CONSTRAINT "journal_command_receipts_owner_id_command_id_pk" PRIMARY KEY("owner_id","command_id")
 );
 --> statement-breakpoint
+CREATE TABLE "journal_id_reservations" (
+	"owner_id" text DEFAULT coalesce(nullif(current_setting('roastbook.user_id', true), ''), 'local') NOT NULL,
+	"table_name" text NOT NULL,
+	"id" integer NOT NULL,
+	CONSTRAINT "journal_id_reservations_table_name_id_pk" PRIMARY KEY("table_name","id")
+);
+--> statement-breakpoint
 CREATE TABLE "journal_sync_revisions" (
 	"owner_id" text PRIMARY KEY DEFAULT coalesce(nullif(current_setting('roastbook.user_id', true), ''), 'local') NOT NULL,
 	"value" bigint DEFAULT 0 NOT NULL
@@ -25,6 +32,14 @@ ALTER TABLE "journal_command_receipts" FORCE ROW LEVEL SECURITY;
 CREATE POLICY journal_owner ON "journal_command_receipts" TO roastbook_journal USING (owner_id = nullif(current_setting('roastbook.user_id', true), '')) WITH CHECK (owner_id = nullif(current_setting('roastbook.user_id', true), ''));
 GRANT SELECT, INSERT, UPDATE, DELETE ON "journal_command_receipts" TO roastbook_journal;
 CREATE POLICY instance_control ON "journal_command_receipts" TO CURRENT_USER USING (true) WITH CHECK (true);
+
+--> statement-breakpoint
+
+ALTER TABLE "journal_id_reservations" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "journal_id_reservations" FORCE ROW LEVEL SECURITY;
+CREATE POLICY journal_owner ON "journal_id_reservations" TO roastbook_journal USING (owner_id = nullif(current_setting('roastbook.user_id', true), '')) WITH CHECK (owner_id = nullif(current_setting('roastbook.user_id', true), ''));
+GRANT SELECT, INSERT, UPDATE, DELETE ON "journal_id_reservations" TO roastbook_journal;
+CREATE POLICY instance_control ON "journal_id_reservations" TO CURRENT_USER USING (true) WITH CHECK (true);
 
 --> statement-breakpoint
 CREATE FUNCTION journal_changed() RETURNS trigger LANGUAGE plpgsql SET search_path = public, pg_temp AS $$

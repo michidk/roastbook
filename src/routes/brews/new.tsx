@@ -24,6 +24,7 @@ import {
 } from '@/journal/suggestions'
 import { getTasteTags } from '@/journal/taste-tags'
 import { DEMO_MODE } from '@/lib/build-mode'
+import { integrationCapability } from '@/lib/client/integration-capability'
 import { isConnectionOnline } from '@/lib/connection-status'
 import { searchValidator } from '@/lib/search-params'
 import { checkShotRecommendationEnabled } from '@/lib/server/shot-recommendations'
@@ -72,9 +73,7 @@ async function loadNewBrewReferenceData() {
     getLastBeansByBrewingMethod(),
     getGear(),
     getGearSets(),
-    DEMO_MODE || !isConnectionOnline()
-      ? Promise.resolve({ enabled: false })
-      : checkShotRecommendationEnabled().catch(() => ({ enabled: false })),
+    integrationCapability(checkShotRecommendationEnabled)(),
     getDrinkConfiguration(),
     getDrinkTypeSuggestions(),
     getTasteTagSuggestions(),

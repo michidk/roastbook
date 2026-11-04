@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "4dd8f71c-bb42-43d1-a50c-b0e1af4ae64b",
+  "id": "2159150d-5e70-41f3-a5c7-ef60d123e767",
   "prevId": "fb3aa18f-3c94-46c5-adf6-8aac37ce20de",
   "tables": {
     "account_jobs": {
@@ -5360,6 +5360,45 @@
           "value": "\"journal_id_counters\".\"value\" >= 0"
         }
       }
+    },
+    "journal_id_reservations": {
+      "name": "journal_id_reservations",
+      "columns": {
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "table_name": {
+          "name": "table_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "journal_id_reservations_table_name_id_pk": {
+          "columns": [
+            "table_name",
+            "id"
+          ],
+          "name": "journal_id_reservations_table_name_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "journal_mutation_assertions": {
       "name": "journal_mutation_assertions",

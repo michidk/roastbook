@@ -3,11 +3,13 @@ import { Copy, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { copyRecipe } from '@/lib/client/journal'
+import { createRecipe, type getRecipe } from '@/journal/recipes'
 import { getErrorMessage } from '@/lib/error-message'
+import { recipePayload } from '@/lib/new-shot-payload'
+import { shotFormValuesFrom } from '@/modules/brews/shot-form-values'
 
 type RecipeDuplicateButtonProps = {
-  readonly recipe: Parameters<typeof copyRecipe>[0]
+  readonly recipe: NonNullable<Awaited<ReturnType<typeof getRecipe>>>
   readonly compact?: boolean
 }
 
@@ -23,7 +25,12 @@ export function RecipeDuplicateButton({
     if (isDuplicating) return
     setIsDuplicating(true)
     try {
-      const duplicate = await copyRecipe(recipe)
+      const duplicate = await createRecipe({
+        data: {
+          name: `${recipe.name} (copy)`,
+          ...recipePayload(shotFormValuesFrom(recipe)),
+        },
+      })
       await router.invalidate()
       toast.success('Recipe duplicated')
       await navigate({

@@ -1,7 +1,9 @@
 // Server platform. The browser runtime replaces this module (see scripts/vite-journal-platform.ts).
 import {
   isReplayedPath,
+  isUploadedPath,
   markReplayedPath,
+  markUploadedPath,
   takeRecordedValues,
 } from '@/db/journal-replay.server'
 import {
@@ -28,17 +30,32 @@ export function generateStoragePath(
   return recorded as string
 }
 
-/** Never let a replayed path overwrite an existing object. */
+const original = (path: string) =>
+  path.replace(/\.(thumb|small)\.webp$/, '.webp')
+
+/**
+ * A replayed path never overwrites an existing object, in any size, and a
+ * failed replay deletes only the objects it uploaded itself.
+ */
 export function getStorage(): StorageProvider {
   const provider = storage()
   return new Proxy(provider, {
     get(target, property) {
-      if (property !== 'upload') return Reflect.get(target, property)
-      return async (file: File | Blob, path: string) => {
-        if (isReplayedPath(path) && (await target.exists(path)))
-          throw new Error('Replayed storage path already exists')
-        return target.upload(file, path)
-      }
+      if (property === 'upload')
+        return async (file: File | Blob, path: string) => {
+          if (!isReplayedPath(original(path))) return target.upload(file, path)
+          if (await target.exists(path))
+            throw new Error('Replayed storage path already exists')
+          const uploaded = await target.upload(file, path)
+          markUploadedPath(path)
+          return uploaded
+        }
+      if (property === 'delete')
+        return async (path: string) => {
+          if (isReplayedPath(original(path)) && !isUploadedPath(path)) return
+          return target.delete(path)
+        }
+      return Reflect.get(target, property)
     },
   })
 }

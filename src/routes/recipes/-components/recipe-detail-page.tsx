@@ -20,7 +20,7 @@ import { useFormSubmission } from '@/hooks/use-form-submission'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import type { getGear } from '@/journal/gear'
 import type { getRecipe } from '@/journal/recipes'
-import { editRecipe, removeJournalEntity } from '@/lib/client/journal'
+import { deleteRecipe, updateRecipe } from '@/journal/recipes'
 import { getErrorMessage } from '@/lib/error-message'
 import { recipePayload } from '@/lib/new-shot-payload'
 import { getShotUpdateErrors } from '@/lib/update-validation'
@@ -88,7 +88,7 @@ export function RecipeDetailPage() {
           clientOperationId: updateOperationId,
         }
 
-        await editRecipe(updateData)
+        await updateRecipe({ data: updateData })
         await navigate({
           search: (current) => ({ ...current, edit: undefined }),
           replace: true,
@@ -179,10 +179,12 @@ export function RecipeDetailPage() {
                 description="This template will be removed permanently. Existing brews keep their copied values and are not affected."
                 onConfirm={async () => {
                   try {
-                    await removeJournalEntity({
-                      entityType: 'recipe',
-                      id: recipe.id,
-                      revision: recipe.revision,
+                    await deleteRecipe({
+                      data: {
+                        id: recipe.id,
+                        baseRevision: recipe.revision,
+                        idempotent: true,
+                      },
                     })
                     await router.invalidate()
                     toast.success('Recipe deleted')

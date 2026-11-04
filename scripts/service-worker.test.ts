@@ -143,8 +143,7 @@ async function createHarness(options: HarnessOptions = {}) {
     if (
       url.endsWith('/offline-shell.html') ||
       url.endsWith('/overview') ||
-      url.endsWith('/brews/new') ||
-      url.endsWith('/brews/pending')
+      url.endsWith('/brews/new')
     ) {
       return htmlResponse('app-document', url)
     }
@@ -321,7 +320,6 @@ describe('service worker', () => {
       expect.arrayContaining([
         absoluteUrl('/overview'),
         absoluteUrl('/brews/new'),
-        absoluteUrl('/brews/pending'),
       ]),
     )
   })

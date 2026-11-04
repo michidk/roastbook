@@ -85,24 +85,36 @@ three endpoints in `src/lib/server/journal-sync.ts`:
    its encoded input (`src/journal/codec.ts`: dates, files and form data
    survive), a UUID key, and the values it generated: identifiers from the pool
    the server reserved for this device, and picture storage paths.
-2. **Push.** Pending writes replay in order on the server with the recorded
-   values. A receipt makes each key apply once. Recorded paths must have the
-   expected shape for their record and must not exist yet. The reply says
-   whether anything else changed the journal since the browser's revision.
+2. **Push.** Pending writes replay strictly in order on the server with the
+   recorded values; a write waiting to retry holds back later ones. A receipt
+   makes each key apply once. Recorded identifiers must be ones the server
+   reserved for this owner. Recorded paths must have the expected shape for
+   their record and must not exist yet; a failed replay deletes only objects it
+   uploaded. The reply says whether anything else changed the journal since
+   the browser's revision.
 3. **Pull.** A revision check; when another device or integration changed the
    journal, the browser replaces the owner's rows and runs its pending writes
    again on top, with their recorded values.
-4. **Identifiers.** The server reserves 256 identifiers per table and device.
+4. **Identifiers.** The server reserves 256 identifiers per table and device
+   and records them per owner (`journal_id_reservations`). With more than 1024
+   unused ones for a table, it hands out the oldest again instead of new ones.
    Records that other records reference must take identifiers from
    `allocateJournalIds`; pure link rows may use database defaults.
-5. **Conflicts.** A replayed write the server rejects, or one that no longer
-   applies after a pull, is kept as a conflict. The sync banner lists it with
-   Try again and Discard. Later writes continue.
+5. **Conflicts.** The server marks a write it can never apply (validation,
+   missing records, ownership); that write, one that no longer applies after a
+   pull, or one that failed 12 times is kept as a conflict. The sync banner
+   lists it with Try again and Discard, and later writes continue. Busy,
+   connection and other infrastructure failures retry with backoff.
+6. **Accounts.** A pull for a different signed-in account is refused, so it
+   never fills another owner's local journal.
 
 Triggers advance the owner's revision for every journal table on PostgreSQL and
 D1, so changes from MCP and integrations reach browsers too. On PostgreSQL the
 request transaction and per-owner lock make replay atomic and its revision
-check exact.
+check exact. D1 has neither: a replay that fails between its write and its
+receipt can be reported as a conflict on retry, and a change another device
+makes during a replay shows on this device only after the next revision
+change.
 
 ## Earlier offline data
 

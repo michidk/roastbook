@@ -13,9 +13,8 @@ export async function signOutOfAccount() {
   try {
     // This account's journal leaves the device with the session.
     if (journal) {
-      const database = journal.options.database
-      await journal.close()
-      indexedDB.deleteDatabase(`/pglite/${database}`)
+      const { deleteLocalJournal } = await import('@/journal/local/client')
+      await deleteLocalJournal(journal)
     }
     localStorage.removeItem('roastbook-active-owner')
     if ('caches' in window)

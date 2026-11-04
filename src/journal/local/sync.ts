@@ -1,3 +1,4 @@
+import { rejectedPrefix } from '@/journal/codec'
 import { getJournalFunction } from '@/journal/function'
 import { setJournalConfig } from '@/journal/platform/config.browser'
 import {
@@ -5,21 +6,21 @@ import {
   pushJournalWrite,
   reserveJournalIds,
 } from '@/lib/server/journal-sync'
-import type { LocalJournal } from './client'
+import { type LocalJournal, notifyLocalChange } from './client'
 import { replaceJournalRows, serialTables } from './snapshot'
 import { setSyncStatus } from './sync-status'
 
 type Pull = Awaited<ReturnType<typeof pullJournal>>
 type Account = Pull['account']
 
-/** A server rejection, not a network failure: the user must review it. */
-function isRejection(error: unknown) {
-  return (
-    error instanceof Error &&
-    !(error instanceof TypeError) &&
-    !/fetch|network|offline|failed to load|timed? ?out/i.test(error.message)
-  )
+/** The server marks changes it cannot apply; anything else is retried. */
+function rejection(error: unknown) {
+  return error instanceof Error && error.message.startsWith(rejectedPrefix)
+    ? error.message.slice(rejectedPrefix.length)
+    : undefined
 }
+// After this many failed attempts (about an hour) a change needs review.
+const maxAttempts = 12
 function isAuthError(error: unknown) {
   return (
     error instanceof Error &&
@@ -35,26 +36,35 @@ export async function loadAccount(journal: LocalJournal) {
 
 /** Replaces the owner's journal rows with the server's and reapplies pending writes. */
 async function applyPull(journal: LocalJournal, pull: Pull) {
+  // A session for another account must never fill this owner's journal.
+  if (pull.account && pull.account.id !== journal.options.identity().id)
+    throw new Error('Authentication required: signed in as another account')
   await journal.setState('account', pull.account)
   await journal.setState('config', pull.config)
   setJournalConfig(pull.config)
   if (pull.tables) {
-    await replaceJournalRows(journal, pull.tables as Record<string, object[]>)
-    await rebasePending(journal)
+    const upTo = await replaceJournalRows(
+      journal,
+      pull.tables as Record<string, object[]>,
+    )
+    await rebasePending(journal, upTo)
+    // Pages in every tab show the downloaded changes.
+    notifyLocalChange()
   }
   await journal.setState('revision', pull.revision)
   await journal.setState('lastSyncAt', new Date().toISOString())
 }
 
 /** Pending writes run again on top of the refreshed rows, with their recorded values. */
-async function rebasePending(journal: LocalJournal) {
+async function rebasePending(journal: LocalJournal, upTo: number) {
   const pending = await journal.client.query<{
     seq: number
     name: string
     input: unknown
     recorded: Record<string, unknown[]>
   }>(
-    "select seq, name, input, recorded from roastbook_local.outbox where status = 'pending' order by seq",
+    "select seq, name, input, recorded from roastbook_local.outbox where status = 'pending' and seq <= $1 order by seq",
+    [upTo],
   )
   const { decodeInput } = await import('@/journal/codec')
   for (const entry of pending.rows) {
@@ -107,11 +117,14 @@ async function pushPending(journal: LocalJournal) {
       input: unknown
       recorded: Record<string, unknown[]>
       key: string
+      attempts: number
+      due: boolean
     }>(
-      "select seq, name, input, recorded, key from roastbook_local.outbox where status = 'pending' and next_attempt_at <= now() order by seq limit 1",
+      "select seq, name, input, recorded, key, attempts, next_attempt_at <= now() as due from roastbook_local.outbox where status = 'pending' order by seq limit 1",
     )
     const entry = next.rows[0]
-    if (!entry) return
+    // Changes apply in order: a later one never overtakes one waiting to retry.
+    if (!entry?.due) return
     const known = (await journal.getState<number>('revision')) ?? 0
     try {
       const result = await pushJournalWrite({
@@ -130,10 +143,18 @@ async function pushPending(journal: LocalJournal) {
       // Only this device changed the journal: the local rows already match.
       if (result.unchanged) await journal.setState('revision', result.revision)
     } catch (error) {
-      if (isRejection(error) && !isAuthError(error)) {
+      const rejected = rejection(error)
+      if (
+        rejected !== undefined ||
+        (!isAuthError(error) && entry.attempts + 1 >= maxAttempts)
+      ) {
         await journal.client.query(
           "update roastbook_local.outbox set status = 'conflict', error = $2 where seq = $1",
-          [entry.seq, error instanceof Error ? error.message : String(error)],
+          [
+            entry.seq,
+            rejected ??
+              (error instanceof Error ? error.message : String(error)),
+          ],
         )
         // Later changes may still apply; the review lists this one.
         continue
@@ -151,7 +172,7 @@ let running: Promise<void> | undefined
 /** Sends pending writes in order, then downloads changes made elsewhere. */
 export function synchronizeJournal(journal: LocalJournal) {
   // Offline, the `online` event starts the next sync.
-  if (typeof navigator !== 'undefined' && !navigator.onLine)
+  if (journal.closed || (typeof navigator !== 'undefined' && !navigator.onLine))
     return Promise.resolve()
   running ??= (async () => {
     setSyncStatus({ syncing: true })
@@ -177,9 +198,12 @@ export function synchronizeJournal(journal: LocalJournal) {
       })
     } finally {
       setSyncStatus({ syncing: false })
-      await refreshSyncStatus(journal)
       running = undefined
-      await scheduleRetry(journal)
+      // Signing out closes the journal; nothing is left to report or retry.
+      if (!journal.closed) {
+        await refreshSyncStatus(journal)
+        await scheduleRetry(journal)
+      }
     }
   })()
   return running
@@ -197,7 +221,7 @@ async function scheduleRetry(journal: LocalJournal) {
   const wait = next.rows[0]?.wait
   if (wait === null || wait === undefined) return
   retry = setTimeout(
-    () => void synchronizeJournal(journal),
+    () => void synchronizeJournal(journal).catch(() => undefined),
     Math.min(Math.max(Number(wait), 2_000), 300_000),
   )
 }
@@ -235,6 +259,8 @@ export async function retryChange(journal: LocalJournal, seq: number) {
     "update roastbook_local.outbox set status = 'pending', error = null, attempts = 0, next_attempt_at = now() where seq = $1",
     [seq],
   )
+  // Its effect is not in the local rows any more; download them after it applies.
+  await journal.setState('revision', null)
   await synchronizeJournal(journal)
 }
 
