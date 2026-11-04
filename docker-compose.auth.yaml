@@ -49,8 +49,9 @@ services:
       AUTH_ENABLED: "true"
       AUTH_URL: ${AUTH_URL:?Set the public application URL}
       AUTH_SECRET: ${AUTH_SECRET:?Set a random secret with at least 32 characters}
-      AUTH_SIGNUP_ENABLED: ${AUTH_SIGNUP_ENABLED:-true}
+      AUTH_SIGNUP_ENABLED: ${AUTH_SIGNUP_ENABLED:-false}
       AUTH_ADMIN_EMAIL: ${AUTH_ADMIN_EMAIL:-}
+      AUTH_ALLOWED_EMAILS: ${AUTH_ALLOWED_EMAILS:-}
       DEPLOYMENT_MODE: ${DEPLOYMENT_MODE:-self-hosted}
       EMAIL_PROVIDER: ${EMAIL_PROVIDER:-smtp}
       EMAIL_FROM: ${EMAIL_FROM:?Set the sender address}

@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/input-otp'
 import { Label } from '@/components/ui/label'
 import { SIGN_IN_CODE_LENGTH } from '@/modules/auth/sign-in-link'
+import { CreateAccountDialog } from './create-account-dialog'
 import { PasskeySetupDialog } from './passkey-setup-dialog'
 import { useLoginForm } from './use-login-form'
 
@@ -31,7 +32,7 @@ export function LoginForm() {
       : activity === 'verifying'
         ? 'Signing you in…'
         : step.kind === 'email'
-          ? 'Send sign-in email'
+          ? 'Continue with email'
           : step.kind === 'confirm'
             ? 'Confirm sign-in'
             : 'Sign in'
@@ -56,7 +57,10 @@ export function LoginForm() {
         </CardTitle>
         <div className="text-base leading-relaxed text-muted-foreground">
           {step.kind === 'email' ? (
-            <p>Sign in to your private coffee journal. No password needed.</p>
+            <p>
+              Sign in or start your coffee journal. Just your email, no
+              password.
+            </p>
           ) : (
             <>
               <p>
@@ -104,10 +108,11 @@ export function LoginForm() {
                   id="email-help"
                   className="text-sm leading-relaxed text-muted-foreground"
                 >
-                  We’ll email you a link and an 8-digit sign-in code.
+                  We’ll email you a sign-in code. New here? You can create your
+                  account once you’ve entered it.
                 </p>
               </div>
-            ) : step.kind === 'code' ? (
+            ) : step.kind === 'code' || step.kind === 'create' ? (
               <div className="space-y-3">
                 <p className="text-sm leading-relaxed text-muted-foreground">
                   Open the link in your email, or enter your code here.
@@ -163,7 +168,7 @@ export function LoginForm() {
                 Confirm below to finish signing in on this device.
               </p>
             )}
-            {error ? (
+            {error && step.kind !== 'create' ? (
               <div
                 id="login-error"
                 role="alert"
@@ -255,6 +260,15 @@ export function LoginForm() {
           <p role="alert">Enable JavaScript in your browser to sign in.</p>
         </noscript>
       </CardContent>
+      {step.kind === 'create' && !login.passkeyPromptOpen ? (
+        <CreateAccountDialog
+          email={step.email}
+          busy={busy}
+          error={error}
+          onCreate={(choices) => void login.createAccount(choices)}
+          onCancel={login.changeEmail}
+        />
+      ) : null}
       {login.passkeyPromptOpen ? (
         <PasskeySetupDialog onContinue={login.continueAfterPasskey} />
       ) : null}

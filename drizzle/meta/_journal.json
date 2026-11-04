@@ -568,6 +568,13 @@
       "when": 1793820303088,
       "tag": "0080_remove-ai-allowance",
       "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1793820552171,
+      "tag": "0081_sign-up-consent",
+      "breakpoints": true
     }
   ]
 }

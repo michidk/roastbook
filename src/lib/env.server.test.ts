@@ -98,7 +98,23 @@ describe('authentication deployment configuration', () => {
         DEPLOYMENT_MODE: 'hosted',
         AUTH_ADMIN_EMAIL: 'Owner@example.test',
       }).AUTH_ADMIN_EMAIL,
-    ).toBe('owner@example.test')
+    ).toEqual(['owner@example.test'])
+  })
+  test('parses admin and allowed email lists and closes signup by default', () => {
+    const environment = parseServerEnv({
+      ...authenticated,
+      AUTH_ADMIN_EMAIL: ' A@example.test, b@example.test ',
+      AUTH_ALLOWED_EMAILS: 'Friend@example.test',
+    })
+    expect(environment.AUTH_ADMIN_EMAIL).toEqual([
+      'a@example.test',
+      'b@example.test',
+    ])
+    expect(environment.AUTH_ALLOWED_EMAILS).toEqual(['friend@example.test'])
+    expect(environment.AUTH_SIGNUP_ENABLED).toBe(false)
+    expect(() =>
+      parseServerEnv({ ...authenticated, AUTH_ALLOWED_EMAILS: 'not-an-email' }),
+    ).toThrow('AUTH_ALLOWED_EMAILS')
   })
   test('requires a delivery provider and strong application secret', () => {
     expect(() => parseServerEnv({ ...authenticated, SMTP_URL: '' })).toThrow(

@@ -19,6 +19,7 @@ const allowed = new Set([
   '/sign-out',
   '/email-otp/send-verification-otp',
   '/email-otp/resolve-sign-in-link',
+  '/email-otp/check-verification-otp',
   '/sign-in/email-otp',
   '/change-email',
   '/verify-email',

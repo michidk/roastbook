@@ -7,6 +7,7 @@ import { getServerEnv } from '@/lib/env.server'
 import { decryptAiKey, encryptAiKey } from '../ai-credential.server'
 import { createJournalDefaults } from './defaults.server'
 import { journalTables } from './journal-tables.server'
+import { isAdminEmail, mayRegister } from './registration.server'
 
 export async function initializeUser(user: {
   id: string
@@ -36,11 +37,7 @@ export async function initializeUser(user: {
     if (current?.journalInitializedAt) return
     const firstSelfHost =
       env.DEPLOYMENT_MODE === 'self-hosted' && !instance.bootstrapCompletedAt
-    if (
-      !env.AUTH_SIGNUP_ENABLED &&
-      !firstSelfHost &&
-      user.email !== env.AUTH_ADMIN_EMAIL
-    ) {
+    if (!firstSelfHost && !mayRegister(env, user.email)) {
       throw new Error('Registration is disabled')
     }
     if (firstSelfHost) {
@@ -86,7 +83,7 @@ export async function initializeUser(user: {
       .update(authUsers)
       .set({ journalInitializedAt: new Date() })
       .where(eq(authUsers.id, user.id))
-    if (firstSelfHost || user.email === env.AUTH_ADMIN_EMAIL)
+    if (firstSelfHost || isAdminEmail(env, user.email))
       await tx
         .update(authUsers)
         .set({ role: 'admin' })

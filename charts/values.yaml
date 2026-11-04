@@ -206,5 +206,6 @@ hodor:
 auth:
   enabled: false
   # Secret containing AUTH_URL, AUTH_SECRET, EMAIL_FROM, SMTP_URL or RESEND_API_KEY,
-  # and optional DEPLOYMENT_MODE, AUTH_ADMIN_EMAIL, AUTH_SIGNUP_ENABLED.
+  # and optional DEPLOYMENT_MODE, AUTH_ADMIN_EMAIL, AUTH_ALLOWED_EMAILS,
+  # AUTH_SIGNUP_ENABLED (comma-separated email lists; signup closed by default).
   existingSecret: ""

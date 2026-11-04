@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { getControlDb } from '@/db/connection.server'
 import { requireIdentity } from '@/db/journal-context.server'
 import { authSessions, authUsers, authVerifications } from '@/db/schema'
+import { signUpPolicy } from '@/extension-points/sign-up.server'
 import { getServerEnv } from '@/lib/env.server'
 import {
   changeUserRole,
@@ -32,7 +33,10 @@ export async function verifyAuthContract(
   const attemptsEmail = address('attempts')
   const flowA = address('flow-a')
   const flowB = address('flow-b')
+  const termsEmail = address('terms')
+  const policy = signUpPolicy()
   const emails = [
+    termsEmail,
     adminEmail,
     userEmail,
     expiredEmail,
@@ -102,9 +106,42 @@ export async function verifyAuthContract(
     assert.equal(resolved.status, 200)
     return { ...resolvedLink.parse(await resolved.json()), link }
   }
+  async function check(email: string, otp: string) {
+    const response = await api('/email-otp/check-verification-otp', {
+      email,
+      type: 'sign-in',
+      otp,
+    })
+    return {
+      status: response.status,
+      code: (await response.json().catch(() => ({}))).code as unknown,
+    }
+  }
   async function login(email: string) {
     const { code } = await credentials(email)
-    const response = await api('/sign-in/email-otp', { email, otp: code })
+    const wrong = await check(
+      email,
+      code === '00000000' ? '11111111' : '00000000',
+    )
+    assert.notEqual(
+      wrong.code,
+      'USER_NOT_FOUND',
+      'a wrong code must not reveal whether an account exists',
+    )
+    const existing = await check(email, code)
+    const created = existing.code === 'USER_NOT_FOUND'
+    assert(created || existing.status === 200, JSON.stringify(existing))
+    const response = await api('/sign-in/email-otp', {
+      email,
+      otp: code,
+      // The confirmation step sends the consents with the creating sign-in.
+      ...(created
+        ? {
+            termsVersion: policy.termsVersion ?? undefined,
+            newsletterOptIn: true,
+          }
+        : {}),
+    })
     assert.equal(response.status, 200, await response.clone().text())
     const cookie = response.headers
       .getSetCookie()
@@ -119,6 +156,11 @@ export async function verifyAuthContract(
       .from(authUsers)
       .where(eq(authUsers.email, email))
     assert(user)
+    if (created) {
+      assert.equal(user.termsVersion ?? null, policy.termsVersion)
+      assert.equal(Boolean(user.termsAcceptedAt), Boolean(policy.termsVersion))
+      assert.equal(user.newsletterOptIn, policy.newsletter)
+    }
     return { cookie, user, code }
   }
   function signedQuery(
@@ -138,6 +180,26 @@ export async function verifyAuthContract(
     return params.toString()
   }
   try {
+    if (policy.termsVersion) {
+      for (const termsVersion of [undefined, 'outdated-version']) {
+        const { code } = await credentials(termsEmail)
+        const refused = await api('/sign-in/email-otp', {
+          email: termsEmail,
+          otp: code,
+          termsVersion,
+        })
+        assert.equal(refused.status, 400, 'accounts require the current terms')
+      }
+      assert.equal(
+        (
+          await database
+            .select()
+            .from(authUsers)
+            .where(eq(authUsers.email, termsEmail))
+        ).length,
+        0,
+      )
+    }
     const admin = await login(adminEmail)
     const user = await login(userEmail)
     await database

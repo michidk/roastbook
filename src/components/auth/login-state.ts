@@ -22,6 +22,8 @@ export type LoginStep =
   | z.infer<typeof emailDraft>
   | (z.infer<typeof codeDraft> & { code: string })
   | { kind: 'confirm'; email: string; code: string; sentAt: number }
+  // The code is valid, but no account exists for the address yet.
+  | { kind: 'create'; email: string; code: string; sentAt: number }
 
 export function restoreLoginDraft(raw: string | null, now: number): LoginStep {
   const empty: LoginStep = { kind: 'email', email: '' }

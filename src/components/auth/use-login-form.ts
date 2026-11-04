@@ -1,5 +1,6 @@
 import { type SubmitEvent, useEffect, useRef, useState } from 'react'
 import { z } from 'zod'
+import { afterSignUp, signUpRequest } from '@/extension-points/sign-up'
 import { authClient } from '@/lib/auth-client'
 import { selectOfflineOwner } from '@/lib/journal-owner'
 import { getPasskeySetupOffer } from '@/lib/server/passkey-prompt'
@@ -17,7 +18,13 @@ import {
 } from './login-state'
 
 const redirectSchema = z.object({ url: z.string() })
-type Activity = 'sending' | 'verifying' | 'resending' | 'passkey' | null
+type Activity =
+  | 'sending'
+  | 'verifying'
+  | 'creating'
+  | 'resending'
+  | 'passkey'
+  | null
 
 export function useLoginForm() {
   const [step, setStep] = useState<LoginStep>({ kind: 'email', email: '' })
@@ -163,9 +170,30 @@ export function useLoginForm() {
     event.preventDefault()
     if (!ready || busy) return
     if (step.kind === 'email') return sendEmail()
+    if (step.kind === 'create') return
     setActivity('verifying')
     setError('')
     try {
+      // Checks the code without using it: only a proven address learns whether
+      // an account exists, and a new one is created only after confirmation.
+      const check = await authClient.$fetch(
+        '/email-otp/check-verification-otp',
+        {
+          method: 'POST',
+          body: { email: step.email, type: 'sign-in', otp: step.code },
+        },
+      )
+      const errorCode = (check.error as { code?: unknown } | null)?.code
+      if (errorCode === 'USER_NOT_FOUND') {
+        setStep({ ...step, kind: 'create' })
+        setActivity(null)
+        return
+      }
+      if (check.error)
+        throw new Error(
+          check.error.message ??
+            'This code is invalid or expired. Request a new email.',
+        )
       const result = await authClient.signIn.emailOtp({
         email: step.email,
         otp: step.code,
@@ -187,6 +215,32 @@ export function useLoginForm() {
         codeInput.current?.focus()
         codeInput.current?.select()
       })
+    }
+  }
+
+  async function createAccount(choices: Record<string, boolean>) {
+    if (step.kind !== 'create' || busy) return
+    setActivity('creating')
+    setError('')
+    try {
+      const result = await authClient.$fetch('/sign-in/email-otp', {
+        method: 'POST',
+        body: { email: step.email, otp: step.code, ...signUpRequest(choices) },
+      })
+      if (result.error)
+        throw new Error(
+          result.error.message ??
+            'Could not create your account. Request a new email and try again.',
+        )
+      afterSignUp(choices)
+      await completeEmailSignIn(result.data)
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : 'Could not create your account. Try again.',
+      )
+      setActivity(null)
     }
   }
 
@@ -243,6 +297,7 @@ export function useLoginForm() {
     emailInput,
     codeInput,
     submit,
+    createAccount,
     sendEmail,
     signInPasskey,
     changeEmail,
