@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { adminUserColumns } from '@/extension-points/admin-user-extras'
 import {
   useDateFormatter,
   useDateTimeFormatter,
@@ -34,6 +35,15 @@ export function AdminUsersTable({
               Account
             </TableHead>
             <TableHead scope="col">Role</TableHead>
+            {adminUserColumns.map(({ id, header, align }) => (
+              <TableHead
+                key={id}
+                scope="col"
+                className={align === 'right' ? 'text-right' : undefined}
+              >
+                {header}
+              </TableHead>
+            ))}
             <TableHead scope="col" className="pr-4">
               <span className="sr-only">Actions</span>
             </TableHead>
@@ -79,6 +89,18 @@ export function AdminUsersTable({
                     )}
                   </Badge>
                 </TableCell>
+                {adminUserColumns.map(({ id, align, cell }) => (
+                  <TableCell
+                    key={id}
+                    className={
+                      align === 'right'
+                        ? 'text-right tabular-nums'
+                        : 'text-muted-foreground'
+                    }
+                  >
+                    {cell(user)}
+                  </TableCell>
+                ))}
                 <TableCell className="pr-3 text-right">
                   {user.deletingAt ? (
                     <span className="sr-only">Deletion in progress</span>
@@ -91,7 +113,7 @@ export function AdminUsersTable({
           ) : (
             <TableRow>
               <TableCell
-                colSpan={3}
+                colSpan={3 + adminUserColumns.length}
                 className="py-12 text-center text-muted-foreground"
               >
                 No users on this page.

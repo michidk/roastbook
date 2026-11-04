@@ -19,6 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { adminUserActions } from '@/extension-points/admin-user-extras'
 import { deleteUser, type getUsers, setUserRole } from '@/lib/server/account'
 
 export type AdminUser = Awaited<ReturnType<typeof getUsers>>['users'][number]
@@ -27,7 +28,7 @@ export function AdminUserActions({ user }: { readonly user: AdminUser }) {
   const router = useRouter()
   const actionTrigger = useRef<HTMLButtonElement>(null)
   const [busy, setBusy] = useState(false)
-  const [dialog, setDialog] = useState<'delete' | null>(null)
+  const [dialog, setDialog] = useState<string | null>(null)
 
   async function action(work: () => Promise<unknown>, message: string) {
     setBusy(true)
@@ -42,6 +43,8 @@ export function AdminUserActions({ user }: { readonly user: AdminUser }) {
       setBusy(false)
     }
   }
+
+  const extra = adminUserActions.find(({ id }) => id === dialog)
 
   return (
     <>
@@ -80,6 +83,12 @@ export function AdminUserActions({ user }: { readonly user: AdminUser }) {
               )}
               {user.role === 'admin' ? 'Remove admin' : 'Make admin'}
             </DropdownMenuItem>
+            {adminUserActions.map(({ id, label, icon: Icon }) => (
+              <DropdownMenuItem key={id} onClick={() => setDialog(id)}>
+                <Icon aria-hidden />
+                {label}
+              </DropdownMenuItem>
+            ))}
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
@@ -101,33 +110,44 @@ export function AdminUserActions({ user }: { readonly user: AdminUser }) {
       >
         <DialogContent showCloseButton={!busy} finalFocus={actionTrigger}>
           <DialogHeader>
-            <DialogTitle>Delete user?</DialogTitle>
+            <DialogTitle>{extra ? extra.title : 'Delete user?'}</DialogTitle>
             <DialogDescription className="break-words">
-              {`Permanently delete ${user.email} and their journal, including brews, beans, café visits, and images. This cannot be undone.`}
+              {extra
+                ? extra.description(user)
+                : `Permanently delete ${user.email} and their journal, including brews, beans, café visits, and images. This cannot be undone.`}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              disabled={busy}
-              onClick={() => setDialog(null)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={busy}
-              aria-busy={busy}
-              onClick={() =>
-                void action(
-                  () => deleteUser({ data: { userId: user.id } }),
-                  'User deletion started.',
-                )
-              }
-            >
-              {busy ? 'Deleting…' : 'Delete permanently'}
-            </Button>
-          </DialogFooter>
+          {extra ? (
+            extra.form({
+              user,
+              busy,
+              run: action,
+              close: () => setDialog(null),
+            })
+          ) : (
+            <DialogFooter>
+              <Button
+                variant="outline"
+                disabled={busy}
+                onClick={() => setDialog(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={busy}
+                aria-busy={busy}
+                onClick={() =>
+                  void action(
+                    () => deleteUser({ data: { userId: user.id } }),
+                    'User deletion started.',
+                  )
+                }
+              >
+                {busy ? 'Deleting…' : 'Delete permanently'}
+              </Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
     </>

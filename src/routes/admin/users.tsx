@@ -5,9 +5,9 @@ import {
 } from '@tanstack/react-router'
 import { PanelSection } from '@/components/section-layout'
 import { Button } from '@/components/ui/button'
-import { AdminUsersTable } from '@/extension-points/admin-users-table'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { getUsers } from '@/lib/server/account'
+import { AdminUsersTable } from './-components/admin-users-table'
 
 export const Route = createFileRoute('/admin/users')({
   validateSearch: (search: Record<string, unknown>) => ({
