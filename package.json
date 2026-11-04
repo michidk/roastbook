@@ -96,7 +96,7 @@
     "@cloudflare/workers-types": "5.20261102.1",
     "@electric-sql/pglite": "0.5.14",
     "@modelcontextprotocol/client": "2.4.0",
-    "@opencode-ai/models": "0.0.121",
+    "@opencode-ai/models": "0.0.122",
     "@storybook/addon-docs": "10.6.5",
     "@storybook/addon-themes": "10.6.5",
     "@storybook/react-vite": "10.6.5",

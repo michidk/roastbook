@@ -49,7 +49,7 @@
         "@cloudflare/workers-types": "5.20261102.1",
         "@electric-sql/pglite": "0.5.14",
         "@modelcontextprotocol/client": "2.4.0",
-        "@opencode-ai/models": "0.0.121",
+        "@opencode-ai/models": "0.0.122",
         "@roastbook/journal-demo": "workspace:*",
         "@storybook/addon-docs": "10.6.5",
         "@storybook/addon-themes": "10.6.5",
@@ -434,7 +434,7 @@
 
     "@oozcitak/util": ["@oozcitak/util@10.0.0", "", {}, "sha512-hAX0pT/73190NLqBPPWSdBVGtbY6VOhWYK3qqHqtXQ1gK7kS2yz4+ivsN07hpJ6I3aeMtKP6J6npsEKOAzuTLA=="],
 
-    "@opencode-ai/models": ["@opencode-ai/models@0.0.121", "", { "peerDependencies": { "effect": "4.0.0-beta.83" }, "optionalPeers": ["effect"] }, "sha512-ilAUUzW0mDQvvPHRdK/JV7Pg1CUjky7nl4RSWy9I5ximzSNuXR5uBMgEtDUwPVcc2qphhk5p40v0sF01OoOMng=="],
+    "@opencode-ai/models": ["@opencode-ai/models@0.0.122", "", { "peerDependencies": { "effect": "4.0.0-beta.83" }, "optionalPeers": ["effect"] }, "sha512-AA4Z5jJ3d63UFw2Upzp1mhfE9D8twYzJ8q478IMmCYfXpGnsdzD+dp1f1hFCpM2iyraqD6NFPyxmTyC5n8/zKA=="],
 
     "@oxc-parser/binding-android-arm-eabi": ["@oxc-parser/binding-android-arm-eabi@0.155.0", "", { "os": "android", "cpu": "arm" }, "sha512-A6xv7hDtnTm+xlZ7utn6rRQpRMJHRhVr3gjRGqlx0RUX84mNk0pAsy6YN/wWhuOTkaZhRrrzaLxf0NfbH77j2w=="],
 
