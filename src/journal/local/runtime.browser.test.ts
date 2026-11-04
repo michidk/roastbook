@@ -1,6 +1,6 @@
 // Runs with the browser platform (`bun run test:browser-runtime`): the real
 // journal functions execute against an in-process PGlite journal.
-import { afterEach, expect, mock, test } from 'bun:test'
+import { afterEach, expect, mock, setDefaultTimeout, test } from 'bun:test'
 import { readdir, readFile } from 'node:fs/promises'
 import { PGlite } from '@electric-sql/pglite'
 import { createBean, getBeanCollection, updateBean } from '@/journal/beans'
@@ -17,14 +17,28 @@ const migrations = Object.fromEntries(
     .map((name) => [name, () => readFile(`drizzle/${name}`, 'utf8')]),
 )
 
+// The first test also migrates the template database.
+setDefaultTimeout(30_000)
+
 const opened: LocalJournal[] = []
 afterEach(async () => {
   for (const journal of opened.splice(0)) await journal.close()
 })
 
+// Migrated once; each test starts from a copy of that database.
+let migrated: Blob | undefined
+async function migratedClient() {
+  if (!migrated) {
+    const template = await PGlite.create('memory://')
+    await migrateJournal(template, migrations)
+    migrated = await template.dumpDataDir('none')
+    await template.close()
+  }
+  return PGlite.create('memory://', { loadDataDir: migrated })
+}
+
 async function openJournal(sync: boolean) {
-  const client = await PGlite.create('memory://')
-  await migrateJournal(client, migrations)
+  const client = await migratedClient()
   const journal = await openTestJournal(client, sync)
   opened.push(journal)
   return journal
