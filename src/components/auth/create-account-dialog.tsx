@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { signUpChoices } from '@/extension-points/sign-up'
+import { type SignUpChoice, signUpChoices } from '@/extension-points/sign-up'
 
 export function CreateAccountDialog({
   email,
@@ -50,32 +50,17 @@ export function CreateAccountDialog({
         {signUpChoices.length || error ? (
           <DialogBody className="space-y-4">
             {signUpChoices.map((choice) => (
-              <div key={choice.id} className="flex items-start gap-1">
-                <Checkbox
-                  id={`sign-up-${choice.id}`}
-                  className="mt-2.5"
-                  checked={choices[choice.id] === true}
-                  onCheckedChange={(checked) =>
-                    setChoices((current) => ({
-                      ...current,
-                      [choice.id]: checked,
-                    }))
-                  }
-                  aria-required={choice.required || undefined}
-                />
-                <Label
-                  htmlFor={`sign-up-${choice.id}`}
-                  className="block flex-1 py-1.5 pl-2 font-normal leading-relaxed"
-                >
-                  {choice.label}
-                  {choice.required ? (
-                    <span className="text-muted-foreground"> (required)</span>
-                  ) : null}
-                </Label>
-                <PageHelp ariaLabel={`About ${choice.name}`}>
-                  {choice.help}
-                </PageHelp>
-              </div>
+              <ChoiceRow
+                key={choice.id}
+                choice={choice}
+                checked={choices[choice.id] === true}
+                onChange={(checked) =>
+                  setChoices((current) => ({
+                    ...current,
+                    [choice.id]: checked,
+                  }))
+                }
+              />
             ))}
             {error ? (
               <div
@@ -108,5 +93,37 @@ export function CreateAccountDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function ChoiceRow({
+  choice,
+  checked,
+  onChange,
+}: {
+  readonly choice: SignUpChoice
+  readonly checked: boolean
+  readonly onChange: (checked: boolean) => void
+}) {
+  return (
+    <div className="flex items-start gap-1">
+      <Checkbox
+        id={`sign-up-${choice.id}`}
+        className="mt-2.5"
+        checked={checked}
+        onCheckedChange={onChange}
+        aria-required={choice.required || undefined}
+      />
+      <Label
+        htmlFor={`sign-up-${choice.id}`}
+        className="block flex-1 py-1.5 pl-2 font-normal leading-relaxed"
+      >
+        {choice.label}
+        {choice.required ? (
+          <span className="text-muted-foreground"> (required)</span>
+        ) : null}
+      </Label>
+      <PageHelp ariaLabel={`About ${choice.name}`}>{choice.help}</PageHelp>
+    </div>
   )
 }
