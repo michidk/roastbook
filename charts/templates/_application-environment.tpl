@@ -1,15 +1,8 @@
 {{- define "roastbook.applicationEnvironment" -}}
-{{- if and .Values.openai.providedExistingSecret .Values.openai.existingSecret }}
-{{- fail "Choose openai.existingSecret or openai.providedExistingSecret, not both" }}
-{{- end }}
 {{- if .Values.auth.enabled }}
 envFrom:
   - secretRef:
       name: {{ required "auth.existingSecret is required for built-in authentication" .Values.auth.existingSecret }}
-{{- if .Values.openai.providedExistingSecret }}
-  - secretRef:
-      name: {{ .Values.openai.providedExistingSecret }}
-{{- end }}
 {{- end }}
 env:
   - name: AUTH_ENABLED
@@ -58,19 +51,6 @@ env:
         name: {{ .Values.storage.s3.existingSecret }}
         key: {{ .Values.storage.s3.existingSecretSecretAccessKeyKey }}
   {{- end }}
-  {{- if and .Values.auth.enabled .Values.openai.existingSecret }}
-  - name: OPENAI_API_KEY
-    valueFrom:
-      secretKeyRef:
-        name: {{ .Values.openai.existingSecret }}
-        key: {{ .Values.openai.existingSecretKey }}
-  - name: OPENAI_BASE_URL
-    value: {{ .Values.openai.baseUrl | quote }}
-  - name: OPENAI_VISION_MODEL
-    value: {{ .Values.openai.visionModel | quote }}
-  - name: OPENAI_RESEARCH_MODEL
-    value: {{ .Values.openai.researchModel | quote }}
-  {{- end }}
   {{- if .Values.openai.credentialExistingSecret }}
   - name: AI_CREDENTIAL_ENCRYPTION_KEY
     valueFrom:
@@ -90,10 +70,4 @@ env:
     value: {{ join "," .Values.mcp.allowedOrigins | quote }}
   {{- end }}
   {{- end }}
-  - name: AI_TELEMETRY_STORE_PAYLOADS
-    value: {{ .Values.openai.telemetryStorePayloads | quote }}
-  - name: AI_TELEMETRY_RETENTION_DAYS
-    value: {{ .Values.openai.telemetryRetentionDays | quote }}
-  - name: AI_TELEMETRY_MAX_PAYLOAD_BYTES
-    value: {{ .Values.openai.telemetryMaxPayloadBytes | quote }}
 {{- end -}}

@@ -5,16 +5,15 @@ import { eq } from 'drizzle-orm'
 assert(process.env.TEST_DATABASE_URL, 'An isolated test database is required')
 process.env.DATABASE_URL = process.env.TEST_DATABASE_URL
 process.env.AUTH_ENABLED = 'true'
-process.env.DEPLOYMENT_MODE = 'hosted'
+process.env.DEPLOYMENT_MODE = 'self-hosted'
 process.env.AUTH_URL = 'https://coffee.example.test'
 process.env.AUTH_ADMIN_EMAIL = 'owner@example.test'
 process.env.AUTH_SECRET = 'r'.repeat(64)
 process.env.EMAIL_FROM = 'fixture@example.test'
 process.env.SMTP_URL = 'smtp://127.0.0.1:1'
-process.env.AI_TELEMETRY_STORE_PAYLOADS = 'false'
-process.env.AI_PROVIDED_API_KEY = 'fixture-operator-key'
-process.env.AI_PROVIDED_VISION_MODEL = 'fixture-vision'
-process.env.AI_PROVIDED_RESEARCH_MODEL = 'fixture-research'
+process.env.AI_CREDENTIAL_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString(
+  'base64',
+)
 let fail = false
 const output = 'PRIVATE_OUTPUT_FIXTURE'
 const provider = Bun.serve({
@@ -58,10 +57,13 @@ const provider = Bun.serve({
     )
   },
 })
-process.env.AI_PROVIDED_BASE_URL = `http://127.0.0.1:${provider.port}/v1`
+process.env.AI_ALLOWED_PRIVATE_ORIGINS = `http://127.0.0.1:${provider.port}`
 const { getControlDb } = await import('../src/db/connection.server')
 const { withJournal } = await import('../src/db/journal-context.server')
-const { authUsers, aiRequestLogs } = await import('../src/db/schema')
+const { authUsers } = await import('../src/db/schema')
+const { saveAiProviderSettings } = await import(
+  '../src/lib/server/ai-provider-settings.server'
+)
 const { researchBeanFromWeb } = await import(
   '../src/lib/server/ai-web-research.server'
 )
@@ -81,7 +83,6 @@ try {
     email: user.email,
     emailVerified: true,
     journalInitializedAt: new Date(),
-    aiProviderMode: 'provided',
   })
   console.info = (...args) => {
     logs.push(JSON.stringify(args))
@@ -89,6 +90,15 @@ try {
   console.error = (...args) => {
     logs.push(JSON.stringify(args))
   }
+  await withJournal(user, () =>
+    saveAiProviderSettings({
+      baseURL: `http://127.0.0.1:${provider.port}/v1`,
+      apiKey: 'fixture-user-key',
+      api: 'responses',
+      visionModel: 'fixture-vision',
+      researchModel: 'fixture-research',
+    }),
+  )
   const result = await withJournal(user, () =>
     researchBeanFromWeb('PRIVATE_INPUT_FIXTURE', 'PRIVATE_ROASTER_FIXTURE'),
   )
@@ -99,27 +109,18 @@ try {
       researchBeanFromWeb('PRIVATE_FAILURE_INPUT_FIXTURE'),
     ),
   )
-  const rows = await getControlDb()
-    .select({ payload: aiRequestLogs.requestPayload })
-    .from(aiRequestLogs)
-    .where(eq(aiRequestLogs.ownerId, user.id))
-  assert.equal(rows.length, 2)
-  for (const row of rows) assert.deepEqual(row.payload, { redacted: true })
   assert(logs.length > 0, 'Operational metadata should still be logged')
   assert(
     !logs.join('\n').includes('PRIVATE_'),
     'Private research content must not enter application logs',
   )
   assert(
-    !logs.join('\n').includes('fixture-operator-key'),
+    !logs.join('\n').includes('fixture-user-key'),
     'Provider credentials must not enter application logs',
   )
 } finally {
   console.info = originalInfo
   console.error = originalError
-  await getControlDb()
-    .delete(aiRequestLogs)
-    .where(eq(aiRequestLogs.ownerId, user.id))
   await getControlDb().delete(authUsers).where(eq(authUsers.id, user.id))
   provider.stop(true)
 }

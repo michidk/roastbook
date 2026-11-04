@@ -3,7 +3,7 @@ import { webSearchTool } from '@tanstack/ai-openai/tools'
 import {
   createAiRequestLogMiddleware,
   startAiRequestLog,
-} from '@/lib/server/ai-request-logs.server'
+} from '@/extension-points/ai-request-recorder.server'
 import {
   BEAN_INFO_FIELDS,
   MACHINE_RESEARCH_FIELDS,

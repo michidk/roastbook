@@ -4,7 +4,7 @@ import { parseServerEnv } from '@/lib/env.server'
 const databaseUrl = 'postgresql://roastbook:roastbook@localhost:5432/roastbook'
 
 describe('server environment', () => {
-  test('applies local storage and AI defaults', () => {
+  test('applies local storage defaults', () => {
     const environment = parseServerEnv({ DATABASE_URL: databaseUrl })
 
     expect(environment).toMatchObject({
@@ -13,31 +13,7 @@ describe('server environment', () => {
       STORAGE_PATH: './uploads',
       STORAGE_URL: '/media',
       S3_REGION: 'us-east-1',
-      AI_TELEMETRY_STORE_PAYLOADS: false,
-      AI_TELEMETRY_RETENTION_DAYS: 1,
-      AI_TELEMETRY_MAX_PAYLOAD_BYTES: 65_536,
     })
-  })
-
-  test('bounds detailed AI telemetry configuration', () => {
-    const environment = parseServerEnv({
-      DATABASE_URL: databaseUrl,
-      AI_TELEMETRY_STORE_PAYLOADS: 'true',
-      AI_TELEMETRY_RETENTION_DAYS: '7',
-      AI_TELEMETRY_MAX_PAYLOAD_BYTES: '32768',
-    })
-
-    expect(environment).toMatchObject({
-      AI_TELEMETRY_STORE_PAYLOADS: true,
-      AI_TELEMETRY_RETENTION_DAYS: 7,
-      AI_TELEMETRY_MAX_PAYLOAD_BYTES: 32_768,
-    })
-    expect(() =>
-      parseServerEnv({
-        DATABASE_URL: databaseUrl,
-        AI_TELEMETRY_RETENTION_DAYS: '31',
-      }),
-    ).toThrow('AI_TELEMETRY_RETENTION_DAYS')
   })
 
   test('treats empty optional values as unset', () => {
@@ -179,112 +155,6 @@ test('validates the AI encryption key and confines private AI origins to self-ho
       AI_ALLOWED_PRIVATE_ORIGINS: 'http://localhost:11434',
     }),
   ).toThrow('AI_ALLOWED_PRIVATE_ORIGINS')
-})
-
-describe('provided AI deployment configuration', () => {
-  const base = {
-    DATABASE_URL: databaseUrl,
-    AUTH_ENABLED: 'true',
-    AUTH_URL: 'https://coffee.example.test',
-    AUTH_SECRET: 'a'.repeat(64),
-    EMAIL_FROM: 'coffee@example.test',
-    SMTP_URL: 'smtp://localhost:1025',
-  }
-  const legacy = {
-    OPENAI_API_KEY: 'existing-operator-key',
-    OPENAI_BASE_URL: 'http://omniroute.internal:20128/v1',
-    OPENAI_VISION_MODEL: 'existing-vision',
-    OPENAI_RESEARCH_MODEL: 'existing-research',
-  }
-  test('reuses the complete existing operator provider, including internal endpoints', () => {
-    expect(parseServerEnv({ ...base, ...legacy })).toMatchObject({
-      AI_PROVIDED_API_KEY: legacy.OPENAI_API_KEY,
-      AI_PROVIDED_BASE_URL: legacy.OPENAI_BASE_URL,
-      AI_PROVIDED_API: 'responses',
-      AI_PROVIDED_VISION_MODEL: legacy.OPENAI_VISION_MODEL,
-      AI_PROVIDED_RESEARCH_MODEL: legacy.OPENAI_RESEARCH_MODEL,
-    })
-    expect(
-      parseServerEnv({ ...base, OPENAI_API_KEY: legacy.OPENAI_API_KEY }),
-    ).toMatchObject({
-      AI_PROVIDED_BASE_URL: 'https://api.openai.com/v1',
-      AI_PROVIDED_VISION_MODEL: 'gpt-5.1-codex',
-      AI_PROVIDED_RESEARCH_MODEL: 'gpt-5.1-codex',
-    })
-    expect(
-      parseServerEnv({ ...base, ...legacy, AI_PROVIDED_API_KEY: '  ' })
-        .AI_PROVIDED_API_KEY,
-    ).toBe(legacy.OPENAI_API_KEY)
-  })
-  test('never combines a new provider key with the existing endpoint or models', () => {
-    expect(
-      parseServerEnv({
-        ...base,
-        ...legacy,
-        AI_PROVIDED_API_KEY: 'new-provider-key',
-        AI_PROVIDED_VISION_MODEL: 'new-vision',
-        AI_PROVIDED_RESEARCH_MODEL: 'new-research',
-      }),
-    ).toMatchObject({
-      AI_PROVIDED_API_KEY: 'new-provider-key',
-      AI_PROVIDED_BASE_URL: 'https://api.openai.com/v1',
-      AI_PROVIDED_VISION_MODEL: 'new-vision',
-      AI_PROVIDED_RESEARCH_MODEL: 'new-research',
-    })
-    expect(() =>
-      parseServerEnv({ ...base, ...legacy, AI_PROVIDED_API_KEY: 'new-key' }),
-    ).toThrow('AI_PROVIDED_VISION_MODEL')
-    expect(
-      parseServerEnv({
-        ...base,
-        ...legacy,
-        AI_PROVIDED_BASE_URL: 'https://new-provider.example/v1',
-      }).AI_PROVIDED_API_KEY,
-    ).toBeUndefined()
-  })
-  test('accepts unused operator configuration when authentication is disabled', () => {
-    expect(
-      parseServerEnv({ DATABASE_URL: databaseUrl, ...legacy }).AUTH_ENABLED,
-    ).toBe(false)
-    expect(() =>
-      parseServerEnv({
-        ...base,
-        ...legacy,
-        OPENAI_BASE_URL: 'https://user:password@example.test/v1',
-      }),
-    ).toThrow('AI_PROVIDED_BASE_URL')
-  })
-  test('requires explicit models only when authentication enables the operator key', () => {
-    expect(
-      parseServerEnv({
-        DATABASE_URL: databaseUrl,
-        AI_PROVIDED_API_KEY: 'fixture-key',
-      }).AUTH_ENABLED,
-    ).toBe(false)
-    expect(() =>
-      parseServerEnv({ ...base, AI_PROVIDED_API_KEY: 'fixture-key' }),
-    ).toThrow('AI_PROVIDED_VISION_MODEL')
-    expect(
-      parseServerEnv({
-        ...base,
-        AI_PROVIDED_API_KEY: 'fixture-key',
-        AI_PROVIDED_VISION_MODEL: 'vision',
-        AI_PROVIDED_RESEARCH_MODEL: 'research',
-      }).AI_PROVIDED_API,
-    ).toBe('responses')
-  })
-  test('rejects operator endpoint URLs that could forward credentials unexpectedly', () => {
-    for (const endpoint of [
-      'file:///tmp/provider',
-      'https://user:password@example.test/v1',
-      'https://example.test/v1?key=secret',
-      'https://example.test/v1#fragment',
-    ]) {
-      expect(() =>
-        parseServerEnv({ ...base, AI_PROVIDED_BASE_URL: endpoint }),
-      ).toThrow('AI_PROVIDED_BASE_URL')
-    }
-  })
 })
 
 describe('image limit configuration', () => {

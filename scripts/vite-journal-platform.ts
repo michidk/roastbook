@@ -6,10 +6,14 @@ const platform =
 
 /**
  * Journal code runs on the server and in the browser. The browser build swaps
- * the platform modules for their `.browser.ts` versions, the D1 schema of the
- * hosted build for PostgreSQL, and the demo edition for the product's synced one.
+ * the platform modules for their `.browser.ts` versions, a server schema swapped
+ * in by a build extension for PostgreSQL's, and the demo edition for the
+ * product's synced one.
  */
-export function journalPlatform(edition: 'standard' | 'demo'): Plugin {
+export function journalPlatform(
+  edition: 'standard' | 'demo',
+  serverSchema?: string,
+): Plugin {
   return {
     name: 'roastbook-journal-platform',
     enforce: 'pre',
@@ -21,8 +25,8 @@ export function journalPlatform(edition: 'standard' | 'demo'): Plugin {
         importer?.includes('/drizzle-orm/')
       )
         return resolve('src/journal/local/pglite-types.ts')
-      // The browser journal is PostgreSQL even when the server build is D1.
-      if (source === resolve('src/db/d1/schema.ts'))
+      // The browser journal is PostgreSQL whatever schema the server uses.
+      if (serverSchema && source === serverSchema)
         return resolve('src/db/schema.ts')
       const module = platform.exec(source)?.[1]
       if (module) return resolve(`src/journal/platform/${module}.browser.ts`)

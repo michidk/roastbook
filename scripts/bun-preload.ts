@@ -1,14 +1,9 @@
 import { plugin } from 'bun'
-import { AI_PRICING_MODULE, aiPricingModule } from './ai-pricing'
 
-// Bun runs tests and scripts without Vite; give it the same generated modules.
+// Bun runs tests and scripts without Vite; give it the same platform modules.
 plugin({
-  name: 'roastbook-generated-modules',
+  name: 'roastbook-journal-platform',
   setup(build) {
-    build.module(AI_PRICING_MODULE, () => ({
-      contents: aiPricingModule(),
-      loader: 'js',
-    }))
     // Browser-runtime tests use the browser platform, like the client build.
     // Bun skips onResolve for path aliases, so the server modules re-export.
     if (process.env.JOURNAL_PLATFORM === 'browser')

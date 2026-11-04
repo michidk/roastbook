@@ -39,8 +39,6 @@ values.
 | `hodor.existingSecret` | `password`, `secret` |
 | `storage.s3.existingSecret` | `access-key-id`, `secret-access-key` |
 | `openai.credentialExistingSecret` | `encryption-key` |
-| `openai.existingSecret` | `api-key` |
-| `openai.providedExistingSecret` | `AI_PROVIDED_*` variables |
 | `auth.existingSecret` | Authentication variables, see below |
 
 Key names can be overridden with the matching `*Key` values.
@@ -82,13 +80,7 @@ archives.
 
 - `openai.credentialExistingSecret` holds the key that encrypts users' own
   provider keys; without it, BYOAI is unavailable.
-- Provided AI (authenticated deployments only) uses either
-  `openai.existingSecret` with `baseUrl`, `visionModel`, and `researchModel`
-  (the `OPENAI_*` variables) or `openai.providedExistingSecret` with
-  `AI_PROVIDED_*` keys. The chart rejects both at once.
-- `openai.allowedPrivateOrigins` allows exact private origins (self-hosted).
-- `openai.telemetryStorePayloads`, `telemetryRetentionDays`, and
-  `telemetryMaxPayloadBytes` control diagnostic payload logging.
+- `openai.allowedPrivateOrigins` allows exact private origins.
 
 ## MCP
 

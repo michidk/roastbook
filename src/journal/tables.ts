@@ -16,7 +16,7 @@ const serverOnly = new Set([
   'shottimer',
 ])
 
-// `Table` covers both schemas: the hosted build swaps in the D1 (SQLite) one.
+// `Table` covers both schemas: a build extension may swap in a SQLite one.
 export const journalTables: Table[] = Object.values(
   schema as Record<string, unknown>,
 ).filter(

@@ -1,13 +1,9 @@
 import { z } from 'zod'
 import {
-  createAiProviderFetch,
-  createProvidedAiFetch,
-} from '@/lib/server/ai-provider-fetch.server'
-import {
   completeAiRequestLog,
   failAiRequestLog,
   startAiRequestLog,
-} from '@/lib/server/ai-request-logs.server'
+} from '@/extension-points/ai-request-recorder.server'
 import {
   BEAN_IMAGE_INFO_FIELDS,
   beanInfoPrompt,
@@ -51,11 +47,7 @@ export async function extractBeanInfoFromImages(
       /\/$/,
       '',
     )
-    const providerFetch =
-      config.providerMode === 'provided'
-        ? createProvidedAiFetch()
-        : createAiProviderFetch(baseURL)
-    const response = await providerFetch(`${baseURL}/chat/completions`, {
+    const response = await config.fetch(`${baseURL}/chat/completions`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${config.apiKey}`,
@@ -63,9 +55,7 @@ export async function extractBeanInfoFromImages(
       },
       body: JSON.stringify({
         model: config.visionModel,
-        ...(config.providerMode === 'provided'
-          ? { max_completion_tokens: 4096 }
-          : {}),
+        ...config.visionRequestLimits,
         messages: [
           { role: 'system', content: systemPrompt },
           {
@@ -96,11 +86,7 @@ export async function extractBeanInfoFromImages(
     const responseBody: unknown = await response.json()
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {
-        throw new Error(
-          config.providerMode === 'provided'
-            ? 'Provided AI is temporarily unavailable. Contact the administrator.'
-            : 'AI service authentication failed. Update the configured API key.',
-        )
+        throw new Error(config.authFailureMessage)
       }
       const providerError = z
         .object({ error: z.object({ message: z.string() }) })

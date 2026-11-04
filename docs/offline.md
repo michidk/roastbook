@@ -51,5 +51,4 @@ localhost with IndexedDB and Web Locks is required.
 ## Testing
 
 `bun run test:browser-runtime` runs journal functions on PGlite.
-`src/lib/server/journal-sync.integration.test.ts` and `bun run test:cloudflare`
-replay writes on PostgreSQL and D1.
+`src/lib/server/journal-sync.integration.test.ts` replays writes on PostgreSQL.

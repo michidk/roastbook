@@ -1,7 +1,7 @@
 # Journal architecture
 
 Every journal read and write is one SQL journal function in `src/journal/`. It
-runs on the server on PostgreSQL or D1, and in browsers that keep a device copy
+runs on the server on PostgreSQL, and in browsers that keep a device copy
 on PGlite (sync replay, MCP and browser tabs without a copy use the server).
 `src/journal/local/device-copy.ts` decides: the demo and the installed app
 always keep a copy, a browser tab only when chosen in Settings → Offline;
@@ -33,11 +33,11 @@ Each module has a server version and a `*.browser.ts` version, selected for the
 client build by `scripts/vite-journal-platform.ts` (the demo build also selects
 `packages/journal-demo/src/edition.ts`).
 
-- `database`: request scope with RLS (PostgreSQL) or owner predicates (D1); in
-  the browser, a PGlite transaction as the owner with the same role and RLS.
-- `storage`: disk, S3 or R2; in the browser, picture bytes in the local
+- `database`: request scope with RLS; in the browser, a PGlite transaction as
+  the owner with the same role and RLS.
+- `storage`: disk or S3; in the browser, picture bytes in the local
   database, in the record's transaction.
-- `images`: sharp or Cloudflare Images; in the browser, canvas. Sizes come from
+- `images`: sharp; in the browser, canvas. Sizes come from
   `src/lib/picture-sizes.ts`. Pictures the browser encoded arrive with their
   thumbnails and are only checked, never encoded again.
 - `config`: environment; in the browser, cached server limits or demo defaults.
@@ -90,8 +90,9 @@ client build by `scripts/vite-journal-platform.ts` (the demo build also selects
   after a pull, or one that failed 12 times becomes a conflict with Try again
   and Discard in the sync banner; later writes continue. Infrastructure
   failures retry with backoff. A pull for a different account is refused.
-- **D1.** Without transactions, a replay counts as applied when its receipt or
-  all of its recorded identifiers already exist.
+- **Without transactions.** On a database without interactive transactions, a
+  replay counts as applied when its receipt or all of its recorded identifiers
+  already exist.
 
 RxDB queues from earlier versions are replayed once as journal writes by
 `legacy-offline.ts`, keeping their original operation ids as outbox keys.
@@ -100,7 +101,6 @@ RxDB queues from earlier versions are replayed once as journal writes by
 
 - `bun run test:browser-runtime`: `*.browser.test.ts` on in-process PGlite.
 - `src/lib/server/journal-sync.integration.test.ts`: replay on PostgreSQL.
-- `bun run test:cloudflare`: replay on D1.
 - `bun run check:client-assets`: database engine only in the worker, no
   secrets in client assets.
 

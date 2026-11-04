@@ -2,9 +2,8 @@
 
 Roastbook is a self-hosted coffee journal built with Bun, TanStack Start,
 React 19, shadcn/ui, and Drizzle. Self-hosting uses PostgreSQL with local or
-S3-compatible storage; hosted builds use Cloudflare Workers, D1, and R2.
-Deploy with Docker or the Helm chart. Better Auth provides private accounts;
-Hodor is optional for a shared journal.
+S3-compatible storage. Deploy with Docker or the Helm chart. Better Auth
+provides private accounts; Hodor is optional for a shared journal.
 
 ## Sources of truth
 
@@ -13,10 +12,9 @@ Hodor is optional for a shared journal.
 - Runtime configuration: `docs/configuration.md`
 - Docker, Helm, and security boundary: `docs/deployment.md`
 - Demo edition and Vercel build: `docs/demo-mode.md`
-- Workers target and release artifact: `docs/cloudflare-runtime.md`
 - Visual and interaction rules: `DESIGN.md`
 - Design files, capture, and editor: `design/README.md`
-- Database schemas: `src/db/schema.ts` (PostgreSQL), `src/db/d1/schema.ts` (D1)
+- Database schema: `src/db/schema.ts`
 - Journal functions, local database, and sync: `docs/client-data.md`
 - Journal architecture decision: `docs/adr/0001-sql-journal.md`
 - Helm defaults: `charts/values.yaml`
@@ -58,8 +56,9 @@ entry points, stack); never describe planned work as shipped.
   `import.meta.env` nowhere else.
 - All private requests pass through the journal request boundary.
   - PostgreSQL: transaction-local identity and the restricted RLS role.
-  - D1: explicit owner predicates, owner values, and composite owner foreign
-    keys; never emulate an interactive transaction.
+  - Journal functions stay portable to SQLite: explicit owner predicates,
+    owner values, and composite owner foreign keys; never rely on an
+    interactive transaction.
   - Related writes use `runJournalMutations` with compare-and-swap assertions
     in one atomic batch.
   - Reserve control access for authentication and account administration.

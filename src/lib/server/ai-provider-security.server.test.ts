@@ -96,26 +96,6 @@ describe('AI endpoint policy and transport', () => {
       }),
     ).rejects.toThrow()
   })
-  test('allows only the configured operator endpoint to use an internal network', async () => {
-    const endpoint = 'http://omniroute.internal:20128/v1'
-    const options = {
-      policy: { providedBaseURL: endpoint },
-      resolve: async () => [{ address: '10.42.0.10' }],
-    }
-    expect((await resolveAiEndpoint(endpoint, options)).addresses).toEqual([
-      { address: '10.42.0.10' },
-    ])
-    for (const other of [
-      'http://omniroute.internal:20129/v1',
-      'http://omniroute.internal:20128/other',
-      'http://metadata.internal/v1',
-      'https://omniroute.internal:20128/v1',
-    ])
-      await expect(resolveAiEndpoint(other, options)).rejects.toThrow()
-    await expect(
-      resolveAiEndpoint(endpoint, { ...options, policy: hosted }),
-    ).rejects.toThrow('HTTPS')
-  })
   test('pins DNS to the approved address, refuses redirects and provider errors, and bounds streamed responses', async () => {
     let requests = 0
     const server = Bun.serve({

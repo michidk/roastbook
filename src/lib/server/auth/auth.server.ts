@@ -4,7 +4,6 @@ import { betterAuth } from 'better-auth'
 import { APIError, createAuthMiddleware } from 'better-auth/api'
 import { emailOTP } from 'better-auth/plugins'
 import { and, eq, isNull } from 'drizzle-orm'
-import { getCloudflareRuntime } from '@/cloudflare/context.server'
 import { getControlDb } from '@/db/connection.server'
 import { authUsers, instanceIdentity } from '@/db/schema'
 import { renderAccountEmail } from '@/lib/account-email'
@@ -12,6 +11,7 @@ import { getServerEnv } from '@/lib/env.server'
 import { createAuthDatabaseAdapter } from '@/lib/server/auth/database-adapter.server'
 import { sendAccountEmail } from '@/lib/server/auth/email.server'
 import { initializeUser } from '@/lib/server/auth/identity.server'
+import { getExtensionRuntimeKey } from '@/lib/server/runtime-extension.server'
 import {
   SIGN_IN_CODE_LENGTH,
   SIGN_IN_LIFETIME_MS,
@@ -214,12 +214,12 @@ function createAuth() {
 let auth: ReturnType<typeof createAuth> | undefined
 const runtimeAuth = new WeakMap<object, ReturnType<typeof createAuth>>()
 export function getAuth() {
-  const runtime = getCloudflareRuntime()
-  if (runtime) {
-    const cached = runtimeAuth.get(runtime.bindings)
+  const runtimeKey = getExtensionRuntimeKey()
+  if (runtimeKey) {
+    const cached = runtimeAuth.get(runtimeKey)
     if (cached) return cached
     const created = createAuth()
-    runtimeAuth.set(runtime.bindings, created)
+    runtimeAuth.set(runtimeKey, created)
     return created
   }
   auth ??= createAuth()

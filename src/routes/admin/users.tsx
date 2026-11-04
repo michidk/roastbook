@@ -5,9 +5,9 @@ import {
 } from '@tanstack/react-router'
 import { PanelSection } from '@/components/section-layout'
 import { Button } from '@/components/ui/button'
+import { AdminUsersTable } from '@/extension-points/admin-users-table'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { getUsers } from '@/lib/server/account'
-import { AdminUsersTable } from './-components/admin-users-table'
 
 export const Route = createFileRoute('/admin/users')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -25,7 +25,6 @@ export const Route = createFileRoute('/admin/users')({
 })
 
 function UsersPage() {
-  const { providedAiAvailable } = Route.useRouteContext()
   const state = Route.useLoaderData()
   const router = useRouter()
   const loading = useRouterState({ select: (state) => state.isLoading })
@@ -36,16 +35,9 @@ function UsersPage() {
   return (
     <PanelSection
       title="Users"
-      description={
-        providedAiAvailable
-          ? 'Manage accounts, administrator access, and weekly free AI allowances.'
-          : 'Manage accounts and administrator access.'
-      }
+      description="Manage accounts and administrator access."
     >
-      <AdminUsersTable
-        users={state.users}
-        providedAiAvailable={providedAiAvailable}
-      />
+      <AdminUsersTable users={state.users} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground" aria-live="polite">
           {state.users.length

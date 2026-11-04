@@ -12,8 +12,8 @@ printing secret values.
 | Variable | Default | Required | Description |
 | --- | --- | --- | --- |
 | `DATABASE_URL` | — | PostgreSQL | PostgreSQL connection URL |
-| `DATABASE_PROVIDER` | `postgres` | No | `postgres` or `d1` (Workers) |
-| `STORAGE_PROVIDER` | `local` | No | `local`, `s3`, or `r2` (Workers) |
+| `DATABASE_PROVIDER` | `postgres` | No | `postgres` |
+| `STORAGE_PROVIDER` | `local` | No | `local` or `s3` |
 | `STORAGE_PATH` | `./uploads` | No | Upload root for local storage |
 | `STORAGE_URL` | `/media` | No | Server media URL base |
 | `IMAGE_MAX_PER_ITEM` | `3` | No | Pictures per item, 1–100 |
@@ -53,7 +53,7 @@ a new client; see [Journal architecture](client-data.md).
 | `AUTH_SIGNUP_ENABLED` | `true` | No | Allow verified email signup |
 | `AUTH_ADMIN_EMAIL` | — | Hosted | Bootstrap administrator email |
 | `AUTH_IP_HEADER` | `x-real-ip` | No | Client IP header from the proxy |
-| `EMAIL_PROVIDER` | `smtp` | No | `smtp`, `resend`, or `service` (Workers) |
+| `EMAIL_PROVIDER` | `smtp` | No | `smtp` or `resend` |
 | `EMAIL_FROM` | — | Auth | Verified sender address |
 | `SMTP_URL` | — | SMTP | SMTP URL, preferably `smtps://` |
 | `RESEND_API_KEY` | — | Resend | Resend API key |
@@ -88,43 +88,20 @@ authorized endpoints; do not put a public bucket or CDN in front of them.
 
 | Variable | Default | Required | Description |
 | --- | --- | --- | --- |
-| `AI_CREDENTIAL_ENCRYPTION_KEY` | — | BYOAI | Base64 32-byte key |
-| `AI_PROVIDED_API_KEY` | — | Provided AI | Operator API key |
-| `AI_PROVIDED_BASE_URL` | OpenAI API | No | Operator endpoint |
-| `AI_PROVIDED_API` | `responses` | No | Or `chat-completions` |
-| `AI_PROVIDED_VISION_MODEL` | — | Provided AI | Image model ID |
-| `AI_PROVIDED_RESEARCH_MODEL` | — | Provided AI | Text model ID |
+| `AI_CREDENTIAL_ENCRYPTION_KEY` | — | AI | Base64 32-byte key |
 | `AI_ALLOWED_PRIVATE_ORIGINS` | — | No | Allowed private origins |
-| `AI_TELEMETRY_STORE_PAYLOADS` | `false` | No | Store prompts and responses |
-| `AI_TELEMETRY_RETENTION_DAYS` | `1` | No | Retention, 1–30 days |
-| `AI_TELEMETRY_MAX_PAYLOAD_BYTES` | `65536` | No | Cap, 1 KiB–1 MiB |
-| `OPENAI_API_KEY` | — | No | Fallback operator key |
-| `OPENAI_BASE_URL` | OpenAI API | No | Fallback endpoint |
-| `OPENAI_VISION_MODEL` | `gpt-5.1-codex` | No | Fallback image model |
-| `OPENAI_RESEARCH_MODEL` | `gpt-5.1-codex` | No | Fallback text model |
 
-Users either connect their own provider (BYOAI) in Settings > AI or use the
-operator's provided AI. BYOAI needs `AI_CREDENTIAL_ENCRYPTION_KEY`: generate it
-once with `openssl rand -base64 32`, use the same key on all replicas, and back
-it up with the database. Losing it requires users to reconnect providers.
-
-Provided AI is available only with authentication enabled and an operator key
-set. Any nonempty `AI_PROVIDED_*` variable selects that set as a whole;
-otherwise the `OPENAI_*` variables supply the operator provider using the
-Responses API. Both endpoints default to `https://api.openai.com/v1`; the
-operator endpoint may be an internal HTTP(S) service.
-Each account gets 10 provided operations per week (reset Monday 00:00 UTC),
-adjustable per user in Admin > Users. Reserved operations stay consumed on
-failure. Set provider-side spending limits as well.
+Each user connects their own OpenAI-compatible provider in Settings > AI; the
+operator supplies only `AI_CREDENTIAL_ENCRYPTION_KEY`. Generate it once with
+`openssl rand -base64 32`, use the same key on all replicas, and back it up
+with the database. Losing it requires users to reconnect providers. Keys are
+encrypted per user and endpoint and never reach browsers, exports, or logs.
 
 User endpoints must use HTTPS; private, loopback, metadata, and reserved
 addresses are blocked and redirects are refused. `AI_ALLOWED_PRIVATE_ORIGINS`
 allows exact origins such as `http://ollama:11434` and is rejected in hosted
-mode.
-
-Request metadata and token usage are logged in the database; payloads are
-stored only with `AI_TELEMETRY_STORE_PAYLOADS=true`. They can contain private
-journal data, so enable it only for short diagnostics.
+mode. Selected journal data and images go to the user's provider, which bills
+them.
 
 ## MCP
 
@@ -158,10 +135,3 @@ These variables are read by the Compose files, not by the application.
 
 Chart defaults live in `charts/values.yaml`, validated by
 `charts/values.schema.json`. See `charts/README.md`.
-
-## Cloudflare Workers
-
-The Workers build uses D1, R2, and Cloudflare Email Sending bindings instead of
-`DATABASE_URL`, local or S3 storage, and SMTP, and always requires
-authentication. `ROASTBOOK_SOURCE_REVISION` records the source commit. See
-[Cloudflare runtime](cloudflare-runtime.md).
