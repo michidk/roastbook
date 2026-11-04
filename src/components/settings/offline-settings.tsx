@@ -15,7 +15,7 @@ import type { ComponentType } from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { DeleteConfirmation } from '@/components/delete-confirmation'
-import { SettingsPanelSection } from '@/components/settings/settings-shell'
+import { PanelSection } from '@/components/section-layout'
 import { Button } from '@/components/ui/button'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
@@ -238,7 +238,7 @@ export function OfflineSettings() {
 
   return (
     <>
-      <SettingsPanelSection
+      <PanelSection
         title="Offline"
         description={
           isOnline
@@ -359,9 +359,9 @@ export function OfflineSettings() {
             </Button>
           ) : null}
         </div>
-      </SettingsPanelSection>
+      </PanelSection>
 
-      <SettingsPanelSection
+      <PanelSection
         title="App shell"
         description="Re-download the cached application shell and static assets. Pending operations and local data are preserved."
       >
@@ -379,9 +379,9 @@ export function OfflineSettings() {
           />
           {isResettingShell ? 'Repairing…' : 'Repair app shell'}
         </Button>
-      </SettingsPanelSection>
+      </PanelSection>
 
-      <SettingsPanelSection
+      <PanelSection
         title="Cached data"
         description="Saved brew detail copies and the new-brew reference snapshot. Pending operations are kept."
       >
@@ -403,9 +403,9 @@ export function OfflineSettings() {
           }
           onConfirm={handleClearCaches}
         />
-      </SettingsPanelSection>
+      </PanelSection>
 
-      <SettingsPanelSection
+      <PanelSection
         title="Local data"
         description="The operation log, cached entities, reference data, and sync metadata stored in this browser."
       >
@@ -431,7 +431,7 @@ export function OfflineSettings() {
           }
           onConfirm={handleClearAll}
         />
-      </SettingsPanelSection>
+      </PanelSection>
     </>
   )
 }

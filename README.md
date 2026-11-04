@@ -49,7 +49,10 @@
 The public website is [roastbook.coffee](https://roastbook.coffee/). This repository
 serves the browser-local demo, the self-hosted journal, and a Cloudflare Workers
 runtime for managed hosting. Hosted infrastructure stays in a separate private
-repository; this does not change the self-hosted installation.
+repository; this does not change the self-hosted installation. Hosted automation
+deploys successful main builds to staging and published
+GitHub releases to production. PR previews require a contributor with write access
+or a `preview` label applied by someone with that access.
 
 ## ☕ What it is
 
@@ -153,6 +156,11 @@ white and black styling without textures.
 > Choose provided AI or BYOAI in Settings > AI. When enabled by your operator,
 > provided AI includes 10 free requests per week, resetting Monday at 00:00 UTC.
 > Administrators can adjust each user's allowance and review instance AI costs.
+
+Administrators use a dedicated Admin page with the same section navigation as
+Settings. Its Users table shows account roles, last sign-in, journal counts,
+and free AI usage when provided AI is enabled. Row actions manage administrator
+access, weekly allowances, and confirmed account deletion.
 > BYOAI uses your own endpoint and key, billed by your provider.
 > The free tier appears only with authentication enabled and an operator key in
 > environment variables, including existing `OPENAI_*` configuration. Otherwise,

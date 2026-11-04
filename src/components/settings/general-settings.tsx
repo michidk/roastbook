@@ -8,7 +8,7 @@ import {
 import { useEffect, useState } from 'react'
 import { CurrencyField, SelectField } from '@/components/form/form-field'
 import { TimeZoneField } from '@/components/form/time-zone-field'
-import { SettingsPanelSection } from '@/components/settings/settings-shell'
+import { PanelSection } from '@/components/section-layout'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useSettingMutation } from '@/hooks/use-setting-mutation'
 import {
@@ -115,7 +115,7 @@ export function GeneralSettings({ onSaved }: { readonly onSaved: () => void }) {
 
   return (
     <>
-      <SettingsPanelSection
+      <PanelSection
         title="Default currency"
         description="Used when adding beans, gear, and café visits."
         action={
@@ -135,9 +135,9 @@ export function GeneralSettings({ onSaved }: { readonly onSaved: () => void }) {
             if (isCurrency(value)) void currencyMutation.save(value)
           }}
         />
-      </SettingsPanelSection>
+      </PanelSection>
 
-      <SettingsPanelSection
+      <PanelSection
         title="Formatting"
         description="Choose how numbers and calendar dates are displayed. Both decimal separators are accepted when entering a value."
         action={
@@ -169,9 +169,9 @@ export function GeneralSettings({ onSaved }: { readonly onSaved: () => void }) {
             if (isDateFormat(value)) void dateFormatMutation.save(value)
           }}
         />
-      </SettingsPanelSection>
+      </PanelSection>
 
-      <SettingsPanelSection
+      <PanelSection
         title="Time zone"
         description="Used for brew-day boundaries, streaks, and time-of-day statistics."
         action={
@@ -188,9 +188,9 @@ export function GeneralSettings({ onSaved }: { readonly onSaved: () => void }) {
           disabled={timeZoneMutation.isSaving}
           onChange={(timeZone) => void timeZoneMutation.save(timeZone)}
         />
-      </SettingsPanelSection>
+      </PanelSection>
 
-      <SettingsPanelSection
+      <PanelSection
         title="Default list view"
         description="How cafés, roasters, recipes, and brewing methods are shown before you choose a view for a list."
         action={
@@ -211,7 +211,7 @@ export function GeneralSettings({ onSaved }: { readonly onSaved: () => void }) {
             if (isCollectionView(value)) void listViewMutation.save(value)
           }}
         />
-      </SettingsPanelSection>
+      </PanelSection>
     </>
   )
 }

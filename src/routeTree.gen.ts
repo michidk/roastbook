@@ -10,10 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as DotwellKnownSplatRouteImport } from './routes/[.]well-known/$'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAiRouteImport } from './routes/admin/ai'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as ApiAuthProbeRouteImport } from './routes/api/auth-probe'
@@ -78,6 +80,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -98,15 +105,20 @@ const DotwellKnownSplatRoute = DotwellKnownSplatRouteImport.update({
   path: '/.well-known/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAiRoute = AdminAiRouteImport.update({
-  id: '/admin/ai',
-  path: '/admin/ai',
-  getParentRoute: () => rootRouteImport,
+  id: '/ai',
+  path: '/ai',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/admin/users',
-  path: '/admin/users',
-  getParentRoute: () => rootRouteImport,
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
 } as any)
 const ApiAuthProbeRoute = ApiAuthProbeRouteImport.update({
   id: '/api/auth-probe',
@@ -392,6 +404,7 @@ const ApiAccountExportsJobIdRoute = ApiAccountExportsJobIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRouteWithChildren
   '/stats': typeof StatsRoute
@@ -436,6 +449,7 @@ export interface FileRoutesByFullPath {
   '/shots/new': typeof ShotsNewRoute
   '/visits/$visitId': typeof VisitsVisitIdRoute
   '/visits/new': typeof VisitsNewRoute
+  '/admin/': typeof AdminIndexRoute
   '/beans/': typeof BeansIndexRoute
   '/brewing-methods/': typeof BrewingMethodsIndexRoute
   '/brews/': typeof BrewsIndexRoute
@@ -500,6 +514,7 @@ export interface FileRoutesByTo {
   '/shots/new': typeof ShotsNewRoute
   '/visits/$visitId': typeof VisitsVisitIdRoute
   '/visits/new': typeof VisitsNewRoute
+  '/admin': typeof AdminIndexRoute
   '/beans': typeof BeansIndexRoute
   '/brewing-methods': typeof BrewingMethodsIndexRoute
   '/brews': typeof BrewsIndexRoute
@@ -522,6 +537,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRouteWithChildren
   '/stats': typeof StatsRoute
@@ -566,6 +582,7 @@ export interface FileRoutesById {
   '/shots/new': typeof ShotsNewRoute
   '/visits/$visitId': typeof VisitsVisitIdRoute
   '/visits/new': typeof VisitsNewRoute
+  '/admin/': typeof AdminIndexRoute
   '/beans/': typeof BeansIndexRoute
   '/brewing-methods/': typeof BrewingMethodsIndexRoute
   '/brews/': typeof BrewsIndexRoute
@@ -589,6 +606,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/login'
     | '/settings'
     | '/stats'
@@ -633,6 +651,7 @@ export interface FileRouteTypes {
     | '/shots/new'
     | '/visits/$visitId'
     | '/visits/new'
+    | '/admin/'
     | '/beans/'
     | '/brewing-methods/'
     | '/brews/'
@@ -697,6 +716,7 @@ export interface FileRouteTypes {
     | '/shots/new'
     | '/visits/$visitId'
     | '/visits/new'
+    | '/admin'
     | '/beans'
     | '/brewing-methods'
     | '/brews'
@@ -718,6 +738,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/login'
     | '/settings'
     | '/stats'
@@ -762,6 +783,7 @@ export interface FileRouteTypes {
     | '/shots/new'
     | '/visits/$visitId'
     | '/visits/new'
+    | '/admin/'
     | '/beans/'
     | '/brewing-methods/'
     | '/brews/'
@@ -784,12 +806,11 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   LoginRoute: typeof LoginRoute
   SettingsRoute: typeof SettingsRouteWithChildren
   StatsRoute: typeof StatsRoute
   DotwellKnownSplatRoute: typeof DotwellKnownSplatRoute
-  AdminAiRoute: typeof AdminAiRoute
-  AdminUsersRoute: typeof AdminUsersRoute
   ApiAuthProbeRoute: typeof ApiAuthProbeRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ApiMcpRoute: typeof ApiMcpRoute
@@ -845,6 +866,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -873,19 +901,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DotwellKnownSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/ai': {
       id: '/admin/ai'
-      path: '/admin/ai'
+      path: '/ai'
       fullPath: '/admin/ai'
       preLoaderRoute: typeof AdminAiRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/users': {
       id: '/admin/users'
-      path: '/admin/users'
+      path: '/users'
       fullPath: '/admin/users'
       preLoaderRoute: typeof AdminUsersRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/api/auth-probe': {
       id: '/api/auth-probe'
@@ -1282,6 +1317,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminAiRoute: typeof AdminAiRoute
+  AdminUsersRoute: typeof AdminUsersRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminAiRoute: AdminAiRoute,
+  AdminUsersRoute: AdminUsersRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 interface SettingsRouteChildren {
   SettingsAboutRoute: typeof SettingsAboutRoute
   SettingsAccountRoute: typeof SettingsAccountRoute
@@ -1318,12 +1367,11 @@ const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   LoginRoute: LoginRoute,
   SettingsRoute: SettingsRouteWithChildren,
   StatsRoute: StatsRoute,
   DotwellKnownSplatRoute: DotwellKnownSplatRoute,
-  AdminAiRoute: AdminAiRoute,
-  AdminUsersRoute: AdminUsersRoute,
   ApiAuthProbeRoute: ApiAuthProbeRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiMcpRoute: ApiMcpRoute,

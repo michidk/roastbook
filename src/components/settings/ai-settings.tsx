@@ -1,7 +1,7 @@
 import { Bot, Bug } from 'lucide-react'
 import { useState } from 'react'
+import { PanelSection } from '@/components/section-layout'
 import { AiRequestLogDialog } from '@/components/settings/ai-request-log-dialog'
-import { SettingsPanelSection } from '@/components/settings/settings-shell'
 import { Button } from '@/components/ui/button'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import type { AiRequestStats } from '@/lib/server/ai-request-logs'
@@ -35,7 +35,7 @@ export function AiSettings({
 
   return (
     <>
-      <SettingsPanelSection
+      <PanelSection
         title={
           providedAvailable ? 'BYOAI usage and costs' : 'AI usage and costs'
         }
@@ -83,7 +83,7 @@ export function AiSettings({
             Open request log
           </Button>
         </div>
-      </SettingsPanelSection>
+      </PanelSection>
       <AiRequestLogDialog
         open={requestLogOpen}
         onOpenChange={setRequestLogOpen}

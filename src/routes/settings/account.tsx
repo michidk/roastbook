@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { SettingsPanelSection } from '@/components/settings/settings-shell'
+import { PanelSection } from '@/components/section-layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -69,7 +69,7 @@ function AccountPage() {
   }
   return (
     <>
-      <SettingsPanelSection
+      <PanelSection
         title="Email address"
         description="Your email address is used for passwordless sign-in and account confirmations."
       >
@@ -103,8 +103,8 @@ function AccountPage() {
             Change email
           </Button>
         </form>
-      </SettingsPanelSection>
-      <SettingsPanelSection
+      </PanelSection>
+      <PanelSection
         title="Passkeys"
         description="Use your device or a security key to sign in without an email code."
       >
@@ -153,8 +153,8 @@ function AccountPage() {
             Add a passkey
           </Button>
         </div>
-      </SettingsPanelSection>
-      <SettingsPanelSection
+      </PanelSection>
+      <PanelSection
         title="Sessions"
         description="Sign out on this device or end your sessions on other devices."
       >
@@ -183,8 +183,8 @@ function AccountPage() {
           For sensitive changes, sign in again if your session is older than 10
           minutes.
         </p>
-      </SettingsPanelSection>
-      <SettingsPanelSection
+      </PanelSection>
+      <PanelSection
         title="Export your journal"
         description="Download your data and original stored images as a ZIP archive. Downloads expire after 24 hours."
       >
@@ -219,9 +219,9 @@ function AccountPage() {
             Refresh status
           </Button>
         </div>
-      </SettingsPanelSection>
+      </PanelSection>
       {identity.role === 'admin' ? (
-        <SettingsPanelSection
+        <PanelSection
           title="Administration"
           description="Manage users and administrator access for this installation."
         >
@@ -231,9 +231,9 @@ function AccountPage() {
           >
             Manage users
           </Button>
-        </SettingsPanelSection>
+        </PanelSection>
       ) : null}
-      <SettingsPanelSection
+      <PanelSection
         title="Delete your account"
         description="Permanently delete your journal and images. You must confirm through your email."
       >
@@ -273,7 +273,7 @@ function AccountPage() {
             Request account deletion
           </Button>
         )}
-      </SettingsPanelSection>
+      </PanelSection>
     </>
   )
 }

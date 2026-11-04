@@ -1,8 +1,8 @@
 import { KeyRound, Loader2, Timer } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { PanelSection } from '@/components/section-layout'
 import { IntegrationTokenControl } from '@/components/settings/integration-token-control'
-import { SettingsPanelSection } from '@/components/settings/settings-shell'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { useAppSettings } from '@/hooks/use-app-settings'
@@ -43,7 +43,7 @@ export function ShottimerSettings({
 
   return (
     <>
-      <SettingsPanelSection
+      <PanelSection
         title="Shottimer"
         description="Receive brew times from a Wi-Fi shottimer. Open new brew pages offer each received time and share their target time with the device."
         action={
@@ -69,9 +69,9 @@ export function ShottimerSettings({
             onCheckedChange={(checked) => void saveEnabled(checked)}
           />
         </div>
-      </SettingsPanelSection>
+      </PanelSection>
 
-      <SettingsPanelSection
+      <PanelSection
         title="Device token"
         description="Create a token and enter it in your shottimer configuration. Replacing a token disconnects devices using the old one."
         action={<KeyRound className="size-5 text-link" />}
@@ -83,7 +83,7 @@ export function ShottimerSettings({
         ) : (
           <IntegrationTokenControl kind="shottimer" onSaved={onSaved} />
         )}
-      </SettingsPanelSection>
+      </PanelSection>
     </>
   )
 }

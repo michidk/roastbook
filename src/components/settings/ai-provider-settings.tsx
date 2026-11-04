@@ -3,7 +3,7 @@ import { KeyRound } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { SelectField } from '@/components/form/form-field'
-import { SettingsPanelSection } from '@/components/settings/settings-shell'
+import { PanelSection } from '@/components/section-layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -100,7 +100,7 @@ export function AiProviderSettings({ settings }: { settings: Settings }) {
     }
   }
   return (
-    <SettingsPanelSection
+    <PanelSection
       title="AI provider"
       description={
         allowance.providedAvailable
@@ -287,6 +287,6 @@ export function AiProviderSettings({ settings }: { settings: Settings }) {
           Switch to BYOAI to configure your own provider.
         </p>
       )}
-    </SettingsPanelSection>
+    </PanelSection>
   )
 }

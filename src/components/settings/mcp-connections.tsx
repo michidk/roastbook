@@ -1,12 +1,12 @@
 import { useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { PanelSection } from '@/components/section-layout'
 import { Button } from '@/components/ui/button'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import type { getMcpAdminState } from '@/lib/mcp/settings'
 import { disconnectOAuthGrant } from '@/lib/server/oauth'
 import { IntegrationTokenControl } from './integration-token-control'
-import { SettingsPanelSection } from './settings-shell'
 
 type Grants = Awaited<ReturnType<typeof getMcpAdminState>>['grants']
 
@@ -35,7 +35,7 @@ export function McpConnections({ grants }: { readonly grants: Grants }) {
   return (
     <>
       {account ? (
-        <SettingsPanelSection
+        <PanelSection
           title="Connected applications"
           description="Applications you authorized through browser sign-in. Disconnecting immediately removes their access to your journal."
         >
@@ -74,15 +74,15 @@ export function McpConnections({ grants }: { readonly grants: Grants }) {
               in to connect one.
             </p>
           )}
-        </SettingsPanelSection>
+        </PanelSection>
       ) : null}
       {demoMode ? null : (
-        <SettingsPanelSection
+        <PanelSection
           title="MCP tokens"
           description="For clients without browser sign-in. Tokens allow all enabled MCP tools and expire after one year."
         >
           <IntegrationTokenControl kind="mcp" />
-        </SettingsPanelSection>
+        </PanelSection>
       )}
     </>
   )

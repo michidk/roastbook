@@ -1,4 +1,4 @@
-import { SettingsPanelSection } from '@/components/settings/settings-shell'
+import { PanelSection } from '@/components/section-layout'
 import { Progress } from '@/components/ui/progress'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
@@ -17,7 +17,7 @@ export function AiAllowanceSettings({
   const number = useNumberFormatter()
   if (!allowance.providedAvailable) return null
   return (
-    <SettingsPanelSection
+    <PanelSection
       title="Included AI usage"
       description="Your weekly allowance and lifetime usage of the included AI provider."
     >
@@ -75,6 +75,6 @@ export function AiAllowanceSettings({
           Included AI is free to you and excluded from your BYOAI cost estimate.
         </p>
       </div>
-    </SettingsPanelSection>
+    </PanelSection>
   )
 }

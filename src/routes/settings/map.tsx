@@ -1,8 +1,8 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { Loader2, MapPinned } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { PanelSection } from '@/components/section-layout'
 import { MapLocationSettings } from '@/components/settings/map-location-settings'
-import { SettingsPanelSection } from '@/components/settings/settings-shell'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useSettingMutation } from '@/hooks/use-setting-mutation'
 import { updateDefaultMapLocation } from '@/lib/server/settings'
@@ -48,7 +48,7 @@ function MapSettingsSection() {
   })
 
   return (
-    <SettingsPanelSection
+    <PanelSection
       title="Default map location"
       description="Choose where the café explorer opens. Look up a location or enter coordinates directly."
       action={
@@ -64,6 +64,6 @@ function MapSettingsSection() {
         disabled={mapLocationMutation.isSaving}
         onChange={(location) => void mapLocationMutation.save(location)}
       />
-    </SettingsPanelSection>
+    </PanelSection>
   )
 }

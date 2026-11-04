@@ -1,6 +1,6 @@
 import { HardDrive, Images } from 'lucide-react'
 import type { ComponentType } from 'react'
-import { SettingsPanelSection } from '@/components/settings/settings-shell'
+import { PanelSection } from '@/components/section-layout'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import type { getInternalStats } from '@/lib/server/internal-stats'
 import { formatBytes } from '@/lib/utils'
@@ -58,7 +58,7 @@ export function StorageSettings({
   const formatNumber = useNumberFormatter()
 
   return (
-    <SettingsPanelSection
+    <PanelSection
       title="Storage"
       description="Image storage used by your journal. Usage includes compressed pictures and their thumbnails."
       action={<HardDrive className="size-5 text-link" />}
@@ -111,6 +111,6 @@ export function StorageSettings({
           Storage usage could not be loaded. Refresh to try again.
         </p>
       )}
-    </SettingsPanelSection>
+    </PanelSection>
   )
 }

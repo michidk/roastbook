@@ -9,6 +9,27 @@ Infrastructure, production configuration, secrets, and deployment workflows live
 in the private `michidk/roastbook-infra` repository. This public repository builds
 the application artifact without Cloudflare management credentials.
 
+## Hosted deployment events
+
+The private infrastructure controller deploys successful `main` push builds to
+staging and published GitHub releases to production. Production selects the exact
+release tag revision and its successful main CI artifact. A tag push or draft
+release alone does not deploy production. Published prereleases also deploy.
+
+PR previews are eligible when the author has repository push access, or when the
+current `preview` label was applied by someone with push access. The controller
+checks current permissions and GitHub label history before creating or updating
+resources. Fork PRs can qualify through the same approval policy. Successful
+previews receive a PR comment and GitHub deployment link. Closing or merging the
+PR removes its environment and marks its deployments inactive.
+
+The public relay always reads its controller script from `main` and sends event
+metadata only. The private controller validates the PR or release, CI run,
+revision and immutable artifact again. No Cloudflare management credentials are
+available to PR builds. Dedicated App credentials and protected environment
+secrets in the private infrastructure repository are required to activate this
+automation.
+
 ## Build the release artifact
 
 ```sh

@@ -1,152 +1,62 @@
-import { createFileRoute, redirect, useRouter } from '@tanstack/react-router'
-import { useState } from 'react'
-import { toast } from 'sonner'
-import { AdminNavigation } from '@/components/admin-navigation'
-import { AdminUserAllowance } from '@/components/admin-user-allowance'
-import { Page, PageHeader } from '@/components/page-layout'
-import { Button } from '@/components/ui/button'
-import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import {
-  deleteUser,
-  getCurrentAccount,
-  getUsers,
-  setUserRole,
-} from '@/lib/server/account'
+  createFileRoute,
+  useRouter,
+  useRouterState,
+} from '@tanstack/react-router'
+import { PanelSection } from '@/components/section-layout'
+import { Button } from '@/components/ui/button'
+import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { getUsers } from '@/lib/server/account'
+import { AdminUsersTable } from './-components/admin-users-table'
 
 export const Route = createFileRoute('/admin/users')({
   validateSearch: (search: Record<string, unknown>) => ({
     page:
       typeof search.page === 'number' &&
       Number.isInteger(search.page) &&
-      search.page >= 0
+      search.page >= 0 &&
+      search.page <= 10000
         ? search.page
         : 0,
   }),
-  beforeLoad: async () => {
-    const account = await getCurrentAccount()
-    if (account.identity?.role !== 'admin') throw redirect({ to: '/settings' })
-    return { providedAiAvailable: account.providedAiAvailable }
-  },
   loaderDeps: ({ search }) => ({ page: search.page }),
   loader: ({ deps }) => getUsers({ data: deps }),
   component: UsersPage,
 })
+
 function UsersPage() {
   const { providedAiAvailable } = Route.useRouteContext()
-  const state = Route.useLoaderData(),
-    router = useRouter()
-  const formatDate = useDateTimeFormatter()
-  const [busy, setBusy] = useState(false)
-  const [deleting, setDeleting] = useState<string | null>(null)
-  async function action(work: () => Promise<unknown>) {
-    setBusy(true)
-    try {
-      await work()
-      setDeleting(null)
-      await router.invalidate()
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'The action failed')
-    } finally {
-      setBusy(false)
-    }
-  }
+  const state = Route.useLoaderData()
+  const router = useRouter()
+  const loading = useRouterState({ select: (state) => state.isLoading })
+  const number = useNumberFormatter()
+  const first = state.users.length ? state.page * 50 + 1 : 0
+  const last = state.page * 50 + state.users.length
+
   return (
-    <Page>
-      <PageHeader
-        title="Users"
-        description={
-          providedAiAvailable
-            ? 'Manage accounts, administrator access, and weekly free AI allowances.'
-            : 'Manage accounts and administrator access.'
-        }
+    <PanelSection
+      title="Users"
+      description={
+        providedAiAvailable
+          ? 'Manage accounts, administrator access, and weekly free AI allowances.'
+          : 'Manage accounts and administrator access.'
+      }
+    >
+      <AdminUsersTable
+        users={state.users}
+        providedAiAvailable={providedAiAvailable}
       />
-      <AdminNavigation providedAiAvailable={providedAiAvailable} />
-      <div className="space-y-4">
-        {state.users.map((user) => (
-          <div
-            key={user.id}
-            className="flex flex-wrap items-center justify-between gap-4 rounded-lg border p-4"
-          >
-            <div className="min-w-0 space-y-2">
-              <p className="break-all text-sm text-muted-foreground">
-                {user.email}
-              </p>
-              <p className="text-sm">
-                {user.deletingAt ? 'Deletion in progress' : user.role}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Joined {formatDate(user.createdAt)} · Last login:{' '}
-                {user.lastLoginAt
-                  ? formatDate(user.lastLoginAt)
-                  : 'Not recorded'}
-              </p>
-              <p className="text-sm">
-                {user.brews} brews · {user.beans} beans · {user.visits} café
-                visits
-              </p>
-              {providedAiAvailable && !user.deletingAt ? (
-                <AdminUserAllowance
-                  key={`${user.id}-${user.aiWeeklyLimit}`}
-                  userId={user.id}
-                  limit={user.aiWeeklyLimit}
-                  used={user.aiRequestsThisWeek}
-                  busy={busy}
-                  onSave={action}
-                />
-              ) : null}
-            </div>
-            {user.deletingAt ? null : (
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  disabled={busy}
-                  variant="outline"
-                  onClick={() =>
-                    void action(() =>
-                      setUserRole({
-                        data: {
-                          userId: user.id,
-                          role: user.role === 'admin' ? 'user' : 'admin',
-                        },
-                      }),
-                    )
-                  }
-                >
-                  {user.role === 'admin' ? 'Remove admin' : 'Make admin'}
-                </Button>
-                {deleting === user.id ? (
-                  <>
-                    <Button
-                      disabled={busy}
-                      variant="destructive"
-                      onClick={() =>
-                        void action(() =>
-                          deleteUser({ data: { userId: user.id } }),
-                        )
-                      }
-                    >
-                      Confirm permanent deletion
-                    </Button>
-                    <Button variant="outline" onClick={() => setDeleting(null)}>
-                      Cancel
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    disabled={busy}
-                    variant="destructive"
-                    onClick={() => setDeleting(user.id)}
-                  >
-                    Delete user
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
-        <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground" aria-live="polite">
+          {state.users.length
+            ? `${number(first)}–${number(last)} of ${number(state.total)} users`
+            : `${number(state.total)} users`}
+        </p>
+        <div className="flex gap-2">
           <Button
-            disabled={state.page === 0}
+            disabled={state.page === 0 || loading}
             variant="outline"
+            size="sm"
             onClick={() =>
               void router.navigate({
                 to: '/admin/users',
@@ -156,10 +66,10 @@ function UsersPage() {
           >
             Previous
           </Button>
-          <span>{state.total} users</span>
           <Button
-            disabled={(state.page + 1) * 50 >= state.total}
+            disabled={(state.page + 1) * 50 >= state.total || loading}
             variant="outline"
+            size="sm"
             onClick={() =>
               void router.navigate({
                 to: '/admin/users',
@@ -171,6 +81,6 @@ function UsersPage() {
           </Button>
         </div>
       </div>
-    </Page>
+    </PanelSection>
   )
 }

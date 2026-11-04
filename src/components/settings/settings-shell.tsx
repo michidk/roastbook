@@ -1,200 +1,62 @@
 import { Link, useLocation } from '@tanstack/react-router'
 import { CloudOff } from 'lucide-react'
+import type { ReactNode } from 'react'
 import {
-  type ComponentType,
-  type ReactNode,
-  useEffect,
-  useId,
-  useState,
-} from 'react'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+  SectionLayout,
+  type SectionNavigationItem,
+} from '@/components/section-layout'
 import { useOnlineStatus } from '@/hooks/use-online-status'
 import { usePwaMode } from '@/hooks/use-pwa-mode'
-import { cn } from '@/lib/utils'
-
-export type SettingsSection = {
-  /** The section's route, which doubles as its tab value. */
-  readonly to: string
-  readonly label: string
-  readonly icon: ComponentType<{
-    readonly className?: string
-    readonly 'aria-hidden'?: boolean
-  }>
-}
-
-/**
- * The deepest section route matching the current URL. `/settings` is the
- * General index route, so it only wins when no nested section matches.
- */
-function activeSectionPath(
-  sections: readonly SettingsSection[],
-  pathname: string,
-): string {
-  const nested = sections
-    .filter((section) => section.to !== '/settings')
-    .find(
-      (section) =>
-        pathname === section.to || pathname.startsWith(`${section.to}/`),
-    )
-  return nested?.to ?? '/settings'
-}
 
 export function SettingsShell({
   sections,
   children,
 }: {
-  readonly sections: readonly SettingsSection[]
+  readonly sections: readonly SectionNavigationItem[]
   readonly children: ReactNode
 }) {
   const { pathname } = useLocation()
   const isOnline = useOnlineStatus()
   const isPwa = usePwaMode()
-  const activeSection = activeSectionPath(sections, pathname)
   const disableServerControls =
     !isOnline &&
     pathname !== '/settings/appearance' &&
     pathname !== '/settings/offline'
-  const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>(
-    'horizontal',
-  )
-
-  useEffect(() => {
-    const desktop = window.matchMedia('(min-width: 1024px)')
-    const updateOrientation = () =>
-      setOrientation(desktop.matches ? 'vertical' : 'horizontal')
-
-    updateOrientation()
-    desktop.addEventListener('change', updateOrientation)
-    return () => desktop.removeEventListener('change', updateOrientation)
-  }, [])
 
   return (
-    <Tabs
-      value={activeSection}
-      orientation={orientation}
-      className="w-[calc(100vw-2rem)] min-w-0 max-w-full flex-col gap-0 overflow-hidden rounded-2xl border border-border bg-card shadow-coffee md:w-[calc(100vw-4rem)] lg:grid lg:min-h-[620px] lg:w-full lg:grid-cols-[15rem_minmax(0,1fr)]"
-    >
-      <aside className="border-b border-border bg-secondary/45 p-3 lg:border-r lg:border-b-0 lg:p-5">
-        <p className="hidden px-3 pb-3 text-xs font-bold tracking-[0.14em] text-muted-foreground uppercase lg:block">
-          Settings
-        </p>
-        <ScrollArea
-          type="always"
-          orientation="horizontal"
-          className="w-full pb-3 lg:overflow-visible lg:pb-0 [&_[data-slot=scroll-area-scrollbar]]:lg:hidden"
-          viewportClassName="lg:overflow-visible!"
+    <SectionLayout label="Settings" sections={sections}>
+      {!isOnline ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="mb-5 flex items-start gap-3 rounded-xl border border-border bg-secondary/45 p-3 text-sm"
         >
-          <TabsList
-            aria-label="Settings sections"
-            className="h-auto w-max min-w-full flex-row justify-start gap-1 rounded-none bg-transparent p-0 lg:w-full lg:flex-col"
-          >
-            {sections.map((section) => {
-              const Icon = section.icon
-
-              return (
-                <TabsTrigger
-                  key={section.to}
-                  value={section.to}
-                  render={<Link to={section.to} />}
-                  nativeButton={false}
-                  className={cn(
-                    'min-h-11 shrink-0 flex-none justify-start gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold text-muted-foreground no-underline shadow-none after:hidden hover:bg-secondary hover:text-foreground data-active:bg-accent data-active:text-accent-foreground data-active:!shadow-none lg:w-full',
-                  )}
+          <CloudOff className="mt-0.5 size-5 shrink-0 text-link" aria-hidden />
+          <div className="min-w-0 space-y-1">
+            <p className="font-semibold">You’re offline</p>
+            <p className="text-muted-foreground">
+              Server-backed settings are read-only. The browser theme and{' '}
+              {isPwa ? (
+                <Link
+                  to="/settings/offline"
+                  className="font-semibold text-link underline underline-offset-2"
                 >
-                  <Icon className="size-4.5" aria-hidden={true} />
-                  <span>{section.label}</span>
-                </TabsTrigger>
-              )
-            })}
-          </TabsList>
-        </ScrollArea>
-      </aside>
-
-      <TabsContent
-        value={activeSection}
-        className="min-w-0 bg-background/35 p-4 sm:p-6 lg:p-7"
-      >
-        {!isOnline ? (
-          <div
-            role="status"
-            aria-live="polite"
-            className="mb-5 flex items-start gap-3 rounded-xl border border-border bg-secondary/45 p-3 text-sm"
-          >
-            <CloudOff
-              className="mt-0.5 size-5 shrink-0 text-link"
-              aria-hidden={true}
-            />
-            <div className="min-w-0 space-y-1">
-              <p className="font-semibold">You’re offline</p>
-              <p className="text-muted-foreground">
-                Server-backed settings are read-only. The browser theme and{' '}
-                {isPwa ? (
-                  <Link
-                    to="/settings/offline"
-                    className="font-semibold text-link underline underline-offset-2"
-                  >
-                    PWA settings
-                  </Link>
-                ) : (
-                  'cached data'
-                )}{' '}
-                remain available.
-              </p>
-            </div>
+                  PWA settings
+                </Link>
+              ) : (
+                'cached data'
+              )}{' '}
+              remain available.
+            </p>
           </div>
-        ) : null}
-
-        <fieldset
-          disabled={disableServerControls}
-          className="m-0 min-w-0 border-0 p-0"
-        >
-          <div className="mx-auto max-w-3xl divide-y divide-border">
-            {children}
-          </div>
-        </fieldset>
-      </TabsContent>
-    </Tabs>
-  )
-}
-
-export function SettingsPanelSection({
-  title,
-  description,
-  action,
-  children,
-  className,
-  contentClassName,
-}: {
-  readonly title: string
-  readonly description?: string
-  readonly action?: ReactNode
-  readonly children: ReactNode
-  readonly className?: string
-  readonly contentClassName?: string
-}) {
-  const headingId = useId()
-
-  return (
-    <section
-      aria-labelledby={headingId}
-      className={cn('py-5 first:pt-0 last:pb-0 sm:py-6', className)}
-    >
-      <header className="flex items-start justify-between gap-4">
-        <div className="min-w-0 space-y-1">
-          <h2
-            id={headingId}
-            className="font-display text-lg leading-snug font-bold tracking-tight"
-          >
-            {title}
-          </h2>
-          {description ? (
-            <p className="text-sm text-muted-foreground">{description}</p>
-          ) : null}
         </div>
-        {action ? <div className="shrink-0">{action}</div> : null}
-      </header>
-      <div className={cn('mt-5 space-y-4', contentClassName)}>{children}</div>
-    </section>
+      ) : null}
+      <fieldset
+        disabled={disableServerControls}
+        className="m-0 min-w-0 divide-y divide-border border-0 p-0"
+      >
+        {children}
+      </fieldset>
+    </SectionLayout>
   )
 }
