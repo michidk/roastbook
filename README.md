@@ -100,8 +100,8 @@ own OpenAI-compatible endpoint in **Settings → AI**. See
 - **Brew recommendations** — compare a draft or logged brew with up to 50
   matching brews for the same bean, method, and gear, get one explained
   adjustment or experiment, and ask follow-up questions in a chat.
-- **Request debugging** — inspect raw inputs, responses, errors, token usage,
-  and estimated cost in Settings.
+- **Request log** — see every AI request with its status, duration, and token
+  usage in Settings, and optionally its raw inputs and responses for debugging.
 
 <p align="center">
   <img src=".github/images/ai-opinion-desktop.png"

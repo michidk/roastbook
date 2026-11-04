@@ -1,5 +1,4 @@
 import '@tanstack/react-start/server-only'
-import type { ChatMiddleware } from '@tanstack/ai'
 
 export interface AiRequestStart {
   providerMode: string
@@ -8,32 +7,11 @@ export interface AiRequestStart {
   requestPayload: unknown
 }
 
-// Default: AI requests are not recorded. An extension can replace this module
-// to account for usage or keep a request log.
-export async function startAiRequestLog(
-  _request: AiRequestStart,
-): Promise<number | undefined> {
-  return undefined
-}
-
-export function createAiRequestLogMiddleware(
-  _logId: number | undefined,
-  _model: string,
-): ChatMiddleware {
-  return {}
-}
-
-export async function completeAiRequestLog(_result: {
-  logId: number | undefined
-  model: string
-  responsePayload: unknown
-  usage?: unknown
-  durationMs: number
-}): Promise<void> {}
-
-export async function failAiRequestLog(_failure: {
-  logId: number | undefined
-  model: string
-  error: unknown
-  durationMs: number
-}): Promise<void> {}
+// Default: every AI request is logged with its token usage in the database.
+// An extension can replace this module to account for usage differently.
+export {
+  completeAiRequestLog,
+  createAiRequestLogMiddleware,
+  failAiRequestLog,
+  startAiRequestLog,
+} from '@/lib/server/ai-request-logs.server'

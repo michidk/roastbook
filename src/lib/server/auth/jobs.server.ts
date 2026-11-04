@@ -240,7 +240,6 @@ async function deleteJournal(job: Job) {
     'mcp_settings',
     'mcp_audit_events',
     'ai_request_logs',
-    'ai_usage',
     'media_cleanup_jobs',
     'journal_sync_revisions',
     // Last: deleting journal rows above records their changes here.

@@ -296,43 +296,6 @@ export const drinkTypeOptionGroupsRelations = relations(
   }),
 )
 
-export const aiUsage = pgTable(
-  'ai_usage',
-  {
-    ownerId: journalOwner(),
-    id: serial('id').primaryKey(),
-    requestId: text('request_id').notNull(),
-    feature: text('feature').notNull(),
-    model: text('model').notNull(),
-    promptTokens: integer('prompt_tokens').notNull(),
-    cachedPromptTokens: integer('cached_prompt_tokens').default(0).notNull(),
-    completionTokens: integer('completion_tokens').notNull(),
-    totalTokens: integer('total_tokens').notNull(),
-    estimatedCostUsd: decimal('estimated_cost_usd', {
-      precision: 18,
-      scale: 10,
-    }),
-    createdAt: createdAt(),
-  },
-  (table) => [
-    index('ai_usage_owner_id_idx').on(table.ownerId),
-    check(
-      'ai_usage_tokens_nonnegative_check',
-      sql`${table.promptTokens} >= 0
-        and ${table.cachedPromptTokens} >= 0
-        and ${table.cachedPromptTokens} <= ${table.promptTokens}
-        and ${table.completionTokens} >= 0
-        and ${table.totalTokens} >= 0`,
-    ),
-    check(
-      'ai_usage_cost_nonnegative_check',
-      sql`${table.estimatedCostUsd} is null or ${table.estimatedCostUsd} >= 0`,
-    ),
-    index('ai_usage_request_id_idx').on(table.requestId),
-    index('ai_usage_created_at_idx').on(table.createdAt),
-  ],
-)
-
 export const aiRequestLogs = pgTable(
   'ai_request_logs',
   {
@@ -351,12 +314,6 @@ export const aiRequestLogs = pgTable(
     cachedPromptTokens: integer('cached_prompt_tokens').default(0).notNull(),
     completionTokens: integer('completion_tokens').default(0).notNull(),
     totalTokens: integer('total_tokens').default(0).notNull(),
-    estimatedCostUsd: decimal('estimated_cost_usd', {
-      precision: 18,
-      scale: 10,
-    }),
-    estimatedCostSource: text('estimated_cost_source'),
-    estimatedCostVersion: text('estimated_cost_version'),
     durationMs: integer('duration_ms'),
     completedAt: timestamp('completed_at'),
     createdAt: createdAt(),
@@ -381,8 +338,7 @@ export const aiRequestLogs = pgTable(
         and ${table.cachedPromptTokens} >= 0
         and ${table.cachedPromptTokens} <= ${table.promptTokens}
         and ${table.completionTokens} >= 0
-        and ${table.totalTokens} >= 0
-        and (${table.estimatedCostUsd} is null or ${table.estimatedCostUsd} >= 0)`,
+        and ${table.totalTokens} >= 0`,
     ),
     index('ai_request_logs_created_at_idx').on(table.createdAt),
   ],

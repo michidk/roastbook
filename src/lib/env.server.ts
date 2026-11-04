@@ -70,6 +70,19 @@ const serverSchema = {
     )
     .optional(),
   AI_ALLOWED_PRIVATE_ORIGINS: optionalString,
+  AI_TELEMETRY_STORE_PAYLOADS: booleanString,
+  AI_TELEMETRY_RETENTION_DAYS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(30)
+    .default(1),
+  AI_TELEMETRY_MAX_PAYLOAD_BYTES: z.coerce
+    .number()
+    .int()
+    .min(1_024)
+    .max(1_048_576)
+    .default(65_536),
   MCP_ALLOWED_HOSTS: optionalString,
   MCP_ALLOWED_ORIGINS: optionalString,
 }
@@ -144,6 +157,12 @@ export function parseServerEnv(
       AI_CREDENTIAL_ENCRYPTION_KEY:
         runtimeEnvironment.AI_CREDENTIAL_ENCRYPTION_KEY,
       AI_ALLOWED_PRIVATE_ORIGINS: runtimeEnvironment.AI_ALLOWED_PRIVATE_ORIGINS,
+      AI_TELEMETRY_STORE_PAYLOADS:
+        runtimeEnvironment.AI_TELEMETRY_STORE_PAYLOADS,
+      AI_TELEMETRY_RETENTION_DAYS:
+        runtimeEnvironment.AI_TELEMETRY_RETENTION_DAYS,
+      AI_TELEMETRY_MAX_PAYLOAD_BYTES:
+        runtimeEnvironment.AI_TELEMETRY_MAX_PAYLOAD_BYTES,
       MCP_ALLOWED_HOSTS: runtimeEnvironment.MCP_ALLOWED_HOSTS,
       MCP_ALLOWED_ORIGINS: runtimeEnvironment.MCP_ALLOWED_ORIGINS,
     },
