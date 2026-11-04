@@ -30,19 +30,16 @@ const imageTables = [
   'cafe_visit_images',
 ] as const
 const excludedExports = new Set([
-  'client_operations',
   'media_cleanup_jobs',
   'journal_sync_revisions',
   'journal_command_receipts',
   'journal_id_reservations',
-  'replication_changes',
   'shottimer',
 ])
 const exportedTables = journalTables.filter(
   (table) => !excludedExports.has(table),
 )
 const deleteOrder = [
-  'client_operations',
   'brew_drink_options',
   'brew_taste_tags',
   'brew_accessory_gear',
@@ -86,7 +83,6 @@ const deleteOrder = [
   'shottimer',
   'mcp_settings',
   'mcp_audit_events',
-  'replication_changes',
   'ai_request_logs',
   'ai_usage',
   'media_cleanup_jobs',

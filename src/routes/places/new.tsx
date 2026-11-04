@@ -1,9 +1,4 @@
-import {
-  createFileRoute,
-  Link,
-  useNavigate,
-  useRouter,
-} from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import { CoffeeShopForm } from '@/components/coffee-shops/coffee-shop-form'
 import { FormPageHeader } from '@/components/form/form-shell'
@@ -22,7 +17,6 @@ export const Route = createFileRoute('/places/new')({
 
 function NewCoffeeShopPage() {
   const navigate = useNavigate()
-  const router = useRouter()
 
   return (
     <Page width="form">
@@ -39,7 +33,6 @@ function NewCoffeeShopPage() {
       />
       <CoffeeShopForm
         onCreated={async (coffeeShop) => {
-          await router.invalidate()
           await navigate({
             to: '/places/$coffeeShopId',
             params: { coffeeShopId: String(coffeeShop.id) },

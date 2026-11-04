@@ -7,6 +7,7 @@ import {
   numberFormatSchema,
   timeZoneSchema,
 } from '@/journal/input/settings'
+import { journalNow } from '@/journal/platform/clock'
 import { db, journalInsertValues, owned } from '@/journal/platform/database'
 import type { AppSettings } from '@/lib/app-settings'
 import { DEMO_MODE } from '@/lib/build-mode'
@@ -87,7 +88,7 @@ export async function updateSettings(
     .values(journalInsertValues({ id: 1, ...patch }))
     .onConflictDoUpdate({
       target: [settingsTable.ownerId, settingsTable.id],
-      set: { ...patch, updatedAt: new Date() },
+      set: { ...patch, updatedAt: journalNow() },
     })
     .returning()
   if (!row) throw new Error(errorMessage)

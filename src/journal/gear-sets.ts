@@ -8,6 +8,7 @@ import {
   gearSetUpdateSchema,
   gearSetWriteSchema,
 } from '@/journal/input/gear-sets'
+import { journalNow } from '@/journal/platform/clock'
 import {
   allocateJournalIds,
   db,
@@ -166,7 +167,7 @@ export const updateGearSet = journalWrite('gear-sets/updateGearSet')
       {
         statement: db
           .update(gearSets)
-          .set({ ...toGearSetRow(data), updatedAt: new Date() })
+          .set({ ...toGearSetRow(data), updatedAt: journalNow() })
           .where(owned(gearSets, eq(gearSets.id, data.id)))
           .getSQL(),
         expectedChanges: 1,

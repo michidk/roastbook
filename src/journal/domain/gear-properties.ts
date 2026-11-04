@@ -11,6 +11,7 @@ import {
   tamperDetails,
   wdtDetails,
 } from '@/db/schema'
+import { journalNow } from '@/journal/platform/clock'
 import {
   allocateJournalIds,
   db,
@@ -120,7 +121,7 @@ async function syncMachineSettingRevision(
   if (settings && current && settingsMatch(current, settings)) return []
   if (!settings && !current) return []
   const mutations: JournalMutation[] = []
-  const now = new Date()
+  const now = journalNow()
   if (current) {
     mutations.push({
       statement: db
@@ -338,7 +339,7 @@ export async function syncGearProperties(
     mutations.push({
       statement: db
         .update(espressoMachineSettingRevisions)
-        .set({ supersededAt: new Date() })
+        .set({ supersededAt: journalNow() })
         .where(
           owned(
             espressoMachineSettingRevisions,

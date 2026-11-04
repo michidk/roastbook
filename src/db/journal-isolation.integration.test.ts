@@ -23,7 +23,7 @@ afterAll(async () => {
     await client`delete from brews where owner_id in (${a},${b})`
     await client`delete from beans where owner_id in (${a},${b})`
     await client`delete from settings where owner_id in (${a},${b})`
-    await client`delete from client_operations where owner_id in (${a},${b})`
+    await client`delete from journal_command_receipts where owner_id in (${a},${b})`
     await client.end()
   }
 })
@@ -85,11 +85,11 @@ suite('journal database boundary', () => {
       await required(client)`delete from brewing_methods where id=${method.id}`
     }
   })
-  test('allows private singleton preferences and repeated operation IDs for different users', async () => {
+  test('allows private singleton preferences and repeated command ids for different users', async () => {
     for (const owner of [a, b])
       await asUser(owner, async (tx) => {
         await tx`insert into settings(id,default_currency) values (1,${owner === a ? 'EUR' : 'USD'}) on conflict(owner_id,id) do update set default_currency=excluded.default_currency`
-        await tx`insert into client_operations(operation_id) values ('same-operation') on conflict(owner_id,operation_id) do nothing`
+        await tx`insert into journal_command_receipts(command_id) values ('same-command') on conflict(owner_id,command_id) do nothing`
       })
     expect(
       required(

@@ -341,7 +341,8 @@ function RootComponent() {
     let unsubscribe: (() => void) | undefined
     void import('@/journal/local/client').then(({ subscribeLocalChanges }) => {
       if (!disposed)
-        unsubscribe = subscribeLocalChanges(() => void router.invalidate())
+        // Writes in this tab wait for this, so their pages show the change.
+        unsubscribe = subscribeLocalChanges(() => router.invalidate())
     })
     return () => {
       disposed = true

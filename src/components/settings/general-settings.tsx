@@ -31,7 +31,7 @@ import {
 } from '@/lib/collection-view'
 
 /** The currency, formatting, time zone, and list view settings sections. */
-export function GeneralSettings({ onSaved }: { readonly onSaved: () => void }) {
+export function GeneralSettings() {
   const savedSettings = useAppSettings()
   const savedDefaultCurrency = savedSettings.defaultCurrency
   const savedDateFormat = savedSettings.dateFormat
@@ -71,7 +71,6 @@ export function GeneralSettings({ onSaved }: { readonly onSaved: () => void }) {
     mutate: (defaultCurrency) =>
       updateDefaultCurrency({ data: defaultCurrency }),
     selectValue: (updated) => updated.defaultCurrency,
-    onSaved,
     errorMessage: 'Could not save the default currency',
   })
   const numberFormatMutation = useSettingMutation({
@@ -80,7 +79,6 @@ export function GeneralSettings({ onSaved }: { readonly onSaved: () => void }) {
       setSettings((current) => ({ ...current, numberFormat })),
     mutate: (numberFormat) => updateNumberFormat({ data: numberFormat }),
     selectValue: (updated) => updated.numberFormat,
-    onSaved,
     errorMessage: 'Could not save the number format',
   })
   const dateFormatMutation = useSettingMutation({
@@ -89,7 +87,6 @@ export function GeneralSettings({ onSaved }: { readonly onSaved: () => void }) {
       setSettings((current) => ({ ...current, dateFormat })),
     mutate: (dateFormat) => updateDateFormat({ data: dateFormat }),
     selectValue: (updated) => updated.dateFormat,
-    onSaved,
     errorMessage: 'Could not save the date format',
   })
   const listViewMutation = useSettingMutation({
@@ -99,7 +96,6 @@ export function GeneralSettings({ onSaved }: { readonly onSaved: () => void }) {
     mutate: (defaultListView) =>
       updateDefaultListView({ data: defaultListView }),
     selectValue: (updated) => updated.defaultListView,
-    onSaved,
     errorMessage: 'Could not save the default list view',
   })
   const timeZoneMutation = useSettingMutation({
@@ -108,7 +104,6 @@ export function GeneralSettings({ onSaved }: { readonly onSaved: () => void }) {
       setSettings((current) => ({ ...current, timeZone })),
     mutate: (timeZone) => updateTimeZone({ data: timeZone }),
     selectValue: (updated) => updated.timeZone,
-    onSaved,
     errorMessage: 'Could not save the time zone',
     successMessage: 'Time zone saved',
   })

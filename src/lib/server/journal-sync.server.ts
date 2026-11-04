@@ -1,5 +1,13 @@
 import '@tanstack/react-start/server-only'
-import { and, count, eq, getTableColumns, getTableName, sql } from 'drizzle-orm'
+import {
+  and,
+  count,
+  eq,
+  getTableColumns,
+  getTableName,
+  inArray,
+  sql,
+} from 'drizzle-orm'
 import { db } from '@/db'
 import { JournalBusyError } from '@/db/journal-admission.server'
 import { getJournalContext } from '@/db/journal-context.server'
@@ -95,6 +103,13 @@ export async function replayJournalWrite(data: {
       write.execute(decodeInput(data.input)),
     )
   } catch (error) {
+    if (await alreadyApplied(data).catch(() => false)) {
+      await db
+        .insert(journalCommandReceipts)
+        .values(journalInsertValues({ commandId: data.key }))
+        .onConflictDoNothing()
+      return { revision: await revision(), unchanged: false }
+    }
     if (isTransient(error)) throw error
     // The browser keeps this change for review instead of retrying it.
     throw new Error(
@@ -111,6 +126,45 @@ const reservationBatch = 256
 // shortcut: past this many unused identifiers per table (several devices or
 // lost browser storage), the oldest are handed out again instead of new ones.
 const reservationLimit = 1024
+
+/**
+ * Whether a failed replay had in fact applied: a simultaneous push of the same
+ * change committed first, or a D1 replay stopped between its write and its
+ * receipt. Identifiers are reserved per owner, so recorded rows prove it.
+ */
+async function alreadyApplied(data: { key: string; recorded: RecordedValues }) {
+  const [receipt] = await db
+    .select({ key: journalCommandReceipts.commandId })
+    .from(journalCommandReceipts)
+    .where(
+      owned(
+        journalCommandReceipts,
+        eq(journalCommandReceipts.commandId, data.key),
+      ),
+    )
+  if (receipt) return true
+  const created = Object.entries(data.recorded).filter(([kind]) =>
+    kind.startsWith('id:'),
+  )
+  if (!created.length) return false
+  for (const [kind, ids] of created) {
+    const table = reservedIdTables.find(
+      (candidate) => `id:${getTableName(candidate)}` === kind,
+    )
+    const id = table && getTableColumns(table).id
+    if (!table || !id || !ids.every((value) => Number.isSafeInteger(value)))
+      return false
+    for (let start = 0; start < ids.length; start += 90) {
+      const chunk = ids.slice(start, start + 90) as number[]
+      const [found] = await db
+        .select({ value: count() })
+        .from(table)
+        .where(owned(table as never, inArray(id, chunk)))
+      if (found?.value !== chunk.length) return false
+    }
+  }
+  return true
+}
 
 /** Infrastructure failures that a later attempt can get past. */
 function isTransient(error: unknown): boolean {

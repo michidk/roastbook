@@ -254,7 +254,6 @@ export function BeanEditContent({
   isExtracting,
   onResearch,
   onExtractFromImages,
-  onImagesChange,
 }: {
   bean: Bean
   formData: BeanFormValues
@@ -267,7 +266,6 @@ export function BeanEditContent({
   isExtracting: boolean
   onResearch: () => void
   onExtractFromImages: () => Promise<void>
-  onImagesChange: () => void
 }) {
   const set = <Key extends keyof BeanFormValues>(
     key: Key,
@@ -321,7 +319,6 @@ export function BeanEditContent({
           entityType="bean-purchases"
           entityId={bean.purchaseId ?? bean.purchases[0]?.id ?? bean.id}
           images={bean.images}
-          onImagesChange={onImagesChange}
           editable
           imageAction={
             visionEnabled
@@ -351,14 +348,12 @@ export function BeanReadOnlyContent({
   shotCount,
   topTasteTags,
   weightStats,
-  onImagesChange,
   onTogglePurchase,
 }: {
   bean: Bean
   shotCount: number
   topTasteTags: readonly TopTasteTag[]
   weightStats: WeightStats | null
-  onImagesChange: () => void
   onTogglePurchase: (purchaseId: number, isArchived: boolean) => void
 }) {
   const formatDate = useDateFormatter()
@@ -442,7 +437,6 @@ export function BeanReadOnlyContent({
                       visionEnabled={false}
                       purchase={purchase}
                       images={bean.images}
-                      onSaved={onImagesChange}
                     />
                     <Button
                       variant="ghost"
@@ -585,7 +579,6 @@ export function BeanReadOnlyContent({
               entityType="bean-purchases"
               entityId={bean.purchaseId ?? bean.purchases[0]?.id ?? bean.id}
               images={bean.images}
-              onImagesChange={onImagesChange}
             />
           ) : null}
         </aside>

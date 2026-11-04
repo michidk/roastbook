@@ -28,10 +28,8 @@ type TasteTag = {
 
 export function TasteTagSettings({
   tags,
-  onChanged,
 }: {
   readonly tags: readonly TasteTag[]
-  readonly onChanged: () => void
 }) {
   const [newTagName, setNewTagName] = useState('')
   const [isAdding, setIsAdding] = useState(false)
@@ -43,7 +41,6 @@ export function TasteTagSettings({
     try {
       await createTasteTag({ data: { name } })
       setNewTagName('')
-      onChanged()
       toast.success(`Added "${name}"`)
     } catch (error) {
       toast.error(
@@ -101,7 +98,6 @@ export function TasteTagSettings({
                   description="This removes the tag from every shot and café visit that uses it. This action cannot be undone."
                   onConfirm={async () => {
                     await deleteTasteTag({ data: tag.id })
-                    onChanged()
                   }}
                 />
               </li>

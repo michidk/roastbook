@@ -16,9 +16,9 @@ against the local copy, so records need not have been visited first.
 
 AI features, web research, geocoding, remote image import, the shottimer,
 account administration, email and sign-in need their server services and are
-unavailable offline. Pictures added on this device stay available offline.
-Pictures added on other devices display from the server, so an uncached one can
-be missing offline.
+unavailable offline. Pictures added on this device stay available offline, and
+so do pictures from other devices once this browser has shown them; the service
+worker keeps them until sign-out. One never shown here can be missing offline.
 
 The first download needs an online, signed-in session. A failure shows an error;
 it never treats a missing journal as an empty one. New records use identifiers

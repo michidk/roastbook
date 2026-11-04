@@ -50,9 +50,15 @@ export function currentScope() {
   return scope
 }
 
-const listeners = new Set<() => void>()
-/** Notified after every committed local write, in this tab and others. */
-export function subscribeLocalChanges(listener: () => void) {
+/** `write`: a change saved in a tab; `download`: changes made elsewhere. */
+export type LocalChange = 'write' | 'download'
+type LocalChangeListener = (change: LocalChange) => unknown
+const listeners = new Set<LocalChangeListener>()
+/**
+ * Notified after every committed local write, in this tab and others, and
+ * after downloads. A write in this tab resolves once its listeners have.
+ */
+export function subscribeLocalChanges(listener: LocalChangeListener) {
   listeners.add(listener)
   return () => {
     listeners.delete(listener)
@@ -65,13 +71,16 @@ const channel =
     : new BroadcastChannel('roastbook-local-journal')
 // Another tab's pictures register before the pages that show them refresh.
 let mediaClient: LocalClient | undefined
-channel?.addEventListener('message', async () => {
+channel?.addEventListener('message', async ({ data }) => {
   if (mediaClient) await loadLocalMedia(mediaClient).catch(() => undefined)
-  for (const listener of listeners) listener()
+  for (const listener of listeners)
+    listener(data === 'download' ? 'download' : 'write')
 })
-export function notifyLocalChange() {
-  for (const listener of listeners) listener()
-  channel?.postMessage('changed')
+export async function notifyLocalChange(change: LocalChange) {
+  channel?.postMessage(change)
+  await Promise.allSettled(
+    [...listeners].map(async (listener) => listener(change)),
+  )
 }
 
 /** Waits until the leader worker has written the database to IndexedDB. */
@@ -127,17 +136,30 @@ export class LocalJournal {
     return journal
   }
 
-  /** Runs one journal function as the owner, with the server's row security. */
-  run(info: JournalFunctionInfo, input: unknown, replay?: Replay) {
-    const result = this.queue.then(() => this.execute(info, input, replay))
+  /**
+   * Runs one journal function as the owner, with the server's row security.
+   * A write resolves after its pages refreshed, outside the queue so their
+   * reads can run.
+   */
+  async run(
+    info: JournalFunctionInfo,
+    input: unknown,
+    options: RunOptions = {},
+  ) {
+    const result = this.queue.then(() => this.execute(info, input, options))
     this.queue = result.catch(() => undefined)
-    return result
+    const { value, unstored } = await result
+    // Replays run inside a download, which notifies once when it is done.
+    if (info.kind === 'write' && !options.replay)
+      await notifyLocalChange('write')
+    if (unstored) throw unstored
+    return value
   }
 
   private async execute(
     info: JournalFunctionInfo,
     input: unknown,
-    replay?: Replay,
+    { replay, key }: RunOptions,
   ) {
     const encoded =
       info.kind === 'write' && this.options.sync && !replay
@@ -162,25 +184,25 @@ export class LocalJournal {
         const result = await info.execute(input)
         if (encoded !== undefined)
           await tx.execute(
-            sql`insert into roastbook_local.outbox (name, input, recorded, key) values (${info.name}, ${JSON.stringify(encoded)}::jsonb, ${JSON.stringify(scope.recorded)}::jsonb, ${crypto.randomUUID()})`,
+            sql`insert into roastbook_local.outbox (name, input, recorded, key) values (${info.name}, ${JSON.stringify(encoded)}::jsonb, ${JSON.stringify(scope.recorded)}::jsonb, ${key ?? crypto.randomUUID()})`,
           )
         return result
       } finally {
         scope = undefined
       }
     })
-    // A write returns only after IndexedDB has it, outbox entry included.
     for (const effect of committed) effect()
-    if (info.kind !== 'write') return value
-    try {
-      await (this.options.client
-        ? this.client.syncToFs()
-        : flushWorker(this.options.database))
-    } finally {
-      // Committed either way: pages refresh and the change syncs.
-      notifyLocalChange()
-    }
-    return value
+    if (info.kind !== 'write') return { value }
+    // A write returns only after IndexedDB has it, outbox entry included.
+    // Committed either way, so pages still refresh and the change syncs.
+    const unstored = await (this.options.client
+      ? this.client.syncToFs()
+      : flushWorker(this.options.database)
+    ).then(
+      () => undefined,
+      (error: unknown) => error,
+    )
+    return { value, unstored }
   }
 
   async getState<T = unknown>(key: string): Promise<T | undefined> {
@@ -206,6 +228,12 @@ export class LocalJournal {
 }
 
 export type Replay = { recorded: Record<string, unknown[]> }
+type RunOptions = {
+  /** Runs an outbox entry again, with the values it recorded. */
+  replay?: Replay
+  /** Outbox key; changes moved from earlier storage keep theirs. */
+  key?: string
+}
 
 /** Closes a journal and removes its database from this browser. */
 export async function deleteLocalJournal(journal: LocalJournal) {

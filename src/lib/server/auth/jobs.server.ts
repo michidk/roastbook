@@ -88,9 +88,7 @@ async function exportJournal(job: Job) {
           'journal_command_receipts',
           'journal_id_reservations',
           'journal_sync_revisions',
-          'client_operations',
           'media_cleanup_jobs',
-          'replication_changes',
           'shottimer',
         ].includes(table)
       )
@@ -197,7 +195,6 @@ async function deleteJournal(job: Job) {
   const order = [
     'journal_command_receipts',
     'journal_id_reservations',
-    'client_operations',
     'brew_drink_options',
     'brew_taste_tags',
     'brew_accessory_gear',
@@ -241,7 +238,6 @@ async function deleteJournal(job: Job) {
     'shottimer',
     'mcp_settings',
     'mcp_audit_events',
-    'replication_changes',
     'ai_request_logs',
     'ai_usage',
     'media_cleanup_jobs',

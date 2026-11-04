@@ -2,11 +2,15 @@ const BUILD_ID = '__BUILD_ID__'
 const PRECACHE_CACHE = `roastbook-precache-${BUILD_ID}`
 const DOCUMENT_CACHE = `roastbook-documents-${BUILD_ID}`
 const ASSET_CACHE = 'roastbook-assets-v2'
+// Pictures this browser showed stay available offline. They are private, so
+// the cache goes with the session, like documents.
+const MEDIA_CACHE = 'roastbook-documents-media'
 const LEGACY_ASSET_CACHES = ['roastbook-assets']
 const OFFLINE_URL = '/offline.html'
 const JOURNAL_SHELL_URL = '/offline-shell.html'
 const MAX_ASSET_ENTRIES = 100
 const MAX_DOCUMENT_ENTRIES = 20
+const MAX_MEDIA_ENTRIES = 400
 const MAX_ASSET_BYTES = 2097152
 // The journal database engine must be available offline; it is larger.
 const MAX_ENGINE_BYTES = 16777216
@@ -49,6 +53,11 @@ self.addEventListener('fetch', (event) => {
 
   if (url.pathname === '/_gate/logout' || url.pathname === '/login') {
     event.respondWith(fetch(request).finally(clearDocumentCaches))
+    return
+  }
+
+  if (url.pathname.startsWith('/media/')) {
+    event.respondWith(cacheFirstMedia(request))
     return
   }
 
@@ -143,7 +152,9 @@ async function activate() {
       .filter(
         (key) =>
           (key.startsWith('roastbook-precache-') && key !== PRECACHE_CACHE) ||
-          (key.startsWith('roastbook-documents-') && key !== DOCUMENT_CACHE) ||
+          (key.startsWith('roastbook-documents-') &&
+            key !== DOCUMENT_CACHE &&
+            key !== MEDIA_CACHE) ||
           LEGACY_ASSET_CACHES.includes(key),
       )
       .map((key) => caches.delete(key)),
@@ -211,6 +222,24 @@ async function clearDocumentCaches() {
       .filter((key) => key.startsWith('roastbook-documents-'))
       .map((key) => caches.delete(key)),
   )
+}
+
+// A picture's path names one immutable file, so a cached copy never goes stale.
+async function cacheFirstMedia(request) {
+  const cache = await caches.open(MEDIA_CACHE)
+  const cached = await cache.match(request)
+  if (cached) return cached
+  const response = await fetch(request)
+  const type = response.headers.get('content-type') ?? ''
+  if (response.ok && type.startsWith('image/')) {
+    try {
+      await cache.put(request, response.clone())
+      await trimCache(cache, MAX_MEDIA_ENTRIES)
+    } catch {
+      // A cache write failure must not block the picture.
+    }
+  }
+  return response
 }
 
 async function cacheFirstPrecache(request) {

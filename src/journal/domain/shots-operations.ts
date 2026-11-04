@@ -14,7 +14,6 @@ import {
   beanPurchases,
   beans,
   brewingMethods,
-  clientOperations,
   recipes,
   shotAccessoryGear,
   shots,
@@ -25,7 +24,6 @@ import {
   replaceShotAccessoryGear,
   withAccessoryGearIds,
 } from '@/journal/domain/accessory-gear'
-import { clientOperationMutations } from '@/journal/domain/client-operations'
 import {
   assertDrinkSelection,
   assertDrinkTypeAvailableForBrewingMethod,
@@ -46,6 +44,7 @@ import {
 } from '@/journal/domain/shot-parameter-projection'
 import { prepareRecipeFromShot } from '@/journal/domain/shot-recipes'
 import { shotSortExpression } from '@/journal/domain/shot-sort'
+import { journalNow } from '@/journal/platform/clock'
 import {
   allocateJournalIds,
   db,
@@ -398,25 +397,6 @@ export async function getShotOperation(id: number) {
   return shot ? withAccessoryGearIds(shot) : undefined
 }
 
-async function completedShot(operationId?: string) {
-  if (!operationId) return undefined
-  const operation = await db.query.clientOperations.findFirst({
-    where: owned(
-      clientOperations,
-      eq(clientOperations.operationId, operationId),
-    ),
-  })
-  if (!operation) return undefined
-  const shot = operation.brewId
-    ? await db.query.shots.findFirst({
-        where: owned(shots, eq(shots.id, operation.brewId)),
-      })
-    : undefined
-  if (!shot)
-    throw new ShotInputError('This brew was already synced and deleted')
-  return shot
-}
-
 async function shotTagMutations(
   shotId: number,
   tasteTagIds: readonly number[],
@@ -473,7 +453,6 @@ async function prepareShotCreate(data: ShotCreateCandidate) {
             ...values,
             id,
             machineSettingRevisionId,
-            clientOperationId: data.clientOperationId ?? null,
           }),
         )
         .getSQL(),
@@ -485,10 +464,6 @@ async function prepareShotCreate(data: ShotCreateCandidate) {
       projectAccessoryGearIds(data, method.enabledParameters),
     )),
     ...(await shotTagMutations(id, data.tasteTagIds ?? [])),
-    ...clientOperationMutations({
-      operationId: data.clientOperationId,
-      brewId: id,
-    }),
   ]
   return {
     id,
@@ -510,33 +485,17 @@ async function loadPersistedShot(id: number) {
 }
 
 export async function createShotOperation(data: ShotCreateCandidate) {
-  const completed = await completedShot(data.clientOperationId)
-  if (completed) return completed
   const plan = await prepareShotCreate(data)
-  try {
-    await runJournalMutations(plan.mutations)
-  } catch (error) {
-    const existing = await completedShot(data.clientOperationId)
-    if (existing) return existing
-    throw error
-  }
+  await runJournalMutations(plan.mutations)
   return loadPersistedShot(plan.id)
 }
 
 export async function createShotAndSaveRecipeOperation(
   data: CreateShotAndSaveRecipeInput,
 ) {
-  const completed = await completedShot(data.shot.clientOperationId)
-  if (completed) return { shot: completed, recipe: null }
   const shot = await prepareShotCreate(data.shot)
   const recipe = await prepareRecipeFromShot(shot.source, data.target)
-  try {
-    await runJournalMutations([...shot.mutations, ...recipe.mutations])
-  } catch (error) {
-    const existing = await completedShot(data.shot.clientOperationId)
-    if (existing) return { shot: existing, recipe: null }
-    throw error
-  }
+  await runJournalMutations([...shot.mutations, ...recipe.mutations])
   return {
     shot: await loadPersistedShot(shot.id),
     recipe: expectReturnedRow(
@@ -551,8 +510,6 @@ export async function createShotAndSaveRecipeOperation(
 export async function updateShotOperation(
   data: ReturnType<typeof shotUpdateSchema.parse>,
 ) {
-  const completed = await completedShot(data.clientOperationId)
-  if (completed) return completed
   const existing = await db.query.shots.findFirst({
     where: owned(shots, eq(shots.id, data.id)),
   })
@@ -595,7 +552,7 @@ export async function updateShotOperation(
           ...values,
           machineSettingRevisionId,
           revision: existing.revision + 1,
-          updatedAt: new Date(),
+          updatedAt: journalNow(),
         })
         .where(
           owned(
@@ -617,18 +574,8 @@ export async function updateShotOperation(
     ...(data.tasteTagIds === undefined
       ? []
       : await shotTagMutations(data.id, data.tasteTagIds)),
-    ...clientOperationMutations({
-      operationId: data.clientOperationId,
-      brewId: data.id,
-    }),
   ]
-  try {
-    await runJournalMutations(mutations)
-  } catch (error) {
-    const completed = await completedShot(data.clientOperationId)
-    if (completed) return completed
-    throw error
-  }
+  await runJournalMutations(mutations)
   return loadPersistedShot(data.id)
 }
 

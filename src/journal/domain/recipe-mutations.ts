@@ -1,8 +1,8 @@
 import { and, eq } from 'drizzle-orm'
 import { recipes } from '@/db/schema'
 import { replaceRecipeAccessoryGear } from '@/journal/domain/accessory-gear'
-import { clientOperationMutations } from '@/journal/domain/client-operations'
 import { replaceRecipeDrinkOptions } from '@/journal/domain/drink-options'
+import { journalNow, journalUuid } from '@/journal/platform/clock'
 import {
   allocateJournalIds,
   db,
@@ -13,7 +13,7 @@ import {
 
 type RecipeValues = Omit<
   typeof recipes.$inferInsert,
-  'ownerId' | 'id' | 'syncId' | 'revision' | 'createdAt' | 'clientOperationId'
+  'ownerId' | 'id' | 'syncId' | 'revision' | 'createdAt'
 >
 
 export async function prepareRecipeWrite({
@@ -21,13 +21,11 @@ export async function prepareRecipeWrite({
   existing,
   accessoryGearIds,
   drinkOptionValueIds,
-  operationId,
 }: {
   values: RecipeValues
   existing?: typeof recipes.$inferSelect
   accessoryGearIds: readonly number[]
   drinkOptionValueIds: readonly number[]
-  operationId?: string
 }) {
   const [allocatedId] = existing
     ? [existing.id]
@@ -35,9 +33,9 @@ export async function prepareRecipeWrite({
   if (allocatedId === undefined)
     throw new Error('Could not allocate recipe identifier')
   const id = allocatedId
-  const syncId = existing?.syncId ?? crypto.randomUUID()
+  const syncId = existing?.syncId ?? journalUuid()
   const revision = existing ? existing.revision + 1 : 0
-  const updatedAt = new Date()
+  const updatedAt = journalNow()
   const write = { ...values, updatedAt }
   const mutations: JournalMutation[] = [
     {
@@ -63,7 +61,6 @@ export async function prepareRecipeWrite({
                 id,
                 syncId,
                 revision,
-                clientOperationId: operationId ?? null,
               }),
             )
             .getSQL(),
@@ -73,7 +70,6 @@ export async function prepareRecipeWrite({
     },
     ...(await replaceRecipeAccessoryGear(id, accessoryGearIds)),
     ...(await replaceRecipeDrinkOptions(id, drinkOptionValueIds)),
-    ...clientOperationMutations({ operationId, recipeId: id }),
   ]
   return { id, mutations }
 }

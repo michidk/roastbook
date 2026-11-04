@@ -1,9 +1,4 @@
-import {
-  createFileRoute,
-  Link,
-  useNavigate,
-  useRouter,
-} from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, Pencil } from 'lucide-react'
 import { useRef } from 'react'
 import { CoffeeShopCard } from '@/components/coffee-shops/coffee-shop-card'
@@ -74,7 +69,6 @@ function VisitDetailPage() {
     Route.useLoaderData()
   const { edit: isEditing = false } = Route.useSearch()
   const navigate = useNavigate({ from: '/visits/$visitId' })
-  const router = useRouter()
   const editButtonRef = useRef<HTMLAnchorElement>(null)
 
   if (!visit) {
@@ -89,7 +83,6 @@ function VisitDetailPage() {
 
   const handleDelete = async () => {
     await deleteCafeVisit({ data: visit.id })
-    await router.invalidate()
     await navigate({ to: '/visits' })
   }
 
@@ -98,7 +91,6 @@ function VisitDetailPage() {
       search: (current) => ({ ...current, edit: undefined }),
       replace: true,
     })
-    await router.invalidate()
     requestAnimationFrame(() => editButtonRef.current?.focus())
   }
 

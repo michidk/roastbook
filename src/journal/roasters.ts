@@ -7,6 +7,7 @@ import {
   roasterListSchema,
   roasterUpdateSchema,
 } from '@/journal/input/roasters'
+import { journalNow } from '@/journal/platform/clock'
 import { db, journalInsertValues, owned } from '@/journal/platform/database'
 import {
   deleteWebsiteFaviconBestEffort,
@@ -114,7 +115,7 @@ export const updateRoaster = journalWrite('roasters/updateRoaster')
     const { id, ...values } = data
     const [roaster] = await db
       .update(roasters)
-      .set({ ...values, updatedAt: new Date() })
+      .set({ ...values, updatedAt: journalNow() })
       .where(owned(roasters, eq(roasters.id, id)))
       .returning()
     const updated = expectReturnedRow(roaster, 'Roaster')

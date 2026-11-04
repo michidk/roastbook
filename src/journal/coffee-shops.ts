@@ -9,6 +9,7 @@ import {
   coffeeShopUpdateSchema,
   normalizeCoffeeShopInput,
 } from '@/journal/input/coffee-shops'
+import { journalNow } from '@/journal/platform/clock'
 import { db, journalInsertValues, owned } from '@/journal/platform/database'
 import {
   deleteWebsiteFaviconBestEffort,
@@ -175,7 +176,7 @@ export const updateCoffeeShop = journalWrite('coffee-shops/updateCoffeeShop')
     const { id, ...values } = data
     const [coffeeShop] = await db
       .update(coffeeShops)
-      .set({ ...values, updatedAt: new Date() })
+      .set({ ...values, updatedAt: journalNow() })
       .where(owned(coffeeShops, eq(coffeeShops.id, id)))
       .returning()
     const updated = expectReturnedRow(coffeeShop, 'Café')

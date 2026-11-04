@@ -1,4 +1,4 @@
-import { useNavigate, useRouter } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import { Copy, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -18,7 +18,6 @@ export function RecipeDuplicateButton({
   compact = false,
 }: RecipeDuplicateButtonProps) {
   const navigate = useNavigate()
-  const router = useRouter()
   const [isDuplicating, setIsDuplicating] = useState(false)
 
   const handleDuplicate = async () => {
@@ -31,7 +30,6 @@ export function RecipeDuplicateButton({
           ...recipePayload(shotFormValuesFrom(recipe)),
         },
       })
-      await router.invalidate()
       toast.success('Recipe duplicated')
       await navigate({
         to: '/recipes/$recipeId',

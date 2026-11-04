@@ -45,6 +45,14 @@ async function engineAssets() {
   }
 }
 
+// PGlite's relaxed background flush can race files PostgreSQL is changing
+// (ENOENT). The next flush copies them, and every write waits for the durable
+// flush below, so it is not an error worth reporting.
+self.addEventListener('unhandledrejection', (event) => {
+  if ((event.reason as { name?: unknown } | undefined)?.name === 'ErrnoError')
+    event.preventDefault()
+})
+
 worker({
   async init(options) {
     const name = String(options.meta?.database ?? '')

@@ -1,4 +1,4 @@
-import { Link, useNavigate, useRouter } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import type { FormEvent } from 'react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -52,7 +52,6 @@ export function GearDetailPage({
   onFinishEditing: () => void | Promise<void>
 }) {
   const navigate = useNavigate()
-  const router = useRouter()
   const isOnline = useOnlineStatus()
   const [isSaving, setIsSaving] = useState(false)
   const [isResearching, setIsResearching] = useState(false)
@@ -73,7 +72,6 @@ export function GearDetailPage({
     )
   }
 
-  const invalidateDetail = () => router.invalidate()
   const resetForm = () => setFormData(gearFormValuesFrom(gear))
 
   const handleResearch = async () => {
@@ -125,7 +123,6 @@ export function GearDetailPage({
       })
       setFormData((current) => ({ ...current, propertyEvidence: [] }))
       await onFinishEditing()
-      await invalidateDetail()
     } catch (error) {
       toast.error(getErrorMessage(error, 'Could not save this gear'))
     } finally {
@@ -147,7 +144,6 @@ export function GearDetailPage({
       await updateGear({
         data: { id: gear.id, isArchived: !gear.isArchived },
       })
-      await invalidateDetail()
     } catch (error) {
       toast.error(getErrorMessage(error, 'Could not update this gear'))
     }
@@ -167,7 +163,6 @@ export function GearDetailPage({
         }}
         onDelete={async () => {
           await deleteGear({ data: gear.id })
-          await router.invalidate()
           await navigate({ to: '/gear' })
         }}
       />
@@ -178,7 +173,6 @@ export function GearDetailPage({
             entityType="gear"
             entityId={gear.id}
             images={gear.images}
-            onImagesChange={invalidateDetail}
             editable
           />
           <GearEditForm
@@ -197,7 +191,6 @@ export function GearDetailPage({
               entityType="gear"
               entityId={gear.id}
               images={gear.images}
-              onImagesChange={invalidateDetail}
             />
           )}
           <GearReadOnlyContent

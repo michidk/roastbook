@@ -44,5 +44,5 @@ export async function resetDemoJournal() {
   )
   forgetLocalMedia()
   await loadSample(journal)
-  notifyLocalChange()
+  void notifyLocalChange('download')
 }

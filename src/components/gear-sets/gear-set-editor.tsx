@@ -1,4 +1,3 @@
-import { useRouter } from '@tanstack/react-router'
 import { Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { GearSetFields } from '@/components/gear-sets/gear-set-fields'
@@ -20,7 +19,6 @@ type GearSetEditorProps = {
 }
 
 export function GearSetEditor({ gearSet, gear }: GearSetEditorProps) {
-  const router = useRouter()
   const { values, set } = useFormState(() => gearSetFormValuesFrom(gearSet))
   const { isSubmitting, handleSubmit } = useFormSubmission({
     canSubmit: () => Boolean(values.name.trim()),
@@ -28,7 +26,6 @@ export function GearSetEditor({ gearSet, gear }: GearSetEditorProps) {
       await updateGearSet({
         data: { id: gearSet.id, ...gearSetWritePayload(values) },
       })
-      await router.invalidate()
       toast.success(`${values.name.trim()} saved`)
     },
     onError: (error) =>

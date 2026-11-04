@@ -48,6 +48,9 @@ Each module has a server version and a `*.browser.ts` version:
   limits.
 - `config`: the environment; in the browser, server limits kept for offline use,
   or demo defaults.
+- `clock`: the time and generated UUIDs of a write (`journalNow`,
+  `journalUuid`, and the schema's timestamp defaults); in the browser they are
+  recorded, so the server replay writes identical rows.
 - `effects`: website icon fetches; nothing in the browser, since the server
   fetches during replay.
 - `runtime`: runs in the request's journal scope; in the browser, runs in the
@@ -84,7 +87,10 @@ three endpoints in `src/lib/server/journal-sync.ts`:
 1. **Write.** A local write records, in the same transaction, the function name,
    its encoded input (`src/journal/codec.ts`: dates, files and form data
    survive), a UUID key, and the values it generated: identifiers from the pool
-   the server reserved for this device, and picture storage paths.
+   the server reserved for this device, picture storage paths, generated UUIDs,
+   and the time of the change. Journal code takes time and UUIDs from
+   `@/journal/platform/clock`, never `new Date()` or `crypto.randomUUID()`, so
+   a record created offline keeps the time it was made.
 2. **Push.** Pending writes replay strictly in order on the server with the
    recorded values; a write waiting to retry holds back later ones. A receipt
    makes each key apply once. Recorded identifiers must be ones the server
@@ -111,17 +117,25 @@ three endpoints in `src/lib/server/journal-sync.ts`:
 Triggers advance the owner's revision for every journal table on PostgreSQL and
 D1, so changes from MCP and integrations reach browsers too. On PostgreSQL the
 request transaction and per-owner lock make replay atomic and its revision
-check exact. D1 has neither: a replay that fails between its write and its
-receipt can be reported as a conflict on retry, and a change another device
-makes during a replay shows on this device only after the next revision
-change.
+check exact. D1 has neither. A replay that applied but failed before its
+receipt, or a simultaneous push of the same change, counts as applied when its
+receipt or every identifier it recorded already exists. A change another device
+makes during a replay shows on this device only after the next revision change.
+
+A write in a tab resolves after the open pages reloaded their data (the root
+route listens for local changes), so pages never refresh by hand after a
+journal write. Downloads refresh every tab the same way.
 
 ## Earlier offline data
 
-Versions before this design queued brew and recipe changes in RxDB. On first
-open, `legacy-offline.ts` replays those pending operations as journal writes
-once, then deletes the old stores. If any operation cannot move, the stores
-stay and Settings → Offline reports how many.
+Versions before this design queued brew and recipe changes in RxDB. On open,
+`legacy-offline.ts` replays those pending operations as journal writes, then
+deletes the old stores. Each keeps the operation id it was first sent with as
+its outbox key, and the migration that removed the old operation ids kept them
+as receipts, so a change the server already has never applies twice. The move
+holds the sync lock and skips changes already in the outbox, so it can run
+again; until everything moved, each start retries the rest and Settings →
+Offline reports how many remain.
 
 ## Development and verification
 

@@ -59,7 +59,11 @@ try {
       )
     }
   }
-  const response = await runtime.dispatchFetch('http://localhost/verify')
+  // POST: the HTTP client may retry a GET, which ran every case twice against
+  // the same database.
+  const response = await runtime.dispatchFetch('http://localhost/verify', {
+    method: 'POST',
+  })
   const report = await response.json()
   for (const result of report.results ?? []) {
     console.log(

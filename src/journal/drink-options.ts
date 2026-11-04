@@ -10,6 +10,7 @@ import {
   drinkTypeWriteSchema,
   optionValueWriteSchema,
 } from '@/journal/input/drink-options'
+import { journalNow } from '@/journal/platform/clock'
 import {
   allocateJournalIds,
   db,
@@ -72,7 +73,7 @@ export const saveDrinkType = journalWrite('drink-options/saveDrinkType')
         statement: duplicate
           ? db
               .update(drinkTypes)
-              .set({ isArchived: false, updatedAt: new Date() })
+              .set({ isArchived: false, updatedAt: journalNow() })
               .where(
                 owned(
                   drinkTypes,
@@ -83,7 +84,7 @@ export const saveDrinkType = journalWrite('drink-options/saveDrinkType')
           : data.id
             ? db
                 .update(drinkTypes)
-                .set({ name: data.name, updatedAt: new Date() })
+                .set({ name: data.name, updatedAt: journalNow() })
                 .where(owned(drinkTypes, eq(drinkTypes.id, id)))
                 .getSQL()
             : db
@@ -139,7 +140,7 @@ export const archiveDrinkType = journalWrite('drink-options/archiveDrinkType')
   .handler(async ({ data: id }) => {
     await db
       .update(drinkTypes)
-      .set({ isArchived: true, updatedAt: new Date() })
+      .set({ isArchived: true, updatedAt: journalNow() })
       .where(owned(drinkTypes, eq(drinkTypes.id, id)))
   })
 
@@ -163,7 +164,7 @@ export const createDrinkOptionValue = journalWrite(
     const [value] = duplicate
       ? await db
           .update(drinkOptionValues)
-          .set({ isArchived: false, updatedAt: new Date() })
+          .set({ isArchived: false, updatedAt: journalNow() })
           .where(
             owned(drinkOptionValues, eq(drinkOptionValues.id, duplicate.id)),
           )
@@ -183,6 +184,6 @@ export const archiveDrinkOptionValue = journalWrite(
   .handler(async ({ data: id }) => {
     await db
       .update(drinkOptionValues)
-      .set({ isArchived: true, updatedAt: new Date() })
+      .set({ isArchived: true, updatedAt: journalNow() })
       .where(owned(drinkOptionValues, eq(drinkOptionValues.id, id)))
   })

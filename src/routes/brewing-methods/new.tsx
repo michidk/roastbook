@@ -1,9 +1,4 @@
-import {
-  createFileRoute,
-  Link,
-  useNavigate,
-  useRouter,
-} from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import { BrewingMethodForm } from '@/components/brewing-methods/brewing-method-form'
 import { FormPageHeader } from '@/components/form/form-shell'
@@ -19,7 +14,6 @@ export const Route = createFileRoute('/brewing-methods/new')({
 function NewBrewingMethodPage() {
   const drinks = Route.useLoaderData()
   const navigate = useNavigate()
-  const router = useRouter()
 
   return (
     <Page width="form">
@@ -37,7 +31,6 @@ function NewBrewingMethodPage() {
       <BrewingMethodForm
         drinkTypes={drinks.drinkTypes}
         onCreated={async (method) => {
-          await router.invalidate()
           await navigate({
             to: '/brewing-methods/$brewingMethodId',
             params: { brewingMethodId: String(method.id) },

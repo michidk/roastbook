@@ -1,4 +1,3 @@
-import { useRouter } from '@tanstack/react-router'
 import { Save, Timer } from 'lucide-react'
 import { type SyntheticEvent, useState } from 'react'
 import { toast } from 'sonner'
@@ -28,7 +27,6 @@ export function BrewingMethodEditor({
   readonly method: BrewingMethod
   readonly drinkTypes: readonly DrinkTypeOption[]
 }) {
-  const router = useRouter()
   const [name, setName] = useState(method.name)
   const [description, setDescription] = useState(method.description ?? '')
   const [enabledParameters, setEnabledParameters] = useState<
@@ -63,7 +61,6 @@ export function BrewingMethodEditor({
           drinkTypeIds,
         },
       })
-      await router.invalidate()
       toast.success(`${name.trim()} saved`)
     } catch (error) {
       toast.error(

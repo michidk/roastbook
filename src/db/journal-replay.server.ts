@@ -31,6 +31,11 @@ export function takeRecordedValues(kind: string, count: number) {
   return queue.splice(0, count)
 }
 
+/** A value every call of a replay shares, such as the time of the write. */
+export function peekRecordedValue(kind: string) {
+  return replay.getStore()?.values[kind]?.[0]
+}
+
 /** Paths chosen by the browser must be new objects. */
 export function isReplayedPath(path: string) {
   return replay.getStore()?.newPaths.has(path) ?? false

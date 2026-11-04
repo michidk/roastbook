@@ -31,7 +31,14 @@ const cases = [
 ]
 
 export default {
-  async fetch(_request: Request, bindings: CloudflareRuntimeBindings) {
+  async fetch(request: Request, bindings: CloudflareRuntimeBindings) {
+    // Only the runner's request runs the cases: any other request reaching the
+    // worker would run them again against the same database.
+    if (
+      request.method !== 'POST' ||
+      new URL(request.url).pathname !== '/verify'
+    )
+      return new Response(null, { status: 404 })
     return withCloudflareRuntime(bindings, async () => {
       const results = []
       for (const item of cases) {

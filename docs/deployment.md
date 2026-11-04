@@ -30,7 +30,7 @@ user has claimed the journal.
 
 Journal requests use a transaction-local identity and the restricted
 `roastbook_journal` PostgreSQL role. Forced row-level security covers every
-journal table, including images, preferences, AI logs, and replication state.
+journal table, including images, preferences, AI logs, and sync bookkeeping.
 Ownership triggers reject references to another account's records. A separate
 control connection handles authentication, bootstrap, administrative account
 actions, and durable jobs. Use the same database owner for migrations and the

@@ -8,8 +8,8 @@ import {
   beanPurchases,
   beans,
   brewingMethods,
-  clientOperations,
   gear,
+  journalCommandReceipts,
   mediaCleanupJobs,
   recipes,
   settings,
@@ -17,6 +17,7 @@ import {
   shots,
   tasteTags,
 } from '@/db/schema'
+import { encodeInput } from '@/journal/codec'
 import { createShotAndSaveRecipeSchema } from '@/journal/domain/shot-list-contract'
 import { saveShotToRecipe } from '@/journal/domain/shot-recipes'
 import {
@@ -26,6 +27,10 @@ import {
   getShotOperation,
   updateShotOperation,
 } from '@/journal/domain/shots-operations'
+import {
+  replayJournalWrite,
+  reserveJournalIdentifiers,
+} from '@/lib/server/journal-sync.server'
 import { shotCreateSchema, shotUpdateSchema } from '@/lib/server-validation'
 import { SHOT_PARAMETER_KEYS } from '@/lib/shot-parameters'
 
@@ -188,12 +193,10 @@ async function ownershipRollback(bindings: CloudflareRuntimeBindings) {
     return row
   })
   await alice.run(async () => {
-    const operationId = crypto.randomUUID()
     await assert.rejects(
       createShotOperation(
         shotInput(alice, {
           accessoryGearIds: [privateGear.id],
-          clientOperationId: operationId,
         }),
       ),
       /FOREIGN KEY/,
@@ -201,15 +204,6 @@ async function ownershipRollback(bindings: CloudflareRuntimeBindings) {
     assert.equal(
       (await db.select({ value: count() }).from(shots).where(owned(shots)))[0]
         ?.value,
-      0,
-    )
-    assert.equal(
-      (
-        await db
-          .select({ value: count() })
-          .from(clientOperations)
-          .where(owned(clientOperations))
-      )[0]?.value,
       0,
     )
     const brew = await createShotOperation(shotInput(alice))
@@ -250,35 +244,60 @@ async function ownershipRollback(bindings: CloudflareRuntimeBindings) {
 
 async function concurrentIdempotency(bindings: CloudflareRuntimeBindings) {
   const journal = await fixture(bindings)
-  const operationId = crypto.randomUUID()
-  const results = await Promise.all(
+  // Simultaneous pushes of one browser write apply it once.
+  const write = await journal.run(async () => {
+    const reserved = await reserveJournalIdentifiers([
+      'beans',
+      'bean_purchases',
+    ])
+    return {
+      name: 'beans/createBean',
+      input: await encodeInput({ name: 'Pushed once', weight: '250' }),
+      recorded: {
+        'id:beans': reserved.beans?.slice(0, 1) ?? [],
+        'id:bean_purchases': reserved.bean_purchases?.slice(0, 1) ?? [],
+      },
+      key: crypto.randomUUID(),
+      revision: 0,
+    }
+  })
+  const pushes = await Promise.allSettled(
     Array.from({ length: 8 }, () =>
-      journal.run(() =>
-        createShotOperation(
-          shotInput(journal, { clientOperationId: operationId }),
-        ),
-      ),
+      journal.run(() => replayJournalWrite(write)),
     ),
   )
-  assert.equal(new Set(results.map((row) => row.id)).size, 1)
+  assert.deepEqual(
+    pushes.filter((push) => push.status === 'rejected'),
+    [],
+  )
   await journal.run(async () => {
     assert.equal(
-      (await db.select({ value: count() }).from(shots).where(owned(shots)))[0]
-        ?.value,
+      (
+        await db
+          .select({ value: count() })
+          .from(beans)
+          .where(owned(beans, eq(beans.name, 'Pushed once')))
+      )[0]?.value,
       1,
     )
     assert.equal(
       (
         await db
           .select({ value: count() })
-          .from(clientOperations)
-          .where(owned(clientOperations))
+          .from(journalCommandReceipts)
+          .where(
+            owned(
+              journalCommandReceipts,
+              eq(journalCommandReceipts.commandId, write.key),
+            ),
+          )
       )[0]?.value,
       1,
     )
   })
-  const original = results[0]
-  if (!original) throw new Error('Missing concurrent brew result')
+  const original = await journal.run(() =>
+    createShotOperation(shotInput(journal)),
+  )
   const updates = await Promise.allSettled(
     ['19', '20'].map((doseGrams) =>
       journal.run(() =>

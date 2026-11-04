@@ -362,6 +362,27 @@ describe('service worker', () => {
     expect(harness.getDocumentCache()).toBeUndefined()
   })
 
+  test('keeps viewed pictures offline until the session ends', async () => {
+    const harness = await createHarness()
+    const picture = '/media/beans/1/1-photo.webp'
+    harness.setAssetResponse(
+      picture,
+      new Response('picture', { headers: { 'content-type': 'image/webp' } }),
+    )
+    await harness.dispatch('fetch', { request: request(picture) })
+    harness.setOffline(true)
+    const offline = await harness.dispatch('fetch', {
+      request: request(picture),
+    })
+    expect(await (offline as Response).text()).toBe('picture')
+
+    harness.setOffline(false)
+    await harness.dispatch('fetch', {
+      request: request('/_gate/logout', 'navigate'),
+    })
+    expect(harness.hasCache('roastbook-documents-media')).toBe(false)
+  })
+
   test('serves a precached icon while offline', async () => {
     const harness = await createHarness()
     await harness.dispatch('install')
@@ -511,11 +532,6 @@ describe('service worker', () => {
       { method: 'GET', url: absoluteUrl('/api/health'), mode: 'cors' },
       { method: 'GET', url: absoluteUrl('/_serverFn/abc'), mode: 'cors' },
       { method: 'GET', url: absoluteUrl('/_gate/login'), mode: 'navigate' },
-      {
-        method: 'GET',
-        url: absoluteUrl('/media/photo.webp'),
-        mode: 'no-cors',
-      },
       { method: 'GET', url: absoluteUrl('/sw.js'), mode: 'cors' },
     ]
 

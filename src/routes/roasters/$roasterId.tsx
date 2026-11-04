@@ -1,9 +1,4 @@
-import {
-  createFileRoute,
-  Link,
-  useNavigate,
-  useRouter,
-} from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, ExternalLink, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { DeleteConfirmation } from '@/components/delete-confirmation'
@@ -44,7 +39,6 @@ function RoasterDetailPage() {
   const roaster = Route.useLoaderData()
   const { edit: isEditing = false } = Route.useSearch()
   const navigate = useNavigate({ from: '/roasters/$roasterId' })
-  const router = useRouter()
   const {
     values: formData,
     set,
@@ -63,7 +57,6 @@ function RoasterDetailPage() {
           search: (current) => ({ ...current, edit: undefined }),
           replace: true,
         })
-        await router.invalidate()
       },
       onError: (error) =>
         toast.error(getErrorMessage(error, 'Failed to update roaster')),
@@ -81,7 +74,6 @@ function RoasterDetailPage() {
 
   const handleDelete = async () => {
     await deleteRoaster({ data: roaster.id })
-    await router.invalidate()
     await navigate({ to: '/roasters' })
   }
 

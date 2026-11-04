@@ -44,7 +44,9 @@ work as shipped.
   write a second implementation of a journal query. Journal code reaches the
   database, storage, images, configuration and side effects only through
   `src/journal/platform/*`. Register new modules in `src/journal/registry.ts`;
-  records other records reference take identifiers from `allocateJournalIds`.
+  records other records reference take identifiers from `allocateJournalIds`,
+  and time and UUIDs come from `@/journal/platform/clock`. A journal write
+  refreshes the open pages itself; do not call `router.invalidate()` after one.
 - Integrations and other server-only operations live in `src/lib/server/`.
   There, files with a `.server.ts` suffix are internal server modules;
   unsuffixed files export `createServerFn` boundaries.

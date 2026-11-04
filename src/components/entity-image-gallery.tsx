@@ -58,7 +58,6 @@ interface EntityImageGalleryProps {
   readonly entityType: 'bean-purchases' | 'gear' | 'shots'
   readonly entityId: number
   readonly images: readonly EntityImage[]
-  readonly onImagesChange: () => void | Promise<void>
   readonly imageAction?: EntityImageAction
   readonly editable?: boolean
 }
@@ -67,7 +66,6 @@ export function EntityImageGallery({
   entityType,
   entityId,
   images,
-  onImagesChange,
   imageAction,
   editable = false,
 }: EntityImageGalleryProps) {
@@ -133,18 +131,6 @@ export function EntityImageGallery({
         ...current.filter(({ image }) => !attemptedPreviews.has(image.preview)),
         ...failures,
       ])
-      if (uploaded.length > 0) {
-        try {
-          await onImagesChange()
-        } catch (error) {
-          setGalleryError(
-            getErrorMessage(
-              error,
-              'Pictures were uploaded, but the gallery could not refresh',
-            ),
-          )
-        }
-      }
     } catch (error) {
       setGalleryError(getErrorMessage(error, 'Could not save these pictures'))
     } finally {
@@ -172,14 +158,6 @@ export function EntityImageGallery({
         })
       } catch (error) {
         setGalleryError(getErrorMessage(error, 'Failed to set thumbnail'))
-        return
-      }
-      try {
-        await onImagesChange()
-      } catch (error) {
-        setGalleryError(
-          getErrorMessage(error, 'Thumbnail changed, but the gallery is stale'),
-        )
       }
     } finally {
       setIsSettingThumbnail(null)
@@ -201,14 +179,6 @@ export function EntityImageGallery({
         })
       } catch (error) {
         setGalleryError(getErrorMessage(error, 'Failed to delete image'))
-        return
-      }
-      try {
-        await onImagesChange()
-      } catch (error) {
-        setGalleryError(
-          getErrorMessage(error, 'Picture deleted, but the gallery is stale'),
-        )
       }
     } finally {
       setIsDeletingImage(null)

@@ -1,9 +1,4 @@
-import {
-  createFileRoute,
-  Link,
-  useNavigate,
-  useRouter,
-} from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import { Page, PageHeader } from '@/components/page-layout'
@@ -106,7 +101,6 @@ function NewShotPage() {
   const data = Route.useLoaderData()
   const search = Route.useSearch()
   const navigate = useNavigate()
-  const router = useRouter()
 
   return (
     <Page>
@@ -127,7 +121,6 @@ function NewShotPage() {
           beanPurchaseId: search.beanPurchaseId,
         }}
         onSaved={async () => {
-          await router.invalidate()
           await navigate({ to: '/brews' })
           toast.success('Brew saved', {
             action: {

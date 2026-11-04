@@ -1,9 +1,4 @@
-import {
-  getRouteApi,
-  Link,
-  useNavigate,
-  useRouter,
-} from '@tanstack/react-router'
+import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -65,7 +60,6 @@ export function BrewDetailPage() {
   const formatNumber = useNumberFormatter()
   const tasteProfile = useTasteProfile()
   const navigate = useNavigate({ from: '/brews/$shotId' })
-  const router = useRouter()
   const isOnline = useOnlineStatus()
 
   const [isSavingRecipe, setIsSavingRecipe] = useState(false)
@@ -82,7 +76,6 @@ export function BrewDetailPage() {
       await deleteShot({
         data: { id: shot.id, baseRevision: shot.revision, idempotent: true },
       })
-      await router.invalidate()
       await navigate({ to: '/brews' })
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to delete brew'))
@@ -95,7 +88,6 @@ export function BrewDetailPage() {
   }
 
   const handleSaved = async () => {
-    await router.invalidate()
     await navigate({ search: (current) => ({ ...current, edit: undefined }) })
     requestAnimationFrame(() => editButtonRef.current?.focus())
   }
@@ -114,7 +106,6 @@ export function BrewDetailPage() {
         toast.error('Could not save this recipe')
         return false
       }
-      await router.invalidate()
       toast.success(isNewRecipe ? 'Recipe created' : 'Recipe updated')
       return true
     } catch (error) {
@@ -277,7 +268,6 @@ export function BrewDetailPage() {
         entityId={shot.id}
         images={shot.images}
         editable
-        onImagesChange={() => router.invalidate()}
       />
 
       {isEditing && editData ? (

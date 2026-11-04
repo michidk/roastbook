@@ -2,7 +2,7 @@ import { resolve } from 'node:path'
 import type { Plugin } from 'vite'
 
 const platform =
-  /^@\/journal\/platform\/(config|database|effects|images|runtime|storage)$/
+  /^@\/journal\/platform\/(clock|config|database|effects|images|runtime|storage)$/
 
 /**
  * Journal code runs on the server and in the browser. The browser build swaps

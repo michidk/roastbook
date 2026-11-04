@@ -1,20 +1,10 @@
 // One-time move of work queued by the previous offline mode (RxDB) into the
 // journal. The old stores are deleted only when every pending change moved.
-import { deleteEntityImage, uploadEntityImage } from '@/journal/images'
-import {
-  createRecipe,
-  deleteRecipe,
-  saveShotAsRecipe,
-  updateRecipe,
-} from '@/journal/recipes'
-import {
-  createShot,
-  createShotAndSaveRecipe,
-  deleteShot,
-  updateShot,
-} from '@/journal/shots'
+import { getJournalFunction } from '@/journal/function'
+import '@/journal/registry'
 import { decodeBase64 } from '@/lib/base64'
 import { createEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
+import type { LocalJournal } from './client'
 
 type LegacyOperation = {
   id: string
@@ -91,10 +81,33 @@ function withRevision(operation: LegacyOperation) {
   }
 }
 
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** Earlier clients sent this id; the server keeps it as a receipt. */
+function operationKey(operation: LegacyOperation) {
+  const sent = operation.payload?.clientOperationId
+  if (typeof sent === 'string' && uuid.test(sent)) return sent
+  return uuid.test(operation.id) ? operation.id : crypto.randomUUID()
+}
+
+const createdTables: Record<string, string> = {
+  'brew/create': 'id:brews',
+  'brew/save-to-recipe': 'id:brews',
+  'recipe/create': 'id:recipes',
+  'brew-image/upload': 'id:brew_images',
+}
+
 async function apply(
+  journal: LocalJournal,
   operation: LegacyOperation,
   blobs: Map<string, LegacyBlob>,
+  key: string,
 ): Promise<number | undefined> {
+  const run = async (name: string, data: unknown) => {
+    const write = getJournalFunction(name)
+    if (!write) throw new Error(`Unsupported earlier change: ${name}`)
+    return (await journal.run(write, data, { key })) as { id: number }
+  }
   const payload = operation.payload ?? {}
   const id = Number(operation.entityServerId ?? operation.entityLocalId)
   const deletion = {
@@ -105,28 +118,31 @@ async function apply(
       : {}),
   }
   const kind = `${operation.entityType}/${operation.operationType}`
-  if (kind === 'brew/create')
-    return (await createShot({ data: payload as never })).id
+  if (kind === 'brew/create') return (await run('shots/createShot', payload)).id
   if (kind === 'brew/update')
-    return (await updateShot({ data: withRevision(operation) as never })).id
-  if (kind === 'brew/delete') return void (await deleteShot({ data: deletion }))
+    return (await run('shots/updateShot', withRevision(operation))).id
+  if (kind === 'brew/delete')
+    return void (await run('shots/deleteShot', deletion))
   if (kind === 'brew/save-to-recipe') {
-    if (payload.shot)
-      return (await createShotAndSaveRecipe({ data: payload as never })).shot.id
-    await saveShotAsRecipe({
-      data: {
-        shotId: payload.shotId,
-        ...(payload.target as object),
-      } as never,
+    if (payload.shot) {
+      const created = (await run(
+        'shots/createShotAndSaveRecipe',
+        payload,
+      )) as unknown as { shot: { id: number } }
+      return created.shot.id
+    }
+    await run('recipes/saveShotAsRecipe', {
+      shotId: payload.shotId,
+      ...(payload.target as object),
     })
     return Number(payload.shotId)
   }
   if (kind === 'recipe/create')
-    return (await createRecipe({ data: payload as never })).id
+    return (await run('recipes/createRecipe', payload)).id
   if (kind === 'recipe/update')
-    return (await updateRecipe({ data: withRevision(operation) as never })).id
+    return (await run('recipes/updateRecipe', withRevision(operation))).id
   if (kind === 'recipe/delete')
-    return void (await deleteRecipe({ data: deletion }))
+    return void (await run('recipes/deleteRecipe', deletion))
   const entityType = (payload.entityType as 'shots' | undefined) ?? 'shots'
   const entityId =
     (payload.entityId as number | undefined) ?? Number(operation.entityServerId)
@@ -141,27 +157,30 @@ async function apply(
       },
     )
     return (
-      await uploadEntityImage({
-        data: createEntityImageUploadFormData(entityType, entityId, file),
-      })
+      await run(
+        'images/uploadEntityImage',
+        createEntityImageUploadFormData(entityType, entityId, file),
+      )
     ).id
   }
   if (kind === 'brew-image/remove-image')
-    return void (await deleteEntityImage({
-      data: {
-        entityType,
-        entityId,
-        imageId: Number(payload.imageId ?? 0),
-        idempotent: true,
-      },
+    return void (await run('images/deleteEntityImage', {
+      entityType,
+      entityId,
+      imageId: Number(payload.imageId ?? 0),
+      idempotent: true,
     }))
   throw new Error(`Unsupported earlier change: ${kind}`)
 }
 
-/** Moves pending earlier changes into the journal; returns how many could not move. */
-export async function migrateLegacyOffline(owner: string) {
+/**
+ * Moves pending earlier changes into the journal and returns how many could
+ * not move. Safe to run again: a change keeps its key, so one that already
+ * moved is skipped here and applied at most once by the server.
+ */
+export async function migrateLegacyOffline(journal: LocalJournal) {
   if (typeof indexedDB === 'undefined' || !indexedDB.databases) return 0
-  const database = legacyDatabase(owner)
+  const database = legacyDatabase(journal.options.identity().id)
   const operations = (
     await readDocuments<LegacyOperation>(store(database, 'operations'))
   )
@@ -181,8 +200,17 @@ export async function migrateLegacyOffline(owner: string) {
       .find((id) => id !== undefined)
     if (!operation.entityServerId && dependency !== undefined)
       operation.entityServerId = String(dependency)
+    const key = operationKey(operation)
     try {
-      const id = await apply(operation, blobs)
+      const moved = await journal.client.query<{
+        recorded: Record<string, unknown[]>
+      }>('select recorded from roastbook_local.outbox where key = $1', [key])
+      const recorded = moved.rows[0]?.recorded
+      const table =
+        createdTables[`${operation.entityType}/${operation.operationType}`]
+      const id = recorded
+        ? (table && Number(recorded[table]?.[0])) || undefined
+        : await apply(journal, operation, blobs, key)
       if (id !== undefined) created.set(operation.id, id)
     } catch (error) {
       failed++

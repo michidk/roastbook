@@ -11,6 +11,7 @@ import {
   text,
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core'
+import { journalNow } from '@/journal/platform/clock'
 import {
   BEAN_TYPE_VALUES,
   GEAR_TYPE_VALUES,
@@ -62,9 +63,11 @@ export const journalMutationAssertions = sqliteTable(
 const timestamps = () => ({
   createdAt: timestamp('created_at')
     .default(sql`(cast(unixepoch('subsec') * 1000 as integer))`)
+    .$defaultFn(journalNow)
     .notNull(),
   updatedAt: timestamp('updated_at')
     .default(sql`(cast(unixepoch('subsec') * 1000 as integer))`)
+    .$defaultFn(journalNow)
     .notNull(),
 })
 
@@ -84,6 +87,7 @@ const imageFile = () => ({
 const createdAt = () =>
   timestamp('created_at')
     .default(sql`(cast(unixepoch('subsec') * 1000 as integer))`)
+    .$defaultFn(journalNow)
     .notNull()
 
 export const gearTypeEnum = (name: string) =>
@@ -239,6 +243,7 @@ export const mcpAuditEvents = sqliteTable(
     toolName: text('tool_name'),
     createdAt: timestamp('created_at')
       .default(sql`(cast(unixepoch('subsec') * 1000 as integer))`)
+      .$defaultFn(journalNow)
       .notNull(),
   },
   (table) => [
@@ -944,6 +949,7 @@ export const espressoMachineSettingRevisions = sqliteTable(
     }),
     effectiveFrom: timestamp('effective_from')
       .default(sql`(cast(unixepoch('subsec') * 1000 as integer))`)
+      .$defaultFn(journalNow)
       .notNull(),
     supersededAt: timestamp('superseded_at'),
     createdAt: createdAt(),
@@ -1485,9 +1491,11 @@ export const gearPropertyEvidence = sqliteTable(
     rawUnit: text('raw_unit'),
     retrievedAt: timestamp('retrieved_at')
       .default(sql`(cast(unixepoch('subsec') * 1000 as integer))`)
+      .$defaultFn(journalNow)
       .notNull(),
     acceptedAt: timestamp('accepted_at')
       .default(sql`(cast(unixepoch('subsec') * 1000 as integer))`)
+      .$defaultFn(journalNow)
       .notNull(),
   },
   (table) => [
@@ -1899,7 +1907,6 @@ export const recipes = sqliteTable(
     ownerId: journalOwner(),
     id: integer('id').primaryKey({ autoIncrement: true }),
     name: text('name').notNull(),
-    clientOperationId: text('client_operation_id'),
     syncId: text('sync_id')
       .default(sql`(lower(hex(randomblob(16))))`)
       .notNull(),
@@ -2006,10 +2013,6 @@ export const recipes = sqliteTable(
     uniqueIndex('recipes_id_owner_unique').on(table.ownerId, table.id),
 
     index('recipes_owner_id_idx').on(table.ownerId),
-    uniqueIndex('recipes_client_operation_id_unique').on(
-      table.ownerId,
-      table.clientOperationId,
-    ),
     uniqueIndex('recipes_sync_id_unique').on(table.ownerId, table.syncId),
     check(
       'recipes_ratio_basis_check',
@@ -2164,6 +2167,7 @@ export const shots = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     brewedAt: timestamp('brewed_at')
       .default(sql`(cast(unixepoch('subsec') * 1000 as integer))`)
+      .$defaultFn(journalNow)
       .notNull(),
     revision: integer('revision').default(0).notNull(),
     ...shotContextColumns(),
@@ -2184,7 +2188,6 @@ export const shots = sqliteTable(
     body: integer('body'),
     astringency: integer('astringency'),
     notes: text('notes'),
-    clientOperationId: text('client_operation_id'),
     ...timestamps(),
   },
   (table) => [
@@ -2351,72 +2354,6 @@ export const shots = sqliteTable(
     index('brews_machine_id_idx').on(table.machineId),
     index('brews_grinder_id_idx').on(table.grinderId),
     index('brews_basket_id_idx').on(table.basketId),
-    uniqueIndex('brews_client_operation_id_unique').on(
-      table.ownerId,
-      table.clientOperationId,
-    ),
-  ],
-)
-
-export const replicationChanges = sqliteTable(
-  'replication_changes',
-  {
-    ownerId: journalOwner(),
-    sequence: integer('sequence').primaryKey({ autoIncrement: true }),
-    entity: text('entity').notNull(),
-    documentId: text('document_id').notNull(),
-    document: jsonb('document').notNull(),
-    deleted: boolean('deleted').default(false).notNull(),
-    createdAt: createdAt(),
-  },
-  (table) => [
-    check(
-      'replication_changes_document_json',
-      sql`${table.document} is null or json_valid(${table.document})`,
-    ),
-    check(
-      'replication_changes_deleted_boolean',
-      sql`${table.deleted} in (0, 1)`,
-    ),
-
-    index('replication_changes_owner_id_idx').on(table.ownerId),
-    index('replication_changes_entity_sequence_idx').on(
-      table.entity,
-      table.sequence,
-    ),
-  ],
-)
-
-export const clientOperations = sqliteTable(
-  'client_operations',
-  {
-    ownerId: journalOwner(),
-    operationId: text('operation_id').notNull(),
-    brewId: integer('brew_id').references(() => shots.id, {
-      onDelete: 'set null',
-    }),
-    recipeId: integer('recipe_id').references(() => recipes.id, {
-      onDelete: 'set null',
-    }),
-    createdAt: createdAt(),
-  },
-  (table) => [
-    foreignKey({
-      name: 'client_operations_brewId_owner_fk',
-      columns: [table.ownerId, table.brewId],
-      foreignColumns: [shots.ownerId, shots.id],
-    }),
-    foreignKey({
-      name: 'client_operations_recipeId_owner_fk',
-      columns: [table.ownerId, table.recipeId],
-      foreignColumns: [recipes.ownerId, recipes.id],
-    }),
-
-    primaryKey({ columns: [table.ownerId, table.operationId] }),
-    index('client_operations_owner_id_idx').on(table.ownerId),
-    index('client_operations_brew_id_idx').on(table.brewId),
-    index('client_operations_recipe_id_idx').on(table.recipeId),
-    index('client_operations_created_at_idx').on(table.createdAt),
   ],
 )
 
@@ -2675,7 +2612,6 @@ export const shotImages = sqliteTable(
     shotId: integer('brew_id')
       .references(() => shots.id, { onDelete: 'cascade' })
       .notNull(),
-    clientOperationId: text('client_operation_id'),
     ...imageFile(),
     createdAt: createdAt(),
   },
@@ -2688,10 +2624,6 @@ export const shotImages = sqliteTable(
 
     index('brew_images_owner_id_idx').on(table.ownerId),
     index('brew_images_brew_id_idx').on(table.shotId),
-    uniqueIndex('brew_images_client_operation_id_unique').on(
-      table.ownerId,
-      table.clientOperationId,
-    ),
   ],
 )
 
@@ -2811,6 +2743,7 @@ export const cafeVisits = sqliteTable(
     notes: text('notes'),
     visitedAt: timestamp('visited_at')
       .default(sql`(cast(unixepoch('subsec') * 1000 as integer))`)
+      .$defaultFn(journalNow)
       .notNull(),
     ...timestamps(),
   },
@@ -3032,6 +2965,7 @@ export const mediaCleanupJobs = sqliteTable(
     lastError: text('last_error'),
     nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true })
       .default(sql`(cast(unixepoch('subsec') * 1000 as integer))`)
+      .$defaultFn(journalNow)
       .notNull(),
     ...timestamps(),
   },
@@ -3228,7 +3162,8 @@ export const accountJobs = sqliteTable(
     attempts: integer('attempts').notNull().default(0),
     availableAt: timestamp('available_at', { withTimezone: true })
       .notNull()
-      .default(sql`(cast(unixepoch('subsec') * 1000 as integer))`),
+      .default(sql`(cast(unixepoch('subsec') * 1000 as integer))`)
+      .$defaultFn(journalNow),
     expiresAt: timestamp('expires_at', { withTimezone: true }),
     ...timestamps(),
   },
@@ -3629,7 +3564,10 @@ export const journalCommandReceipts = sqliteTable(
   {
     ownerId: journalOwner(),
     commandId: text('command_id').notNull(),
-    appliedAt: timestamp('applied_at').notNull().defaultNow(),
+    appliedAt: timestamp('applied_at')
+      .notNull()
+      .defaultNow()
+      .$defaultFn(journalNow),
   },
   (table) => [primaryKey({ columns: [table.ownerId, table.commandId] })],
 )

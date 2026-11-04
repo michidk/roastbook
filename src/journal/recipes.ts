@@ -1,6 +1,6 @@
 import { and, asc, count, desc, eq, exists, or } from 'drizzle-orm'
 import { z } from 'zod'
-import { beans, brewingMethods, clientOperations, recipes } from '@/db/schema'
+import { beans, brewingMethods, recipes } from '@/db/schema'
 import { withAccessoryGearIds } from '@/journal/domain/accessory-gear'
 import {
   assertDrinkSelection,
@@ -15,6 +15,7 @@ import {
 } from '@/journal/domain/shot-parameter-projection'
 import { prepareShotToRecipe } from '@/journal/domain/shot-recipes'
 import { journalRead, journalWrite } from '@/journal/function'
+import { journalNow } from '@/journal/platform/clock'
 import { db, owned, runJournalMutations } from '@/journal/platform/database'
 import { escapedContainsPattern } from '@/lib/collection-query'
 import { expectReturnedRow } from '@/lib/domain-errors'
@@ -66,7 +67,6 @@ function projectRecipeWrite(
     beanId,
     drinkTypeId,
     drinkOptionValueIds: _drinkOptionValueIds,
-    clientOperationId: _clientOperationId,
     ...parameters
   } = data
   return {
@@ -76,7 +76,7 @@ function projectRecipeWrite(
       beanId,
       drinkTypeId,
       ...projectShotParameters(parameters, enabledParameters),
-      updatedAt: new Date(),
+      updatedAt: journalNow(),
     },
     accessoryGearIds: projectAccessoryGearIds(parameters, enabledParameters),
   }
@@ -197,36 +197,10 @@ export const getRecipe = journalRead('recipes/getRecipe')
  * association rows, keeping storage details out of route components.
  */
 
-async function completedRecipe(operationId?: string) {
-  if (!operationId) return undefined
-  const operation = await db.query.clientOperations.findFirst({
-    where: owned(
-      clientOperations,
-      eq(clientOperations.operationId, operationId),
-    ),
-  })
-  if (!operation) return undefined
-  const recipe = operation.recipeId
-    ? await db.query.recipes.findFirst({
-        where: owned(recipes, eq(recipes.id, operation.recipeId)),
-      })
-    : undefined
-  if (!recipe)
-    throw new RecipeInputError('This recipe was already synced and deleted')
-  return recipe
-}
-
 async function executeRecipePlan(
   plan: Awaited<ReturnType<typeof prepareRecipeWrite>>,
-  operationId?: string,
 ) {
-  try {
-    await runJournalMutations(plan.mutations)
-  } catch (error) {
-    const completed = await completedRecipe(operationId)
-    if (completed) return completed
-    throw error
-  }
+  await runJournalMutations(plan.mutations)
   return expectReturnedRow(
     await db.query.recipes.findFirst({
       where: owned(recipes, eq(recipes.id, plan.id)),
@@ -251,8 +225,6 @@ export const updateRecipe = journalWrite('recipes/updateRecipe')
     validateRecipeInput(recipeUpdateSchema, input),
   )
   .handler(async ({ data }) => {
-    const completed = await completedRecipe(data.clientOperationId)
-    if (completed) return completed
     const existing = await db.query.recipes.findFirst({
       where: owned(recipes, eq(recipes.id, data.id)),
     })
@@ -273,9 +245,8 @@ export const updateRecipe = journalWrite('recipes/updateRecipe')
       existing,
       accessoryGearIds: projected.accessoryGearIds,
       drinkOptionValueIds: data.drinkOptionValueIds ?? [],
-      operationId: data.clientOperationId,
     })
-    return executeRecipePlan(plan, data.clientOperationId)
+    return executeRecipePlan(plan)
   })
 
 export const createRecipe = journalWrite('recipes/createRecipe')
@@ -283,29 +254,20 @@ export const createRecipe = journalWrite('recipes/createRecipe')
     validateRecipeInput(recipeCreateSchema, input),
   )
   .handler(async ({ data }) => {
-    const completed = await completedRecipe(data.clientOperationId)
-    if (completed) return completed
     const projected = await validateRecipeSelection(data)
     const plan = await prepareRecipeWrite({
       values: projected.values,
       accessoryGearIds: projected.accessoryGearIds,
       drinkOptionValueIds: data.drinkOptionValueIds ?? [],
-      operationId: data.clientOperationId,
     })
-    return executeRecipePlan(plan, data.clientOperationId)
+    return executeRecipePlan(plan)
   })
 
 export const saveShotAsRecipe = journalWrite('recipes/saveShotAsRecipe')
   .validator(shotRecipeTargetSchema)
   .handler(async ({ data }) => {
-    const completed = await completedRecipe(data.clientOperationId)
-    if (completed) return completed
-    const plan = await prepareShotToRecipe(
-      data.shotId,
-      data,
-      data.clientOperationId,
-    )
-    return executeRecipePlan(plan, data.clientOperationId)
+    const plan = await prepareShotToRecipe(data.shotId, data)
+    return executeRecipePlan(plan)
   })
 
 export const deleteRecipe = journalWrite('recipes/deleteRecipe')

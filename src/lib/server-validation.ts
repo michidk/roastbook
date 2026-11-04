@@ -124,7 +124,6 @@ const nullableShotDecimal = boundedDecimalStringSchema(
 
 export const shotCreateSchema = z.object({
   brewingMethodId: positiveIdSchema,
-  clientOperationId: z.uuid().optional(),
   brewedAt: notFutureDateSchema.optional(),
   beanId: optionalNullablePositiveIdSchema,
   beanPurchaseId: optionalNullablePositiveIdSchema,

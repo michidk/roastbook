@@ -1,5 +1,6 @@
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import { beanPurchases, shots } from '@/db/schema'
+import { journalNow } from '@/journal/platform/clock'
 import {
   allocateJournalIds,
   db,
@@ -61,7 +62,7 @@ export async function updateBeanPurchaseOperation(
     {
       statement: db
         .update(beanPurchases)
-        .set({ ...values, updatedAt: new Date() })
+        .set({ ...values, updatedAt: journalNow() })
         .where(
           owned(
             beanPurchases,

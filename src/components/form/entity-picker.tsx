@@ -1,4 +1,3 @@
-import { useRouter } from '@tanstack/react-router'
 import { type ReactNode, useState } from 'react'
 import {
   CreatableCombobox,
@@ -42,7 +41,6 @@ export function EntityPicker<T>({
   renderSuggestionLeading,
   ...comboboxProps
 }: EntityPickerProps<T>) {
-  const router = useRouter()
   const [pendingName, setPendingName] = useState<string | null>(null)
   const [justCreated, setJustCreated] = useState<FallbackOption | null>(null)
 
@@ -56,7 +54,6 @@ export function EntityPicker<T>({
     setJustCreated({ key, label: entity.name })
     onChange(key)
     closeDialog()
-    await router.invalidate()
   }
 
   return (

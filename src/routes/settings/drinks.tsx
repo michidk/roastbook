@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { Coffee, Milk, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -70,14 +70,10 @@ function AddItemForm({
 
 function DrinkSettings() {
   const configuration = Route.useLoaderData()
-  const router = useRouter()
   const milkGroup = configuration.optionGroups.find(
     (group) => group.name.toLocaleLowerCase() === 'milk',
   )
 
-  const refresh = async () => {
-    await router.invalidate()
-  }
   const reportError = (error: unknown, fallback: string) =>
     toast.error(error instanceof Error ? error.message : fallback)
 
@@ -124,7 +120,6 @@ function DrinkSettings() {
                                 optionGroupIds,
                               },
                             })
-                            await refresh()
                           } catch (error) {
                             reportError(error, 'Could not update this type')
                           }
@@ -137,7 +132,6 @@ function DrinkSettings() {
                     description="Existing brews and visits keep this type, but it will no longer be offered for new entries."
                     onConfirm={async () => {
                       await archiveDrinkType({ data: drinkType.id })
-                      await refresh()
                     }}
                   />
                 </div>
@@ -152,7 +146,6 @@ function DrinkSettings() {
           onAdd={async (name) => {
             try {
               await saveDrinkType({ data: { name, optionGroupIds: [] } })
-              await refresh()
             } catch (error) {
               reportError(error, 'Could not add this drink type')
             }
@@ -178,7 +171,6 @@ function DrinkSettings() {
                   description="Existing entries keep this value, but it will no longer be offered for new entries."
                   onConfirm={async () => {
                     await archiveDrinkOptionValue({ data: value.id })
-                    await refresh()
                   }}
                 />
               </li>
@@ -193,7 +185,6 @@ function DrinkSettings() {
                 await createDrinkOptionValue({
                   data: { groupId: milkGroup.id, name },
                 })
-                await refresh()
               } catch (error) {
                 reportError(error, 'Could not add this milk type')
               }

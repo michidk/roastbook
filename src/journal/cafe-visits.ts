@@ -17,6 +17,7 @@ import {
   cafeVisitSchema,
   cafeVisitUpdateSchema,
 } from '@/journal/input/cafe-visits'
+import { journalNow } from '@/journal/platform/clock'
 import {
   allocateJournalIds,
   db,
@@ -199,7 +200,7 @@ export const updateCafeVisit = journalWrite('cafe-visits/updateCafeVisit')
           .set({
             ...values,
             updatedAt: new Date(
-              Math.max(Date.now(), current.updatedAt.getTime() + 1),
+              Math.max(journalNow().getTime(), current.updatedAt.getTime() + 1),
             ),
           })
           .where(

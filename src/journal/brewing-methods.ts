@@ -15,6 +15,7 @@ import {
   brewingMethodWriteSchema,
   normalizeBrewingMethodWrite,
 } from '@/journal/input/brewing-methods'
+import { journalNow } from '@/journal/platform/clock'
 import {
   allocateJournalIds,
   db,
@@ -228,7 +229,7 @@ export const updateBrewingMethod = journalWrite(
             description: data.description,
             enabledParameters: [...data.enabledParameters],
             timerEnabled: data.timerEnabled,
-            updatedAt: new Date(),
+            updatedAt: journalNow(),
           })
           .where(owned(brewingMethods, eq(brewingMethods.id, data.id)))
           .getSQL(),

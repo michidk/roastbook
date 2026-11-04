@@ -100,7 +100,7 @@ in the same checkout because their Nitro build state is shared.
 ## Installation and offline behavior
 
 The demo has no install manifest, offline page, service-worker shell cache, or
-replication. It can save edits locally while its loaded tab remains open without
+synchronization. It can save edits locally while its loaded tab remains open without
 a network connection, but a cold offline launch is not supported. The install
 hint describes the standard edition's offline support.
 

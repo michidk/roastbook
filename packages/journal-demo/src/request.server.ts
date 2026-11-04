@@ -1,18 +1,10 @@
 import '@tanstack/react-start/server-only'
-import {
-  demoModeReadOnlyResponse,
-  isDemoServerRequestBlocked,
-} from '@/lib/server/demo-mode.server'
 
+// The demo has no accounts, so requests need no journal identity. The demo
+// middleware in src/start.ts already rejects server endpoints.
 export async function handleJournalRequest(
-  request: Request,
+  _request: Request,
   next: () => Promise<Response>,
 ): Promise<Response> {
-  return isDemoServerRequestBlocked(
-    true,
-    request.method,
-    new URL(request.url).pathname,
-  )
-    ? demoModeReadOnlyResponse()
-    : next()
+  return next()
 }

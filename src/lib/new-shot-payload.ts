@@ -56,7 +56,7 @@ export function recipePayload(values: ShotFormValues) {
 export function newShotPayload(
   values: ShotFormValues,
   tasteTagIds: readonly number[],
-  options?: { readonly brewedAt?: string; readonly clientOperationId?: string },
+  options?: { readonly brewedAt?: string },
 ) {
   const brewedAt = options?.brewedAt
     ? localDateTimeInputToDate(options.brewedAt)
@@ -65,9 +65,6 @@ export function newShotPayload(
     ...shotParameterPayload(values),
     ...shotDrinkPayload(values),
     brewedAt: brewedAt ?? undefined,
-    ...(options?.clientOperationId
-      ? { clientOperationId: options.clientOperationId }
-      : {}),
     rating: toNullableRating(values.rating),
     extractionBalance: toNullableRating(values.extractionBalance),
     ...shotSensoryPayload(values),

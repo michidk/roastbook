@@ -22,7 +22,6 @@ type RecipeSource = ShotParameterInput & {
 export async function prepareRecipeFromShot(
   source: RecipeSource,
   target: RecipeTarget,
-  operationId?: string,
 ) {
   const existing =
     target.recipeId === undefined
@@ -44,14 +43,12 @@ export async function prepareRecipeFromShot(
     existing,
     accessoryGearIds: projectAccessoryGearIds(source, source.enabledParameters),
     drinkOptionValueIds: source.drinkOptionValueIds,
-    operationId,
   })
 }
 
 export async function prepareShotToRecipe(
   shotId: number,
   target: RecipeTarget,
-  operationId?: string,
 ) {
   const shot = await db.query.shots.findFirst({
     where: owned(shots, eq(shots.id, shotId)),
@@ -71,7 +68,6 @@ export async function prepareShotToRecipe(
       ),
     },
     target,
-    operationId,
   )
 }
 

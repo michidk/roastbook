@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { Loader2, Sparkles, Tags } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { PanelSection } from '@/components/section-layout'
@@ -24,7 +24,6 @@ export const Route = createFileRoute('/settings/taste-profile')({
 
 function TasteProfileSection() {
   const tasteTags = Route.useLoaderData()
-  const router = useRouter()
   const savedTasteProfile = useAppSettings().tasteProfile
   const [tasteProfile, setTasteProfile] = useState(savedTasteProfile)
 
@@ -38,7 +37,6 @@ function TasteProfileSection() {
         data: enabledTasteProfileFields(nextTasteProfile),
       }),
     selectValue: (updated) => updated.tasteProfile,
-    onSaved: () => void router.invalidate(),
     errorMessage: 'Could not save the taste profile fields',
   })
   const toggleTasteProfileField = (
@@ -84,12 +82,7 @@ function TasteProfileSection() {
           onToggle={toggleTasteProfileField}
         />
 
-        {tasteProfile.flavorTags ? (
-          <TasteTagSettings
-            tags={tasteTags}
-            onChanged={() => router.invalidate()}
-          />
-        ) : null}
+        {tasteProfile.flavorTags ? <TasteTagSettings tags={tasteTags} /> : null}
       </PanelSection>
     </>
   )

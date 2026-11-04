@@ -150,7 +150,6 @@ describe('AI brew recommendation context', () => {
         ownerId: 'local',
         revision: 0,
         brewedAt,
-        clientOperationId: null,
         brewingMethodId: 3,
         beanId: 12,
         drinkTypeId: null,

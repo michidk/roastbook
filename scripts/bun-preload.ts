@@ -15,7 +15,7 @@ plugin({
       build.onLoad(
         {
           filter:
-            /\/src\/journal\/platform\/(config|database|effects|images|runtime|storage)\.ts$/,
+            /\/src\/journal\/platform\/(clock|config|database|effects|images|runtime|storage)\.ts$/,
         },
         (args) => ({
           contents: `export * from ${JSON.stringify(args.path.replace(/\.ts$/, '.browser.ts'))}`,

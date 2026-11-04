@@ -1,4 +1,4 @@
-import { getRouteApi, useNavigate, useRouter } from '@tanstack/react-router'
+import { getRouteApi, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import {
@@ -55,7 +55,6 @@ export function BeanDetailPage() {
   const search = routeApi.useSearch()
   const isEditing = search.edit ?? false
   const navigate = useNavigate({ from: '/beans/$beanId' })
-  const router = useRouter()
   const isOnline = useOnlineStatus()
   const [isSaving, setIsSaving] = useState(false)
   const [isResearching, setIsResearching] = useState(false)
@@ -121,7 +120,6 @@ export function BeanDetailPage() {
         data: beanUpdatePayload(bean.id, formData),
       })
       await updateSearch({ edit: undefined }, { replace: true })
-      await router.invalidate()
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to update bean'))
     } finally {
@@ -225,11 +223,9 @@ export function BeanDetailPage() {
         onToggleArchive={() => {
           void updateBean({
             data: { id: bean.id, isArchived: !bean.isArchived },
+          }).catch((error) => {
+            toast.error(getErrorMessage(error, 'Could not update this bean'))
           })
-            .then(() => router.invalidate())
-            .catch((error) => {
-              toast.error(getErrorMessage(error, 'Could not update this bean'))
-            })
         }}
         onCancelEdit={() => {
           setFormData(toBeanFormValues(bean))
@@ -238,7 +234,6 @@ export function BeanDetailPage() {
         onSave={handleSave}
         onDelete={async () => {
           const result = await deleteBean({ data: bean.id })
-          await router.invalidate()
           if (result.archived) {
             toast.success(
               'This coffee is in your history, so it was moved to the archive',
@@ -256,7 +251,6 @@ export function BeanDetailPage() {
             beanName={bean.name}
             visionEnabled={visionEnabled}
             previous={bean.purchases[0]}
-            onSaved={() => router.invalidate()}
           />
         </div>
       ) : null}
@@ -273,7 +267,6 @@ export function BeanDetailPage() {
           isExtracting={isExtracting}
           onResearch={handleResearchOnline}
           onExtractFromImages={handleExtractFromImages}
-          onImagesChange={() => router.invalidate()}
         />
       ) : (
         <BeanReadOnlyContent
@@ -281,17 +274,12 @@ export function BeanDetailPage() {
           shotCount={shotAnalytics.totalShots}
           topTasteTags={shotAnalytics.topTasteTags}
           weightStats={weightStats}
-          onImagesChange={() => router.invalidate()}
           onTogglePurchase={(purchaseId, isArchived) => {
             void setBeanPurchaseArchived({
               data: { id: purchaseId, beanId: bean.id, isArchived },
-            })
-              .then(() => router.invalidate())
-              .catch((error) =>
-                toast.error(
-                  getErrorMessage(error, 'Could not update this bag'),
-                ),
-              )
+            }).catch((error) =>
+              toast.error(getErrorMessage(error, 'Could not update this bag')),
+            )
           }}
         />
       )}

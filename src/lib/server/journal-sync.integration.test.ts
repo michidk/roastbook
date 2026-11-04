@@ -53,7 +53,12 @@ suite('journal sync replays browser writes on PostgreSQL', () => {
     const write = {
       name: 'beans/createBean',
       input: await encodeInput({ name: 'Offline bean', weight: '250' }),
-      recorded: { 'id:beans': [beanId], 'id:bean_purchases': [purchaseId] },
+      recorded: {
+        'id:beans': [beanId],
+        'id:bean_purchases': [purchaseId],
+        // Saved offline earlier: the server keeps the time of the change.
+        now: ['2026-10-01T08:00:00.000Z'],
+      },
       key: randomUUID(),
     }
     const before = await withJournal(first, () => loadJournalRows(null))
@@ -68,6 +73,9 @@ suite('journal sync replays browser writes on PostgreSQL', () => {
       [beanId, 'Offline bean'],
     ])
     expect(rows.tables?.bean_purchases?.[0]?.id).toBe(purchaseId)
+    expect(rows.tables?.beans?.[0]?.createdAt).toEqual(
+      new Date('2026-10-01T08:00:00.000Z'),
+    )
 
     // A lost response retries the same key: nothing is applied twice.
     const repeated = await withJournal(first, () =>
@@ -158,6 +166,20 @@ suite('journal sync replays browser writes on PostgreSQL', () => {
       ).rejects.toThrow('Invalid replayed identifier')
   })
 
+  test('a recorded time in the future is not trusted', async () => {
+    await expect(
+      withJournal(first, () =>
+        replayJournalWrite({
+          name: 'beans/updateBean',
+          input: { id: 2_000_000_001, name: 'Later' },
+          recorded: { now: [new Date(Date.now() + 3_600_000).toISOString()] },
+          key: randomUUID(),
+          revision: 0,
+        }),
+      ),
+    ).rejects.toThrow('Invalid replayed time')
+  })
+
   test('unknown or read operations are never replayed', async () => {
     for (const name of ['beans/getBeans', 'nothing/here', '../../db/index'])
       await expect(
@@ -185,7 +207,7 @@ suite('journal sync replays browser writes on PostgreSQL', () => {
     if (!purchase) throw new Error('Expected a bean purchase')
     const [imageId] = await reserved('bean_images')
     const path = `beans/${purchase.id}/${Date.now()}-${randomUUID()}.webp`
-    const upload = (recordedPath: string) =>
+    const upload = (recordedPath: string, id = imageId) =>
       withJournal(first, () =>
         replayJournalWrite({
           name: 'images/uploadEntityImageBase64',
@@ -199,7 +221,7 @@ suite('journal sync replays browser writes on PostgreSQL', () => {
           },
           recorded: {
             storagePath: [recordedPath],
-            'id:bean_images': [imageId],
+            'id:bean_images': [id],
           },
           key: randomUUID(),
           revision: 0,
@@ -217,7 +239,8 @@ suite('journal sync replays browser writes on PostgreSQL', () => {
       stored.tables?.bean_images?.map((image) => image.storagePath),
     ).toEqual([path])
     // Replaying the same path for another record must neither overwrite nor delete it.
-    await expect(upload(path)).rejects.toThrow()
+    const [otherImageId] = await reserved('bean_images')
+    await expect(upload(path, otherImageId)).rejects.toThrow()
     const { getStorage } = await import('@/lib/storage')
     for (const stored of [path, path.replace(/\.webp$/, '.thumb.webp')])
       expect(await getStorage().exists(stored)).toBe(true)

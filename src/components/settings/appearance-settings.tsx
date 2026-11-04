@@ -16,11 +16,7 @@ import { usePreferencesStore } from '@/lib/preferences-store'
 import { DARK_THEMES, LIGHT_THEMES } from '@/lib/theme'
 
 /** The theme and page background settings sections. */
-export function AppearanceSettings({
-  onSaved,
-}: {
-  readonly onSaved: () => void
-}) {
+export function AppearanceSettings() {
   const savedSettings = useAppSettings()
   const savedBackgroundTextureEnabled = savedSettings.backgroundTextureEnabled
   const [backgroundTextureEnabled, setBackgroundTextureEnabled] = useState(
@@ -51,7 +47,6 @@ export function AppearanceSettings({
     applyValue: setBackgroundTextureEnabled,
     mutate: (enabled) => updateBackgroundTextureEnabled({ data: enabled }),
     selectValue: (updated) => updated.backgroundTextureEnabled,
-    onSaved,
     errorMessage: 'Could not save the page background setting',
   })
 
@@ -64,7 +59,6 @@ export function AppearanceSettings({
     applyValue: setLightTheme,
     mutate: (value) => updateLightTheme({ data: value }),
     selectValue: (updated) => updated.lightTheme,
-    onSaved,
     errorMessage: 'Could not save the light theme',
   })
   useEffect(
@@ -76,7 +70,6 @@ export function AppearanceSettings({
     applyValue: setDarkTheme,
     mutate: (value) => updateDarkTheme({ data: value }),
     selectValue: (updated) => updated.darkTheme,
-    onSaved,
     errorMessage: 'Could not save the dark theme',
   })
   useEffect(
@@ -89,7 +82,6 @@ export function AppearanceSettings({
     applyValue: setBackgroundGrainEnabled,
     mutate: (value) => updateBackgroundGrainEnabled({ data: value }),
     selectValue: (updated) => updated.backgroundGrainEnabled,
-    onSaved,
     errorMessage: 'Could not save the background grain',
   })
   return (

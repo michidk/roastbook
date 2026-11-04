@@ -6,14 +6,12 @@ import * as schema from '@/db/schema'
 const serverOnly = new Set([
   'ai_request_logs',
   'ai_usage',
-  'client_operations',
   'journal_command_receipts',
   'journal_id_reservations',
   'journal_sync_revisions',
   'mcp_audit_events',
   'mcp_settings',
   'media_cleanup_jobs',
-  'replication_changes',
   'shottimer',
 ])
 

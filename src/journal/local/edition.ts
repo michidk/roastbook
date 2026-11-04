@@ -35,7 +35,8 @@ let setup: { journal: LocalJournal; ready: Promise<void> } | undefined
 /** Prepares an opened journal once; every caller waits for the same setup. */
 async function prepare(journal: LocalJournal) {
   // Every local write is followed by a sync once the burst of edits settles.
-  subscribeLocalChanges(() => {
+  subscribeLocalChanges((change) => {
+    if (change === 'download') return
     void refreshSyncStatus(journal).catch(() => undefined)
     clearTimeout(syncScheduled)
     syncScheduled = setTimeout(() => void synchronizeJournal(journal), 800)
@@ -44,18 +45,19 @@ async function prepare(journal: LocalJournal) {
   const config = await journal.getState<JournalConfig>('config')
   if (config) setJournalConfig(config)
   await refreshSyncStatus(journal)
-  // Runs once, in one tab: repeating it would apply moved changes twice.
+  // Until every earlier change moved, each start retries the rest. It holds
+  // the sync lock, so moved changes stay in the outbox until it finishes.
   const moveLegacy = async () => {
     if (await journal.getState('legacyMoved')) return
-    await journal.setState('legacyMoved', true)
-    const failed = await migrateLegacyOffline(
-      journal.options.identity().id,
-    ).catch(() => -1) // Unknown count; Settings → Offline reports it.
-    if (failed) await journal.setState('legacyFailed', failed)
+    const failed = await migrateLegacyOffline(journal).catch(() => -1)
+    await journal.setState('legacyFailed', failed)
+    if (!failed) await journal.setState('legacyMoved', true)
   }
+  // Checked first, so later opens never wait for a running sync.
+  if (await journal.getState('legacyMoved')) return
   await (navigator.locks
     ? navigator.locks.request(
-        `roastbook-legacy-${journal.options.database}`,
+        `roastbook-sync-${journal.options.database}`,
         moveLegacy,
       )
     : moveLegacy())

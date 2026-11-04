@@ -1,9 +1,4 @@
-import {
-  createFileRoute,
-  Link,
-  useNavigate,
-  useRouter,
-} from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import { FormPageHeader } from '@/components/form/form-shell'
 import { Page } from '@/components/page-layout'
@@ -51,7 +46,6 @@ function NewRecipePage() {
 
   const { beans, methods, gear, gearSets, drinks, drinkTypeSuggestions } = data
   const navigate = useNavigate()
-  const router = useRouter()
 
   return (
     <Page width="form">
@@ -74,7 +68,6 @@ function NewRecipePage() {
         drinks={drinks}
         drinkTypeSuggestions={drinkTypeSuggestions}
         onCreated={async (recipe) => {
-          await router.invalidate()
           await navigate({
             to: '/recipes/$recipeId',
             params: { recipeId: String(recipe.id) },

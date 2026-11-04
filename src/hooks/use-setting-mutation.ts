@@ -13,7 +13,6 @@ export function useSettingMutation<Value>({
   applyValue,
   mutate,
   selectValue,
-  onSaved,
   errorMessage,
   successMessage,
 }: {
@@ -21,7 +20,6 @@ export function useSettingMutation<Value>({
   readonly applyValue: (value: Value) => void
   readonly mutate: (value: Value) => Promise<AppSettings>
   readonly selectValue: (settings: AppSettings) => Value
-  readonly onSaved: () => void
   readonly errorMessage: string
   readonly successMessage?: string
 }) {
@@ -34,7 +32,6 @@ export function useSettingMutation<Value>({
     try {
       const updated = await mutate(nextValue)
       applyValue(selectValue(updated))
-      onSaved()
       if (successMessage) toast.success(successMessage)
     } catch (error) {
       applyValue(savedValue)

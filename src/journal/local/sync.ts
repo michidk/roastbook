@@ -49,7 +49,7 @@ async function applyPull(journal: LocalJournal, pull: Pull) {
     )
     await rebasePending(journal, upTo)
     // Pages in every tab show the downloaded changes.
-    notifyLocalChange()
+    void notifyLocalChange('download')
   }
   await journal.setState('revision', pull.revision)
   await journal.setState('lastSyncAt', new Date().toISOString())
@@ -72,7 +72,7 @@ async function rebasePending(journal: LocalJournal, upTo: number) {
     try {
       if (!write) throw new Error('This change is no longer supported')
       await journal.run(write, decodeInput(entry.input), {
-        recorded: entry.recorded,
+        replay: { recorded: entry.recorded },
       })
     } catch (error) {
       await journal.client.query(

@@ -14,6 +14,7 @@ import {
   beanUpdateSchema,
   checkAltitudeRange,
 } from '@/journal/input/beans'
+import { journalNow } from '@/journal/platform/clock'
 import {
   allocateJournalIds,
   db,
@@ -307,7 +308,7 @@ export const updateBean = journalWrite('beans/updateBean')
       {
         statement: db
           .update(beans)
-          .set({ ...values, updatedAt: new Date() })
+          .set({ ...values, updatedAt: journalNow() })
           .where(owned(beans, eq(beans.id, id)))
           .getSQL(),
         expectedChanges: 1,
@@ -319,7 +320,7 @@ export const updateBean = journalWrite('beans/updateBean')
             {
               statement: db
                 .update(beanPurchases)
-                .set({ isArchived, updatedAt: new Date() })
+                .set({ isArchived, updatedAt: journalNow() })
                 .where(owned(beanPurchases, eq(beanPurchases.beanId, id)))
                 .getSQL(),
             },
@@ -353,7 +354,7 @@ export const deleteBean = journalWrite('beans/deleteBean')
     if (brew || recipe || visit) {
       await db
         .update(beanPurchases)
-        .set({ isArchived: true, updatedAt: new Date() })
+        .set({ isArchived: true, updatedAt: journalNow() })
         .where(owned(beanPurchases, eq(beanPurchases.beanId, id)))
       return { archived: true }
     }

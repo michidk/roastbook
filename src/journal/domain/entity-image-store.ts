@@ -1,5 +1,5 @@
 import { and, eq, sql } from 'drizzle-orm'
-import { beanPurchases, shotImages } from '@/db/schema'
+import { beanPurchases } from '@/db/schema'
 import {
   entityImageTarget,
   requireEntityImageCapacity,
@@ -14,6 +14,7 @@ import {
 import { cleanupUncommittedUpload } from '@/journal/domain/media-lifecycle'
 import { prepareStoredImage } from '@/journal/domain/stored-image'
 import type { EntityType } from '@/journal/images'
+import { journalNow } from '@/journal/platform/clock'
 import {
   allocateJournalIds,
   db,
@@ -26,33 +27,12 @@ import { generateStoragePath, getStorage } from '@/journal/platform/storage'
 type EntityImageData = {
   entityType: EntityType
   entityId: number
-  clientOperationId?: string
   filename: string
   mimeType: string
   binaryData: Uint8Array
 }
 
-async function existingOperation(
-  data: Pick<EntityImageData, 'entityType' | 'entityId' | 'clientOperationId'>,
-) {
-  if (data.entityType !== 'shots' || !data.clientOperationId) return undefined
-  const existing = await db.query.shotImages.findFirst({
-    where: owned(
-      shotImages,
-      eq(shotImages.clientOperationId, data.clientOperationId),
-    ),
-  })
-  if (existing && existing.shotId !== data.entityId)
-    throw new Error('Image operation id is already used for another brew')
-  return existing
-}
-
 export async function storeEntityImage(data: EntityImageData) {
-  const storage = getStorage()
-  const existing = await existingOperation(data)
-  if (existing)
-    return { ...existing, url: storage.getUrl(existing.storagePath) }
-
   const { storageType } = entityImageTarget(data.entityType)
   const policy = imageStoragePolicy()
   await requireEntityImageCapacity(
@@ -114,16 +94,6 @@ export async function commitEntityImage(
     data.entityType === 'bean-purchases'
       ? sql`, (select ${beanPurchases.beanId} from ${beanPurchases} where ${owned(beanPurchases, eq(beanPurchases.id, data.entityId))})`
       : sql``
-  const operationColumn =
-    data.entityType === 'shots' ? sql`, client_operation_id` : sql``
-  const operationValue =
-    data.entityType === 'shots'
-      ? sql`, ${data.clientOperationId ?? null}`
-      : sql``
-  const conflict =
-    data.entityType === 'shots'
-      ? sql`on conflict(owner_id, client_operation_id) do nothing`
-      : sql``
 
   try {
     for (const file of prepared.files)
@@ -133,11 +103,11 @@ export async function commitEntityImage(
       )
     await runJournalMutations([
       {
-        statement: sql`insert into ${table} (id, owner_id, storage_path, original_filename, mime_type, size_bytes, storage_bytes, ${sql.identifier(foreignKey.name)}${beanColumn}${operationColumn})
-        select ${id}, ${journalOwnerId()}, ${storagePath}, ${data.filename}, 'image/webp', ${prepared.sizeBytes}, ${prepared.storageBytes}, ${data.entityId}${beanValue}${operationValue}
+        statement: sql`insert into ${table} (id, owner_id, created_at, storage_path, original_filename, mime_type, size_bytes, storage_bytes, ${sql.identifier(foreignKey.name)}${beanColumn})
+        select ${id}, ${journalOwnerId()}, ${sql.param(journalNow(), table.createdAt)}, ${storagePath}, ${data.filename}, 'image/webp', ${prepared.sizeBytes}, ${prepared.storageBytes}, ${data.entityId}${beanValue}
         where exists(select 1 from ${parent} where ${owned(parent, eq(parent.id, data.entityId))})
           and (select count(*) from ${table} where ${owned(table, eq(foreignKey, data.entityId))}) < ${policy.maxImagesPerItem}
-          and (${quota}) ${conflict}`,
+          and (${quota})`,
         expectedChanges: 1,
         conflictMessage:
           'This item changed or its picture or storage limit was reached. Reload and try again.',
@@ -145,9 +115,6 @@ export async function commitEntityImage(
     ])
   } catch (error) {
     await cleanupUncommittedUpload(storagePath)
-    const duplicate = await existingOperation(data)
-    if (duplicate)
-      return { ...duplicate, url: storage.getUrl(duplicate.storagePath) }
     throw error
   }
   const [image] = await db

@@ -54,7 +54,6 @@ export function BeanPurchaseDialog({
   beanId,
   beanName,
   visionEnabled,
-  onSaved,
   purchase,
   images = [],
   previous,
@@ -69,7 +68,6 @@ export function BeanPurchaseDialog({
   readonly beanId: number
   readonly beanName: string
   readonly visionEnabled: boolean
-  readonly onSaved: () => void | Promise<void>
 }) {
   const { defaultCurrency } = useAppSettings()
   const [open, setOpen] = useState(false)
@@ -172,7 +170,6 @@ export function BeanPurchaseDialog({
       )
       imageUpload.removeImages(uploadResult.uploaded)
       setUploadFailures(uploadResult.failures)
-      await onSaved()
       toast.success(purchase ? 'Bag updated' : 'Bag added')
       if (uploadResult.failures.length === 0) finish()
     } catch (error) {
@@ -198,7 +195,6 @@ export function BeanPurchaseDialog({
       )
       imageUpload.removeImages(result.uploaded)
       setUploadFailures(result.failures)
-      if (result.uploaded.length > 0) await onSaved()
       if (result.failures.length === 0) finish()
     } finally {
       setIsRetryingPictures(false)
@@ -319,7 +315,6 @@ export function BeanPurchaseDialog({
                   entityType="bean-purchases"
                   entityId={purchase.id}
                   images={images}
-                  onImagesChange={onSaved}
                   editable
                 />
               ) : (

@@ -1,9 +1,4 @@
-import {
-  getRouteApi,
-  Link,
-  useNavigate,
-  useRouter,
-} from '@tanstack/react-router'
+import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
@@ -46,7 +41,6 @@ export function RecipeDetailPage() {
     detailData
   const { edit: isEditing = false } = routeApi.useSearch()
   const navigate = useNavigate({ from: '/recipes/$recipeId' })
-  const router = useRouter()
   const [name, setName] = useState(recipe?.name ?? '')
   const [values, setValues] = useState(() => createFormValues(recipe))
   const [fieldErrors, setFieldErrors] = useState<
@@ -82,18 +76,11 @@ export function RecipeDetailPage() {
       submit: async () => {
         const data = recipeUpdateData()
         if (!data || !recipe || !recipeBaseRevision) return
-        const updateOperationId = crypto.randomUUID()
-        const updateData = {
-          ...data,
-          clientOperationId: updateOperationId,
-        }
-
-        await updateRecipe({ data: updateData })
+        await updateRecipe({ data })
         await navigate({
           search: (current) => ({ ...current, edit: undefined }),
           replace: true,
         })
-        await router.invalidate()
         toast.success('Recipe updated')
       },
       onError: (error) =>
@@ -186,7 +173,6 @@ export function RecipeDetailPage() {
                         idempotent: true,
                       },
                     })
-                    await router.invalidate()
                     toast.success('Recipe deleted')
                     await navigate({ to: '/recipes' })
                   } catch (error) {

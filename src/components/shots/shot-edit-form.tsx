@@ -89,10 +89,8 @@ export function ShotEditForm({
   const handleSave = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault()
     const formElement = event.currentTarget
-    const updateOperationId = crypto.randomUUID()
     const data = {
       id: shot.id,
-      clientOperationId: updateOperationId,
       baseRevision: shot.revision,
       ...shotParameterPayload(values),
       ...shotDrinkPayload(values),

@@ -13,6 +13,7 @@ import {
   gearListSchema,
   gearUpdateSchema,
 } from '@/journal/input/gear'
+import { journalNow } from '@/journal/platform/clock'
 import {
   allocateJournalIds,
   db,
@@ -232,7 +233,7 @@ export const updateGear = journalWrite('gear/updateGear')
             ...toGearUpdateRow(values),
             ...(derivedName ? { name: derivedName } : {}),
             updatedAt: new Date(
-              Math.max(Date.now(), current.updatedAt.getTime() + 1),
+              Math.max(journalNow().getTime(), current.updatedAt.getTime() + 1),
             ),
           })
           .where(
