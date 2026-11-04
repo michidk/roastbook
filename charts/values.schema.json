@@ -652,6 +652,10 @@
         },
         "existingSecret": {
           "type": "string"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^$|^https?://[^/]+/?$"
         }
       }
     },

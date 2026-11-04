@@ -48,7 +48,7 @@ a new client; see [Journal architecture](client-data.md).
 | --- | --- | --- | --- |
 | `AUTH_ENABLED` | `false` | Hosted | Private accounts and journals |
 | `DEPLOYMENT_MODE` | `self-hosted` | No | `self-hosted` or `hosted` |
-| `AUTH_URL` | — | Auth | Canonical HTTPS origin |
+| `AUTH_URL` | — | Auth/proxy | Public browser origin, also with auth disabled |
 | `AUTH_SECRET` | — | Auth | Random secret, at least 32 characters |
 | `AUTH_SIGNUP_ENABLED` | `false` | No | Open signup to any email |
 | `AUTH_ADMIN_EMAIL` | — | Hosted | Comma-separated admin emails |

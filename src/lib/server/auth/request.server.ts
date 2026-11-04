@@ -7,6 +7,7 @@ import { withJournalResponse } from '@/db/journal-response.server'
 import { authUsers, integrationTokens } from '@/db/schema'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { getServerEnv } from '@/lib/env.server'
+import { requestOrigin } from '@/lib/request-origin'
 import {
   defaultIdentity,
   initializeUser,
@@ -163,10 +164,7 @@ async function handlePrivateRequest(
     !path.startsWith('/api/shottimer/')
   ) {
     const origin = request.headers.get('origin')
-    if (
-      origin &&
-      origin !== new URL(getServerEnv().AUTH_URL ?? request.url).origin
-    )
+    if (origin && origin !== requestOrigin(request, getServerEnv().AUTH_URL))
       return new Response('Forbidden', { status: 403 })
     if (request.headers.get('sec-fetch-site') === 'cross-site')
       return new Response('Forbidden', { status: 403 })

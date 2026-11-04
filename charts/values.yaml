@@ -205,6 +205,9 @@ hodor:
 # Passwordless accounts. Set hodor.enabled=false when using built-in login.
 auth:
   enabled: false
+  # Public browser URL for origin checks, including shared journals behind Hodor.
+  # Leave empty to use AUTH_URL from existingSecret when accounts are enabled.
+  url: ""
   # Secret containing AUTH_URL, AUTH_SECRET, EMAIL_FROM, SMTP_URL or RESEND_API_KEY,
   # and optional DEPLOYMENT_MODE, AUTH_ADMIN_EMAIL, AUTH_ALLOWED_EMAILS,
   # AUTH_SIGNUP_ENABLED (comma-separated email lists; signup closed by default).

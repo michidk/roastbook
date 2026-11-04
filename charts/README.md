@@ -125,3 +125,10 @@ helm lint charts \
   --set hodor.secret=audit-secret \
   --set postgresql.external.url=postgresql://roastbook:password@postgres.example:5432/roastbook
 ```
+
+### Public URL
+
+Set `auth.url` to the public browser origin, such as `https://coffee.example.com`,
+even when using Hodor with built-in accounts disabled. This configures origin
+checks for writes behind a reverse proxy. When empty, accounts can obtain
+`AUTH_URL` from `auth.existingSecret`.

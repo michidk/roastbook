@@ -30,6 +30,19 @@ browser-local demo is described in [Demo mode](demo-mode.md).
   workers and migrations. Overloaded journals return `429` with
   `Retry-After: 1`.
 
+### Public URL behind a reverse proxy
+
+Set `AUTH_URL` to the URL used in the browser, for example
+`https://coffee.example.com`, even with `AUTH_ENABLED=false`. The Hodor Compose
+file forwards this value from `.env`; Helm accepts `auth.url`. With built-in
+accounts, `AUTH_URL` can also come from `auth.existingSecret`.
+
+Both the journal boundary and server-function CSRF middleware use this origin.
+Without it, they use the incoming request URL, which may be an internal HTTP
+address after proxying and cause saves to return `403 Forbidden`. Forwarded
+headers do not override the configured origin. Cross-site requests remain
+blocked. Restart the application after changing the value.
+
 ## Upgrading an existing journal
 
 1. Back up PostgreSQL and uploaded files and verify the restore.

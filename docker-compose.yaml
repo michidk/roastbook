@@ -47,6 +47,7 @@ services:
       MCP_ALLOWED_HOSTS: ${MCP_ALLOWED_HOSTS:-}
       MCP_ALLOWED_ORIGINS: ${MCP_ALLOWED_ORIGINS:-}
       AUTH_ENABLED: "false"
+      AUTH_URL: ${AUTH_URL:-}
       STORAGE_PROVIDER: local
       STORAGE_PATH: /uploads
       STORAGE_URL: /media
