@@ -10,7 +10,7 @@ const context = {
 }
 const payload = {
   email: 'coffee+private@example.test',
-  code: '01234567',
+  code: '012345',
   sentAt: 1_800_000_000_000,
 }
 

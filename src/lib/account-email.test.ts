@@ -8,19 +8,19 @@ describe('account email templates', () => {
     const email = await renderAccountEmail({
       kind: 'sign-in',
       url,
-      code: '01234567',
+      code: '012345',
     })
-    expect(email.subject).not.toContain('01234567')
+    expect(email.subject).not.toContain('012345')
     expect(email.html).toContain('lang="en"')
-    expect(email.html).toContain('01234567')
+    expect(email.html).toContain('012345')
     expect(email.html).toContain(`href="${url}"`)
-    expect(email.text).toContain('Your sign-in code is 01234567.')
+    expect(email.text).toContain('Your sign-in code is 012345.')
     expect(email.text).toContain(url)
     expect(email.text).toContain('10 minutes')
     expect(email.html).not.toMatch(/<img|<script|@import|<link\s/i)
     const preheader = /aria-hidden="true">(.*?)<\/div>/.exec(email.html)?.[1]
     expect(preheader).toBeDefined()
-    expect(preheader).not.toContain('01234567')
+    expect(preheader).not.toContain('012345')
   })
 
   test('escapes dynamic HTML and links without changing plain-text content', async () => {
