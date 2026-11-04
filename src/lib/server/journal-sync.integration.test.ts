@@ -125,6 +125,43 @@ suite('journal sync replays browser writes on PostgreSQL', () => {
     expect(receipts).toEqual([])
   })
 
+  test('a device with no pending writes downloads only what changed', async () => {
+    const before = await withJournal(first, () => loadJournalRows(null))
+    const beanId = (await reserved('beans'))[0] ?? 0
+    const purchaseId = (await reserved('bean_purchases'))[0] ?? 0
+    await withJournal(first, async () =>
+      replayJournalWrite({
+        name: 'beans/createBean',
+        input: await encodeInput({ name: 'Changed elsewhere' }),
+        recorded: { 'id:beans': [beanId], 'id:bean_purchases': [purchaseId] },
+        key: randomUUID(),
+        revision: before.revision,
+      }),
+    )
+    const created = await withJournal(first, () =>
+      loadJournalRows(before.revision, true),
+    )
+    expect(created.tables).toBeNull()
+    expect(created.changes?.beans?.keys).toEqual([{ id: beanId }])
+    expect(created.changes?.beans?.rows.map((row) => row.name)).toEqual([
+      'Changed elsewhere',
+    ])
+    expect(created.changes?.bean_purchases?.keys).toEqual([{ id: purchaseId }])
+
+    // A deleted record is a key without a row.
+    await withJournal(first, async () => {
+      const { deleteBean } = await import('@/journal/beans')
+      await deleteBean({ data: beanId })
+    })
+    const deleted = await withJournal(first, () =>
+      loadJournalRows(created.revision, true),
+    )
+    expect(deleted.changes?.beans).toEqual({ keys: [{ id: beanId }], rows: [] })
+    // Another owner's journal reports none of it.
+    const other = await withJournal(second, () => loadJournalRows(0, true))
+    expect(JSON.stringify(other)).not.toContain('Changed elsewhere')
+  })
+
   test('owners stay isolated: no rows, no writes across journals', async () => {
     const other = await withJournal(second, () => loadJournalRows(null))
     expect(other.tables?.beans ?? []).toEqual([])

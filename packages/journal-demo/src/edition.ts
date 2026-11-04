@@ -1,10 +1,7 @@
 // Demo edition: a fictional journal kept only in this browser, never synced.
 
-import {
-  type LocalJournal,
-  notifyLocalChange,
-  openLocalJournal,
-} from '@/journal/local/client'
+import { notifyLocalChange } from '@/journal/local/changes'
+import { type LocalJournal, openLocalJournal } from '@/journal/local/client'
 import { forgetLocalMedia } from '@/journal/local/media'
 import { replaceJournalRows } from '@/journal/local/snapshot'
 

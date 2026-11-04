@@ -9,7 +9,7 @@ import { getJournalFunction } from '@/journal/function'
 import { currentScope, LocalJournal } from './client'
 import { loadLocalMedia, localMediaObjectUrl } from './media'
 import { migrateJournal } from './migrate'
-import { replaceJournalRows } from './snapshot'
+import { applyJournalChanges, replaceJournalRows } from './snapshot'
 
 const migrations = Object.fromEntries(
   (await readdir('drizzle'))
@@ -64,6 +64,11 @@ async function openTestJournal(client: PGlite, sync: boolean) {
 // The runtime opens the edition journal; tests route it to the open journal.
 mock.module('@/journal/local/edition', () => ({
   openEditionJournal: async () => current,
+}))
+// These tests keep a device copy unless one says otherwise.
+let deviceCopy = true
+mock.module('@/journal/local/device-copy', () => ({
+  keepsDeviceCopy: () => deviceCopy,
 }))
 
 async function outbox(journal: LocalJournal) {
@@ -200,7 +205,12 @@ mock.module('@/lib/server/journal-sync', () => ({
     return push(data.name)
   },
   reserveJournalIds: async () => ({}),
+  callJournal: async ({ data }: { data: { name: string; input: unknown } }) => {
+    called.push(data)
+    return { id: 42 }
+  },
 }))
+const called: Array<{ name: string; input: unknown }> = []
 const sync = await import('./sync')
 
 async function pendingBeans(journal: LocalJournal, names: string[]) {
@@ -398,4 +408,71 @@ test('earlier offline changes move once, keeping their operation ids', async () 
       value: original,
     })
   }
+})
+
+test('a browser without a device copy runs journal functions on the server', async () => {
+  deviceCopy = false
+  const { subscribeLocalChanges } = await import('./changes')
+  const changes: string[] = []
+  const unsubscribe = subscribeLocalChanges((change) => {
+    changes.push(change)
+  })
+  try {
+    const bean = await createBean({ data: { name: 'Server bean' } })
+    expect(bean).toEqual({ id: 42 } as never)
+    expect(called).toEqual([
+      { name: 'beans/createBean', input: { name: 'Server bean' } },
+    ])
+    // Pages refresh after a server write too.
+    expect(changes).toEqual(['write'])
+  } finally {
+    unsubscribe()
+    deviceCopy = true
+  }
+})
+
+test('a download applies only what changed: replaced rows and deletions', async () => {
+  const journal = await openJournal(true)
+  const at = new Date('2026-11-01T08:00:00.000Z')
+  await replaceJournalRows(journal, {
+    beans: [
+      { id: 1, name: 'Kept', createdAt: at, updatedAt: at },
+      { id: 2, name: 'Old name', createdAt: at, updatedAt: at },
+      { id: 3, name: 'Deleted elsewhere', createdAt: at, updatedAt: at },
+    ],
+  })
+  await applyJournalChanges(journal, {
+    beans: {
+      keys: [{ id: 2 }, { id: 3 }, { id: 4 }],
+      rows: [
+        { id: 2, name: 'New name', createdAt: at, updatedAt: at },
+        { id: 4, name: 'Created elsewhere', createdAt: at, updatedAt: at },
+      ],
+    },
+  })
+  const beans = await journal.client.query<{ id: number; name: string }>(
+    'select id, name from beans order by id',
+  )
+  expect(beans.rows).toEqual([
+    { id: 1, name: 'Kept' },
+    { id: 2, name: 'New name' },
+    { id: 4, name: 'Created elsewhere' },
+  ])
+})
+
+test('a synced journal takes every identifier from its reservation', async () => {
+  const journal = await openJournal(true)
+  await replaceJournalRows(journal, {})
+  // Database defaults would number records the server never reserved.
+  await expect(
+    journal.client.query(
+      "insert into beans (owner_id, name) values ('owner-a', 'Unreserved')",
+    ),
+  ).rejects.toThrow()
+  await journal.client.query(
+    "insert into roastbook_local.id_pool (table_name, id) values ('roasters', 950)",
+  )
+  const { createRoaster } = await import('@/journal/roasters')
+  const roaster = await createRoaster({ data: { name: 'Reserved roaster' } })
+  expect(roaster.id).toBe(950)
 })

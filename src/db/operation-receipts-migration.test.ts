@@ -32,4 +32,5 @@ test('operation ids earlier clients sent become receipts before they are dropped
     'update-sent',
   ])
   await client.close()
-})
+  // Applies every migration to a fresh database first.
+}, 30_000)

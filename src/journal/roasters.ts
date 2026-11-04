@@ -8,7 +8,12 @@ import {
   roasterUpdateSchema,
 } from '@/journal/input/roasters'
 import { journalNow } from '@/journal/platform/clock'
-import { db, journalInsertValues, owned } from '@/journal/platform/database'
+import {
+  allocateJournalIds,
+  db,
+  journalInsertValues,
+  owned,
+} from '@/journal/platform/database'
 import {
   deleteWebsiteFaviconBestEffort,
   refreshWebsiteFaviconBestEffort,
@@ -96,9 +101,10 @@ export const getRoaster = journalRead('roasters/getRoaster')
 export const createRoaster = journalWrite('roasters/createRoaster')
   .validator(roasterCreateSchema)
   .handler(async ({ data }) => {
+    const [id] = await allocateJournalIds(roasters)
     const [roaster] = await db
       .insert(roasters)
-      .values(journalInsertValues(data))
+      .values(journalInsertValues({ ...data, id }))
       .returning()
     const created = expectReturnedRow(roaster, 'Roaster')
     await refreshWebsiteFaviconBestEffort({

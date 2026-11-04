@@ -171,7 +171,12 @@ export const createDrinkOptionValue = journalWrite(
           .returning()
       : await db
           .insert(drinkOptionValues)
-          .values(journalInsertValues(data))
+          .values(
+            journalInsertValues({
+              ...data,
+              id: (await allocateJournalIds(drinkOptionValues))[0],
+            }),
+          )
           .returning()
     if (!value) throw new Error('Could not add this option')
     return value

@@ -10,7 +10,12 @@ import {
   normalizeCoffeeShopInput,
 } from '@/journal/input/coffee-shops'
 import { journalNow } from '@/journal/platform/clock'
-import { db, journalInsertValues, owned } from '@/journal/platform/database'
+import {
+  allocateJournalIds,
+  db,
+  journalInsertValues,
+  owned,
+} from '@/journal/platform/database'
 import {
   deleteWebsiteFaviconBestEffort,
   refreshWebsiteFaviconBestEffort,
@@ -155,9 +160,10 @@ export const createCoffeeShop = journalWrite('coffee-shops/createCoffeeShop')
     normalizeCoffeeShopInput(coffeeShopCreateSchema.parse(data)),
   )
   .handler(async ({ data }) => {
+    const [id] = await allocateJournalIds(coffeeShops)
     const [coffeeShop] = await db
       .insert(coffeeShops)
-      .values(journalInsertValues(data))
+      .values(journalInsertValues({ ...data, id }))
       .returning()
     const created = expectReturnedRow(coffeeShop, 'Café')
     await refreshWebsiteFaviconBestEffort({

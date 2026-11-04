@@ -49,6 +49,17 @@ export async function verifyJournalSync(bindings: CloudflareRuntimeBindings) {
       revision: before.revision,
     })
     assert.equal(applied.unchanged, true)
+    // Another device downloads only the rows this write changed.
+    const delta = await loadJournalRows(before.revision, true)
+    assert.equal(delta.tables, null)
+    assert.deepEqual(
+      delta.changes?.beans?.keys,
+      recorded['id:beans'].map((id) => ({ id })),
+    )
+    assert.deepEqual(
+      delta.changes?.beans?.rows.map((bean) => bean.name),
+      ['Offline on D1'],
+    )
     const repeated = await replayJournalWrite({
       ...write,
       revision: applied.revision,

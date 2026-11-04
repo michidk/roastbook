@@ -32,6 +32,7 @@ export const journalTables = [
   'journal_sync_revisions',
   'journal_command_receipts',
   'journal_id_reservations',
+  'journal_changes',
   'mcp_audit_events',
   'mcp_settings',
   'media_cleanup_jobs',

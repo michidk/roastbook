@@ -6,8 +6,14 @@ import {
   pushJournalWrite,
   reserveJournalIds,
 } from '@/lib/server/journal-sync'
-import { type LocalJournal, notifyLocalChange } from './client'
-import { replaceJournalRows, serialTables } from './snapshot'
+import { notifyLocalChange } from './changes'
+import type { LocalJournal } from './client'
+import {
+  applyJournalChanges,
+  replaceJournalRows,
+  serialTables,
+  type TableChanges,
+} from './snapshot'
 import { setSyncStatus } from './sync-status'
 
 type Pull = Awaited<ReturnType<typeof pullJournal>>
@@ -48,9 +54,13 @@ async function applyPull(journal: LocalJournal, pull: Pull) {
       pull.tables as Record<string, object[]>,
     )
     await rebasePending(journal, upTo)
-    // Pages in every tab show the downloaded changes.
-    void notifyLocalChange('download')
-  }
+  } else if (pull.changes)
+    await applyJournalChanges(
+      journal,
+      pull.changes as Record<string, TableChanges>,
+    )
+  // Pages in every tab show the downloaded changes.
+  if (pull.tables || pull.changes) void notifyLocalChange('download')
   await journal.setState('revision', pull.revision)
   await journal.setState('lastSyncAt', new Date().toISOString())
 }
@@ -180,7 +190,15 @@ export function synchronizeJournal(journal: LocalJournal) {
       const run = async () => {
         await pushPending(journal)
         const since = (await journal.getState<number>('revision')) ?? null
-        await applyPull(journal, await pullJournal({ data: { since } }))
+        // Only a journal without local changes can take just what changed.
+        const outbox = await journal.client.query<{ n: number }>(
+          'select count(*)::int as n from roastbook_local.outbox',
+        )
+        const incremental = outbox.rows[0]?.n === 0
+        await applyPull(
+          journal,
+          await pullJournal({ data: { since, incremental } }),
+        )
         await reserveIdentifiers(journal)
       }
       // One tab synchronizes at a time.

@@ -2502,6 +2502,20 @@ export const journalSyncRevisions = pgTable('journal_sync_revisions', {
   ownerId: journalOwner().primaryKey(),
   value: bigint('value', { mode: 'number' }).notNull().default(0),
 })
+/** The latest change to each journal row; devices download only what changed. */
+export const journalChanges = pgTable(
+  'journal_changes',
+  {
+    ownerId: journalOwner(),
+    tableName: text('table_name').notNull(),
+    rowKey: text('row_key').notNull(),
+    revision: bigint('revision', { mode: 'number' }).notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.ownerId, table.tableName, table.rowKey] }),
+    index('journal_changes_revision_idx').on(table.ownerId, table.revision),
+  ],
+)
 /** Identifiers reserved for an owner's offline creates; replays may only use these. */
 export const journalIdReservations = pgTable(
   'journal_id_reservations',

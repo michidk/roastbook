@@ -1,7 +1,12 @@
 export async function signOutOfAccount() {
-  const { openEditionJournal } = await import('@/journal/local/edition')
+  // Only a device copy can hold changes that have not reached the account.
+  const { keepsDeviceCopy } = await import('@/journal/local/device-copy')
+  const journal = keepsDeviceCopy()
+    ? await import('@/journal/local/edition')
+        .then(({ openEditionJournal }) => openEditionJournal())
+        .catch(() => undefined)
+    : undefined
   const { listPendingChanges } = await import('@/journal/local/sync')
-  const journal = await openEditionJournal().catch(() => undefined)
   if (journal && (await listPendingChanges(journal)).length)
     throw new Error('Sync or discard your pending changes before signing out.')
 
@@ -17,6 +22,9 @@ export async function signOutOfAccount() {
       await deleteLocalJournal(journal)
     }
     localStorage.removeItem('roastbook-active-owner')
+    // The choice belonged to this account; the installed app makes it again.
+    const { setDeviceCopy } = await import('@/journal/local/device-copy')
+    setDeviceCopy(false)
     if ('caches' in window)
       for (const key of await caches.keys())
         if (key.startsWith('roastbook-documents-')) await caches.delete(key)

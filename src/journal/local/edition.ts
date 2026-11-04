@@ -3,13 +3,14 @@
 import type { JournalConfig } from '@/journal/platform/config'
 import { setJournalConfig } from '@/journal/platform/config.browser'
 import { getOfflineOwner } from '@/lib/journal-owner'
+import { subscribeLocalChanges } from './changes'
 import {
   type LocalIdentity,
   type LocalJournal,
   localDatabaseName,
   openLocalJournal,
-  subscribeLocalChanges,
 } from './client'
+import { keepsDeviceCopy } from './device-copy'
 import { migrateLegacyOffline } from './legacy-offline'
 import {
   downloadJournal,
@@ -83,7 +84,7 @@ export async function openEditionJournal() {
 
 /** Starts a sync now, for app start, reconnecting and manual retries. */
 export async function synchronizeEditionJournal() {
-  if (getOfflineOwner() === undefined) return
+  if (getOfflineOwner() === undefined || !keepsDeviceCopy()) return
   const journal = await openEditionJournal()
   await synchronizeJournal(journal)
   account = await loadAccount(journal)

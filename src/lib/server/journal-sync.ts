@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import {
+  callJournalFunction,
   journalWriteName,
   loadJournalRows,
   replayJournalWrite,
@@ -9,8 +10,21 @@ import {
 
 /** The owner's journal rows, unless the browser already has this revision. */
 export const pullJournal = createServerFn({ method: 'GET' })
-  .validator(z.object({ since: z.number().int().nonnegative().nullable() }))
-  .handler(({ data }) => loadJournalRows(data.since))
+  .validator(
+    z.object({
+      since: z.number().int().nonnegative().nullable(),
+      // The browser can apply only what changed (it has no pending writes).
+      incremental: z.boolean().optional(),
+    }),
+  )
+  .handler(({ data }) => loadJournalRows(data.since, data.incremental))
+
+/** Runs a journal function on the server, for browsers without a device copy. */
+export const callJournal = createServerFn({ method: 'POST' })
+  .validator(
+    z.object({ name: z.string().regex(journalWriteName), input: z.unknown() }),
+  )
+  .handler(({ data }) => callJournalFunction(data.name, data.input))
 
 /** Replays one write a browser recorded, once. */
 export const pushJournalWrite = createServerFn({ method: 'POST' })

@@ -1,7 +1,12 @@
 import { asc, eq } from 'drizzle-orm'
 import { tasteTags } from '@/db/schema'
 import { journalRead, journalWrite } from '@/journal/function'
-import { db, journalInsertValues, owned } from '@/journal/platform/database'
+import {
+  allocateJournalIds,
+  db,
+  journalInsertValues,
+  owned,
+} from '@/journal/platform/database'
 import { positiveIdSchema, tasteTagCreateSchema } from '@/lib/server-validation'
 
 export const getTasteTags = journalRead('taste-tags/getTasteTags').handler(
@@ -20,9 +25,10 @@ export const createTasteTag = journalWrite('taste-tags/createTasteTag')
       where: owned(tasteTags, eq(tasteTags.name, data.name)),
     })
     if (existing) throw new Error(`A tag named "${data.name}" already exists`)
+    const [id] = await allocateJournalIds(tasteTags)
     const [tag] = await db
       .insert(tasteTags)
-      .values(journalInsertValues({ name: data.name, category: 'flavor' }))
+      .values(journalInsertValues({ id, name: data.name, category: 'flavor' }))
       .returning()
     return tag
   })

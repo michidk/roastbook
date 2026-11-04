@@ -6,6 +6,7 @@ import * as schema from '@/db/schema'
 import { encodeInput } from '@/journal/codec'
 import type { JournalFunctionInfo } from '@/journal/function'
 import { getOfflineOwner, registerOwnerCleanup } from '@/lib/journal-owner'
+import { notifyLocalChange, prepareOtherTabChanges } from './changes'
 import { loadLocalMedia } from './media'
 
 export type LocalDatabase = PgliteDatabase<typeof schema>
@@ -48,39 +49,6 @@ type LocalClient = Pick<
 let scope: LocalScope | undefined
 export function currentScope() {
   return scope
-}
-
-/** `write`: a change saved in a tab; `download`: changes made elsewhere. */
-export type LocalChange = 'write' | 'download'
-type LocalChangeListener = (change: LocalChange) => unknown
-const listeners = new Set<LocalChangeListener>()
-/**
- * Notified after every committed local write, in this tab and others, and
- * after downloads. A write in this tab resolves once its listeners have.
- */
-export function subscribeLocalChanges(listener: LocalChangeListener) {
-  listeners.add(listener)
-  return () => {
-    listeners.delete(listener)
-  }
-}
-// Browser only: an open channel would keep a server-rendering process alive.
-const channel =
-  typeof window === 'undefined' || typeof BroadcastChannel === 'undefined'
-    ? undefined
-    : new BroadcastChannel('roastbook-local-journal')
-// Another tab's pictures register before the pages that show them refresh.
-let mediaClient: LocalClient | undefined
-channel?.addEventListener('message', async ({ data }) => {
-  if (mediaClient) await loadLocalMedia(mediaClient).catch(() => undefined)
-  for (const listener of listeners)
-    listener(data === 'download' ? 'download' : 'write')
-})
-export async function notifyLocalChange(change: LocalChange) {
-  channel?.postMessage(change)
-  await Promise.allSettled(
-    [...listeners].map(async (listener) => listener(change)),
-  )
 }
 
 /** Waits until the leader worker has written the database to IndexedDB. */
@@ -132,7 +100,8 @@ export class LocalJournal {
       await journal.setState('initialized', true)
     }
     await loadLocalMedia(client)
-    mediaClient = client
+    // Another tab's pictures register before the pages that show them refresh.
+    prepareOtherTabChanges(() => loadLocalMedia(client))
     return journal
   }
 

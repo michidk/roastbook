@@ -72,8 +72,8 @@ roasters, brewing methods, and gear. Website:
   statistics, and parameter charts connect quality to beans, methods, gear,
   timing, and cost.
 - 📴 **Installable and offline.** Use it in the browser or install it as a
-  PWA. The journal runs locally, works without a connection, and syncs when
-  you reconnect. [See what works offline.](docs/offline.md)
+  PWA. The installed app keeps the journal on the device, works without a
+  connection, and syncs only what changed when you reconnect. [See what works offline.](docs/offline.md)
 - 🔒 **Yours, end to end.** Your own PostgreSQL and storage. Private accounts
   with email codes and passkeys, or one shared journal behind your own auth
   proxy.

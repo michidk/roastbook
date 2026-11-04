@@ -5,7 +5,9 @@ import {
   eq,
   getTableColumns,
   getTableName,
+  gt,
   inArray,
+  or,
   sql,
 } from 'drizzle-orm'
 import { db } from '@/db'
@@ -18,6 +20,7 @@ import {
 } from '@/db/journal-replay.server'
 import { journalInsertValues, owned } from '@/db/journal-scope.server'
 import {
+  journalChanges,
   journalCommandReceipts,
   journalIdReservations,
   journalSyncRevisions,
@@ -57,19 +60,89 @@ function account() {
     : null
 }
 
-/** The owner's journal rows, unless the browser already has this revision. */
-export async function loadJournalRows(since: number | null) {
+/** Rows changed in one table since a revision: their keys and current contents. */
+export type JournalTableChanges = {
+  keys: Array<Record<string, JournalValue>>
+  rows: Array<Record<string, JournalValue>>
+}
+// Past this many changed rows, one full download is cheaper.
+const maxChangedRows = 5000
+
+/** What changed since a revision; a key without a row was deleted. */
+async function loadJournalChanges(since: number) {
+  const changed = await db
+    .select({ table: journalChanges.tableName, key: journalChanges.rowKey })
+    .from(journalChanges)
+    .where(owned(journalChanges, gt(journalChanges.revision, since)))
+    .limit(maxChangedRows + 1)
+  if (changed.length > maxChangedRows) return undefined
+  const keysByTable = new Map<string, Array<Record<string, JournalValue>>>()
+  for (const { table, key } of changed)
+    keysByTable.set(table, [...(keysByTable.get(table) ?? []), JSON.parse(key)])
+  const changes: Record<string, JournalTableChanges> = {}
+  for (const table of journalTables) {
+    const keys = keysByTable.get(getTableName(table))
+    if (!keys) continue
+    const rows: Array<Record<string, JournalValue>> = []
+    // 40 keys keep each statement within D1's bound-parameter limit.
+    for (let start = 0; start < keys.length; start += 40)
+      rows.push(
+        ...((await db
+          .select()
+          .from(table)
+          .where(
+            owned(
+              table as never,
+              or(...keys.slice(start, start + 40).map(rowKeyCondition)),
+            ),
+          )) as Array<Record<string, JournalValue>>),
+      )
+    changes[getTableName(table)] = { keys, rows }
+  }
+  return changes
+}
+
+function rowKeyCondition(key: Record<string, JournalValue>) {
+  return and(
+    ...Object.entries(key).map(
+      ([column, value]) => sql`${sql.identifier(column)} = ${value}`,
+    ),
+  )
+}
+
+/**
+ * The owner's journal: nothing when the browser has this revision, the rows
+ * changed since its revision when it can apply them, or every row.
+ */
+export async function loadJournalRows(
+  since: number | null,
+  incremental = false,
+) {
   const current = await revision()
   const config = journalConfig()
-  if (since === current)
-    return { revision: current, tables: null, account: account(), config }
+  const base = { revision: current, account: account(), config }
+  if (since === current) return { ...base, tables: null, changes: null }
+  if (incremental && since !== null && since < current) {
+    const changes = await loadJournalChanges(since)
+    if (changes) return { ...base, tables: null, changes }
+  }
   const tables: JournalRows = {}
   for (const table of journalTables)
     tables[getTableName(table)] = (await db
       .select()
       .from(table)
       .where(owned(table as never))) as Array<Record<string, JournalValue>>
-  return { revision: current, tables, account: account(), config }
+  return { ...base, tables, changes: null }
+}
+
+/**
+ * Runs a journal function for a browser that keeps no device copy: the same
+ * function, validated and executed in this request's journal scope.
+ */
+export async function callJournalFunction(name: string, input: unknown) {
+  const call = getJournalFunction(name)
+  if (!call) throw new Error('This journal operation is not available')
+  return (await call.execute(decodeInput(input))) as JournalValue
 }
 
 /**

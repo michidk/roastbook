@@ -43,6 +43,13 @@
       "when": 1793808147740,
       "tag": "0005_receipts_replace_operation_ids",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1793814431071,
+      "tag": "0006_journal_changes",
+      "breakpoints": true
     }
   ]
 }

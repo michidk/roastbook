@@ -331,7 +331,7 @@ function RootComponent() {
   useEffect(() => {
     let disposed = false
     let unsubscribe: (() => void) | undefined
-    void import('@/journal/local/client').then(({ subscribeLocalChanges }) => {
+    void import('@/journal/local/changes').then(({ subscribeLocalChanges }) => {
       if (!disposed)
         // Writes in this tab wait for this, so their pages show the change.
         unsubscribe = subscribeLocalChanges(() => router.invalidate())
@@ -343,9 +343,17 @@ function RootComponent() {
   }, [router])
   useEffect(() => {
     if (login || DEMO_MODE) return
+    // Only a browser with a device copy syncs; others use the server directly.
     const sync = () =>
-      void import('@/journal/local/edition')
-        .then(({ synchronizeEditionJournal }) => synchronizeEditionJournal())
+      void import('@/journal/local/device-copy')
+        .then(async ({ keepsDeviceCopyFor }) => {
+          const owner = getOfflineOwner()
+          if (owner === undefined || !(await keepsDeviceCopyFor(owner))) return
+          const { synchronizeEditionJournal } = await import(
+            '@/journal/local/edition'
+          )
+          await synchronizeEditionJournal()
+        })
         .catch(() => undefined)
     // Reconnecting always sends saved changes; periodic refreshes need a visible tab.
     const refresh = () => {

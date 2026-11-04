@@ -5,6 +5,7 @@ import '@/journal/registry'
 import { decodeBase64 } from '@/lib/base64'
 import { createEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
 import type { LocalJournal } from './client'
+import { legacyOfflineDatabase } from './device-copy'
 
 type LegacyOperation = {
   id: string
@@ -28,13 +29,6 @@ type LegacyBlob = {
   _deleted?: unknown
 }
 
-function legacyDatabase(owner: string) {
-  return owner === 'local'
-    ? 'roastbook-offline-rxdb'
-    : `roastbook-user-${Array.from(owner)
-        .map((character) => character.codePointAt(0)?.toString(16))
-        .join('_')}`
-}
 const store = (database: string, collection: string) =>
   `rxdb-dexie-${database}--0--${collection}`
 
@@ -180,7 +174,7 @@ async function apply(
  */
 export async function migrateLegacyOffline(journal: LocalJournal) {
   if (typeof indexedDB === 'undefined' || !indexedDB.databases) return 0
-  const database = legacyDatabase(journal.options.identity().id)
+  const database = legacyOfflineDatabase(journal.options.identity().id)
   const operations = (
     await readDocuments<LegacyOperation>(store(database, 'operations'))
   )

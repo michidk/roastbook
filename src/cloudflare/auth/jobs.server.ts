@@ -34,6 +34,7 @@ const excludedExports = new Set([
   'journal_sync_revisions',
   'journal_command_receipts',
   'journal_id_reservations',
+  'journal_changes',
   'shottimer',
 ])
 const exportedTables = journalTables.filter(
@@ -89,6 +90,7 @@ const deleteOrder = [
   'journal_sync_revisions',
   'journal_command_receipts',
   'journal_id_reservations',
+  'journal_changes',
 ] as const satisfies readonly (typeof journalTables)[number][]
 const tableColumns = new Map(
   Object.values(schema)
@@ -403,7 +405,8 @@ async function deleteJournal(job: Job) {
       fullPage = page.results.length === 90
     } else {
       const hasFavicons = table === 'coffee_shops' || table === 'roasters'
-      const limit = hasFavicons ? 100 : 250
+      // Change records hold one small row per journal row ever changed.
+      const limit = hasFavicons ? 100 : table === 'journal_changes' ? 2000 : 250
       if (hasFavicons) {
         const page = await database()
           .prepare(

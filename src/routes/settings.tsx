@@ -5,7 +5,7 @@ import { RoutePending } from '@/components/route-pending'
 import { SETTINGS_SECTIONS } from '@/components/settings/settings-sections'
 import { SettingsShell } from '@/components/settings/settings-shell'
 import { useAppSettings } from '@/hooks/use-app-settings'
-import { usePwaMode } from '@/hooks/use-pwa-mode'
+import { DEMO_MODE } from '@/lib/build-mode'
 
 export const Route = createFileRoute('/settings')({
   component: SettingsLayout,
@@ -16,11 +16,11 @@ export const Route = createFileRoute('/settings')({
 })
 
 function SettingsLayout() {
-  const isPwa = usePwaMode()
   const { account } = useAppSettings()
   const sections = SETTINGS_SECTIONS.filter(
     (section) =>
-      (section.to !== '/settings/offline' || isPwa) &&
+      // The demo keeps its journal in the browser and never syncs.
+      (section.to !== '/settings/offline' || !DEMO_MODE) &&
       (section.to !== '/settings/account' || Boolean(account)),
   )
   return (

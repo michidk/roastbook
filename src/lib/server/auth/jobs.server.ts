@@ -87,6 +87,7 @@ async function exportJournal(job: Job) {
         [
           'journal_command_receipts',
           'journal_id_reservations',
+          'journal_changes',
           'journal_sync_revisions',
           'media_cleanup_jobs',
           'shottimer',
@@ -242,6 +243,8 @@ async function deleteJournal(job: Job) {
     'ai_usage',
     'media_cleanup_jobs',
     'journal_sync_revisions',
+    // Last: deleting journal rows above records their changes here.
+    'journal_changes',
   ]
   for (const table of order)
     await db.execute(sql`delete from ${sql.identifier(table)}`)

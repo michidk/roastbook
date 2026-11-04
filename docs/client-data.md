@@ -1,8 +1,12 @@
 # Journal architecture
 
 Every journal read and write is one SQL journal function in `src/journal/`. It
-runs in the browser on PGlite and on the server on PostgreSQL or D1 (sync
-replay, MCP, server features). See [ADR 0001](adr/0001-sql-journal.md) for the
+runs on the server on PostgreSQL or D1, and in browsers that keep a device copy
+on PGlite (sync replay, MCP and browser tabs without a copy use the server).
+`src/journal/local/device-copy.ts` decides: the demo and the installed app
+always keep a copy, a browser tab only when chosen in Settings → Offline;
+other tabs call `callJournal` in `src/lib/server/journal-sync.ts`. See
+[ADR 0001](adr/0001-sql-journal.md) for the
 decision.
 
 ## Journal functions
@@ -72,13 +76,16 @@ client build by `scripts/vite-journal-platform.ts` (the demo build also selects
   receipt makes each key apply once. Recorded identifiers must be reserved for
   the owner; recorded paths must have the expected shape and not exist yet. A
   failed replay deletes only objects it uploaded.
-- **Pull.** When the owner's revision changed elsewhere (triggers advance it on
-  every journal table, so MCP and integrations count), the browser replaces the
-  owner's rows and reruns pending writes on top.
+- **Pull.** Triggers on every journal table advance the owner's revision and
+  record the changed row's key in `journal_changes`, so MCP and integrations
+  count. A device without pending writes downloads only the rows changed since
+  its revision (a key without a row was deleted); otherwise, or past 5,000
+  changes, it replaces the owner's rows and reruns pending writes on top.
 - **Reservations.** The server reserves 256 identifiers per table and device
   (`journal_id_reservations`), reusing the oldest once more than 1024 are
-  unused. Records that others reference must take identifiers from
-  `allocateJournalIds`; pure link rows may use defaults.
+  unused. Every insert into a table with a serial `id` takes it from
+  `allocateJournalIds`; synced local journals exhaust their sequences, so a
+  database default fails instead of diverging from the server.
 - **Conflicts.** A write the server can never apply, one that no longer applies
   after a pull, or one that failed 12 times becomes a conflict with Try again
   and Discard in the sync banner; later writes continue. Infrastructure

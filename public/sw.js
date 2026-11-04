@@ -12,7 +12,7 @@ const MAX_ASSET_ENTRIES = 100
 const MAX_DOCUMENT_ENTRIES = 20
 const MAX_MEDIA_ENTRIES = 400
 const MAX_ASSET_BYTES = 2097152
-// The journal database engine must be available offline; it is larger.
+// The journal database engine is larger; it is cached when first used.
 const MAX_ENGINE_BYTES = 16777216
 const ENGINE_ASSET = /^\/assets\/(?:pglite|initdb)-[\w-]+\.(?:wasm|data)$/
 const EXCLUDED_PATHS = new Set(['/sw.js'])

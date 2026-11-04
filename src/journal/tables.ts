@@ -8,6 +8,7 @@ const serverOnly = new Set([
   'ai_usage',
   'journal_command_receipts',
   'journal_id_reservations',
+  'journal_changes',
   'journal_sync_revisions',
   'mcp_audit_events',
   'mcp_settings',
