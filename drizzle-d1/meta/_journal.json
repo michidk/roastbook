@@ -50,6 +50,13 @@
       "when": 1793814431071,
       "tag": "0006_journal_changes",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1793818787462,
+      "tag": "0007_journal_changes_pruning",
+      "breakpoints": true
     }
   ]
 }

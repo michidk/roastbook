@@ -1,9 +1,15 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { randomUUID } from 'node:crypto'
-import { eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, lte } from 'drizzle-orm'
 import { getControlDb } from '@/db/connection.server'
 import { type JournalIdentity, withJournal } from '@/db/journal-context.server'
-import { authUsers, beans, journalCommandReceipts } from '@/db/schema'
+import {
+  authUsers,
+  beans,
+  journalChanges,
+  journalCommandReceipts,
+  journalSyncRevisions,
+} from '@/db/schema'
 import { encodeInput } from '@/journal/codec'
 import { createEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
 import {
@@ -160,6 +166,48 @@ suite('journal sync replays browser writes on PostgreSQL', () => {
     // Another owner's journal reports none of it.
     const other = await withJournal(second, () => loadJournalRows(0, true))
     expect(JSON.stringify(other)).not.toContain('Changed elsewhere')
+  })
+
+  test('old change records are pruned; devices behind them download everything', async () => {
+    const before = await withJournal(first, () => loadJournalRows(null))
+    // Many writes later: far more revisions than the kept window.
+    await getControlDb()
+      .update(journalSyncRevisions)
+      .set({ value: before.revision + 20_000 })
+      .where(eq(journalSyncRevisions.ownerId, first.id))
+    const beanId = (await reserved('beans'))[0] ?? 0
+    const purchaseId = (await reserved('bean_purchases'))[0] ?? 0
+    const write = await withJournal(first, async () =>
+      replayJournalWrite({
+        name: 'beans/createBean',
+        input: await encodeInput({ name: 'After pruning' }),
+        recorded: { 'id:beans': [beanId], 'id:bean_purchases': [purchaseId] },
+        key: randomUUID(),
+        revision: before.revision + 20_000,
+      }),
+    )
+    const old = await getControlDb()
+      .select({ revision: journalChanges.revision })
+      .from(journalChanges)
+      .where(
+        and(
+          eq(journalChanges.ownerId, first.id),
+          lte(journalChanges.revision, before.revision),
+        ),
+      )
+    expect(old).toEqual([])
+    // Behind the pruned revisions: the whole journal, not a partial delta.
+    const behind = await withJournal(first, () =>
+      loadJournalRows(before.revision, true),
+    )
+    expect(behind.changes).toBeNull()
+    expect(behind.tables?.beans?.length).toBeGreaterThan(0)
+    // Recent enough: still only what changed.
+    const recent = await withJournal(first, () =>
+      loadJournalRows(write.revision - 1, true),
+    )
+    expect(recent.tables).toBeNull()
+    expect(recent.changes?.bean_purchases?.keys).toEqual([{ id: purchaseId }])
   })
 
   test('owners stay isolated: no rows, no writes across journals', async () => {

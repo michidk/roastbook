@@ -3548,6 +3548,8 @@ export const jwks = sqliteTable('jwks', {
 export const journalSyncRevisions = sqliteTable('journal_sync_revisions', {
   ownerId: journalOwner().primaryKey(),
   value: integer('value').notNull().default(0),
+  /** Change records up to this revision were pruned; older devices download everything. */
+  prunedThrough: integer('pruned_through').notNull().default(0),
 })
 /** The latest change to each journal row; devices download only what changed. */
 export const journalChanges = sqliteTable(

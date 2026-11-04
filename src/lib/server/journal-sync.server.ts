@@ -7,6 +7,7 @@ import {
   getTableName,
   gt,
   inArray,
+  lte,
   or,
   sql,
 } from 'drizzle-orm'
@@ -45,12 +46,38 @@ export type JournalRows = Record<string, Array<Record<string, JournalValue>>>
 
 export const journalWriteName = /^([a-z-]+)\/[A-Za-z0-9]+$/
 
-async function revision() {
+async function revisions() {
   const [row] = await db
-    .select({ value: journalSyncRevisions.value })
+    .select({
+      value: journalSyncRevisions.value,
+      prunedThrough: journalSyncRevisions.prunedThrough,
+    })
     .from(journalSyncRevisions)
     .where(owned(journalSyncRevisions))
-  return row?.value ?? 0
+  return { current: row?.value ?? 0, prunedThrough: row?.prunedThrough ?? 0 }
+}
+
+async function revision() {
+  return (await revisions()).current
+}
+
+// Change records stay for the latest revisions; a device further behind
+// downloads the whole journal, which costs less than keeping every deletion.
+const keptRevisions = 5000
+
+/** Drops old change records after writes, so the table stays bounded. */
+async function pruneJournalChanges() {
+  const { current, prunedThrough } = await revisions()
+  if (current - prunedThrough <= 2 * keptRevisions) return
+  const through = current - keptRevisions
+  // Raised first: if the delete fails, older devices only download more.
+  await db
+    .update(journalSyncRevisions)
+    .set({ prunedThrough: through })
+    .where(owned(journalSyncRevisions))
+  await db
+    .delete(journalChanges)
+    .where(owned(journalChanges, lte(journalChanges.revision, through)))
 }
 
 function account() {
@@ -118,11 +145,16 @@ export async function loadJournalRows(
   since: number | null,
   incremental = false,
 ) {
-  const current = await revision()
+  const { current, prunedThrough } = await revisions()
   const config = journalConfig()
   const base = { revision: current, account: account(), config }
   if (since === current) return { ...base, tables: null, changes: null }
-  if (incremental && since !== null && since < current) {
+  if (
+    incremental &&
+    since !== null &&
+    since >= prunedThrough &&
+    since < current
+  ) {
     const changes = await loadJournalChanges(since)
     if (changes) return { ...base, tables: null, changes }
   }
@@ -142,7 +174,9 @@ export async function loadJournalRows(
 export async function callJournalFunction(name: string, input: unknown) {
   const call = getJournalFunction(name)
   if (!call) throw new Error('This journal operation is not available')
-  return (await call.execute(decodeInput(input))) as JournalValue
+  const result = (await call.execute(decodeInput(input))) as JournalValue
+  if (call.kind === 'write') await pruneJournalChanges()
+  return result
 }
 
 /**
@@ -192,6 +226,7 @@ export async function replayJournalWrite(data: {
   await db
     .insert(journalCommandReceipts)
     .values(journalInsertValues({ commandId: data.key }))
+  await pruneJournalChanges()
   return { revision: await revision(), unchanged: before === data.revision }
 }
 

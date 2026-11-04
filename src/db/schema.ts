@@ -2501,6 +2501,10 @@ export const jwks = pgTable('jwks', {
 export const journalSyncRevisions = pgTable('journal_sync_revisions', {
   ownerId: journalOwner().primaryKey(),
   value: bigint('value', { mode: 'number' }).notNull().default(0),
+  /** Change records up to this revision were pruned; older devices download everything. */
+  prunedThrough: bigint('pruned_through', { mode: 'number' })
+    .notNull()
+    .default(0),
 })
 /** The latest change to each journal row; devices download only what changed. */
 export const journalChanges = pgTable(
