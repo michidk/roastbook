@@ -21,6 +21,13 @@ function required<T>(value: T | undefined, message: string): T {
   return value
 }
 
+function demoGearImageSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
 export async function seedDemoDatabase(database: Database): Promise<void> {
   await database
     .insert(schema.brewingMethods)
@@ -251,6 +258,20 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
       })),
     )
     .returning()
+  await database.insert(schema.gearImages).values(
+    gear.map((item) => {
+      // Files in scripts/seed-assets/gear are named after the gear name.
+      const filename = `${demoGearImageSlug(item.name)}.webp`
+      return {
+        gearId: item.id,
+        storagePath: `demo/gear/${filename}`,
+        originalFilename: filename,
+        mimeType: 'image/webp',
+        sizeBytes: 1,
+        isThumbnail: true,
+      }
+    }),
+  )
   const gearId = new Map(gear.map((item) => [item.model, item.id]))
   const machineId = required(gearId.get('Aurora One'), 'Machine missing')
 

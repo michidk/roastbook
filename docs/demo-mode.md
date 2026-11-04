@@ -47,8 +47,9 @@ actions, and POST endpoints fail with a plain-text 403 that the UI shows as a
 "this is just a demo" message wherever the action was attempted. The UI also
 shows a persistent banner, prevents form submissions, and disables its global
 create controls. Both demo and standard editions redirect `/` to `/overview`.
-The bean-package seed images are emitted as static assets
-during the demo build. All demo business and product records are fictional.
+The bean-package and gear seed images are emitted as static
+assets during the demo build. Gear images in `scripts/seed-assets/gear/` are
+named after the slugged gear name. All demo business and product records are fictional.
 Roasters and cafés have no website URLs, and five bundled abstract favicon
 marks are reused across them without making network requests.
 

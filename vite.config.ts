@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { cloudflare } from '@cloudflare/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
@@ -113,9 +113,14 @@ const demoAssets = () => ({
       'cobalt-sunburst.webp',
       'plum-orbit.webp',
       'teal-contours.webp',
+      ...readdirSync(resolve('scripts/seed-assets/gear')).map(
+        (name) => `gear/${name}`,
+      ),
     ]) {
       const source = readFileSync(
-        resolve('scripts/seed-assets/bean-packaging', filename),
+        filename.startsWith('gear/')
+          ? resolve('scripts/seed-assets', filename)
+          : resolve('scripts/seed-assets/bean-packaging', filename),
       )
       this.emitFile({
         type: 'asset',
