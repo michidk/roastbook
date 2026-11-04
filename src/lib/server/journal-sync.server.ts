@@ -111,7 +111,7 @@ async function loadJournalChanges(since: number) {
     const keys = keysByTable.get(getTableName(table))
     if (!keys) continue
     const rows: Array<Record<string, JournalValue>> = []
-    // 40 keys keep each statement within D1's bound-parameter limit.
+    // 40 keys keep each statement within a 100-parameter limit (SQLite builds).
     for (let start = 0; start < keys.length; start += 40)
       rows.push(
         ...((await db
@@ -237,8 +237,8 @@ const reservationLimit = 1024
 
 /**
  * Whether a failed replay had in fact applied: a simultaneous push of the same
- * change committed first, or a D1 replay stopped between its write and its
- * receipt. Identifiers are reserved per owner, so recorded rows prove it.
+ * change committed first, or a replay without transactions stopped between its
+ * write and its receipt. Identifiers are reserved per owner, so recorded rows prove it.
  */
 async function alreadyApplied(data: { key: string; recorded: RecordedValues }) {
   const [receipt] = await db
@@ -326,7 +326,7 @@ export async function reserveJournalIdentifiers(names: readonly string[]) {
       continue
     }
     const ids = await allocateJournalIds(table, reservationBatch)
-    // 30 rows keep each statement within D1's bound-parameter limit.
+    // 30 rows keep each statement within a 100-parameter limit (SQLite builds).
     for (let start = 0; start < ids.length; start += 30)
       await db
         .insert(journalIdReservations)

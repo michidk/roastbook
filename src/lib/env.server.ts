@@ -1,10 +1,8 @@
 import '@tanstack/react-start/server-only'
-
 import { createEnv, type StandardSchemaV1 } from '@t3-oss/env-core'
 import { createServerOnlyFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import { getCloudflareRuntime } from '@/cloudflare/context.server'
-import { DEFAULT_AI_PROVIDER } from '@/lib/ai-provider'
+import { resolveExtensionEnvironment } from '@/lib/server/runtime-extension.server'
 
 const optionalString = z.string().trim().min(1).optional()
 const booleanString = z
@@ -33,11 +31,11 @@ const serverSchema = {
     .string()
     .regex(/^[a-z0-9-]+$/)
     .default('x-real-ip'),
-  EMAIL_PROVIDER: z.enum(['smtp', 'resend', 'service']).default('smtp'),
+  EMAIL_PROVIDER: z.enum(['smtp', 'resend']).default('smtp'),
   EMAIL_FROM: optionalString,
   SMTP_URL: z.url().optional(),
   RESEND_API_KEY: optionalString,
-  DATABASE_PROVIDER: z.enum(['postgres', 'd1']).default('postgres'),
+  DATABASE_PROVIDER: z.enum(['postgres']).default('postgres'),
   DATABASE_URL: z.string().trim().default(''),
   IMAGE_MAX_PER_ITEM: z.coerce.number().int().min(1).max(100).default(3),
   IMAGE_STORAGE_LIMIT_MIB: z.coerce
@@ -46,7 +44,7 @@ const serverSchema = {
     .min(0)
     .max(1_048_576)
     .optional(),
-  STORAGE_PROVIDER: z.enum(['local', 's3', 'r2']).default('local'),
+  STORAGE_PROVIDER: z.enum(['local', 's3']).default('local'),
   STORAGE_PATH: z.string().trim().min(1).default('./uploads'),
   STORAGE_URL: z.string().trim().min(1).default('/media'),
   S3_BUCKET: optionalString,
@@ -64,41 +62,9 @@ const serverSchema = {
       'Use a base64-encoded 32-byte encryption key',
     )
     .optional(),
-  AI_PROVIDED_API_KEY: optionalString,
-  AI_PROVIDED_BASE_URL: z
-    .url()
-    .refine((value) => {
-      const url = new URL(value)
-      return (
-        ['https:', 'http:'].includes(url.protocol) &&
-        !url.username &&
-        !url.password &&
-        !url.search &&
-        !url.hash
-      )
-    }, 'Use an HTTP(S) base URL without credentials, query parameters, or a fragment')
-    .default('https://api.openai.com/v1'),
-  AI_PROVIDED_API: z
-    .enum(['responses', 'chat-completions'])
-    .default('responses'),
-  AI_PROVIDED_VISION_MODEL: optionalString,
-  AI_PROVIDED_RESEARCH_MODEL: optionalString,
   AI_ALLOWED_PRIVATE_ORIGINS: optionalString,
-  AI_TELEMETRY_STORE_PAYLOADS: booleanString,
-  AI_TELEMETRY_RETENTION_DAYS: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(30)
-    .default(1),
   MCP_ALLOWED_HOSTS: optionalString,
   MCP_ALLOWED_ORIGINS: optionalString,
-  AI_TELEMETRY_MAX_PAYLOAD_BYTES: z.coerce
-    .number()
-    .int()
-    .min(1_024)
-    .max(1_048_576)
-    .default(65_536),
 }
 
 const s3RequiredVariables = [
@@ -135,18 +101,10 @@ function validationError(issues: readonly StandardSchemaV1.Issue[]): never {
   throw new Error(`Invalid environment configuration: ${details}`)
 }
 
-export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
-  // Select the entire operator credential bundle so a key never inherits
-  // another provider's endpoint. Empty variables do not select a bundle.
-  const explicitProvided = [
-    'AI_PROVIDED_API_KEY',
-    'AI_PROVIDED_BASE_URL',
-    'AI_PROVIDED_API',
-    'AI_PROVIDED_VISION_MODEL',
-    'AI_PROVIDED_RESEARCH_MODEL',
-  ].some((name) => runtimeEnvironment[name]?.trim())
-  const legacyProvided =
-    !explicitProvided && !!runtimeEnvironment.OPENAI_API_KEY?.trim()
+export function parseServerEnv(
+  runtimeEnvironment: RuntimeEnvironment,
+  { managed = false }: { managed?: boolean } = {},
+) {
   return createEnv({
     server: serverSchema,
     runtimeEnvStrict: {
@@ -177,28 +135,7 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
       S3_SECRET_ACCESS_KEY: runtimeEnvironment.S3_SECRET_ACCESS_KEY,
       AI_CREDENTIAL_ENCRYPTION_KEY:
         runtimeEnvironment.AI_CREDENTIAL_ENCRYPTION_KEY,
-      AI_PROVIDED_API_KEY: legacyProvided
-        ? runtimeEnvironment.OPENAI_API_KEY
-        : runtimeEnvironment.AI_PROVIDED_API_KEY,
-      AI_PROVIDED_BASE_URL: legacyProvided
-        ? runtimeEnvironment.OPENAI_BASE_URL
-        : runtimeEnvironment.AI_PROVIDED_BASE_URL,
-      AI_PROVIDED_API: runtimeEnvironment.AI_PROVIDED_API,
-      AI_PROVIDED_VISION_MODEL: legacyProvided
-        ? runtimeEnvironment.OPENAI_VISION_MODEL?.trim() ||
-          DEFAULT_AI_PROVIDER.visionModel
-        : runtimeEnvironment.AI_PROVIDED_VISION_MODEL,
-      AI_PROVIDED_RESEARCH_MODEL: legacyProvided
-        ? runtimeEnvironment.OPENAI_RESEARCH_MODEL?.trim() ||
-          DEFAULT_AI_PROVIDER.researchModel
-        : runtimeEnvironment.AI_PROVIDED_RESEARCH_MODEL,
       AI_ALLOWED_PRIVATE_ORIGINS: runtimeEnvironment.AI_ALLOWED_PRIVATE_ORIGINS,
-      AI_TELEMETRY_STORE_PAYLOADS:
-        runtimeEnvironment.AI_TELEMETRY_STORE_PAYLOADS,
-      AI_TELEMETRY_RETENTION_DAYS:
-        runtimeEnvironment.AI_TELEMETRY_RETENTION_DAYS,
-      AI_TELEMETRY_MAX_PAYLOAD_BYTES:
-        runtimeEnvironment.AI_TELEMETRY_MAX_PAYLOAD_BYTES,
       MCP_ALLOWED_HOSTS: runtimeEnvironment.MCP_ALLOWED_HOSTS,
       MCP_ALLOWED_ORIGINS: runtimeEnvironment.MCP_ALLOWED_ORIGINS,
     },
@@ -206,37 +143,12 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
     isServer: true,
     createFinalSchema: (shape) =>
       z.object(shape).superRefine((environment, context) => {
-        if (
-          environment.DATABASE_PROVIDER === 'postgres' &&
-          !environment.DATABASE_URL
-        )
+        if (!managed && !environment.DATABASE_URL)
           context.addIssue({
             code: 'custom',
             path: ['DATABASE_URL'],
             message: 'Required for PostgreSQL deployments',
           })
-        if (
-          environment.DATABASE_PROVIDER === 'd1' &&
-          environment.DEPLOYMENT_MODE !== 'hosted'
-        )
-          context.addIssue({
-            code: 'custom',
-            path: ['DATABASE_PROVIDER'],
-            message: 'D1 requires the hosted Workers runtime',
-          })
-        if (environment.AUTH_ENABLED && environment.AI_PROVIDED_API_KEY) {
-          for (const name of [
-            'AI_PROVIDED_VISION_MODEL',
-            'AI_PROVIDED_RESEARCH_MODEL',
-          ] as const) {
-            if (!environment[name])
-              context.addIssue({
-                code: 'custom',
-                path: [name],
-                message: 'Required when provided AI is configured',
-              })
-          }
-        }
         const requireVariable = (name: string, present: unknown) => {
           if (!present)
             context.addIssue({
@@ -286,7 +198,7 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
           requireVariable('AUTH_URL', environment.AUTH_URL)
           requireVariable('AUTH_SECRET', environment.AUTH_SECRET)
           requireVariable('EMAIL_FROM', environment.EMAIL_FROM)
-          if (environment.EMAIL_PROVIDER !== 'service')
+          if (!managed)
             requireVariable(
               environment.EMAIL_PROVIDER === 'smtp'
                 ? 'SMTP_URL'
@@ -308,7 +220,7 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
               })
           }
         }
-        if (environment.STORAGE_PROVIDER !== 's3') return
+        if (managed || environment.STORAGE_PROVIDER !== 's3') return
 
         for (const variable of s3RequiredVariables) {
           if (environment[variable]) continue
@@ -326,37 +238,12 @@ export function parseServerEnv(runtimeEnvironment: RuntimeEnvironment) {
 export type ServerEnv = ReturnType<typeof parseServerEnv>
 
 let cachedEnvironment: ServerEnv | undefined
-const cloudflareEnvironments = new WeakMap<object, ServerEnv>()
 
 export const getServerEnv = createServerOnlyFn((): ServerEnv => {
-  const runtime = getCloudflareRuntime()
-  if (runtime) {
-    const cached = cloudflareEnvironments.get(runtime.bindings)
-    if (cached) return cached
-    const variables = runtime.variables
-    if (
-      variables.AUTH_ENABLED !== 'true' ||
-      variables.DEPLOYMENT_MODE !== 'hosted'
-    )
-      throw new Error('Hosted Workers require authentication')
-    const environment = parseServerEnv({
-      ...variables,
-      DATABASE_PROVIDER: 'd1',
-      STORAGE_PROVIDER: 'r2',
-      EMAIL_PROVIDER: 'service',
-      AUTH_IP_HEADER: 'x-real-ip',
-    })
-    cloudflareEnvironments.set(runtime.bindings, environment)
-    return environment
-  }
-  cachedEnvironment ??= parseServerEnv(process.env)
-  if (
-    cachedEnvironment.DATABASE_PROVIDER === 'd1' ||
-    cachedEnvironment.STORAGE_PROVIDER === 'r2' ||
-    cachedEnvironment.EMAIL_PROVIDER === 'service'
+  const extended = resolveExtensionEnvironment((variables) =>
+    parseServerEnv(variables, { managed: true }),
   )
-    throw new Error(
-      'Cloudflare bindings are required for D1, R2, or service email',
-    )
+  if (extended) return extended
+  cachedEnvironment ??= parseServerEnv(process.env)
   return cachedEnvironment
 })

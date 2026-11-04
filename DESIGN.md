@@ -103,8 +103,7 @@ forms), `wide` (`max-w-5xl`, rich records, settings), `content` (`max-w-3xl`),
   actions may reverse visually so the primary comes first.
 - Settings and Admin use `SectionLayout` (desktop sidebar, mobile tabs) and
   `PanelSection`. Admin Users is a compact table at every width with contained
-  horizontal scroll, a row action menu, an allowance dialog, and confirmed
-  deletion.
+  horizontal scroll, a row action menu, and confirmed deletion.
 
 ### Dialogs
 

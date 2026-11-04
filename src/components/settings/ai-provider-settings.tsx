@@ -7,7 +7,7 @@ import { PanelSection } from '@/components/section-layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
+import { useAiProviderMode } from '@/extension-points/ai-provider-mode'
 import {
   type AiProviderSettingsInput,
   aiProviderSettingsSchema,
@@ -16,7 +16,6 @@ import { DEMO_MODE } from '@/lib/build-mode'
 import {
   clearAiProviderSettings,
   type getAiProviderSettings,
-  setAiProviderMode,
   updateAiProviderSettings,
 } from '@/lib/server/ai-provider-settings'
 
@@ -33,24 +32,7 @@ export function AiProviderSettings({ settings }: { settings: Settings }) {
   const [key, setKey] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const { allowance } = settings
-  const usesByo = !allowance.providedAvailable || allowance.mode === 'byo'
-  async function changeMode(byo: boolean) {
-    if (busy) return
-    setBusy(true)
-    setError('')
-    try {
-      await setAiProviderMode({ data: byo ? 'byo' : 'provided' })
-      await router.invalidate()
-      toast.success(byo ? 'BYOAI selected' : 'Included AI selected')
-    } catch (cause) {
-      setError(
-        cause instanceof Error ? cause.message : 'Could not switch AI provider',
-      )
-    } finally {
-      setBusy(false)
-    }
-  }
+  const { usesByo, control, description } = useAiProviderMode()
   async function save() {
     setBusy(true)
     setError('')
@@ -103,42 +85,12 @@ export function AiProviderSettings({ settings }: { settings: Settings }) {
     <PanelSection
       title="AI provider"
       description={
-        allowance.providedAvailable
-          ? 'Choose Included to use your free allowance, or BYOAI to use your own endpoint and key.'
-          : 'Bring your own API key. AI usage is billed by your provider, and connecting it is optional.'
+        description ??
+        'Bring your own API key. AI usage is billed by your provider, and connecting it is optional.'
       }
       action={<KeyRound className="size-5 text-link" aria-hidden="true" />}
     >
-      {allowance.providedAvailable ? (
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border p-4">
-          <div className="space-y-1">
-            <Label id="ai-byo-mode-label" htmlFor="ai-byo-mode">
-              Use BYOAI
-            </Label>
-            <p
-              id="ai-provider-mode-help"
-              className="text-sm text-muted-foreground"
-            >
-              {usesByo
-                ? 'AI requests use your own provider and billing.'
-                : 'AI requests use the included provider and your weekly free allowance.'}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium">Included</span>
-            <Switch
-              id="ai-byo-mode"
-              aria-labelledby="ai-byo-mode-label"
-              className="after:-inset-y-3.5"
-              checked={usesByo}
-              disabled={busy}
-              aria-describedby="ai-provider-mode-help"
-              onCheckedChange={(checked) => void changeMode(checked)}
-            />
-            <span className="text-sm font-medium">BYOAI</span>
-          </div>
-        </div>
-      ) : null}
+      {control}
       {error ? (
         <p role="alert" className="break-words text-sm text-destructive-text">
           {error}
@@ -281,12 +233,7 @@ export function AiProviderSettings({ settings }: { settings: Settings }) {
             </Button>
           ) : null}
         </>
-      ) : (
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          Included AI is active. View your remaining requests and usage below.
-          Switch to BYOAI to configure your own provider.
-        </p>
-      )}
+      ) : null}
     </PanelSection>
   )
 }

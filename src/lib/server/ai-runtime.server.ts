@@ -1,26 +1,20 @@
-import { maxIterations } from '@tanstack/ai'
 import { openaiCompatibleText } from '@tanstack/ai-openai/compatible'
 import { DEFAULT_AI_PROVIDER } from '@/lib/ai-provider'
-import {
-  createAiProviderFetch,
-  createProvidedAiFetch,
-} from '@/lib/server/ai-provider-fetch.server'
-import { loadAiAllowance, providedAiConfig } from './ai-allowance.server'
+import { createAiProviderFetch } from '@/lib/server/ai-provider-fetch.server'
 import { getAiRuntimeConfig } from './ai-provider-settings.server'
 
 export async function getOpenAIConfig() {
-  const allowance = await loadAiAllowance()
-  if (allowance.mode === 'provided') {
-    const config = providedAiConfig()
-    if (!config) throw new Error('Provided AI is unavailable')
-    return config
+  const settings = (await getAiRuntimeConfig()) ?? {
+    ...DEFAULT_AI_PROVIDER,
+    apiKey: undefined,
   }
   return {
-    ...((await getAiRuntimeConfig()) ?? {
-      ...DEFAULT_AI_PROVIDER,
-      apiKey: undefined,
-    }),
+    ...settings,
     providerMode: 'byo' as const,
+    fetch: createAiProviderFetch(settings.baseURL),
+    visionRequestLimits: {},
+    authFailureMessage:
+      'AI service authentication failed. Update the configured API key.',
   }
 }
 
@@ -34,10 +28,7 @@ export function createAiAdapter(
     apiKey: config.apiKey,
     baseURL: config.baseURL,
     api: config.api,
-    fetch:
-      config.providerMode === 'provided'
-        ? createProvidedAiFetch()
-        : createAiProviderFetch(config.baseURL),
+    fetch: config.fetch,
     maxRetries: 0,
     timeout: 120_000,
   })
@@ -54,16 +45,7 @@ export async function isRecommendationsEnabled(): Promise<boolean> {
 }
 
 export function aiChatLimits(
-  config: Awaited<ReturnType<typeof getOpenAIConfig>>,
+  _config: Awaited<ReturnType<typeof getOpenAIConfig>>,
 ) {
-  return config.providerMode === 'provided'
-    ? {
-        modelOptions:
-          config.api === 'responses'
-            ? { max_output_tokens: 4096, max_tool_calls: 3 }
-            : { max_completion_tokens: 4096 },
-        agentLoopStrategy: maxIterations(2),
-        retry: { maxRetries: 0 },
-      }
-    : {}
+  return {}
 }

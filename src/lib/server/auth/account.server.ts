@@ -6,21 +6,15 @@ import { requireIdentity } from '@/db/journal-context.server'
 import {
   accountJobs,
   adminAuditEvents,
-  aiWeeklyUsage,
   authSessions,
   authUsers,
   authVerifications,
-  beans,
-  cafeVisits,
   instanceIdentity,
   integrationTokens,
-  shots,
 } from '@/db/schema'
 import { renderAccountEmail } from '@/lib/account-email'
-import { aiAllowanceWeek } from '@/lib/ai-allowance'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { getServerEnv } from '@/lib/env.server'
-import { providedAiConfig } from '../ai-allowance.server'
 import { sendAccountEmail } from './email.server'
 import { createIntegrationToken } from './integrations.server'
 
@@ -50,7 +44,6 @@ export async function getAccountState() {
     return {
       ownerId: 'local',
       identity: null,
-      providedAiAvailable: false,
       exports: [],
     }
   const identity = requireIdentity()
@@ -58,7 +51,6 @@ export async function getAccountState() {
     return {
       ownerId: identity.id,
       identity: null,
-      providedAiAvailable: false,
       exports: [],
     }
   const db = getControlDb()
@@ -77,7 +69,6 @@ export async function getAccountState() {
     .limit(10)
   return {
     ownerId: identity.id,
-    providedAiAvailable: !!providedAiConfig(),
     identity: {
       id: identity.id,
       email: identity.email,
@@ -97,12 +88,6 @@ export async function listUsers(page: number) {
         role: authUsers.role,
         createdAt: authUsers.createdAt,
         deletingAt: authUsers.deletingAt,
-        lastLoginAt: authUsers.lastLoginAt,
-        aiWeeklyLimit: authUsers.aiWeeklyLimit,
-        aiRequestsThisWeek: sql<number>`coalesce((select ${aiWeeklyUsage.requests} from ${aiWeeklyUsage} where ${aiWeeklyUsage.userId} = ${sql.raw('"auth_users"."id"')} and ${aiWeeklyUsage.weekStart} = ${aiAllowanceWeek().start.toISOString()}::timestamptz), 0)::int`,
-        brews: sql<number>`(select count(*) from ${shots} where ${shots.ownerId} = ${sql.raw('"auth_users"."id"')})::int`,
-        beans: sql<number>`(select count(*) from ${beans} where ${beans.ownerId} = ${sql.raw('"auth_users"."id"')})::int`,
-        visits: sql<number>`(select count(*) from ${cafeVisits} where ${cafeVisits.ownerId} = ${sql.raw('"auth_users"."id"')})::int`,
       })
       .from(authUsers)
       .where(ne(authUsers.id, 'local'))
@@ -237,7 +222,7 @@ export async function requestAccountDeletion() {
   url.hash = new URLSearchParams({ delete: token }).toString()
   await sendAccountEmail(
     identity.email,
-    renderAccountEmail({ kind: 'delete-account', url: url.href }),
+    await renderAccountEmail({ kind: 'delete-account', url: url.href }),
   )
 }
 export async function confirmAccountDeletion(token: string) {
@@ -316,29 +301,4 @@ export async function listIntegrationTokens() {
     })
     .from(integrationTokens)
     .where(eq(integrationTokens.userId, identity.id))
-}
-
-export async function changeUserAiLimit(userId: string, limit: number) {
-  const actor = requireAdmin(true)
-  if (!providedAiConfig()) throw new Error('Provided AI is unavailable')
-  await getControlDb().transaction(async (tx) => {
-    await authorizeAdminMutation(tx, actor.id)
-    const [target] = await tx
-      .update(authUsers)
-      .set({ aiWeeklyLimit: limit, updatedAt: new Date() })
-      .where(
-        and(
-          eq(authUsers.id, userId),
-          ne(authUsers.id, 'local'),
-          isNull(authUsers.deletingAt),
-        ),
-      )
-      .returning({ id: authUsers.id })
-    if (!target) throw new Error('User not found')
-    await tx.insert(adminAuditEvents).values({
-      actorId: actor.id,
-      targetId: userId,
-      action: `ai-weekly-limit:${limit}`,
-    })
-  })
 }

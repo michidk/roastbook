@@ -2,7 +2,7 @@ import { and, gte, lt, type SQL, type SQLWrapper } from 'drizzle-orm'
 import { dateBoundaryInTimeZone, nextDateKey } from '@/lib/stats-local'
 
 // Compare stored instants using the column's native driver encoder. This keeps
-// calendar ranges identical across PostgreSQL timestamps and D1 milliseconds.
+// calendar ranges identical across database timestamp representations.
 export function localDateRangeCondition(
   column: SQLWrapper,
   timeZone: string,

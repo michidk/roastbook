@@ -1,4 +1,4 @@
-type AccountEmailContent =
+export type AccountEmailContent =
   | { kind: 'sign-in'; url: string; code: string }
   | { kind: 'change-email'; url: string; newEmail: string }
   | { kind: 'verify-email'; url: string }
@@ -75,7 +75,8 @@ function emailCopy(content: AccountEmailContent) {
   }
 }
 
-export function renderAccountEmail(content: AccountEmailContent) {
+// Async so a build extension can replace it with a renderer that awaits.
+export async function renderAccountEmail(content: AccountEmailContent) {
   const link = new URL(content.url)
   if (
     !['https:', 'http:'].includes(link.protocol) ||
@@ -138,4 +139,4 @@ ${paragraphs}${code}
   return { subject: copy.subject, text, html }
 }
 
-export type AccountEmail = ReturnType<typeof renderAccountEmail>
+export type AccountEmail = Awaited<ReturnType<typeof renderAccountEmail>>

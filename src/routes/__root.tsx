@@ -11,6 +11,7 @@ import {
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { useEffect } from 'react'
 import { JournalSyncStatus } from '@/components/journal-sync-status'
+import { AppExtensions } from '@/extension-points/app-extensions'
 
 import '../styles.css'
 import { AlertTriangle, Home, RefreshCw } from 'lucide-react'
@@ -379,6 +380,7 @@ function RootComponent() {
           <Outlet />
         </div>
         <Toaster />
+        <AppExtensions userId={null} />
       </>
     )
 
@@ -405,6 +407,7 @@ function RootComponent() {
         </ScrollArea>
       </div>
       <Toaster />
+      <AppExtensions userId={settings.account?.id ?? null} />
     </TooltipProvider>
   )
 }

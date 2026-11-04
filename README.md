@@ -89,9 +89,8 @@ roasters, brewing methods, and gear. Website:
 
 ## 🧠 AI features
 
-AI is optional; everything else works without it. Users choose provided AI
-(an operator key, with a weekly free allowance administrators can adjust) or
-bring their own OpenAI-compatible endpoint in **Settings → AI**. See
+AI is optional; everything else works without it. Each user connects their
+own OpenAI-compatible endpoint in **Settings → AI**. See
 [AI configuration](docs/configuration.md).
 
 - **Label scanning** — extract bean details from up to six pictures of a bag.
@@ -164,8 +163,8 @@ logged in the database without image payloads.
 
 - Local or S3-compatible media storage with a per-journal storage allowance.
 - Passwordless private accounts or one shared journal behind Hodor.
-- An Admin page for users, roles, and AI allowances; data export and confirmed
-  account deletion.
+- An Admin page for users and roles; data export and confirmed account
+  deletion.
 
 </details>
 
@@ -176,13 +175,13 @@ logged in the database without image payloads.
 | Runtime and package manager | Bun 1.4.4 |
 | Framework and routing | TanStack Start and TanStack Router |
 | UI | React 19, shadcn/ui, Tailwind CSS v4, Lucide, MapLibre GL |
-| Database | PostgreSQL or Cloudflare D1 on the server; PGlite in the browser |
-| Media storage | Local filesystem, S3-compatible buckets, or R2 |
+| Database | PostgreSQL on the server; PGlite in the browser |
+| Media storage | Local filesystem or S3-compatible buckets |
 | AI | TanStack AI with any OpenAI-compatible endpoint |
 | Validation | Zod at every boundary |
 | Authentication | Better Auth (email codes, passkeys); optional Hodor |
 | Tooling | Vite, Biome, Knip, `bun test` |
-| Deployment | Docker Compose, Helm, or Cloudflare Workers |
+| Deployment | Docker Compose or Helm |
 
 ## 🚀 Quick start
 
@@ -252,7 +251,6 @@ migrations on start. See [Development and testing](docs/development.md).
 | [Offline journaling](docs/offline.md) | Offline coverage, sync, and conflicts |
 | [Browser-local demo](docs/demo-mode.md) | Demo data, restrictions, and builds |
 | [Journal architecture](docs/client-data.md) | Journal functions, local database, sync |
-| [Cloudflare runtime](docs/cloudflare-runtime.md) | Workers build with D1 and R2 |
 | [Shottimer API](docs/shottimer.md) | Device integration endpoints |
 | [Design system](DESIGN.md) | Layout contract and UI conventions |
 | [Design files](design/README.md) | Editable OpenPencil views |

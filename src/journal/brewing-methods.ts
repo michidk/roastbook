@@ -273,7 +273,7 @@ export const deleteBrewingMethod = journalWrite(
       )
     }
     await runJournalMutations([
-      // Serialize the count invariant per owner on PostgreSQL. D1 serializes batches.
+      // Serialize the count invariant per owner.
       {
         statement: db
           .update(settings)

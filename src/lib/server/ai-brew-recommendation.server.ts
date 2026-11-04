@@ -2,7 +2,7 @@ import { chat, type ModelMessage } from '@tanstack/ai'
 import {
   createAiRequestLogMiddleware,
   startAiRequestLog,
-} from '@/lib/server/ai-request-logs.server'
+} from '@/extension-points/ai-request-recorder.server'
 import {
   aiChatLimits,
   createAiAdapter,

@@ -76,7 +76,7 @@ function builder(kind: JournalKind, name: string) {
 
 /**
  * Journal functions run against the local database in the browser and against
- * PostgreSQL/D1 on the server. Reads never change data.
+ * the server database. Reads never change data.
  */
 export function journalRead(name: string) {
   return builder('read', name)

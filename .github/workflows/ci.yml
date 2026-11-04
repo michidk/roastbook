@@ -203,65 +203,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  cloudflare:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: checks
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: false
-
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          bun-version: 1.4.4
-
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
-        with:
-          node-version: "26"
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Type check Workers target
-        run: bunx tsc --noEmit -p tsconfig.cloudflare.json
-
-      - name: Check D1 migration metadata and schema drift
-        run: |
-          bun --bun drizzle-kit check --config=drizzle.d1.config.ts
-          bun --bun drizzle-kit generate --config=drizzle.d1.config.ts
-          changes="$(git status --porcelain --untracked-files=all -- drizzle-d1)"
-          if [ -n "$changes" ]; then
-            echo "D1 schema changes require committed migrations and metadata:"
-            echo "$changes"
-            exit 1
-          fi
-
-      - name: Verify D1 tenant and concurrency contracts
-        run: bun run test:cloudflare
-
-      - name: Verify Workers account jobs
-        run: bun run test:cloudflare:jobs
-
-      - name: Build immutable Workers release
-        run: bun run build:cloudflare
-
-      - name: Validate hosted client assets and PWA
-        run: |
-          bun run check:client-assets .output/cloudflare/public
-          bun run check:pwa .output/cloudflare/public
-
-      - name: Verify production Workers artifact and OAuth
-        run: bun run test:cloudflare:release
-
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        with:
-          name: roastbook-cloudflare
-          path: .output/cloudflare/
-          include-hidden-files: false
-          if-no-files-found: error
-          retention-days: 14
 
   demo:
     runs-on: ubuntu-latest

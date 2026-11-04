@@ -29,12 +29,10 @@ export function normalizeAiEndpoint(value: string) {
   return url.href.replace(/\/$/, '')
 }
 
-type EndpointPolicy =
-  | {
-      deploymentMode: 'hosted' | 'self-hosted'
-      privateOrigins: readonly string[]
-    }
-  | { providedBaseURL: string }
+type EndpointPolicy = {
+  deploymentMode: 'hosted' | 'self-hosted'
+  privateOrigins: readonly string[]
+}
 type TransportOptions = { resolve?: ResolveHost; policy?: EndpointPolicy }
 function endpointPolicy(): EndpointPolicy {
   const env = getServerEnv()
@@ -52,11 +50,8 @@ export async function resolveAiEndpoint(
 ) {
   const url = new URL(normalizeAiEndpoint(value))
   const privateAllowed =
-    'providedBaseURL' in policy
-      ? normalizeAiEndpoint(value) ===
-        normalizeAiEndpoint(policy.providedBaseURL)
-      : policy.deploymentMode === 'self-hosted' &&
-        policy.privateOrigins.includes(url.origin)
+    policy.deploymentMode === 'self-hosted' &&
+    policy.privateOrigins.includes(url.origin)
   if (url.protocol !== 'https:' && !privateAllowed)
     throw new Error('AI endpoints must use HTTPS')
   const hostname = url.hostname.replace(/^\[|\]$/g, '')
@@ -84,16 +79,6 @@ export async function resolveAiEndpoint(
   )
     throw new Error('That AI endpoint is not allowed. Use a public provider.')
   return { url, addresses }
-}
-
-/** The operator endpoint comes only from validated server configuration. */
-export function createProvidedAiFetch(): typeof fetch {
-  const env = getServerEnv()
-  if (!env.AUTH_ENABLED || !env.AI_PROVIDED_API_KEY)
-    throw new Error('Provided AI is unavailable')
-  return createAiProviderFetch(env.AI_PROVIDED_BASE_URL, {
-    policy: { providedBaseURL: env.AI_PROVIDED_BASE_URL },
-  })
 }
 
 /** Resolve on every request, then pin the approved IP while preserving TLS hostname verification. */

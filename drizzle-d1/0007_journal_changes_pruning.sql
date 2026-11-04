@@ -1,1 +1,0 @@
-ALTER TABLE `journal_sync_revisions` ADD `pruned_through` integer DEFAULT 0 NOT NULL;

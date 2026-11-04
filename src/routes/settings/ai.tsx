@@ -1,43 +1,22 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { DemoIntegrationNotice } from '@/components/edition-ui'
-import { AiAllowanceSettings } from '@/components/settings/ai-allowance-settings'
 import { AiProviderSettings } from '@/components/settings/ai-provider-settings'
-import { AiSettings } from '@/components/settings/ai-settings'
+import { AiSettingsPanels } from '@/extension-points/ai-settings-panels'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { getAiProviderSettings } from '@/lib/server/ai-provider-settings'
-import {
-  getAiRequestStats,
-  getProvidedAiRequestStats,
-} from '@/lib/server/ai-request-logs'
 
 export const Route = createFileRoute('/settings/ai')({
-  loader: async () => {
-    if (DEMO_MODE) return null
-    const [stats, provider, providedStats] = await Promise.all([
-      getAiRequestStats(),
-      getAiProviderSettings(),
-      getProvidedAiRequestStats(),
-    ])
-    return { stats, provider, providedStats }
-  },
+  loader: async () => (DEMO_MODE ? null : getAiProviderSettings()),
   component: AiSettingsSection,
 })
 
 function AiSettingsSection() {
-  const data = Route.useLoaderData()
-  if (!data) return <DemoIntegrationNotice />
-  const { stats, provider, providedStats } = data
+  const provider = Route.useLoaderData()
+  if (!provider) return <DemoIntegrationNotice />
   return (
     <>
       <AiProviderSettings settings={provider} />
-      <AiAllowanceSettings
-        allowance={provider.allowance}
-        stats={providedStats}
-      />
-      <AiSettings
-        stats={stats}
-        providedAvailable={provider.allowance.providedAvailable}
-      />
+      <AiSettingsPanels />
     </>
   )
 }

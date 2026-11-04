@@ -1,14 +1,7 @@
 import { useRouter } from '@tanstack/react-router'
-import {
-  MoreHorizontal,
-  ShieldCheck,
-  ShieldOff,
-  Sparkles,
-  Trash2,
-} from 'lucide-react'
+import { MoreHorizontal, ShieldCheck, ShieldOff, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { AdminUserAllowance } from '@/components/admin-user-allowance'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -26,21 +19,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { adminUserActions } from '@/extension-points/admin-user-extras'
 import { deleteUser, type getUsers, setUserRole } from '@/lib/server/account'
 
 export type AdminUser = Awaited<ReturnType<typeof getUsers>>['users'][number]
 
-export function AdminUserActions({
-  user,
-  providedAiAvailable,
-}: {
-  readonly user: AdminUser
-  readonly providedAiAvailable: boolean
-}) {
+export function AdminUserActions({ user }: { readonly user: AdminUser }) {
   const router = useRouter()
   const actionTrigger = useRef<HTMLButtonElement>(null)
   const [busy, setBusy] = useState(false)
-  const [dialog, setDialog] = useState<'delete' | 'allowance' | null>(null)
+  const [dialog, setDialog] = useState<string | null>(null)
 
   async function action(work: () => Promise<unknown>, message: string) {
     setBusy(true)
@@ -55,6 +43,8 @@ export function AdminUserActions({
       setBusy(false)
     }
   }
+
+  const extra = adminUserActions.find(({ id }) => id === dialog)
 
   return (
     <>
@@ -93,12 +83,12 @@ export function AdminUserActions({
               )}
               {user.role === 'admin' ? 'Remove admin' : 'Make admin'}
             </DropdownMenuItem>
-            {providedAiAvailable ? (
-              <DropdownMenuItem onClick={() => setDialog('allowance')}>
-                <Sparkles aria-hidden />
-                Edit AI allowance
+            {adminUserActions.map(({ id, label, icon: Icon }) => (
+              <DropdownMenuItem key={id} onClick={() => setDialog(id)}>
+                <Icon aria-hidden />
+                {label}
               </DropdownMenuItem>
-            ) : null}
+            ))}
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
@@ -120,25 +110,20 @@ export function AdminUserActions({
       >
         <DialogContent showCloseButton={!busy} finalFocus={actionTrigger}>
           <DialogHeader>
-            <DialogTitle>
-              {dialog === 'delete' ? 'Delete user?' : 'Weekly AI allowance'}
-            </DialogTitle>
+            <DialogTitle>{extra ? extra.title : 'Delete user?'}</DialogTitle>
             <DialogDescription className="break-words">
-              {dialog === 'delete'
-                ? `Permanently delete ${user.email} and their journal, including brews, beans, café visits, and images. This cannot be undone.`
-                : `Set the number of free AI requests available to ${user.email} each week. The allowance resets on Monday at 00:00 UTC.`}
+              {extra
+                ? extra.description(user)
+                : `Permanently delete ${user.email} and their journal, including brews, beans, café visits, and images. This cannot be undone.`}
             </DialogDescription>
           </DialogHeader>
-          {dialog === 'allowance' ? (
-            <AdminUserAllowance
-              key={`${user.id}-${user.aiWeeklyLimit}`}
-              userId={user.id}
-              limit={user.aiWeeklyLimit}
-              used={user.aiRequestsThisWeek}
-              busy={busy}
-              onSave={(work) => action(work, 'Weekly AI allowance updated.')}
-              onCancel={() => setDialog(null)}
-            />
+          {extra ? (
+            extra.form({
+              user,
+              busy,
+              run: action,
+              close: () => setDialog(null),
+            })
           ) : (
             <DialogFooter>
               <Button

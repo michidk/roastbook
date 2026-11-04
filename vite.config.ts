@@ -1,12 +1,11 @@
 import { resolve } from 'node:path'
-import { cloudflare } from '@cloudflare/vite-plugin'
+import { pathToFileURL } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import { devtools } from '@tanstack/devtools-vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact from '@vitejs/plugin-react'
 import { nitro } from 'nitro/vite'
-import { defineConfig } from 'vite'
-import { aiPricing } from './scripts/ai-pricing'
+import { defineConfig, type PluginOption } from 'vite'
 import { demoServiceAliases } from './scripts/demo-aliases'
 import { demoAssets } from './scripts/vite-demo-assets'
 import { demoLocalPlugin } from './scripts/vite-demo-local'
@@ -14,99 +13,25 @@ import { demoServices } from './scripts/vite-demo-services'
 import { devMigrations } from './scripts/vite-dev-migrations'
 import { journalPlatform } from './scripts/vite-journal-platform'
 
-const cloudflareRuntime = process.env.ROASTBOOK_RUNTIME === 'cloudflare'
+// Optional private build extension, overlaid into ./extension before building.
+interface BuildExtension {
+  aliases: { find: string; replacement: string }[]
+  plugins: PluginOption[]
+}
+const extension: BuildExtension | undefined =
+  process.env.ROASTBOOK_EXTENSION === 'true'
+    ? (await import(pathToFileURL(resolve('extension/vite.mjs')).href)).default
+    : undefined
+const serverSchema = extension?.aliases.find(({ find }) =>
+  new RegExp(find).test('@/db/schema'),
+)?.replacement
 const roastbookEdition = process.env.ROASTBOOK_EDITION ?? 'standard'
 if (roastbookEdition !== 'standard' && roastbookEdition !== 'demo') {
   throw new Error('ROASTBOOK_EDITION must be standard or demo')
 }
 
-if (cloudflareRuntime && roastbookEdition === 'demo')
-  throw new Error('Cloudflare hosting requires the standard edition')
-
-const cloudflareAliases = [
-  {
-    find: /^@\/lib\/server\/database-error.server$/,
-    replacement: resolve('src/cloudflare/database-error.server.ts'),
-  },
-  {
-    find: /^@\/lib\/server\/remote-url-policy.server$/,
-    replacement: resolve('src/cloudflare/remote-url-policy.server.ts'),
-  },
-  {
-    find: /^@\/lib\/server\/remote-image.server$/,
-    replacement: resolve('src/cloudflare/remote-image.server.ts'),
-  },
-  {
-    find: /^@\/lib\/server\/ai-provider-fetch.server$/,
-    replacement: resolve('src/cloudflare/ai-provider-fetch.server.ts'),
-  },
-  {
-    find: /^@better-auth\/cimd\/node$/,
-    replacement: resolve('src/cloudflare/cimd-fetch.server.ts'),
-  },
-  {
-    find: /^@\/db\/sql-dialect.server$/,
-    replacement: resolve('src/db/d1/sql-dialect.server.ts'),
-  },
-  {
-    find: /^@\/lib\/server\/health$/,
-    replacement: resolve('src/cloudflare/health.server.ts'),
-  },
-  {
-    find: /^@\/lib\/server\/auth\/oauth-coordination.server$/,
-    replacement: resolve('src/cloudflare/oauth-coordination.server.ts'),
-  },
-  {
-    find: /^@\/lib\/server\/auth\/jobs.server$/,
-    replacement: resolve('src/cloudflare/auth/jobs.server.ts'),
-  },
-  {
-    find: /^@\/lib\/server\/ai-request-accounting.server$/,
-    replacement: resolve('src/cloudflare/ai-request-accounting.server.ts'),
-  },
-  {
-    find: /^@\/lib\/server\/auth\/identity.server$/,
-    replacement: resolve('src/cloudflare/auth/identity.server.ts'),
-  },
-  {
-    find: /^@\/lib\/server\/auth\/account.server$/,
-    replacement: resolve('src/cloudflare/auth/account.server.ts'),
-  },
-  {
-    find: /^@\/lib\/server\/auth\/integrations.server$/,
-    replacement: resolve('src/cloudflare/auth/integrations.server.ts'),
-  },
-  {
-    find: /^@\/db\/journal-mutations.server$/,
-    replacement: resolve('src/db/d1/journal-mutations.server.ts'),
-  },
-  {
-    find: /^@\/lib\/server\/auth\/database-adapter.server$/,
-    replacement: resolve('src/db/d1/auth-database-adapter.server.ts'),
-  },
-  { find: /^@\/db\/schema$/, replacement: resolve('src/db/d1/schema.ts') },
-  { find: /^@\/db$/, replacement: resolve('src/db/d1/index.ts') },
-  {
-    find: /^@\/db\/connection.server$/,
-    replacement: resolve('src/db/d1/connection.server.ts'),
-  },
-  {
-    find: /^@\/db\/journal-context.server$/,
-    replacement: resolve('src/db/d1/journal-context.server.ts'),
-  },
-  {
-    find: /^@\/lib\/storage$/,
-    replacement: resolve('src/cloudflare/storage.server.ts'),
-  },
-  {
-    find: /^@\/lib\/thumbnail-image$/,
-    replacement: resolve('src/cloudflare/images.server.ts'),
-  },
-  {
-    find: /^@\/lib\/server\/auth\/email.server$/,
-    replacement: resolve('src/cloudflare/auth-email.server.ts'),
-  },
-]
+if (extension && roastbookEdition === 'demo')
+  throw new Error('Build extensions require the standard edition')
 
 const config = defineConfig({
   // Dev/preview servers run behind sandbox proxies that forward arbitrary
@@ -138,8 +63,11 @@ const config = defineConfig({
     __ROASTBOOK_DEMO_MODE__: JSON.stringify(roastbookEdition === 'demo'),
   },
   resolve: {
-    alias: cloudflareRuntime
-      ? cloudflareAliases
+    alias: extension
+      ? extension.aliases.map(({ find, replacement }) => ({
+          find: new RegExp(find),
+          replacement: resolve(replacement),
+        }))
       : roastbookEdition === 'demo'
         ? [
             ...demoServiceAliases,
@@ -218,8 +146,10 @@ const config = defineConfig({
     ],
   },
   plugins: [
-    aiPricing(),
-    journalPlatform(roastbookEdition === 'demo' ? 'demo' : 'standard'),
+    journalPlatform(
+      roastbookEdition === 'demo' ? 'demo' : 'standard',
+      serverSchema && resolve(serverSchema),
+    ),
     {
       name: 'roastbook-schema-declarations',
       transform(code, id) {
@@ -227,9 +157,7 @@ const config = defineConfig({
         // imports to disappear after Start removes server-function handlers.
         if (
           id === resolve('src/db/index.ts') ||
-          id === resolve('src/db/d1/index.ts') ||
-          id === resolve('src/db/schema.ts') ||
-          id === resolve('src/db/d1/schema.ts')
+          id === resolve('src/db/schema.ts')
         )
           return { code, moduleSideEffects: false }
       },
@@ -237,17 +165,10 @@ const config = defineConfig({
     ...(roastbookEdition === 'demo'
       ? [demoServices(), demoAssets(), demoLocalPlugin()]
       : []),
-    ...(!cloudflareRuntime
+    ...(!extension
       ? [devtools(), ...(roastbookEdition === 'demo' ? [] : [devMigrations()])]
       : []),
-    ...(cloudflareRuntime
-      ? [
-          cloudflare({
-            configPath: 'wrangler.runtime.jsonc',
-            viteEnvironment: { name: 'ssr' },
-          }),
-        ]
-      : []),
+    ...(extension?.plugins ?? []),
     tailwindcss(),
     tanstackStart({
       ...(roastbookEdition === 'demo'
@@ -271,7 +192,7 @@ const config = defineConfig({
         },
       },
     }),
-    ...(!cloudflareRuntime
+    ...(!extension
       ? [
           nitro({
             preset: roastbookEdition === 'demo' ? 'vercel' : 'bun',

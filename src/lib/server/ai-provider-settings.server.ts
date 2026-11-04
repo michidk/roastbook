@@ -13,7 +13,6 @@ import {
   normalizeAiEndpoint,
   resolveAiEndpoint,
 } from '@/lib/server/ai-provider-fetch.server'
-import { loadAiAllowance } from './ai-allowance.server'
 import { decryptAiKey, encryptAiKey } from './ai-credential.server'
 
 export async function readAiProviderCredentials() {
@@ -27,9 +26,7 @@ export async function readAiProviderCredentials() {
 }
 export async function loadAiProviderSettings() {
   const row = await readAiProviderCredentials()
-  const allowance = await loadAiAllowance()
   return {
-    allowance,
     ...(row
       ? {
           baseURL: row.baseURL,

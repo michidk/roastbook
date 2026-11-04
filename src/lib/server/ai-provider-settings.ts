@@ -1,7 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { z } from 'zod'
 import { aiProviderSettingsSchema } from '@/lib/ai-provider'
-import { selectAiProvider } from './ai-allowance.server'
 import {
   loadAiProviderSettings,
   removeAiProviderSettings,
@@ -17,7 +15,3 @@ export const updateAiProviderSettings = createServerFn({ method: 'POST' })
 export const clearAiProviderSettings = createServerFn({
   method: 'POST',
 }).handler(removeAiProviderSettings)
-
-export const setAiProviderMode = createServerFn({ method: 'POST' })
-  .validator(z.enum(['provided', 'byo']))
-  .handler(({ data }) => selectAiProvider(data))
