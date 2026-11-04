@@ -3,25 +3,25 @@ import { resolve } from 'node:path'
 import { demoServiceModule, isDemoServiceModule } from './vite-demo-services'
 
 test('only unsuffixed server-function modules are replaced in the demo', () => {
-  expect(isDemoServiceModule(resolve('src/lib/server/beans.ts'))).toBe(true)
-  expect(isDemoServiceModule(resolve('src/lib/mcp/settings.ts'))).toBe(true)
+  expect(isDemoServiceModule(resolve('src/lib/server/research.ts'))).toBe(true)
+  expect(isDemoServiceModule(resolve('src/lib/server/journal-sync.ts'))).toBe(
+    true,
+  )
   expect(
-    isDemoServiceModule(resolve('src/lib/server/journal-snapshot.server.ts')),
+    isDemoServiceModule(resolve('src/lib/server/journal-sync.server.ts')),
   ).toBe(false)
-  // Shared contracts without server functions still compile into the demo.
-  expect(
-    isDemoServiceModule(resolve('src/lib/server/settings-contract.ts')),
-  ).toBe(false)
+  // Journal functions run locally in the demo and are never replaced.
+  expect(isDemoServiceModule(resolve('src/journal/beans.ts'))).toBe(false)
   expect(isDemoServiceModule(resolve('src/lib/image-url.ts'))).toBe(false)
 })
 
 test('every runtime export becomes a disabled demo function', () => {
-  const code = demoServiceModule(resolve('src/lib/server/beans.ts'))
+  const code = demoServiceModule(resolve('src/lib/server/research.ts'))
   expect(code).toContain(
-    'export const getBeans = demoFunction("beans/getBeans")',
+    'export const extractBeanInfo = demoFunction("research/extractBeanInfo")',
   )
   expect(code).toContain(
-    'export const checkVisionEnabled = demoFunction("beans/checkVisionEnabled")',
+    'export const checkVisionEnabled = demoFunction("research/checkVisionEnabled")',
   )
   expect(code).not.toContain('createServerFn')
 })

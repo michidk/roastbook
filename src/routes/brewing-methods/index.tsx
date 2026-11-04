@@ -20,7 +20,7 @@ import { ListPending } from '@/components/route-pending'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useCollectionView } from '@/hooks/use-collection-view'
-import { getBrewingMethodPage } from '@/lib/client/journal/brewing-methods'
+import { getBrewingMethodPage } from '@/journal/brewing-methods'
 import {
   searchInteger,
   searchRecord,

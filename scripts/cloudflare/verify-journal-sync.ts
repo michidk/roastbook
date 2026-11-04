@@ -2,73 +2,70 @@ import assert from 'node:assert/strict'
 import type { CloudflareRuntimeBindings } from '@/cloudflare/context.server'
 import { allocateJournalIds } from '@/db/journal-mutations.server'
 import { beanPurchases, beans } from '@/db/schema'
+import { encodeInput } from '@/journal/codec'
 import {
-  applyJournalCommand,
-  loadJournalSnapshot,
-} from '@/lib/server/journal-snapshot.server'
-import { executeCommand } from '@/modules/journal/commands'
+  loadJournalRows,
+  replayJournalWrite,
+} from '@/lib/server/journal-sync.server'
 import { fixture } from './verify-journal'
 
+/** Browser writes replay on D1 with their recorded identifiers, once each. */
 export async function verifyJournalSync(bindings: CloudflareRuntimeBindings) {
   const first = await fixture(bindings)
   const second = await fixture(bindings)
-  const savedResult = await first.run(async () => {
-    const before = await loadJournalSnapshot()
-    const allocations = {
-      beans: await allocateJournalIds(beans),
-      beanPurchases: await allocateJournalIds(beanPurchases),
+  const created = await first.run(async () => {
+    const before = await loadJournalRows(null)
+    const recorded = {
+      'id:beans': await allocateJournalIds(beans),
+      'id:bean_purchases': await allocateJournalIds(beanPurchases),
     }
-    const command = {
-      id: crypto.randomUUID(),
-      operation: 'beans/createBean',
-      data: { name: 'Shared offline coffee', weight: '250' },
-      createdAt: new Date().toISOString(),
-      allocations,
+    const write = {
+      name: 'beans/createBean',
+      input: await encodeInput({ name: 'Offline on D1', weight: '250' }),
+      recorded,
+      key: crypto.randomUUID(),
     }
-    const local = executeCommand(before, structuredClone(command)).state
-    const saved = await applyJournalCommand(command, before.serverRevision)
-    assert.deepEqual(saved.tables.beans, local.tables.beans)
-    assert.deepEqual(saved.tables.beanPurchases, local.tables.beanPurchases)
-    const replayed = await applyJournalCommand(command, before.serverRevision)
-    assert.equal(replayed.serverRevision, saved.serverRevision)
-    assert.equal(saved.serverRevision, before.serverRevision + 1)
-    assert.deepEqual(await loadJournalSnapshot(), saved)
-    const rename = {
-      ...command,
-      id: crypto.randomUUID(),
-      operation: 'beans/updateBean',
-      data: { id: allocations.beans[0] ?? 0, name: 'Renamed' },
-    }
-    // An older base revision still applies when nothing it touches changed.
-    const renamed = await applyJournalCommand(rename, before.serverRevision)
-    assert.equal(
-      renamed.tables.beans.find((bean) => bean.id === allocations.beans[0])
-        ?.name,
-      'Renamed',
+    const applied = await replayJournalWrite({
+      ...write,
+      revision: before.revision,
+    })
+    assert.equal(applied.unchanged, true)
+    const repeated = await replayJournalWrite({
+      ...write,
+      revision: applied.revision,
+    })
+    assert.equal(repeated.unchanged, false)
+    const rows = await loadJournalRows(null)
+    const saved = rows.tables?.beans?.filter(
+      (bean) => bean.name === 'Offline on D1',
     )
-    const invalid = {
-      ...rename,
-      id: crypto.randomUUID(),
-      data: { ...rename.data, roasterId: 999999999 },
-    }
+    assert.deepEqual(
+      saved?.map((bean) => bean.id),
+      recorded['id:beans'],
+    )
+    assert.equal((await loadJournalRows(rows.revision)).tables, null)
     await assert.rejects(() =>
-      applyJournalCommand(invalid, renamed.serverRevision),
+      replayJournalWrite({
+        name: 'beans/updateBean',
+        input: { id: 2_000_000_000, name: 'Deleted elsewhere' },
+        recorded: {},
+        key: crypto.randomUUID(),
+        revision: rows.revision,
+      }),
     )
-    await assert.rejects(
-      () => applyJournalCommand(invalid, before.serverRevision),
-      /JOURNAL_CONFLICT/,
-    )
-    assert.deepEqual((await loadJournalSnapshot()).tables, renamed.tables)
-    return { saved, rename }
+    return recorded['id:beans'][0] ?? 0
   })
-  const other = await second.run(loadJournalSnapshot)
-  assert(
-    !other.tables.beans.some((bean) => bean.name === 'Shared offline coffee'),
-  )
-  assert.notEqual(other.mediaNamespace, savedResult.saved.mediaNamespace)
   await second.run(async () => {
+    const rows = await loadJournalRows(null)
+    assert(!rows.tables?.beans?.some((bean) => bean.name === 'Offline on D1'))
     await assert.rejects(() =>
-      applyJournalCommand(savedResult.rename, other.serverRevision),
+      replayJournalWrite({
+        name: 'beans/updateBean',
+        input: { id: created, name: 'Cross-owner' },
+        recorded: {},
+        key: crypto.randomUUID(),
+        revision: rows.revision,
+      }),
     )
   })
 }

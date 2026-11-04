@@ -18,7 +18,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
-import { getBeanCollection } from '@/lib/client/journal/beans'
+import { getBeanCollection } from '@/journal/beans'
 import {
   searchInteger,
   searchRecord,

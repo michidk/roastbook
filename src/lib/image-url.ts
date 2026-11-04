@@ -1,15 +1,14 @@
+import { localMediaObjectUrl } from '@/journal/local/media'
 import { DEMO_MODE } from '@/lib/build-mode'
-import { localJournalImageUrl } from '@/lib/client/local-journal'
 import { publicEnv } from '@/lib/env'
 import { getSmallThumbnailPath, getThumbnailPath } from '@/lib/image-path'
 
 const STORAGE_BASE_URL = publicEnv.VITE_STORAGE_URL
 
 function storageUrl(storagePath: string, fallbackPath?: string): string {
-  const local = localJournalImageUrl(storagePath)
+  // Pictures saved in this browser display before (or without) the server.
+  const local = localMediaObjectUrl(storagePath)
   if (local) return local
-  if (DEMO_MODE)
-    return `/media/${storagePath.split('/').map(encodeURIComponent).join('/')}`
   const encodedPath = storagePath.split('/').map(encodeURIComponent).join('/')
   const url = `${STORAGE_BASE_URL.replace(/\/$/, '')}/${encodedPath}`
 

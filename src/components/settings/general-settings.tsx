@@ -12,19 +12,19 @@ import { PanelSection } from '@/components/section-layout'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useSettingMutation } from '@/hooks/use-setting-mutation'
 import {
+  updateDateFormat,
+  updateDefaultCurrency,
+  updateDefaultListView,
+  updateNumberFormat,
+  updateTimeZone,
+} from '@/journal/settings'
+import {
   DATE_FORMAT_OPTIONS,
   isCurrency,
   isDateFormat,
   isNumberFormat,
   NUMBER_FORMAT_OPTIONS,
 } from '@/lib/app-settings'
-import {
-  updateDateFormat,
-  updateDefaultCurrency,
-  updateDefaultListView,
-  updateNumberFormat,
-  updateTimeZone,
-} from '@/lib/client/journal/settings'
 import {
   COLLECTION_VIEW_OPTIONS,
   isCollectionView,

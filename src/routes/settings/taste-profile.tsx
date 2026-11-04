@@ -9,8 +9,8 @@ import {
 import { TasteTagSettings } from '@/components/settings/taste-tag-settings'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useSettingMutation } from '@/hooks/use-setting-mutation'
-import { updateTasteProfileFields } from '@/lib/client/journal/settings'
-import { getTasteTags } from '@/lib/client/journal/taste-tags'
+import { updateTasteProfileFields } from '@/journal/settings'
+import { getTasteTags } from '@/journal/taste-tags'
 import {
   enabledTasteProfileFields,
   type TasteProfileConfig,

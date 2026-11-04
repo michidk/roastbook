@@ -16,7 +16,7 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import { DialogFooter, DialogHeader } from '@/components/ui/dialog'
-import { searchCommandEntities } from '@/lib/client/journal/command-search'
+import { searchCommandEntities } from '@/journal/command-search'
 import {
   COMMAND_ENTITY_SEARCH_MIN_LENGTH,
   type CommandEntitySearchResults,

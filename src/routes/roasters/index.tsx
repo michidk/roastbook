@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { WebsiteLogo } from '@/components/website-logo'
 import { useCollectionView } from '@/hooks/use-collection-view'
-import { getRoasterPage } from '@/lib/client/journal/roasters'
+import { getRoasterPage } from '@/journal/roasters'
 import { nextSortDirection } from '@/lib/collection-sort'
 import {
   searchEnum,

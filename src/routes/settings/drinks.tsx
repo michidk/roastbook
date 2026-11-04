@@ -14,7 +14,7 @@ import {
   createDrinkOptionValue,
   getDrinkConfiguration,
   saveDrinkType,
-} from '@/lib/client/journal/drink-options'
+} from '@/journal/drink-options'
 
 export const Route = createFileRoute('/settings/drinks')({
   loader: () => getDrinkConfiguration(),

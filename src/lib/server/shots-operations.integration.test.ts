@@ -11,14 +11,14 @@ import {
   shotDrinkOptions,
   shots,
 } from '@/db/schema'
-import { replaceRecipeDrinkOptions } from '@/lib/server/drink-options.server'
-import { saveShotToRecipe } from '@/lib/server/shot-recipes.server'
+import { replaceRecipeDrinkOptions } from '@/journal/domain/drink-options'
+import { saveShotToRecipe } from '@/journal/domain/shot-recipes'
 import {
   createShotAndSaveRecipeOperation,
   createShotOperation,
   deleteShotOperation,
   updateShotOperation,
-} from '@/lib/server/shots-operations.server'
+} from '@/journal/domain/shots-operations'
 import { shotFormValuesFrom } from '@/modules/brews/shot-form-values'
 
 const integrationDescribe = process.env.TEST_DATABASE_URL

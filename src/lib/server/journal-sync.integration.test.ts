@@ -1,43 +1,31 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import type { JournalCommand } from '@roastbook/journal-domain/state'
-import { inArray } from 'drizzle-orm'
+import { randomUUID } from 'node:crypto'
+import { eq, inArray } from 'drizzle-orm'
 import { getControlDb } from '@/db/connection.server'
 import { type JournalIdentity, withJournal } from '@/db/journal-context.server'
-import { allocateJournalIds } from '@/db/journal-mutations.server'
-import {
-  authUsers,
-  beanImages,
-  beanPurchases,
-  beans,
-  journalCommandReceipts,
-  journalSyncRevisions,
-} from '@/db/schema'
-import { getStoredImagePaths } from '@/lib/image-path'
-import { journalImageDigest } from '@/lib/journal-image-digest'
-import { getStorage } from '@/lib/storage'
-import { executeCommand } from '@/modules/journal/commands'
-import { localImageUploadSchema } from '@/modules/journal/images'
-import {
-  applyJournalCommand,
-  loadJournalSnapshot,
-  prepareJournalWrite,
-} from './journal-snapshot.server'
-import { drainMediaCleanupQueue } from './media-lifecycle.server'
+import { authUsers, beans, journalCommandReceipts } from '@/db/schema'
+import { encodeInput } from '@/journal/codec'
+import { loadJournalRows, replayJournalWrite } from './journal-sync.server'
 
 const suite = process.env.TEST_DATABASE_URL ? describe : describe.skip
-const first: JournalIdentity = {
-  id: crypto.randomUUID(),
-  email: `${crypto.randomUUID()}@example.test`,
+const identity = (): JournalIdentity => ({
+  id: randomUUID(),
+  email: `${randomUUID()}@example.test`,
   role: 'user',
   authentication: true,
   authenticatedAt: new Date(),
+})
+const first = identity()
+const second = identity()
+
+async function reserved(count: number) {
+  const rows = await getControlDb().execute<{ id: string }>(
+    `select nextval(pg_get_serial_sequence('beans', 'id'))::text as id from generate_series(1, ${count})` as never,
+  )
+  return rows.map((row) => Number(row.id))
 }
-const second: JournalIdentity = {
-  ...first,
-  id: crypto.randomUUID(),
-  email: `${crypto.randomUUID()}@example.test`,
-}
-suite('shared journal transport with real PostgreSQL and journal RLS', () => {
+
+suite('journal sync replays browser writes on PostgreSQL', () => {
   beforeAll(async () => {
     await getControlDb()
       .insert(authUsers)
@@ -51,232 +39,167 @@ suite('shared journal transport with real PostgreSQL and journal RLS', () => {
       )
   })
   afterAll(async () => {
-    const owners = [first.id, second.id]
     await getControlDb()
-      .delete(beanPurchases)
-      .where(inArray(beanPurchases.ownerId, owners))
-    await getControlDb().delete(beans).where(inArray(beans.ownerId, owners))
-    await getControlDb()
-      .delete(journalCommandReceipts)
-      .where(inArray(journalCommandReceipts.ownerId, owners))
-    await getControlDb()
-      .delete(journalSyncRevisions)
-      .where(inArray(journalSyncRevisions.ownerId, owners))
-    await getControlDb().delete(authUsers).where(inArray(authUsers.id, owners))
+      .delete(authUsers)
+      .where(inArray(authUsers.id, [first.id, second.id]))
   })
-  test('commits related records once after a lost response, isolates owners, merges unrelated changes and rejects stale writes', async () => {
-    // Like the client, which reserves identifiers before its first download.
-    const initial = await withJournal(first, async () => {
-      await prepareJournalWrite()
-      return loadJournalSnapshot()
-    })
-    const ids = await withJournal(first, async () => ({
-      beans: await allocateJournalIds(beans, 2),
-      beanPurchases: await allocateJournalIds(beanPurchases, 2),
-    }))
-    const command: JournalCommand = {
-      id: crypto.randomUUID(),
-      operation: 'beans/createBean',
-      data: { name: 'Offline journal bean', weight: '250' },
-      createdAt: new Date().toISOString(),
-      allocations: ids,
+
+  test('a recorded create keeps its identifiers, applies once and reports other changes', async () => {
+    const [beanId] = await reserved(1)
+    const [purchaseId] = await getControlDb()
+      .execute<{ id: string }>(
+        "select nextval(pg_get_serial_sequence('bean_purchases', 'id'))::text as id" as never,
+      )
+      .then((rows) => rows.map((row) => Number(row.id)))
+    const write = {
+      name: 'beans/createBean',
+      input: await encodeInput({ name: 'Offline bean', weight: '250' }),
+      recorded: { 'id:beans': [beanId], 'id:bean_purchases': [purchaseId] },
+      key: randomUUID(),
     }
-    const local = executeCommand(initial, structuredClone(command))
-    expect(local.state.tables.beans).toHaveLength(1)
-    const committed = await withJournal(first, () =>
-      applyJournalCommand(command, initial.serverRevision),
+    const before = await withJournal(first, () => loadJournalRows(null))
+    const applied = await withJournal(first, () =>
+      replayJournalWrite({ ...write, revision: before.revision }),
     )
-    expect(committed.tables.beans).toEqual(local.state.tables.beans)
-    expect(committed.tables.beanPurchases).toEqual(
-      local.state.tables.beanPurchases,
-    )
-    expect(committed.serverRevision).toBe(initial.serverRevision + 1)
-    // The returned journal is what a fresh read sees.
-    expect(committed).toEqual(await withJournal(first, loadJournalSnapshot))
+    expect(applied.unchanged).toBe(true)
+    expect(applied.revision).toBeGreaterThan(before.revision)
+
+    const rows = await withJournal(first, () => loadJournalRows(null))
+    expect(rows.tables?.beans?.map((bean) => [bean.id, bean.name])).toEqual([
+      [beanId, 'Offline bean'],
+    ])
+    expect(rows.tables?.bean_purchases?.[0]?.id).toBe(purchaseId)
+
+    // A lost response retries the same key: nothing is applied twice.
     const repeated = await withJournal(first, () =>
-      applyJournalCommand(command, initial.serverRevision),
+      replayJournalWrite({ ...write, revision: applied.revision }),
     )
-    expect(repeated.tables.beans).toHaveLength(1)
-    expect(repeated.serverRevision).toBe(committed.serverRevision)
-    expect(
-      (await withJournal(second, loadJournalSnapshot)).tables.beans,
-    ).toEqual([])
-    const beanId = ids.beans[0] ?? 0
-    // An older base revision is merged when the command still applies.
+    expect(repeated.unchanged).toBe(false)
+    const again = await withJournal(first, () => loadJournalRows(null))
+    expect(again.tables?.beans).toHaveLength(1)
+
+    // Same revision: the browser can skip downloading.
+    const unchanged = await withJournal(first, () =>
+      loadJournalRows(again.revision),
+    )
+    expect(unchanged.tables).toBeNull()
+
+    // A write based on an older revision still applies but reports the gap.
     const renamed = await withJournal(first, () =>
-      applyJournalCommand(
-        {
-          ...command,
-          id: crypto.randomUUID(),
-          operation: 'beans/updateBean',
-          data: { id: beanId, name: 'Renamed elsewhere' },
-        },
-        initial.serverRevision,
-      ),
+      replayJournalWrite({
+        name: 'beans/updateBean',
+        input: { id: beanId, name: 'Renamed' },
+        recorded: {},
+        key: randomUUID(),
+        revision: before.revision,
+      }),
     )
-    expect(renamed.tables.beans[0]?.name).toBe('Renamed elsewhere')
-    expect(renamed.serverRevision).toBe(committed.serverRevision + 1)
-    // A command whose record was deleted on another device is a conflict.
-    const removedId = ids.beans[1] ?? 0
-    const created = await withJournal(first, () =>
-      applyJournalCommand(
-        {
-          ...command,
-          id: crypto.randomUUID(),
-          data: { name: 'Deleted elsewhere', weight: '250' },
-          allocations: {
-            beans: [removedId],
-            beanPurchases: [ids.beanPurchases[1] ?? 0],
-          },
-        },
-        renamed.serverRevision,
-      ),
-    )
-    await withJournal(first, () =>
-      applyJournalCommand(
-        {
-          ...command,
-          id: crypto.randomUUID(),
-          operation: 'beans/deleteBean',
-          data: removedId,
-          allocations: {},
-        },
-        created.serverRevision,
-      ),
-    )
-    const stale = {
-      ...command,
-      id: crypto.randomUUID(),
-      operation: 'beans/updateBean',
-      data: { id: removedId, name: 'Conflict' },
-      allocations: {},
-    }
+    expect(renamed.unchanged).toBe(false)
+  })
+
+  test('a write that no longer applies changes nothing and leaves no receipt', async () => {
+    const key = randomUUID()
     await expect(
       withJournal(first, () =>
-        applyJournalCommand(stale, created.serverRevision),
-      ),
-    ).rejects.toThrow('JOURNAL_CONFLICT')
-    await expect(
-      withJournal(second, () => applyJournalCommand(stale, 0)),
-    ).rejects.toThrow()
-    expect(
-      (await withJournal(first, loadJournalSnapshot)).tables.beans.map(
-        (bean) => bean.name,
-      ),
-    ).toEqual(['Renamed elsewhere'])
-  })
-  test('a failed relationship never persists a receipt or partial records', async () => {
-    const before = await withJournal(first, loadJournalSnapshot)
-    const command: JournalCommand = {
-      id: crypto.randomUUID(),
-      operation: 'beans/updateBean',
-      data: { id: before.tables.beans[0]?.id ?? 0, roasterId: 999999 },
-      createdAt: new Date().toISOString(),
-      allocations: {},
-    }
-    await expect(
-      withJournal(first, () =>
-        applyJournalCommand(command, before.serverRevision),
+        replayJournalWrite({
+          name: 'beans/updateBean',
+          input: { id: 2_000_000_000, name: 'Deleted elsewhere' },
+          recorded: {},
+          key,
+          revision: 0,
+        }),
       ),
     ).rejects.toThrow()
-    const after = await withJournal(first, loadJournalSnapshot)
-    expect(after.tables).toEqual(before.tables)
-    expect(after.serverRevision).toBe(before.serverRevision)
+    const receipts = await getControlDb()
+      .select()
+      .from(journalCommandReceipts)
+      .where(eq(journalCommandReceipts.commandId, key))
+    expect(receipts).toEqual([])
   })
-  test('real WebP variants synchronize once, reject altered bytes, isolate owners and clean deleted images after commit', async () => {
+
+  test('owners stay isolated: no rows, no writes across journals', async () => {
+    const other = await withJournal(second, () => loadJournalRows(null))
+    expect(other.tables?.beans ?? []).toEqual([])
+    const [firstBean] = await getControlDb()
+      .select({ id: beans.id })
+      .from(beans)
+      .where(eq(beans.ownerId, first.id))
+    await expect(
+      withJournal(second, () =>
+        replayJournalWrite({
+          name: 'beans/updateBean',
+          input: { id: firstBean?.id ?? 0, name: 'Cross-owner' },
+          recorded: {},
+          key: randomUUID(),
+          revision: other.revision,
+        }),
+      ),
+    ).rejects.toThrow()
+  })
+
+  test('unknown or read operations are never replayed', async () => {
+    for (const name of ['beans/getBeans', 'nothing/here', '../../db/index'])
+      await expect(
+        withJournal(first, () =>
+          replayJournalWrite({
+            name,
+            input: null,
+            recorded: {},
+            key: randomUUID(),
+            revision: 0,
+          }),
+        ),
+      ).rejects.toThrow()
+  })
+
+  test('a recorded picture path must match its record and must be new', async () => {
     const sharp = (await import('sharp')).default
     const bytes = await sharp({
-      create: { width: 4, height: 4, channels: 3, background: '#8c5a38' },
+      create: { width: 8, height: 8, channels: 3, background: '#7a4a2a' },
     })
       .webp()
       .toBuffer()
-    const files = Array.from({ length: 3 }, () => bytes.toString('base64'))
-    const initial = await withJournal(first, loadJournalSnapshot)
-    const purchase = initial.tables.beanPurchases[0]
-    if (!purchase) throw new Error('Expected the related coffee purchase')
-    const ids = await withJournal(first, () => allocateJournalIds(beanImages))
-    const command: JournalCommand = {
-      id: crypto.randomUUID(),
-      operation: 'images/uploadEntityImage',
-      data: {
-        entityType: 'bean-purchases',
-        entityId: purchase.id,
-        filename: 'local-coffee.webp',
-        files,
-        digest: await journalImageDigest(files),
-      },
-      createdAt: new Date().toISOString(),
-      allocations: { beanImages: ids },
-    }
-    const storage = getStorage()
-    let paths: string[] = []
-    try {
-      await expect(
-        withJournal(first, () =>
-          applyJournalCommand(
-            {
-              ...command,
-              data: {
-                ...localImageUploadSchema.parse(command.data),
-                digest: '0'.repeat(64),
-              },
-            },
-            initial.serverRevision,
-          ),
-        ),
-      ).rejects.toThrow('content digest')
-      const saved = await withJournal(first, () =>
-        applyJournalCommand(command, initial.serverRevision),
+    const rows = await withJournal(first, () => loadJournalRows(null))
+    const purchase = rows.tables?.bean_purchases?.[0]
+    if (!purchase) throw new Error('Expected a bean purchase')
+    const [imageId] = await getControlDb()
+      .execute<{ id: string }>(
+        "select nextval(pg_get_serial_sequence('bean_images', 'id'))::text as id" as never,
       )
-      const image = saved.tables.beanImages[0]
-      if (!image) throw new Error('The image did not synchronize')
-      paths = getStoredImagePaths([image.storagePath])
-      expect(image.storagePath).toStartWith(
-        `journal/${initial.mediaNamespace}/`,
-      )
-      for (const path of paths) expect(await storage.exists(path)).toBe(true)
-      const replay = await withJournal(first, () =>
-        applyJournalCommand(command, initial.serverRevision),
-      )
-      expect(replay.tables.beanImages).toHaveLength(1)
-      expect(replay.serverRevision).toBe(saved.serverRevision)
-      await expect(
-        withJournal(second, () => applyJournalCommand(command, 0)),
-      ).rejects.toThrow()
-      expect(
-        (await withJournal(second, loadJournalSnapshot)).tables.beanImages,
-      ).toEqual([])
-      const deletion: JournalCommand = {
-        id: crypto.randomUUID(),
-        operation: 'images/deleteEntityImage',
-        data: {
-          entityType: 'bean-purchases',
-          entityId: purchase.id,
-          imageId: image.id,
-        },
-        createdAt: new Date().toISOString(),
-        allocations: {},
-      }
-      await expect(
-        withJournal(first, async () => {
-          await applyJournalCommand(deletion, saved.serverRevision)
-          throw new Error('Rollback after image deletion')
+      .then((result) => result.map((row) => Number(row.id)))
+    const path = `beans/${purchase.id}/${Date.now()}-${randomUUID()}.webp`
+    const upload = (recordedPath: string) =>
+      withJournal(first, () =>
+        replayJournalWrite({
+          name: 'images/uploadEntityImageBase64',
+          input: {
+            entityType: 'bean-purchases',
+            entityId: purchase.id,
+            fileBase64: bytes.toString('base64'),
+            filename: 'bag.webp',
+            mimeType: 'image/webp',
+            sizeBytes: bytes.byteLength,
+          },
+          recorded: {
+            storagePath: [recordedPath],
+            'id:bean_images': [imageId],
+          },
+          key: randomUUID(),
+          revision: 0,
         }),
-      ).rejects.toThrow('Rollback after image deletion')
-      expect(
-        (await withJournal(first, loadJournalSnapshot)).tables.beanImages,
-      ).toHaveLength(1)
-      for (const path of paths) expect(await storage.exists(path)).toBe(true)
-      const deleted = await withJournal(first, () =>
-        applyJournalCommand(deletion, saved.serverRevision),
       )
-      expect(deleted.tables.beanImages).toEqual([])
-      for (const path of paths) expect(await storage.exists(path)).toBe(true)
-      await withJournal(first, () => drainMediaCleanupQueue())
-      for (const path of paths) expect(await storage.exists(path)).toBe(false)
-    } finally {
-      for (const path of paths)
-        if (await storage.exists(path)) await storage.delete(path)
-    }
+    await expect(upload('beans/1/../../etc/passwd')).rejects.toThrow(
+      'Invalid replayed storage path',
+    )
+    await expect(
+      upload(path.replace(/^beans\/\d+/, 'beans/999')),
+    ).rejects.toThrow('Invalid replayed storage path')
+    await upload(path)
+    const stored = await withJournal(first, () => loadJournalRows(null))
+    expect(
+      stored.tables?.bean_images?.map((image) => image.storagePath),
+    ).toEqual([path])
+    // Replaying the same path for another record must not overwrite it.
+    await expect(upload(path)).rejects.toThrow()
   })
 })

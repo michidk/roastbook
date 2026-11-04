@@ -4,12 +4,12 @@ import { EntityForm } from '@/components/form/form-shell'
 import { GearSetPicker } from '@/components/gear-sets/gear-set-picker'
 import { RecipeFields } from '@/components/recipes/recipe-fields'
 import { useFormSubmission } from '@/hooks/use-form-submission'
+import type { getActiveBeans } from '@/journal/beans'
+import type { getBrewingMethods } from '@/journal/brewing-methods'
+import type { getDrinkConfiguration } from '@/journal/drink-options'
+import type { getGear } from '@/journal/gear'
+import type { getGearSets } from '@/journal/gear-sets'
 import { addRecipe } from '@/lib/client/journal'
-import type { getActiveBeans } from '@/lib/client/journal/beans'
-import type { getBrewingMethods } from '@/lib/client/journal/brewing-methods'
-import type { getDrinkConfiguration } from '@/lib/client/journal/drink-options'
-import type { getGear } from '@/lib/client/journal/gear'
-import type { getGearSets } from '@/lib/client/journal/gear-sets'
 import { getErrorMessage } from '@/lib/error-message'
 import { recipePayload } from '@/lib/new-shot-payload'
 import { getShotUpdateErrors } from '@/lib/update-validation'
@@ -31,7 +31,6 @@ type RecipeFormProps = {
     readonly name: string
   }[]
   readonly onCreated: (recipe: { readonly id: number }) => void | Promise<void>
-  readonly onQueued?: () => void | Promise<void>
   readonly onCancel: () => void
 }
 
@@ -43,7 +42,6 @@ export function RecipeForm({
   drinks,
   drinkTypeSuggestions,
   onCreated,
-  onQueued,
   onCancel,
 }: RecipeFormProps) {
   const [name, setName] = useState('')
@@ -77,16 +75,7 @@ export function RecipeForm({
       )
     },
     submit: async () => {
-      const result = await addRecipe(
-        { name, ...recipePayload(values) },
-        { label: name.trim(), detail: 'Recipe' },
-      )
-      if (result.kind === 'queued') {
-        toast.success('Recipe saved on this device')
-        if (onQueued) await onQueued()
-        return
-      }
-      const recipe = result.value
+      const recipe = await addRecipe({ name, ...recipePayload(values) })
       toast.success('Recipe created')
       await onCreated(recipe)
     },

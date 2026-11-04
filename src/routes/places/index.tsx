@@ -28,7 +28,7 @@ import { useTasteProfile } from '@/hooks/use-taste-profile'
 import {
   getCoffeeShopMapOverview,
   getCoffeeShopPage,
-} from '@/lib/client/journal/coffee-shops'
+} from '@/journal/coffee-shops'
 import { thumbnailUrl } from '@/lib/image-url'
 import {
   searchEnum,

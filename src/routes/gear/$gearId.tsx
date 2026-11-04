@@ -8,11 +8,9 @@ import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import type { ShotsTableServerPagination } from '@/components/shots/shots-table'
 
-import {
-  checkGearResearchEnabled,
-  getGearById,
-} from '@/lib/client/journal/gear'
-import { getGearShotPage } from '@/lib/client/journal/shots'
+import { getGearById } from '@/journal/gear'
+import { getGearShotPage } from '@/journal/shots'
+import { checkGearResearchEnabled } from '@/lib/client/research'
 import { nextSortDirection } from '@/lib/collection-sort'
 import { parseEditModeSearch } from '@/lib/edit-mode'
 import { parseIdParam } from '@/lib/route-params'

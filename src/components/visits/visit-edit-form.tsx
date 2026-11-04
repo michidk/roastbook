@@ -7,14 +7,11 @@ import {
   useCurrentLocalDateTimeLimit,
   useLocalDateTimeInput,
 } from '@/hooks/use-local-date-time-input'
+import type { getBeans } from '@/journal/beans'
+import { type getCafeVisit, updateCafeVisit } from '@/journal/cafe-visits'
+import type { getCoffeeShops } from '@/journal/coffee-shops'
+import type { getTasteTags } from '@/journal/taste-tags'
 import { cafeVisitUpdatePayload } from '@/lib/cafe-visit-payload'
-import type { getBeans } from '@/lib/client/journal/beans'
-import {
-  type getCafeVisit,
-  updateCafeVisit,
-} from '@/lib/client/journal/cafe-visits'
-import type { getCoffeeShops } from '@/lib/client/journal/coffee-shops'
-import type { getTasteTags } from '@/lib/client/journal/taste-tags'
 import { localDateTimeInputToDate } from '@/lib/date-input'
 import type { DrinkConfiguration } from '@/lib/drink-options'
 import { focusFirstInvalidControl } from '@/lib/form-validation'

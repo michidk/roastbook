@@ -78,22 +78,13 @@ export function BrewDetailPage() {
 
   const handleDelete = async () => {
     try {
-      const result = await removeJournalEntity({
+      await removeJournalEntity({
         entityType: 'brew',
         id: shot.id,
         revision: shot.revision,
-        details: {
-          label: shot.bean?.name ?? 'Brew',
-          detail: shot.brewingMethod.name,
-        },
       })
-      if (result.kind === 'queued') {
-        toast.success('Brew deletion saved on this device')
-        await navigate({ to: '/brews/pending' })
-      } else {
-        await router.invalidate()
-        await navigate({ to: '/brews' })
-      }
+      await router.invalidate()
+      await navigate({ to: '/brews' })
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to delete brew'))
     }
@@ -110,10 +101,6 @@ export function BrewDetailPage() {
     requestAnimationFrame(() => editButtonRef.current?.focus())
   }
 
-  const handleQueued = async () => {
-    await navigate({ to: '/brews/pending' })
-  }
-
   const handleSaveRecipe = async (target: SaveToRecipeTarget) => {
     const isNewRecipe = target.kind === 'new'
     const targetPayload = isNewRecipe
@@ -121,21 +108,11 @@ export function BrewDetailPage() {
       : { recipeId: target.recipeId }
     setIsSavingRecipe(true)
     try {
-      const result = await saveBrewToRecipe(
-        { shotId: shot.id, ...targetPayload },
-        {
-          label: shot.bean?.name ?? 'Brew',
-          detail: isNewRecipe
-            ? `New recipe: ${target.name}`
-            : 'Existing recipe',
-        },
-      )
-      if (result.kind === 'queued') {
-        toast.success('Recipe save queued on this device')
-        await navigate({ to: '/brews/pending' })
-        return true
-      }
-      if (!result.value) {
+      const result = await saveBrewToRecipe({
+        shotId: shot.id,
+        ...targetPayload,
+      })
+      if (!result) {
         toast.error('Could not save this recipe')
         return false
       }
@@ -311,7 +288,6 @@ export function BrewDetailPage() {
           editData={editData}
           onCancel={handleCancel}
           onSaved={handleSaved}
-          onQueued={handleQueued}
         />
       ) : (
         <>

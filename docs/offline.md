@@ -1,96 +1,79 @@
 # Offline journaling
 
-The standard product uses one account-scoped browser journal in a normal tab and
-an installed PWA. After the first complete online download, journal reads and
-ordinary edits use local IndexedDB data. Changes survive reloads and wait for
-server confirmation. The [demo](demo-mode.md) uses the same journal implementation
-with fictional data and no synchronization or installation support.
+The standard product keeps the signed-in account's journal in the browser, in a
+normal tab and in the installed PWA. After the first online download, every
+journal page reads and writes this local copy, online or offline, and changes
+sync with the account when a connection is available. The [demo](demo-mode.md)
+runs the same journal with fictional data and no synchronization.
 
 ## Coverage
 
-Local operations cover brews, recipes, beans and bags, gear and gear sets,
-roasters, cafés and visits, brewing methods, drinks and options, taste tags,
-journal settings, appearance settings, and added pictures. Lists, details,
-relationships, filters, search, counts, overview, and statistics derive from the
-same committed local data. Records need not have been individually visited first.
+Everything in the journal works offline: brews, recipes, beans and bags, gear
+and gear sets, roasters, cafés and visits, brewing methods, drinks and options,
+taste tags, journal and appearance settings, and pictures. Lists, details,
+search, filters, counts, overview and statistics run the same SQL as the server
+against the local copy, so records need not have been visited first.
 
-AI, web research, geocoding, remote image import, external devices, account
-administration, email, and authentication require their normal server services.
-Existing remote pictures are not downloaded into IndexedDB automatically. Pictures
-added on this device stay available locally after synchronization while referenced
-by the journal. An uncached remote picture can be unavailable offline.
+AI features, web research, geocoding, remote image import, the shottimer,
+account administration, email and sign-in need their server services and are
+unavailable offline. Pictures added on this device stay available offline.
+Pictures added on other devices display from the server, so an uncached one can
+be missing offline.
 
-The first complete journal download requires an online authorized session. A
-failure shows an error and preserves saved work. It never pretends that a partial
-or missing journal is an empty one. New numeric records consume reserved IDs;
-reconnect if the saved per-table identifier pool runs out.
+The first download needs an online, signed-in session. A failure shows an error;
+it never treats a missing journal as an empty one. New records use identifiers
+the server reserved for this device; if a long offline period uses them all, new
+records stop with a message to reconnect, and saved changes are kept.
 
 ## Synchronization and recovery
 
-A local commit saves the domain changes, picture bytes, and durable command
-together. The pending banner distinguishes device storage from server
-confirmation. Synchronization runs at startup, after reconnecting, and on manual
-retry. The server validates commands independently and applies them inside the
-existing authenticated journal boundary.
+A change is saved with its sync record in one local transaction, then sent when
+a connection is available: after each change, at startup, after reconnecting,
+when the app regains focus, every 30 seconds, and from Sync now. The server
+validates and applies each change exactly once inside the normal journal
+boundary. Changes from other devices or integrations download when the account's
+journal revision changed.
 
-Commands carry UUID idempotency keys and a base journal revision. Lost responses
-retry one logical write. Changes from another device or integration are merged
-when your command still applies to the latest journal. A command that no longer
-applies, such as an edit to a record deleted elsewhere, is a conflict. Your
-local journal stays intact until you choose a recovery action. Review changes
-lets you download a local copy, retry, explicitly apply your edits to the latest
-server revision, or discard pending edits and use the server journal. Signing
-out requires resolving pending work first.
+A change made against an older journal still applies when it fits the latest
+one. A change that no longer fits, such as an edit to a record deleted on
+another device, is listed as needing review in the sync banner. Try again sends
+it again; Discard drops this browser's version and restores the account's
+journal. Other changes keep syncing. Signing out requires that everything has
+synced.
 
-Earlier versions' pending brew/recipe operations and caches remain available.
-Resolve or sync that work in Pending changes before making new journal edits.
-The old queue drains through its original idempotent endpoints; new forms use
-only the shared journal command path. If the first complete download is
-unavailable, the pending page and Settings → Offline remain accessible for
-recovery.
+Changes queued by earlier versions of the offline mode move into the journal
+automatically on first open. If any cannot move, Settings → Offline says how
+many, and the earlier browser storage is kept.
 
-Settings → Offline reports local pending counts and estimated browser storage.
-The shared-journal banner opens its recovery actions. Clearing earlier caches
-preserves the new journal and pending work. Clearing all local data requires a
-connection and no pending shared-journal commands; the next online visit downloads
-the journal again. Repair app shell refreshes application files without deleting
-journal data.
+Settings → Offline shows the sync state, the last sync, and browser storage use.
+Remove local copy deletes this browser's journal when everything has synced; it
+downloads again on the next visit. Repair app shell refreshes application files
+without touching the journal.
 
 ## Offline startup and privacy
 
 The product build prerenders a public, data-free SPA shell at
-`/offline-shell.html`. The service worker caches it and hashed application assets
-for cold offline navigation. Client loaders open the previously selected account's
-local journal. No authenticated journal HTML enters the document cache. First
-load, asset download failure, browser cache eviction, or unsupported service
-workers can prevent cold startup. Keep an online visit long enough for downloads
-to finish before relying on offline use.
+`/offline-shell.html`. The service worker caches it, the hashed application
+assets and the journal database engine for cold offline starts. No
+authenticated HTML enters the document cache. Stay online until the first visit
+finishes downloading before relying on offline use.
 
-Browser storage is specific to a profile and origin. It is not encrypted by
-Roastbook and can be removed by the user, browser eviction, or private browsing.
-Clearing site storage removes unconfirmed edits and pictures. Download a local
-copy before destructive conflict recovery. An unsupported saved format reports
-an error without silently resetting it; use a compatible application version or
-contact support.
+Browser storage belongs to one browser profile and origin. Roastbook does not
+encrypt it, and the browser or the user can remove it; clearing site storage
+removes changes that have not synced yet. The local journal needs IndexedDB and
+Web Locks, so it requires HTTPS (or localhost) and a current browser.
 
-The journal currently stores its records in an aggregate document and recomputes
-reads when its revision changes. Pictures are stored separately, but journals
-with many records still increase memory use and local write cost. Background
-refreshes download the journal only when it changed on the server. See [Client
-journal architecture](client-data.md) for the package, transaction,
-synchronization, and identifier contracts.
+See [Journal architecture](client-data.md) for the design.
 
 ## Verification
 
-`packages/journal-client/src/journal.test.ts` exercises actual RxDB/Dexie storage
-with fake IndexedDB. Shared command tests cover relationships, derived results,
-images, and settings. PostgreSQL integration tests compare local results to SQL
-and verify replay, ownership, stale revisions, and rollback. Hosted verification
-runs the same transport against D1. Service-worker tests exercise shell fallback,
-private-document exclusions, application assets, and recovery.
+`bun run test:browser-runtime` runs journal functions with the browser platform
+against PGlite. `src/lib/server/journal-sync.integration.test.ts` and
+`bun run test:cloudflare` replay recorded writes on PostgreSQL and D1.
+Service-worker tests cover shell fallback, private-document exclusions and
+engine precaching.
 
-For a browser acceptance pass, download a journal, go offline, create and edit
-related entities and a picture, reload, reconnect, and confirm exactly one server
-result. Also test cold startup, two tabs, account switching, expired sessions,
-quota errors, and conflict recovery. Automated storage tests do not substitute
-for these browser checks.
+For a browser acceptance pass, download a journal, go offline, create related
+records and a picture, reload, reconnect, and confirm one server copy with the
+same identifiers. Also check a cold offline start, two tabs, a change made on
+another device, and a conflict.

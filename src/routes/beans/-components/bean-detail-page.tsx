@@ -29,14 +29,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 import { useFormState } from '@/hooks/use-form-state'
 import { useOnlineStatus } from '@/hooks/use-online-status'
+import { setBeanPurchaseArchived } from '@/journal/bean-purchases'
+import { deleteBean, updateBean } from '@/journal/beans'
 import { estimateRemainingBeanWeight } from '@/lib/bean-weight'
-import { setBeanPurchaseArchived } from '@/lib/client/journal/bean-purchases'
-import {
-  deleteBean,
-  extractBeanInfo,
-  researchBeanInfo,
-  updateBean,
-} from '@/lib/client/journal/beans'
+import { extractBeanInfo, researchBeanInfo } from '@/lib/client/research'
 import { nextSortDirection } from '@/lib/collection-sort'
 import { getErrorMessage } from '@/lib/error-message'
 import { fetchImageAsBase64 } from '@/lib/image-base64'
@@ -242,14 +238,6 @@ export function BeanDetailPage() {
         onSave={handleSave}
         onDelete={async () => {
           const result = await deleteBean({ data: bean.id })
-          if (!result.archived) {
-            const { removeCachedEntityDetail } = await import(
-              '@/modules/offline/entity-detail-cache'
-            )
-            await removeCachedEntityDetail('bean', bean.id).catch(
-              () => undefined,
-            )
-          }
           await router.invalidate()
           if (result.archived) {
             toast.success(

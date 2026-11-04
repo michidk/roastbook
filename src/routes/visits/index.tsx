@@ -18,7 +18,7 @@ import { WebsiteLogo } from '@/components/website-logo'
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
-import { getCafeVisitPage } from '@/lib/client/journal/cafe-visits'
+import { getCafeVisitPage } from '@/journal/cafe-visits'
 import {
   searchInteger,
   searchRecord,

@@ -9,23 +9,21 @@ import { toast } from 'sonner'
 import { Page, PageHeader } from '@/components/page-layout'
 import { NewShotForm } from '@/components/shots/new-shot-form'
 import { Button } from '@/components/ui/button'
-
-import { DEMO_MODE } from '@/lib/build-mode'
-
-import { getActiveBeanPurchases } from '@/lib/client/journal/beans'
-import { getBrewingMethods } from '@/lib/client/journal/brewing-methods'
-import { getDrinkConfiguration } from '@/lib/client/journal/drink-options'
-import { getGear } from '@/lib/client/journal/gear'
-import { getGearSets } from '@/lib/client/journal/gear-sets'
-import { getRecipes } from '@/lib/client/journal/recipes'
+import { getActiveBeanPurchases } from '@/journal/beans'
+import { getBrewingMethods } from '@/journal/brewing-methods'
+import { getDrinkConfiguration } from '@/journal/drink-options'
+import { getGear } from '@/journal/gear'
+import { getGearSets } from '@/journal/gear-sets'
+import { getRecipes } from '@/journal/recipes'
 import {
   getBeanSuggestions,
   getBrewingMethodSuggestions,
   getDrinkTypeSuggestions,
   getLastBeansByBrewingMethod,
   getTasteTagSuggestions,
-} from '@/lib/client/journal/suggestions'
-import { getTasteTags } from '@/lib/client/journal/taste-tags'
+} from '@/journal/suggestions'
+import { getTasteTags } from '@/journal/taste-tags'
+import { DEMO_MODE } from '@/lib/build-mode'
 import { isConnectionOnline } from '@/lib/connection-status'
 import { searchValidator } from '@/lib/search-params'
 import { checkShotRecommendationEnabled } from '@/lib/server/shot-recommendations'
@@ -138,12 +136,6 @@ function NewShotPage() {
               onClick: () => void navigate({ to: '/brews/new', search }),
             },
           })
-        }}
-        onQueued={async () => {
-          toast.success(
-            'Saved on this device. It will sync when you reconnect.',
-          )
-          await navigate({ to: '/brews/pending' })
         }}
       />
     </Page>

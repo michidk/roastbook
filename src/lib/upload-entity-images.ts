@@ -2,7 +2,7 @@ import {
   type EntityType,
   uploadEntityImage,
   uploadEntityImageBase64,
-} from '@/lib/client/journal/images'
+} from '@/journal/images'
 import { createEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
 import type { ImageFile } from '@/lib/image-file'
 import { isImageUploadNetworkError } from '@/lib/image-upload-error'

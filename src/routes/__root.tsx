@@ -9,9 +9,8 @@ import {
   useRouterState,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import type { ComponentType } from 'react'
-import { useEffect, useState } from 'react'
-import { JournalSyncNotice } from '@/components/journal-sync-notice'
+import { useEffect } from 'react'
+import { JournalSyncStatus } from '@/components/journal-sync-status'
 
 import '../styles.css'
 import { AlertTriangle, Home, RefreshCw } from 'lucide-react'
@@ -29,11 +28,6 @@ import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useOnlineStatus } from '@/hooks/use-online-status'
 import { DEMO_MODE, PREFERENCES_STORAGE_KEY } from '@/lib/build-mode'
-import { getAppSettings } from '@/lib/client/journal/app-settings'
-import {
-  subscribeJournalChanges,
-  synchronizeJournal,
-} from '@/lib/client/local-journal'
 import { DEFAULT_APP_SETTINGS } from '@/lib/default-app-settings'
 import { getErrorDisplayState } from '@/lib/error-display'
 import {
@@ -81,13 +75,12 @@ export const Route = createRootRoute({
       }
     }
     try {
+      // The journal runtime loads in its own chunk.
+      const { getAppSettings } = await import('@/journal/app-settings')
       return await getAppSettings()
     } catch (error) {
-      // Existing pending work remains accessible before the first complete download.
-      if (
-        !DEMO_MODE &&
-        ['/brews/pending', '/settings/offline'].includes(location.pathname)
-      )
+      // Offline settings stay reachable when the journal cannot open.
+      if (!DEMO_MODE && location.pathname === '/settings/offline')
         return { ...DEFAULT_APP_SETTINGS, journalOwner: getOfflineOwner() }
       throw error
     }
@@ -220,26 +213,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   )
 }
 
-function OfflineStatusMount() {
-  const [Status, setStatus] = useState<ComponentType | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    void import('@/components/pending-sync-banner')
-      .then((module) => {
-        if (!cancelled) setStatus(() => module.OfflineStatus)
-      })
-      .catch((error) => {
-        console.error('Could not load the offline status UI', error)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  return Status ? <Status /> : null
-}
-
 function SettingsHydrator() {
   const settings = Route.useLoaderData()
   const lightTheme = settings?.lightTheme ?? 'light-roast'
@@ -303,7 +276,7 @@ function RootErrorComponent({ error }: { error: unknown }) {
     <TooltipProvider>
       <div className="flex h-[100dvh] flex-col overflow-hidden">
         <AppNavbar demoMode={DEMO_MODE} />
-        {DEMO_MODE ? <DemoNotice /> : <OfflineStatusMount />}
+        {DEMO_MODE ? <DemoNotice /> : <JournalSyncStatus />}
         <OfflineBanner isOnline={isOnline} demoMode={DEMO_MODE} />
         <ScrollArea
           className="min-h-0 flex-1"
@@ -364,23 +337,34 @@ function RootComponent() {
 
   const router = useRouter()
   useEffect(() => {
-    return subscribeJournalChanges(() => {
-      void router.invalidate()
+    let disposed = false
+    let unsubscribe: (() => void) | undefined
+    void import('@/journal/local/client').then(({ subscribeLocalChanges }) => {
+      if (!disposed)
+        unsubscribe = subscribeLocalChanges(() => void router.invalidate())
     })
+    return () => {
+      disposed = true
+      unsubscribe?.()
+    }
   }, [router])
   useEffect(() => {
     if (login || DEMO_MODE) return
+    const sync = () =>
+      void import('@/journal/local/edition')
+        .then(({ synchronizeEditionJournal }) => synchronizeEditionJournal())
+        .catch(() => undefined)
+    // Reconnecting always sends saved changes; periodic refreshes need a visible tab.
     const refresh = () => {
-      if (document.visibilityState === 'visible')
-        void synchronizeJournal().catch(() => undefined)
+      if (document.visibilityState === 'visible') sync()
     }
     refresh()
-    window.addEventListener('online', refresh)
+    window.addEventListener('online', sync)
     window.addEventListener('focus', refresh)
     document.addEventListener('visibilitychange', refresh)
     const timer = window.setInterval(refresh, 30000)
     return () => {
-      window.removeEventListener('online', refresh)
+      window.removeEventListener('online', sync)
       window.removeEventListener('focus', refresh)
       document.removeEventListener('visibilitychange', refresh)
       window.clearInterval(timer)
@@ -401,12 +385,7 @@ function RootComponent() {
     <TooltipProvider>
       <div className="flex h-[100dvh] flex-col overflow-hidden">
         <AppNavbar demoMode={settings.demoMode} account={settings.account} />
-        {settings.demoMode ? null : (
-          <>
-            <JournalSyncNotice />
-            <OfflineStatusMount />
-          </>
-        )}
+        {settings.demoMode ? null : <JournalSyncStatus />}
         <OfflineBanner isOnline={isOnline} demoMode={settings.demoMode} />
         <ScrollArea
           className="min-h-0 flex-1"

@@ -230,8 +230,8 @@ PWA installation requires a secure context: HTTPS in production, or
 check the manifest and service worker, then switch the network to offline and
 reload to see the offline behaviour. The worker caches the offline page,
 manifest, icons, hashed `/assets/*` files, and bounded app documents for offline
-boot. Journal edits and pictures commit to RxDB with their durable
-synchronization commands; see
+boot, including the journal database engine. Journal edits and pictures commit
+to the local PGlite journal with their sync records; see
 [Offline journaling](offline.md).
 
 `bun run check:pwa` validates the manifest, icons, offline page, and built
@@ -261,22 +261,28 @@ runs the OpenPencil editor for them. See `design/README.md`.
 - Never edit `src/routeTree.gen.ts` manually.
 - Commit a schema migration and its matching `drizzle/meta` changes together.
 
-## Shared client journal
+## Journal functions
 
-See [Client journal architecture](client-data.md) for package boundaries and
-[Offline journaling](offline.md) for actual coverage. Ordinary client operations
-use `src/lib/client/journal`; portable commands and reads live in
-`src/modules/journal`. Never import server implementations into shared packages.
+See [Journal architecture](client-data.md). Journal reads and writes are SQL
+functions in `src/journal/`, defined with `journalRead`/`journalWrite` and named
+`<module>/<export>`; the browser and the server run the same code. Add new
+modules to `src/journal/registry.ts`. Journal code reaches the database,
+storage, images, configuration and side effects only through
+`src/journal/platform/*`; `bun run check:boundaries` enforces this.
 
-After a PostgreSQL schema change, regenerate portable model metadata with
-`bun run generate:journal-model`. `bun run check:boundaries` verifies generated
-models, synchronization revision triggers, and import ownership. New journal
-tables must participate in owner revision tracking on both PostgreSQL and D1.
-The schema has its normal committed server migrations; browser format versions
-are independent and unsupported versions must preserve saved data.
+New journal tables need owner revision triggers on PostgreSQL and D1
+(`bun scripts/generate-journal-sync-triggers.ts`). Records that other records
+reference must take their identifiers from `allocateJournalIds`, so offline
+creates keep them on the server. The browser applies the same committed
+migrations, so never edit a released migration.
+
+`bun run test` also runs `bun run test:browser-runtime`: `*.browser.test.ts`
+files execute journal functions with the browser platform on an in-process
+PGlite.
 
 Run standard, demo, and hosted builds sequentially in a checkout because Nitro
 build state is shared. The standard build runs Vite under Bun so SPA-shell
 prerendering uses the Bun runtime selected by the Nitro preset. Product builds
 must emit `offline-shell.html`; service-worker generation fails if it is missing.
-Demo builds emit no SQL engine, install manifest, or product offline shell.
+Demo builds emit no install manifest or product offline shell. Both editions
+emit the journal worker with the PGlite engine.

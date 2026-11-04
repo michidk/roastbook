@@ -22,36 +22,27 @@ server journal. It never enables this demo.
 
 ## Local data boundary
 
-The demo selects the shared RxDB journal from `packages/journal-client` and
-portable commands/read models from `src/modules/journal`. TanStack DB subscribes
-to committed journal revisions. No SQL engine, Drizzle driver, server domain
-implementation, or synchronization transport runs in the browser. PGlite is a
-development dependency used only to generate fixtures from committed migrations.
+The demo runs the product's journal: the same SQL journal functions, on the
+visitor's own PGlite database in a browser worker. Only the edition differs
+(`packages/journal-demo/src/edition.ts`): the journal is seeded from fixtures,
+never syncs, and allocates identifiers locally. Lists, details, relations,
+pagination, search, filters, overview, statistics and counts all read that
+database. See [Journal architecture](client-data.md).
 
-Lists, details, relations, pagination, search, filters, overview, statistics, and
-counts all read the same local journal. The product and installed product PWA
-use these operations too, with an authenticated synchronization adapter.
-See [Client journal architecture](client-data.md).
+The first visit downloads `/demo-local/journal.json` and loads it only when the
+`roastbook-demo` database has no journal yet; existing changes are never
+reseeded. Tabs share one database through a leader worker. Color-mode
+preferences use `roastbook-demo-preferences`, separate from standard ones.
 
-The first visit downloads `/demo-local/journal.json` and inserts it only if no
-journal exists. RxDB stores journal tables and settings in one atomic document,
-and added image bytes in a separate collection, in the isolated
-`roastbook-demo-journal` database. Another tab
-seeding first wins; existing changes are never automatically reseeded. RxDB
-propagates committed document changes between tabs. Color-mode preferences use
-`roastbook-demo-preferences`, separate from standard preferences.
+The database applies the server's migrations, so a newer demo upgrades saved
+data in place instead of replacing it. A failed write, including a full browser
+storage, rolls back and keeps earlier changes. Confirmed Reset demo restores the
+fixtures, removes added pictures and resets demo appearance preferences. It
+never touches product account storage.
 
-The record has an explicit format version. Unsupported or invalid data fails
-without overwriting the saved record. A failed write, including browser quota
-failure, preserves the previous commit. Confirmed Reset demo restores fixtures,
-removes added images, and resets demo appearance preferences. It never clears
-product account storage.
-
-Use a current browser over HTTPS or localhost with IndexedDB and browser image
-decoding/canvas support. Browser storage must be enabled and have free space.
-The journal currently saves its records in an aggregate document and recomputes
-derived reads after changes. Large journals increase memory and write cost.
-The demo is temporary, unbacked-up exploration data.
+Use a current browser over HTTPS or localhost with IndexedDB, Web Locks and
+image decoding. The first visit downloads the database engine (about 5 MB
+compressed). The demo is temporary, unbacked-up exploration data.
 
 ## Pictures and integrations
 
@@ -60,17 +51,17 @@ The browser validates the file and parent record, decodes the image, and creates
 WebP versions bounded to 1600, 640, and 128 pixels. The demo permits three
 pictures per item, up to 10 MiB per input file and 50 MiB of compressed browser
 pictures including thumbnails. Browser quota may impose a lower limit.
-Browser blob URLs display added images; they survive reload through IndexedDB.
-Deleting a record or picture also removes its local image files. Reset removes
+Picture bytes are stored in the demo database with their records and display
+through blob URLs. Deleting a record or picture also removes its files. Reset removes
 all added images. Bundled fictional package images and abstract favicons are
 static same-origin assets.
 
 AI, web research, remote image import, geocoding, map tiles, MCP/OAuth, email,
 authentication, account administration, external devices, remote media storage,
 and synchronization are unavailable. Enter cafés and coordinates manually.
-Integration settings explain the restriction. Shared commands reject operations
-outside its journal allowlist, and explicit unavailable-service modules fail before
-network access. No changes are queued for eventual server synchronization.
+Integration settings explain the restriction. In the demo build every
+integration server function is replaced by a stub that fails before network
+access. Nothing is queued for server synchronization.
 
 The demo backend has no journal database. Its database accessor throws, all
 mutation requests remain forbidden, and API and server-function requests are
@@ -95,10 +86,10 @@ after changing fixture generation or migrations. Production emits `.vercel/outpu
 including `/demo-local/journal.json` and `/media/*` fictional images. The demo build
 replaces server-function modules with generated exports that reject integration
 calls (`scripts/vite-demo-services.ts`); a few aliases cover HTTP handlers and
-the auth client. The asset and
-module checks reject browser server code and SQL engines, and product builds
-reject demo modules and fixtures. `scripts/demo-local.test.ts` exercises generated
-fixtures through shared journal commands without a runtime SQL engine.
+the auth client. The asset check allows the database engine only in the journal
+worker and secrets nowhere. `scripts/demo-local.test.ts` checks the generated
+fixtures, and `bun run test:browser-runtime` runs journal functions on PGlite
+like the demo does.
 
 Deploy the prebuilt output with `vercel deploy --prebuilt`. `vercel.json`
 selects `build:demo` for Git-connected deployments. Standard `bun run build`,

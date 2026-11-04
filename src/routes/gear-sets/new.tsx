@@ -6,7 +6,7 @@ import { Page } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import { Button } from '@/components/ui/button'
-import { getGear } from '@/lib/client/journal/gear'
+import { getGear } from '@/journal/gear'
 
 export const Route = createFileRoute('/gear-sets/new')({
   loader: () => getGear(),

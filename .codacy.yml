@@ -6,7 +6,6 @@ engines:
   duplication:
     exclude_paths:
       - "src/routeTree.gen.ts"
-      - "packages/journal-domain/src/model.generated.ts"
 exclude_paths:
   - "node_modules/**"
   - ".output/**"

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { getImageUploadPolicy } from '@/journal/images'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { resizeBrowserImage } from '@/lib/client/image-compression'
-import { getImageUploadPolicy } from '@/lib/client/journal/images'
 import { IMAGE_MIME_TYPE_VALUES, MAX_IMAGE_BYTES } from '@/lib/domain-contracts'
 import type { ImageFile } from '@/lib/image-file'
 import { downloadRemoteImage } from '@/lib/server/remote-image'

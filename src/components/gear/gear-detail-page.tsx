@@ -26,13 +26,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/dialog'
 import { useOnlineStatus } from '@/hooks/use-online-status'
-import {
-  deleteGear,
-  type getGearById,
-  researchMachineSettings,
-  updateGear,
-} from '@/lib/client/journal/gear'
-import type { getGearShotPage } from '@/lib/client/journal/shots'
+import { deleteGear, type getGearById, updateGear } from '@/journal/gear'
+import type { getGearShotPage } from '@/journal/shots'
+import { researchMachineSettings } from '@/lib/client/research'
 import { getErrorMessage } from '@/lib/error-message'
 import type { ExtractedMachineResearch } from '@/modules/ai/read-models'
 
@@ -171,10 +167,6 @@ export function GearDetailPage({
         }}
         onDelete={async () => {
           await deleteGear({ data: gear.id })
-          const { removeCachedEntityDetail } = await import(
-            '@/modules/offline/entity-detail-cache'
-          )
-          await removeCachedEntityDetail('gear', gear.id).catch(() => undefined)
           await router.invalidate()
           await navigate({ to: '/gear' })
         }}

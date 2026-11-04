@@ -68,8 +68,8 @@ does not limit archive generation or account cleanup.
 5. Start the account worker and verify sign-in, image access, and an export
    before reopening the instance to other users.
 
-Sync pending offline changes before enabling accounts. Legacy browser caches
-are preserved under `local` and are never silently assigned to a new account.
+Sync pending offline changes before enabling accounts. A browser journal kept
+for `local` is never silently assigned to a new account.
 Disabling authentication on a database with multiple accounts is rejected;
 consolidating journals requires an explicit migration and backup.
 

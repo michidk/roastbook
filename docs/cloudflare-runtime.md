@@ -94,9 +94,10 @@ Unlike PostgreSQL, D1 has no row-level security or interactive transactions.
 Shared operations therefore apply explicit owner predicates and owner values.
 Composite database foreign keys prevent relationships between different owners.
 
-The browser and installed PWA share the complete owner-scoped RxDB journal.
-Synchronization replays portable commands through the same D1 ownership boundary,
-with revision checks and command receipts in the atomic batch. The build also
+The browser and installed PWA keep the account's journal in PGlite and run the
+same journal functions. Synchronization replays each recorded write on D1
+through the same ownership boundary, with its recorded identifiers and a
+command receipt. The build also
 prerenders a public, data-free offline shell. Only GET requests to the exact
 `/offline-shell` route bypass account and canonical-origin checks for this
 artifact; private routes and media retain those checks.

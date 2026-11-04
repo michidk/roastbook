@@ -12,24 +12,20 @@ import {
   gear,
   mediaCleanupJobs,
   recipes,
-  replicationChanges,
   settings,
   shotImages,
   shots,
   tasteTags,
 } from '@/db/schema'
-import { pullRecipes } from '@/lib/server/replication-pull'
-import { pushRecipes } from '@/lib/server/replication-push'
-import { toDocument } from '@/lib/server/replication-shared'
-import { createShotAndSaveRecipeSchema } from '@/lib/server/shot-list-contract.server'
-import { saveShotToRecipe } from '@/lib/server/shot-recipes.server'
+import { createShotAndSaveRecipeSchema } from '@/journal/domain/shot-list-contract'
+import { saveShotToRecipe } from '@/journal/domain/shot-recipes'
 import {
   createShotAndSaveRecipeOperation,
   createShotOperation,
   deleteShotOperation,
   getShotOperation,
   updateShotOperation,
-} from '@/lib/server/shots-operations.server'
+} from '@/journal/domain/shots-operations'
 import { shotCreateSchema, shotUpdateSchema } from '@/lib/server-validation'
 import { SHOT_PARAMETER_KEYS } from '@/lib/shot-parameters'
 
@@ -124,14 +120,6 @@ async function brewAndRecipe(bindings: CloudflareRuntimeBindings) {
       recipeId: both.recipe.id,
     })
     assert.equal(overwritten.doseGrams, '19.00')
-    const initial = await pullRecipes({})
-    assert(
-      initial.documents.some(
-        (document) =>
-          document.serverId === overwritten.id &&
-          document.serverRevision === overwritten.revision,
-      ),
-    )
   })
 }
 
@@ -319,93 +307,6 @@ async function concurrentIdempotency(bindings: CloudflareRuntimeBindings) {
   })
 }
 
-async function replicationCheckpoints(bindings: CloudflareRuntimeBindings) {
-  const journal = await fixture(bindings)
-  await journal.run(async () => {
-    const initial = await createShotAndSaveRecipeOperation(
-      createShotAndSaveRecipeSchema.parse({
-        shot: shotInput(journal),
-        target: { name: 'First' },
-      }),
-    )
-    await createShotAndSaveRecipeOperation(
-      createShotAndSaveRecipeSchema.parse({
-        shot: shotInput(journal),
-        target: { name: 'Second' },
-      }),
-    )
-    if (!initial.recipe) throw new Error('Initial recipe missing')
-    const firstPage = await pullRecipes({ batchSize: 1 })
-    assert(firstPage.checkpoint.recipeId)
-    const original = toDocument(initial.recipe)
-    assert.deepEqual(
-      await pushRecipes({
-        rows: [
-          {
-            assumedMasterState: original,
-            newDocumentState: { ...original, name: 'First updated' },
-          },
-        ],
-      }),
-      [],
-    )
-    await createShotAndSaveRecipeOperation(
-      createShotAndSaveRecipeSchema.parse({
-        shot: shotInput(journal),
-        target: { name: 'Third' },
-      }),
-    )
-    const seen = [...firstPage.documents]
-    let checkpoint = firstPage.checkpoint
-    while (checkpoint.recipeId) {
-      const page = await pullRecipes({ checkpoint, batchSize: 1 })
-      seen.push(...page.documents)
-      checkpoint = page.checkpoint
-    }
-    for (let pageIndex = 0; pageIndex < 10; pageIndex++) {
-      const page = await pullRecipes({ checkpoint, batchSize: 1 })
-      seen.push(...page.documents)
-      assert(page.checkpoint.sequence >= checkpoint.sequence)
-      checkpoint = page.checkpoint
-      if (!page.documents.length) break
-    }
-    const latest = new Map(seen.map((document) => [document.syncId, document]))
-    assert.equal(latest.size, 3)
-    assert.equal(latest.get(original.syncId)?.name, 'First updated')
-    const master = latest.get(original.syncId)
-    if (!master) throw new Error('Updated recipe was lost')
-    const concurrent = await Promise.all(
-      ['Version A', 'Version B'].map((name) =>
-        pushRecipes({
-          rows: [
-            {
-              assumedMasterState: master,
-              newDocumentState: { ...master, name },
-            },
-          ],
-        }),
-      ),
-    )
-    assert.equal(
-      concurrent.filter((conflicts) => conflicts.length === 0).length,
-      1,
-    )
-    assert.equal(
-      concurrent.filter((conflicts) => conflicts.length === 1).length,
-      1,
-    )
-    const stored = await db.query.recipes.findFirst({
-      where: owned(recipes, eq(recipes.syncId, original.syncId)),
-    })
-    assert.equal(stored?.revision, master.serverRevision + 1)
-    const changes = await db
-      .select()
-      .from(replicationChanges)
-      .where(owned(replicationChanges))
-    assert(changes.length >= 5)
-  })
-}
-
 async function mediaAtomicity(bindings: CloudflareRuntimeBindings) {
   const alice = await fixture(bindings)
   const bob = await fixture(bindings)
@@ -492,10 +393,6 @@ export const verifyJournalCases = [
   {
     name: 'simultaneous idempotency and stale integer revisions',
     run: concurrentIdempotency,
-  },
-  {
-    name: 'recipe replication checkpoints and concurrent conflicts',
-    run: replicationCheckpoints,
   },
   {
     name: 'R2 media cleanup, deletion rollback, and owner isolation',

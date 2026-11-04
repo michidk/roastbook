@@ -33,8 +33,8 @@ import { useImageUpload } from '@/hooks/use-image-upload'
 import {
   createBeanPurchase,
   updateBeanPurchase,
-} from '@/lib/client/journal/bean-purchases'
-import { extractBeanInfo } from '@/lib/client/journal/beans'
+} from '@/journal/bean-purchases'
+import { extractBeanInfo } from '@/lib/client/research'
 import { getErrorMessage } from '@/lib/error-message'
 import type { ImageFile } from '@/lib/image-file'
 import {

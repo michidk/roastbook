@@ -1,6 +1,6 @@
 # ADR 0012: RxDB persistence with TanStack DB collections
 
-- Status: Accepted for the first vertical slice
+- Status: Superseded by [ADR 0013](0013-sql-journal-in-browser.md)
 - Date: 2026-10-28
 
 ## Context

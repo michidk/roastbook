@@ -12,7 +12,7 @@ import { demoAssets } from './scripts/vite-demo-assets'
 import { demoLocalPlugin } from './scripts/vite-demo-local'
 import { demoServices } from './scripts/vite-demo-services'
 import { devMigrations } from './scripts/vite-dev-migrations'
-import { journalBoundaries } from './scripts/vite-journal-boundaries'
+import { journalPlatform } from './scripts/vite-journal-platform'
 
 const cloudflareRuntime = process.env.ROASTBOOK_RUNTIME === 'cloudflare'
 const roastbookEdition = process.env.ROASTBOOK_EDITION ?? 'standard'
@@ -123,6 +123,8 @@ const config = defineConfig({
         codeSplitting: {
           groups: [
             { name: 'validation', test: /node_modules\/zod\// },
+            // Journal functions run on every page; keep them in one shared chunk.
+            { name: 'journal', test: /\/src\/journal\// },
             {
               name: 'router-runtime',
               test: /node_modules\/@tanstack\/(?:router-core|react-router)\//,
@@ -141,10 +143,6 @@ const config = defineConfig({
       : roastbookEdition === 'demo'
         ? [
             ...demoServiceAliases,
-            {
-              find: /^@\/lib\/edition-journal$/,
-              replacement: resolve('packages/journal-demo/src/journal.ts'),
-            },
             {
               find: /^@\/components\/edition-ui$/,
               replacement: resolve('packages/journal-demo/src/ui.tsx'),
@@ -221,7 +219,7 @@ const config = defineConfig({
   },
   plugins: [
     aiPricing(),
-    journalBoundaries(roastbookEdition === 'demo'),
+    journalPlatform(roastbookEdition === 'demo' ? 'demo' : 'standard'),
     {
       name: 'roastbook-schema-declarations',
       transform(code, id) {
@@ -263,16 +261,12 @@ const config = defineConfig({
           }),
       router: {
         codeSplittingOptions: {
-          // Keep route loaders in the critical route bundle so client-side
-          // navigation can start data fetching immediately. Group the route
-          // UI into one lazy chunk instead of creating a request per property.
+          // Loaders query the local journal, so each route's loader and page
+          // load together in one lazy chunk. Pending and error screens stay
+          // separate so they can render while that chunk downloads.
           defaultBehavior: [
-            [
-              'component',
-              'pendingComponent',
-              'errorComponent',
-              'notFoundComponent',
-            ],
+            ['loader', 'component'],
+            ['pendingComponent', 'errorComponent', 'notFoundComponent'],
           ],
         },
       },

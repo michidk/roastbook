@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button'
 import { useCollectionView } from '@/hooks/use-collection-view'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
-import { getRecipePage } from '@/lib/client/journal/recipes'
+import { getRecipePage } from '@/journal/recipes'
 import { nextSortDirection } from '@/lib/collection-sort'
 import { thumbnailUrl } from '@/lib/image-url'
 import {

@@ -16,13 +16,6 @@
       "entry": ["src/**/*.ts", "src/**/*.tsx"],
       "project": ["src/**/*.{ts,tsx}"]
     },
-    "packages/journal-client": {
-      "entry": ["src/*.test.ts"],
-      "project": ["src/**/*.ts"]
-    },
-    "packages/journal-domain": {
-      "project": ["src/**/*.ts"]
-    },
     ".": {
       "entry": [
         "src/routes/**/*.tsx",
@@ -57,7 +50,10 @@
         "drizzle.d1.config.ts",
         "scripts/**/*.mjs",
         "src/cloudflare/cimd-fetch.server.ts",
-        "src/components/edition-ui.tsx"
+        "src/components/edition-ui.tsx",
+        "src/journal/platform/*.browser.ts",
+        "src/journal/local/pglite-types.ts",
+        "src/journal/local/worker.ts"
       ],
       "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{ts,mjs}", "*.config.ts"]
     }

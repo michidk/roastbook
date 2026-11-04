@@ -49,12 +49,3 @@ export async function selectOfflineOwner(id: string) {
   }
   restoreOfflineOwner(id)
 }
-
-export function offlineDatabaseName() {
-  const id = getOfflineOwner()
-  return id === 'local'
-    ? 'roastbook-offline-rxdb'
-    : `roastbook-user-${Array.from(id)
-        .map((c) => c.codePointAt(0)?.toString(16))
-        .join('_')}`
-}

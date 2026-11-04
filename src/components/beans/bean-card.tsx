@@ -8,8 +8,8 @@ import {
 } from '@/components/ui/card'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import type { getBeans } from '@/journal/beans'
 import { estimateRemainingBeanWeight } from '@/lib/bean-weight'
-import type { getBeans } from '@/lib/client/journal/beans'
 import {
   BEAN_TYPE_LABELS,
   getProcessMethodLabel,

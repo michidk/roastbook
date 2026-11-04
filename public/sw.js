@@ -8,6 +8,9 @@ const JOURNAL_SHELL_URL = '/offline-shell.html'
 const MAX_ASSET_ENTRIES = 100
 const MAX_DOCUMENT_ENTRIES = 20
 const MAX_ASSET_BYTES = 2097152
+// The journal database engine must be available offline; it is larger.
+const MAX_ENGINE_BYTES = 16777216
+const ENGINE_ASSET = /^\/assets\/(?:pglite|initdb)-[\w-]+\.(?:wasm|data)$/
 const EXCLUDED_PATHS = new Set(['/sw.js'])
 const EXCLUDED_PREFIXES = ['/api/', '/_serverFn/', '/_gate/', '/media/']
 const PRECACHE_ASSETS = __PRECACHE_ASSETS__
@@ -304,13 +307,16 @@ async function isCacheableStaticResponse(
   if (contentType.includes('text/html')) return pathname.endsWith('.html')
 
   if (options.checkSize) {
+    const limit = ENGINE_ASSET.test(pathname)
+      ? MAX_ENGINE_BYTES
+      : MAX_ASSET_BYTES
     const declaredLength = declaredContentLength(response)
     if (declaredLength !== null) {
-      if (declaredLength > MAX_ASSET_BYTES) return false
+      if (declaredLength > limit) return false
     } else {
       try {
         const body = await response.clone().blob()
-        if (body.size > MAX_ASSET_BYTES) return false
+        if (body.size > limit) return false
       } catch {
         return false
       }

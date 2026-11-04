@@ -2,8 +2,8 @@ import { useRouter } from '@tanstack/react-router'
 import { HardDrive, RotateCcw } from 'lucide-react'
 import { DeleteConfirmation } from '@/components/delete-confirmation'
 import { Button } from '@/components/ui/button'
-import { resetLocalDemo } from '@/lib/client/local-journal'
 import { usePreferencesStore } from '@/lib/preferences-store'
+import { resetDemoJournal } from '../edition'
 
 export function DemoNotice() {
   const router = useRouter()
@@ -39,7 +39,7 @@ export function DemoNotice() {
             </Button>
           }
           onConfirm={async () => {
-            await resetLocalDemo()
+            await resetDemoJournal()
             usePreferencesStore.setState({
               theme: 'system',
               collectionViews: {},

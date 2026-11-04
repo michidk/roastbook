@@ -10,7 +10,7 @@ import { Toggle } from '@/components/ui/toggle'
 import {
   type getBrewingMethod,
   updateBrewingMethod,
-} from '@/lib/client/journal/brewing-methods'
+} from '@/journal/brewing-methods'
 import type { DrinkTypeOption } from '@/lib/drink-options'
 import {
   SHOT_PARAMETER_KEYS,

@@ -1,4 +1,4 @@
-import { getDashboardStats, getRecentShots } from '@/lib/client/journal/stats'
+import { getDashboardStats, getRecentShots } from '@/journal/stats'
 
 export async function loadOverviewData() {
   const [stats, recentShots] = await Promise.all([

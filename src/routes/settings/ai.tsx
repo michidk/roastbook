@@ -9,17 +9,14 @@ import {
   getAiRequestStats,
   getProvidedAiRequestStats,
 } from '@/lib/server/ai-request-logs'
-import { loadOfflineSettingsData } from '@/modules/offline/settings-cache'
 
 export const Route = createFileRoute('/settings/ai')({
   loader: async () => {
     if (DEMO_MODE) return null
     const [stats, provider, providedStats] = await Promise.all([
-      loadOfflineSettingsData('ai', () => getAiRequestStats()),
-      loadOfflineSettingsData('ai-provider', () => getAiProviderSettings()),
-      loadOfflineSettingsData('ai-provided-usage', () =>
-        getProvidedAiRequestStats(),
-      ),
+      getAiRequestStats(),
+      getAiProviderSettings(),
+      getProvidedAiRequestStats(),
     ])
     return { stats, provider, providedStats }
   },

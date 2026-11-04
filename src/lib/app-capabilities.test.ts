@@ -48,31 +48,3 @@ describe('application capabilities', () => {
     ).toBe(false)
   })
 })
-
-test('the compiled demo never opens synchronized storage or queues a local write', () => {
-  const result = Bun.spawnSync(
-    [
-      process.execPath,
-      '--define',
-      '__ROASTBOOK_DEMO_MODE__=true',
-      '-e',
-      `
-    const { getOfflineRxDatabase } = await import('./src/modules/rxdb/offline-database')
-    const { runJournalMutation } = await import('./src/modules/offline/mutation')
-    const { loadCached } = await import('./src/modules/offline/cached-read')
-    let calls = 0
-    try { await getOfflineRxDatabase() } catch (error) { console.log(error.message) }
-    try { await runJournalMutation({ online: () => false, send: async () => ++calls, enqueue: async () => String(++calls) }) } catch (error) { console.log(error.message) }
-    await loadCached({ load: async () => ({ name: 'Demo' }), read: async () => { calls++; return undefined }, write: async () => { calls++ } })
-    console.log(calls)
-  `,
-    ],
-    { cwd: process.cwd() },
-  )
-  expect(result.exitCode).toBe(0)
-  expect(result.stderr.toString()).toBe('')
-  expect(result.stdout.toString()).toContain(
-    'Offline support is not available in the demo.',
-  )
-  expect(result.stdout.toString()).toEndWith('1\n')
-})

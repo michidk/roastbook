@@ -1,9 +1,6 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { dirname, normalize, relative, resolve } from 'node:path'
 
-import { checkClientBoundaries } from './client-boundaries'
-import { checkJournalImports } from './journal-boundaries'
-
 const importPattern = /(?:from\s+|import\s*\()(['"])([^'"]+)\1/g
 const failures: string[] = []
 
@@ -26,10 +23,6 @@ const files = (
 
 for (const path of files) {
   const source = await readFile(path, 'utf8')
-  failures.push(
-    ...checkClientBoundaries(path, source),
-    ...checkJournalImports(path, source),
-  )
   for (const match of source.matchAll(importPattern)) {
     const target = match[2]
     if (!target) continue
@@ -38,6 +31,22 @@ for (const path of files) {
       : target.startsWith('.')
         ? relative('.', resolve(dirname(path), target))
         : target
+
+    // Journal code also runs in the browser. Only its platform modules may
+    // reach server implementations, and the browser build replaces them.
+    if (
+      path.startsWith('src/journal/') &&
+      !path.startsWith('src/journal/platform/') &&
+      !path.includes('.test.') &&
+      (resolvedTarget.includes('.server') ||
+        target.startsWith('node:') ||
+        target === '@tanstack/react-start' ||
+        target === '@tanstack/react-start/server-only' ||
+        target === '@/db' ||
+        resolvedTarget.startsWith('src/lib/storage'))
+    ) {
+      failures.push(`${path} must use @/journal/platform instead of ${target}`)
+    }
 
     if (
       path.startsWith('src/lib/') &&

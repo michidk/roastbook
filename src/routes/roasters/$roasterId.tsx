@@ -23,11 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { WebsiteLogo } from '@/components/website-logo'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
-import {
-  deleteRoaster,
-  getRoaster,
-  updateRoaster,
-} from '@/lib/client/journal/roasters'
+import { deleteRoaster, getRoaster, updateRoaster } from '@/journal/roasters'
 import { getRoastLevelLabel } from '@/lib/constants'
 import { parseEditModeSearch } from '@/lib/edit-mode'
 import { getErrorMessage } from '@/lib/error-message'

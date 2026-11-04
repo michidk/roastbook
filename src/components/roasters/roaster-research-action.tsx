@@ -9,7 +9,7 @@ import { useOnlineStatus } from '@/hooks/use-online-status'
 import {
   checkRoasterResearchEnabled,
   researchRoasterInfo,
-} from '@/lib/client/journal/roasters'
+} from '@/lib/client/research'
 import { getErrorMessage } from '@/lib/error-message'
 import type { ExtractedRoasterInfo } from '@/modules/ai/read-models'
 

@@ -28,12 +28,9 @@ import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
 import { useImageUpload } from '@/hooks/use-image-upload'
 import { useOnlineStatus } from '@/hooks/use-online-status'
-import {
-  checkVisionEnabled,
-  createBean,
-  extractBeanInfo,
-} from '@/lib/client/journal/beans'
-import { getRoasters } from '@/lib/client/journal/roasters'
+import { createBean } from '@/journal/beans'
+import { getRoasters } from '@/journal/roasters'
+import { checkVisionEnabled, extractBeanInfo } from '@/lib/client/research'
 import { getErrorMessage } from '@/lib/error-message'
 import type { ImageFile } from '@/lib/image-file'
 import { getExtractedRoasterAction } from '@/lib/roaster-match'

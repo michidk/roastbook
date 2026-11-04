@@ -1,142 +1,126 @@
-# Client journal architecture
+# Journal architecture
 
-The demo, browser product, and installed product PWA use the same local journal
-commands and read models. Installation changes application startup and asset
-caching; it does not select another database or synchronization path.
+Every journal read and write is implemented once, as SQL, in a journal function
+under `src/journal/`. The same function runs in two places:
 
-## Ownership and packages
+- **In the browser**, against the visitor's own PostgreSQL database: PGlite in a
+  shared worker, persisted in IndexedDB. Every journal page reads and writes it,
+  online or offline.
+- **On the server**, against PostgreSQL (self-hosted) or D1 (hosted), to replay
+  browser writes, for MCP, and for server-side features.
 
-- `packages/journal-domain` defines portable row schemas, decimal normalization,
-  command/state formats, foreign keys, unique constraints, and a transaction
-  workspace. The model generator reads Drizzle metadata at development time.
-- `packages/journal-client` persists the journal, outbox, and image bytes in
-  RxDB using Dexie and IndexedDB. TanStack DB projects committed revisions into
-  reactive queries.
-- `packages/journal-demo` supplies fictional bootstrap data, isolated storage,
-  reset controls, and the few unavailable-service modules that are not server
-  functions. `scripts/vite-demo-services.ts` generates the rest: in the demo
-  build, every unsuffixed `src/lib/server` or `src/lib/mcp` module that defines
-  `createServerFn` becomes exports that fail with the demo message.
-- `src/modules/journal` contains shared input validation, journal commands,
-  relationships, image metadata, and read calculations.
-- `src/lib/client/journal` connects existing typed route contracts to local
-  operations in the browser and server functions during server execution.
-- `src/lib/edition-journal.ts` supplies the product's authenticated transport.
-  The demo build selects its own entry point through Vite aliases.
-- `src/lib/server/journal-snapshot.server.ts` authorizes and applies synchronized
-  commands through Drizzle and the existing PostgreSQL/D1 journal boundary.
-  `journal-mutation-plan.server.ts` constructs its atomic SQL batch, including
-  relationship ordering, the revision assertion, receipt, queued media cleanup,
-  and the final revision.
+There is no second query implementation, no server-side journal cache, and no
+browser-only data model.
 
-Shared packages cannot import application or server implementations. Product
-output cannot include demo modules or fixtures. Browser output cannot include
-SQL engines, database drivers, secrets, or server implementations. Import checks
-and emitted-module checks enforce these rules. Generated demo services and the
-remaining demo aliases never compile server implementations into the browser.
+## Journal functions
 
-## Read and write behavior
+```ts
+export const getBean = journalRead('beans/getBean')
+  .validator(positiveIdSchema)
+  .handler(async ({ data: id }) => db.query.beans.findFirst(/* … */))
 
-Client adapters declare `journalRead` or `journalWrite` with an operation name
-checked against the shared registry. Suggestions use the same read registry.
-JSON storage conversion and date restoration live in
-`src/modules/journal/serialization.ts`. The server transport remains responsible
-for authorization and delivery; it does not decide domain behavior.
+export const createBean = journalWrite('beans/createBean')
+  .validator(beanCreateSchema)
+  .handler(async ({ data }) => {/* … */})
+```
 
-After a complete first download, local data is the source for lists, details,
-relations, pagination, search, counts, overview, statistics, suggestions, settings,
-and ordinary journal edits. A failed initial download is an error, not an empty
-journal. Initial product download requires a connection and an authorized account.
-The demo downloads its public, build-generated fixture JSON instead.
+- The name is `<module>/<export>`. `src/journal/function.test.ts` checks every
+  name and that `src/journal/registry.ts` loads every module.
+- Callers use `getBean({ data })`, like a TanStack server function.
+- Inputs are validated where the function runs, including on server replay.
+- Journal code imports the database, storage, image processing, configuration
+  and side effects only from `src/journal/platform/*`. The import-boundary
+  check rejects server-only imports anywhere else in `src/journal/`.
+- Integrations (AI research, accounts, geocoding, email, shottimer) stay
+  ordinary TanStack server functions under `src/lib/server/`. They need a
+  connection and are unavailable offline and in the demo.
 
-A command validates input and relationships in a private workspace. RxDB commits
-its resulting tables, new image bytes, identifier reservations, and outbox entry
-in one document. A rejected command changes none of those values. After the
-commit, new image bytes move to a separate `media` collection; if that fails,
-they stay in the journal document and move after a later command or reopen.
-Deleting an image row removes its stored variants. There is no cross-collection
-optimistic transaction that could persist only half a command.
-Queries wait for the committed revision before returning results. Subscribers
-invalidate active routes when a committed revision changes, including changes
-received from another tab.
+## Platform modules
 
-This design deliberately stores the journal tables in one aggregate document.
-TanStack DB currently reacts to aggregate revisions and executes shared read
-calculations; it does not incrementally join normalized per-entity collections.
-Mutations clone and validate every journal row, but not stored image bytes. This
-costs memory and local write time proportional to the number of records. Do not
-describe this as a large-journal performance optimization. TanStack DB is pinned
-to `1.0.0-rc.1.2`.
+Each module has a server version and a `*.browser.ts` version:
 
-## Product synchronization
+- `database`: the PostgreSQL/D1 request scope with RLS or owner predicates; in
+  the browser, a local PGlite transaction as the owner, with the same role and
+  RLS.
+- `storage`: disk, S3 or R2; in the browser, picture bytes in the local
+  database, in the same transaction as their record.
+- `images`: sharp; in the browser, decoding and canvas with the same sizes and
+  limits.
+- `config`: the environment; in the browser, server limits kept for offline use,
+  or demo defaults.
+- `effects`: website icon fetches; nothing in the browser, since the server
+  fetches during replay.
+- `runtime`: runs in the request's journal scope; in the browser, runs in the
+  local journal and records writes in the outbox.
 
-Each local command has a UUID and saved identifier allocations. The server
-reserves 256 numeric identifiers per table, replenishing pools below 128 on a
-successful refresh. Offline creates stop with a recoverable message when a table's
-pool runs out. Reconnect to reserve more; existing changes remain saved.
+`scripts/vite-journal-platform.ts` selects the browser modules for the client
+build. The demo build also selects `packages/journal-demo/src/edition.ts`.
+Page code builds SQL with Drizzle and sends it to the worker; only the worker
+loads the database engine.
 
-Every write first creates the owner's settings and revision rows if needed and
-drains media cleanup from earlier committed requests. Journal reads never write.
-The server then loads one consistent owner-scoped snapshot, replays the same
-validated command, and commits its SQL diff, revision assertion, idempotency
-receipt, and final revision in one protected batch. The batch ends at exactly
-the previous revision plus one, so the server returns only that revision unless
-another device or integration had changed the journal. Then it returns the
-resulting journal and the client replays its later commands on top. PostgreSQL
-retains transaction-local RLS identity. D1 retains explicit ownership predicates
-and its atomic mutation-batch contract. Database triggers advance journal
-revisions for writes from existing server integrations. A lost response can
-replay the same command without creating a second record.
+## Local journal
 
-Synchronization sends saved commands in order before refreshing. A refresh sends
-the local revision and downloads the journal only when the server revision
-differs. A remote refresh cannot overwrite concurrent local edits. Changes from
-another device do not block a command that still applies to the latest journal;
-the server replays it there. A command that no longer applies, such as an edit to
-a record deleted elsewhere or a brew edited from an older version, is a conflict.
-Explicit server rejections remain visible as conflicts, authentication
-requirements, or failures. Review changes
-allows downloading the local journal, retrying, explicitly applying conflicting
-edits to the latest revision, or replacing pending changes with the server copy.
-Client validation never replaces server authorization.
+`src/journal/local/` holds the browser runtime:
 
-Existing product offline caches and pending operations remain in their original
-account partition. New journal edits and synchronization wait until earlier
-nonterminal operations are drained or resolved through Pending changes. Earlier
-work is never silently discarded or sent through both mutation paths. The older
-queue is retained for recovery only; ordinary forms no longer insert into it.
+- `worker.ts` opens `idb://roastbook-journal-<owner>` (or `roastbook-demo`),
+  applies the server's migrations in order (`migrate.ts`), and creates the
+  `roastbook_local` bookkeeping schema: applied migrations, state, outbox,
+  reserved identifiers and picture bytes. It compiles the engine from bytes, so
+  servers need not send `application/wasm`.
+- `client.ts` shares one database between tabs through PGlite's leader worker
+  (Web Locks; HTTPS or localhost only). It runs one journal function at a time
+  per tab, in a transaction with `roastbook.user_id` set and the
+  `roastbook_journal` role, exactly like the server.
+- Reads skip the IndexedDB flush. A write returns only after IndexedDB has the
+  change and its outbox entry.
+- Each owner has a separate database. Signing out removes it after every change
+  has synced.
 
-## Images and storage failures
+## Synchronization
 
-Image intake shares the existing MIME, size, and dimension checks. Browser
-compression creates WebP versions bounded to 1600, 640, and 128 pixels. The journal
-stores metadata with its records, keeps bytes in the media collection, and
-displays local blob URLs. Product sync
-validates image bytes again and writes owner-namespaced media through the normal
-storage provider. Demo media has no transport.
+The product edition (`src/journal/local/edition.ts`, `sync.ts`) syncs with
+three endpoints in `src/lib/server/journal-sync.ts`:
 
-Product image deletion queues cleanup with its database mutation. The next
-journal write removes the stored variants, after the deleting transaction has
-committed.
-Rolling back a deletion leaves its picture bytes intact.
+1. **Write.** A local write records, in the same transaction, the function name,
+   its encoded input (`src/journal/codec.ts`: dates, files and form data
+   survive), a UUID key, and the values it generated: identifiers from the pool
+   the server reserved for this device, and picture storage paths.
+2. **Push.** Pending writes replay in order on the server with the recorded
+   values. A receipt makes each key apply once. Recorded paths must have the
+   expected shape for their record and must not exist yet. The reply says
+   whether anything else changed the journal since the browser's revision.
+3. **Pull.** A revision check; when another device or integration changed the
+   journal, the browser replaces the owner's rows and runs its pending writes
+   again on top, with their recorded values.
+4. **Identifiers.** The server reserves 256 identifiers per table and device.
+   Records that other records reference must take identifiers from
+   `allocateJournalIds`; pure link rows may use database defaults.
+5. **Conflicts.** A replayed write the server rejects, or one that no longer
+   applies after a pull, is kept as a conflict. The sync banner lists it with
+   Try again and Discard. Later writes continue.
 
-The saved format has an explicit version. An unsupported or invalid saved record
-fails without reseeding or overwriting it. Quota failures leave the prior commit
-intact. RxDB handles cross-tab document revisions; product delivery also uses Web
-Locks when available and server receipts/revision checks in all cases. Browser
-storage remains per-device, unencrypted by Roastbook, and subject to browser
-clearing or eviction. Pending changes are not backed up until confirmed by the
-server.
+Triggers advance the owner's revision for every journal table on PostgreSQL and
+D1, so changes from MCP and integrations reach browsers too. On PostgreSQL the
+request transaction and per-owner lock make replay atomic and its revision
+check exact.
+
+## Earlier offline data
+
+Versions before this design queued brew and recipe changes in RxDB. On first
+open, `legacy-offline.ts` replays those pending operations as journal writes
+once, then deletes the old stores. If any operation cannot move, the stores
+stay and Settings → Offline reports how many.
 
 ## Development and verification
 
-Add ordinary operations to the shared command/read definitions and their client
-facade. Reuse existing validation, image helpers, and UI components. Integrations,
-authentication, and account administration remain separate server operations.
+- `bun run test:browser-runtime` runs `*.browser.test.ts` with the browser
+  platform against an in-process PGlite: local writes, outbox entries, identifier
+  pools, rollback and replay after a refresh.
+- `src/lib/server/journal-sync.integration.test.ts` replays recorded writes on
+  PostgreSQL: identifiers, receipts, revisions, owner isolation and picture paths.
+- `bun run test:cloudflare` replays recorded writes on D1.
+- `bun run check:client-assets` allows the database engine only in the journal
+  worker, and secrets nowhere.
 
-Run `bun run verify`, `bun run build:demo`, and the hosted checks described in
-[Development](development.md). Use isolated PostgreSQL and S3 services for
-`bun run test:integration`. Tests cover persistence, transactional relationships,
-reactive results, quota rollback, replay, conflicts, owner isolation, and SQL read
-parity. See [Offline journaling](offline.md) and [Browser-local demo](demo-mode.md)
-for user-facing behavior and limitations.
+See [Offline journaling](offline.md) for user-facing behavior and
+[Browser-local demo](demo-mode.md) for the demo.

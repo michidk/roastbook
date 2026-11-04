@@ -6,7 +6,9 @@ import { z } from 'zod'
 import {
   BUILD_ID_PLACEHOLDER,
   createServiceWorkerBuildId,
+  ENGINE_ASSET,
   MAX_PRECACHE_ASSET_BYTES,
+  MAX_PRECACHE_ENGINE_BYTES,
   PRECACHED_FILES,
   readClientAssetNames,
   readServiceWorkerTemplate,
@@ -202,9 +204,12 @@ for (const directory of outputDirs) {
   for (const asset of await readClientAssetNames(directory)) {
     const assetPath = join(directory, 'assets', asset)
     const size = (await stat(assetPath)).size
+    const limit = ENGINE_ASSET.test(asset)
+      ? MAX_PRECACHE_ENGINE_BYTES
+      : MAX_PRECACHE_ASSET_BYTES
     record(
-      size <= MAX_PRECACHE_ASSET_BYTES,
-      `${assetPath} is ${size} bytes, above the offline precache limit of ${MAX_PRECACHE_ASSET_BYTES}`,
+      size <= limit,
+      `${assetPath} is ${size} bytes, above the offline precache limit of ${limit}`,
     )
   }
 

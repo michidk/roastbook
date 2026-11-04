@@ -16,8 +16,8 @@ import { Button } from '@/components/ui/button'
 import {
   deleteBrewingMethod,
   getBrewingMethod,
-} from '@/lib/client/journal/brewing-methods'
-import { getDrinkConfiguration } from '@/lib/client/journal/drink-options'
+} from '@/journal/brewing-methods'
+import { getDrinkConfiguration } from '@/journal/drink-options'
 import { getErrorMessage } from '@/lib/error-message'
 import { parseIdParam } from '@/lib/route-params'
 

@@ -14,8 +14,8 @@ import {
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
-import type { getGearById } from '@/lib/client/journal/gear'
-import type { getGearShotPage } from '@/lib/client/journal/shots'
+import type { getGearById } from '@/journal/gear'
+import type { getGearShotPage } from '@/journal/shots'
 import {
   BASKET_KIND_OPTIONS,
   BREWER_FLOW_CONTROL_OPTIONS,

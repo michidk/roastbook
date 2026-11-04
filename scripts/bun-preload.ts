@@ -9,5 +9,18 @@ plugin({
       contents: aiPricingModule(),
       loader: 'js',
     }))
+    // Browser-runtime tests use the browser platform, like the client build.
+    // Bun skips onResolve for path aliases, so the server modules re-export.
+    if (process.env.JOURNAL_PLATFORM === 'browser')
+      build.onLoad(
+        {
+          filter:
+            /\/src\/journal\/platform\/(config|database|effects|images|runtime|storage)\.ts$/,
+        },
+        (args) => ({
+          contents: `export * from ${JSON.stringify(args.path.replace(/\.ts$/, '.browser.ts'))}`,
+          loader: 'ts',
+        }),
+      )
   },
 })

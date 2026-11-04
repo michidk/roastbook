@@ -17,6 +17,7 @@ provides private accounts; Hodor remains optional for a shared journal.
 - Visual and interaction rules: `DESIGN.md`
 - OpenPencil design files, capture, and editor: `design/README.md`
 - Database schemas: `src/db/schema.ts` (PostgreSQL), `src/db/d1/schema.ts` (D1)
+- Journal functions, local database and sync: `docs/client-data.md`
 - Helm defaults: `charts/values.yaml`
 
 Do not duplicate configuration tables or deployment examples here. Update the
@@ -37,9 +38,16 @@ work as shipped.
 - Reusable client-side feature contracts and pure feature logic live in
   `src/modules/<feature>/` after they have at least two consumers. Modules may
   import shared `src/lib/` primitives, but never routes or server modules.
-- Server-side domain operations live in `src/lib/server/`. There, files with a
-  `.server.ts` suffix are internal server modules; unsuffixed files export
-  `createServerFn` boundaries.
+- Journal reads and writes are SQL journal functions in `src/journal/`
+  (`journalRead`/`journalWrite`, named `<module>/<export>`). The same code runs
+  in the browser on PGlite and on the server for sync replay and MCP; never
+  write a second implementation of a journal query. Journal code reaches the
+  database, storage, images, configuration and side effects only through
+  `src/journal/platform/*`. Register new modules in `src/journal/registry.ts`;
+  records other records reference take identifiers from `allocateJournalIds`.
+- Integrations and other server-only operations live in `src/lib/server/`.
+  There, files with a `.server.ts` suffix are internal server modules;
+  unsuffixed files export `createServerFn` boundaries.
 - `src/lib/server/ai-runtime.server.ts`, database access, storage providers, and
   secrets are
   server-only. Never import them into browser code or expose non-`VITE_`

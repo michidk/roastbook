@@ -1,53 +1,31 @@
-import {
-  journalTableMetadata,
-  journalTableNames,
-} from '@roastbook/journal-domain/model'
-import { journalCommandSchema } from '@roastbook/journal-domain/state'
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import { allocateJournalIds } from '@/db/journal-mutations.server'
-import * as tables from '@/db/schema'
 import {
-  applyJournalCommand,
-  journalRevision,
-  loadJournalSnapshot,
-  prepareJournalWrite,
-} from './journal-snapshot.server'
+  journalWriteName,
+  loadJournalRows,
+  replayJournalWrite,
+  reserveJournalIdentifiers,
+} from './journal-sync.server'
 
-/** Returns null when the journal is still at revision `since`. */
-export const getJournalSnapshot = createServerFn({ method: 'GET' })
+/** The owner's journal rows, unless the browser already has this revision. */
+export const pullJournal = createServerFn({ method: 'GET' })
   .validator(z.object({ since: z.number().int().nonnegative().nullable() }))
-  .handler(async ({ data }) =>
-    data.since !== null && (await journalRevision()) === data.since
-      ? null
-      : loadJournalSnapshot(),
-  )
+  .handler(({ data }) => loadJournalRows(data.since))
 
-/** Returns the journal only when another device changed it since `revision`. */
-export const sendJournalCommand = createServerFn({ method: 'POST' })
+/** Replays one write a browser recorded, once. */
+export const pushJournalWrite = createServerFn({ method: 'POST' })
   .validator(
     z.object({
-      command: journalCommandSchema,
+      name: z.string().regex(journalWriteName),
+      input: z.unknown(),
+      recorded: z.record(z.string(), z.array(z.unknown()).max(500)),
+      key: z.uuid(),
       revision: z.number().int().nonnegative(),
     }),
   )
-  .handler(async ({ data }) => {
-    const state = await applyJournalCommand(data.command, data.revision)
-    // A write moves the revision by exactly one; anything else came from elsewhere.
-    return {
-      serverRevision: state.serverRevision,
-      state: state.serverRevision === data.revision + 1 ? null : state,
-    }
-  })
+  .handler(({ data }) => replayJournalWrite(data))
 
-export const reserveJournalIdentifiers = createServerFn({ method: 'POST' })
-  .validator(z.array(z.enum(journalTableNames)).max(40))
-  .handler(async ({ data }) => {
-    await prepareJournalWrite()
-    const result: Record<string, number[]> = {}
-    for (const name of new Set(data)) {
-      if (journalTableMetadata[name].primaryKey === 'id' && name !== 'settings')
-        result[name] = await allocateJournalIds(tables[name], 256)
-    }
-    return result
-  })
+/** Identifiers this device may assign to records it creates offline. */
+export const reserveJournalIds = createServerFn({ method: 'POST' })
+  .validator(z.array(z.string()).max(60))
+  .handler(({ data }) => reserveJournalIdentifiers(data))

@@ -46,7 +46,7 @@ import {
   deleteCoffeeShop,
   type getCoffeeShop,
   updateCoffeeShop,
-} from '@/lib/client/journal/coffee-shops'
+} from '@/journal/coffee-shops'
 import { getErrorMessage } from '@/lib/error-message'
 import { toNullableRating, toRatingInput } from '@/lib/rating'
 import { cn } from '@/lib/utils'

@@ -2,16 +2,10 @@ import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 
-import {
-  checkResearchEnabled,
-  checkVisionEnabled,
-  getBean,
-} from '@/lib/client/journal/beans'
-import { getRoasters } from '@/lib/client/journal/roasters'
-import {
-  getBeanShotAnalytics,
-  getBeanShotPage,
-} from '@/lib/client/journal/shots'
+import { getBean } from '@/journal/beans'
+import { getRoasters } from '@/journal/roasters'
+import { getBeanShotAnalytics, getBeanShotPage } from '@/journal/shots'
+import { checkResearchEnabled, checkVisionEnabled } from '@/lib/client/research'
 import { parseEditModeSearch } from '@/lib/edit-mode'
 import { parseIdParam } from '@/lib/route-params'
 import {

@@ -1,19 +1,20 @@
-import { owned } from '@/db/journal-scope.server'
 import '@tanstack/react-start/server-only'
 
 import { McpServer } from '@modelcontextprotocol/server'
-import { asc, desc, eq } from 'drizzle-orm'
 import { z } from 'zod'
-import { db } from '@/db'
-import { beans, brewingMethods, gear, recipes, roasters } from '@/db/schema'
-import { MCP_TOOL_CATALOG, type McpToolName } from '@/lib/mcp/catalog'
-import { shotListSchema } from '@/lib/server/shot-list-contract.server'
+import { getBean, getBeans } from '@/journal/beans'
+import { getBrewingMethods } from '@/journal/brewing-methods'
+import { shotListSchema } from '@/journal/domain/shot-list-contract'
 import {
   createShotOperation,
   getShotOperation,
   getShotPageOperation,
-} from '@/lib/server/shots-operations.server'
-import { loadDetailedStats } from '@/lib/server/stats-detail.server'
+} from '@/journal/domain/shots-operations'
+import { loadDetailedStats } from '@/journal/domain/stats-detail'
+import { getGear } from '@/journal/gear'
+import { getRecipe, getRecipes } from '@/journal/recipes'
+import { getRoasters } from '@/journal/roasters'
+import { MCP_TOOL_CATALOG, type McpToolName } from '@/lib/mcp/catalog'
 import { positiveIdSchema, shotCreateSchema } from '@/lib/server-validation'
 import { parseStatsFilter } from '@/lib/stats-filters'
 import { assertValidUpdate, getShotUpdateErrors } from '@/lib/update-validation'
@@ -137,59 +138,24 @@ export function createRoastbookMcpServer(
     (loaders.listBrews ?? getShotPageOperation)(args),
   )
   register('get_brew', idInput, ({ id }) => getShotOperation(id))
-  register('list_beans', pageInput, ({ offset, limit }) =>
-    db.query.beans.findMany({
-      where: owned(beans),
-      orderBy: [desc(beans.createdAt)],
-      limit,
-      offset,
-      with: { roasterRef: { columns: { id: true, name: true } } },
-    }),
+  // The same journal functions the app uses; MCP pages through their results.
+  const page = <T>(
+    rows: readonly T[],
+    { offset, limit }: z.infer<typeof pageInput>,
+  ) => rows.slice(offset, offset + limit)
+  register('list_beans', pageInput, async (args) =>
+    page(await getBeans(), args),
   )
-  register('get_bean', idInput, ({ id }) =>
-    db.query.beans.findFirst({
-      where: owned(beans, eq(beans.id, id)),
-      with: {
-        roasterRef: { columns: { id: true, name: true } },
-        purchases: true,
-      },
-    }),
+  register('get_bean', idInput, ({ id }) => getBean({ data: id }))
+  register('list_recipes', pageInput, async (args) =>
+    page(await getRecipes(), args),
   )
-  register('list_recipes', pageInput, ({ offset, limit }) =>
-    db.query.recipes.findMany({
-      where: owned(recipes),
-      orderBy: [desc(recipes.updatedAt)],
-      limit,
-      offset,
-    }),
+  register('get_recipe', idInput, ({ id }) => getRecipe({ data: id }))
+  register('list_gear', pageInput, async (args) => page(await getGear(), args))
+  register('list_roasters', pageInput, async (args) =>
+    page(await getRoasters(), args),
   )
-  register('get_recipe', idInput, ({ id }) =>
-    db.query.recipes.findFirst({ where: owned(recipes, eq(recipes.id, id)) }),
-  )
-  register('list_gear', pageInput, ({ offset, limit }) =>
-    db.query.gear.findMany({
-      where: owned(gear),
-      orderBy: [desc(gear.createdAt)],
-      limit,
-      offset,
-    }),
-  )
-  register('list_roasters', pageInput, ({ offset, limit }) =>
-    db.query.roasters.findMany({
-      where: owned(roasters),
-      orderBy: [asc(roasters.name)],
-      limit,
-      offset,
-    }),
-  )
-  register('list_brewing_methods', emptyInput, () =>
-    db.query.brewingMethods.findMany({
-      where: owned(brewingMethods),
-      columns: { id: true, name: true, description: true },
-      orderBy: [asc(brewingMethods.id)],
-      with: { drinkTypeLinks: true },
-    }),
-  )
+  register('list_brewing_methods', emptyInput, () => getBrewingMethods())
   register('get_stats', statsInput, (args) =>
     loadDetailedStats(parseStatsFilter(args)),
   )

@@ -1,4 +1,3 @@
-import '@tanstack/react-start/server-only'
 import { relations, sql } from 'drizzle-orm'
 import {
   bigint,

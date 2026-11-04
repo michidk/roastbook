@@ -23,13 +23,7 @@ export function RecipeDuplicateButton({
     if (isDuplicating) return
     setIsDuplicating(true)
     try {
-      const result = await copyRecipe(recipe)
-      if (result.kind === 'queued') {
-        toast.success('Recipe copy saved on this device')
-        await navigate({ to: '/brews/pending' })
-        return
-      }
-      const duplicate = result.value
+      const duplicate = await copyRecipe(recipe)
       await router.invalidate()
       toast.success('Recipe duplicated')
       await navigate({

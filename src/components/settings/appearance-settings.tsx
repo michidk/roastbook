@@ -11,7 +11,7 @@ import {
   updateBackgroundTextureEnabled,
   updateDarkTheme,
   updateLightTheme,
-} from '@/lib/client/journal/settings'
+} from '@/journal/settings'
 import { usePreferencesStore } from '@/lib/preferences-store'
 import { DARK_THEMES, LIGHT_THEMES } from '@/lib/theme'
 

@@ -7,6 +7,9 @@ export const SOURCE_SERVICE_WORKER = 'public/sw.js'
 export const BUILD_ID_PLACEHOLDER = '__BUILD_ID__'
 export const ASSET_LIST_PLACEHOLDER = '__PRECACHE_ASSETS__'
 export const MAX_PRECACHE_ASSET_BYTES = 2 * 1024 * 1024
+// The journal database engine must be available offline; it is larger.
+export const MAX_PRECACHE_ENGINE_BYTES = 16 * 1024 * 1024
+export const ENGINE_ASSET = /^(?:pglite|initdb)-[\w-]+\.(?:wasm|data)$/
 export const PRECACHED_FILES = [
   'offline.html',
   'manifest.json',

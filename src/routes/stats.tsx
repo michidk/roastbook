@@ -18,7 +18,7 @@ import { StarRating } from '@/components/ui/star-rating'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
-import { getDetailedStats } from '@/lib/client/journal/stats'
+import { getDetailedStats } from '@/journal/stats'
 import { searchValidator } from '@/lib/search-params'
 import { parseStatsFilter, percentChange } from '@/lib/stats-filters'
 

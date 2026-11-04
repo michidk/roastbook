@@ -4,10 +4,10 @@ import { DrinkSelectionFields } from '@/components/drinks/drink-selection-fields
 import { InputField, SelectField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
 import { ShotParameterFields } from '@/components/shots/shot-parameter-fields'
-import type { getActiveBeans } from '@/lib/client/journal/beans'
-import type { getBrewingMethods } from '@/lib/client/journal/brewing-methods'
-import type { getDrinkConfiguration } from '@/lib/client/journal/drink-options'
-import type { getGear } from '@/lib/client/journal/gear'
+import type { getActiveBeans } from '@/journal/beans'
+import type { getBrewingMethods } from '@/journal/brewing-methods'
+import type { getDrinkConfiguration } from '@/journal/drink-options'
+import type { getGear } from '@/journal/gear'
 import { drinkConfigurationForBrewingMethod } from '@/lib/drink-options'
 import {
   availableGearForShot,

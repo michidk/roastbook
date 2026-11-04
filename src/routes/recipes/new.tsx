@@ -12,12 +12,12 @@ import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
 import { Button } from '@/components/ui/button'
 
-import { getActiveBeans } from '@/lib/client/journal/beans'
-import { getBrewingMethods } from '@/lib/client/journal/brewing-methods'
-import { getDrinkConfiguration } from '@/lib/client/journal/drink-options'
-import { getGear } from '@/lib/client/journal/gear'
-import { getGearSets } from '@/lib/client/journal/gear-sets'
-import { getDrinkTypeSuggestions } from '@/lib/client/journal/suggestions'
+import { getActiveBeans } from '@/journal/beans'
+import { getBrewingMethods } from '@/journal/brewing-methods'
+import { getDrinkConfiguration } from '@/journal/drink-options'
+import { getGear } from '@/journal/gear'
+import { getGearSets } from '@/journal/gear-sets'
+import { getDrinkTypeSuggestions } from '@/journal/suggestions'
 
 type RecipeNewData = Awaited<ReturnType<typeof loadRecipeNewData>>
 type CachedRecipeReferenceData = RecipeNewData & {}
@@ -79,9 +79,6 @@ function NewRecipePage() {
             to: '/recipes/$recipeId',
             params: { recipeId: String(recipe.id) },
           })
-        }}
-        onQueued={async () => {
-          await navigate({ to: '/brews/pending' })
         }}
         onCancel={() => navigate({ to: '/recipes' })}
       />

@@ -1,5 +1,5 @@
-import { getBrewingMethods } from '@/lib/client/journal/brewing-methods'
-import { getShotGroups, getShotPage } from '@/lib/client/journal/shots'
+import { getBrewingMethods } from '@/journal/brewing-methods'
+import { getShotGroups, getShotPage } from '@/journal/shots'
 import type { BrewsSearch } from '@/routes/brews/-lib/brews-search'
 
 export async function loadBrewsPage(deps: BrewsSearch) {

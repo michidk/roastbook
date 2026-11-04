@@ -15,12 +15,12 @@ import {
   useCurrentLocalDateTimeLimit,
   useLocalDateTimeInput,
 } from '@/hooks/use-local-date-time-input'
+import type { getActiveBeanPurchases } from '@/journal/beans'
+import type { getBrewingMethods } from '@/journal/brewing-methods'
+import type { getGear } from '@/journal/gear'
+import type { getShot } from '@/journal/shots'
+import type { getTasteTags } from '@/journal/taste-tags'
 import { editBrew } from '@/lib/client/journal'
-import type { getActiveBeanPurchases } from '@/lib/client/journal/beans'
-import type { getBrewingMethods } from '@/lib/client/journal/brewing-methods'
-import type { getGear } from '@/lib/client/journal/gear'
-import type { getShot } from '@/lib/client/journal/shots'
-import type { getTasteTags } from '@/lib/client/journal/taste-tags'
 import { localDateTimeInputToDate } from '@/lib/date-input'
 import {
   type DrinkConfiguration,
@@ -53,7 +53,6 @@ type ShotEditFormProps = {
   readonly editData: ShotEditData
   readonly onCancel: () => void
   readonly onSaved: () => Promise<void>
-  readonly onQueued?: () => Promise<void> | void
 }
 
 export function ShotEditForm({
@@ -61,7 +60,6 @@ export function ShotEditForm({
   editData,
   onCancel,
   onSaved,
-  onQueued,
 }: ShotEditFormProps) {
   const [values, setValues] = useState<ShotFormValues>(() => ({
     ...shotFormValuesFrom(shot),
@@ -114,17 +112,8 @@ export function ShotEditForm({
 
     setIsSaving(true)
     try {
-      const result = await editBrew(data, {
-        label: shot.bean?.name ?? 'Brew',
-        detail: shot.brewingMethod.name,
-      })
-      if (result.kind === 'queued') {
-        toast.success('Changes saved on this device')
-        if (onQueued) await onQueued()
-        else await onSaved()
-      } else {
-        await onSaved()
-      }
+      await editBrew(data)
+      await onSaved()
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Failed to update brew',

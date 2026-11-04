@@ -4,7 +4,7 @@ import type { CloudflareRuntimeBindings } from '@/cloudflare/context.server'
 import { db } from '@/db'
 import { owned } from '@/db/journal-scope.server'
 import { settings } from '@/db/schema'
-import { loadDetailedStats } from '@/lib/server/stats-detail.server'
+import { loadDetailedStats } from '@/journal/domain/stats-detail'
 import { parseStatsFilter } from '@/lib/stats-filters'
 import { fixture } from './verify-journal'
 

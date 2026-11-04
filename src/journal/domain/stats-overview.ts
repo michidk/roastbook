@@ -1,0 +1,84 @@
+import { count, eq } from 'drizzle-orm'
+import {
+  beanPurchases,
+  cafeVisits,
+  coffeeShops,
+  settings,
+  shots,
+} from '@/db/schema'
+import { localDateRangeCondition } from '@/journal/domain/stats-sql'
+import {
+  db,
+  owned,
+  toDisplayableDatabaseError,
+} from '@/journal/platform/database'
+import { dateKeyInTimeZone } from '@/lib/stats-filters'
+
+export async function loadDashboardStats() {
+  try {
+    const now = new Date()
+    const installationSettings = await db.query.settings.findFirst({
+      columns: { timeZone: true },
+      where: owned(settings, eq(settings.id, 1)),
+    })
+    const timeZone = installationSettings?.timeZone ?? 'UTC'
+    const today = dateKeyInTimeZone(now, timeZone)
+    const startOfMonth = `${today.slice(0, 7)}-01`
+    const [
+      [shotsCount],
+      [activeBeansCount],
+      [shotsThisMonthCount],
+      [visitsCount],
+      [coffeeShopsCount],
+    ] = await Promise.all([
+      db.select({ count: count() }).from(shots).where(owned(shots)),
+      db
+        .select({ count: count() })
+        .from(beanPurchases)
+        .where(owned(beanPurchases, eq(beanPurchases.isArchived, false))),
+      db
+        .select({ count: count() })
+        .from(shots)
+        .where(
+          owned(
+            shots,
+            localDateRangeCondition(
+              shots.brewedAt,
+              timeZone,
+              startOfMonth,
+              today,
+            ),
+          ),
+        ),
+      db.select({ count: count() }).from(cafeVisits).where(owned(cafeVisits)),
+      db.select({ count: count() }).from(coffeeShops).where(owned(coffeeShops)),
+    ])
+
+    return {
+      totalShots: shotsCount?.count ?? 0,
+      activeBeans: activeBeansCount?.count ?? 0,
+      shotsThisMonth: shotsThisMonthCount?.count ?? 0,
+      cafeVisits: visitsCount?.count ?? 0,
+      coffeeShops: coffeeShopsCount?.count ?? 0,
+    }
+  } catch (error) {
+    throw await toDisplayableDatabaseError(error)
+  }
+}
+
+export async function loadRecentShots(limit: number) {
+  try {
+    return await db.query.shots.findMany({
+      where: owned(shots),
+      limit,
+      orderBy: (shots, { desc }) => [desc(shots.brewedAt)],
+      with: {
+        bean: { with: { images: true } },
+        brewingMethod: true,
+        tasteTags: { with: { tasteTag: true } },
+      },
+    })
+  } catch (error) {
+    throw await toDisplayableDatabaseError(error)
+  }
+}

@@ -18,9 +18,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 import { useFormSubmission } from '@/hooks/use-form-submission'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import type { getGear } from '@/journal/gear'
+import type { getRecipe } from '@/journal/recipes'
 import { editRecipe, removeJournalEntity } from '@/lib/client/journal'
-import type { getGear } from '@/lib/client/journal/gear'
-import type { getRecipe } from '@/lib/client/journal/recipes'
 import { getErrorMessage } from '@/lib/error-message'
 import { recipePayload } from '@/lib/new-shot-payload'
 import { getShotUpdateErrors } from '@/lib/update-validation'
@@ -88,15 +88,7 @@ export function RecipeDetailPage() {
           clientOperationId: updateOperationId,
         }
 
-        const result = await editRecipe(updateData, {
-          label: name.trim(),
-          detail: 'Recipe',
-        })
-        if (result.kind === 'queued') {
-          toast.success('Recipe changes saved on this device')
-          await navigate({ to: '/brews/pending' })
-          return
-        }
+        await editRecipe(updateData)
         await navigate({
           search: (current) => ({ ...current, edit: undefined }),
           replace: true,
@@ -187,20 +179,14 @@ export function RecipeDetailPage() {
                 description="This template will be removed permanently. Existing brews keep their copied values and are not affected."
                 onConfirm={async () => {
                   try {
-                    const result = await removeJournalEntity({
+                    await removeJournalEntity({
                       entityType: 'recipe',
                       id: recipe.id,
                       revision: recipe.revision,
-                      details: { label: recipe.name, detail: 'Recipe' },
                     })
-                    if (result.kind === 'queued') {
-                      toast.success('Recipe deletion saved on this device')
-                      await navigate({ to: '/brews/pending' })
-                    } else {
-                      await router.invalidate()
-                      toast.success('Recipe deleted')
-                      await navigate({ to: '/recipes' })
-                    }
+                    await router.invalidate()
+                    toast.success('Recipe deleted')
+                    await navigate({ to: '/recipes' })
                   } catch (error) {
                     toast.error(
                       getErrorMessage(error, 'Could not delete recipe'),

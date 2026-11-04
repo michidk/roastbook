@@ -21,7 +21,7 @@ import {
   CardTitle,
   interactiveCardLinkClassName,
 } from '@/components/ui/card'
-import { getGearSetPage } from '@/lib/client/journal/gear-sets'
+import { getGearSetPage } from '@/journal/gear-sets'
 import { nextSortDirection } from '@/lib/collection-sort'
 import {
   searchEnum,

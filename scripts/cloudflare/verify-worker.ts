@@ -17,7 +17,7 @@ const cases = [
   },
   ...verifyJournalCases,
   {
-    name: 'shared local journal commands, receipts, conflicts and owner isolation',
+    name: 'browser writes replay on D1 once, with recorded identifiers',
     run: verifyJournalSync,
   },
   {
