@@ -124,8 +124,10 @@ without Hodor:
 docker compose -f docker-compose.auth.yaml up --build
 ```
 
-Set `AUTH_SIGNUP_ENABLED=false` after setup to close registration. Both files
-use the same volume names; back up and stop one stack before switching.
+Registration is closed by default: list admins in `AUTH_ADMIN_EMAIL` and other
+people in `AUTH_ALLOWED_EMAILS`, or set `AUTH_SIGNUP_ENABLED=true` to open it.
+Both files use the same volume names; back up and stop one stack before
+switching.
 
 ### Upgrading PostgreSQL to a new major version
 

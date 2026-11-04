@@ -2097,6 +2097,9 @@ export const authUsers = pgTable('auth_users', {
     withTimezone: true,
   }),
   lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
+  termsVersion: text('terms_version'),
+  termsAcceptedAt: timestamp('terms_accepted_at', { withTimezone: true }),
+  newsletterOptIn: boolean('newsletter_opt_in').notNull().default(false),
   image: text('image'),
   role: text('role', { enum: ['user', 'admin'] })
     .notNull()

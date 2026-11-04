@@ -10,6 +10,18 @@ const booleanString = z
   .default('false')
   .transform((value) => value === 'true')
 
+// Comma-separated addresses, compared in lowercase.
+const emailList = z
+  .string()
+  .default('')
+  .transform((value) =>
+    value
+      .split(',')
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean),
+  )
+  .pipe(z.array(z.email()))
+
 const serverSchema = {
   ROASTBOOK_SOURCE_REVISION: z
     .string()
@@ -19,14 +31,9 @@ const serverSchema = {
   DEPLOYMENT_MODE: z.enum(['self-hosted', 'hosted']).default('self-hosted'),
   AUTH_URL: z.url().optional(),
   AUTH_SECRET: z.string().min(32).optional(),
-  AUTH_SIGNUP_ENABLED: z
-    .enum(['true', 'false'])
-    .default('true')
-    .transform((value) => value === 'true'),
-  AUTH_ADMIN_EMAIL: z
-    .email()
-    .transform((value) => value.toLowerCase())
-    .optional(),
+  AUTH_SIGNUP_ENABLED: booleanString,
+  AUTH_ADMIN_EMAIL: emailList,
+  AUTH_ALLOWED_EMAILS: emailList,
   AUTH_IP_HEADER: z
     .string()
     .regex(/^[a-z0-9-]+$/)
@@ -115,6 +122,7 @@ export function parseServerEnv(
       AUTH_SECRET: runtimeEnvironment.AUTH_SECRET,
       AUTH_SIGNUP_ENABLED: runtimeEnvironment.AUTH_SIGNUP_ENABLED,
       AUTH_ADMIN_EMAIL: runtimeEnvironment.AUTH_ADMIN_EMAIL,
+      AUTH_ALLOWED_EMAILS: runtimeEnvironment.AUTH_ALLOWED_EMAILS,
       AUTH_IP_HEADER: runtimeEnvironment.AUTH_IP_HEADER,
       EMAIL_PROVIDER: runtimeEnvironment.EMAIL_PROVIDER,
       EMAIL_FROM: runtimeEnvironment.EMAIL_FROM,
@@ -208,7 +216,10 @@ export function parseServerEnv(
                 : environment.RESEND_API_KEY,
             )
           if (environment.DEPLOYMENT_MODE === 'hosted') {
-            requireVariable('AUTH_ADMIN_EMAIL', environment.AUTH_ADMIN_EMAIL)
+            requireVariable(
+              'AUTH_ADMIN_EMAIL',
+              environment.AUTH_ADMIN_EMAIL.length,
+            )
             if (
               environment.AUTH_URL &&
               !environment.AUTH_URL.startsWith('https://')

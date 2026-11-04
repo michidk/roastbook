@@ -6,6 +6,7 @@ import { emailOTP } from 'better-auth/plugins'
 import { and, eq, isNull } from 'drizzle-orm'
 import { getControlDb } from '@/db/connection.server'
 import { authUsers, instanceIdentity } from '@/db/schema'
+import { signUpPolicy } from '@/extension-points/sign-up.server'
 import { renderAccountEmail } from '@/lib/account-email'
 import { getServerEnv } from '@/lib/env.server'
 import { createAuthDatabaseAdapter } from '@/lib/server/auth/database-adapter.server'
@@ -20,6 +21,7 @@ import { allowEmailAttempt } from './email-rate-limit.server'
 import { getEmailSignInOAuthQuery } from './email-sign-in-flow.server'
 import { mcpAuthPlugins } from './mcp-options.server'
 import { requirePasskeyUserVerification } from './passkey-policy.server'
+import { mayRegister } from './registration.server'
 import {
   createSignInLinkToken,
   emailSignInLinkPlugin,
@@ -49,6 +51,15 @@ function createAuth() {
       additionalFields: {
         role: { type: ['user', 'admin'], defaultValue: 'user', input: false },
         deletingAt: { type: 'date', required: false, input: false },
+        // Sent with the sign-in that creates an account; validated in the create hook.
+        termsVersion: { type: 'string', required: false, input: true },
+        termsAcceptedAt: { type: 'date', required: false, input: false },
+        newsletterOptIn: {
+          type: 'boolean',
+          required: false,
+          defaultValue: false,
+          input: true,
+        },
       },
       changeEmail: {
         enabled: true,
@@ -83,6 +94,7 @@ function createAuth() {
         '/email-otp/send-verification-otp': { window: 60, max: 3 },
         '/email-otp/resolve-sign-in-link': { window: 60, max: 20 },
         '/sign-in/email-otp': { window: 60, max: 5 },
+        '/email-otp/check-verification-otp': { window: 60, max: 5 },
         '/oauth2/register': { window: 3600, max: 10 },
         '/oauth2/authorize': { window: 60, max: 30 },
         '/oauth2/token': { window: 60, max: 30 },
@@ -99,13 +111,11 @@ function createAuth() {
         }
         if (
           ctx.path !== '/email-otp/send-verification-otp' &&
+          ctx.path !== '/email-otp/check-verification-otp' &&
           ctx.path !== '/sign-in/email-otp'
         )
           return
-        if (
-          ctx.path === '/email-otp/send-verification-otp' &&
-          ctx.body?.type !== 'sign-in'
-        )
+        if (ctx.path !== '/sign-in/email-otp' && ctx.body?.type !== 'sign-in')
           throw new APIError('BAD_REQUEST', {
             message: 'Only sign-in codes are supported',
           })
@@ -115,13 +125,13 @@ function createAuth() {
         if (
           !(await allowEmailAttempt(
             email,
-            ctx.path === '/sign-in/email-otp' ? 'verify' : 'send',
+            ctx.path === '/email-otp/send-verification-otp' ? 'send' : 'verify',
           ))
         )
           throw new APIError('TOO_MANY_REQUESTS', {
             message: 'Too many attempts. Try again in ten minutes.',
           })
-        if (env.AUTH_SIGNUP_ENABLED) return
+        if (mayRegister(env, email)) return
         const [existing] = await getControlDb()
           .select({ id: authUsers.id })
           .from(authUsers)
@@ -132,7 +142,6 @@ function createAuth() {
           .where(eq(instanceIdentity.id, 1))
         if (
           !existing &&
-          email !== env.AUTH_ADMIN_EMAIL &&
           !(
             env.DEPLOYMENT_MODE === 'self-hosted' &&
             !instance?.bootstrapCompletedAt
@@ -148,7 +157,26 @@ function createAuth() {
     },
     databaseHooks: {
       user: {
-        create: { before: async (user) => ({ data: { ...user, name: '' } }) },
+        create: {
+          before: async (user) => {
+            const policy = signUpPolicy()
+            const accepted = user.termsVersion === policy.termsVersion
+            if (policy.termsVersion && !accepted)
+              throw new APIError('BAD_REQUEST', {
+                message: 'Accept the Terms of Service to create your account',
+              })
+            return {
+              data: {
+                ...user,
+                name: '',
+                termsVersion: policy.termsVersion,
+                termsAcceptedAt: policy.termsVersion ? new Date() : null,
+                newsletterOptIn:
+                  policy.newsletter && user.newsletterOptIn === true,
+              },
+            }
+          },
+        },
         update: { before: async (user) => ({ data: { ...user, name: '' } }) },
       },
       session: {

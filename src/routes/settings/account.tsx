@@ -5,6 +5,7 @@ import { PanelSection } from '@/components/section-layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { AccountSettingsExtensions } from '@/extension-points/account-settings'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { authClient } from '@/lib/auth-client'
 import {
@@ -184,6 +185,7 @@ function AccountPage() {
           minutes.
         </p>
       </PanelSection>
+      <AccountSettingsExtensions />
       <PanelSection
         title="Export your journal"
         description="Download your data and original stored images as a ZIP archive. Downloads expire after 24 hours."
