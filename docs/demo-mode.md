@@ -8,7 +8,9 @@ journal record and setting can be created, edited, and deleted.
 The demo runs the product's SQL journal functions on the visitor's own PGlite
 database in a browser worker (see [Journal architecture](client-data.md)). The
 edition (`packages/journal-demo/src/edition.ts`) seeds the journal from
-fixtures, allocates identifiers locally, and never syncs.
+fixtures, allocates identifiers locally, and never syncs. Its bean-package and
+gear pictures come from `scripts/seed-assets/` (gear images are named after the
+slugged gear name) and are emitted as static files by the demo build.
 
 - The first visit downloads `/demo-local/journal.json` (plus the database
   engine, about 5 MB compressed) into the empty `roastbook-demo` database.

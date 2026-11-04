@@ -33,6 +33,22 @@ describe('demo database', () => {
     process.exitCode = 0
   })
 
+  test('gives every gear item a bundled thumbnail image', async () => {
+    const gear = await database.query.gear.findMany({ with: { images: true } })
+    const bundled = new Set(await readdir(resolve('scripts/seed-assets/gear')))
+
+    expect(gear.length).toBe(bundled.size)
+    for (const item of gear) {
+      expect(item.images).toHaveLength(1)
+      expect(item.images[0]?.isThumbnail).toBe(true)
+      expect(
+        bundled.has(
+          item.images[0]?.storagePath.replace('demo/gear/', '') ?? '',
+        ),
+      ).toBe(true)
+    }
+  })
+
   test('includes reusable gear sets with their equipment', async () => {
     const gearSets = await database.query.gearSets.findMany({
       orderBy: (gearSet, { asc }) => [asc(gearSet.name)],

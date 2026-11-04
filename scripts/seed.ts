@@ -1,3 +1,4 @@
+import { readdir } from 'node:fs/promises'
 import type { PgliteDatabase } from 'drizzle-orm/pglite'
 import { seedDemoDatabase } from '../src/db/demo-seed.server'
 import type * as schema from '../src/db/schema'
@@ -13,14 +14,21 @@ const DEMO_BEAN_PACKAGE_IMAGES = [
   'teal-contours.webp',
 ] as const
 
-async function installDemoBeanPackageImages(): Promise<void> {
+async function installDemoImages(): Promise<void> {
   const storage = getStorage()
+  const gearImages = await readdir(new URL('seed-assets/gear', import.meta.url))
 
-  for (const filename of DEMO_BEAN_PACKAGE_IMAGES) {
-    const file = Bun.file(
-      new URL(`seed-assets/bean-packaging/${filename}`, import.meta.url),
-    )
-    const storagePath = `demo/${filename}`
+  for (const [source, storagePath] of [
+    ...DEMO_BEAN_PACKAGE_IMAGES.map((filename): [string, string] => [
+      `seed-assets/bean-packaging/${filename}`,
+      `demo/${filename}`,
+    ]),
+    ...gearImages.map((filename): [string, string] => [
+      `seed-assets/gear/${filename}`,
+      `demo/gear/${filename}`,
+    ]),
+  ]) {
+    const file = Bun.file(new URL(source, import.meta.url))
     const bytes = Buffer.from(await file.arrayBuffer())
 
     await storage.upload(file, storagePath)
@@ -36,7 +44,7 @@ async function seed(): Promise<void> {
     // fixture. Its declared PGlite type keeps the database-free demo build
     // independent from the PostgreSQL driver used by this command.
     await seedDemoDatabase(db as unknown as PgliteDatabase<typeof schema>)
-    await installDemoBeanPackageImages()
+    await installDemoImages()
     console.log('Canonical demo dataset seeded')
   } finally {
     await client.end()

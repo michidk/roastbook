@@ -1,7 +1,8 @@
-import { readFile } from 'node:fs/promises'
+import { readdir, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import sharp from 'sharp'
 import type { Plugin } from 'vite'
+import { pictureSizes } from '../src/lib/picture-sizes'
 
 async function loadDemoAssets() {
   const assets = new Map<string, Uint8Array>()
@@ -11,17 +12,27 @@ async function loadDemoAssets() {
     'cobalt-sunburst.webp',
     'plum-orbit.webp',
     'teal-contours.webp',
+    ...(await readdir(resolve('scripts/seed-assets/gear'))).map(
+      (name) => `gear/${name}`,
+    ),
   ]) {
     const source = await readFile(
-      resolve('scripts/seed-assets/bean-packaging', filename),
+      filename.startsWith('gear/')
+        ? resolve('scripts/seed-assets', filename)
+        : resolve('scripts/seed-assets/bean-packaging', filename),
     )
     assets.set(`media/demo/${filename}`, source)
     assets.set(`media/demo/${filename.replace('.webp', '.thumb.webp')}`, source)
     assets.set(
       `media/demo/${filename.replace('.webp', '.small.webp')}`,
       await sharp(source)
-        .resize({ width: 128, withoutEnlargement: true })
-        .webp({ quality: 72 })
+        .resize({
+          width: pictureSizes.small.maxDimension,
+          height: pictureSizes.small.maxDimension,
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .webp({ quality: pictureSizes.small.quality })
         .toBuffer(),
     )
   }
