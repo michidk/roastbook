@@ -1,222 +1,121 @@
-# Cloudflare hosted runtime
+# Cloudflare Workers target
 
-The hosted build runs TanStack Start on Cloudflare Workers, uses D1 for its
-relational database, and stores private media and account exports in R2. The
-Docker and Helm builds retain PostgreSQL, its row-level security policies, and
-local or S3-compatible storage. The demo build remains a separate edition.
+`ROASTBOOK_RUNTIME=cloudflare` builds the standard edition for Cloudflare
+Workers: TanStack Start on Workers, D1 as the database, R2 for media and account
+exports. It leaves out Nitro, native Sharp, Nodemailer, PostgreSQL and
+filesystem storage. Docker and Helm deployments use `bun run build` with
+PostgreSQL instead; see [Deployment](deployment.md).
 
-Infrastructure, production configuration, secrets, and deployment workflows live
-in the private `michidk/roastbook-infra` repository. This public repository builds
-the application artifact without Cloudflare management credentials.
-
-## Hosted deployment events
-
-The private infrastructure controller deploys successful `main` push builds to
-staging and published GitHub releases to production. Production selects the exact
-release tag revision and its successful main CI artifact. A tag push or draft
-release alone does not deploy production. Published prereleases also deploy.
-
-PR previews are eligible when the author has repository push access, or when the
-current `preview` label was applied by someone with push access. The controller
-checks current permissions and GitHub label history before creating or updating
-resources. Fork PRs can qualify through the same approval policy. Successful
-previews receive a PR comment and GitHub deployment link. Closing or merging the
-PR removes its environment and marks its deployments inactive.
-
-The public relay always reads its controller script from `main` and sends event
-metadata only. The private controller validates the PR or release, CI run,
-revision and immutable artifact again. No Cloudflare management credentials are
-available to PR builds. Dedicated App credentials and protected environment
-secrets in the private infrastructure repository are required to activate this
-automation.
-
-## Build the release artifact
+## Build and verify
 
 ```sh
-bun install --frozen-lockfile
 bun run typecheck:cloudflare
-bun run build:cloudflare
+bun run build:cloudflare         # artifact in .output/cloudflare/
+bun run test:cloudflare
+bun run test:cloudflare:jobs
+bun run test:cloudflare:release  # after build:cloudflare
+bun run dev:cloudflare           # Vite dev server, Workers adapters
 ```
 
-`ROASTBOOK_RUNTIME=cloudflare` selects the Workers adapters in Vite. This target
-requires the standard edition. It excludes Nitro, native Sharp, Nodemailer,
-PostgreSQL connections, and filesystem storage from the Worker application.
-Self-hosted builds continue to use `bun run build`.
+`typecheck:cloudflare` checks the D1 schema and driver contracts.
+`test:cloudflare` runs the shared journal, authentication and storage
+operations in workerd against local D1 and R2. `test:cloudflare:jobs` covers
+export claims, expiry, deletion and account isolation.
+`test:cloudflare:release` boots the built artifact with D1, R2 and Durable
+Objects and covers signed sessions, OAuth PKCE, single-use codes, concurrent
+refresh rotation and disconnect races; archive tests validate ZIP output with
+Python's standard ZIP reader. These run on local emulators and do
+not verify live Email or Images bindings, DNS, or a deployed release.
 
-The release directory is `.output/cloudflare/`. Its manifest,
-`roastbook-release.json`, identifies the source revision, Worker entry, static
-assets, SQL migrations, compatibility flags, and SHA-256 digest of every release
-file. Set `ROASTBOOK_SOURCE_REVISION` to the full source commit in CI. Local builds
-fall back to the checkout revision. The private deployment workflow verifies
-this manifest before deploying the corresponding successful application build.
+`roastbook-release.json` in the artifact records the source revision, Worker
+entry, static assets, SQL migrations, compatibility flags and a SHA-256 digest
+of every file. Set `ROASTBOOK_SOURCE_REVISION` to the full commit in CI; local
+builds use the checkout revision. `wrangler.runtime.jsonc` declares the bindings
+for the build and a disposable local emulator only; it has no real resource IDs
+and is not a deployment configuration.
 
-`wrangler.runtime.jsonc` describes build-time bindings and a disposable local
-emulator. It contains no production resource identifiers or credentials. Do not
-use that configuration to deploy the hosted service.
-
-## Runtime bindings
+## Bindings
 
 | Binding | Purpose |
 | --- | --- |
 | `DB` | D1 database with the committed `drizzle-d1` migrations |
-| `MEDIA` | Private R2 bucket for images and account export archives |
-| `ACCOUNT_EMAIL` | Private service binding to the trusted Resend email Worker |
-| `ACCOUNT_JOBS` | SQLite Durable Object that schedules bounded account jobs |
-| `IMAGES` | Cloudflare Images binding for image validation and transforms |
-| `OAUTH_COORDINATOR` | Serializes OAuth exchanges and disconnects |
-| `ASSETS` | Worker static assets generated by the Vite build |
+| `MEDIA` | Private R2 bucket for images and export archives |
+| `ACCOUNT_EMAIL` | Service binding to a Worker that delivers account email |
+| `ACCOUNT_JOBS` | SQLite Durable Object that runs account jobs on alarms |
+| `IMAGES` | Cloudflare Images for validation and transforms |
+| `OAUTH_COORDINATOR` | Durable Object serializing OAuth exchanges |
+| `ASSETS` | Static assets from the Vite build |
 
-The infrastructure repository configures individual environment variables and
-secrets. Hosted Workers require `AUTH_ENABLED=true`, `DEPLOYMENT_MODE=hosted`, an
-exact HTTPS `AUTH_URL` origin, `AUTH_SECRET`, `AUTH_ADMIN_EMAIL`, and `EMAIL_FROM`.
-The runtime selects D1, R2, and service email automatically. PostgreSQL URLs,
-S3 access keys, SMTP credentials, and Resend keys are unnecessary in the application
-Worker. The private email Worker owns the domain-scoped Resend key, pins the
-sender, bounds message size, and restricts preview recipients. It has no public
-route. PR code receives only its service binding, never the provider key.
+`ACCOUNT_EMAIL` receives `POST /send` with a JSON message; the application
+Worker holds no email provider key.
 
-When provided AI is enabled, supply the operator AI settings and an
-`AI_CREDENTIAL_ENCRYPTION_KEY`. Empty optional secrets disable their associated
-configuration. The full application setting definitions remain in
+## Required variables
+
+`AUTH_ENABLED=true`, `DEPLOYMENT_MODE=hosted`, an exact HTTPS `AUTH_URL`
+origin, `AUTH_SECRET`, `AUTH_ADMIN_EMAIL` and `EMAIL_FROM`. Provided AI also
+needs its AI settings and `AI_CREDENTIAL_ENCRYPTION_KEY`; empty optional secrets
+disable their feature. D1, R2 and email are selected from the bindings, so no
+PostgreSQL, S3, SMTP or provider credentials are used. All settings are in
 [Configuration](configuration.md).
 
-## Request and data boundaries
+## Security boundaries
 
-The Worker rejects requests whose origin differs from `AUTH_URL`. It replaces
-client-supplied forwarding headers with Cloudflare's connecting IP before
-Better Auth or application rate limiting runs. Responses carry private,
-non-cacheable headers. Successful application responses also report
-`X-Roastbook-Revision` when the release revision variable is configured.
+- **Requests:** origins other than `AUTH_URL` are rejected. Forwarding headers
+  are replaced with Cloudflare's connecting IP before Better Auth and rate
+  limiting. Responses are private and non-cacheable and carry
+  `X-Roastbook-Revision` when the revision is set. Only `GET /offline-shell`
+  (a prerendered, data-free page) bypasses account and origin checks.
+- **Ownership:** each request gets its own bindings and journal identity through
+  `AsyncLocalStorage`. D1 has no row-level security or interactive
+  transactions, so journal queries require an account scope and use explicit
+  owner predicates and values; composite foreign keys keep owners apart.
+  Browser sync replays recorded writes through the same boundary with their
+  recorded identifiers and a command receipt.
+- **Atomic writes:** related writes run in one D1 batch. A CHECK constraint
+  verifies expected row counts after each write, so a stale revision or an
+  inactive account rolls back the whole batch. Identifier reservation is an
+  atomic counter update.
+- **Media:** R2 objects are served only after the ownership check; the bucket
+  has no public domain and exports are never served by a public asset route.
+- **Outbound requests:** the artifact requires the `global_fetch_strictly_public`
+  compatibility flag, which routes fetches over the public Internet and rejects
+  hosts resolving to private IPs, including the application's own zone. Do not
+  add origin, VPC or private outbound bindings. Workers cannot pin DNS in Node
+  HTTP, so the adapters use native fetch, validate DNS answers through
+  Cloudflare DNS, reject private literals, and bound headers and response size.
+  AI endpoints and client metadata must be public HTTPS; AI requests follow no
+  redirects and forward only authorization, content type and accept headers.
+  Remote images follow up to four validated redirects without credentials.
 
-Each request receives its own runtime bindings and journal identity through
-`AsyncLocalStorage`. D1 journal queries require an authenticated account scope.
-Unlike PostgreSQL, D1 has no row-level security or interactive transactions.
-Shared operations therefore apply explicit owner predicates and owner values.
-Composite database foreign keys prevent relationships between different owners.
+See Cloudflare's
+[compatibility flag documentation](https://developers.cloudflare.com/workers/configuration/compatibility-flags/#global-fetch-strictly-public)
+for the outbound guarantee.
 
-The browser and installed PWA keep the account's journal in PGlite and run the
-same journal functions. Synchronization replays each recorded write on D1
-through the same ownership boundary, with its recorded identifiers and a
-command receipt. The build also
-prerenders a public, data-free offline shell. Only GET requests to the exact
-`/offline-shell` route bypass account and canonical-origin checks for this
-artifact; private routes and media retain those checks.
+## Images
 
-Related writes run in a single D1 batch. Expected row counts are checked inside
-that batch through a database CHECK constraint immediately after each write.
-A stale revision rolls back the complete batch. The batch also checks that its
-account remains active. Identifier reservation uses an atomic counter update
-that accounts for existing table IDs.
+The Images binding rejects SVGs, mismatched MIME types, files over 10 MiB,
+dimensions over 12,000 pixels and images over 50 million pixels. It produces
+WebP full and thumbnail images (three transformations per picture) and JPEG
+inputs for AI. All outputs are prepared before storage; their actual sizes count
+toward the journal allowance, checked with the per-item count by a conditional
+INSERT in the same batch, so concurrent uploads cannot exceed either limit. If
+Images transformations are unavailable, uploads fail without storing originals
+or partial sets; stored pictures stay readable from R2.
 
-Media requests must pass the journal ownership check before reading R2. The
-bucket has no public delivery domain. Export paths are account-authorized and
-must not be served by a public asset route.
+## Account jobs and exports
 
-## Images and exports
+`ACCOUNT_JOBS` alarms claim jobs atomically and fence writes by attempt and
+lease; no cron trigger is needed. Each alarm schedules the next even after a
+failure, and the health check starts the loop. Deletion resumes in bounded pages
+and leaves other accounts untouched. Export retries write under an
+attempt-specific key, and only the current claim publishes its archive.
 
-The Images binding validates file metadata and rejects SVGs, mismatched MIME
-types, files over 10 MiB, dimensions larger than 12,000 pixels, and images
-above 50 million pixels. It generates
-WebP storage and thumbnail images and JPEG inputs for AI. Transform output is
-bounded by the same size limit. All three compressed objects are prepared before
-storage admission. Their actual byte lengths, including thumbnails, count toward
-the current journal's allowance. A conditional D1 INSERT checks the per-item count
-and the total owner-scoped storage within the same atomic batch. Concurrent
-uploads cannot bypass either limit.
+Exports are streaming ZIP64 with CRC32 and UTF-8 names; images are stored
+without recompression. The writer honors backpressure, rejects unsafe or
+duplicate paths and cancels sources when a transfer stops. R2 multipart uploads
+buffer one 8 MiB part and abort on failure. Configure an R2 lifecycle rule to
+remove multipart uploads abandoned by a terminated process.
 
-[Images Free](https://developers.cloudflare.com/images/pricing/) includes 5,000
-unique transformations per calendar month across the account. A stored picture
-normally requires three transformations for its full image and two thumbnails;
-AI image preparation consumes additional transformations. `.info()` is free.
-Compressed outputs are persisted in private R2, so viewing them requires no new
-transformations. If the Free allowance is exhausted, uploads fail without storing
-uncompressed originals or partial picture sets. Existing pictures remain readable.
-The infrastructure must keep Images on Free; it must not enable paid Images
-storage or silently upgrade the transformation plan.
-
-Account exports use streaming ZIP64 with CRC32 checksums and UTF-8 filenames.
-Image contents are stored without another compression pass. The writer honors
-backpressure, rejects unsafe or duplicate archive paths, and cancels source
-streams when a download or upload stops. R2 multipart uploads buffer one 8 MiB
-part and abort incomplete uploads after failures. Configure an R2 lifecycle
-rule to remove abandoned multipart uploads after process termination.
-
-Durable Object alarms claim account jobs atomically and fence writes by claim
-attempt and lease. Deletion resumes in bounded pages and preserves other users'
-rows and media. Export retries start a new archive under an attempt-specific key.
-Only the current claim can publish its completed archive.
-
-Exports currently allow up to 5,000 rows, 200 original images, 64 MiB of payload,
-and 90 seconds per attempt. Exceeding a limit fails the export without publishing
-a partial ZIP. The release health check starts the persistent alarm loop.
-Each alarm schedules the next run even after failure. Jobs use the Durable
-Object CPU budget rather
-than the 10 ms HTTP/Cron budget on Workers Free. No cron triggers are required.
-Exports batch owner-filtered queries across tables to reduce D1 calls.
-
-## Verification
-
-`bun run typecheck:cloudflare` checks the actual D1 schema and driver contracts.
-The standard TypeScript check continues to check PostgreSQL self-hosting.
-`bun run test:cloudflare` runs the actual shared domain operations inside workerd
-against isolated D1 and R2 bindings, including the same authentication contract
-used by PostgreSQL integration tests. `bun run test:cloudflare:jobs` checks archive,
-claim, expiry, deletion, and account isolation behavior.
-After building, `bun run test:cloudflare:release` boots the release artifact with
-D1, R2, and a real Durable Object. It checks signed sessions, OAuth PKCE, code
-single use, concurrent refresh rotation, disconnect races, and reconnection.
-Archive tests validate output using Python's standard ZIP reader, including CRC
-checks, Unicode paths, empty entries, cancellation, and unsafe path rejection.
-
-Cloud resources still require an operator deployment and checks against the
-configured email service and Images bindings. A successful local build or local
-D1/R2 emulator run does not verify those remote services, DNS, or a live release.
-
-## Public outbound requests
-
-The hosted artifact explicitly requires `global_fetch_strictly_public`. Global
-fetch then uses the public Internet boundary, including for requests back to the
-application's own zone. Do not add an origin binding, VPC binding, or private
-outbound override to these transports.
-
-Cloudflare's [runtime flag definition](https://github.com/cloudflare/workerd/blob/main/src/workerd/io/compatibility-date.capnp)
-explains the SSRF guarantee and rejection of hosts resolving to private IPs.
-The [compatibility flag documentation](https://developers.cloudflare.com/workers/configuration/compatibility-flags/#global-fetch-strictly-public)
-describes the public routing behavior. Workers' Node HTTP implementation does
-[not support custom DNS lookup callbacks](https://developers.cloudflare.com/workers/runtime-apis/nodejs/http/),
-so the hosted adapters use native fetch and the platform's connection-time
-network enforcement. Self-hosted Node/Bun transports retain DNS pinning.
-
-The hosted adapters also validate all DNS answers through Cloudflare DNS,
-reject private address literals, and bound headers and streamed response bytes.
-AI and client metadata require HTTPS. AI requests never follow redirects and
-forward only the configured authorization, content type, and accept headers.
-Remote images may follow four redirects, validating each destination and
-sending no account credentials. Hosted operator AI endpoints must also be public
-HTTPS endpoints.
-
-## Workers Free target
-
-The private infrastructure targets Workers Free without a paid subscription.
-Resend Free replaces Cloudflare Email Sending, which requires Workers Paid.
-R2 has no minimum charge, but storage and operations above its free allowance
-remain metered. Cloudflare Images Free stops new transformations after its
-monthly allowance; it must not be silently upgraded to a paid subscription.
-
-Workers Free currently allows 100,000 requests/day, 10 ms CPU per HTTP request,
-10 D1 databases/account, and 500 MB per D1 database. SQLite Durable Objects are
-available on Free and have a default 30-second CPU budget per invocation,
-including alarms. Free limits are shared with other applications on the account.
-Production and staging consume two database slots; previews use the remaining
-capacity. Clean up closed previews promptly.
-
-Local workerd verification checks behavior, not Cloudflare's production CPU
-meter. Before launch, measure cold and warm login rendering, email sign-in,
-passkey verification, authenticated pages, MCP requests, and alarm jobs on the
-actual Free account. An HTTP operation repeatedly exceeding 10 ms needs to be
-optimized or moved to an appropriate processing boundary before launch. Do not
-assume that a small user count guarantees the CPU limit is satisfied.
-
-See [Workers limits](https://developers.cloudflare.com/workers/platform/limits/),
-[Durable Object limits](https://developers.cloudflare.com/durable-objects/platform/limits/),
-and [Resend pricing](https://resend.com/pricing) for current allowances.
+An export may contain at most 5,000 rows, 200 original images and 64 MiB, and
+must finish within 90 seconds; otherwise it fails without publishing a partial
+ZIP.
