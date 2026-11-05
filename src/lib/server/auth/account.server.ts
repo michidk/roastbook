@@ -6,11 +6,21 @@ import { requireIdentity } from '@/db/journal-context.server'
 import {
   accountJobs,
   adminAuditEvents,
+  aiRequestLogs,
+  authPasskeys,
   authSessions,
   authUsers,
   authVerifications,
+  beanPurchases,
+  beans,
+  cafeVisits,
+  coffeeShops,
+  gear,
   instanceIdentity,
   integrationTokens,
+  recipes,
+  roasters,
+  shots,
 } from '@/db/schema'
 import { renderAccountEmail } from '@/lib/account-email'
 import { DEMO_MODE } from '@/lib/build-mode'
@@ -100,6 +110,125 @@ export async function listUsers(page: number) {
       .where(ne(authUsers.id, 'local')),
   ])
   return { users, total: total?.count ?? 0, page }
+}
+
+/** One account's settings, passkeys, and journal and AI usage. */
+export async function loadUser(userId: string) {
+  requireAdmin()
+  const db = getControlDb()
+  const [user] = await db
+    .select({
+      id: authUsers.id,
+      email: authUsers.email,
+      role: authUsers.role,
+      createdAt: authUsers.createdAt,
+      deletingAt: authUsers.deletingAt,
+      emailVerified: authUsers.emailVerified,
+      lastLoginAt: authUsers.lastLoginAt,
+      termsVersion: authUsers.termsVersion,
+      termsAcceptedAt: authUsers.termsAcceptedAt,
+      newsletterOptIn: authUsers.newsletterOptIn,
+      journalInitializedAt: authUsers.journalInitializedAt,
+    })
+    .from(authUsers)
+    .where(and(eq(authUsers.id, userId), ne(authUsers.id, 'local')))
+  if (!user) throw new Error('User not found')
+  const owned = (table: typeof shots | typeof beans | typeof roasters) =>
+    db
+      .select({ count: count() })
+      .from(table)
+      .where(eq(table.ownerId, userId))
+      .then(([row]) => row?.count ?? 0)
+  const since = new Date(Date.now() - 30 * 86_400_000).toISOString()
+  const [passkeys, sessions, tokens, ai, ...counts] = await Promise.all([
+    db
+      .select({
+        name: authPasskeys.name,
+        deviceType: authPasskeys.deviceType,
+        backedUp: authPasskeys.backedUp,
+        createdAt: authPasskeys.createdAt,
+      })
+      .from(authPasskeys)
+      .where(eq(authPasskeys.userId, userId))
+      .orderBy(authPasskeys.createdAt),
+    db
+      .select({ count: count() })
+      .from(authSessions)
+      .where(
+        and(
+          eq(authSessions.userId, userId),
+          gt(authSessions.expiresAt, new Date()),
+        ),
+      ),
+    db
+      .select({ count: count() })
+      .from(integrationTokens)
+      .where(
+        and(
+          eq(integrationTokens.userId, userId),
+          gt(integrationTokens.expiresAt, new Date()),
+        ),
+      ),
+    db
+      .select({
+        total: count(),
+        recent:
+          sql<number>`count(*) filter (where ${aiRequestLogs.createdAt} >= ${since})`.mapWith(
+            Number,
+          ),
+        tokens:
+          sql<number>`coalesce(sum(${aiRequestLogs.totalTokens}), 0)`.mapWith(
+            Number,
+          ),
+        lastAt: sql<Date | null>`max(${aiRequestLogs.createdAt})`.mapWith(
+          (value) => (value ? new Date(value) : null),
+        ),
+      })
+      .from(aiRequestLogs)
+      .where(eq(aiRequestLogs.ownerId, userId)),
+    ...[
+      shots,
+      beans,
+      cafeVisits,
+      coffeeShops,
+      roasters,
+      gear,
+      recipes,
+      beanPurchases,
+    ].map((table) => owned(table as typeof shots)),
+  ])
+  const [
+    brews,
+    beanCount,
+    visits,
+    cafes,
+    roasterCount,
+    gearCount,
+    recipeCount,
+    purchases,
+  ] = counts
+  return {
+    user,
+    passkeys,
+    activeSessions: sessions[0]?.count ?? 0,
+    integrationTokens: tokens[0]?.count ?? 0,
+    usage: {
+      brews: brews ?? 0,
+      beans: beanCount ?? 0,
+      purchases: purchases ?? 0,
+      visits: visits ?? 0,
+      cafes: cafes ?? 0,
+      roasters: roasterCount ?? 0,
+      gear: gearCount ?? 0,
+      recipes: recipeCount ?? 0,
+    },
+    ai: {
+      requests: ai[0]?.total ?? 0,
+      requestsLast30Days: ai[0]?.recent ?? 0,
+      tokens: ai[0]?.tokens ?? 0,
+      lastRequestAt: ai[0]?.lastAt ?? null,
+    },
+  }
 }
 
 type ControlTransaction = Parameters<

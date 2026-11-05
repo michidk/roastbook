@@ -27,6 +27,7 @@ import {
   confirmAccountDeletion,
   issueToken,
   listUsers,
+  loadUser,
   requestAccountExport,
   revokeToken,
 } from './account.server'
@@ -172,6 +173,18 @@ suite('private account lifecycle', () => {
       .update(authUsers)
       .set({ role: 'user' })
       .where(eq(authUsers.id, second.id))
+  })
+  test('shows administrators one account with its journal usage', async () => {
+    await expect(asSecond(() => loadUser(first.id))).rejects.toThrow(
+      'Administrator',
+    )
+    const details = await asFirst(() => loadUser(second.id))
+    expect(details.user.email).toBe(second.email)
+    expect(details.usage).toMatchObject({ beans: 1, gear: 1, purchases: 1 })
+    expect(details.passkeys).toEqual([])
+    await expect(asFirst(() => loadUser('local'))).rejects.toThrow(
+      'User not found',
+    )
   })
   test('keeps a streamed database operation in its transaction until the response ends', async () => {
     const response = await withJournalResponse(

@@ -68,6 +68,7 @@ import { Route as ShotsNewRouteImport } from './routes/shots/new'
 import { Route as VisitsIndexRouteImport } from './routes/visits/index'
 import { Route as VisitsVisitIdRouteImport } from './routes/visits/$visitId'
 import { Route as VisitsNewRouteImport } from './routes/visits/new'
+import { Route as AdminUsersUserIdRouteImport } from './routes/admin/users_/$userId'
 import { Route as ApiShottimerShotsRouteImport } from './routes/api/shottimer/shots'
 import { Route as ApiShottimerTargetRouteImport } from './routes/api/shottimer/target'
 import { Route as ApiAccountExportsJobIdRouteImport } from './routes/api/account/exports/$jobId'
@@ -368,6 +369,11 @@ const VisitsNewRoute = VisitsNewRouteImport.update({
   path: '/visits/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminUsersUserIdRoute = AdminUsersUserIdRouteImport.update({
+  id: '/users_/$userId',
+  path: '/users/$userId',
+  getParentRoute: () => AdminRoute,
+} as any)
 const ApiShottimerShotsRoute = ApiShottimerShotsRouteImport.update({
   id: '/api/shottimer/shots',
   path: '/api/shottimer/shots',
@@ -444,6 +450,7 @@ export interface FileRoutesByFullPath {
   '/shops/': typeof ShopsIndexRoute
   '/shots/': typeof ShotsIndexRoute
   '/visits/': typeof VisitsIndexRoute
+  '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/api/shottimer/shots': typeof ApiShottimerShotsRoute
   '/api/shottimer/target': typeof ApiShottimerTargetRoute
   '/api/account/exports/$jobId': typeof ApiAccountExportsJobIdRoute
@@ -506,6 +513,7 @@ export interface FileRoutesByTo {
   '/shops': typeof ShopsIndexRoute
   '/shots': typeof ShotsIndexRoute
   '/visits': typeof VisitsIndexRoute
+  '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/api/shottimer/shots': typeof ApiShottimerShotsRoute
   '/api/shottimer/target': typeof ApiShottimerTargetRoute
   '/api/account/exports/$jobId': typeof ApiAccountExportsJobIdRoute
@@ -571,6 +579,7 @@ export interface FileRoutesById {
   '/shops/': typeof ShopsIndexRoute
   '/shots/': typeof ShotsIndexRoute
   '/visits/': typeof VisitsIndexRoute
+  '/admin/users_/$userId': typeof AdminUsersUserIdRoute
   '/api/shottimer/shots': typeof ApiShottimerShotsRoute
   '/api/shottimer/target': typeof ApiShottimerTargetRoute
   '/api/account/exports/$jobId': typeof ApiAccountExportsJobIdRoute
@@ -637,6 +646,7 @@ export interface FileRouteTypes {
     | '/shops/'
     | '/shots/'
     | '/visits/'
+    | '/admin/users/$userId'
     | '/api/shottimer/shots'
     | '/api/shottimer/target'
     | '/api/account/exports/$jobId'
@@ -699,6 +709,7 @@ export interface FileRouteTypes {
     | '/shops'
     | '/shots'
     | '/visits'
+    | '/admin/users/$userId'
     | '/api/shottimer/shots'
     | '/api/shottimer/target'
     | '/api/account/exports/$jobId'
@@ -763,6 +774,7 @@ export interface FileRouteTypes {
     | '/shops/'
     | '/shots/'
     | '/visits/'
+    | '/admin/users_/$userId'
     | '/api/shottimer/shots'
     | '/api/shottimer/target'
     | '/api/account/exports/$jobId'
@@ -1234,6 +1246,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VisitsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/users_/$userId': {
+      id: '/admin/users_/$userId'
+      path: '/users/$userId'
+      fullPath: '/admin/users/$userId'
+      preLoaderRoute: typeof AdminUsersUserIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/api/shottimer/shots': {
       id: '/api/shottimer/shots'
       path: '/api/shottimer/shots'
@@ -1261,11 +1280,13 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  AdminUsersUserIdRoute: typeof AdminUsersUserIdRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
+  AdminUsersUserIdRoute: AdminUsersUserIdRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
@@ -1357,13 +1378,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

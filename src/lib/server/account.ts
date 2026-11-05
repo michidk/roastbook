@@ -7,6 +7,7 @@ import {
   issueToken,
   listIntegrationTokens,
   listUsers,
+  loadUser,
   removeUser,
   requestAccountDeletion,
   requestAccountExport,
@@ -19,6 +20,9 @@ export const getCurrentAccount = createServerFn({ method: 'GET' }).handler(
 export const getUsers = createServerFn({ method: 'GET' })
   .validator(z.object({ page: z.number().int().min(0).max(10000).default(0) }))
   .handler(({ data }) => listUsers(data.page))
+export const getUser = createServerFn({ method: 'GET' })
+  .validator(z.object({ userId: z.string().min(1).max(128) }))
+  .handler(({ data }) => loadUser(data.userId))
 export const setUserRole = createServerFn({ method: 'POST' })
   .validator(
     z.object({

@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import { ShieldCheck } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -54,12 +55,14 @@ export function AdminUsersTable({
             users.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="py-3 pl-4">
-                  <p
-                    className="max-w-64 truncate font-medium"
+                  <Link
+                    to="/admin/users/$userId"
+                    params={{ userId: user.id }}
+                    className="block max-w-64 truncate font-medium underline-offset-4 hover:underline"
                     title={user.email}
                   >
                     {user.email}
-                  </p>
+                  </Link>
                   <p
                     className="mt-0.5 text-xs text-muted-foreground"
                     title={dateTime(user.createdAt)}

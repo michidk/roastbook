@@ -163,8 +163,8 @@ logged in the database without image payloads.
 
 - Local or S3-compatible media storage with a per-journal storage allowance.
 - Passwordless private accounts or one shared journal behind Hodor.
-- An Admin page for users and roles; data export and confirmed account
-  deletion.
+- An Admin page for users and roles, with each account's agreements,
+  passkeys, sessions and usage; data export and confirmed account deletion.
 
 </details>
 
