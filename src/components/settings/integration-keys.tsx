@@ -36,6 +36,10 @@ import {
   revokeIntegrationKey,
   updateIntegrationKey,
 } from '@/lib/server/integrations'
+import type {
+  IntegrationKeyPrefill,
+  KeyExpiry,
+} from '@/modules/integrations/key-link'
 import {
   allScopes,
   describeScopes,
@@ -47,22 +51,27 @@ type Credential = Awaited<
 >['credentials'][number]
 
 const EXPIRY_OPTIONS = [
-  { value: '30', label: '30 days' },
-  { value: '90', label: '90 days' },
-  { value: '365', label: '1 year' },
-  { value: 'custom', label: 'Custom date' },
-  { value: 'never', label: 'No expiry' },
-] as const
-type Expiry = (typeof EXPIRY_OPTIONS)[number]['value']
+  { value: '30d', label: '30 days', days: 30 },
+  { value: '90d', label: '90 days', days: 90 },
+  { value: '1y', label: '1 year', days: 365 },
+  { value: 'custom', label: 'Custom date', days: null },
+  { value: 'never', label: 'No expiry', days: null },
+] as const satisfies readonly {
+  value: KeyExpiry
+  label: string
+  days: number | null
+}[]
 
-function expiryDate(expiry: Expiry, customDate: string) {
+function expiryDate(expiry: KeyExpiry, customDate: string) {
   if (expiry === 'never') return null
   if (expiry === 'custom') {
     // The end of the chosen day, in the browser's time zone.
     const date = new Date(`${customDate}T23:59:59`)
     return Number.isNaN(date.getTime()) ? undefined : date.toISOString()
   }
-  return new Date(Date.now() + Number(expiry) * 86_400_000).toISOString()
+  const days =
+    EXPIRY_OPTIONS.find((option) => option.value === expiry)?.days ?? 90
+  return new Date(Date.now() + days * 86_400_000).toISOString()
 }
 
 async function copy(value: string, label: string) {
@@ -81,17 +90,22 @@ export function IntegrationKeys({
   kind,
   credentials,
   onChanged,
+  prefill = null,
+  onPrefillDone,
 }: {
   readonly kind: 'api' | 'mcp'
   readonly credentials: readonly Credential[]
   readonly onChanged: () => Promise<void> | void
+  /** Opens the new-key dialog filled in from a link. */
+  readonly prefill?: IntegrationKeyPrefill | null
+  readonly onPrefillDone?: () => void
 }) {
   const noun = kind === 'api' ? 'API key' : 'MCP token'
   const isOnline = useOnlineStatus()
   const formatDate = useDateFormatter()
   const formatDateTime = useDateTimeFormatter()
   const formatNumber = useNumberFormatter()
-  const [creating, setCreating] = useState(false)
+  const [creating, setCreating] = useState(prefill !== null)
   const [editing, setEditing] = useState<Credential | null>(null)
 
   async function revoke(credential: Credential) {
@@ -184,7 +198,11 @@ export function IntegrationKeys({
         kind={kind}
         noun={noun}
         open={creating}
-        onOpenChange={setCreating}
+        initial={prefill}
+        onOpenChange={(open) => {
+          setCreating(open)
+          if (!open && prefill) onPrefillDone?.()
+        }}
         onCreated={onChanged}
       />
       {editing ? (
@@ -203,30 +221,34 @@ function CreateKeyDialog({
   kind,
   noun,
   open,
+  initial,
   onOpenChange,
   onCreated,
 }: {
   readonly kind: 'api' | 'mcp'
   readonly noun: string
   readonly open: boolean
+  readonly initial: IntegrationKeyPrefill | null
   readonly onOpenChange: (open: boolean) => void
   readonly onCreated: () => Promise<void> | void
 }) {
   const id = useId()
-  const [name, setName] = useState('')
-  const [expiry, setExpiry] = useState<Expiry>('90')
+  const [name, setName] = useState(initial?.name ?? '')
+  const [expiry, setExpiry] = useState<KeyExpiry>(initial?.expires ?? '90d')
   const [customDate, setCustomDate] = useState('')
   const [scopes, setScopes] = useState<IntegrationScope[]>(() =>
-    allScopes('read'),
+    initial?.scopes.length ? initial.scopes : allScopes('read'),
   )
+  const [prefilled, setPrefilled] = useState(initial !== null)
   const [busy, setBusy] = useState(false)
   const [token, setToken] = useState('')
 
   function reset() {
     setName('')
-    setExpiry('90')
+    setExpiry('90d')
     setCustomDate('')
     setScopes(allScopes('read'))
+    setPrefilled(false)
     setToken('')
   }
 
@@ -316,6 +338,15 @@ function CreateKeyDialog({
               </DialogDescription>
             </DialogHeader>
             <DialogBody className="space-y-5">
+              {prefilled ? (
+                <p
+                  role="note"
+                  className="rounded-md bg-muted px-3 py-2 text-sm"
+                >
+                  Filled in from a link. Check the name, expiry and permissions
+                  before you create it.
+                </p>
+              ) : null}
               <div className="space-y-2">
                 <Label htmlFor={`${id}-name`}>Name</Label>
                 <Input
@@ -334,7 +365,7 @@ function CreateKeyDialog({
                   <Label htmlFor={`${id}-expiry`}>Expires</Label>
                   <Select
                     value={expiry}
-                    onValueChange={(value) => setExpiry(value as Expiry)}
+                    onValueChange={(value) => setExpiry(value as KeyExpiry)}
                   >
                     <SelectTrigger id={`${id}-expiry`} className="w-full">
                       <SelectValue />

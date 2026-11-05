@@ -31,7 +31,21 @@ Permissions are granted per resource as **None**, **Read**, or
 | `visits` | Café visits and their pictures |
 | `methods` | Brewing methods, drink types, and drink options |
 | `tags` | Taste tags |
+| `shottimer` | Report brew times and read the target time ([Shottimer](shottimer.md)) |
 | `stats` | Dashboard and detailed statistics (read only) |
+
+### Links that fill in a new key
+
+Like GitHub's token links, a link can open the new-key dialog with a name,
+permissions, and expiry filled in. The owner still checks and confirms it; a
+link never creates a key on its own:
+
+```text
+/settings/api?create=true&name=Backup%20script&scopes=brews:read,beans:read&expires=90d
+```
+
+`scopes` is a comma-separated list; `expires` is `30d`, `90d`, `1y`, or
+`never`. Unknown scopes are ignored.
 
 Scopes are written `<resource>:read` or `<resource>:write`; write includes
 read. A key only ever reaches the journal of the account that created it:

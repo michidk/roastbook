@@ -40,6 +40,11 @@ export const INTEGRATION_RESOURCES = [
   },
   { id: 'tags', label: 'Taste tags', description: 'Your taste tags' },
   {
+    id: 'shottimer',
+    label: 'Shottimer',
+    description: 'Report brew times from a device and read the target time',
+  },
+  {
     id: 'stats',
     label: 'Statistics',
     description: 'Dashboard and detailed brewing statistics',

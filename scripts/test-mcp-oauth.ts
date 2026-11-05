@@ -575,9 +575,9 @@ try {
     ].map(([kind, token]) => ({
       id: randomUUID(),
       userId: first.id,
-      kind: kind === 'mcp' ? ('mcp' as const) : ('shottimer' as const),
+      kind: kind === 'mcp' ? ('mcp' as const) : ('api' as const),
       tokenHash: hashIntegrationToken(token ?? ''),
-      scopes: ['brews:read'],
+      scopes: kind === 'mcp' ? ['brews:read'] : ['shottimer:write'],
       name: 'Test',
       expiresAt: new Date(Date.now() + 60_000),
     })),

@@ -2158,12 +2158,12 @@ export const integrationTokens = pgTable(
     userId: text('user_id')
       .notNull()
       .references(() => authUsers.id, { onDelete: 'cascade' }),
-    kind: text('kind', { enum: ['api', 'mcp', 'shottimer'] }).notNull(),
+    kind: text('kind', { enum: ['api', 'mcp'] }).notNull(),
     name: text('name').notNull(),
     tokenHash: text('token_hash').notNull().unique(),
     /** The first characters of the token, shown so owners can tell keys apart. */
     tokenPrefix: text('token_prefix'),
-    /** Integration scopes (`<resource>:<read|write>`); unused by shottimer tokens. */
+    /** Integration scopes (`<resource>:<read|write>`). */
     scopes: text('scopes').array().notNull().default(sql`'{}'::text[]`),
     createdAt: createdAt(),
     /** Null for API keys and MCP tokens the owner chose never to expire. */

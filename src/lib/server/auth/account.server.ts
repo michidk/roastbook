@@ -1,6 +1,6 @@
 import '@tanstack/react-start/server-only'
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
-import { and, count, desc, eq, gt, isNull, ne, sql } from 'drizzle-orm'
+import { and, count, desc, eq, gt, inArray, isNull, ne, sql } from 'drizzle-orm'
 import { getControlDb } from '@/db/connection.server'
 import { requireIdentity } from '@/db/journal-context.server'
 import {
@@ -8,6 +8,7 @@ import {
   adminAuditEvents,
   aiRequestLogs,
   authPasskeys,
+  authRateLimits,
   authSessions,
   authUsers,
   authVerifications,
@@ -318,6 +319,14 @@ async function scheduleDeletion(
   await tx.delete(authSessions).where(eq(authSessions.userId, userId))
   await tx.delete(integrationTokens).where(eq(integrationTokens.userId, userId))
   await tx
+    .delete(authRateLimits)
+    .where(
+      inArray(authRateLimits.key, [
+        `integration:user:${userId}:minute`,
+        `integration:user:${userId}:day`,
+      ]),
+    )
+  await tx
     .insert(accountJobs)
     .values({ id: randomUUID(), userId, kind: 'delete' })
   await tx
@@ -395,28 +404,4 @@ export async function requestAccountExport() {
       .insert(accountJobs)
       .values({ id: randomUUID(), userId: identity.id, kind: 'export' })
   })
-}
-export async function revokeToken(id: string) {
-  const identity = requireIdentity()
-  await getControlDb()
-    .delete(integrationTokens)
-    .where(
-      and(
-        eq(integrationTokens.id, id),
-        eq(integrationTokens.userId, identity.id),
-      ),
-    )
-}
-
-export async function listIntegrationTokens() {
-  const identity = requireIdentity()
-  return getControlDb()
-    .select({
-      id: integrationTokens.id,
-      name: integrationTokens.name,
-      kind: integrationTokens.kind,
-      expiresAt: integrationTokens.expiresAt,
-    })
-    .from(integrationTokens)
-    .where(eq(integrationTokens.userId, identity.id))
 }

@@ -6,11 +6,20 @@ import { IntegrationKeys } from '@/components/settings/integration-keys'
 import { RateLimitUsage } from '@/components/settings/rate-limit-usage'
 import { Button } from '@/components/ui/button'
 import type { getApiAccessState } from '@/lib/server/integrations'
+import type { IntegrationKeyPrefill } from '@/modules/integrations/key-link'
 
 type ApiAccessState = Awaited<ReturnType<typeof getApiAccessState>>
 
 /** API keys, the base URL and the shared rate limits. */
-export function ApiSettings({ state }: { readonly state: ApiAccessState }) {
+export function ApiSettings({
+  state,
+  prefill,
+  onPrefillDone,
+}: {
+  readonly state: ApiAccessState
+  readonly prefill: IntegrationKeyPrefill | null
+  readonly onPrefillDone: () => void
+}) {
   const router = useRouter()
   const example = `curl -H "Authorization: Bearer $ROASTBOOK_API_KEY" \\\n  "${state.baseUrl}/brews?page=1"`
 
@@ -67,9 +76,13 @@ export function ApiSettings({ state }: { readonly state: ApiAccessState }) {
         description="Each key acts only on your journal, with the permissions you choose. Keys are shown once; revoke any you no longer use."
       >
         <IntegrationKeys
+          // A new link reopens the dialog with its values.
+          key={prefill ? JSON.stringify(prefill) : 'keys'}
           kind="api"
           credentials={state.credentials}
           onChanged={() => router.invalidate()}
+          prefill={prefill}
+          onPrefillDone={onPrefillDone}
         />
       </PanelSection>
 

@@ -140,11 +140,13 @@ import {
   shotUpdateSchema,
   tasteTagCreateSchema,
 } from '@/lib/server-validation'
+import { shottimerShotRequestSchema } from '@/lib/shottimer'
 import { STATS_PERIOD_VALUES } from '@/lib/stats-filters'
 import type {
   IntegrationAccess,
   IntegrationResource,
 } from '@/modules/integrations/scopes'
+import { loadShottimerTarget, recordShottimerShot } from '../shottimer.server'
 import {
   deleteIntegrationImage,
   type IntegrationImage,
@@ -738,6 +740,36 @@ export const INTEGRATION_OPERATIONS: readonly IntegrationOperation[] = [
     path: '/stats/dashboard',
     input: empty,
     run: () => getDashboardStats(),
+  }),
+
+  operation({
+    name: 'report_shot_time',
+    title: 'Report shot time',
+    description:
+      'Offer a measured brew time to the next brew logged in the app, as a shottimer does.',
+    access: 'write',
+    resources: ['shottimer'],
+    method: 'POST',
+    path: '/shottimer/shots',
+    input: shottimerShotRequestSchema,
+    run: async ({ seconds }) => {
+      await recordShottimerShot(
+        shottimerShotRequestSchema.parse({ seconds }).seconds,
+      )
+      return null
+    },
+  }),
+  operation({
+    name: 'get_shot_target',
+    title: 'Get target shot time',
+    description:
+      'The target time of the brew being logged in the app, for a shottimer display.',
+    access: 'read',
+    resources: ['shottimer'],
+    method: 'GET',
+    path: '/shottimer/target',
+    input: empty,
+    run: async () => ({ targetSeconds: await loadShottimerTarget() }),
   }),
 
   operation({

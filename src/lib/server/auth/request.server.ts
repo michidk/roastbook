@@ -29,8 +29,8 @@ export function isPublicApiPath(path: string) {
 
 function integrationKind(path: string) {
   if (path === '/api/mcp') return 'mcp'
-  if (isApiPath(path)) return 'api'
-  if (path.startsWith('/api/shottimer/')) return 'shottimer'
+  // Shottimer devices use API keys with the shottimer scope.
+  if (isApiPath(path) || path.startsWith('/api/shottimer/')) return 'api'
   return null
 }
 
@@ -69,15 +69,11 @@ async function resolveJournalIdentity(
       role: match.user.role,
       authentication: env.AUTH_ENABLED,
       authenticatedAt: null,
-      ...(integration === 'shottimer'
-        ? {}
-        : {
-            integration: {
-              channel: integration,
-              credentialId: match.id,
-              scopes: match.scopes,
-            },
-          }),
+      integration: {
+        channel: integration,
+        credentialId: match.id,
+        scopes: match.scopes,
+      },
     }
   }
   if (!env.AUTH_ENABLED) return defaultIdentity()
@@ -189,8 +185,7 @@ async function handlePrivateRequest(
     )
   if (
     !['GET', 'HEAD', 'OPTIONS'].includes(request.method) &&
-    !identity.integration &&
-    !path.startsWith('/api/shottimer/')
+    !identity.integration
   ) {
     const origin = request.headers.get('origin')
     if (origin && origin !== requestOrigin(request, getServerEnv().PUBLIC_URL))

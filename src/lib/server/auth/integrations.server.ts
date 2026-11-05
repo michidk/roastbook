@@ -33,32 +33,6 @@ function requireRecentSignIn(identity: JournalIdentity, action: string) {
     throw new Error(`Sign in again before ${action}`)
 }
 
-/** The shottimer device token: one per account, valid for a year. */
-export async function createIntegrationToken(kind: 'shottimer', name: string) {
-  const identity = requireIdentity()
-  requireRecentSignIn(identity, 'creating credentials')
-  const token = randomBytes(32).toString('base64url')
-  await getControlDb().transaction(async (tx) => {
-    await tx
-      .delete(integrationTokens)
-      .where(
-        and(
-          eq(integrationTokens.userId, identity.id),
-          eq(integrationTokens.kind, kind),
-        ),
-      )
-    await tx.insert(integrationTokens).values({
-      id: randomUUID(),
-      userId: identity.id,
-      kind,
-      name,
-      tokenHash: hashIntegrationToken(token),
-      expiresAt: new Date(Date.now() + 365 * 86400_000),
-    })
-  })
-  return token
-}
-
 function requireScopes(scopes: readonly string[]) {
   const normalized = normalizeScopes(scopes)
   if (!normalized.length) throw new Error('Choose at least one permission')
@@ -122,10 +96,6 @@ export async function updateIntegrationCredential(input: {
       and(
         eq(integrationTokens.id, input.id),
         eq(integrationTokens.userId, identity.id),
-        or(
-          eq(integrationTokens.kind, 'api'),
-          eq(integrationTokens.kind, 'mcp'),
-        ),
       ),
     )
     .returning({ id: integrationTokens.id })
@@ -180,7 +150,7 @@ export async function listIntegrationCredentials(kind: CredentialKind) {
 /** Resolves a bearer token for one integration kind, ignoring expired ones. */
 export async function findIntegrationCredential(
   token: string,
-  kind: CredentialKind | 'shottimer',
+  kind: CredentialKind,
 ) {
   const [match] = await getControlDb()
     .select({

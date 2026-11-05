@@ -28,10 +28,12 @@ import {
   listUsers,
   loadUser,
   requestAccountExport,
-  revokeToken,
 } from './account.server'
 import { createJournalDefaults } from './defaults.server'
-import { createIntegrationCredential } from './integrations.server'
+import {
+  createIntegrationCredential,
+  revokeIntegrationCredential,
+} from './integrations.server'
 import { runAccountJob } from './jobs.server'
 import { journalTables } from './journal-tables.server'
 import { handleJournalRequest } from './request.server'
@@ -259,7 +261,7 @@ suite('private account lifecycle', () => {
       .from(integrationTokens)
       .where(eq(integrationTokens.userId, second.id))
     if (!stored) throw new Error('Missing token')
-    await asFirst(() => revokeToken(stored.id))
+    await asFirst(() => revokeIntegrationCredential(stored.id))
     expect(
       (await handleJournalRequest(mcp, async () => new Response())).status,
     ).toBe(200)
@@ -270,7 +272,7 @@ suite('private account lifecycle', () => {
     expect(
       (await handleJournalRequest(mcp, async () => new Response())).status,
     ).toBe(401)
-    await asSecond(() => revokeToken(stored.id))
+    await asSecond(() => revokeIntegrationCredential(stored.id))
     expect(
       (await handleJournalRequest(mcp, async () => new Response())).status,
     ).toBe(401)

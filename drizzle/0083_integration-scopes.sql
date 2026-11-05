@@ -15,3 +15,6 @@ ALTER TABLE "oauth_grant_scopes" ADD CONSTRAINT "oauth_grant_scopes_user_id_auth
 ALTER TABLE "oauth_grant_scopes" ADD CONSTRAINT "oauth_grant_scopes_client_id_oauth_client_client_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."oauth_client"("client_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 -- Existing MCP tokens keep what they could do: read everything, log brews.
 UPDATE "integration_tokens" SET "scopes" = ARRAY['brews:read', 'brews:write', 'beans:read', 'roasters:read', 'gear:read', 'recipes:read', 'places:read', 'visits:read', 'methods:read', 'tags:read', 'stats:read']::text[] WHERE "kind" = 'mcp';
+--> statement-breakpoint
+-- Shottimer device tokens become API keys limited to the shottimer scope; paired devices keep working.
+UPDATE "integration_tokens" SET "kind" = 'api', "scopes" = ARRAY['shottimer:read', 'shottimer:write']::text[] WHERE "kind" = 'shottimer';

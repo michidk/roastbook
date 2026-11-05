@@ -104,9 +104,9 @@ codex mcp add roastbook --url http://127.0.0.1:3001/api/mcp \
 Requests must match the Host and Origin allowlists (`MCP_ALLOWED_HOSTS`,
 `MCP_ALLOWED_ORIGINS`). `docker-compose.yaml` publishes the MCP port on
 loopback only; the Helm chart can create a restricted private Service (see
-`charts/README.md`). Shottimer devices use their own tokens; see
-[Shottimer API](shottimer.md). API and MCP requests share the account's rate
-limits ([API](api.md#rate-limits)).
+`charts/README.md`). Shottimer devices use API keys limited to the shottimer
+permission; see [Shottimer API](shottimer.md). API and MCP requests share the
+account's rate limits ([API](api.md#rate-limits)).
 
 ## API
 
