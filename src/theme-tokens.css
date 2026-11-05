@@ -178,8 +178,6 @@
     --chart-3: #577d80;
     --chart-4: #9b627c;
     --chart-5: #aa723b;
-    --page-stains: none;
-    --page-texture: none;
   }
 
   :root:not(.dark)[data-light-theme="pure-light"],
@@ -229,8 +227,6 @@
     --chart-3: #527d89;
     --chart-4: #965d7e;
     --chart-5: #768541;
-    --page-stains: none;
-    --page-texture: none;
     --coffee-shadow: none;
     --coffee-shadow-inline: none;
     --coffee-shadow-strong: none;
@@ -284,8 +280,6 @@
     --chart-3: #88b6b0;
     --chart-4: #d8a9ba;
     --chart-5: #ddd0a0;
-    --page-stains: none;
-    --page-texture: none;
   }
 
   :root.dark[data-dark-theme="pure-dark"],
@@ -335,8 +329,6 @@
     --chart-3: #9bbab1;
     --chart-4: #c9b1da;
     --chart-5: #e7c6a4;
-    --page-stains: none;
-    --page-texture: none;
     --coffee-shadow: none;
     --coffee-shadow-inline: none;
     --coffee-shadow-strong: none;
