@@ -1,7 +1,5 @@
 import '@tanstack/react-start/server-only'
-import { readFile } from 'node:fs/promises'
-import { createRequire } from 'node:module'
-import { dirname, join } from 'node:path'
+import { scalarBundle } from '@/lib/server/integrations/api-reference-bundle.server'
 import { PALETTE_RESTORE_SCRIPT, THEME_BOOTSTRAP_SCRIPT } from '@/lib/theme'
 
 /**
@@ -28,25 +26,6 @@ export function isApiTryPath(path: string) {
   return path === API_TRY_BASE_PATH || path.startsWith(`${API_TRY_BASE_PATH}/`)
 }
 const SCRIPT_PREFIX = `${API_DOCS_PATH}/scalar/`
-
-let scalar: Promise<{ file: string; version: string }> | undefined
-
-/** Scalar's browser bundle, resolved from the installed package. */
-function scalarBundle() {
-  scalar ??= (async () => {
-    const require = createRequire(join(process.cwd(), 'package.json'))
-    // The package exports dist/index.js; its browser build sits beside it.
-    const dist = dirname(require.resolve('@scalar/api-reference'))
-    const manifest = JSON.parse(
-      await readFile(join(dist, '..', 'package.json'), 'utf8'),
-    ) as { version: string }
-    return {
-      file: join(dist, 'browser', 'standalone.js'),
-      version: manifest.version,
-    }
-  })()
-  return scalar
-}
 
 const PAGE_SECURITY_HEADERS = {
   'Content-Security-Policy': [
@@ -279,9 +258,9 @@ ${PAGE_HEADER}
 }
 
 async function docsScript(path: string) {
-  const { file, version } = await scalarBundle()
+  const { script, version } = await scalarBundle()
   if (path !== `${SCRIPT_PREFIX}${version}`) return null
-  return new Response(await readFile(file), {
+  return new Response(script, {
     headers: {
       'Content-Type': 'text/javascript; charset=utf-8',
       'Cache-Control': 'public, max-age=31536000, immutable',

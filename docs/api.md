@@ -9,6 +9,10 @@ The same operations are available as MCP tools (see
 [Deployment](deployment.md#mcp)). API keys, MCP tokens, and MCP applications
 share one permission model and one rate limit.
 
+Open **Settings → API** and choose **Open API explorer** to browse endpoints
+and try requests. The adjacent **OpenAPI description (JSON)** button opens the
+machine-readable schema. Both links describe the running version.
+
 ## Keys and permissions
 
 Create a key in **Settings → API**. Give it a name, an expiry (one day to one
