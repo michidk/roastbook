@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:18@sha256:6d732ddbc9cca651c7cbda3f2b84bc515c6d09de796204176c9e312ce8069c6c
+    image: postgres:18@sha256:bd5dfa494a5a259704365813dbfa5fa6b3e69be7348d43b547f540c730478583
     restart: unless-stopped
     environment:
       POSTGRES_DB: roastbook
