@@ -19,6 +19,45 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
 }
 
+function reviveUnion(options: readonly z.ZodType[], value: unknown) {
+  // A string another member accepts as a string stays a string.
+  if (
+    typeof value === 'string' &&
+    options.some(
+      (option) =>
+        defOf(option).type !== 'date' && option.safeParse(value).success,
+    )
+  )
+    return value
+  return options.reduce<unknown>(
+    (current, option) => reviveDates(option, current),
+    value,
+  )
+}
+
+function reviveObject(
+  shape: Record<string, z.ZodType> | undefined,
+  value: unknown,
+) {
+  if (!isPlainObject(value) || !shape) return value
+  return Object.fromEntries(
+    Object.entries(value).map(([key, item]) => [
+      key,
+      shape[key] ? reviveDates(shape[key], item) : item,
+    ]),
+  )
+}
+
+function reviveRecord(valueType: z.ZodType, value: unknown) {
+  if (!isPlainObject(value)) return value
+  return Object.fromEntries(
+    Object.entries(value).map(([key, item]) => [
+      key,
+      reviveDates(valueType, item),
+    ]),
+  )
+}
+
 /**
  * JSON has no dates. Converts ISO strings to `Date` wherever the journal
  * schema expects one, leaving every other value untouched.
@@ -46,44 +85,15 @@ export function reviveDates(schema: z.ZodType, value: unknown): unknown {
         ? value.map((item) => reviveDates(def.element as z.ZodType, item))
         : value
     case 'record':
-      return isPlainObject(value) && def.valueType
-        ? Object.fromEntries(
-            Object.entries(value).map(([key, item]) => [
-              key,
-              reviveDates(def.valueType as z.ZodType, item),
-            ]),
-          )
-        : value
+      return def.valueType ? reviveRecord(def.valueType, value) : value
     case 'intersection':
       return def.left && def.right
         ? reviveDates(def.right, reviveDates(def.left, value))
         : value
-    case 'union': {
-      const options = def.options ?? []
-      // A string another member accepts as a string stays a string.
-      if (
-        typeof value === 'string' &&
-        options.some(
-          (option) =>
-            defOf(option).type !== 'date' && option.safeParse(value).success,
-        )
-      )
-        return value
-      return options.reduce<unknown>(
-        (current, option) => reviveDates(option, current),
-        value,
-      )
-    }
-    case 'object': {
-      if (!isPlainObject(value) || !def.shape) return value
-      const shape = def.shape
-      return Object.fromEntries(
-        Object.entries(value).map(([key, item]) => [
-          key,
-          shape[key] ? reviveDates(shape[key], item) : item,
-        ]),
-      )
-    }
+    case 'union':
+      return reviveUnion(def.options ?? [], value)
+    case 'object':
+      return reviveObject(def.shape, value)
     default:
       return value
   }

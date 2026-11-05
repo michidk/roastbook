@@ -491,13 +491,24 @@ try {
   const rw = tokenSchema.parse(
     await json(await exchange(client, readWrite.code, readWrite.verifier)),
   )
-  const toolsBody = await (await rpc('tools/list', {}, rw.access_token)).text()
-  assert(toolsBody.includes('create_brew'), toolsBody)
-  // The owner can narrow an application to fewer permissions than it asked for.
+  // Without permissions chosen on the consent page, an application keeps
+  // read access only, even when it asked for mcp:write.
+  const readOnlyTools = await (
+    await rpc('tools/list', {}, rw.access_token)
+  ).text()
+  assert(readOnlyTools.includes('"name":"list_beans"'), readOnlyTools)
+  assert(!readOnlyTools.includes('create_brew'), readOnlyTools)
   const connected = (await withJournal(first, listOAuthGrants)).find(
     (item) => item.clientId === client,
   )
   assert(connected)
+  // The owner grants write access within what the application asked for.
+  await withJournal(first, () =>
+    updateOAuthGrantAccess(connected.id, allScopes('write')),
+  )
+  const toolsBody = await (await rpc('tools/list', {}, rw.access_token)).text()
+  assert(toolsBody.includes('create_brew'), toolsBody)
+  // And can narrow it to fewer permissions than it asked for.
   await withJournal(first, () =>
     updateOAuthGrantAccess(connected.id, ['beans:read']),
   )
