@@ -16,6 +16,8 @@ export type JournalIdentity = {
   role: 'user' | 'admin'
   authentication: boolean
   authenticatedAt: Date | null
+  /** The browser session behind the request, when there is one. */
+  sessionId?: string
   /** Set for API and MCP requests: the credential and what it may do. */
   integration?: {
     readonly channel: 'api' | 'mcp'

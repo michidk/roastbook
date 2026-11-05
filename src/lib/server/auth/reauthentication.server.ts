@@ -26,9 +26,29 @@ export class ReauthenticationRequiredError extends Error {
 }
 
 /**
- * Issues a single-use confirmation for one action. The caller has just signed
- * in again in the confirmation dialog, so the session is seconds old; an older
- * session, such as a stolen cookie, cannot obtain one.
+ * Each fresh sign-in yields exactly one confirmation. Inserting a marker keyed
+ * by the session is atomic on every database: a second request loses.
+ */
+async function claimSession(sessionId: string) {
+  const [claimed] = await getControlDb()
+    .insert(authVerifications)
+    .values({
+      id: `reauthentication-session:${hash(sessionId)}`,
+      identifier: 'reauthentication-session',
+      value: '',
+      expiresAt: new Date(Date.now() + SIGN_IN_WINDOW_MS),
+    })
+    .onConflictDoNothing()
+    .returning({ id: authVerifications.id })
+  if (!claimed) throw new ReauthenticationRequiredError()
+}
+
+/**
+ * Confirms the owner for one action right after they signed in again in the
+ * confirmation dialog. The session must be seconds old, belong to the account
+ * that asked, and not have confirmed anything before. Returns the single-use
+ * token for the action, or nothing for actions the authentication library
+ * checks itself through the fresh session.
  */
 export async function issueReauthentication(
   action: ReauthenticationAction,
@@ -37,15 +57,16 @@ export async function issueReauthentication(
   const identity = requireIdentity()
   if (!identity.authentication)
     throw new Error('This instance has no accounts to confirm')
-  if (SESSION_ONLY_ACTIONS.has(action))
-    throw new Error('This action needs no confirmation token')
   if (identity.id !== expectedUserId)
     throw new Error('Confirm with the account you are using')
   if (
+    !identity.sessionId ||
     !identity.authenticatedAt ||
     Date.now() - identity.authenticatedAt.getTime() > SIGN_IN_WINDOW_MS
   )
     throw new ReauthenticationRequiredError()
+  await claimSession(identity.sessionId)
+  if (SESSION_ONLY_ACTIONS.has(action)) return undefined
   const token = randomBytes(32).toString('base64url')
   await getControlDb()
     .insert(authVerifications)

@@ -102,6 +102,7 @@ async function resolveJournalIdentity(
     role: listed || current?.role === 'admin' ? 'admin' : 'user',
     authentication: true,
     authenticatedAt: session.session.createdAt,
+    sessionId: session.session.id,
   }
 }
 

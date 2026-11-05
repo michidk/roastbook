@@ -242,6 +242,22 @@ suite('private account lifecycle', () => {
         issueReauthentication('create-credential', first.id),
       ),
     ).rejects.toThrow('account you are using')
+    // One sign-in confirms one action, even under concurrent requests.
+    const session = {
+      ...second,
+      authenticatedAt: new Date(),
+      sessionId: randomUUID(),
+    }
+    const claims = await Promise.allSettled(
+      Array.from({ length: 3 }, () =>
+        withJournal(session, () =>
+          issueReauthentication('create-credential', second.id),
+        ),
+      ),
+    )
+    expect(claims.filter((claim) => claim.status === 'fulfilled')).toHaveLength(
+      1,
+    )
     const token = await confirmAs(second, 'create-credential')
     // A confirmation for one action does not unlock another.
     await expect(asSecond(() => requestAccountExport(token))).rejects.toThrow(

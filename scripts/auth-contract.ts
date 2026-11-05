@@ -393,7 +393,7 @@ export async function verifyAuthContract(
     ) => {
       let token = ''
       await domain(cookie, async () => {
-        token = await issueReauthentication(action, userId)
+        token = (await issueReauthentication(action, userId)) ?? ''
       })
       return token
     }
@@ -432,19 +432,15 @@ export async function verifyAuthContract(
       ),
       /Confirm it’s you/,
     )
-    const demotion = await confirm(
-      admin.cookie,
-      admin.user.id,
-      'change-user-role',
+    // One sign-in confirms one action: the same session cannot confirm again.
+    await assert.rejects(
+      confirm(admin.cookie, admin.user.id, 'change-user-role'),
+      /Confirm it’s you/,
     )
-    assert.equal(
-      (
-        await domain(admin.cookie, () =>
-          changeUserRole(user.user.id, 'user', demotion),
-        )
-      ).status,
-      204,
-    )
+    await database
+      .update(authUsers)
+      .set({ role: 'user' })
+      .where(eq(authUsers.id, user.user.id))
     await assert.rejects(
       domain(user.cookie, () => listUsers(0)),
       /Administrator/,

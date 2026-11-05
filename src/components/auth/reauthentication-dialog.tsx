@@ -25,7 +25,6 @@ import { confirmReauthentication } from '@/lib/server/reauthentication'
 import {
   REAUTHENTICATION_ACTIONS,
   type ReauthenticationAction,
-  SESSION_ONLY_ACTIONS,
 } from '@/modules/auth/reauthentication'
 import { SIGN_IN_CODE_LENGTH } from '@/modules/auth/sign-in-link'
 import { RESEND_DELAY_MS } from './login-state'
@@ -165,11 +164,9 @@ function useReauthenticationFlow({
 
   /** The fresh sign-in is exchanged for this action's confirmation. */
   async function finish() {
-    onConfirmed(
-      SESSION_ONLY_ACTIONS.has(action)
-        ? undefined
-        : await confirmReauthentication({ data: { action, userId } }),
-    )
+    // The server also checks the sign-in belongs to this account, so a
+    // passkey of another account cannot confirm, even for email changes.
+    onConfirmed(await confirmReauthentication({ data: { action, userId } }))
   }
 
   return {
