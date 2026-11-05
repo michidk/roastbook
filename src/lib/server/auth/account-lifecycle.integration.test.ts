@@ -239,14 +239,6 @@ suite('private account lifecycle', () => {
         )
       ).status,
     ).toBe(401)
-    expect(
-      (
-        await handleJournalRequest(
-          request('/api/shottimer/shots'),
-          async () => new Response(),
-        )
-      ).status,
-    ).toBe(401)
     // MCP tokens and API keys are not interchangeable.
     expect(
       (

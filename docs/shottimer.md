@@ -16,32 +16,30 @@ target time to count against.
 The link is `https://<your Roastbook>/settings/api?create=true&name=Shottimer&scopes=shottimer:write&expires=never`,
 so device instructions can link to it directly. Revoke the key in Settings →
 API to disconnect the device. Device tokens created before API keys existed
-were converted to such keys and keep working.
+were converted to such keys.
 
-Compose and Helm let `/api/shottimer/*` through Hodor without a session (see
-[Deployment](deployment.md)). With another authentication proxy, exempt the
-same path prefix and keep TLS enabled because the key is a bearer credential.
+The device uses the regular [API](api.md): the same base URL, key header,
+rate limits, and error format as any other client.
 
 ## Endpoints
 
 Every request needs `Authorization: Bearer <key>` with an API key that has
-`shottimer:write` (which includes `shottimer:read`). Requests return `401`
-while the integration is disabled or the key is unknown, revoked, or expired,
-and `403` when the key lacks the permission. They count against the account's
-[rate limits](api.md#rate-limits). The same operations are available as
-`/api/v1/shottimer/shots` and `/api/v1/shottimer/target`.
+`shottimer:write` (which includes `shottimer:read`). Unknown, revoked, or
+expired keys get `401`, keys without the permission `403`, and requests while
+the integration is turned off `422`. See [API](api.md) for headers and errors.
 
 ### Submit a brew time
 
 ```http
-POST /api/shottimer/shots
+POST /api/v1/shottimer/shots
 Content-Type: application/json
 
 {"seconds": 27.4}
 ```
 
 `seconds` must be a positive number up to 9999.99 and is rounded to two
-decimals. A valid request returns `204`; a malformed body returns `400`.
+decimals. A valid request returns `200` with `{"data": null}`; a malformed
+body returns `400`.
 
 Open new brew pages poll for the latest time every few seconds and offer it in
 a dialog. Accepting fills in the brew time; accepting or dismissing clears the
@@ -51,11 +49,11 @@ no longer offered.
 ### Read the target time
 
 ```http
-GET /api/shottimer/target
+GET /api/v1/shottimer/target
 ```
 
 ```json
-{"targetSeconds": 28}
+{"data": {"targetSeconds": 28}}
 ```
 
 `targetSeconds` is the target time of the most recently opened new brew page,

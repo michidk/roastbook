@@ -29,8 +29,7 @@ export function isPublicApiPath(path: string) {
 
 function integrationKind(path: string) {
   if (path === '/api/mcp') return 'mcp'
-  // Shottimer devices use API keys with the shottimer scope.
-  if (isApiPath(path) || path.startsWith('/api/shottimer/')) return 'api'
+  if (isApiPath(path)) return 'api'
   return null
 }
 

@@ -139,9 +139,9 @@ spec:
               value: {{ or .Values.hodor.secureCookie (not (empty .Values.ingress.tls)) | quote }}
             - name: LOG_FORMAT
               value: {{ .Values.hodor.logFormat | quote }}
-            # The shottimer device API and the REST API authenticate with their own tokens.
+            # The REST API (including shottimer devices) authenticates with its own keys.
             - name: BYPASS_PATHS
-              value: "/api/shottimer/*,/api/v1/*"
+              value: "/api/v1/*"
           livenessProbe:
             httpGet:
               path: /_gate/health

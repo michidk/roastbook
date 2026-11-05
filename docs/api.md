@@ -131,7 +131,6 @@ requests return `429` with `Retry-After` until the window resets.
 ## Exposure
 
 Behind Hodor, the Compose file and Helm chart let `/api/v1/*` through without
-the Hodor login, like `/api/shottimer/*`: the API authenticates every request
-with its own key and never accepts a browser session. With another
-authenticating proxy, exempt the same path prefix and keep TLS enabled because
-keys are bearer credentials.
+the Hodor login: the API authenticates every request with its own key and
+never accepts a browser session. With another authenticating proxy, exempt
+the same path prefix and keep TLS enabled because keys are bearer credentials.

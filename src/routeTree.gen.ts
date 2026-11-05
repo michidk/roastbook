@@ -70,8 +70,6 @@ import { Route as VisitsIndexRouteImport } from './routes/visits/index'
 import { Route as VisitsVisitIdRouteImport } from './routes/visits/$visitId'
 import { Route as VisitsNewRouteImport } from './routes/visits/new'
 import { Route as AdminUsersUserIdRouteImport } from './routes/admin/users_/$userId'
-import { Route as ApiShottimerShotsRouteImport } from './routes/api/shottimer/shots'
-import { Route as ApiShottimerTargetRouteImport } from './routes/api/shottimer/target'
 import { Route as ApiV1SplatRouteImport } from './routes/api/v1/$'
 import { Route as ApiAccountExportsJobIdRouteImport } from './routes/api/account/exports/$jobId'
 
@@ -381,16 +379,6 @@ const AdminUsersUserIdRoute = AdminUsersUserIdRouteImport.update({
   path: '/users/$userId',
   getParentRoute: () => AdminRoute,
 } as any)
-const ApiShottimerShotsRoute = ApiShottimerShotsRouteImport.update({
-  id: '/api/shottimer/shots',
-  path: '/api/shottimer/shots',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiShottimerTargetRoute = ApiShottimerTargetRouteImport.update({
-  id: '/api/shottimer/target',
-  path: '/api/shottimer/target',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiV1SplatRoute = ApiV1SplatRouteImport.update({
   id: '/api/v1/$',
   path: '/api/v1/$',
@@ -464,8 +452,6 @@ export interface FileRoutesByFullPath {
   '/shots/': typeof ShotsIndexRoute
   '/visits/': typeof VisitsIndexRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
-  '/api/shottimer/shots': typeof ApiShottimerShotsRoute
-  '/api/shottimer/target': typeof ApiShottimerTargetRoute
   '/api/v1/$': typeof ApiV1SplatRoute
   '/api/account/exports/$jobId': typeof ApiAccountExportsJobIdRoute
 }
@@ -529,8 +515,6 @@ export interface FileRoutesByTo {
   '/shots': typeof ShotsIndexRoute
   '/visits': typeof VisitsIndexRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
-  '/api/shottimer/shots': typeof ApiShottimerShotsRoute
-  '/api/shottimer/target': typeof ApiShottimerTargetRoute
   '/api/v1/$': typeof ApiV1SplatRoute
   '/api/account/exports/$jobId': typeof ApiAccountExportsJobIdRoute
 }
@@ -597,8 +581,6 @@ export interface FileRoutesById {
   '/shots/': typeof ShotsIndexRoute
   '/visits/': typeof VisitsIndexRoute
   '/admin/users_/$userId': typeof AdminUsersUserIdRoute
-  '/api/shottimer/shots': typeof ApiShottimerShotsRoute
-  '/api/shottimer/target': typeof ApiShottimerTargetRoute
   '/api/v1/$': typeof ApiV1SplatRoute
   '/api/account/exports/$jobId': typeof ApiAccountExportsJobIdRoute
 }
@@ -666,8 +648,6 @@ export interface FileRouteTypes {
     | '/shots/'
     | '/visits/'
     | '/admin/users/$userId'
-    | '/api/shottimer/shots'
-    | '/api/shottimer/target'
     | '/api/v1/$'
     | '/api/account/exports/$jobId'
   fileRoutesByTo: FileRoutesByTo
@@ -731,8 +711,6 @@ export interface FileRouteTypes {
     | '/shots'
     | '/visits'
     | '/admin/users/$userId'
-    | '/api/shottimer/shots'
-    | '/api/shottimer/target'
     | '/api/v1/$'
     | '/api/account/exports/$jobId'
   id:
@@ -798,8 +776,6 @@ export interface FileRouteTypes {
     | '/shots/'
     | '/visits/'
     | '/admin/users_/$userId'
-    | '/api/shottimer/shots'
-    | '/api/shottimer/target'
     | '/api/v1/$'
     | '/api/account/exports/$jobId'
   fileRoutesById: FileRoutesById
@@ -850,8 +826,6 @@ export interface RootRouteChildren {
   ShopsIndexRoute: typeof ShopsIndexRoute
   ShotsIndexRoute: typeof ShotsIndexRoute
   VisitsIndexRoute: typeof VisitsIndexRoute
-  ApiShottimerShotsRoute: typeof ApiShottimerShotsRoute
-  ApiShottimerTargetRoute: typeof ApiShottimerTargetRoute
   ApiV1SplatRoute: typeof ApiV1SplatRoute
   ApiAccountExportsJobIdRoute: typeof ApiAccountExportsJobIdRoute
 }
@@ -1285,20 +1259,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersUserIdRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/api/shottimer/shots': {
-      id: '/api/shottimer/shots'
-      path: '/api/shottimer/shots'
-      fullPath: '/api/shottimer/shots'
-      preLoaderRoute: typeof ApiShottimerShotsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/shottimer/target': {
-      id: '/api/shottimer/target'
-      path: '/api/shottimer/target'
-      fullPath: '/api/shottimer/target'
-      preLoaderRoute: typeof ApiShottimerTargetRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/v1/$': {
       id: '/api/v1/$'
       path: '/api/v1/$'
@@ -1412,8 +1372,6 @@ const rootRouteChildren: RootRouteChildren = {
   ShopsIndexRoute: ShopsIndexRoute,
   ShotsIndexRoute: ShotsIndexRoute,
   VisitsIndexRoute: VisitsIndexRoute,
-  ApiShottimerShotsRoute: ApiShottimerShotsRoute,
-  ApiShottimerTargetRoute: ApiShottimerTargetRoute,
   ApiV1SplatRoute: ApiV1SplatRoute,
   ApiAccountExportsJobIdRoute: ApiAccountExportsJobIdRoute,
 }

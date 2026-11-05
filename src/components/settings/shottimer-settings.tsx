@@ -62,7 +62,7 @@ export function ShottimerSettings({
           <div className="space-y-1">
             <Label htmlFor="shottimer-enabled">Shottimer integration</Label>
             <p className="text-sm text-muted-foreground">
-              Accept requests to <code>/api/shottimer/*</code> from API keys
+              Accept requests to <code>/api/v1/shottimer/*</code> from API keys
               with shottimer access.
             </p>
           </div>

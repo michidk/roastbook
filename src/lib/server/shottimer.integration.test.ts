@@ -10,33 +10,31 @@ import {
   revokeIntegrationCredential,
 } from '@/lib/server/auth/integrations.server'
 import { handleJournalRequest } from '@/lib/server/auth/request.server'
+import { handleApiRequest } from '@/lib/server/integrations/api.server'
 import {
   dismissShottimerShot,
   loadPendingShottimerShot,
   setShottimerEnabled,
   setShottimerTarget,
 } from '@/lib/server/shottimer.server'
-import {
-  handleShottimerShotRequest,
-  handleShottimerTargetRequest,
-} from '@/lib/server/shottimer-api'
 
 const integrationDescribe = process.env.TEST_DATABASE_URL
   ? describe
   : describe.skip
 
 function postShot(token: string | null, body: unknown) {
-  const request = new Request('http://roastbook.test/api/shottimer/shots', {
+  const request = new Request('http://roastbook.test/api/v1/shottimer/shots', {
     method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body: JSON.stringify(body),
   })
-  return handleJournalRequest(request, () =>
-    handleShottimerShotRequest(request),
-  )
+  return handleJournalRequest(request, () => handleApiRequest(request))
 }
 
-integrationDescribe('shottimer device API', () => {
+integrationDescribe('shottimer through the API', () => {
   const identity: JournalIdentity = {
     id: `device-${crypto.randomUUID()}`,
     email: 'device@example.test',
@@ -79,7 +77,8 @@ integrationDescribe('shottimer device API', () => {
 
   test('accepts API keys with the shottimer scope once enabled', async () => {
     const token = await createKey(['shottimer:write'])
-    expect((await postShot(token, { seconds: 27 })).status).toBe(401)
+    // Turned off in Settings → Shottimer.
+    expect((await postShot(token, { seconds: 27 })).status).toBe(422)
 
     await scoped(() => setShottimerEnabled(true))
     expect((await postShot(null, { seconds: 27 })).status).toBe(401)
@@ -95,7 +94,7 @@ integrationDescribe('shottimer device API', () => {
     ).filter((item) => item.scopes.includes('brews:write'))
     if (key) await scoped(() => revokeIntegrationCredential(key.id))
     expect((await postShot(brews, { seconds: 27 })).status).toBe(401)
-    expect((await postShot(token, { seconds: 27.456 })).status).toBe(204)
+    expect((await postShot(token, { seconds: 27.456 })).status).toBe(200)
   })
 
   test('offers the latest shot until it is dismissed', async () => {
@@ -110,12 +109,13 @@ integrationDescribe('shottimer device API', () => {
   test('serves the reported target time', async () => {
     const token = await createKey(['shottimer:read'])
     await scoped(() => setShottimerTarget(28))
-    const request = new Request('http://roastbook.test/api/shottimer/target', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    const response = await handleJournalRequest(request, () =>
-      handleShottimerTargetRequest(request),
+    const request = new Request(
+      'http://roastbook.test/api/v1/shottimer/target',
+      { headers: { Authorization: `Bearer ${token}` } },
     )
-    expect(await response.json()).toEqual({ targetSeconds: 28 })
+    const response = await handleJournalRequest(request, () =>
+      handleApiRequest(request),
+    )
+    expect(await response.json()).toEqual({ data: { targetSeconds: 28 } })
   })
 })

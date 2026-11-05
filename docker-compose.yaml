@@ -71,8 +71,8 @@ services:
       SESSION_TTL: ${HODOR_SESSION_TTL:-86400}
       SECURE_COOKIE: ${HODOR_SECURE_COOKIE:-false}
       LOG_FORMAT: ${HODOR_LOG_FORMAT:-compact}
-      # The shottimer device API and the REST API authenticate with their own tokens.
-      BYPASS_PATHS: /api/shottimer/*,/api/v1/*
+      # The REST API (including shottimer devices) authenticates with its own keys.
+      BYPASS_PATHS: /api/v1/*
 
 volumes:
   postgres_data:

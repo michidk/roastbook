@@ -45,17 +45,10 @@ export async function setShottimerEnabled(enabled: boolean) {
   return toSettings(await updateShottimer({ enabled }))
 }
 
-/** The device API answers only while the owner has the integration on. */
-export class ShottimerDisabledError extends Error {
-  constructor() {
-    super('Turn on the shottimer in Settings → Shottimer first')
-    this.name = 'ShottimerDisabledError'
-  }
-}
-
+/** The device operations answer only while the owner has the integration on. */
 async function requireShottimerEnabled() {
   if ((await readShottimer())?.enabled !== true)
-    throw new ShottimerDisabledError()
+    throw new Error('Turn on the shottimer in Settings → Shottimer first')
 }
 
 export async function recordShottimerShot(seconds: number) {
