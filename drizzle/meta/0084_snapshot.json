@@ -1,6 +1,6 @@
 {
-  "id": "b15c85ab-1233-46bb-85fe-501cae355762",
-  "prevId": "7a7b0e31-c19a-4b8b-ae8d-daa0510237f7",
+  "id": "7a7b0e31-c19a-4b8b-ae8d-daa0510237f7",
+  "prevId": "95fa1330-2e98-429f-8d1f-d2b7759b29a1",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1118,7 +1118,7 @@
           "name": "bean_purchase_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "storage_path": {
           "name": "storage_path",
@@ -4826,6 +4826,19 @@
           "primaryKey": false,
           "notNull": true
         },
+        "token_prefix": {
+          "name": "token_prefix",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scopes": {
+          "name": "scopes",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::text[]"
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -4837,7 +4850,13 @@
           "name": "expires_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
+        },
+        "last_used_at": {
+          "name": "last_used_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -8673,12 +8692,6 @@
           "notNull": true,
           "default": false
         },
-        "token_hash": {
-          "name": "token_hash",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "latest_shot_seconds": {
           "name": "latest_shot_seconds",
           "type": "double precision",
@@ -9026,6 +9039,86 @@
           "value": "(\"wdt_details\".\"needle_diameter_mm\" is null or \"wdt_details\".\"needle_diameter_mm\" > 0)\n        and (\"wdt_details\".\"needle_count\" is null or \"wdt_details\".\"needle_count\" > 0)"
         }
       },
+      "isRLSEnabled": false
+    },
+    "public.oauth_grant_scopes": {
+      "name": "oauth_grant_scopes",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "client_id": {
+          "name": "client_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scopes": {
+          "name": "scopes",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "oauth_grant_scopes_user_id_auth_users_id_fk": {
+          "name": "oauth_grant_scopes_user_id_auth_users_id_fk",
+          "tableFrom": "oauth_grant_scopes",
+          "tableTo": "auth_users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "oauth_grant_scopes_client_id_oauth_client_client_id_fk": {
+          "name": "oauth_grant_scopes_client_id_oauth_client_client_id_fk",
+          "tableFrom": "oauth_grant_scopes",
+          "tableTo": "oauth_client",
+          "columnsFrom": [
+            "client_id"
+          ],
+          "columnsTo": [
+            "client_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "oauth_grant_scopes_user_id_client_id_pk": {
+          "name": "oauth_grant_scopes_user_id_client_id_pk",
+          "columns": [
+            "user_id",
+            "client_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     }
   },

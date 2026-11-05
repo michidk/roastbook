@@ -93,7 +93,7 @@ const addedTriggers = [...addedTables]
         .join(', ')});`,
   )
   .join('\n--> statement-breakpoint\n')
-const additionPath = 'drizzle/0083_colossal_bastion.sql'
+const additionPath = 'drizzle/0084_colossal_bastion.sql'
 const additionMarker = '-- Bean library synchronization triggers.'
 const additionCurrent = await Bun.file(additionPath).text()
 const additionOutput = `${additionCurrent.split(additionMarker)[0]?.trimEnd()}\n${additionMarker}\n${addedTriggers}\n`
