@@ -154,7 +154,15 @@ async function bodyInput(
       message: 'Send application/json (or multipart/form-data for pictures)',
     })
   const body = await readBoundedRequestBody(request, limit)
-  if (body instanceof Response) return body
+  if (body instanceof Response)
+    return failure({
+      status: body.status,
+      code: 'invalid_input',
+      message:
+        body.status === 413
+          ? 'The request body is too large'
+          : 'Could not read the request body',
+    })
   if (!body.length) return {}
   try {
     const value = JSON.parse(body.toString('utf8')) as unknown

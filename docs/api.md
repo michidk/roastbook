@@ -133,11 +133,11 @@ curl -H "Authorization: Bearer $ROASTBOOK_API_KEY" \
 - `GET /api/v1` lists every operation and whether the key may use it.
 - `GET /api/v1/openapi.json` is the OpenAPI 3.1 description, readable without
   a key. Each operation names its required scope.
-- JSON responses are objects with a `data` field; picture downloads return the
-  image itself. Lists return the same pages the app shows. Their query
-  parameters differ per list (for example `page` for brews, `activePage` and
-  `archivedPage` for beans and gear); the OpenAPI description has each list's
-  parameters.
+- Operation responses are JSON objects with a `data` field; picture downloads
+  return the image itself, and `/api/v1/openapi.json` the OpenAPI document.
+  Lists return the same pages the app shows. Their query parameters differ per
+  list (for example `page` for brews, `activePage` and `archivedPage` for beans
+  and gear); the OpenAPI description has each list's parameters.
 - Request bodies are JSON (`Content-Type: application/json`), at most 1 MiB,
   except picture uploads (see [Pictures](#pictures)). Path parameters such as
   `{id}` override body fields of the same name.
