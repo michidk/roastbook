@@ -2,6 +2,10 @@ import { useRouter } from '@tanstack/react-router'
 import { KeyRound } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import {
+  isReauthenticationCancelled,
+  useReauthentication,
+} from '@/components/auth/reauthentication-dialog'
 import { SelectField } from '@/components/form/form-field'
 import { PanelSection } from '@/components/section-layout'
 import { Button } from '@/components/ui/button'
@@ -33,8 +37,8 @@ export function AiProviderSettings({ settings }: { settings: Settings }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const { usesByo, control, description } = useAiProviderMode()
+  const reauthentication = useReauthentication()
   async function save() {
-    setBusy(true)
     setError('')
     try {
       const parsed = aiProviderSettingsSchema.safeParse({
@@ -45,13 +49,17 @@ export function AiProviderSettings({ settings }: { settings: Settings }) {
         throw new Error(
           parsed.error.issues[0]?.message ?? 'Check your provider settings',
         )
-      const input = parsed.data
-      const updated = await updateAiProviderSettings({ data: input })
+      const reauthToken = await reauthentication.confirm('save-ai-credentials')
+      setBusy(true)
+      const updated = await updateAiProviderSettings({
+        data: { ...parsed.data, reauthToken },
+      })
       setSaved(updated)
       setKey('')
       toast.success('AI provider saved')
       await router.invalidate()
     } catch (cause) {
+      if (isReauthenticationCancelled(cause)) return
       setError(
         cause instanceof Error
           ? cause.message
@@ -176,8 +184,7 @@ export function AiProviderSettings({ settings }: { settings: Settings }) {
                 />
                 <p id="ai-key-help" className="text-sm text-muted-foreground">
                   Your key is encrypted when stored and is never shown again.
-                  Sign in again before saving if your session is older than ten
-                  minutes.
+                  Saving asks you to confirm it’s you first.
                 </p>
               </div>
               <div className="grid gap-5 sm:grid-cols-2">

@@ -2,11 +2,9 @@ import '@tanstack/react-start/server-only'
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { and, count, desc, eq, gt, isNull, lt, or, sql } from 'drizzle-orm'
 import { getControlDb } from '@/db/connection.server'
-import {
-  type JournalIdentity,
-  requireIdentity,
-} from '@/db/journal-context.server'
+import { requireIdentity } from '@/db/journal-context.server'
 import { authUsers, integrationTokens } from '@/db/schema'
+import { consumeReauthentication } from '@/lib/server/auth/reauthentication.server'
 import {
   type IntegrationScope,
   normalizeScopes,
@@ -24,15 +22,6 @@ export function hashIntegrationToken(token: string) {
   return createHash('sha256').update(token).digest('hex')
 }
 
-function requireRecentSignIn(identity: JournalIdentity, action: string) {
-  if (
-    identity.authentication &&
-    (!identity.authenticatedAt ||
-      Date.now() - identity.authenticatedAt.getTime() > 600_000)
-  )
-    throw new Error(`Sign in again before ${action}`)
-}
-
 function requireScopes(scopes: readonly string[]) {
   const normalized = normalizeScopes(scopes)
   if (!normalized.length) throw new Error('Choose at least one permission')
@@ -48,12 +37,13 @@ export async function createIntegrationCredential(input: {
   name: string
   scopes: readonly string[]
   expiresAt: Date | null
+  reauthToken?: string
 }) {
   const identity = requireIdentity()
-  requireRecentSignIn(identity, 'creating credentials')
   const scopes = requireScopes(input.scopes)
   if (input.expiresAt && input.expiresAt.getTime() <= Date.now())
     throw new Error('Choose an expiry date in the future')
+  await consumeReauthentication('create-credential', input.reauthToken)
   const token = `${TOKEN_PREFIXES[input.kind]}${randomBytes(32).toString('base64url')}`
   // Count and insert under one per-account lock so parallel requests cannot
   // exceed the limit.
@@ -91,12 +81,14 @@ export async function updateIntegrationCredential(input: {
   id: string
   name: string
   scopes: readonly string[]
+  reauthToken?: string
 }) {
   const identity = requireIdentity()
-  requireRecentSignIn(identity, 'changing permissions')
+  const scopes = requireScopes(input.scopes)
+  await consumeReauthentication('change-permissions', input.reauthToken)
   const [updated] = await getControlDb()
     .update(integrationTokens)
-    .set({ name: input.name, scopes: requireScopes(input.scopes) })
+    .set({ name: input.name, scopes })
     .where(
       and(
         eq(integrationTokens.id, input.id),

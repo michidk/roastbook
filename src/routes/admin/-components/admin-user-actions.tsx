@@ -2,6 +2,10 @@ import { useRouter } from '@tanstack/react-router'
 import { MoreHorizontal, ShieldCheck, ShieldOff, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
+import {
+  isReauthenticationCancelled,
+  useReauthentication,
+} from '@/components/auth/reauthentication-dialog'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -21,6 +25,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { adminUserActions } from '@/extension-points/admin-user-extras'
 import { deleteUser, type getUsers, setUserRole } from '@/lib/server/account'
+import type { ReauthenticationAction } from '@/modules/auth/reauthentication'
 
 export type AdminUser = Awaited<ReturnType<typeof getUsers>>['users'][number]
 
@@ -29,15 +34,25 @@ export function AdminUserActions({ user }: { readonly user: AdminUser }) {
   const actionTrigger = useRef<HTMLButtonElement>(null)
   const [busy, setBusy] = useState(false)
   const [dialog, setDialog] = useState<string | null>(null)
+  const reauthentication = useReauthentication()
 
-  async function action(work: () => Promise<unknown>, message: string) {
-    setBusy(true)
+  /** Runs an admin action, first confirming it's you when it is sensitive. */
+  async function action(
+    work: (reauthToken: string | undefined) => Promise<unknown>,
+    message: string,
+    confirm?: ReauthenticationAction,
+  ) {
     try {
-      await work()
+      const reauthToken = confirm
+        ? await reauthentication.confirm(confirm)
+        : undefined
+      setBusy(true)
+      await work(reauthToken)
       await router.invalidate()
       setDialog(null)
       toast.success(message)
     } catch (error) {
+      if (isReauthenticationCancelled(error)) return
       toast.error(error instanceof Error ? error.message : 'The action failed')
     } finally {
       setBusy(false)
@@ -48,6 +63,7 @@ export function AdminUserActions({ user }: { readonly user: AdminUser }) {
 
   return (
     <>
+      {reauthentication.dialog}
       <DropdownMenu>
         <DropdownMenuTrigger>
           <Button
@@ -65,14 +81,16 @@ export function AdminUserActions({ user }: { readonly user: AdminUser }) {
             <DropdownMenuItem
               onClick={() =>
                 void action(
-                  () =>
+                  (reauthToken) =>
                     setUserRole({
                       data: {
                         userId: user.id,
                         role: user.role === 'admin' ? 'user' : 'admin',
+                        reauthToken,
                       },
                     }),
                   'Administrator access updated.',
+                  'change-user-role',
                 )
               }
             >
@@ -139,8 +157,10 @@ export function AdminUserActions({ user }: { readonly user: AdminUser }) {
                 aria-busy={busy}
                 onClick={() =>
                   void action(
-                    () => deleteUser({ data: { userId: user.id } }),
+                    (reauthToken) =>
+                      deleteUser({ data: { userId: user.id, reauthToken } }),
                     'User deletion started.',
+                    'delete-user',
                   )
                 }
               >

@@ -64,6 +64,9 @@ const { authUsers } = await import('../src/db/schema')
 const { saveAiProviderSettings } = await import(
   '../src/lib/server/ai-provider-settings.server'
 )
+const { confirmAs } = await import(
+  '../src/lib/server/auth/reauthentication-fixture.server'
+)
 const { researchBeanFromWeb } = await import(
   '../src/lib/server/ai-web-research.server'
 )
@@ -90,14 +93,18 @@ try {
   console.error = (...args) => {
     logs.push(JSON.stringify(args))
   }
+  const confirmation = await confirmAs(user, 'save-ai-credentials')
   await withJournal(user, () =>
-    saveAiProviderSettings({
-      baseURL: `http://127.0.0.1:${provider.port}/v1`,
-      apiKey: 'fixture-user-key',
-      api: 'responses',
-      visionModel: 'fixture-vision',
-      researchModel: 'fixture-research',
-    }),
+    saveAiProviderSettings(
+      {
+        baseURL: `http://127.0.0.1:${provider.port}/v1`,
+        apiKey: 'fixture-user-key',
+        api: 'responses',
+        visionModel: 'fixture-vision',
+        researchModel: 'fixture-research',
+      },
+      confirmation,
+    ),
   )
   const result = await withJournal(user, () =>
     researchBeanFromWeb('PRIVATE_INPUT_FIXTURE', 'PRIVATE_ROASTER_FIXTURE'),

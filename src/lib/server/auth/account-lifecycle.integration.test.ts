@@ -22,6 +22,7 @@ import {
 } from '@/db/schema'
 import { downloadAccountExport } from '@/lib/server/account-export'
 import { getStorage } from '@/lib/storage'
+import type { ReauthenticationAction } from '@/modules/auth/reauthentication'
 import {
   changeUserRole,
   confirmAccountDeletion,
@@ -36,6 +37,8 @@ import {
 } from './integrations.server'
 import { runAccountJob } from './jobs.server'
 import { journalTables } from './journal-tables.server'
+import { issueReauthentication } from './reauthentication.server'
+import { confirmAs } from './reauthentication-fixture.server'
 import { handleJournalRequest } from './request.server'
 
 const suite = process.env.TEST_DATABASE_URL ? describe : describe.skip
@@ -56,6 +59,15 @@ const second: JournalIdentity = {
 const database = getControlDb
 const asFirst = <T>(work: () => Promise<T>) => withJournal(first, work)
 const asSecond = <T>(work: () => Promise<T>) => withJournal(second, work)
+/** Runs a sensitive action right after confirming it's the owner. */
+async function confirmed<T>(
+  identity: JournalIdentity,
+  action: ReauthenticationAction,
+  work: (token: string) => Promise<T>,
+) {
+  const token = await confirmAs(identity, action)
+  return withJournal(identity, () => work(token))
+}
 let directory: string | undefined
 let imagePath = '',
   gearImagePath = '',
@@ -156,13 +168,24 @@ suite('private account lifecycle', () => {
   test('normal users cannot administer accounts and concurrent demotions retain one admin', async () => {
     await expect(asSecond(() => listUsers(0))).rejects.toThrow('Administrator')
     await expect(
-      asFirst(() => changeUserRole(first.id, 'user')),
+      asFirst(() => changeUserRole(second.id, 'admin')),
+    ).rejects.toThrow('Confirm it’s you')
+    await expect(
+      confirmed(first, 'change-user-role', (token) =>
+        changeUserRole(first.id, 'user', token),
+      ),
     ).rejects.toThrow('last administrator')
-    await asFirst(() => changeUserRole(second.id, 'admin'))
+    await confirmed(first, 'change-user-role', (token) =>
+      changeUserRole(second.id, 'admin', token),
+    )
     const anotherAdmin = { ...second, role: 'admin' as const }
     const results = await Promise.allSettled([
-      asFirst(() => changeUserRole(first.id, 'user')),
-      withJournal(anotherAdmin, () => changeUserRole(second.id, 'user')),
+      confirmed(first, 'change-user-role', (token) =>
+        changeUserRole(first.id, 'user', token),
+      ),
+      confirmed(anotherAdmin, 'change-user-role', (token) =>
+        changeUserRole(second.id, 'user', token),
+      ),
     ])
     expect(
       results.filter((result) => result.status === 'fulfilled'),
@@ -207,13 +230,51 @@ suite('private account lifecycle', () => {
     )
     expect(await response.text()).toContain('Private export bean')
   })
+  test('confirmations are single-use, action-bound, and need a fresh sign-in', async () => {
+    const stale = { ...second, authenticatedAt: new Date(Date.now() - 180_000) }
+    await expect(
+      withJournal(stale, () =>
+        issueReauthentication('create-credential', second.id),
+      ),
+    ).rejects.toThrow('Confirm it’s you')
+    await expect(
+      withJournal({ ...second, authenticatedAt: new Date() }, () =>
+        issueReauthentication('create-credential', first.id),
+      ),
+    ).rejects.toThrow('account you are using')
+    const token = await confirmAs(second, 'create-credential')
+    // A confirmation for one action does not unlock another.
+    await expect(asSecond(() => requestAccountExport(token))).rejects.toThrow(
+      'Confirm it’s you',
+    )
+    const create = () =>
+      createIntegrationCredential({
+        kind: 'api',
+        name: 'Single use',
+        scopes: ['beans:read'],
+        expiresAt: null,
+        reauthToken: token,
+      })
+    await asSecond(create)
+    await expect(asSecond(create)).rejects.toThrow('Confirm it’s you')
+    // Without built-in accounts there is nobody to confirm.
+    await withJournal({ ...second, authentication: false }, () =>
+      createIntegrationCredential({
+        kind: 'api',
+        name: 'Shared journal',
+        scopes: ['beans:read'],
+        expiresAt: null,
+      }),
+    )
+  })
   test('requires correct token kind, owner, expiry, and revocation for integrations', async () => {
-    const token = await asSecond(() =>
+    const token = await confirmed(second, 'create-credential', (reauthToken) =>
       createIntegrationCredential({
         kind: 'mcp',
         name: 'Lifecycle test',
         scopes: ['beans:read'],
         expiresAt: null,
+        reauthToken,
       }),
     )
     const request = (path: string, value = token) =>
@@ -270,7 +331,7 @@ suite('private account lifecycle', () => {
     ).toBe(401)
   })
   test('exports profile, private data, and originals while excluding credentials', async () => {
-    await asSecond(requestAccountExport)
+    await confirmed(second, 'export-account', requestAccountExport)
     expect(await runAccountJob()).toBe(true)
     const [job] = await database()
       .select()
@@ -320,17 +381,18 @@ suite('private account lifecycle', () => {
     expect((await asFirst(() => downloadAccountExport(job.id))).status).toBe(
       404,
     )
-    await expect(asSecond(requestAccountExport)).rejects.toThrow(
-      'one export per hour',
-    )
+    await expect(
+      confirmed(second, 'export-account', requestAccountExport),
+    ).rejects.toThrow('one export per hour')
   })
   test('requires a one-time email confirmation and removes journal, credentials, and files', async () => {
-    await asSecond(() =>
+    await confirmed(second, 'create-credential', (reauthToken) =>
       createIntegrationCredential({
         kind: 'api',
         name: 'Delete test',
         scopes: ['beans:read'],
         expiresAt: null,
+        reauthToken,
       }),
     )
     await database()

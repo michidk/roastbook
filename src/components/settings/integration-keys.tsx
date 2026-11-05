@@ -1,6 +1,10 @@
 import { Copy, KeyRound, Plus, TriangleAlert } from 'lucide-react'
 import { type FormEvent, useId, useState } from 'react'
 import { toast } from 'sonner'
+import {
+  isReauthenticationCancelled,
+  useReauthentication,
+} from '@/components/auth/reauthentication-dialog'
 import { DeleteConfirmation } from '@/components/delete-confirmation'
 import { ScopePicker } from '@/components/settings/scope-picker'
 import { Badge } from '@/components/ui/badge'
@@ -52,6 +56,7 @@ type Credential = Awaited<
 >['credentials'][number]
 
 const EXPIRY_OPTIONS = [
+  { value: '1d', label: '1 day', days: 1 },
   { value: '7d', label: '7 days', days: 7 },
   { value: '30d', label: '30 days', days: 30 },
   { value: '90d', label: '90 days', days: 90 },
@@ -246,6 +251,7 @@ function CreateKeyDialog({
   const [prefilled, setPrefilled] = useState(initial !== null)
   const [busy, setBusy] = useState(false)
   const [token, setToken] = useState('')
+  const reauthentication = useReauthentication()
 
   function reset() {
     setName('')
@@ -263,15 +269,17 @@ function CreateKeyDialog({
       toast.error('Choose an expiry date')
       return
     }
-    setBusy(true)
     try {
+      const reauthToken = await reauthentication.confirm('create-credential')
+      setBusy(true)
       setToken(
         await createIntegrationKey({
-          data: { kind, name: name.trim(), scopes, expiresAt },
+          data: { kind, name: name.trim(), scopes, expiresAt, reauthToken },
         }),
       )
       await onCreated()
     } catch (error) {
+      if (isReauthenticationCancelled(error)) return
       toast.error(getErrorMessage(error, `Could not create the ${noun}`))
     } finally {
       setBusy(false)
@@ -286,170 +294,173 @@ function CreateKeyDialog({
     String(next.getDate()).padStart(2, '0'),
   ].join('-')
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(nextOpen) => {
-        // Closing mid-request would lose the token shown only once.
-        if (!nextOpen && busy) return
-        if (!nextOpen) reset()
-        onOpenChange(nextOpen)
-      }}
-    >
-      <DialogContent showCloseButton={!busy}>
-        {token ? (
-          <>
-            <DialogHeader>
-              <DialogTitle>Copy your {noun}</DialogTitle>
-              <DialogDescription>
-                This is the only time it is shown. Store it in your client or
-                password manager.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogBody>
-              <div className="flex gap-2">
-                <Label htmlFor={`${id}-token`} className="sr-only">
-                  {noun}
-                </Label>
-                <Input
-                  id={`${id}-token`}
-                  readOnly
-                  value={token}
-                  className="font-mono"
-                  onFocus={(event) => event.target.select()}
-                />
+    <>
+      {reauthentication.dialog}
+      <Dialog
+        open={open}
+        onOpenChange={(nextOpen) => {
+          // Closing mid-request would lose the token shown only once.
+          if (!nextOpen && busy) return
+          if (!nextOpen) reset()
+          onOpenChange(nextOpen)
+        }}
+      >
+        <DialogContent showCloseButton={!busy}>
+          {token ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>Copy your {noun}</DialogTitle>
+                <DialogDescription>
+                  This is the only time it is shown. Store it in your client or
+                  password manager.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogBody>
+                <div className="flex gap-2">
+                  <Label htmlFor={`${id}-token`} className="sr-only">
+                    {noun}
+                  </Label>
+                  <Input
+                    id={`${id}-token`}
+                    readOnly
+                    value={token}
+                    className="font-mono"
+                    onFocus={(event) => event.target.select()}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label={`Copy ${noun}`}
+                    onClick={() => void copy(token, noun)}
+                  >
+                    <Copy aria-hidden="true" />
+                  </Button>
+                </div>
+              </DialogBody>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    reset()
+                    onOpenChange(false)
+                  }}
+                >
+                  Done
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <form onSubmit={(event) => void submit(event)} className="contents">
+              <DialogHeader>
+                <DialogTitle>Create {noun}</DialogTitle>
+                <DialogDescription>
+                  Choose what it may do. It can only reach your own journal and
+                  never manages your account.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogBody className="space-y-5">
+                {prefilled ? (
+                  <p
+                    role="note"
+                    className="rounded-md bg-muted px-3 py-2 text-sm"
+                  >
+                    Filled in from a link. Check the name, expiry and
+                    permissions before you create it.
+                  </p>
+                ) : null}
+                <div className="space-y-2">
+                  <Label htmlFor={`${id}-name`}>Name</Label>
+                  <Input
+                    id={`${id}-name`}
+                    required
+                    maxLength={80}
+                    placeholder={
+                      kind === 'api' ? 'Migration script' : 'Claude Desktop'
+                    }
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                  />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor={`${id}-expiry`}>Expires</Label>
+                    <Select
+                      value={expiry}
+                      onValueChange={(value) => setExpiry(value as KeyExpiry)}
+                    >
+                      <SelectTrigger id={`${id}-expiry`} className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {EXPIRY_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {expiry === 'custom' ? (
+                    <div className="space-y-2">
+                      <Label htmlFor={`${id}-date`}>Expiry date</Label>
+                      <Input
+                        id={`${id}-date`}
+                        type="date"
+                        required
+                        min={tomorrow}
+                        value={customDate}
+                        onChange={(event) => setCustomDate(event.target.value)}
+                      />
+                    </div>
+                  ) : null}
+                </div>
+                {expiry === 'never' ? (
+                  <p
+                    role="alert"
+                    className="flex gap-2 rounded-md border border-warning-border bg-warning px-3 py-2 text-sm text-warning-foreground"
+                  >
+                    <TriangleAlert
+                      aria-hidden="true"
+                      className="mt-0.5 size-4 shrink-0"
+                    />
+                    Keys without expiry are not recommended. A leaked key keeps
+                    working until you revoke it; prefer an expiry and create a
+                    new key when it runs out.
+                  </p>
+                ) : null}
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Permissions</p>
+                  <ScopePicker
+                    id={`${id}-scopes`}
+                    value={scopes}
+                    onChange={setScopes}
+                    disabled={busy}
+                  />
+                </div>
+              </DialogBody>
+              <DialogFooter>
                 <Button
                   type="button"
                   variant="outline"
-                  size="icon"
-                  aria-label={`Copy ${noun}`}
-                  onClick={() => void copy(token, noun)}
-                >
-                  <Copy aria-hidden="true" />
-                </Button>
-              </div>
-            </DialogBody>
-            <DialogFooter>
-              <Button
-                type="button"
-                onClick={() => {
-                  reset()
-                  onOpenChange(false)
-                }}
-              >
-                Done
-              </Button>
-            </DialogFooter>
-          </>
-        ) : (
-          <form onSubmit={(event) => void submit(event)} className="contents">
-            <DialogHeader>
-              <DialogTitle>Create {noun}</DialogTitle>
-              <DialogDescription>
-                Choose what it may do. It can only reach your own journal and
-                never manages your account.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogBody className="space-y-5">
-              {prefilled ? (
-                <p
-                  role="note"
-                  className="rounded-md bg-muted px-3 py-2 text-sm"
-                >
-                  Filled in from a link. Check the name, expiry and permissions
-                  before you create it.
-                </p>
-              ) : null}
-              <div className="space-y-2">
-                <Label htmlFor={`${id}-name`}>Name</Label>
-                <Input
-                  id={`${id}-name`}
-                  required
-                  maxLength={80}
-                  placeholder={
-                    kind === 'api' ? 'Migration script' : 'Claude Desktop'
-                  }
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor={`${id}-expiry`}>Expires</Label>
-                  <Select
-                    value={expiry}
-                    onValueChange={(value) => setExpiry(value as KeyExpiry)}
-                  >
-                    <SelectTrigger id={`${id}-expiry`} className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {EXPIRY_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {expiry === 'custom' ? (
-                  <div className="space-y-2">
-                    <Label htmlFor={`${id}-date`}>Expiry date</Label>
-                    <Input
-                      id={`${id}-date`}
-                      type="date"
-                      required
-                      min={tomorrow}
-                      value={customDate}
-                      onChange={(event) => setCustomDate(event.target.value)}
-                    />
-                  </div>
-                ) : null}
-              </div>
-              {expiry === 'never' ? (
-                <p
-                  role="alert"
-                  className="flex gap-2 rounded-md border border-warning-border bg-warning px-3 py-2 text-sm text-warning-foreground"
-                >
-                  <TriangleAlert
-                    aria-hidden="true"
-                    className="mt-0.5 size-4 shrink-0"
-                  />
-                  Keys without expiry are not recommended. A leaked key keeps
-                  working until you revoke it; prefer an expiry and create a new
-                  key when it runs out.
-                </p>
-              ) : null}
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Permissions</p>
-                <ScopePicker
-                  id={`${id}-scopes`}
-                  value={scopes}
-                  onChange={setScopes}
                   disabled={busy}
-                />
-              </div>
-            </DialogBody>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={busy}
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={busy || !name.trim() || !scopes.length}
-              >
-                <KeyRound aria-hidden="true" />
-                {busy ? 'Creating…' : `Create ${noun}`}
-              </Button>
-            </DialogFooter>
-          </form>
-        )}
-      </DialogContent>
-    </Dialog>
+                  onClick={() => onOpenChange(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={busy || !name.trim() || !scopes.length}
+                >
+                  <KeyRound aria-hidden="true" />
+                  {busy ? 'Creating…' : `Create ${noun}`}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 
@@ -468,18 +479,21 @@ function EditKeyDialog({
   const [name, setName] = useState(credential.name)
   const [scopes, setScopes] = useState<IntegrationScope[]>(credential.scopes)
   const [busy, setBusy] = useState(false)
+  const reauthentication = useReauthentication()
 
   async function submit(event: FormEvent) {
     event.preventDefault()
-    setBusy(true)
     try {
+      const reauthToken = await reauthentication.confirm('change-permissions')
+      setBusy(true)
       await updateIntegrationKey({
-        data: { id: credential.id, name: name.trim(), scopes },
+        data: { id: credential.id, name: name.trim(), scopes, reauthToken },
       })
       await onSaved()
       toast.success('Permissions saved. New requests use them immediately.')
       onClose()
     } catch (error) {
+      if (isReauthenticationCancelled(error)) return
       toast.error(getErrorMessage(error, 'Could not save the permissions'))
     } finally {
       setBusy(false)
@@ -487,55 +501,58 @@ function EditKeyDialog({
   }
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <form onSubmit={(event) => void submit(event)} className="contents">
-          <DialogHeader>
-            <DialogTitle>Edit {noun}</DialogTitle>
-            <DialogDescription>
-              Changes apply to the next request; the {noun} itself stays the
-              same.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogBody className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor={`${id}-name`}>Name</Label>
-              <Input
-                id={`${id}-name`}
-                required
-                maxLength={80}
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Permissions</p>
-              <ScopePicker
-                id={`${id}-scopes`}
-                value={scopes}
-                onChange={setScopes}
+    <>
+      {reauthentication.dialog}
+      <Dialog open onOpenChange={(open) => !open && onClose()}>
+        <DialogContent>
+          <form onSubmit={(event) => void submit(event)} className="contents">
+            <DialogHeader>
+              <DialogTitle>Edit {noun}</DialogTitle>
+              <DialogDescription>
+                Changes apply to the next request; the {noun} itself stays the
+                same.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogBody className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor={`${id}-name`}>Name</Label>
+                <Input
+                  id={`${id}-name`}
+                  required
+                  maxLength={80}
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Permissions</p>
+                <ScopePicker
+                  id={`${id}-scopes`}
+                  value={scopes}
+                  onChange={setScopes}
+                  disabled={busy}
+                />
+              </div>
+            </DialogBody>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
                 disabled={busy}
-              />
-            </div>
-          </DialogBody>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={busy}
-              onClick={onClose}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={busy || !name.trim() || !scopes.length}
-            >
-              {busy ? 'Saving…' : 'Save'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+                onClick={onClose}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={busy || !name.trim() || !scopes.length}
+              >
+                {busy ? 'Saving…' : 'Save'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
