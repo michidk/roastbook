@@ -1,5 +1,5 @@
 {
-  "id": "7a7b0e31-c19a-4b8b-ae8d-daa0510237f7",
+  "id": "95fa1330-2e98-429f-8d1f-d2b7759b29a1",
   "prevId": "5b030575-1624-4a36-840d-37ba9c7192c7",
   "version": "7",
   "dialect": "postgresql",
@@ -1466,187 +1466,6 @@
       },
       "isRLSEnabled": false
     },
-    "public.bean_tag_assignments": {
-      "name": "bean_tag_assignments",
-      "schema": "",
-      "columns": {
-        "owner_id": {
-          "name": "owner_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "coalesce(nullif(current_setting('roastbook.user_id', true), ''), 'local')"
-        },
-        "bean_id": {
-          "name": "bean_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "tag_id": {
-          "name": "tag_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "bean_tag_assignments_owner_id_bean_id_beans_owner_id_id_fk": {
-          "name": "bean_tag_assignments_owner_id_bean_id_beans_owner_id_id_fk",
-          "tableFrom": "bean_tag_assignments",
-          "tableTo": "beans",
-          "columnsFrom": [
-            "owner_id",
-            "bean_id"
-          ],
-          "columnsTo": [
-            "owner_id",
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "bean_tag_assignments_owner_id_tag_id_bean_tags_owner_id_id_fk": {
-          "name": "bean_tag_assignments_owner_id_tag_id_bean_tags_owner_id_id_fk",
-          "tableFrom": "bean_tag_assignments",
-          "tableTo": "bean_tags",
-          "columnsFrom": [
-            "owner_id",
-            "tag_id"
-          ],
-          "columnsTo": [
-            "owner_id",
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "bean_tag_assignments_owner_id_bean_id_tag_id_pk": {
-          "name": "bean_tag_assignments_owner_id_bean_id_tag_id_pk",
-          "columns": [
-            "owner_id",
-            "bean_id",
-            "tag_id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.bean_tags": {
-      "name": "bean_tags",
-      "schema": "",
-      "columns": {
-        "owner_id": {
-          "name": "owner_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "coalesce(nullif(current_setting('roastbook.user_id', true), ''), 'local')"
-        },
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "bean_tags_owner_id_idx": {
-          "name": "bean_tags_owner_id_idx",
-          "columns": [
-            {
-              "expression": "owner_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "bean_tags_owner_id_id_unique": {
-          "name": "bean_tags_owner_id_id_unique",
-          "columns": [
-            {
-              "expression": "owner_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "bean_tags_owner_name_unique": {
-          "name": "bean_tags_owner_name_unique",
-          "columns": [
-            {
-              "expression": "owner_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "lower(trim(\"name\"))",
-              "asc": true,
-              "isExpression": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "bean_tags_name_check": {
-          "name": "bean_tags_name_check",
-          "value": "length(trim(\"bean_tags\".\"name\")) between 1 and 50"
-        }
-      },
-      "isRLSEnabled": false
-    },
     "public.beans": {
       "name": "beans",
       "schema": "",
@@ -1663,25 +1482,6 @@
           "type": "serial",
           "primaryKey": true,
           "notNull": true
-        },
-        "always_on_shelf": {
-          "name": "always_on_shelf",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "rating": {
-          "name": "rating",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "rating_note": {
-          "name": "rating_note",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         },
         "name": {
           "name": "name",
@@ -1801,27 +1601,6 @@
           "method": "btree",
           "with": {}
         },
-        "beans_owner_id_id_unique": {
-          "name": "beans_owner_id_id_unique",
-          "columns": [
-            {
-              "expression": "owner_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "beans_created_at_idx": {
           "name": "beans_created_at_idx",
           "columns": [
@@ -1872,10 +1651,6 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {
-        "beans_rating_check": {
-          "name": "beans_rating_check",
-          "value": "\"beans\".\"rating\" between 1 and 5"
-        },
         "beans_altitude_range_check": {
           "name": "beans_altitude_range_check",
           "value": "(\"beans\".\"altitude_min_meters\" is null or \"beans\".\"altitude_min_meters\" between 0 and 9000)\n        and (\"beans\".\"altitude_max_meters\" is null or \"beans\".\"altitude_max_meters\" between 0 and 9000)\n        and (\"beans\".\"altitude_min_meters\" is null or \"beans\".\"altitude_max_meters\" is null or \"beans\".\"altitude_min_meters\" <= \"beans\".\"altitude_max_meters\")"
@@ -4826,6 +4601,19 @@
           "primaryKey": false,
           "notNull": true
         },
+        "token_prefix": {
+          "name": "token_prefix",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scopes": {
+          "name": "scopes",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::text[]"
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -4837,7 +4625,13 @@
           "name": "expires_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
+        },
+        "last_used_at": {
+          "name": "last_used_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -6268,6 +6062,86 @@
         }
       },
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.oauth_grant_scopes": {
+      "name": "oauth_grant_scopes",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "client_id": {
+          "name": "client_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scopes": {
+          "name": "scopes",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "oauth_grant_scopes_user_id_auth_users_id_fk": {
+          "name": "oauth_grant_scopes_user_id_auth_users_id_fk",
+          "tableFrom": "oauth_grant_scopes",
+          "tableTo": "auth_users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "oauth_grant_scopes_client_id_oauth_client_client_id_fk": {
+          "name": "oauth_grant_scopes_client_id_oauth_client_client_id_fk",
+          "tableFrom": "oauth_grant_scopes",
+          "tableTo": "oauth_client",
+          "columnsFrom": [
+            "client_id"
+          ],
+          "columnsTo": [
+            "client_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "oauth_grant_scopes_user_id_client_id_pk": {
+          "name": "oauth_grant_scopes_user_id_client_id_pk",
+          "columns": [
+            "user_id",
+            "client_id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -8672,12 +8546,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
-        },
-        "token_hash": {
-          "name": "token_hash",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         },
         "latest_shot_seconds": {
           "name": "latest_shot_seconds",
