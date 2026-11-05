@@ -56,6 +56,27 @@ export function VisitBeanField({
         emptyMessage="No coffees yet. Type a name to add one."
       />
     )
+  return (
+    <VisitBeanDraft
+      draft={draft}
+      onDraftChange={onDraftChange}
+      roasters={roasters}
+      upload={upload}
+    />
+  )
+}
+
+function VisitBeanDraft({
+  draft,
+  onDraftChange,
+  roasters,
+  upload,
+}: {
+  draft: BeanFormValues
+  onDraftChange: (value: BeanFormValues | null) => void
+  roasters: readonly RoasterOption[]
+  upload: ReturnType<typeof useImageUpload>
+}) {
   const set = <Key extends keyof BeanFormValues>(
     key: Key,
     value: BeanFormValues[Key],
