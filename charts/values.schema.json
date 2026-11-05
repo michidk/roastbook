@@ -133,6 +133,10 @@
     }
   ],
   "properties": {
+    "publicUrl": {
+      "type": "string",
+      "pattern": "^$|^https?://[^/]+/?$"
+    },
     "replicaCount": {
       "type": "integer",
       "minimum": 0
@@ -657,6 +661,7 @@
           "type": "string"
         },
         "url": {
+          "description": "Former name of publicUrl.",
           "type": "string",
           "pattern": "^$|^https?://[^/]+/?$"
         }

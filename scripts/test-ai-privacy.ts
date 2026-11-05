@@ -6,7 +6,7 @@ assert(process.env.TEST_DATABASE_URL, 'An isolated test database is required')
 process.env.DATABASE_URL = process.env.TEST_DATABASE_URL
 process.env.AUTH_ENABLED = 'true'
 process.env.DEPLOYMENT_MODE = 'self-hosted'
-process.env.AUTH_URL = 'https://coffee.example.test'
+process.env.PUBLIC_URL = 'https://coffee.example.test'
 process.env.AUTH_ADMIN_EMAIL = 'owner@example.test'
 process.env.AUTH_SECRET = 'r'.repeat(64)
 process.env.EMAIL_FROM = 'fixture@example.test'

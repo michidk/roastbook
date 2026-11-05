@@ -173,7 +173,7 @@ async function handlePrivateRequest(
     !path.startsWith('/api/shottimer/')
   ) {
     const origin = request.headers.get('origin')
-    if (origin && origin !== requestOrigin(request, getServerEnv().AUTH_URL))
+    if (origin && origin !== requestOrigin(request, getServerEnv().PUBLIC_URL))
       return new Response('Forbidden', { status: 403 })
     if (request.headers.get('sec-fetch-site') === 'cross-site')
       return new Response('Forbidden', { status: 403 })

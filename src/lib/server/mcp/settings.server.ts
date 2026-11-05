@@ -119,7 +119,7 @@ export async function loadMcpAdminState() {
   ])
   return {
     endpoint: getMcpEndpoint(
-      getServerEnv().AUTH_URL ?? getRequest(),
+      getServerEnv().PUBLIC_URL ?? getRequest(),
     ).toString(),
     policy,
     tools: MCP_TOOL_CATALOG.map((tool) => ({ ...tool })),

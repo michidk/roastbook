@@ -12,7 +12,7 @@ export type McpConfig = {
 }
 
 type McpEnvironment = {
-  AUTH_URL?: string
+  PUBLIC_URL?: string
   MCP_ALLOWED_HOSTS?: string
   MCP_ALLOWED_ORIGINS?: string
 }
@@ -44,8 +44,8 @@ export function resolveMcpConfig(environment: McpEnvironment): McpConfig {
     allowedHostnames: [
       ...new Set([
         ...localhostAllowedHostnames(),
-        ...(environment.AUTH_URL
-          ? [new URL(environment.AUTH_URL).hostname]
+        ...(environment.PUBLIC_URL
+          ? [new URL(environment.PUBLIC_URL).hostname]
           : []),
         ...splitList(environment.MCP_ALLOWED_HOSTS).map(toHostname),
       ]),
@@ -53,8 +53,8 @@ export function resolveMcpConfig(environment: McpEnvironment): McpConfig {
     allowedOrigins: [
       ...new Set([
         ...localhostAllowedOrigins(),
-        ...(environment.AUTH_URL
-          ? [new URL(environment.AUTH_URL).hostname]
+        ...(environment.PUBLIC_URL
+          ? [new URL(environment.PUBLIC_URL).hostname]
           : []),
         ...splitList(environment.MCP_ALLOWED_ORIGINS).map(toHostname),
       ]),

@@ -48,7 +48,7 @@ a new client; see [Journal architecture](client-data.md).
 | --- | --- | --- | --- |
 | `AUTH_ENABLED` | `false` | Hosted | Private accounts and journals |
 | `DEPLOYMENT_MODE` | `self-hosted` | No | `self-hosted` or `hosted` |
-| `AUTH_URL` | — | Auth/proxy | Public browser origin, also with auth disabled |
+| `PUBLIC_URL` | — | Auth/proxy | Public browser origin; formerly `AUTH_URL` |
 | `AUTH_SECRET` | — | Auth | Random secret, at least 32 characters |
 | `AUTH_SIGNUP_ENABLED` | `false` | No | Open signup to any email |
 | `AUTH_ADMIN_EMAIL` | — | Hosted | Comma-separated admin emails; set yours |
@@ -131,7 +131,7 @@ redacts the stored ones. They contain private journal data.
 | `MCP_ALLOWED_ORIGINS` | — | No | Extra `Origin` names |
 | `MCP_PORT` | `3001` | No | Loopback port in `docker-compose.yaml` |
 
-Loopback and the `AUTH_URL` hostname are always allowed.
+Loopback and the `PUBLIC_URL` hostname are always allowed.
 
 See [Deployment](deployment.md) for MCP authentication and exposure.
 

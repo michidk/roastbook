@@ -47,7 +47,7 @@ services:
       MCP_ALLOWED_HOSTS: ${MCP_ALLOWED_HOSTS:-}
       MCP_ALLOWED_ORIGINS: ${MCP_ALLOWED_ORIGINS:-}
       AUTH_ENABLED: "true"
-      AUTH_URL: ${AUTH_URL:?Set the public application URL}
+      PUBLIC_URL: ${PUBLIC_URL:-${AUTH_URL:-}}
       AUTH_SECRET: ${AUTH_SECRET:?Set a random secret with at least 32 characters}
       AUTH_SIGNUP_ENABLED: ${AUTH_SIGNUP_ENABLED:-false}
       AUTH_ADMIN_EMAIL: ${AUTH_ADMIN_EMAIL:?Set your email address to become administrator}

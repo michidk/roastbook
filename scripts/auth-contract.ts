@@ -23,7 +23,7 @@ type Message = { to: string; text: string }
 export async function verifyAuthContract(
   readMessages: () => Promise<Message[]>,
 ) {
-  const origin = new URL(getServerEnv().AUTH_URL ?? '').origin
+  const origin = new URL(getServerEnv().PUBLIC_URL ?? '').origin
   const database = getControlDb()
   const prefix = `contract-${randomUUID()}`
   const address = (name: string) => `${prefix}-${name}@example.test`

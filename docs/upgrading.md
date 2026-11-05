@@ -26,6 +26,8 @@ restore it first: see
 - **Signup is closed by default.** `AUTH_SIGNUP_ENABLED` now defaults to
   `false`. List other people in `AUTH_ALLOWED_EMAILS`, or set
   `AUTH_SIGNUP_ENABLED=true` to keep open registration.
+- **Rename `AUTH_URL` to `PUBLIC_URL`** (Helm: `auth.url` to `publicUrl`). The
+  old names still work.
 - New accounts are created only after the person confirms it on the sign-in
   page, and sign-in codes have six digits.
 

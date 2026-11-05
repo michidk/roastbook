@@ -1,3 +1,8 @@
+# Public browser origin, such as https://coffee.example.com. Required for built-in
+# accounts (or set PUBLIC_URL in auth.existingSecret); behind Hodor or another
+# proxy it keeps write origin checks working. auth.url is the former name.
+publicUrl: ""
+
 replicaCount: 1
 
 image:
@@ -207,10 +212,7 @@ hodor:
 # Passwordless accounts. Set hodor.enabled=false when using built-in login.
 auth:
   enabled: false
-  # Public browser URL for origin checks, including shared journals behind Hodor.
-  # Leave empty to use AUTH_URL from existingSecret when accounts are enabled.
-  url: ""
-  # Secret containing AUTH_URL, AUTH_SECRET, EMAIL_FROM, SMTP_URL or RESEND_API_KEY,
+  # Secret containing PUBLIC_URL (unless publicUrl is set), AUTH_SECRET, EMAIL_FROM, SMTP_URL or RESEND_API_KEY,
   # and optional DEPLOYMENT_MODE, AUTH_ADMIN_EMAIL, AUTH_ALLOWED_EMAILS,
   # AUTH_SIGNUP_ENABLED (comma-separated email lists; signup closed by default).
   existingSecret: ""

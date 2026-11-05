@@ -69,7 +69,7 @@ hodor:
   enabled: false
 ```
 
-The Secret supplies `AUTH_URL`, `AUTH_SECRET`, `EMAIL_FROM`, and `SMTP_URL` or
+The Secret supplies `PUBLIC_URL`, `AUTH_SECRET`, `EMAIL_FROM`, and `SMTP_URL` or
 `EMAIL_PROVIDER=resend` with `RESEND_API_KEY`; optionally
 `AUTH_SIGNUP_ENABLED`, `DEPLOYMENT_MODE`, `AUTH_ADMIN_EMAIL`,
 `AUTH_ALLOWED_EMAILS`, and `AUTH_IP_HEADER`. Registration is closed unless an
@@ -92,7 +92,7 @@ temporary disk for ZIP archives.
 NetworkPolicy rule admitting only `mcp.allowedCidrs` and
 `mcp.allowedNamespaces` (at least one is required; keep
 `networkPolicy.enabled`). OAuth sign-in for MCP clients uses the public
-`AUTH_URL` origin and needs `hodor.enabled=false` or a proxy that lets native
+`PUBLIC_URL` origin and needs `hodor.enabled=false` or a proxy that lets native
 clients through.
 
 ```yaml
@@ -131,10 +131,11 @@ helm lint charts \
 
 ### Public URL
 
-Set `auth.url` to the public browser origin, such as `https://coffee.example.com`,
-even when using Hodor with built-in accounts disabled. This configures origin
-checks for writes behind a reverse proxy. When empty, accounts can obtain
-`AUTH_URL` from `auth.existingSecret`.
+Set `publicUrl` to the public browser origin, such as
+`https://coffee.example.com`. Built-in accounts require it, or `PUBLIC_URL` in
+`auth.existingSecret`. Behind Hodor or another proxy that changes the `Host`
+header, it keeps origin checks for writes working. `auth.url` is the former
+name and still works.
 
 ### Database maintenance
 
