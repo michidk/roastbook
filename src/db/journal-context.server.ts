@@ -2,6 +2,7 @@ import '@tanstack/react-start/server-only'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { setTimeout as delay } from 'node:timers/promises'
 import { eq, sql } from 'drizzle-orm'
+import type { IntegrationScope } from '@/modules/integrations/scopes'
 import { getJournalDb } from './connection.server'
 import { JournalAdmission, JournalBusyError } from './journal-admission.server'
 import { authUsers } from './schema'
@@ -15,7 +16,13 @@ export type JournalIdentity = {
   role: 'user' | 'admin'
   authentication: boolean
   authenticatedAt: Date | null
-  mcpScopes?: readonly string[]
+  /** Set for API and MCP requests: the credential and what it may do. */
+  integration?: {
+    readonly channel: 'api' | 'mcp'
+    /** Token id, or `oauth:<client id>` for an MCP application. */
+    readonly credentialId: string
+    readonly scopes: readonly IntegrationScope[]
+  }
 }
 const context = new AsyncLocalStorage<{
   identity: JournalIdentity

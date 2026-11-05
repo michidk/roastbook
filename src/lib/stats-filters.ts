@@ -14,7 +14,7 @@ export const STATS_PERIOD_OPTIONS = [
   { value: 'custom', label: 'Custom range' },
 ] as const
 
-const STATS_PERIOD_VALUES = [
+export const STATS_PERIOD_VALUES = [
   '30d',
   '90d',
   'ytd',

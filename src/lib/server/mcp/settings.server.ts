@@ -7,24 +7,25 @@ import { db } from '@/db'
 import { mcpAuditEvents, mcpSettings } from '@/db/schema'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { getServerEnv } from '@/lib/env.server'
-import {
-  MCP_TOOL_CATALOG,
-  MCP_TOOL_NAMES,
-  type McpToolName,
-} from '@/lib/mcp/catalog'
+import { INTEGRATION_RESOURCES } from '@/modules/integrations/scopes'
 import { listOAuthGrants } from '../auth/oauth-grants.server'
+import {
+  INTEGRATION_OPERATION_NAMES,
+  INTEGRATION_OPERATIONS,
+} from '../integrations/operations.server'
+import { loadIntegrationSettings } from '../integrations/settings.server'
 import { getMcpEndpoint } from './config.server'
 
 export type McpPolicy = {
   enabled: boolean
-  disabledTools: McpToolName[]
+  disabledTools: string[]
 }
 
 const DEFAULT_POLICY: McpPolicy = { enabled: true, disabledTools: [] }
 
 function knownDisabledTools(values: readonly string[]) {
-  const known = new Set<string>(MCP_TOOL_NAMES)
-  return values.filter((value): value is McpToolName => known.has(value))
+  const known = new Set<string>(INTEGRATION_OPERATION_NAMES)
+  return values.filter((value) => known.has(value))
 }
 
 export async function loadMcpPolicy(): Promise<McpPolicy> {
@@ -111,19 +112,40 @@ export async function loadMcpAuditPage(page = 0) {
   }
 }
 
+const resourceLabel = (id: string) =>
+  INTEGRATION_RESOURCES.find((resource) => resource.id === id)?.label ??
+  'Pictures'
+
 export async function loadMcpAdminState() {
   const [policy, audit, grants] = await Promise.all([
     loadMcpPolicy(),
     loadMcpAuditPage(0),
     DEMO_MODE ? [] : listOAuthGrants(),
   ])
+  const access = await loadIntegrationSettings(
+    'mcp',
+    grants.map((grant) => `oauth:${grant.clientId}`),
+  )
   return {
     endpoint: getMcpEndpoint(
       getServerEnv().PUBLIC_URL ?? getRequest(),
     ).toString(),
     policy,
-    tools: MCP_TOOL_CATALOG.map((tool) => ({ ...tool })),
+    tools: INTEGRATION_OPERATIONS.map((operation) => ({
+      name: operation.name,
+      title: operation.title,
+      description: operation.description,
+      access: operation.access,
+      group:
+        operation.resources.length === 1
+          ? resourceLabel(operation.resources[0] ?? '')
+          : 'Pictures',
+    })),
     audit,
-    grants,
+    grants: grants.map((grant) => ({
+      ...grant,
+      requestsToday: access.requestsToday[`oauth:${grant.clientId}`] ?? 0,
+    })),
+    ...access,
   }
 }

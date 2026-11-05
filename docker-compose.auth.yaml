@@ -46,6 +46,8 @@ services:
       DATABASE_URL: postgresql://roastbook:roastbook@postgres:5432/roastbook
       MCP_ALLOWED_HOSTS: ${MCP_ALLOWED_HOSTS:-}
       MCP_ALLOWED_ORIGINS: ${MCP_ALLOWED_ORIGINS:-}
+      INTEGRATION_RATE_LIMIT_PER_MINUTE: ${INTEGRATION_RATE_LIMIT_PER_MINUTE:-120}
+      INTEGRATION_RATE_LIMIT_PER_DAY: ${INTEGRATION_RATE_LIMIT_PER_DAY:-5000}
       AUTH_ENABLED: "true"
       PUBLIC_URL: ${PUBLIC_URL:-${AUTH_URL:-}}
       AUTH_SECRET: ${AUTH_SECRET:?Set a random secret with at least 32 characters}

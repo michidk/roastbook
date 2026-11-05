@@ -61,14 +61,17 @@ Upgrading from a release before accounts and the SQL journal? Follow
 5. Start the account worker and check sign-in, images, and an export before
    admitting other users.
 
-Shottimer devices and MCP clients need newly generated tokens after enabling
-accounts.
+Shottimer devices, API scripts, and MCP clients need newly generated tokens
+after enabling accounts.
 
 ## MCP
 
 `/api/mcp` serves stateless Streamable HTTP. It needs a user-bound access token
-in both authentication modes and exposes read tools plus `create_brew`; no
-tool edits or deletes data.
+in both authentication modes. Its tools are the operations of the
+[API](api.md): reading, creating, updating, and deleting journal records and
+pictures, within the permissions the owner granted. Tools outside those
+permissions are not listed. Account and instance administration is never
+available.
 
 With built-in accounts, MCP clients sign in through OAuth (Authorization Code
 with PKCE) and a consent page on the `PUBLIC_URL` origin:
@@ -84,8 +87,15 @@ For OAuth, `/.well-known/oauth-protected-resource/api/mcp`,
 interactive proxy gate in front. Keep `AUTH_SECRET` identical across replicas
 and restarts; it encrypts the OAuth signing keys stored in PostgreSQL.
 
-Without accounts, or for clients without browser sign-in, create a manual token
-under Settings > AI access (MCP). It is shown once and expires after one year:
+On the consent page the owner chooses per-resource permissions within what
+the application requested (`mcp:read`, `mcp:write`), and can change them later
+under Settings > AI access (MCP). Applications connected and MCP tokens created
+before permissions existed keep read access only; grant write access again
+where needed, since writing now includes editing and deleting.
+
+Without accounts, or for clients without browser sign-in, create an MCP token
+under Settings > AI access (MCP) with a name, permissions, and an optional
+expiry. It is shown once:
 
 ```bash
 codex mcp add roastbook --url http://127.0.0.1:3001/api/mcp \
@@ -95,8 +105,15 @@ codex mcp add roastbook --url http://127.0.0.1:3001/api/mcp \
 Requests must match the Host and Origin allowlists (`MCP_ALLOWED_HOSTS`,
 `MCP_ALLOWED_ORIGINS`). `docker-compose.yaml` publishes the MCP port on
 loopback only; the Helm chart can create a restricted private Service (see
-`charts/README.md`). Shottimer devices use their own tokens; see
-[Shottimer API](shottimer.md).
+`charts/README.md`). Shottimer devices use API keys limited to the shottimer
+permission; see [Shottimer API](shottimer.md). API and MCP requests share the
+account's rate limits ([API](api.md#rate-limits)).
+
+## API
+
+`/api/v1` authenticates every request with an API key from Settings > API and
+never accepts a browser session, so Compose and Helm let `/api/v1/*` through
+Hodor without a login. See [API](api.md).
 
 ## Accounts and worker
 

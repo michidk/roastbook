@@ -114,10 +114,14 @@ AI calls run server-side only and are rate-limited, schema-validated, and
 logged in the database without image payloads.
 
 > [!IMPORTANT]
-> **MCP server for your own agents.** `/api/mcp` is a Streamable HTTP endpoint
-> with ten read tools and one write tool (`create_brew`). Connect with browser
-> sign-in and OAuth consent, or with manual tokens; manage them in
-> **Settings → AI access (MCP)**. See [Deployment](docs/deployment.md).
+> **API and MCP server for your own scripts and agents.** `/api/v1` is a REST
+> API with an OpenAPI description, and `/api/mcp` a Streamable HTTP MCP
+> endpoint; both can read and change everything in your journal, including
+> pictures, but never administer accounts. API keys, MCP tokens, and MCP
+> applications get per-resource read or write permissions and shared rate
+> limits; keys and tokens also expire (seven days unless you choose longer).
+> Manage them in **Settings → API** and **Settings → AI access (MCP)**. See
+> [API](docs/api.md) and [Deployment](docs/deployment.md#mcp).
 
 ## 📦 Features
 
@@ -254,6 +258,7 @@ migrations on start. See [Development and testing](docs/development.md).
 | [Offline journaling](docs/offline.md) | Offline coverage, sync, and conflicts |
 | [Browser-local demo](docs/demo-mode.md) | Demo data, restrictions, and builds |
 | [Journal architecture](docs/client-data.md) | Journal functions, local database, sync |
+| [API](docs/api.md) | REST API, keys, permissions, rate limits |
 | [Shottimer API](docs/shottimer.md) | Device integration endpoints |
 | [Design system](DESIGN.md) | Layout contract and UI conventions |
 | [Design files](design/README.md) | Editable OpenPencil views |

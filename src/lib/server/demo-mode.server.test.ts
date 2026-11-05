@@ -12,7 +12,7 @@ describe('demo mode mutation guard', () => {
       '/api/mcp',
       '/api/account/exports/test',
       '/api/replication/pull',
-      '/api/shottimer/target',
+      '/api/v1/shottimer',
       '/api/auth/sign-in',
       '/_serverFn/test',
     ]) {

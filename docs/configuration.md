@@ -135,6 +135,18 @@ Loopback and the `PUBLIC_URL` hostname are always allowed.
 
 See [Deployment](deployment.md) for MCP authentication and exposure.
 
+## API and MCP
+
+| Variable | Default | Required | Description |
+| --- | --- | --- | --- |
+| `INTEGRATION_RATE_LIMIT_PER_MINUTE` | `120` | No | Requests per minute |
+| `INTEGRATION_RATE_LIMIT_PER_DAY` | `5000` | No | Requests per UTC day |
+
+The limits apply to all API keys, MCP tokens, and MCP applications of one
+account together. Compose passes both variables through; Helm sets them with
+`integrations.rateLimit.perMinute` and `integrations.rateLimit.perDay`. See
+[API](api.md).
+
 ## Docker Compose
 
 These variables are read by the Compose files, not by the application.

@@ -11,7 +11,7 @@ import {
   Client,
   StreamableHTTPClientTransport,
 } from '@modelcontextprotocol/client'
-import { eq, inArray } from 'drizzle-orm'
+import { eq, inArray, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 
 // A separate process keeps the ephemeral auth origin out of other test suites.
@@ -41,22 +41,32 @@ const { withJournal } = await import('../src/db/journal-context.server')
 const { requireIdentity } = await import('../src/db/journal-context.server')
 const schema = await import('../src/db/schema')
 const { db } = await import('../src/db')
-const { handleJournalRequest, hashIntegrationToken } = await import(
+const { handleJournalRequest } = await import(
   '../src/lib/server/auth/request.server'
 )
+const { hashIntegrationToken } = await import(
+  '../src/lib/server/auth/integrations.server'
+)
+const { allScopes } = await import('../src/modules/integrations/scopes')
 const { handleMcpHttpRequest } = await import(
   '../src/lib/server/mcp/http.server'
 )
-const { loadConsent, listOAuthGrants, revokeOAuthGrant } = await import(
-  '../src/lib/server/auth/oauth-grants.server'
-)
+const {
+  loadConsent,
+  listOAuthGrants,
+  revokeOAuthGrant,
+  updateOAuthGrantAccess,
+} = await import('../src/lib/server/auth/oauth-grants.server')
 const { withOAuthClientLock } = await import(
   '../src/lib/server/auth/oauth-lock.server'
 )
 const { saveMcpPolicy } = await import('../src/lib/server/mcp/settings.server')
-const { allowMcpRequest } = await import(
-  '../src/lib/server/mcp/rate-limit.server'
-)
+const { consumeIntegrationRequest, integrationRateLimitPrefixes } =
+  await import('../src/lib/server/integrations/rate-limit.server')
+const rateLimitKeys = (userId: string) => [
+  `integration:user:${userId}:minute`,
+  `integration:user:${userId}:day`,
+]
 const control = getControlDb()
 const users = [0, 1].map(() => ({
   id: `mcp-test-${randomUUID()}`,
@@ -481,8 +491,34 @@ try {
   const rw = tokenSchema.parse(
     await json(await exchange(client, readWrite.code, readWrite.verifier)),
   )
+  // Without permissions chosen on the consent page, an application keeps
+  // read access only, even when it asked for mcp:write.
+  const readOnlyTools = await (
+    await rpc('tools/list', {}, rw.access_token)
+  ).text()
+  assert(readOnlyTools.includes('"name":"list_beans"'), readOnlyTools)
+  assert(!readOnlyTools.includes('create_brew'), readOnlyTools)
+  const connected = (await withJournal(first, listOAuthGrants)).find(
+    (item) => item.clientId === client,
+  )
+  assert(connected)
+  // The owner grants write access within what the application asked for.
+  await withJournal(first, () =>
+    updateOAuthGrantAccess(connected.id, allScopes('write')),
+  )
   const toolsBody = await (await rpc('tools/list', {}, rw.access_token)).text()
   assert(toolsBody.includes('create_brew'), toolsBody)
+  // And can narrow it to fewer permissions than it asked for.
+  await withJournal(first, () =>
+    updateOAuthGrantAccess(connected.id, ['beans:read']),
+  )
+  const narrowed = await (await rpc('tools/list', {}, rw.access_token)).text()
+  assert(narrowed.includes('"name":"list_beans"'), narrowed)
+  assert(!narrowed.includes('create_brew'), narrowed)
+  assert(!narrowed.includes('"name":"list_brews"'), narrowed)
+  await withJournal(first, () =>
+    updateOAuthGrantAccess(connected.id, allScopes('write')),
+  )
   await withJournal(first, () =>
     saveMcpPolicy({ enabled: false, disabledTools: [] }),
   )
@@ -541,22 +577,26 @@ try {
     .set({ deletingAt: null })
     .where(eq(schema.authUsers.id, first.id))
   const manual = randomBytes(32).toString('base64url'),
-    shottimer = randomBytes(32).toString('base64url')
+    apiKey = randomBytes(32).toString('base64url')
   await control.insert(schema.integrationTokens).values(
-    [
-      ['mcp', manual],
-      ['shottimer', shottimer],
-    ].map(([kind, token]) => ({
+    (
+      [
+        ['mcp', manual],
+        ['api', apiKey],
+      ] as const
+    ).map(([kind, token]) => ({
       id: randomUUID(),
       userId: first.id,
-      kind: kind === 'mcp' ? ('mcp' as const) : ('shottimer' as const),
-      tokenHash: hashIntegrationToken(token ?? ''),
+      kind,
+      tokenHash: hashIntegrationToken(token),
+      scopes: ['brews:read'],
       name: 'Test',
       expiresAt: new Date(Date.now() + 60_000),
     })),
   )
   assert.equal((await rpc('tools/list', {}, manual)).status, 200)
-  assert.equal((await rpc('tools/list', {}, shottimer)).status, 401)
+  // API keys are not MCP credentials, even with the same scopes.
+  assert.equal((await rpc('tools/list', {}, apiKey)).status, 401)
   assert.equal((await fetch(resource, { method: 'GET' })).status, 405)
   assert.equal(
     (await fetch(resource, { method: 'POST', body: 'no' })).status,
@@ -587,11 +627,13 @@ try {
   )
   await control
     .delete(schema.authRateLimits)
-    .where(eq(schema.authRateLimits.key, `mcp:${first.id}`))
-  const limits = await withJournal(first, () =>
-    Promise.all(Array.from({ length: 125 }, () => allowMcpRequest())),
+    .where(inArray(schema.authRateLimits.key, rateLimitKeys(first.id)))
+  const limits = await Promise.all(
+    Array.from({ length: 125 }, () =>
+      consumeIntegrationRequest(first.id, 'rate-limit-test'),
+    ),
   )
-  assert.equal(limits.filter(Boolean).length, 120)
+  assert.equal(limits.filter((limit) => limit.allowed).length, 120)
   assert.equal((await rpc('tools/list', {}, manual)).status, 429)
   // Untrusted metadata must never reach internal services, including through DNS names.
   const { fetchClientMetadataResource } = await import('@better-auth/cimd/node')
@@ -611,12 +653,19 @@ try {
       await db.delete(schema.beans)
       await db.delete(schema.mcpSettings)
     })
-  await control.delete(schema.authRateLimits).where(
-    inArray(
-      schema.authRateLimits.key,
-      users.map((user) => `mcp:${user.id}`),
-    ),
-  )
+  // Account and per-credential usage rows, including OAuth and manual tokens.
+  await control
+    .delete(schema.authRateLimits)
+    .where(
+      or(
+        ...users
+          .flatMap((user) => integrationRateLimitPrefixes(user.id))
+          .map(
+            (prefix) =>
+              sql`left(${schema.authRateLimits.key}, ${prefix.length}) = ${prefix}`,
+          ),
+      ),
+    )
   await control.delete(schema.authUsers).where(
     inArray(
       schema.authUsers.id,

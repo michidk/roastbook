@@ -46,6 +46,8 @@ services:
       DATABASE_URL: postgresql://roastbook:roastbook@postgres:5432/roastbook
       MCP_ALLOWED_HOSTS: ${MCP_ALLOWED_HOSTS:-}
       MCP_ALLOWED_ORIGINS: ${MCP_ALLOWED_ORIGINS:-}
+      INTEGRATION_RATE_LIMIT_PER_MINUTE: ${INTEGRATION_RATE_LIMIT_PER_MINUTE:-120}
+      INTEGRATION_RATE_LIMIT_PER_DAY: ${INTEGRATION_RATE_LIMIT_PER_DAY:-5000}
       AUTH_ENABLED: "false"
       PUBLIC_URL: ${PUBLIC_URL:-${AUTH_URL:-}}
       STORAGE_PROVIDER: local
@@ -71,8 +73,8 @@ services:
       SESSION_TTL: ${HODOR_SESSION_TTL:-86400}
       SECURE_COOKIE: ${HODOR_SECURE_COOKIE:-false}
       LOG_FORMAT: ${HODOR_LOG_FORMAT:-compact}
-      # The shottimer device API authenticates with its own token.
-      BYPASS_PATHS: /api/shottimer/*
+      # The REST API (including shottimer devices) authenticates with its own keys.
+      BYPASS_PATHS: /api/v1,/api/v1/*
 
 volumes:
   postgres_data:

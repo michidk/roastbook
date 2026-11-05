@@ -582,6 +582,13 @@
       "when": 1793836269153,
       "tag": "0082_remove-ai-cost",
       "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1793875181988,
+      "tag": "0083_integration-scopes",
+      "breakpoints": true
     }
   ]
 }

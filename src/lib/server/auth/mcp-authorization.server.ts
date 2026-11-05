@@ -5,6 +5,10 @@ import { getControlDb } from '@/db/connection.server'
 import { withJournalResponse } from '@/db/journal-response.server'
 import { authUsers, oauthClient, oauthConsent } from '@/db/schema'
 import { getServerEnv } from '@/lib/env.server'
+import {
+  effectiveGrantScopes,
+  loadApprovedGrantScopes,
+} from '../integrations/oauth-scopes.server'
 import { getAuth } from './auth.server'
 
 export const OAUTH_DISCOVERY_PATHS = new Set([
@@ -72,7 +76,14 @@ export async function authorizeMcpRequest(
               .split(' ')
               .filter((scope) => grant.scopes.includes(scope))
           : []
-      if (!grantedScopes.includes('mcp:read'))
+      const approved = await loadApprovedGrantScopes(grant.user.id, [
+        claims.client_id,
+      ])
+      const scopes = effectiveGrantScopes(
+        approved.get(claims.client_id),
+        grantedScopes,
+      )
+      if (!grantedScopes.includes('mcp:read') || !scopes.length)
         return Response.json(
           { error: 'insufficient_scope' },
           {
@@ -90,7 +101,11 @@ export async function authorizeMcpRequest(
           role: grant.user.role,
           authentication: true,
           authenticatedAt: null,
-          mcpScopes: grantedScopes,
+          integration: {
+            channel: 'mcp',
+            credentialId: `oauth:${claims.client_id}`,
+            scopes,
+          },
         },
         next,
         { signal: request.signal },

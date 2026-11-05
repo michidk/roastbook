@@ -1,21 +1,20 @@
 import { describe, expect, test } from 'bun:test'
 import { resolveMcpConfig } from './config.server'
 import { createMcpHttpHandler, handlesMcpHttpPath } from './http.server'
-import type { McpLoaders } from './tools.server'
+import type { McpRunner } from './tools.server'
 
 const config = resolveMcpConfig({
   MCP_ALLOWED_HOSTS: 'roastbook.internal',
   MCP_ALLOWED_ORIGINS: 'https://client.internal',
 })
 
-const loaders = {
-  listBrews: async () => ({
-    items: [],
-    page: 1,
-    totalItems: 0,
-    scopeLabel: null,
-  }),
-} as unknown as McpLoaders
+const run: McpRunner = async () => ({
+  items: [],
+  page: 1,
+  totalItems: 0,
+  scopeLabel: null,
+})
+const scopes = () => ['brews:read']
 
 function request(host: string, headers: Record<string, string> = {}) {
   return new Request('http://upstream/api/mcp', {
@@ -73,7 +72,8 @@ describe('stateless MCP HTTP endpoint', () => {
     const audits: unknown[] = []
     const handle = createMcpHttpHandler(config, {
       audit: async (event) => void audits.push(event),
-      loaders,
+      run,
+      scopes,
     })
     for (const host of ['localhost:3000', '127.0.0.1', 'roastbook.internal']) {
       const response = await handle(request(host))
@@ -109,14 +109,72 @@ describe('stateless MCP HTTP endpoint', () => {
     expect(good?.status).toBe(200)
   })
 
+  test('calling a tool outside the scopes asks for more access', async () => {
+    const handle = handlerFor()
+    const response = await handle(
+      new Request('http://upstream/api/mcp', {
+        method: 'POST',
+        headers: {
+          Host: 'localhost',
+          Accept: 'application/json, text/event-stream',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'tools/call',
+          params: { name: 'create_brew', arguments: {} },
+        }),
+      }),
+    )
+    expect(response?.status).toBe(403)
+    expect(response?.headers.get('www-authenticate')).toBe(
+      'Bearer error="insufficient_scope", scope="brews:write"',
+    )
+  })
+
+  test('judges picture tools by the resource each call targets', async () => {
+    const handle = createMcpHttpHandler(config, {
+      run,
+      scopes: () => ['beans:write'],
+    })
+    const upload = (entityType: string) =>
+      handle(
+        new Request('http://upstream/api/mcp', {
+          method: 'POST',
+          headers: {
+            Host: 'localhost',
+            Accept: 'application/json, text/event-stream',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'tools/call',
+            params: {
+              name: 'upload_image',
+              arguments: { entityType, entityId: 1 },
+            },
+          }),
+        }),
+      )
+    const denied = await upload('brews')
+    expect(denied?.status).toBe(403)
+    expect(denied?.headers.get('www-authenticate')).toBe(
+      'Bearer error="insufficient_scope", scope="brews:write"',
+    )
+    expect((await upload('bean-purchases'))?.status).not.toBe(403)
+  })
+
   test('owner policy pauses the endpoint', async () => {
     const handle = createMcpHttpHandler(config, {
       policy: async () => ({ enabled: false, disabledTools: [] }),
+      scopes,
     })
     expect((await handle(request('localhost')))?.status).toBe(503)
   })
 })
 
 function handlerFor() {
-  return createMcpHttpHandler(config, { loaders })
+  return createMcpHttpHandler(config, { run, scopes })
 }
