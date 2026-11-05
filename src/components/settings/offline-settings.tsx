@@ -13,22 +13,10 @@ import { toast } from 'sonner'
 import { JournalSyncStatus } from '@/components/journal-sync-status'
 import { PanelSection } from '@/components/section-layout'
 import { Button } from '@/components/ui/button'
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useOnlineStatus } from '@/hooks/use-online-status'
-import { usePwaMode } from '@/hooks/use-pwa-mode'
-import { keepsDeviceCopy, setDeviceCopy } from '@/journal/local/device-copy'
+import { keepsDeviceCopy } from '@/journal/local/device-copy'
 import { useSyncStatus } from '@/journal/local/sync-status'
 import { getErrorMessage } from '@/lib/error-message'
 import { formatBytes } from '@/lib/utils'
@@ -72,10 +60,7 @@ export function OfflineSettings() {
   )
   const [legacyFailed, setLegacyFailed] = useState(0)
   const [isResettingShell, setIsResettingShell] = useState(false)
-  const [keep, setKeep] = useState(keepsDeviceCopy)
-  const [isChanging, setIsChanging] = useState(false)
-  const [confirmRemove, setConfirmRemove] = useState(false)
-  const installed = usePwaMode()
+  const keep = keepsDeviceCopy()
 
   useEffect(() => {
     void navigator.storage
@@ -122,37 +107,6 @@ export function OfflineSettings() {
     navigator.serviceWorker.controller.postMessage({ type: 'RESET_SHELL' })
   }
 
-  // Keeping a copy downloads the journal once; dropping it needs a synced journal.
-  const changeDeviceCopy = async (next: boolean) => {
-    setIsChanging(true)
-    try {
-      const [{ openEditionJournal }, { deleteLocalJournal }, sync] =
-        await Promise.all([
-          import('@/journal/local/edition'),
-          import('@/journal/local/client'),
-          import('@/journal/local/sync'),
-        ])
-      const journal = await openEditionJournal()
-      if (next) {
-        setDeviceCopy(true)
-        setKeep(true)
-        toast.success('Your journal is now kept on this device.')
-        return
-      }
-      if ((await sync.listPendingChanges(journal)).length)
-        throw new Error('Sync or discard the changes on this device first.')
-      await deleteLocalJournal(journal)
-      setDeviceCopy(false)
-      toast.success('This device no longer keeps a copy of your journal.')
-      window.location.reload()
-    } catch (error) {
-      toast.error(
-        getErrorMessage(error, 'Could not change this device’s journal copy'),
-      )
-    } finally {
-      setIsChanging(false)
-    }
-  }
   const sync = () =>
     void import('@/journal/local/edition')
       .then(({ synchronizeEditionJournal }) => synchronizeEditionJournal())
@@ -164,7 +118,7 @@ export function OfflineSettings() {
         title="Offline"
         description={
           !keep
-            ? 'This browser reads and writes your journal on the server and keeps no copy. Keep a copy to use Roastbook offline; the installed app always keeps one.'
+            ? 'Install Roastbook to keep your journal available offline. This browser uses the server without downloading a journal copy.'
             : isOnline
               ? 'Your journal is kept on this device and syncs with your account. You can keep journaling without a connection.'
               : 'You are offline. Changes are saved on this device and sync when you reconnect.'
@@ -177,58 +131,11 @@ export function OfflineSettings() {
           )
         }
       >
-        <div className="flex items-center justify-between gap-4 rounded-xl bg-secondary/40 p-4">
-          <div className="space-y-1">
-            <Label id="device-copy-label" htmlFor="device-copy">
-              Keep this journal on this device
-            </Label>
-            <p className="text-sm text-muted-foreground">
-              {installed
-                ? 'The installed app always keeps a copy for offline use.'
-                : keep
-                  ? 'Turning this off removes the copy once everything has synced.'
-                  : 'Downloads your journal records once; pictures load as you view them.'}
-            </p>
-          </div>
-          <Switch
-            id="device-copy"
-            aria-labelledby="device-copy-label"
-            checked={keep}
-            disabled={
-              installed ||
-              isChanging ||
-              !isOnline ||
-              (keep && (unsynced > 0 || status.syncing))
-            }
-            onCheckedChange={(checked) =>
-              checked ? void changeDeviceCopy(true) : setConfirmRemove(true)
-            }
-          />
-        </div>
-        <AlertDialog open={confirmRemove} onOpenChange={setConfirmRemove}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Remove this device’s copy?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Everything is synced, so your account keeps it all. This browser
-                then needs a connection to use Roastbook.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={isChanging}>
-                Cancel
-              </AlertDialogCancel>
-              <Button
-                variant="destructive"
-                disabled={isChanging}
-                aria-busy={isChanging}
-                onClick={() => void changeDeviceCopy(false)}
-              >
-                {isChanging ? 'Removing…' : 'Remove copy'}
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <p className="text-sm text-muted-foreground">
+          {keep
+            ? 'Pictures are available offline after you view them. Existing journal copies stay available when you open Roastbook in a browser tab.'
+            : 'Open the installed app while online to download your journal. Pictures are cached as you view them.'}
+        </p>
         {keep ? (
           <>
             <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3">

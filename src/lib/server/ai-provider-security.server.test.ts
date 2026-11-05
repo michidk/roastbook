@@ -96,6 +96,22 @@ describe('AI endpoint policy and transport', () => {
       }),
     ).rejects.toThrow()
   })
+  test('explains how to enable HTTP for self-hosted providers', async () => {
+    const endpoint = 'http://host.containers.internal:42000/v1'
+    await expect(
+      resolveAiEndpoint(endpoint, {
+        policy: { deploymentMode: 'self-hosted', privateOrigins: [] },
+      }),
+    ).rejects.toThrow('AI_ALLOWED_PRIVATE_ORIGINS')
+    const resolved = await resolveAiEndpoint(endpoint, {
+      policy: {
+        deploymentMode: 'self-hosted',
+        privateOrigins: ['http://host.containers.internal:42000'],
+      },
+      resolve: async () => [{ address: '10.0.0.2' }],
+    })
+    expect(resolved.url.href).toBe(endpoint)
+  })
   test('pins DNS to the approved address, refuses redirects and provider errors, and bounds streamed responses', async () => {
     let requests = 0
     const server = Bun.serve({

@@ -6,6 +6,7 @@ import { drizzle } from 'drizzle-orm/pglite'
 import { seedDemoDatabase } from '@/db/demo-seed.server'
 import * as schema from '@/db/schema'
 import { journalTables } from '@/journal/tables'
+import { generateDemoAi } from './generate-demo-ai'
 
 // The demo's sample journal, generated with the same migrations the browser applies.
 const client = await PGlite.create('memory://')
@@ -37,6 +38,10 @@ try {
   const directory = resolve(process.argv[2] ?? '.demo-build/client')
   await rm(directory, { recursive: true, force: true })
   await mkdir(directory, { recursive: true })
+  await writeFile(
+    resolve(directory, 'ai.json'),
+    JSON.stringify(await generateDemoAi(database)),
+  )
   await writeFile(
     resolve(directory, 'journal.json'),
     JSON.stringify({ tables }),

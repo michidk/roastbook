@@ -13,7 +13,7 @@ export async function runJournalFunction(
   if (!keepsDeviceCopy()) {
     if (!isConnectionOnline())
       throw new Error(
-        'You are offline. To use Roastbook offline, install it or turn on Settings → Offline → Keep this journal on this device.',
+        'You are offline. Install Roastbook and open it once while online to keep your journal available offline.',
       )
     const { callJournal } = await import('@/lib/server/journal-sync')
     const result = await callJournal({

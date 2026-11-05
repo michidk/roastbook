@@ -5,6 +5,7 @@ import { getControlDb } from '@/db/connection.server'
 import { requireIdentity } from '@/db/journal-context.server'
 import { oauthClient, oauthConsent } from '@/db/schema'
 import { coordinateRevokeGrant } from '@/lib/server/auth/oauth-coordination.server'
+import { consumeReauthentication } from '@/lib/server/auth/reauthentication.server'
 import {
   type IntegrationScope,
   normalizeScopes,
@@ -114,14 +115,11 @@ export async function listOAuthGrants() {
 export async function updateOAuthGrantAccess(
   id: string,
   scopes: readonly string[],
+  reauthToken?: string,
 ): Promise<IntegrationScope[]> {
   const identity = requireIdentity()
-  if (
-    !identity.authentication ||
-    !identity.authenticatedAt ||
-    Date.now() - identity.authenticatedAt.getTime() > 600_000
-  )
-    throw new Error('Sign in again to change permissions')
+  if (!identity.authentication)
+    throw new Error('Sign in to manage connected applications')
   const [grant] = await getControlDb()
     .select({ clientId: oauthConsent.clientId, scopes: oauthConsent.scopes })
     .from(oauthConsent)
@@ -130,18 +128,16 @@ export async function updateOAuthGrantAccess(
   const allowed = new Set<string>(scopesAllowedByProtocol(grant.scopes))
   const approved = normalizeScopes(scopes).filter((scope) => allowed.has(scope))
   if (!approved.length) throw new Error('Choose at least one permission')
+  await consumeReauthentication('change-permissions', reauthToken)
   await saveApprovedGrantScopes(identity.id, grant.clientId, approved)
   return approved
 }
 
+/** Disconnecting only removes access, so it needs no confirmation. */
 export async function revokeOAuthGrant(id: string) {
   const identity = requireIdentity()
-  if (
-    !identity.authentication ||
-    !identity.authenticatedAt ||
-    Date.now() - identity.authenticatedAt.getTime() > 600_000
-  )
-    throw new Error('Sign in again to disconnect an application')
+  if (!identity.authentication)
+    throw new Error('Sign in to manage connected applications')
   const [connection] = await getControlDb()
     .select({ clientId: oauthConsent.clientId })
     .from(oauthConsent)

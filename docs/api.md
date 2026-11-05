@@ -9,10 +9,17 @@ The same operations are available as MCP tools (see
 [Deployment](deployment.md#mcp)). API keys, MCP tokens, and MCP applications
 share one permission model and one rate limit.
 
+Open **Settings → API** and choose **Open API explorer** to browse endpoints
+and try requests. The adjacent **OpenAPI description (JSON)** button opens the
+machine-readable schema. The explorer also links to it as **OpenAPI JSON** in
+its header. Both links describe the running version.
+
 ## Keys and permissions
 
-Create a key in **Settings → API**. Give it a name, an expiry (30 days to one
-year, a custom date, or none), and permissions. Keys are shown once; Roastbook
+Create a key in **Settings → API**. Give it a name, an expiry (one day to one
+year, seven days by default, a custom date, or none), and permissions. With
+built-in accounts, creating a key or changing its permissions first asks you to
+confirm it’s you with a passkey or an email code. Keys are shown once; Roastbook
 stores only a hash and the first characters (`rbk_api_…`) so you can tell keys
 apart. You can change a key's name and permissions later without rotating it,
 and revoke it at any time.
@@ -44,8 +51,8 @@ link never creates a key on its own:
 /settings/api?create=true&name=Backup%20script&scopes=brews:read,beans:read&expires=90d
 ```
 
-`scopes` is a comma-separated list; `expires` is `30d`, `90d`, `1y`, or
-`never`. Unknown scopes are ignored.
+`scopes` is a comma-separated list; `expires` is `1d`, `7d`, `30d`, `90d`,
+`1y`, or `never`. Unknown scopes are ignored.
 
 Scopes are written `<resource>:read` or `<resource>:write`; write includes
 read. A key only ever reaches the journal of the account that created it:
@@ -121,7 +128,43 @@ pictures), `gear`, `places`, or `visits`. Reading uses `:read`, the rest
   (`set_image_thumbnail`).
 
 `GET /api/v1`, `GET /api/v1/rate-limit`, and `GET /api/v1/openapi.json` need
-no particular scope.
+no particular scope. `GET /api/v1/openapi.json` and `GET /api/v1/docs` need
+no key at all.
+
+## Reference
+
+`/api/v1/docs` is an interactive API reference for the running version: every
+endpoint with its parameters, body, permission, response fields, and example
+requests in curl
+and other languages. Settings → API links to it. It needs no sign-in, so you
+can link to it from elsewhere. It follows the theme and palettes you last used
+in Roastbook on the same browser.
+
+**Test request** sends a real request:
+
+- Signed in to Roastbook (or past the Hodor login), it runs as your account
+  with every permission, like the app, without an API key. It changes your
+  journal for real and counts against the account's rate limit.
+- Paste a key under **Authentication** to test that key and its permissions
+  instead. The key stays in the page and is not saved.
+- Signed out, test requests need a key, as with curl. With
+  `AUTH_ENABLED=false` there is no sign-in: anyone who can reach the app counts
+  as signed in to the shared journal, which is why such instances belong
+  behind Hodor, another authenticating proxy, or a private network.
+
+Signed-in test requests go to `/api/try/v1/…`, the same routes behind the
+app's sign-in. They only accept the reference page's own requests (a required
+header and the same-origin check), and `/api/v1` itself never accepts a
+browser session.
+
+The reference and `/api/v1/openapi.json` are generated from the same operation
+catalog as the API and MCP tools. Success response schemas come from the
+handlers’ TypeScript return types, including nested records, pagination, nulls,
+and dates serialized as ISO strings. Each error status specifies its actual
+error code and a matching example. The page uses
+[Scalar](https://github.com/scalar/scalar), served by
+Roastbook itself with its telemetry, AI assistant, and request proxy turned
+off; its only outside requests are the Google Fonts the app uses too.
 
 ## Requests
 
@@ -132,7 +175,8 @@ curl -H "Authorization: Bearer $ROASTBOOK_API_KEY" \
 
 - `GET /api/v1` lists every operation and whether the key may use it.
 - `GET /api/v1/openapi.json` is the OpenAPI 3.1 description, readable without
-  a key. Each operation names its required scope.
+  a key. Each operation names its required scope. `GET /api/v1/docs` shows it
+  as a [reference](#reference).
 - Operation responses are JSON objects with a `data` field; picture downloads
   return the image itself, and `/api/v1/openapi.json` the OpenAPI document.
   Lists return the same pages the app shows. Their query parameters differ per

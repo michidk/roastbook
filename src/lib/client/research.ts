@@ -1,7 +1,7 @@
 import * as remote from '@/lib/server/research'
 import { integrationCapability } from './integration-capability'
 
-// AI runs only on the server; probes report "unavailable" offline and in the demo.
+// Standard AI runs on the server; demo probes expose only local preset actions.
 export {
   extractBeanInfo,
   researchBeanInfo,

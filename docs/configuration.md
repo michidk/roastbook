@@ -60,9 +60,14 @@ a new client; see [Journal architecture](client-data.md).
 | `RESEND_API_KEY` | — | Resend | Resend API key |
 
 Sign-in uses emailed one-time codes (or the equivalent link) and passkeys;
-there are no passwords. Codes expire after ten minutes. Sessions last 30 days;
-sensitive account and administrator actions require a sign-in within the last
-ten minutes.
+there are no passwords. Codes expire after ten minutes. Sessions last 30 days.
+Sensitive actions ask the owner to confirm it’s them first, with a passkey or an
+emailed code, every time: creating API keys and MCP tokens, changing their or
+an application's permissions, saving an AI provider key, exporting or deleting
+the account, changing the email address or passkeys, and changing or deleting
+users as an administrator. One sign-in confirms one action: the confirmation
+is valid for five minutes, and email and passkey changes must follow within the
+ten minutes the session counts as fresh.
 
 New passkeys use the account email as the username shown by password managers.
 
@@ -114,14 +119,35 @@ encrypted per user and endpoint and never reach browsers, exports, or logs.
 
 User endpoints must use HTTPS; private, loopback, metadata, and reserved
 addresses are blocked and redirects are refused. `AI_ALLOWED_PRIVATE_ORIGINS`
-allows exact origins such as `http://ollama:11434` and is rejected in hosted
-mode. Selected journal data and images go to the user's provider, which bills
-them.
+accepts a comma-separated list of exact origins (scheme, hostname, and port,
+without a path) and is rejected in hosted mode. For example:
+
+```env
+AI_ALLOWED_PRIVATE_ORIGINS=http://ollama:11434,http://host.containers.internal:42000
+```
+
+In self-hosted mode, listed origins allow both HTTP and private addresses.
+Recreate the application container after changing this variable. In Settings > AI,
+enter the full API base URL, including the provider's API path, for example
+`http://host.containers.internal:42000/v1`. The hostname must resolve and the
+provider must be reachable from inside the application container; this setting
+does not configure DNS, networking, or TLS trust.
+
+Selected journal data and images go to the user's provider, which bills them.
 
 Every request's metadata, status, duration, and token usage are logged in the
 database and shown in Settings > AI. Prompts and responses are stored only
 with `AI_TELEMETRY_STORE_PAYLOADS=true` (off by default); turning it off again
 redacts the stored ones. They contain private journal data.
+
+### Responses web research
+
+Responses endpoints use the OpenAI Responses adapter so web research is sent
+as the provider-hosted `web_search` tool. The provider must implement that
+hosted tool; a Responses-compatible text endpoint alone is not sufficient.
+Chat Completions endpoints retain the generic compatible adapter and do not
+support online research. Endpoint validation and the protected HTTP transport
+apply to both adapters.
 
 ## MCP
 

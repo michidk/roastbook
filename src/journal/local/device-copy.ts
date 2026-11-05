@@ -7,8 +7,8 @@ const choice = 'roastbook-device-copy'
 
 /**
  * The demo and the installed app always keep the journal on the device, for
- * offline use; a browser tab only when chosen in Settings → Offline. Other
- * tabs read and write the journal on the server.
+ * offline use. Browser tabs reuse an existing copy, including copies enabled
+ * before the setting was removed; other tabs use the server.
  */
 export function keepsDeviceCopy() {
   if (typeof window === 'undefined') return false

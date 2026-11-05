@@ -1,5 +1,6 @@
-import { History, Loader2, RefreshCw, Sparkles } from 'lucide-react'
+import { History, RefreshCw, Sparkles } from 'lucide-react'
 import { useState } from 'react'
+import { AiThinking } from '@/components/ai-thinking'
 import {
   ChangeBlock,
   KeepConstantBlock,
@@ -35,6 +36,7 @@ import {
 } from '@/components/ui/tooltip'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useFeatureAvailability } from '@/hooks/use-feature-availability'
+import { DEMO_MODE } from '@/lib/build-mode'
 import {
   getShotRecommendation,
   getShotRecommendationOptions,
@@ -185,7 +187,7 @@ export function AiRecommendationDialog({
           <TooltipContent
             side="bottom"
             sideOffset={6}
-            className="w-72 items-start rounded-lg border border-border bg-popover p-3 text-sm leading-relaxed text-muted-foreground shadow-coffee [&>svg]:hidden"
+            className="w-72 items-start rounded-lg border border-border bg-popover p-3 text-sm leading-relaxed text-muted-foreground shadow-coffee"
           >
             {helpText}
           </TooltipContent>
@@ -210,10 +212,14 @@ export function AiRecommendationDialog({
             <DialogTitle>
               {isFocusedShot ? 'AI opinion on this brew' : 'AI recommendation'}
             </DialogTitle>
-            <DialogDescription className={cn(result && 'max-sm:sr-only')}>
-              {isFocusedShot
-                ? 'An assessment of this specific brew and a next-brew adjustment based on its beans, brewing method, exact gear, tasting result, and matching history.'
-                : 'A next-brew adjustment based on the latest completed brew for these beans, its brewing method and exact gear setup, and matching history. Unsaved form values are not used.'}
+            <DialogDescription
+              className={cn(result && !DEMO_MODE && 'max-sm:sr-only')}
+            >
+              {DEMO_MODE
+                ? 'Preset demo response. Edits and custom questions are not analyzed. No AI provider is contacted.'
+                : isFocusedShot
+                  ? 'An assessment of this specific brew and a next-brew adjustment based on its beans, brewing method, exact gear, tasting result, and matching history.'
+                  : 'A next-brew adjustment based on the latest completed brew for these beans, its brewing method and exact gear setup, and matching history. Unsaved form values are not used.'}
             </DialogDescription>
           </DialogHeader>
           {result && request ? (
@@ -339,22 +345,19 @@ export function AiRecommendationDialog({
                   </p>
                 </div>
               ) : loading ? (
-                <div
-                  className="flex min-h-56 flex-col items-center justify-center gap-3 text-center"
-                  aria-live="polite"
-                >
-                  <Loader2 className="size-7 animate-spin text-primary" />
-                  <div>
-                    <p className="font-medium">
-                      {isFocusedShot
-                        ? 'Analyzing this brew and its history…'
-                        : 'Analyzing brew history…'}
-                    </p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Comparing settings, extraction, strength, and flavor
-                      development.
-                    </p>
-                  </div>
+                <div className="flex min-h-56 flex-col items-center justify-center gap-3 text-center">
+                  <AiThinking
+                    className="font-medium"
+                    label={
+                      isFocusedShot
+                        ? 'Thinking about this brew…'
+                        : 'Thinking about your next brew…'
+                    }
+                  />
+                  <p className="max-w-sm text-sm text-muted-foreground">
+                    Comparing settings, extraction, strength, and flavor
+                    development.
+                  </p>
                 </div>
               ) : error ? (
                 <div

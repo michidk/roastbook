@@ -1,4 +1,4 @@
-import { Loader2, MessageCircle, RefreshCw, Send } from 'lucide-react'
+import { MessageCircle, RefreshCw, Send } from 'lucide-react'
 import {
   type FormEvent,
   type KeyboardEvent,
@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { AiThinking } from '@/components/ai-thinking'
 import {
   ChangeBlock,
   KeepConstantBlock,
@@ -200,10 +201,7 @@ export function RecommendationChat({
             ),
           )}
           {pending ? (
-            <div className="mr-auto flex items-center gap-2 rounded-2xl bg-muted px-3.5 py-2.5 text-sm text-muted-foreground">
-              <Loader2 aria-hidden className="size-4 animate-spin" />
-              Thinking…
-            </div>
+            <AiThinking className="mr-auto w-fit rounded-2xl bg-muted px-3.5 py-2.5 text-sm text-muted-foreground" />
           ) : null}
           {error ? (
             <div

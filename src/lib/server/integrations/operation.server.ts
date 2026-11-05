@@ -54,43 +54,48 @@ export const statsFilter = z.object({
   to: z.iso.date().optional().describe('YYYY-MM-DD, with period=custom'),
 })
 
-export function operation<S extends z.ZodType>(
+export function operation<const N extends string, S extends z.ZodType, R>(
   definition: Omit<IntegrationOperation, 'input' | 'run'> & {
+    readonly name: N
     readonly input: S
-    readonly run: (
-      input: z.input<S>,
-      context: IntegrationContext,
-    ) => Promise<unknown>
+    readonly run: (input: z.input<S>, context: IntegrationContext) => Promise<R>
   },
-): IntegrationOperation {
+) {
   return {
     ...definition,
     input: integrationInput(definition.input),
-    run: definition.run as IntegrationOperation['run'],
+    run: definition.run,
   }
 }
 
-type CrudOptions = {
+type CrudOptions<S extends string, P extends string> = {
   readonly resource: IntegrationResource
-  readonly singular: string
-  readonly plural: string
+  readonly singular: S
+  readonly plural: P
   readonly path: string
   readonly noun: string
 }
 
 /** The five standard operations for one journal collection. */
 export function crud<
+  const S extends string,
+  const P extends string,
+  LR,
+  GR,
+  CR,
+  UR,
+  DR,
   L extends z.ZodType,
   C extends z.ZodType,
   U extends z.ZodType,
 >(
-  options: CrudOptions,
+  options: CrudOptions<S, P>,
   handlers: {
-    list: { input: L; run: (input: z.input<L>) => Promise<unknown> }
-    get: (id: number) => Promise<unknown>
-    create: { input: C; run: (input: z.input<C>) => Promise<unknown> }
-    update: { input: U; run: (input: z.input<U>) => Promise<unknown> }
-    delete: (id: number) => Promise<unknown>
+    list: { input: L; run: (input: z.input<L>) => Promise<LR> }
+    get: (id: number) => Promise<GR>
+    create: { input: C; run: (input: z.input<C>) => Promise<CR> }
+    update: { input: U; run: (input: z.input<U>) => Promise<UR> }
+    delete: (id: number) => Promise<DR>
   },
 ) {
   const { resource, singular, plural, path, noun } = options
@@ -150,5 +155,5 @@ export function crud<
       input: id,
       run: (input) => handlers.delete(input.id),
     }),
-  ]
+  ] as const
 }

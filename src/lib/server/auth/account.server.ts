@@ -26,6 +26,7 @@ import {
 import { renderAccountEmail } from '@/lib/account-email'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { getServerEnv } from '@/lib/env.server'
+import { consumeReauthentication } from '@/lib/server/auth/reauthentication.server'
 import { integrationRateLimitPrefixes } from '@/lib/server/integrations/rate-limit.server'
 import { sendAccountEmail } from './email.server'
 
@@ -35,17 +36,8 @@ function accountIdentity() {
     throw new Error('Account management is disabled')
   return identity
 }
-function requireFresh() {
+export function requireAdmin() {
   const identity = accountIdentity()
-  if (
-    !identity.authenticatedAt ||
-    Date.now() - identity.authenticatedAt.getTime() > 600_000
-  )
-    throw new Error('Sign in again to confirm this action')
-  return identity
-}
-export function requireAdmin(fresh = false) {
-  const identity = fresh ? requireFresh() : accountIdentity()
   if (identity.role !== 'admin')
     throw new Error('Administrator access is required')
   return identity
@@ -278,8 +270,13 @@ async function protectLastAdmin(tx: ControlTransaction, id: string) {
   }
   return target
 }
-export async function changeUserRole(userId: string, role: 'user' | 'admin') {
-  const actor = requireAdmin(true)
+export async function changeUserRole(
+  userId: string,
+  role: 'user' | 'admin',
+  reauthToken?: string,
+) {
+  const actor = requireAdmin()
+  await consumeReauthentication('change-user-role', reauthToken)
   await getControlDb().transaction(async (tx) => {
     await authorizeAdminMutation(tx, actor.id)
     if (role === 'user') await protectLastAdmin(tx, userId)
@@ -336,15 +333,17 @@ async function scheduleDeletion(
     .insert(adminAuditEvents)
     .values({ actorId, targetId: userId, action: 'delete' })
 }
-export async function removeUser(userId: string) {
-  const actor = requireAdmin(true)
+export async function removeUser(userId: string, reauthToken?: string) {
+  const actor = requireAdmin()
+  await consumeReauthentication('delete-user', reauthToken)
   await getControlDb().transaction(async (tx) => {
     await authorizeAdminMutation(tx, actor.id)
     await scheduleDeletion(tx, userId, actor.id)
   })
 }
-export async function requestAccountDeletion() {
-  const identity = requireFresh()
+export async function requestAccountDeletion(reauthToken?: string) {
+  const identity = accountIdentity()
+  await consumeReauthentication('delete-account', reauthToken)
   const token = randomBytes(32).toString('base64url')
   const hash = createHash('sha256').update(token).digest('hex')
   await getControlDb().transaction(async (tx) => {
@@ -385,8 +384,9 @@ export async function confirmAccountDeletion(token: string) {
     await scheduleDeletion(tx, identity.id, identity.id)
   })
 }
-export async function requestAccountExport() {
-  const identity = requireFresh()
+export async function requestAccountExport(reauthToken?: string) {
+  const identity = accountIdentity()
+  await consumeReauthentication('export-account', reauthToken)
   await getControlDb().transaction(async (tx) => {
     await tx.execute(
       sql`select pg_advisory_xact_lock(hashtextextended(${identity.id}, 1))`,

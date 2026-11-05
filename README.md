@@ -44,7 +44,8 @@
 > **Try it in ten seconds.** The
 > [editable demo](https://demo.roastbook.coffee/overview) runs entirely in your
 > browser with fictional sample data — no account, no server database. Changes
-> stay in this browser only.
+> stay in this browser only. AI recommendations and bean research use preset
+> responses from the sample data without contacting an AI provider.
 
 Beans form a coffee database with optional bag tracking, shelf placement, personal
 ratings with brew-average fallback, and custom tags. Log a new café coffee inside
@@ -76,8 +77,10 @@ roasters, brewing methods, and gear. Website:
   statistics, and parameter charts connect quality to beans, methods, gear,
   timing, and cost.
 - 📴 **Installable and offline.** Use it in the browser or install it as a
-  PWA. The installed app keeps the journal on the device, works without a
-  connection, and syncs only what changed when you reconnect. [See what works offline.](docs/offline.md)
+  PWA. The installed app automatically keeps the journal on the device, works
+  without a connection, and syncs only what changed when you reconnect. Browser
+  tabs use the server unless this browser already has a journal copy.
+  [See what works offline.](docs/offline.md)
 - 🔒 **Yours, end to end.** Your own PostgreSQL and storage. Private accounts
   with email codes and passkeys, or one shared journal behind your own auth
   proxy.
@@ -119,7 +122,9 @@ logged in the database without image payloads.
 
 > [!IMPORTANT]
 > **API and MCP server for your own scripts and agents.** `/api/v1` is a REST
-> API with an OpenAPI description, and `/api/mcp` a Streamable HTTP MCP
+> API with generated OpenAPI request and response schemas and a public,
+> interactive reference
+> at `/api/v1/docs`, and `/api/mcp` a Streamable HTTP MCP
 > endpoint; both can read and change everything in your journal, including
 > pictures, but never administer accounts. API keys, MCP tokens, and MCP
 > applications get per-resource read or write permissions and shared rate
@@ -241,7 +246,7 @@ migrations on start. See [Development and testing](docs/development.md).
 | `bun run lint:deadcode` | Find unused code and dependencies with Knip |
 | `bun run build` | Build production assets |
 | `bun run dev:demo` | Run the browser-local demo |
-| `bun run build:demo` | Build the browser-local demo for Vercel |
+| `bun run build:demo` | Build the static browser-local demo |
 | `bun run verify` | Run the complete local quality gate |
 | `bun run db:generate` | Generate a Drizzle migration after a schema change |
 | `bun run db:migrate` | Apply committed migrations |

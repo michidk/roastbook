@@ -29,7 +29,7 @@ jobs:
     timeout-minutes: 20
     services:
       postgres:
-        image: postgres:18@sha256:6d732ddbc9cca651c7cbda3f2b84bc515c6d09de796204176c9e312ce8069c6c
+        image: postgres:18@sha256:bd5dfa494a5a259704365813dbfa5fa6b3e69be7348d43b547f540c730478583
         env:
           POSTGRES_DB: roastbook_test
           POSTGRES_USER: roastbook
@@ -174,7 +174,7 @@ jobs:
 
       - name: Log in to Container Registry
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -203,26 +203,3 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-
-  demo:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: false
-
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          bun-version: 1.4.4
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Build database-free demo and verify retiring service worker
-        run: bun run build:demo
-
-      - name: Validate demo client assets
-        run: bun run check:client-assets .vercel/output/static

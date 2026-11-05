@@ -121,7 +121,7 @@ export function AppearanceSettings() {
                 Coffee stains
               </Label>
               <p className="text-sm text-muted-foreground">
-                Coffee-ring marks in Roast themes.
+                Coffee-ring marks in all themes.
               </p>
             </div>
             <Switch
@@ -140,7 +140,7 @@ export function AppearanceSettings() {
                 Background grain
               </Label>
               <p className="text-sm text-muted-foreground">
-                A paper texture in Roast themes.
+                A paper texture in all themes.
               </p>
             </div>
             <Switch

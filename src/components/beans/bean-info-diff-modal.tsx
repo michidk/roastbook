@@ -17,6 +17,7 @@ import {
   type SelectableDiffDefinition,
   useSelectableDiffs,
 } from '@/hooks/use-selectable-diffs'
+import { DEMO_MODE } from '@/lib/build-mode'
 import {
   BEAN_TYPE_LABELS,
   type BeanType,
@@ -177,9 +178,11 @@ export function BeanInfoDiffModal({
           <DialogHeader>
             <DialogTitle>No Changes Found</DialogTitle>
             <DialogDescription>
-              {source === 'image'
-                ? "The AI couldn't extract any new information from the image."
-                : "The AI couldn't find any new information about this bean online."}
+              {DEMO_MODE
+                ? 'The preset response matches the original sample bean. No online research was performed.'
+                : source === 'image'
+                  ? "The AI couldn't extract any new information from the image."
+                  : "The AI couldn't find any new information about this bean online."}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -200,6 +203,9 @@ export function BeanInfoDiffModal({
               : 'Review research results'}
           </DialogTitle>
           <DialogDescription>
+            {DEMO_MODE && (
+              <span>Preset sample response. No AI provider is contacted. </span>
+            )}
             {newFieldCount > 0 && (
               <span className="text-positive-text">
                 {newFieldCount} new field{newFieldCount !== 1 ? 's' : ''}

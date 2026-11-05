@@ -5,6 +5,11 @@ import { encodeBase64 } from '@/lib/base64'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { MAX_IMAGE_BYTES } from '@/lib/domain-contracts'
 import { readBoundedRequestBody } from '../request-body.server'
+import {
+  type API_TRY_BASE_PATH,
+  handleApiDocsRequest,
+  isApiDocsPath,
+} from './api-docs.server'
 import { IntegrationImage } from './images.server'
 import { buildOpenApiDocument } from './openapi.server'
 import {
@@ -259,6 +264,7 @@ async function builtInRoute(url: URL, path: string) {
       {
         data: {
           documentation: `${url.origin}${API_BASE_PATH}/openapi.json`,
+          reference: `${url.origin}${API_BASE_PATH}/docs`,
           scopes: integration.scopes,
           operations: INTEGRATION_OPERATIONS.map((operation) =>
             operationSummary(operation, integration.scopes),
@@ -355,15 +361,25 @@ async function routeRequest(request: Request, url: URL, path: string) {
 /**
  * `/api/v1`: the journal as a REST API. Runs inside the key owner's journal
  * scope (see request.server.ts); every route maps to one shared operation.
+ * `/api/try/v1` serves the same routes to the signed-in API reference.
  */
-export async function handleApiRequest(request: Request): Promise<Response> {
+export async function handleApiRequest(
+  request: Request,
+  basePath: typeof API_BASE_PATH | typeof API_TRY_BASE_PATH = API_BASE_PATH,
+): Promise<Response> {
   const url = new URL(request.url)
-  const path = url.pathname.slice(API_BASE_PATH.length) || '/'
+  const path = url.pathname.slice(basePath.length) || '/'
   if (DEMO_MODE) return new Response('Not found', { status: 404 })
-  if (path === '/openapi.json' && request.method === 'GET')
+  const publicFiles = basePath === API_BASE_PATH && request.method === 'GET'
+  if (publicFiles && path === '/openapi.json')
     return Response.json(buildOpenApiDocument(url.origin), {
       headers: { 'Cache-Control': 'public, max-age=300' },
     })
+  if (publicFiles && isApiDocsPath(path))
+    return (
+      (await handleApiDocsRequest(path)) ??
+      failure({ status: 404, code: 'not_found', message: 'No such file' })
+    )
   const admission = await admitIntegrationRequest()
   if (admission.rejected) return admission.rejected
   return withHeaders(await routeRequest(request, url, path), admission.headers)

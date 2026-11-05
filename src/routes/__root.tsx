@@ -1,5 +1,6 @@
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import {
+  ClientOnly,
   createRootRoute,
   HeadContent,
   Outlet,
@@ -41,6 +42,7 @@ import { usePreferencesStore } from '@/lib/preferences-store'
 import { getCurrentAccount } from '@/lib/server/account'
 import {
   isDarkTheme,
+  PALETTE_STORAGE_KEY,
   THEME_BOOTSTRAP_SCRIPT,
   THEME_COLORS,
   themeColor,
@@ -153,12 +155,20 @@ export const Route = createRootRoute({
         : []),
     ],
   }),
-  component: RootComponent,
+  component: DEMO_MODE ? DemoRootComponent : RootComponent,
   pendingComponent: AppPending,
   shellComponent: RootDocument,
   errorComponent: RootErrorComponent,
   notFoundComponent: () => <RouteNotFound />,
 })
+
+function DemoRootComponent() {
+  return (
+    <ClientOnly fallback={<AppPending />}>
+      <RootComponent />
+    </ClientOnly>
+  )
+}
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   const settings = Route.useLoaderData()
@@ -242,6 +252,14 @@ function SettingsHydrator() {
       )
       document.documentElement.dataset.lightTheme = lightTheme
       document.documentElement.dataset.darkTheme = darkTheme
+      try {
+        localStorage.setItem(
+          PALETTE_STORAGE_KEY,
+          JSON.stringify({ lightTheme, darkTheme }),
+        )
+      } catch {
+        // Storage can be unavailable; only the API reference reads this.
+      }
       document.documentElement.classList.toggle('dark', isDark)
       document.documentElement.style.colorScheme = isDark ? 'dark' : 'light'
       document.documentElement.style.backgroundColor = color

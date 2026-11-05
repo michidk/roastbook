@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { z } from 'zod'
+import { reauthenticationTokenSchema } from '@/modules/auth/reauthentication'
 import {
   approveConsentAccess,
   loadConsent,
@@ -28,8 +29,16 @@ export const approveOAuthConsentAccess = createServerFn({ method: 'POST' })
     approveConsentAccess(consentQuery(data.query), data.scopes),
   )
 export const updateOAuthGrantPermissions = createServerFn({ method: 'POST' })
-  .validator(z.object({ id: z.string().min(1).max(512), scopes: scopeList }))
-  .handler(({ data }) => updateOAuthGrantAccess(data.id, data.scopes))
+  .validator(
+    z.object({
+      id: z.string().min(1).max(512),
+      scopes: scopeList,
+      reauthToken: reauthenticationTokenSchema,
+    }),
+  )
+  .handler(({ data }) =>
+    updateOAuthGrantAccess(data.id, data.scopes, data.reauthToken),
+  )
 export const disconnectOAuthGrant = createServerFn({ method: 'POST' })
   .validator(z.object({ id: z.string().min(1).max(512) }))
   .handler(({ data }) => revokeOAuthGrant(data.id))

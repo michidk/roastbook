@@ -13,7 +13,9 @@ import {
   listUsers,
   requestAccountDeletion,
 } from '@/lib/server/auth/account.server'
+import { issueReauthentication } from '@/lib/server/auth/reauthentication.server'
 import { handleJournalRequest } from '@/lib/server/auth/request.server'
+import type { ReauthenticationAction } from '@/modules/auth/reauthentication'
 
 const resolvedLink = z.object({ email: z.email(), code: z.string() })
 const sessionBody = z.object({ id: z.string(), authenticatedAt: z.string() })
@@ -383,31 +385,78 @@ export async function verifyAuthContract(
       domain(user.cookie, () => listUsers(0)),
       /Administrator/,
     )
+    // Sensitive actions need a confirmation, which only a fresh sign-in gets.
+    const confirm = async (
+      cookie: string,
+      userId: string,
+      action: ReauthenticationAction,
+    ) => {
+      let token = ''
+      await domain(cookie, async () => {
+        token = (await issueReauthentication(action, userId)) ?? ''
+      })
+      return token
+    }
     await assert.rejects(
       domain(admin.cookie, () => changeUserRole(user.user.id, 'admin')),
-      /Sign in again/,
+      /Confirm it’s you/,
+    )
+    await database
+      .update(authSessions)
+      .set({ createdAt: new Date(Date.now() - 180_000) })
+      .where(eq(authSessions.userId, admin.user.id))
+    await assert.rejects(
+      confirm(admin.cookie, admin.user.id, 'change-user-role'),
+      /Confirm it’s you/,
     )
     await database
       .update(authSessions)
       .set({ createdAt: new Date() })
-      .where(eq(authSessions.userId, admin.user.id))
-    assert.equal(
-      (await domain(admin.cookie, () => changeUserRole(user.user.id, 'admin')))
-        .status,
-      204,
+      .where(inArray(authSessions.userId, [admin.user.id, user.user.id]))
+    const promotion = await confirm(
+      admin.cookie,
+      admin.user.id,
+      'change-user-role',
     )
     assert.equal(
-      (await domain(admin.cookie, () => changeUserRole(user.user.id, 'user')))
-        .status,
+      (
+        await domain(admin.cookie, () =>
+          changeUserRole(user.user.id, 'admin', promotion),
+        )
+      ).status,
       204,
     )
+    await assert.rejects(
+      domain(admin.cookie, () =>
+        changeUserRole(user.user.id, 'user', promotion),
+      ),
+      /Confirm it’s you/,
+    )
+    // One sign-in confirms one action: the same session cannot confirm again.
+    await assert.rejects(
+      confirm(admin.cookie, admin.user.id, 'change-user-role'),
+      /Confirm it’s you/,
+    )
+    await database
+      .update(authUsers)
+      .set({ role: 'user' })
+      .where(eq(authUsers.id, user.user.id))
     await assert.rejects(
       domain(user.cookie, () => listUsers(0)),
       /Administrator/,
     )
 
+    const deletionConfirmation = await confirm(
+      user.cookie,
+      user.user.id,
+      'delete-account',
+    )
     assert.equal(
-      (await domain(user.cookie, requestAccountDeletion)).status,
+      (
+        await domain(user.cookie, () =>
+          requestAccountDeletion(deletionConfirmation),
+        )
+      ).status,
       204,
     )
     const deletion = (await readMessages())

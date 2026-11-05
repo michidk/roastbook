@@ -67,6 +67,16 @@ For a schema change:
 Run `bun run generate-routes` after route-file changes; never edit
 `src/routeTree.gen.ts`.
 
+## API response schemas
+
+Run `bun run generate:api-responses` after changing an integration handler's
+return type or adding an operation. Commit
+`src/lib/server/integrations/response-schemas.gen.json` with the code change;
+do not edit it by hand. The generator reads the operation catalog's inferred
+return types, maps dates to ISO strings and void results to null, and supplies
+the success schemas in `/api/v1/openapi.json`. `bun run check` rejects stale
+response schemas.
+
 ## Journal functions
 
 Journal reads and writes are SQL functions in `src/journal/`; see
@@ -96,7 +106,7 @@ bun run check:pwa
   `test:coverage` reports coverage without a threshold.
 - `check:client-assets` enforces JavaScript and MapLibre chunk budgets and
   rejects server-only SDK code in browser assets. Pass another build's public
-  directory to check it, e.g. `.vercel/output/static`.
+  directory to check it, e.g. `dist/client`.
 - `check:pwa` validates the manifest, icons, offline page and built service
   worker.
 

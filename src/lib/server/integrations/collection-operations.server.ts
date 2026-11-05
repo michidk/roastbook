@@ -382,4 +382,4 @@ export const COLLECTION_OPERATIONS = [
       delete: (data) => deleteCafeVisit({ data }),
     },
   ),
-]
+] as const

@@ -45,7 +45,7 @@ function TooltipTrigger({ ...props }: TooltipPrimitive.Trigger.Props) {
 function TooltipContent({
   className,
   side = 'top',
-  sideOffset = 4,
+  sideOffset = 8,
   align = 'center',
   alignOffset = 0,
   children,
@@ -73,7 +73,10 @@ function TooltipContent({
           {...props}
         >
           {children}
-          <TooltipPrimitive.Arrow className="z-50 size-2.5 translate-y-[calc(-50%-2px)] rotate-45 rounded-[2px] bg-foreground fill-foreground data-[side=bottom]:top-1 data-[side=inline-end]:top-1/2! data-[side=inline-end]:-left-1 data-[side=inline-end]:-translate-y-1/2 data-[side=inline-start]:top-1/2! data-[side=inline-start]:-right-1 data-[side=inline-start]:-translate-y-1/2 data-[side=left]:top-1/2! data-[side=left]:-right-1 data-[side=left]:-translate-y-1/2 data-[side=right]:top-1/2! data-[side=right]:-left-1 data-[side=right]:-translate-y-1/2 data-[side=top]:-bottom-2.5" />
+          <TooltipPrimitive.Arrow
+            data-slot="tooltip-arrow"
+            className="h-1.5 w-3 bg-inherit [clip-path:polygon(0_0,100%_0,50%_100%)] data-[side=top]:-bottom-[5px] data-[side=bottom]:-top-[5px] data-[side=bottom]:rotate-180 data-[side=left]:-right-2 data-[side=left]:-rotate-90 data-[side=right]:-left-2 data-[side=right]:rotate-90 ltr:data-[side=inline-start]:-right-2 ltr:data-[side=inline-start]:-rotate-90 ltr:data-[side=inline-end]:-left-2 ltr:data-[side=inline-end]:rotate-90 rtl:data-[side=inline-start]:-left-2 rtl:data-[side=inline-start]:rotate-90 rtl:data-[side=inline-end]:-right-2 rtl:data-[side=inline-end]:-rotate-90"
+          />
         </TooltipPrimitive.Popup>
       </TooltipPrimitive.Positioner>
     </TooltipPrimitive.Portal>

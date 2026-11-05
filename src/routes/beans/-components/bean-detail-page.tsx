@@ -51,6 +51,7 @@ export function BeanDetailPage() {
     roasters,
     visionEnabled,
     researchEnabled,
+    recommendationEnabled,
   } = detailData
   const search = routeApi.useSearch()
   const isEditing = search.edit ?? false
@@ -218,7 +219,7 @@ export function BeanDetailPage() {
         roasters={availableRoasters}
         isEditing={isEditing}
         isSaving={isSaving}
-        recommendationEnabled={researchEnabled && isOnline}
+        recommendationEnabled={recommendationEnabled && isOnline}
         shotCount={shotAnalytics.totalShots}
         onToggleArchive={() => {
           void updateBean({

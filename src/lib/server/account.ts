@@ -10,6 +10,7 @@ import {
   requestAccountDeletion,
   requestAccountExport,
 } from '@/lib/server/auth/account.server'
+import { reauthenticationTokenSchema } from '@/modules/auth/reauthentication'
 
 export const getCurrentAccount = createServerFn({ method: 'GET' }).handler(
   getAccountState,
@@ -25,18 +26,26 @@ export const setUserRole = createServerFn({ method: 'POST' })
     z.object({
       userId: z.string().min(1).max(128),
       role: z.enum(['user', 'admin']),
+      reauthToken: reauthenticationTokenSchema,
     }),
   )
-  .handler(({ data }) => changeUserRole(data.userId, data.role))
+  .handler(({ data }) =>
+    changeUserRole(data.userId, data.role, data.reauthToken),
+  )
 export const deleteUser = createServerFn({ method: 'POST' })
-  .validator(z.object({ userId: z.string().min(1).max(128) }))
-  .handler(({ data }) => removeUser(data.userId))
-export const requestDeletion = createServerFn({ method: 'POST' }).handler(
-  requestAccountDeletion,
-)
+  .validator(
+    z.object({
+      userId: z.string().min(1).max(128),
+      reauthToken: reauthenticationTokenSchema,
+    }),
+  )
+  .handler(({ data }) => removeUser(data.userId, data.reauthToken))
+export const requestDeletion = createServerFn({ method: 'POST' })
+  .validator(z.object({ reauthToken: reauthenticationTokenSchema }))
+  .handler(({ data }) => requestAccountDeletion(data.reauthToken))
 export const confirmDeletion = createServerFn({ method: 'POST' })
   .validator(z.object({ token: z.string().regex(/^[A-Za-z0-9_-]{43}$/) }))
   .handler(({ data }) => confirmAccountDeletion(data.token))
-export const requestExport = createServerFn({ method: 'POST' }).handler(
-  requestAccountExport,
-)
+export const requestExport = createServerFn({ method: 'POST' })
+  .validator(z.object({ reauthToken: reauthenticationTokenSchema }))
+  .handler(({ data }) => requestAccountExport(data.reauthToken))

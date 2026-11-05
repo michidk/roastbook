@@ -42,12 +42,13 @@ Semantic tokens in `src/styles.css` (light / dark, default Roast palettes):
 
 ### Palettes
 
-Light and dark palettes are chosen separately. Roast (default) has paper grain
-and coffee rings; Classic Light (ivory, copper), Classic Dark (charcoal, cream,
-copper), Pure Light and Pure Dark (white/black, neutral accents, no decorative
-shadows) omit the textures. Every palette keeps visible card and control
-boundaries. Overrides and the settings previews use the same tokens in
-`src/styles.css`.
+Light and dark palettes are chosen separately. Roast is the default; Classic
+Light uses ivory and copper, Classic Dark uses charcoal, cream and copper, and
+Pure Light and Pure Dark use white/black with neutral accents and no decorative
+shadows. Paper grain and coffee rings are available in every palette and can be
+toggled independently. Every palette keeps visible card and control boundaries.
+Overrides and the settings previews use the same tokens in
+`src/theme-tokens.css`.
 
 - Color mode (System, Light, Dark in the avatar menu's Theme submenu) is a
   browser-local preference. Palettes, rings and grain are saved with the
@@ -60,7 +61,8 @@ boundaries. Overrides and the settings previews use the same tokens in
 ## Typography
 
 - Display: `Bricolage Grotesque` (`font-display`, tight tracking). Body:
-  `Hanken Grotesk`. Aligned data uses tabular numerals.
+  `Hanken Grotesk`. Families and font weights live in `src/typography.css`,
+  shared by the app and API explorer. Aligned data uses tabular numerals.
 - Page title `1.875rem` mobile / `3rem` desktop, weight 800; compact variant
   `1.5rem` / `1.875rem` from `sm`.
 - Section title `1.125rem`/700; body `1rem`/400–600; small `0.875rem`/400–600.

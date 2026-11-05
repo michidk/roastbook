@@ -1,0 +1,4076 @@
+{
+  "operations": {
+    "list_brews": { "$ref": "#/components/schemas/ListBrewsData" },
+    "get_brew": {
+      "anyOf": [
+        { "$ref": "#/components/schemas/GetBrewData" },
+        { "type": "null" }
+      ]
+    },
+    "create_brew": { "$ref": "#/components/schemas/CreateBrewData" },
+    "update_brew": { "$ref": "#/components/schemas/CreateBrewData" },
+    "delete_brew": { "type": "null" },
+    "list_bean_brews": { "$ref": "#/components/schemas/ListBeanBrewsData" },
+    "get_bean_brew_analytics": {
+      "$ref": "#/components/schemas/GetBeanBrewAnalyticsData"
+    },
+    "list_gear_brews": { "$ref": "#/components/schemas/ListBeanBrewsData" },
+    "save_brew_as_recipe": {
+      "$ref": "#/components/schemas/SaveBrewAsRecipeData"
+    },
+    "list_beans": { "$ref": "#/components/schemas/ListBeansData" },
+    "get_bean": {
+      "anyOf": [
+        { "$ref": "#/components/schemas/GetBeanData" },
+        { "type": "null" }
+      ]
+    },
+    "create_bean": { "$ref": "#/components/schemas/CreateBeanData" },
+    "update_bean": { "$ref": "#/components/schemas/UpdateBeanData" },
+    "delete_bean": { "$ref": "#/components/schemas/DeleteBeanData" },
+    "create_bean_purchase": {
+      "$ref": "#/components/schemas/CreateBeanPurchaseData"
+    },
+    "update_bean_purchase": {
+      "$ref": "#/components/schemas/CreateBeanPurchaseData"
+    },
+    "archive_bean_purchase": {
+      "$ref": "#/components/schemas/CreateBeanPurchaseData"
+    },
+    "list_roasters": { "$ref": "#/components/schemas/ListRoastersData" },
+    "get_roaster": {
+      "anyOf": [
+        { "$ref": "#/components/schemas/GetRoasterData" },
+        { "type": "null" }
+      ]
+    },
+    "create_roaster": { "$ref": "#/components/schemas/CreateRoasterData" },
+    "update_roaster": { "$ref": "#/components/schemas/UpdateRoasterData" },
+    "delete_roaster": { "type": "null" },
+    "list_gear": { "$ref": "#/components/schemas/ListGearData" },
+    "get_gear": {
+      "anyOf": [
+        { "$ref": "#/components/schemas/GetGearData" },
+        { "type": "null" }
+      ]
+    },
+    "create_gear": { "$ref": "#/components/schemas/CreateGearData" },
+    "update_gear": { "$ref": "#/components/schemas/CreateGearData" },
+    "delete_gear": { "type": "null" },
+    "list_gear_sets": { "$ref": "#/components/schemas/ListGearSetsData" },
+    "get_gear_set": {
+      "anyOf": [
+        { "$ref": "#/components/schemas/GetGearSetData" },
+        { "type": "null" }
+      ]
+    },
+    "create_gear_set": { "$ref": "#/components/schemas/CreateGearSetData" },
+    "update_gear_set": { "$ref": "#/components/schemas/CreateGearSetData" },
+    "delete_gear_set": { "type": "null" },
+    "list_recipes": { "$ref": "#/components/schemas/ListRecipesData" },
+    "get_recipe": {
+      "anyOf": [
+        { "$ref": "#/components/schemas/GetRecipeData" },
+        { "type": "null" }
+      ]
+    },
+    "create_recipe": { "$ref": "#/components/schemas/SaveBrewAsRecipeData" },
+    "update_recipe": { "$ref": "#/components/schemas/SaveBrewAsRecipeData" },
+    "delete_recipe": { "type": "null" },
+    "list_places": { "$ref": "#/components/schemas/ListPlacesData" },
+    "get_place": {
+      "anyOf": [
+        { "$ref": "#/components/schemas/GetPlaceData" },
+        { "type": "null" }
+      ]
+    },
+    "create_place": { "$ref": "#/components/schemas/CreatePlaceData" },
+    "update_place": { "$ref": "#/components/schemas/UpdatePlaceData" },
+    "delete_place": { "type": "null" },
+    "list_visits": { "$ref": "#/components/schemas/ListVisitsData" },
+    "get_visit": {
+      "anyOf": [
+        { "$ref": "#/components/schemas/GetVisitData" },
+        { "type": "null" }
+      ]
+    },
+    "create_visit": { "$ref": "#/components/schemas/CreateVisitData" },
+    "update_visit": { "$ref": "#/components/schemas/CreateVisitData" },
+    "delete_visit": { "type": "null" },
+    "list_brewing_methods": {
+      "type": "array",
+      "items": { "$ref": "#/components/schemas/Response_6fb81392969cea25" }
+    },
+    "get_brewing_method": {
+      "anyOf": [
+        { "$ref": "#/components/schemas/GetBrewingMethodData" },
+        { "type": "null" }
+      ]
+    },
+    "create_brewing_method": {
+      "$ref": "#/components/schemas/CreateBrewingMethodData"
+    },
+    "update_brewing_method": {
+      "$ref": "#/components/schemas/UpdateBrewingMethodData"
+    },
+    "delete_brewing_method": { "type": "null" },
+    "get_drink_configuration": {
+      "$ref": "#/components/schemas/GetDrinkConfigurationData"
+    },
+    "save_drink_type": { "$ref": "#/components/schemas/SaveDrinkTypeData" },
+    "archive_drink_type": { "type": "null" },
+    "create_drink_option": {
+      "$ref": "#/components/schemas/CreateDrinkOptionData"
+    },
+    "archive_drink_option": { "type": "null" },
+    "list_taste_tags": {
+      "type": "array",
+      "items": { "$ref": "#/components/schemas/Response_6aae1f2dd92aa0aa" }
+    },
+    "create_taste_tag": {
+      "anyOf": [
+        { "$ref": "#/components/schemas/CreateTasteTagData" },
+        { "type": "null" }
+      ]
+    },
+    "delete_taste_tag": { "type": "null" },
+    "get_stats": { "$ref": "#/components/schemas/GetStatsData" },
+    "get_dashboard": { "$ref": "#/components/schemas/GetDashboardData" },
+    "report_shot_time": { "type": "null" },
+    "get_shot_target": { "$ref": "#/components/schemas/GetShotTargetData" },
+    "upload_image": { "$ref": "#/components/schemas/UploadImageData" },
+    "set_image_thumbnail": { "type": "null" },
+    "delete_image": { "type": "null" }
+  },
+  "rateLimit": {
+    "type": "object",
+    "properties": {
+      "allowed": { "type": "boolean" },
+      "windows": {
+        "type": "array",
+        "items": {
+          "description": "One fixed rate-limit window of the account's API and MCP allowance.",
+          "type": "object",
+          "properties": {
+            "window": { "enum": ["day", "minute"], "type": "string" },
+            "limit": { "type": "number" },
+            "used": { "type": "number" },
+            "remaining": { "type": "number" },
+            "resetAt": {
+              "description": "ISO timestamp when the window starts over.",
+              "type": "string"
+            }
+          },
+          "required": ["limit", "remaining", "resetAt", "used", "window"]
+        }
+      }
+    },
+    "required": ["allowed", "windows"]
+  },
+  "definitions": {
+    "ListBrewsData": {
+      "type": "object",
+      "properties": {
+        "scopeLabel": { "type": ["null", "string"] },
+        "page": { "type": "number" },
+        "pageSize": { "type": "number" },
+        "totalItems": { "type": "number" },
+        "totalPages": { "type": "number" },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_fe4430b91d271e5f" }
+        }
+      },
+      "required": [
+        "items",
+        "page",
+        "pageSize",
+        "scopeLabel",
+        "totalItems",
+        "totalPages"
+      ]
+    },
+    "Response_fe4430b91d271e5f": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "number" },
+        "brewedAt": { "type": "string", "format": "date-time" },
+        "rating": { "type": ["null", "number"] },
+        "doseGrams": { "type": ["null", "string"] },
+        "brewWaterGrams": { "type": ["null", "string"] },
+        "ratioBasis": { "type": ["null", "string"] },
+        "grindSetting": { "type": ["null", "string"] },
+        "yieldGrams": { "type": ["null", "string"] },
+        "shotTimeSeconds": { "type": ["null", "string"] },
+        "brewTemperatureCelsius": { "type": ["null", "string"] },
+        "bean": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_9ae0df235e5f4a3e" },
+            { "type": "null" }
+          ]
+        },
+        "brewingMethod": {
+          "$ref": "#/components/schemas/Response_b25abce90ca4df89"
+        }
+      },
+      "required": [
+        "bean",
+        "brewTemperatureCelsius",
+        "brewWaterGrams",
+        "brewedAt",
+        "brewingMethod",
+        "doseGrams",
+        "grindSetting",
+        "id",
+        "rating",
+        "ratioBasis",
+        "shotTimeSeconds",
+        "yieldGrams"
+      ]
+    },
+    "Response_9ae0df235e5f4a3e": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "id": { "type": "number" },
+        "roaster": { "type": ["null", "string"] },
+        "origin": { "type": ["null", "string"] },
+        "region": { "type": ["null", "string"] },
+        "process": { "type": ["null", "string"] },
+        "roasterRef": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_5e94f7fc74ee6569" },
+            { "type": "null" }
+          ]
+        },
+        "images": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_2e80fe294621193d" }
+        }
+      },
+      "required": [
+        "id",
+        "images",
+        "name",
+        "origin",
+        "process",
+        "region",
+        "roaster",
+        "roasterRef"
+      ]
+    },
+    "Response_5e94f7fc74ee6569": {
+      "type": "object",
+      "properties": { "name": { "type": "string" } },
+      "required": ["name"]
+    },
+    "Response_2e80fe294621193d": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "beanId": { "type": "number" },
+        "beanPurchaseId": { "type": "number" },
+        "isThumbnail": { "type": "boolean" },
+        "storagePath": { "type": "string" },
+        "originalFilename": { "type": ["null", "string"] },
+        "mimeType": { "type": ["null", "string"] },
+        "sizeBytes": { "type": ["null", "number"] },
+        "storageBytes": { "type": ["null", "number"] }
+      },
+      "required": [
+        "beanId",
+        "beanPurchaseId",
+        "createdAt",
+        "id",
+        "isThumbnail",
+        "mimeType",
+        "originalFilename",
+        "ownerId",
+        "sizeBytes",
+        "storageBytes",
+        "storagePath"
+      ]
+    },
+    "Response_b25abce90ca4df89": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "id": { "type": "number" }
+      },
+      "required": ["id", "name"]
+    },
+    "GetBrewData": {
+      "type": "object",
+      "properties": {
+        "grinder": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_aa8903cb4c9efe79" },
+            { "type": "null" }
+          ]
+        },
+        "basket": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_aa8903cb4c9efe79" },
+            { "type": "null" }
+          ]
+        },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "targetTimeSeconds": { "type": ["null", "string"] },
+        "drinkTypeId": { "type": ["null", "number"] },
+        "drinkType": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_7ab7ca3248772bc1" },
+            { "type": "null" }
+          ]
+        },
+        "notes": { "type": ["null", "string"] },
+        "images": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_d98dd5bcc9aeae95" }
+        },
+        "beanId": { "type": ["null", "number"] },
+        "beanPurchaseId": { "type": ["null", "number"] },
+        "brewedAt": { "type": "string", "format": "date-time" },
+        "revision": { "type": "number" },
+        "brewPressureBar": { "type": ["null", "string"] },
+        "preinfusionTimeSeconds": { "type": ["null", "string"] },
+        "preinfusionPressureBar": { "type": ["null", "string"] },
+        "machineSettingRevisionId": { "type": ["null", "number"] },
+        "rating": { "type": ["null", "number"] },
+        "extractionBalance": { "type": ["null", "number"] },
+        "bitterness": { "type": ["null", "number"] },
+        "acidity": { "type": ["null", "number"] },
+        "sweetness": { "type": ["null", "number"] },
+        "body": { "type": ["null", "number"] },
+        "astringency": { "type": ["null", "number"] },
+        "machineId": { "type": ["null", "number"] },
+        "doseGrams": { "type": ["null", "string"] },
+        "brewWaterGrams": { "type": ["null", "string"] },
+        "ratioBasis": { "type": ["null", "string"] },
+        "grinderId": { "type": ["null", "number"] },
+        "grindSetting": { "type": ["null", "string"] },
+        "yieldGrams": { "type": ["null", "string"] },
+        "shotTimeSeconds": { "type": ["null", "string"] },
+        "brewTemperatureCelsius": { "type": ["null", "string"] },
+        "bloomTimeSeconds": { "type": ["null", "string"] },
+        "flowRateMlPerSecond": { "type": ["null", "string"] },
+        "basketId": { "type": ["null", "number"] },
+        "usesPuckScreen": { "type": ["null", "boolean"] },
+        "paperFilterPosition": { "type": ["null", "string"] },
+        "distributionMethod": { "type": ["null", "string"] },
+        "tampForceKg": { "type": ["null", "string"] },
+        "brewingMethodId": { "type": "number" },
+        "bean": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_ced4f9621585b019" },
+            { "type": "null" }
+          ]
+        },
+        "machine": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_aa8903cb4c9efe79" },
+            { "type": "null" }
+          ]
+        },
+        "brewingMethod": {
+          "$ref": "#/components/schemas/Response_87e892bd623bc6d1"
+        },
+        "drinkOptions": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_86a78736e7721c69" }
+        },
+        "machineSettingRevision": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_e8a312162dce3ec7" },
+            { "type": "null" }
+          ]
+        },
+        "tasteTags": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_f9623f0483a8431c" }
+        },
+        "accessoryGearIds": { "type": "array", "items": { "type": "number" } }
+      },
+      "required": [
+        "accessoryGearIds",
+        "acidity",
+        "astringency",
+        "basket",
+        "basketId",
+        "bean",
+        "beanId",
+        "beanPurchaseId",
+        "bitterness",
+        "bloomTimeSeconds",
+        "body",
+        "brewPressureBar",
+        "brewTemperatureCelsius",
+        "brewWaterGrams",
+        "brewedAt",
+        "brewingMethod",
+        "brewingMethodId",
+        "createdAt",
+        "distributionMethod",
+        "doseGrams",
+        "drinkOptions",
+        "drinkType",
+        "drinkTypeId",
+        "extractionBalance",
+        "flowRateMlPerSecond",
+        "grindSetting",
+        "grinder",
+        "grinderId",
+        "id",
+        "images",
+        "machine",
+        "machineId",
+        "machineSettingRevision",
+        "machineSettingRevisionId",
+        "notes",
+        "ownerId",
+        "paperFilterPosition",
+        "preinfusionPressureBar",
+        "preinfusionTimeSeconds",
+        "rating",
+        "ratioBasis",
+        "revision",
+        "shotTimeSeconds",
+        "sweetness",
+        "tampForceKg",
+        "targetTimeSeconds",
+        "tasteTags",
+        "updatedAt",
+        "usesPuckScreen",
+        "yieldGrams"
+      ]
+    },
+    "Response_aa8903cb4c9efe79": {
+      "type": "object",
+      "properties": {
+        "brand": { "type": ["null", "string"] },
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "isArchived": { "type": "boolean" },
+        "model": { "type": ["null", "string"] },
+        "notes": { "type": ["null", "string"] },
+        "type": {
+          "enum": [
+            "basket",
+            "brewer",
+            "espresso_machine",
+            "espresso_machine_with_grinder",
+            "grinder",
+            "kettle",
+            "other",
+            "scale",
+            "tamper",
+            "wdt"
+          ],
+          "type": "string"
+        },
+        "priceCurrency": { "type": ["null", "string"] },
+        "purchaseDate": {
+          "anyOf": [
+            { "type": "string", "format": "date-time" },
+            { "type": "null" }
+          ]
+        },
+        "purchasePrice": { "type": ["null", "string"] },
+        "manualUrl": { "type": ["null", "string"] },
+        "productUrl": { "type": ["null", "string"] }
+      },
+      "required": [
+        "brand",
+        "createdAt",
+        "id",
+        "isArchived",
+        "manualUrl",
+        "model",
+        "name",
+        "notes",
+        "ownerId",
+        "priceCurrency",
+        "productUrl",
+        "purchaseDate",
+        "purchasePrice",
+        "type",
+        "updatedAt"
+      ]
+    },
+    "Response_7ab7ca3248772bc1": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "isArchived": { "type": "boolean" }
+      },
+      "required": [
+        "createdAt",
+        "id",
+        "isArchived",
+        "name",
+        "ownerId",
+        "updatedAt"
+      ]
+    },
+    "Response_d98dd5bcc9aeae95": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "storagePath": { "type": "string" },
+        "originalFilename": { "type": ["null", "string"] },
+        "mimeType": { "type": ["null", "string"] },
+        "sizeBytes": { "type": ["null", "number"] },
+        "storageBytes": { "type": ["null", "number"] },
+        "shotId": { "type": "number" }
+      },
+      "required": [
+        "createdAt",
+        "id",
+        "mimeType",
+        "originalFilename",
+        "ownerId",
+        "shotId",
+        "sizeBytes",
+        "storageBytes",
+        "storagePath"
+      ]
+    },
+    "Response_ced4f9621585b019": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "notes": { "type": ["null", "string"] },
+        "type": {
+          "anyOf": [
+            { "enum": ["espresso", "filter", "omni"], "type": "string" },
+            { "type": "null" }
+          ]
+        },
+        "isDecaf": { "type": "boolean" },
+        "roaster": { "type": ["null", "string"] },
+        "roasterId": { "type": ["null", "number"] },
+        "origin": { "type": ["null", "string"] },
+        "region": { "type": ["null", "string"] },
+        "farm": { "type": ["null", "string"] },
+        "variety": { "type": ["null", "string"] },
+        "altitudeMinMeters": { "type": ["null", "number"] },
+        "altitudeMaxMeters": { "type": ["null", "number"] },
+        "process": { "type": ["null", "string"] },
+        "roastLevel": {
+          "anyOf": [
+            {
+              "enum": [
+                "dark",
+                "light",
+                "medium",
+                "medium_dark",
+                "medium_light"
+              ],
+              "type": "string"
+            },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": [
+        "altitudeMaxMeters",
+        "altitudeMinMeters",
+        "createdAt",
+        "farm",
+        "id",
+        "isDecaf",
+        "name",
+        "notes",
+        "origin",
+        "ownerId",
+        "process",
+        "region",
+        "roastLevel",
+        "roaster",
+        "roasterId",
+        "type",
+        "updatedAt",
+        "variety"
+      ]
+    },
+    "Response_87e892bd623bc6d1": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "description": { "type": ["null", "string"] },
+        "enabledParameters": { "type": "array", "items": { "type": "string" } },
+        "timerEnabled": { "type": "boolean" }
+      },
+      "required": [
+        "createdAt",
+        "description",
+        "enabledParameters",
+        "id",
+        "name",
+        "ownerId",
+        "timerEnabled",
+        "updatedAt"
+      ]
+    },
+    "Response_86a78736e7721c69": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "shotId": { "type": "number" },
+        "optionValueId": { "type": "number" },
+        "optionValue": {
+          "$ref": "#/components/schemas/Response_3d8850202e164d27"
+        }
+      },
+      "required": ["id", "optionValue", "optionValueId", "ownerId", "shotId"]
+    },
+    "Response_3d8850202e164d27": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "isArchived": { "type": "boolean" },
+        "groupId": { "type": "number" },
+        "group": { "$ref": "#/components/schemas/Response_738c3fc66eba0c1c" }
+      },
+      "required": [
+        "createdAt",
+        "group",
+        "groupId",
+        "id",
+        "isArchived",
+        "name",
+        "ownerId",
+        "updatedAt"
+      ]
+    },
+    "Response_738c3fc66eba0c1c": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "isArchived": { "type": "boolean" }
+      },
+      "required": [
+        "createdAt",
+        "id",
+        "isArchived",
+        "name",
+        "ownerId",
+        "updatedAt"
+      ]
+    },
+    "Response_e8a312162dce3ec7": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "gearId": { "type": "number" },
+        "kind": { "type": "string" },
+        "brewPressureBar": { "type": ["null", "string"] },
+        "preinfusionEnabled": { "type": ["null", "boolean"] },
+        "preinfusionTimeSeconds": { "type": ["null", "string"] },
+        "preinfusionPressureBar": { "type": ["null", "string"] },
+        "flowLimitMlPerSecond": { "type": ["null", "string"] },
+        "brewTemperatureOffsetCelsius": { "type": ["null", "string"] },
+        "programmedVolumeMl": { "type": ["null", "string"] },
+        "defaultStopMode": { "type": ["null", "string"] },
+        "steamTemperatureCelsius": { "type": ["null", "string"] },
+        "steamPressureBar": { "type": ["null", "string"] },
+        "effectiveFrom": { "type": "string", "format": "date-time" },
+        "supersededAt": {
+          "anyOf": [
+            { "type": "string", "format": "date-time" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": [
+        "brewPressureBar",
+        "brewTemperatureOffsetCelsius",
+        "createdAt",
+        "defaultStopMode",
+        "effectiveFrom",
+        "flowLimitMlPerSecond",
+        "gearId",
+        "id",
+        "kind",
+        "ownerId",
+        "preinfusionEnabled",
+        "preinfusionPressureBar",
+        "preinfusionTimeSeconds",
+        "programmedVolumeMl",
+        "steamPressureBar",
+        "steamTemperatureCelsius",
+        "supersededAt"
+      ]
+    },
+    "Response_f9623f0483a8431c": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "shotId": { "type": "number" },
+        "tasteTagId": { "type": "number" },
+        "tasteTag": { "$ref": "#/components/schemas/Response_6eccfc608e5d9b3d" }
+      },
+      "required": ["id", "ownerId", "shotId", "tasteTag", "tasteTagId"]
+    },
+    "Response_6eccfc608e5d9b3d": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "category": { "type": ["null", "string"] },
+        "extractionAxis": { "type": ["null", "string"] },
+        "strengthAxis": { "type": ["null", "string"] },
+        "hint": { "type": "string" }
+      },
+      "required": [
+        "category",
+        "extractionAxis",
+        "hint",
+        "id",
+        "name",
+        "ownerId",
+        "strengthAxis"
+      ]
+    },
+    "CreateBrewData": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "targetTimeSeconds": { "type": ["null", "string"] },
+        "drinkTypeId": { "type": ["null", "number"] },
+        "notes": { "type": ["null", "string"] },
+        "beanId": { "type": ["null", "number"] },
+        "beanPurchaseId": { "type": ["null", "number"] },
+        "brewedAt": { "type": "string", "format": "date-time" },
+        "revision": { "type": "number" },
+        "brewPressureBar": { "type": ["null", "string"] },
+        "preinfusionTimeSeconds": { "type": ["null", "string"] },
+        "preinfusionPressureBar": { "type": ["null", "string"] },
+        "machineSettingRevisionId": { "type": ["null", "number"] },
+        "rating": { "type": ["null", "number"] },
+        "extractionBalance": { "type": ["null", "number"] },
+        "bitterness": { "type": ["null", "number"] },
+        "acidity": { "type": ["null", "number"] },
+        "sweetness": { "type": ["null", "number"] },
+        "body": { "type": ["null", "number"] },
+        "astringency": { "type": ["null", "number"] },
+        "machineId": { "type": ["null", "number"] },
+        "doseGrams": { "type": ["null", "string"] },
+        "brewWaterGrams": { "type": ["null", "string"] },
+        "ratioBasis": { "type": ["null", "string"] },
+        "grinderId": { "type": ["null", "number"] },
+        "grindSetting": { "type": ["null", "string"] },
+        "yieldGrams": { "type": ["null", "string"] },
+        "shotTimeSeconds": { "type": ["null", "string"] },
+        "brewTemperatureCelsius": { "type": ["null", "string"] },
+        "bloomTimeSeconds": { "type": ["null", "string"] },
+        "flowRateMlPerSecond": { "type": ["null", "string"] },
+        "basketId": { "type": ["null", "number"] },
+        "usesPuckScreen": { "type": ["null", "boolean"] },
+        "paperFilterPosition": { "type": ["null", "string"] },
+        "distributionMethod": { "type": ["null", "string"] },
+        "tampForceKg": { "type": ["null", "string"] },
+        "brewingMethodId": { "type": "number" }
+      },
+      "required": [
+        "acidity",
+        "astringency",
+        "basketId",
+        "beanId",
+        "beanPurchaseId",
+        "bitterness",
+        "bloomTimeSeconds",
+        "body",
+        "brewPressureBar",
+        "brewTemperatureCelsius",
+        "brewWaterGrams",
+        "brewedAt",
+        "brewingMethodId",
+        "createdAt",
+        "distributionMethod",
+        "doseGrams",
+        "drinkTypeId",
+        "extractionBalance",
+        "flowRateMlPerSecond",
+        "grindSetting",
+        "grinderId",
+        "id",
+        "machineId",
+        "machineSettingRevisionId",
+        "notes",
+        "ownerId",
+        "paperFilterPosition",
+        "preinfusionPressureBar",
+        "preinfusionTimeSeconds",
+        "rating",
+        "ratioBasis",
+        "revision",
+        "shotTimeSeconds",
+        "sweetness",
+        "tampForceKg",
+        "targetTimeSeconds",
+        "updatedAt",
+        "usesPuckScreen",
+        "yieldGrams"
+      ]
+    },
+    "ListBeanBrewsData": {
+      "type": "object",
+      "properties": {
+        "page": { "type": "number" },
+        "pageSize": { "type": "number" },
+        "totalItems": { "type": "number" },
+        "totalPages": { "type": "number" },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_fe4430b91d271e5f" }
+        }
+      },
+      "required": ["items", "page", "pageSize", "totalItems", "totalPages"]
+    },
+    "GetBeanBrewAnalyticsData": {
+      "type": "object",
+      "properties": {
+        "totalShots": { "type": "number" },
+        "usedWeightGrams": { "type": "string" },
+        "chartShots": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_d4768d54696fe7e1" }
+        },
+        "topTasteTags": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_9240826f4718489e" }
+        }
+      },
+      "required": [
+        "chartShots",
+        "topTasteTags",
+        "totalShots",
+        "usedWeightGrams"
+      ]
+    },
+    "Response_d4768d54696fe7e1": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "number" },
+        "brewedAt": { "type": "string", "format": "date-time" },
+        "doseGrams": { "type": ["null", "string"] },
+        "grindSetting": { "type": ["null", "string"] },
+        "yieldGrams": { "type": ["null", "string"] },
+        "shotTimeSeconds": { "type": ["null", "string"] }
+      },
+      "required": [
+        "brewedAt",
+        "doseGrams",
+        "grindSetting",
+        "id",
+        "shotTimeSeconds",
+        "yieldGrams"
+      ]
+    },
+    "Response_9240826f4718489e": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "number" },
+        "name": { "type": "string" },
+        "usageCount": { "type": "number" }
+      },
+      "required": ["id", "name", "usageCount"]
+    },
+    "SaveBrewAsRecipeData": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "targetTimeSeconds": { "type": ["null", "string"] },
+        "drinkTypeId": { "type": ["null", "number"] },
+        "beanId": { "type": ["null", "number"] },
+        "revision": { "type": "number" },
+        "brewPressureBar": { "type": ["null", "string"] },
+        "preinfusionTimeSeconds": { "type": ["null", "string"] },
+        "preinfusionPressureBar": { "type": ["null", "string"] },
+        "machineId": { "type": ["null", "number"] },
+        "doseGrams": { "type": ["null", "string"] },
+        "brewWaterGrams": { "type": ["null", "string"] },
+        "ratioBasis": { "type": ["null", "string"] },
+        "grinderId": { "type": ["null", "number"] },
+        "grindSetting": { "type": ["null", "string"] },
+        "yieldGrams": { "type": ["null", "string"] },
+        "shotTimeSeconds": { "type": ["null", "string"] },
+        "brewTemperatureCelsius": { "type": ["null", "string"] },
+        "bloomTimeSeconds": { "type": ["null", "string"] },
+        "flowRateMlPerSecond": { "type": ["null", "string"] },
+        "basketId": { "type": ["null", "number"] },
+        "usesPuckScreen": { "type": ["null", "boolean"] },
+        "paperFilterPosition": { "type": ["null", "string"] },
+        "distributionMethod": { "type": ["null", "string"] },
+        "tampForceKg": { "type": ["null", "string"] },
+        "brewingMethodId": { "type": "number" },
+        "syncId": { "type": "string" }
+      },
+      "required": [
+        "basketId",
+        "beanId",
+        "bloomTimeSeconds",
+        "brewPressureBar",
+        "brewTemperatureCelsius",
+        "brewWaterGrams",
+        "brewingMethodId",
+        "createdAt",
+        "distributionMethod",
+        "doseGrams",
+        "drinkTypeId",
+        "flowRateMlPerSecond",
+        "grindSetting",
+        "grinderId",
+        "id",
+        "machineId",
+        "name",
+        "ownerId",
+        "paperFilterPosition",
+        "preinfusionPressureBar",
+        "preinfusionTimeSeconds",
+        "ratioBasis",
+        "revision",
+        "shotTimeSeconds",
+        "syncId",
+        "tampForceKg",
+        "targetTimeSeconds",
+        "updatedAt",
+        "usesPuckScreen",
+        "yieldGrams"
+      ]
+    },
+    "ListBeansData": {
+      "type": "object",
+      "properties": {
+        "active": { "$ref": "#/components/schemas/Response_647adf06191454ac" },
+        "archived": {
+          "$ref": "#/components/schemas/Response_5a88f9fe4d44843d"
+        },
+        "totalItems": { "type": "number" },
+        "totalBags": { "type": "number" }
+      },
+      "required": ["active", "archived", "totalBags", "totalItems"]
+    },
+    "Response_647adf06191454ac": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_d17067f6e5a40237" }
+        },
+        "page": { "type": "number" },
+        "pageSize": { "type": "number" },
+        "totalItems": { "type": "number" },
+        "totalPages": { "type": "number" }
+      },
+      "required": ["items", "page", "pageSize", "totalItems", "totalPages"]
+    },
+    "Response_d17067f6e5a40237": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "notes": { "type": ["null", "string"] },
+        "type": {
+          "anyOf": [
+            { "enum": ["espresso", "filter", "omni"], "type": "string" },
+            { "type": "null" }
+          ]
+        },
+        "isDecaf": { "type": "boolean" },
+        "roaster": { "type": ["null", "string"] },
+        "roasterId": { "type": ["null", "number"] },
+        "origin": { "type": ["null", "string"] },
+        "region": { "type": ["null", "string"] },
+        "farm": { "type": ["null", "string"] },
+        "variety": { "type": ["null", "string"] },
+        "altitudeMinMeters": { "type": ["null", "number"] },
+        "altitudeMaxMeters": { "type": ["null", "number"] },
+        "process": { "type": ["null", "string"] },
+        "roastLevel": {
+          "anyOf": [
+            {
+              "enum": [
+                "dark",
+                "light",
+                "medium",
+                "medium_dark",
+                "medium_light"
+              ],
+              "type": "string"
+            },
+            { "type": "null" }
+          ]
+        },
+        "roasterRef": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_3ed60debade9b0c7" },
+            { "type": "null" }
+          ]
+        },
+        "images": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_2e80fe294621193d" }
+        },
+        "usedWeightGrams": { "type": "string" },
+        "purchaseId": { "type": ["null", "number"] },
+        "roastDate": {
+          "anyOf": [
+            { "type": "string", "format": "date-time" },
+            { "type": "null" }
+          ]
+        },
+        "weight": { "type": ["null", "string"] },
+        "price": { "type": ["null", "string"] },
+        "priceCurrency": { "type": ["null", "string"] },
+        "shopName": { "type": ["null", "string"] },
+        "shopUrl": { "type": ["null", "string"] },
+        "isArchived": { "type": "boolean" }
+      },
+      "required": [
+        "altitudeMaxMeters",
+        "altitudeMinMeters",
+        "createdAt",
+        "farm",
+        "id",
+        "images",
+        "isArchived",
+        "isDecaf",
+        "name",
+        "notes",
+        "origin",
+        "ownerId",
+        "price",
+        "priceCurrency",
+        "process",
+        "purchaseId",
+        "region",
+        "roastDate",
+        "roastLevel",
+        "roaster",
+        "roasterId",
+        "roasterRef",
+        "shopName",
+        "shopUrl",
+        "type",
+        "updatedAt",
+        "usedWeightGrams",
+        "variety",
+        "weight"
+      ]
+    },
+    "Response_3ed60debade9b0c7": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "location": { "type": ["null", "string"] },
+        "country": { "type": ["null", "string"] },
+        "website": { "type": ["null", "string"] },
+        "instagramHandle": { "type": ["null", "string"] },
+        "notes": { "type": ["null", "string"] }
+      },
+      "required": [
+        "country",
+        "createdAt",
+        "id",
+        "instagramHandle",
+        "location",
+        "name",
+        "notes",
+        "ownerId",
+        "updatedAt",
+        "website"
+      ]
+    },
+    "Response_5a88f9fe4d44843d": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_d17067f6e5a40237" }
+        },
+        "page": { "type": "number" },
+        "pageSize": { "type": "number" },
+        "totalItems": { "type": "number" },
+        "totalPages": { "type": "number" }
+      },
+      "required": ["items", "page", "pageSize", "totalItems", "totalPages"]
+    },
+    "GetBeanData": {
+      "type": "object",
+      "properties": {
+        "purchases": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_b7db6781758408c4" }
+        },
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "notes": { "type": ["null", "string"] },
+        "type": {
+          "anyOf": [
+            { "enum": ["espresso", "filter", "omni"], "type": "string" },
+            { "type": "null" }
+          ]
+        },
+        "isDecaf": { "type": "boolean" },
+        "roaster": { "type": ["null", "string"] },
+        "roasterId": { "type": ["null", "number"] },
+        "origin": { "type": ["null", "string"] },
+        "region": { "type": ["null", "string"] },
+        "farm": { "type": ["null", "string"] },
+        "variety": { "type": ["null", "string"] },
+        "altitudeMinMeters": { "type": ["null", "number"] },
+        "altitudeMaxMeters": { "type": ["null", "number"] },
+        "process": { "type": ["null", "string"] },
+        "roastLevel": {
+          "anyOf": [
+            {
+              "enum": [
+                "dark",
+                "light",
+                "medium",
+                "medium_dark",
+                "medium_light"
+              ],
+              "type": "string"
+            },
+            { "type": "null" }
+          ]
+        },
+        "roasterRef": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_3ed60debade9b0c7" },
+            { "type": "null" }
+          ]
+        },
+        "images": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_2e80fe294621193d" }
+        },
+        "purchaseId": { "type": ["null", "number"] },
+        "roastDate": {
+          "anyOf": [
+            { "type": "string", "format": "date-time" },
+            { "type": "null" }
+          ]
+        },
+        "weight": { "type": ["null", "string"] },
+        "price": { "type": ["null", "string"] },
+        "priceCurrency": { "type": ["null", "string"] },
+        "shopName": { "type": ["null", "string"] },
+        "shopUrl": { "type": ["null", "string"] },
+        "isArchived": { "type": "boolean" }
+      },
+      "required": [
+        "altitudeMaxMeters",
+        "altitudeMinMeters",
+        "createdAt",
+        "farm",
+        "id",
+        "images",
+        "isArchived",
+        "isDecaf",
+        "name",
+        "notes",
+        "origin",
+        "ownerId",
+        "price",
+        "priceCurrency",
+        "process",
+        "purchaseId",
+        "purchases",
+        "region",
+        "roastDate",
+        "roastLevel",
+        "roaster",
+        "roasterId",
+        "roasterRef",
+        "shopName",
+        "shopUrl",
+        "type",
+        "updatedAt",
+        "variety",
+        "weight"
+      ]
+    },
+    "Response_b7db6781758408c4": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "isArchived": { "type": "boolean" },
+        "beanId": { "type": "number" },
+        "purchasedAt": {
+          "anyOf": [
+            { "type": "string", "format": "date-time" },
+            { "type": "null" }
+          ]
+        },
+        "roastDate": {
+          "anyOf": [
+            { "type": "string", "format": "date-time" },
+            { "type": "null" }
+          ]
+        },
+        "initialWeightGrams": { "type": ["null", "string"] },
+        "price": { "type": ["null", "string"] },
+        "priceCurrency": { "type": ["null", "string"] },
+        "shopName": { "type": ["null", "string"] },
+        "shopUrl": { "type": ["null", "string"] },
+        "shots": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_8f3ad63cde606a56" }
+        }
+      },
+      "required": [
+        "beanId",
+        "createdAt",
+        "id",
+        "initialWeightGrams",
+        "isArchived",
+        "ownerId",
+        "price",
+        "priceCurrency",
+        "purchasedAt",
+        "roastDate",
+        "shopName",
+        "shopUrl",
+        "shots",
+        "updatedAt"
+      ]
+    },
+    "Response_8f3ad63cde606a56": {
+      "type": "object",
+      "properties": { "doseGrams": { "type": ["null", "string"] } },
+      "required": ["doseGrams"]
+    },
+    "CreateBeanData": {
+      "type": "object",
+      "properties": {
+        "purchaseId": { "type": "number" },
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "notes": { "type": ["null", "string"] },
+        "type": {
+          "anyOf": [
+            { "enum": ["espresso", "filter", "omni"], "type": "string" },
+            { "type": "null" }
+          ]
+        },
+        "isDecaf": { "type": "boolean" },
+        "roaster": { "type": ["null", "string"] },
+        "roasterId": { "type": ["null", "number"] },
+        "origin": { "type": ["null", "string"] },
+        "region": { "type": ["null", "string"] },
+        "farm": { "type": ["null", "string"] },
+        "variety": { "type": ["null", "string"] },
+        "altitudeMinMeters": { "type": ["null", "number"] },
+        "altitudeMaxMeters": { "type": ["null", "number"] },
+        "process": { "type": ["null", "string"] },
+        "roastLevel": {
+          "anyOf": [
+            {
+              "enum": [
+                "dark",
+                "light",
+                "medium",
+                "medium_dark",
+                "medium_light"
+              ],
+              "type": "string"
+            },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": [
+        "altitudeMaxMeters",
+        "altitudeMinMeters",
+        "createdAt",
+        "farm",
+        "id",
+        "isDecaf",
+        "name",
+        "notes",
+        "origin",
+        "ownerId",
+        "process",
+        "purchaseId",
+        "region",
+        "roastLevel",
+        "roaster",
+        "roasterId",
+        "type",
+        "updatedAt",
+        "variety"
+      ]
+    },
+    "UpdateBeanData": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "notes": { "type": ["null", "string"] },
+        "type": {
+          "anyOf": [
+            { "enum": ["espresso", "filter", "omni"], "type": "string" },
+            { "type": "null" }
+          ]
+        },
+        "isDecaf": { "type": "boolean" },
+        "roaster": { "type": ["null", "string"] },
+        "roasterId": { "type": ["null", "number"] },
+        "origin": { "type": ["null", "string"] },
+        "region": { "type": ["null", "string"] },
+        "farm": { "type": ["null", "string"] },
+        "variety": { "type": ["null", "string"] },
+        "altitudeMinMeters": { "type": ["null", "number"] },
+        "altitudeMaxMeters": { "type": ["null", "number"] },
+        "process": { "type": ["null", "string"] },
+        "roastLevel": {
+          "anyOf": [
+            {
+              "enum": [
+                "dark",
+                "light",
+                "medium",
+                "medium_dark",
+                "medium_light"
+              ],
+              "type": "string"
+            },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": [
+        "altitudeMaxMeters",
+        "altitudeMinMeters",
+        "createdAt",
+        "farm",
+        "id",
+        "isDecaf",
+        "name",
+        "notes",
+        "origin",
+        "ownerId",
+        "process",
+        "region",
+        "roastLevel",
+        "roaster",
+        "roasterId",
+        "type",
+        "updatedAt",
+        "variety"
+      ]
+    },
+    "DeleteBeanData": {
+      "type": "object",
+      "properties": { "archived": { "type": "boolean" } },
+      "required": ["archived"]
+    },
+    "CreateBeanPurchaseData": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "isArchived": { "type": "boolean" },
+        "beanId": { "type": "number" },
+        "purchasedAt": {
+          "anyOf": [
+            { "type": "string", "format": "date-time" },
+            { "type": "null" }
+          ]
+        },
+        "roastDate": {
+          "anyOf": [
+            { "type": "string", "format": "date-time" },
+            { "type": "null" }
+          ]
+        },
+        "initialWeightGrams": { "type": ["null", "string"] },
+        "price": { "type": ["null", "string"] },
+        "priceCurrency": { "type": ["null", "string"] },
+        "shopName": { "type": ["null", "string"] },
+        "shopUrl": { "type": ["null", "string"] }
+      },
+      "required": [
+        "beanId",
+        "createdAt",
+        "id",
+        "initialWeightGrams",
+        "isArchived",
+        "ownerId",
+        "price",
+        "priceCurrency",
+        "purchasedAt",
+        "roastDate",
+        "shopName",
+        "shopUrl",
+        "updatedAt"
+      ]
+    },
+    "ListRoastersData": {
+      "type": "object",
+      "properties": {
+        "page": { "type": "number" },
+        "pageSize": { "type": "number" },
+        "totalItems": { "type": "number" },
+        "totalPages": { "type": "number" },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_32b2265d6c87c50e" }
+        }
+      },
+      "required": ["items", "page", "pageSize", "totalItems", "totalPages"]
+    },
+    "Response_32b2265d6c87c50e": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "number" },
+        "name": { "type": "string" },
+        "location": { "type": ["null", "string"] },
+        "country": { "type": ["null", "string"] },
+        "website": { "type": ["null", "string"] },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "notes": { "type": ["null", "string"] },
+        "beanCount": { "type": "number" }
+      },
+      "required": [
+        "beanCount",
+        "country",
+        "id",
+        "location",
+        "name",
+        "notes",
+        "updatedAt",
+        "website"
+      ]
+    },
+    "GetRoasterData": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "location": { "type": ["null", "string"] },
+        "country": { "type": ["null", "string"] },
+        "website": { "type": ["null", "string"] },
+        "instagramHandle": { "type": ["null", "string"] },
+        "notes": { "type": ["null", "string"] },
+        "beans": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_ced4f9621585b019" }
+        }
+      },
+      "required": [
+        "beans",
+        "country",
+        "createdAt",
+        "id",
+        "instagramHandle",
+        "location",
+        "name",
+        "notes",
+        "ownerId",
+        "updatedAt",
+        "website"
+      ]
+    },
+    "CreateRoasterData": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "location": { "type": ["null", "string"] },
+        "country": { "type": ["null", "string"] },
+        "website": { "type": ["null", "string"] },
+        "instagramHandle": { "type": ["null", "string"] },
+        "notes": { "type": ["null", "string"] }
+      },
+      "required": [
+        "country",
+        "createdAt",
+        "id",
+        "instagramHandle",
+        "location",
+        "name",
+        "notes",
+        "ownerId",
+        "updatedAt",
+        "website"
+      ]
+    },
+    "UpdateRoasterData": {
+      "type": "object",
+      "properties": {
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "name": { "type": "string" },
+        "location": { "type": ["null", "string"] },
+        "country": { "type": ["null", "string"] },
+        "website": { "type": ["null", "string"] },
+        "instagramHandle": { "type": ["null", "string"] },
+        "notes": { "type": ["null", "string"] }
+      },
+      "required": [
+        "country",
+        "createdAt",
+        "id",
+        "instagramHandle",
+        "location",
+        "name",
+        "notes",
+        "ownerId",
+        "updatedAt",
+        "website"
+      ]
+    },
+    "ListGearData": {
+      "type": "object",
+      "properties": {
+        "active": { "$ref": "#/components/schemas/Response_8f8b12239d900612" },
+        "archived": {
+          "$ref": "#/components/schemas/Response_8f8b12239d900612"
+        },
+        "totalItems": { "type": "number" }
+      },
+      "required": ["active", "archived", "totalItems"]
+    },
+    "Response_8f8b12239d900612": {
+      "type": "object",
+      "properties": {
+        "page": { "type": "number" },
+        "pageSize": { "type": "number" },
+        "totalItems": { "type": "number" },
+        "totalPages": { "type": "number" },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_af8dbe0b466d6cac" }
+        }
+      },
+      "required": ["items", "page", "pageSize", "totalItems", "totalPages"]
+    },
+    "Response_af8dbe0b466d6cac": {
+      "type": "object",
+      "properties": {
+        "brand": { "type": ["null", "string"] },
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "isArchived": { "type": "boolean" },
+        "model": { "type": ["null", "string"] },
+        "notes": { "type": ["null", "string"] },
+        "type": {
+          "enum": [
+            "basket",
+            "brewer",
+            "espresso_machine",
+            "espresso_machine_with_grinder",
+            "grinder",
+            "kettle",
+            "other",
+            "scale",
+            "tamper",
+            "wdt"
+          ],
+          "type": "string"
+        },
+        "priceCurrency": { "type": ["null", "string"] },
+        "purchaseDate": {
+          "anyOf": [
+            { "type": "string", "format": "date-time" },
+            { "type": "null" }
+          ]
+        },
+        "purchasePrice": { "type": ["null", "string"] },
+        "manualUrl": { "type": ["null", "string"] },
+        "productUrl": { "type": ["null", "string"] },
+        "images": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_7bc3fb395a83a31e" }
+        }
+      },
+      "required": [
+        "brand",
+        "createdAt",
+        "id",
+        "images",
+        "isArchived",
+        "manualUrl",
+        "model",
+        "name",
+        "notes",
+        "ownerId",
+        "priceCurrency",
+        "productUrl",
+        "purchaseDate",
+        "purchasePrice",
+        "type",
+        "updatedAt"
+      ]
+    },
+    "Response_7bc3fb395a83a31e": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "isThumbnail": { "type": "boolean" },
+        "storagePath": { "type": "string" },
+        "originalFilename": { "type": ["null", "string"] },
+        "mimeType": { "type": ["null", "string"] },
+        "sizeBytes": { "type": ["null", "number"] },
+        "storageBytes": { "type": ["null", "number"] },
+        "gearId": { "type": "number" }
+      },
+      "required": [
+        "createdAt",
+        "gearId",
+        "id",
+        "isThumbnail",
+        "mimeType",
+        "originalFilename",
+        "ownerId",
+        "sizeBytes",
+        "storageBytes",
+        "storagePath"
+      ]
+    },
+    "GetGearData": {
+      "type": "object",
+      "properties": {
+        "brand": { "type": ["null", "string"] },
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "isArchived": { "type": "boolean" },
+        "model": { "type": ["null", "string"] },
+        "notes": { "type": ["null", "string"] },
+        "type": {
+          "enum": [
+            "basket",
+            "brewer",
+            "espresso_machine",
+            "espresso_machine_with_grinder",
+            "grinder",
+            "kettle",
+            "other",
+            "scale",
+            "tamper",
+            "wdt"
+          ],
+          "type": "string"
+        },
+        "priceCurrency": { "type": ["null", "string"] },
+        "purchaseDate": {
+          "anyOf": [
+            { "type": "string", "format": "date-time" },
+            { "type": "null" }
+          ]
+        },
+        "purchasePrice": { "type": ["null", "string"] },
+        "manualUrl": { "type": ["null", "string"] },
+        "productUrl": { "type": ["null", "string"] },
+        "images": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_7bc3fb395a83a31e" }
+        },
+        "espressoMachineDetails": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_edb70fb29504f785" },
+            { "type": "null" }
+          ]
+        },
+        "machineSettingRevisions": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_0e8da83d763f4971" }
+        },
+        "grinderDetails": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_7dbc76ff57b019e2" },
+            { "type": "null" }
+          ]
+        },
+        "brewerDetails": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_3311d951d888d00d" },
+            { "type": "null" }
+          ]
+        },
+        "kettleDetails": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_5eb5fc579f8d25ca" },
+            { "type": "null" }
+          ]
+        },
+        "scaleDetails": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_4eca8168925d28cb" },
+            { "type": "null" }
+          ]
+        },
+        "tamperDetails": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_cd41f793d1a40ec6" },
+            { "type": "null" }
+          ]
+        },
+        "wdtDetails": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_0489fc65b7394928" },
+            { "type": "null" }
+          ]
+        },
+        "basketDetails": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_0f5d20857848cafc" },
+            { "type": "null" }
+          ]
+        },
+        "propertyEvidence": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_b9de4879a4dc3c7e" }
+        }
+      },
+      "required": [
+        "basketDetails",
+        "brand",
+        "brewerDetails",
+        "createdAt",
+        "espressoMachineDetails",
+        "grinderDetails",
+        "id",
+        "images",
+        "isArchived",
+        "kettleDetails",
+        "machineSettingRevisions",
+        "manualUrl",
+        "model",
+        "name",
+        "notes",
+        "ownerId",
+        "priceCurrency",
+        "productUrl",
+        "propertyEvidence",
+        "purchaseDate",
+        "purchasePrice",
+        "scaleDetails",
+        "tamperDetails",
+        "type",
+        "updatedAt",
+        "wdtDetails"
+      ]
+    },
+    "Response_edb70fb29504f785": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "gearId": { "type": "number" },
+        "portafilterDiameterMm": { "type": ["null", "string"] },
+        "heatingArchitecture": { "type": ["null", "string"] },
+        "temperatureControl": { "type": ["null", "string"] },
+        "pressureControl": { "type": ["null", "string"] },
+        "flowControl": { "type": ["null", "string"] },
+        "preinfusionControl": { "type": ["null", "string"] },
+        "shotStopModes": {
+          "anyOf": [
+            { "type": "array", "items": { "type": "string" } },
+            { "type": "null" }
+          ]
+        },
+        "steamSystem": { "type": ["null", "string"] },
+        "simultaneousBrewAndSteam": { "type": ["null", "boolean"] },
+        "groupCount": { "type": ["null", "number"] },
+        "pumpType": { "type": ["null", "string"] },
+        "waterSourceModes": {
+          "anyOf": [
+            { "type": "array", "items": { "type": "string" } },
+            { "type": "null" }
+          ]
+        },
+        "brewPressureMinimumBar": { "type": ["null", "string"] },
+        "brewPressureMaximumBar": { "type": ["null", "string"] },
+        "brewTemperatureMinimumCelsius": { "type": ["null", "string"] },
+        "brewTemperatureMaximumCelsius": { "type": ["null", "string"] }
+      },
+      "required": [
+        "brewPressureMaximumBar",
+        "brewPressureMinimumBar",
+        "brewTemperatureMaximumCelsius",
+        "brewTemperatureMinimumCelsius",
+        "flowControl",
+        "gearId",
+        "groupCount",
+        "heatingArchitecture",
+        "ownerId",
+        "portafilterDiameterMm",
+        "preinfusionControl",
+        "pressureControl",
+        "pumpType",
+        "shotStopModes",
+        "simultaneousBrewAndSteam",
+        "steamSystem",
+        "temperatureControl",
+        "waterSourceModes"
+      ]
+    },
+    "Response_0e8da83d763f4971": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "gearId": { "type": "number" },
+        "kind": { "type": "string" },
+        "brewPressureBar": { "type": ["null", "string"] },
+        "preinfusionEnabled": { "type": ["null", "boolean"] },
+        "preinfusionTimeSeconds": { "type": ["null", "string"] },
+        "preinfusionPressureBar": { "type": ["null", "string"] },
+        "flowLimitMlPerSecond": { "type": ["null", "string"] },
+        "brewTemperatureOffsetCelsius": { "type": ["null", "string"] },
+        "programmedVolumeMl": { "type": ["null", "string"] },
+        "defaultStopMode": { "type": ["null", "string"] },
+        "steamTemperatureCelsius": { "type": ["null", "string"] },
+        "steamPressureBar": { "type": ["null", "string"] },
+        "effectiveFrom": { "type": "string", "format": "date-time" },
+        "supersededAt": {
+          "anyOf": [
+            { "type": "string", "format": "date-time" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": [
+        "brewPressureBar",
+        "brewTemperatureOffsetCelsius",
+        "createdAt",
+        "defaultStopMode",
+        "effectiveFrom",
+        "flowLimitMlPerSecond",
+        "gearId",
+        "id",
+        "kind",
+        "ownerId",
+        "preinfusionEnabled",
+        "preinfusionPressureBar",
+        "preinfusionTimeSeconds",
+        "programmedVolumeMl",
+        "steamPressureBar",
+        "steamTemperatureCelsius",
+        "supersededAt"
+      ]
+    },
+    "Response_7dbc76ff57b019e2": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "gearId": { "type": "number" },
+        "burrMechanism": { "type": ["null", "string"] },
+        "burrDiameterMm": { "type": ["null", "string"] },
+        "adjustmentType": { "type": ["null", "string"] },
+        "grindSettingFormat": { "type": "string" },
+        "grindSettingMinimum": { "type": ["null", "string"] },
+        "grindSettingMaximum": { "type": ["null", "string"] },
+        "brewRange": {
+          "anyOf": [
+            { "type": "array", "items": { "type": "string" } },
+            { "type": "null" }
+          ]
+        },
+        "beanFeed": { "type": ["null", "string"] },
+        "doseControlModes": {
+          "anyOf": [
+            { "type": "array", "items": { "type": "string" } },
+            { "type": "null" }
+          ]
+        },
+        "burrMaterial": { "type": ["null", "string"] }
+      },
+      "required": [
+        "adjustmentType",
+        "beanFeed",
+        "brewRange",
+        "burrDiameterMm",
+        "burrMaterial",
+        "burrMechanism",
+        "doseControlModes",
+        "gearId",
+        "grindSettingFormat",
+        "grindSettingMaximum",
+        "grindSettingMinimum",
+        "ownerId"
+      ]
+    },
+    "Response_3311d951d888d00d": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "gearId": { "type": "number" },
+        "flowControl": { "type": ["null", "string"] },
+        "mechanism": { "type": ["null", "string"] },
+        "capacityMl": { "type": ["null", "string"] },
+        "filterFormat": { "type": ["null", "string"] }
+      },
+      "required": [
+        "capacityMl",
+        "filterFormat",
+        "flowControl",
+        "gearId",
+        "mechanism",
+        "ownerId"
+      ]
+    },
+    "Response_5eb5fc579f8d25ca": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "gearId": { "type": "number" },
+        "temperatureControl": { "type": ["null", "string"] },
+        "capacityMl": { "type": ["null", "string"] },
+        "spoutType": { "type": ["null", "string"] },
+        "minimumTemperatureCelsius": { "type": ["null", "string"] },
+        "maximumTemperatureCelsius": { "type": ["null", "string"] },
+        "supportsTemperatureHold": { "type": ["null", "boolean"] }
+      },
+      "required": [
+        "capacityMl",
+        "gearId",
+        "maximumTemperatureCelsius",
+        "minimumTemperatureCelsius",
+        "ownerId",
+        "spoutType",
+        "supportsTemperatureHold",
+        "temperatureControl"
+      ]
+    },
+    "Response_4eca8168925d28cb": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "gearId": { "type": "number" },
+        "resolutionGrams": { "type": ["null", "string"] },
+        "capacityGrams": { "type": ["null", "string"] },
+        "hasTimer": { "type": ["null", "boolean"] },
+        "supportsAutoTare": { "type": ["null", "boolean"] },
+        "supportsAutoTimer": { "type": ["null", "boolean"] },
+        "hasFlowRateDisplay": { "type": ["null", "boolean"] }
+      },
+      "required": [
+        "capacityGrams",
+        "gearId",
+        "hasFlowRateDisplay",
+        "hasTimer",
+        "ownerId",
+        "resolutionGrams",
+        "supportsAutoTare",
+        "supportsAutoTimer"
+      ]
+    },
+    "Response_cd41f793d1a40ec6": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "gearId": { "type": "number" },
+        "diameterMm": { "type": ["null", "string"] },
+        "forceControl": { "type": ["null", "string"] },
+        "baseShape": { "type": ["null", "string"] },
+        "selfLeveling": { "type": ["null", "boolean"] }
+      },
+      "required": [
+        "baseShape",
+        "diameterMm",
+        "forceControl",
+        "gearId",
+        "ownerId",
+        "selfLeveling"
+      ]
+    },
+    "Response_0489fc65b7394928": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "gearId": { "type": "number" },
+        "needleDiameterMm": { "type": ["null", "string"] },
+        "needleCount": { "type": ["null", "number"] },
+        "depthControl": { "type": ["null", "string"] }
+      },
+      "required": [
+        "depthControl",
+        "gearId",
+        "needleCount",
+        "needleDiameterMm",
+        "ownerId"
+      ]
+    },
+    "Response_0f5d20857848cafc": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "gearId": { "type": "number" },
+        "kind": { "type": ["null", "string"] },
+        "diameterMm": { "type": ["null", "string"] },
+        "nominalDoseGrams": { "type": ["null", "string"] },
+        "isPressurized": { "type": ["null", "boolean"] },
+        "doseMinimumGrams": { "type": ["null", "string"] },
+        "doseMaximumGrams": { "type": ["null", "string"] }
+      },
+      "required": [
+        "diameterMm",
+        "doseMaximumGrams",
+        "doseMinimumGrams",
+        "gearId",
+        "isPressurized",
+        "kind",
+        "nominalDoseGrams",
+        "ownerId"
+      ]
+    },
+    "Response_b9de4879a4dc3c7e": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "gearId": { "type": "number" },
+        "propertyKey": { "type": "string" },
+        "valueJson": {},
+        "sourceUrl": { "type": "string" },
+        "sourceTitle": { "type": ["null", "string"] },
+        "sourceKind": { "type": "string" },
+        "rawValue": { "type": ["null", "string"] },
+        "rawUnit": { "type": ["null", "string"] },
+        "retrievedAt": { "type": "string", "format": "date-time" },
+        "acceptedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "acceptedAt",
+        "gearId",
+        "id",
+        "ownerId",
+        "propertyKey",
+        "rawUnit",
+        "rawValue",
+        "retrievedAt",
+        "sourceKind",
+        "sourceTitle",
+        "sourceUrl",
+        "valueJson"
+      ]
+    },
+    "CreateGearData": {
+      "type": "object",
+      "properties": {
+        "brand": { "type": ["null", "string"] },
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "isArchived": { "type": "boolean" },
+        "model": { "type": ["null", "string"] },
+        "notes": { "type": ["null", "string"] },
+        "type": {
+          "enum": [
+            "basket",
+            "brewer",
+            "espresso_machine",
+            "espresso_machine_with_grinder",
+            "grinder",
+            "kettle",
+            "other",
+            "scale",
+            "tamper",
+            "wdt"
+          ],
+          "type": "string"
+        },
+        "priceCurrency": { "type": ["null", "string"] },
+        "purchaseDate": {
+          "anyOf": [
+            { "type": "string", "format": "date-time" },
+            { "type": "null" }
+          ]
+        },
+        "purchasePrice": { "type": ["null", "string"] },
+        "manualUrl": { "type": ["null", "string"] },
+        "productUrl": { "type": ["null", "string"] }
+      },
+      "required": [
+        "brand",
+        "createdAt",
+        "id",
+        "isArchived",
+        "manualUrl",
+        "model",
+        "name",
+        "notes",
+        "ownerId",
+        "priceCurrency",
+        "productUrl",
+        "purchaseDate",
+        "purchasePrice",
+        "type",
+        "updatedAt"
+      ]
+    },
+    "ListGearSetsData": {
+      "type": "object",
+      "properties": {
+        "page": { "type": "number" },
+        "pageSize": { "type": "number" },
+        "totalItems": { "type": "number" },
+        "totalPages": { "type": "number" },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/GetGearSetData" }
+        }
+      },
+      "required": ["items", "page", "pageSize", "totalItems", "totalPages"]
+    },
+    "GetGearSetData": {
+      "type": "object",
+      "properties": {
+        "accessoryGear": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_950c1d0b02a2b7f1" }
+        },
+        "accessoryGearIds": { "type": "array", "items": { "type": "number" } },
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "description": { "type": ["null", "string"] },
+        "machineId": { "type": ["null", "number"] },
+        "grinderId": { "type": ["null", "number"] },
+        "basketId": { "type": ["null", "number"] },
+        "grinder": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_e56137bf7560dbab" },
+            { "type": "null" }
+          ]
+        },
+        "basket": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_b31275201d100d14" },
+            { "type": "null" }
+          ]
+        },
+        "machine": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_38314ee00b546adb" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": [
+        "accessoryGear",
+        "accessoryGearIds",
+        "basket",
+        "basketId",
+        "createdAt",
+        "description",
+        "grinder",
+        "grinderId",
+        "id",
+        "machine",
+        "machineId",
+        "name",
+        "ownerId",
+        "updatedAt"
+      ]
+    },
+    "Response_950c1d0b02a2b7f1": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "id": { "type": "number" }
+      },
+      "required": ["id", "name"]
+    },
+    "Response_e56137bf7560dbab": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "id": { "type": "number" }
+      },
+      "required": ["id", "name"]
+    },
+    "Response_b31275201d100d14": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "id": { "type": "number" }
+      },
+      "required": ["id", "name"]
+    },
+    "Response_38314ee00b546adb": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "id": { "type": "number" }
+      },
+      "required": ["id", "name"]
+    },
+    "CreateGearSetData": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "description": { "type": ["null", "string"] },
+        "machineId": { "type": ["null", "number"] },
+        "grinderId": { "type": ["null", "number"] },
+        "basketId": { "type": ["null", "number"] }
+      },
+      "required": [
+        "basketId",
+        "createdAt",
+        "description",
+        "grinderId",
+        "id",
+        "machineId",
+        "name",
+        "ownerId",
+        "updatedAt"
+      ]
+    },
+    "ListRecipesData": {
+      "type": "object",
+      "properties": {
+        "page": { "type": "number" },
+        "pageSize": { "type": "number" },
+        "totalItems": { "type": "number" },
+        "totalPages": { "type": "number" },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_cb9abeb7cfff18d6" }
+        }
+      },
+      "required": ["items", "page", "pageSize", "totalItems", "totalPages"]
+    },
+    "Response_cb9abeb7cfff18d6": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "targetTimeSeconds": { "type": ["null", "string"] },
+        "drinkTypeId": { "type": ["null", "number"] },
+        "beanId": { "type": ["null", "number"] },
+        "revision": { "type": "number" },
+        "brewPressureBar": { "type": ["null", "string"] },
+        "preinfusionTimeSeconds": { "type": ["null", "string"] },
+        "preinfusionPressureBar": { "type": ["null", "string"] },
+        "machineId": { "type": ["null", "number"] },
+        "doseGrams": { "type": ["null", "string"] },
+        "brewWaterGrams": { "type": ["null", "string"] },
+        "ratioBasis": { "type": ["null", "string"] },
+        "grinderId": { "type": ["null", "number"] },
+        "grindSetting": { "type": ["null", "string"] },
+        "yieldGrams": { "type": ["null", "string"] },
+        "shotTimeSeconds": { "type": ["null", "string"] },
+        "brewTemperatureCelsius": { "type": ["null", "string"] },
+        "bloomTimeSeconds": { "type": ["null", "string"] },
+        "flowRateMlPerSecond": { "type": ["null", "string"] },
+        "basketId": { "type": ["null", "number"] },
+        "usesPuckScreen": { "type": ["null", "boolean"] },
+        "paperFilterPosition": { "type": ["null", "string"] },
+        "distributionMethod": { "type": ["null", "string"] },
+        "tampForceKg": { "type": ["null", "string"] },
+        "brewingMethodId": { "type": "number" },
+        "syncId": { "type": "string" },
+        "grinder": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_aa8903cb4c9efe79" },
+            { "type": "null" }
+          ]
+        },
+        "basket": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_aa8903cb4c9efe79" },
+            { "type": "null" }
+          ]
+        },
+        "drinkType": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_7ab7ca3248772bc1" },
+            { "type": "null" }
+          ]
+        },
+        "bean": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_5b59e68e72f885ec" },
+            { "type": "null" }
+          ]
+        },
+        "machine": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_aa8903cb4c9efe79" },
+            { "type": "null" }
+          ]
+        },
+        "accessoryGearLinks": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_94ccf78a70e313ad" }
+        },
+        "brewingMethod": {
+          "$ref": "#/components/schemas/Response_87e892bd623bc6d1"
+        },
+        "drinkOptions": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_8b1a4eee7ed4cd16" }
+        }
+      },
+      "required": [
+        "accessoryGearLinks",
+        "basket",
+        "basketId",
+        "bean",
+        "beanId",
+        "bloomTimeSeconds",
+        "brewPressureBar",
+        "brewTemperatureCelsius",
+        "brewWaterGrams",
+        "brewingMethod",
+        "brewingMethodId",
+        "createdAt",
+        "distributionMethod",
+        "doseGrams",
+        "drinkOptions",
+        "drinkType",
+        "drinkTypeId",
+        "flowRateMlPerSecond",
+        "grindSetting",
+        "grinder",
+        "grinderId",
+        "id",
+        "machine",
+        "machineId",
+        "name",
+        "ownerId",
+        "paperFilterPosition",
+        "preinfusionPressureBar",
+        "preinfusionTimeSeconds",
+        "ratioBasis",
+        "revision",
+        "shotTimeSeconds",
+        "syncId",
+        "tampForceKg",
+        "targetTimeSeconds",
+        "updatedAt",
+        "usesPuckScreen",
+        "yieldGrams"
+      ]
+    },
+    "Response_5b59e68e72f885ec": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "notes": { "type": ["null", "string"] },
+        "type": {
+          "anyOf": [
+            { "enum": ["espresso", "filter", "omni"], "type": "string" },
+            { "type": "null" }
+          ]
+        },
+        "isDecaf": { "type": "boolean" },
+        "roaster": { "type": ["null", "string"] },
+        "roasterId": { "type": ["null", "number"] },
+        "origin": { "type": ["null", "string"] },
+        "region": { "type": ["null", "string"] },
+        "farm": { "type": ["null", "string"] },
+        "variety": { "type": ["null", "string"] },
+        "altitudeMinMeters": { "type": ["null", "number"] },
+        "altitudeMaxMeters": { "type": ["null", "number"] },
+        "process": { "type": ["null", "string"] },
+        "roastLevel": {
+          "anyOf": [
+            {
+              "enum": [
+                "dark",
+                "light",
+                "medium",
+                "medium_dark",
+                "medium_light"
+              ],
+              "type": "string"
+            },
+            { "type": "null" }
+          ]
+        },
+        "roasterRef": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_3ed60debade9b0c7" },
+            { "type": "null" }
+          ]
+        },
+        "images": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_2e80fe294621193d" }
+        }
+      },
+      "required": [
+        "altitudeMaxMeters",
+        "altitudeMinMeters",
+        "createdAt",
+        "farm",
+        "id",
+        "images",
+        "isDecaf",
+        "name",
+        "notes",
+        "origin",
+        "ownerId",
+        "process",
+        "region",
+        "roastLevel",
+        "roaster",
+        "roasterId",
+        "roasterRef",
+        "type",
+        "updatedAt",
+        "variety"
+      ]
+    },
+    "Response_94ccf78a70e313ad": {
+      "type": "object",
+      "properties": { "gearId": { "type": "number" } },
+      "required": ["gearId"]
+    },
+    "Response_8b1a4eee7ed4cd16": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "recipeId": { "type": "number" },
+        "optionValueId": { "type": "number" },
+        "optionValue": {
+          "$ref": "#/components/schemas/Response_3e3026da9874f9d8"
+        }
+      },
+      "required": ["id", "optionValue", "optionValueId", "ownerId", "recipeId"]
+    },
+    "Response_3e3026da9874f9d8": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "isArchived": { "type": "boolean" },
+        "groupId": { "type": "number" }
+      },
+      "required": [
+        "createdAt",
+        "groupId",
+        "id",
+        "isArchived",
+        "name",
+        "ownerId",
+        "updatedAt"
+      ]
+    },
+    "GetRecipeData": {
+      "type": "object",
+      "properties": {
+        "grinder": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_aa8903cb4c9efe79" },
+            { "type": "null" }
+          ]
+        },
+        "basket": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_aa8903cb4c9efe79" },
+            { "type": "null" }
+          ]
+        },
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "targetTimeSeconds": { "type": ["null", "string"] },
+        "drinkTypeId": { "type": ["null", "number"] },
+        "drinkType": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_7ab7ca3248772bc1" },
+            { "type": "null" }
+          ]
+        },
+        "beanId": { "type": ["null", "number"] },
+        "revision": { "type": "number" },
+        "brewPressureBar": { "type": ["null", "string"] },
+        "preinfusionTimeSeconds": { "type": ["null", "string"] },
+        "preinfusionPressureBar": { "type": ["null", "string"] },
+        "machineId": { "type": ["null", "number"] },
+        "doseGrams": { "type": ["null", "string"] },
+        "brewWaterGrams": { "type": ["null", "string"] },
+        "ratioBasis": { "type": ["null", "string"] },
+        "grinderId": { "type": ["null", "number"] },
+        "grindSetting": { "type": ["null", "string"] },
+        "yieldGrams": { "type": ["null", "string"] },
+        "shotTimeSeconds": { "type": ["null", "string"] },
+        "brewTemperatureCelsius": { "type": ["null", "string"] },
+        "bloomTimeSeconds": { "type": ["null", "string"] },
+        "flowRateMlPerSecond": { "type": ["null", "string"] },
+        "basketId": { "type": ["null", "number"] },
+        "usesPuckScreen": { "type": ["null", "boolean"] },
+        "paperFilterPosition": { "type": ["null", "string"] },
+        "distributionMethod": { "type": ["null", "string"] },
+        "tampForceKg": { "type": ["null", "string"] },
+        "brewingMethodId": { "type": "number" },
+        "bean": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_5b59e68e72f885ec" },
+            { "type": "null" }
+          ]
+        },
+        "syncId": { "type": "string" },
+        "machine": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_aa8903cb4c9efe79" },
+            { "type": "null" }
+          ]
+        },
+        "brewingMethod": {
+          "$ref": "#/components/schemas/Response_87e892bd623bc6d1"
+        },
+        "drinkOptions": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_8b1a4eee7ed4cd16" }
+        },
+        "accessoryGearIds": { "type": "array", "items": { "type": "number" } }
+      },
+      "required": [
+        "accessoryGearIds",
+        "basket",
+        "basketId",
+        "bean",
+        "beanId",
+        "bloomTimeSeconds",
+        "brewPressureBar",
+        "brewTemperatureCelsius",
+        "brewWaterGrams",
+        "brewingMethod",
+        "brewingMethodId",
+        "createdAt",
+        "distributionMethod",
+        "doseGrams",
+        "drinkOptions",
+        "drinkType",
+        "drinkTypeId",
+        "flowRateMlPerSecond",
+        "grindSetting",
+        "grinder",
+        "grinderId",
+        "id",
+        "machine",
+        "machineId",
+        "name",
+        "ownerId",
+        "paperFilterPosition",
+        "preinfusionPressureBar",
+        "preinfusionTimeSeconds",
+        "ratioBasis",
+        "revision",
+        "shotTimeSeconds",
+        "syncId",
+        "tampForceKg",
+        "targetTimeSeconds",
+        "updatedAt",
+        "usesPuckScreen",
+        "yieldGrams"
+      ]
+    },
+    "ListPlacesData": {
+      "type": "object",
+      "properties": {
+        "listCounts": {
+          "$ref": "#/components/schemas/Response_7c98bf6549b72b9d"
+        },
+        "page": { "type": "number" },
+        "pageSize": { "type": "number" },
+        "totalItems": { "type": "number" },
+        "totalPages": { "type": "number" },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_fd84d0a0de68dee4" }
+        }
+      },
+      "required": [
+        "items",
+        "listCounts",
+        "page",
+        "pageSize",
+        "totalItems",
+        "totalPages"
+      ]
+    },
+    "Response_7c98bf6549b72b9d": {
+      "type": "object",
+      "properties": {
+        "all": { "type": "number" },
+        "favorites": { "type": "number" },
+        "wantToVisit": { "type": "number" }
+      },
+      "required": ["all", "favorites", "wantToVisit"]
+    },
+    "Response_fd84d0a0de68dee4": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "number" },
+        "name": { "type": "string" },
+        "address": { "type": ["null", "string"] },
+        "city": { "type": ["null", "string"] },
+        "country": { "type": ["null", "string"] },
+        "latitude": { "type": ["null", "string"] },
+        "longitude": { "type": ["null", "string"] },
+        "website": { "type": ["null", "string"] },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "rating": { "type": ["null", "number"] },
+        "isFavorite": { "type": "boolean" },
+        "wantsToVisit": { "type": "boolean" },
+        "visitCount": { "type": "number" },
+        "latestVisitAt": { "type": "string", "format": "date-time" },
+        "imagePath": { "type": ["null", "string"] }
+      },
+      "required": [
+        "address",
+        "city",
+        "country",
+        "id",
+        "imagePath",
+        "isFavorite",
+        "latestVisitAt",
+        "latitude",
+        "longitude",
+        "name",
+        "rating",
+        "updatedAt",
+        "visitCount",
+        "wantsToVisit",
+        "website"
+      ]
+    },
+    "GetPlaceData": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "country": { "type": ["null", "string"] },
+        "website": { "type": ["null", "string"] },
+        "instagramHandle": { "type": ["null", "string"] },
+        "notes": { "type": ["null", "string"] },
+        "rating": { "type": ["null", "number"] },
+        "address": { "type": ["null", "string"] },
+        "city": { "type": ["null", "string"] },
+        "latitude": { "type": ["null", "string"] },
+        "longitude": { "type": ["null", "string"] },
+        "isFavorite": { "type": "boolean" },
+        "wantsToVisit": { "type": "boolean" },
+        "images": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_16f60b8dfe40bf5e" }
+        },
+        "cafeVisits": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_a3435a30ab38d780" }
+        }
+      },
+      "required": [
+        "address",
+        "cafeVisits",
+        "city",
+        "country",
+        "createdAt",
+        "id",
+        "images",
+        "instagramHandle",
+        "isFavorite",
+        "latitude",
+        "longitude",
+        "name",
+        "notes",
+        "ownerId",
+        "rating",
+        "updatedAt",
+        "wantsToVisit",
+        "website"
+      ]
+    },
+    "Response_16f60b8dfe40bf5e": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "storagePath": { "type": "string" },
+        "originalFilename": { "type": ["null", "string"] },
+        "mimeType": { "type": ["null", "string"] },
+        "sizeBytes": { "type": ["null", "number"] },
+        "storageBytes": { "type": ["null", "number"] },
+        "coffeeShopId": { "type": "number" }
+      },
+      "required": [
+        "coffeeShopId",
+        "createdAt",
+        "id",
+        "mimeType",
+        "originalFilename",
+        "ownerId",
+        "sizeBytes",
+        "storageBytes",
+        "storagePath"
+      ]
+    },
+    "Response_a3435a30ab38d780": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "drinkTypeId": { "type": ["null", "number"] },
+        "notes": { "type": ["null", "string"] },
+        "beanId": { "type": ["null", "number"] },
+        "price": { "type": ["null", "string"] },
+        "rating": { "type": ["null", "number"] },
+        "coffeeShopId": { "type": ["null", "number"] },
+        "currency": { "type": ["null", "string"] },
+        "visitedAt": { "type": "string", "format": "date-time" },
+        "drinkType": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_7ab7ca3248772bc1" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": [
+        "beanId",
+        "coffeeShopId",
+        "createdAt",
+        "currency",
+        "drinkType",
+        "drinkTypeId",
+        "id",
+        "notes",
+        "ownerId",
+        "price",
+        "rating",
+        "updatedAt",
+        "visitedAt"
+      ]
+    },
+    "CreatePlaceData": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "country": { "type": ["null", "string"] },
+        "website": { "type": ["null", "string"] },
+        "instagramHandle": { "type": ["null", "string"] },
+        "notes": { "type": ["null", "string"] },
+        "rating": { "type": ["null", "number"] },
+        "address": { "type": ["null", "string"] },
+        "city": { "type": ["null", "string"] },
+        "latitude": { "type": ["null", "string"] },
+        "longitude": { "type": ["null", "string"] },
+        "isFavorite": { "type": "boolean" },
+        "wantsToVisit": { "type": "boolean" }
+      },
+      "required": [
+        "address",
+        "city",
+        "country",
+        "createdAt",
+        "id",
+        "instagramHandle",
+        "isFavorite",
+        "latitude",
+        "longitude",
+        "name",
+        "notes",
+        "ownerId",
+        "rating",
+        "updatedAt",
+        "wantsToVisit",
+        "website"
+      ]
+    },
+    "UpdatePlaceData": {
+      "type": "object",
+      "properties": {
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "name": { "type": "string" },
+        "address": { "type": ["null", "string"] },
+        "city": { "type": ["null", "string"] },
+        "country": { "type": ["null", "string"] },
+        "latitude": { "type": ["null", "string"] },
+        "longitude": { "type": ["null", "string"] },
+        "website": { "type": ["null", "string"] },
+        "instagramHandle": { "type": ["null", "string"] },
+        "notes": { "type": ["null", "string"] },
+        "rating": { "type": ["null", "number"] },
+        "isFavorite": { "type": "boolean" },
+        "wantsToVisit": { "type": "boolean" }
+      },
+      "required": [
+        "address",
+        "city",
+        "country",
+        "createdAt",
+        "id",
+        "instagramHandle",
+        "isFavorite",
+        "latitude",
+        "longitude",
+        "name",
+        "notes",
+        "ownerId",
+        "rating",
+        "updatedAt",
+        "wantsToVisit",
+        "website"
+      ]
+    },
+    "ListVisitsData": {
+      "type": "object",
+      "properties": {
+        "page": { "type": "number" },
+        "pageSize": { "type": "number" },
+        "totalItems": { "type": "number" },
+        "totalPages": { "type": "number" },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_816080b699129719" }
+        }
+      },
+      "required": ["items", "page", "pageSize", "totalItems", "totalPages"]
+    },
+    "Response_816080b699129719": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "drinkTypeId": { "type": ["null", "number"] },
+        "notes": { "type": ["null", "string"] },
+        "beanId": { "type": ["null", "number"] },
+        "price": { "type": ["null", "string"] },
+        "rating": { "type": ["null", "number"] },
+        "coffeeShopId": { "type": ["null", "number"] },
+        "currency": { "type": ["null", "string"] },
+        "visitedAt": { "type": "string", "format": "date-time" },
+        "drinkType": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_7ab7ca3248772bc1" },
+            { "type": "null" }
+          ]
+        },
+        "bean": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_ced4f9621585b019" },
+            { "type": "null" }
+          ]
+        },
+        "coffeeShop": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_e57d65d0dd97852d" },
+            { "type": "null" }
+          ]
+        },
+        "tasteTags": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_9970bd2fa3bfe549" }
+        }
+      },
+      "required": [
+        "bean",
+        "beanId",
+        "coffeeShop",
+        "coffeeShopId",
+        "createdAt",
+        "currency",
+        "drinkType",
+        "drinkTypeId",
+        "id",
+        "notes",
+        "ownerId",
+        "price",
+        "rating",
+        "tasteTags",
+        "updatedAt",
+        "visitedAt"
+      ]
+    },
+    "Response_e57d65d0dd97852d": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "country": { "type": ["null", "string"] },
+        "website": { "type": ["null", "string"] },
+        "instagramHandle": { "type": ["null", "string"] },
+        "notes": { "type": ["null", "string"] },
+        "rating": { "type": ["null", "number"] },
+        "address": { "type": ["null", "string"] },
+        "city": { "type": ["null", "string"] },
+        "latitude": { "type": ["null", "string"] },
+        "longitude": { "type": ["null", "string"] },
+        "isFavorite": { "type": "boolean" },
+        "wantsToVisit": { "type": "boolean" }
+      },
+      "required": [
+        "address",
+        "city",
+        "country",
+        "createdAt",
+        "id",
+        "instagramHandle",
+        "isFavorite",
+        "latitude",
+        "longitude",
+        "name",
+        "notes",
+        "ownerId",
+        "rating",
+        "updatedAt",
+        "wantsToVisit",
+        "website"
+      ]
+    },
+    "Response_9970bd2fa3bfe549": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "tasteTagId": { "type": "number" },
+        "cafeVisitId": { "type": "number" },
+        "tasteTag": { "$ref": "#/components/schemas/Response_6eccfc608e5d9b3d" }
+      },
+      "required": ["cafeVisitId", "id", "ownerId", "tasteTag", "tasteTagId"]
+    },
+    "GetVisitData": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "drinkTypeId": { "type": ["null", "number"] },
+        "notes": { "type": ["null", "string"] },
+        "beanId": { "type": ["null", "number"] },
+        "price": { "type": ["null", "string"] },
+        "rating": { "type": ["null", "number"] },
+        "coffeeShopId": { "type": ["null", "number"] },
+        "currency": { "type": ["null", "string"] },
+        "visitedAt": { "type": "string", "format": "date-time" },
+        "drinkType": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_7ab7ca3248772bc1" },
+            { "type": "null" }
+          ]
+        },
+        "images": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_e7f6a3c6d171d7de" }
+        },
+        "bean": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_ced4f9621585b019" },
+            { "type": "null" }
+          ]
+        },
+        "drinkOptions": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_f588a40c2b771181" }
+        },
+        "coffeeShop": {
+          "anyOf": [
+            { "$ref": "#/components/schemas/Response_e57d65d0dd97852d" },
+            { "type": "null" }
+          ]
+        },
+        "tasteTags": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_cd049fac6c7c8ddc" }
+        }
+      },
+      "required": [
+        "bean",
+        "beanId",
+        "coffeeShop",
+        "coffeeShopId",
+        "createdAt",
+        "currency",
+        "drinkOptions",
+        "drinkType",
+        "drinkTypeId",
+        "id",
+        "images",
+        "notes",
+        "ownerId",
+        "price",
+        "rating",
+        "tasteTags",
+        "updatedAt",
+        "visitedAt"
+      ]
+    },
+    "Response_e7f6a3c6d171d7de": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "storagePath": { "type": "string" },
+        "originalFilename": { "type": ["null", "string"] },
+        "mimeType": { "type": ["null", "string"] },
+        "sizeBytes": { "type": ["null", "number"] },
+        "storageBytes": { "type": ["null", "number"] },
+        "cafeVisitId": { "type": "number" }
+      },
+      "required": [
+        "cafeVisitId",
+        "createdAt",
+        "id",
+        "mimeType",
+        "originalFilename",
+        "ownerId",
+        "sizeBytes",
+        "storageBytes",
+        "storagePath"
+      ]
+    },
+    "Response_f588a40c2b771181": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "optionValueId": { "type": "number" },
+        "cafeVisitId": { "type": "number" },
+        "optionValue": {
+          "$ref": "#/components/schemas/Response_f1be448ed951ca28"
+        }
+      },
+      "required": [
+        "cafeVisitId",
+        "id",
+        "optionValue",
+        "optionValueId",
+        "ownerId"
+      ]
+    },
+    "Response_f1be448ed951ca28": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "isArchived": { "type": "boolean" },
+        "groupId": { "type": "number" },
+        "group": { "$ref": "#/components/schemas/Response_738c3fc66eba0c1c" }
+      },
+      "required": [
+        "createdAt",
+        "group",
+        "groupId",
+        "id",
+        "isArchived",
+        "name",
+        "ownerId",
+        "updatedAt"
+      ]
+    },
+    "Response_cd049fac6c7c8ddc": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "tasteTagId": { "type": "number" },
+        "cafeVisitId": { "type": "number" },
+        "tasteTag": { "$ref": "#/components/schemas/Response_6eccfc608e5d9b3d" }
+      },
+      "required": ["cafeVisitId", "id", "ownerId", "tasteTag", "tasteTagId"]
+    },
+    "CreateVisitData": {
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "drinkTypeId": { "type": ["null", "number"] },
+        "notes": { "type": ["null", "string"] },
+        "beanId": { "type": ["null", "number"] },
+        "price": { "type": ["null", "string"] },
+        "rating": { "type": ["null", "number"] },
+        "coffeeShopId": { "type": ["null", "number"] },
+        "currency": { "type": ["null", "string"] },
+        "visitedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "beanId",
+        "coffeeShopId",
+        "createdAt",
+        "currency",
+        "drinkTypeId",
+        "id",
+        "notes",
+        "ownerId",
+        "price",
+        "rating",
+        "updatedAt",
+        "visitedAt"
+      ]
+    },
+    "Response_6fb81392969cea25": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "description": { "type": ["null", "string"] },
+        "enabledParameters": { "type": "array", "items": { "type": "string" } },
+        "timerEnabled": { "type": "boolean" },
+        "drinkTypeIds": { "type": "array", "items": { "type": "number" } }
+      },
+      "required": [
+        "createdAt",
+        "description",
+        "drinkTypeIds",
+        "enabledParameters",
+        "id",
+        "name",
+        "ownerId",
+        "timerEnabled",
+        "updatedAt"
+      ]
+    },
+    "GetBrewingMethodData": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "description": { "type": ["null", "string"] },
+        "enabledParameters": { "type": "array", "items": { "type": "string" } },
+        "timerEnabled": { "type": "boolean" },
+        "drinkTypeIds": { "type": "array", "items": { "type": "number" } }
+      },
+      "required": [
+        "createdAt",
+        "description",
+        "drinkTypeIds",
+        "enabledParameters",
+        "id",
+        "name",
+        "ownerId",
+        "timerEnabled",
+        "updatedAt"
+      ]
+    },
+    "CreateBrewingMethodData": {
+      "type": "object",
+      "properties": {
+        "drinkTypeIds": { "type": "array", "items": { "type": "number" } },
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "description": { "type": ["null", "string"] },
+        "enabledParameters": { "type": "array", "items": { "type": "string" } },
+        "timerEnabled": { "type": "boolean" }
+      },
+      "required": [
+        "createdAt",
+        "description",
+        "drinkTypeIds",
+        "enabledParameters",
+        "id",
+        "name",
+        "ownerId",
+        "timerEnabled",
+        "updatedAt"
+      ]
+    },
+    "UpdateBrewingMethodData": {
+      "type": "object",
+      "properties": {
+        "drinkTypeIds": { "type": "array", "items": { "type": "number" } },
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "description": { "type": ["null", "string"] },
+        "enabledParameters": { "type": "array", "items": { "type": "string" } },
+        "timerEnabled": { "type": "boolean" }
+      },
+      "required": [
+        "createdAt",
+        "description",
+        "drinkTypeIds",
+        "enabledParameters",
+        "id",
+        "name",
+        "ownerId",
+        "timerEnabled",
+        "updatedAt"
+      ]
+    },
+    "GetDrinkConfigurationData": {
+      "type": "object",
+      "properties": {
+        "drinkTypes": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_adc1886f8faa56e9" }
+        },
+        "optionGroups": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_eb84694f60dc7322" }
+        }
+      },
+      "required": ["drinkTypes", "optionGroups"]
+    },
+    "Response_adc1886f8faa56e9": {
+      "type": "object",
+      "properties": {
+        "optionGroupIds": { "type": "array", "items": { "type": "number" } },
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "isArchived": { "type": "boolean" }
+      },
+      "required": [
+        "createdAt",
+        "id",
+        "isArchived",
+        "name",
+        "optionGroupIds",
+        "ownerId",
+        "updatedAt"
+      ]
+    },
+    "Response_eb84694f60dc7322": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "isArchived": { "type": "boolean" },
+        "values": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_50419e2b4330261c" }
+        }
+      },
+      "required": [
+        "createdAt",
+        "id",
+        "isArchived",
+        "name",
+        "ownerId",
+        "updatedAt",
+        "values"
+      ]
+    },
+    "Response_50419e2b4330261c": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "isArchived": { "type": "boolean" },
+        "groupId": { "type": "number" }
+      },
+      "required": [
+        "createdAt",
+        "groupId",
+        "id",
+        "isArchived",
+        "name",
+        "ownerId",
+        "updatedAt"
+      ]
+    },
+    "SaveDrinkTypeData": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "isArchived": { "type": "boolean" }
+      },
+      "required": [
+        "createdAt",
+        "id",
+        "isArchived",
+        "name",
+        "ownerId",
+        "updatedAt"
+      ]
+    },
+    "CreateDrinkOptionData": {
+      "type": "object",
+      "properties": {
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "groupId": { "type": "number" },
+        "name": { "type": "string" },
+        "isArchived": { "type": "boolean" }
+      },
+      "required": [
+        "createdAt",
+        "groupId",
+        "id",
+        "isArchived",
+        "name",
+        "ownerId",
+        "updatedAt"
+      ]
+    },
+    "Response_6aae1f2dd92aa0aa": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "category": { "type": ["null", "string"] },
+        "extractionAxis": { "type": ["null", "string"] },
+        "strengthAxis": { "type": ["null", "string"] },
+        "hint": { "type": "string" }
+      },
+      "required": [
+        "category",
+        "extractionAxis",
+        "hint",
+        "id",
+        "name",
+        "ownerId",
+        "strengthAxis"
+      ]
+    },
+    "CreateTasteTagData": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "category": { "type": ["null", "string"] },
+        "extractionAxis": { "type": ["null", "string"] },
+        "strengthAxis": { "type": ["null", "string"] },
+        "hint": { "type": "string" }
+      },
+      "required": [
+        "category",
+        "extractionAxis",
+        "hint",
+        "id",
+        "name",
+        "ownerId",
+        "strengthAxis"
+      ]
+    },
+    "GetStatsData": {
+      "type": "object",
+      "properties": {
+        "filter": { "$ref": "#/components/schemas/Response_1b8089c5781085e1" },
+        "available": {
+          "$ref": "#/components/schemas/Response_2b259c98d2b902f2"
+        },
+        "shots": { "$ref": "#/components/schemas/Response_51e1f2d9f79c19ba" },
+        "beans": { "$ref": "#/components/schemas/Response_b39389905143ebb4" },
+        "brewing": { "$ref": "#/components/schemas/Response_13206cc42a8734e1" },
+        "consistency": {
+          "$ref": "#/components/schemas/Response_1167208654542bfd"
+        },
+        "gear": { "$ref": "#/components/schemas/Response_f767b8463767941e" },
+        "ratings": { "$ref": "#/components/schemas/Response_790fb5be8b3cb206" },
+        "trend": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_936fadf191e93755" }
+        },
+        "activityCalendar": {
+          "$ref": "#/components/schemas/Response_6ea0c21e895c475f"
+        },
+        "methods": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_ba0a7effa690e8b6" }
+        },
+        "tasteProfile": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_9eb62974277ba74c" }
+        },
+        "dialIn": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_75614b169c143ecf" }
+        },
+        "rhythm": { "$ref": "#/components/schemas/Response_dfe90e25fd579a44" },
+        "exploration": {
+          "$ref": "#/components/schemas/Response_51fea0aecf13589e"
+        },
+        "cost": { "$ref": "#/components/schemas/Response_77ed5c05b3918936" },
+        "visits": { "$ref": "#/components/schemas/Response_8c21014bb780c45b" },
+        "places": { "$ref": "#/components/schemas/Response_7e36aab93aa9d56d" }
+      },
+      "required": [
+        "activityCalendar",
+        "available",
+        "beans",
+        "brewing",
+        "consistency",
+        "cost",
+        "dialIn",
+        "exploration",
+        "filter",
+        "gear",
+        "methods",
+        "places",
+        "ratings",
+        "rhythm",
+        "shots",
+        "tasteProfile",
+        "trend",
+        "visits"
+      ]
+    },
+    "Response_1b8089c5781085e1": {
+      "type": "object",
+      "properties": {
+        "period": {
+          "enum": ["1y", "30d", "90d", "all", "custom", "ytd"],
+          "type": "string"
+        },
+        "method": { "type": ["null", "number"] },
+        "bean": { "type": ["null", "number"] },
+        "from": { "type": ["null", "string"] },
+        "to": { "type": ["null", "string"] },
+        "timeZone": { "type": "string" },
+        "range": { "$ref": "#/components/schemas/Response_9dd7aeda8f45fb1e" }
+      },
+      "required": ["period", "range", "timeZone"]
+    },
+    "Response_9dd7aeda8f45fb1e": {
+      "type": "object",
+      "properties": {
+        "start": { "type": ["null", "string"] },
+        "end": { "type": "string" },
+        "previousStart": { "type": ["null", "string"] },
+        "previousEnd": { "type": ["null", "string"] },
+        "bucket": { "$ref": "#/components/schemas/Response_48028e57c9329c17" },
+        "days": { "type": ["null", "number"] }
+      },
+      "required": [
+        "bucket",
+        "days",
+        "end",
+        "previousEnd",
+        "previousStart",
+        "start"
+      ]
+    },
+    "Response_48028e57c9329c17": {
+      "enum": ["day", "month", "week"],
+      "type": "string"
+    },
+    "Response_2b259c98d2b902f2": {
+      "type": "object",
+      "properties": {
+        "methods": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_70edba70834b3986" }
+        },
+        "beans": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_458a390b06ce4904" }
+        }
+      },
+      "required": ["beans", "methods"]
+    },
+    "Response_70edba70834b3986": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "number" },
+        "name": { "type": "string" }
+      },
+      "required": ["id", "name"]
+    },
+    "Response_458a390b06ce4904": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "number" },
+        "name": { "type": "string" },
+        "isArchived": { "type": "boolean" }
+      },
+      "required": ["id", "isArchived", "name"]
+    },
+    "Response_51e1f2d9f79c19ba": {
+      "type": "object",
+      "properties": {
+        "total": { "type": "number" },
+        "previousTotal": { "type": ["null", "number"] },
+        "avgPerDay": { "type": "number" }
+      },
+      "required": ["avgPerDay", "previousTotal", "total"]
+    },
+    "Response_b39389905143ebb4": {
+      "type": "object",
+      "properties": {
+        "totalGramsUsed": { "type": "number" },
+        "previousTotalGramsUsed": { "type": ["null", "number"] },
+        "uniqueBeansUsed": { "type": "number" },
+        "topByShots": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_63d88dba287f1652" }
+        },
+        "topByRating": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_0c188e142c8103dd" }
+        }
+      },
+      "required": [
+        "previousTotalGramsUsed",
+        "topByRating",
+        "topByShots",
+        "totalGramsUsed",
+        "uniqueBeansUsed"
+      ]
+    },
+    "Response_63d88dba287f1652": {
+      "type": "object",
+      "properties": {
+        "beanId": { "type": "number" },
+        "beanName": { "type": "string" },
+        "shotCount": { "type": "number" }
+      },
+      "required": ["beanId", "beanName", "shotCount"]
+    },
+    "Response_0c188e142c8103dd": {
+      "type": "object",
+      "properties": {
+        "avgRating": { "type": ["null", "number"] },
+        "beanId": { "type": "number" },
+        "beanName": { "type": "string" },
+        "shotCount": { "type": "number" }
+      },
+      "required": ["avgRating", "beanId", "beanName", "shotCount"]
+    },
+    "Response_13206cc42a8734e1": {
+      "type": "object",
+      "properties": {
+        "avgDose": { "type": ["null", "number"] },
+        "avgYield": { "type": ["null", "number"] },
+        "avgTime": { "type": ["null", "number"] },
+        "avgRatio": { "type": ["null", "number"] }
+      },
+      "required": ["avgDose", "avgRatio", "avgTime", "avgYield"]
+    },
+    "Response_1167208654542bfd": {
+      "type": "object",
+      "properties": {
+        "time": { "$ref": "#/components/schemas/Response_eb925fcccb280d60" },
+        "dose": { "$ref": "#/components/schemas/Response_eb925fcccb280d60" },
+        "yield": { "$ref": "#/components/schemas/Response_eb925fcccb280d60" },
+        "ratio": { "$ref": "#/components/schemas/Response_eb925fcccb280d60" }
+      },
+      "required": ["dose", "ratio", "time", "yield"]
+    },
+    "Response_eb925fcccb280d60": {
+      "type": "object",
+      "properties": {
+        "count": { "type": "number" },
+        "median": { "type": ["null", "number"] },
+        "p25": { "type": ["null", "number"] },
+        "p75": { "type": ["null", "number"] }
+      },
+      "required": ["count", "median", "p25", "p75"]
+    },
+    "Response_f767b8463767941e": {
+      "type": "object",
+      "properties": {
+        "brewers": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_f2032a6a6aee8a65" }
+        },
+        "grinders": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_f2032a6a6aee8a65" }
+        },
+        "accessories": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_f2032a6a6aee8a65" }
+        }
+      },
+      "required": ["accessories", "brewers", "grinders"]
+    },
+    "Response_f2032a6a6aee8a65": {
+      "type": "object",
+      "properties": {
+        "gearId": { "type": "number" },
+        "gearName": { "type": "string" },
+        "gearType": { "type": "string" },
+        "shotCount": { "type": "number" }
+      },
+      "required": ["gearId", "gearName", "gearType", "shotCount"]
+    },
+    "Response_790fb5be8b3cb206": {
+      "type": "object",
+      "properties": {
+        "average": { "type": ["null", "number"] },
+        "previousAverage": { "type": ["null", "number"] },
+        "totalRated": { "type": "number" },
+        "previousTotalRated": { "type": ["null", "number"] },
+        "highRated": { "type": "number" },
+        "distribution": {
+          "$ref": "#/components/schemas/Response_beccde8fbd986edb"
+        }
+      },
+      "required": [
+        "average",
+        "distribution",
+        "highRated",
+        "previousAverage",
+        "previousTotalRated",
+        "totalRated"
+      ]
+    },
+    "Response_beccde8fbd986edb": {
+      "type": "object",
+      "properties": {
+        "1": { "type": "number" },
+        "2": { "type": "number" },
+        "3": { "type": "number" },
+        "4": { "type": "number" },
+        "5": { "type": "number" }
+      },
+      "required": ["1", "2", "3", "4", "5"]
+    },
+    "Response_936fadf191e93755": {
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "count": { "type": "number" },
+        "averageRating": { "type": ["null", "number"] },
+        "totalRated": { "type": "number" },
+        "highRated": { "type": "number" }
+      },
+      "required": ["averageRating", "count", "date", "highRated", "totalRated"]
+    },
+    "Response_6ea0c21e895c475f": {
+      "type": "object",
+      "properties": {
+        "end": { "type": "string" },
+        "days": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_61b2b219b6c71156" }
+        }
+      },
+      "required": ["days", "end"]
+    },
+    "Response_61b2b219b6c71156": {
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "count": { "type": "number" }
+      },
+      "required": ["count", "date"]
+    },
+    "Response_ba0a7effa690e8b6": {
+      "type": "object",
+      "properties": {
+        "avgRating": { "type": ["null", "number"] },
+        "methodId": { "type": "number" },
+        "methodName": { "type": "string" },
+        "shotCount": { "type": "number" }
+      },
+      "required": ["avgRating", "methodId", "methodName", "shotCount"]
+    },
+    "Response_9eb62974277ba74c": {
+      "type": "object",
+      "properties": {
+        "avgRating": { "type": ["null", "number"] },
+        "id": { "type": "number" },
+        "name": { "type": "string" },
+        "category": { "type": ["null", "string"] },
+        "count": { "type": "number" },
+        "extractionAxis": { "type": ["null", "number"] },
+        "strengthAxis": { "type": ["null", "number"] }
+      },
+      "required": [
+        "avgRating",
+        "category",
+        "count",
+        "extractionAxis",
+        "id",
+        "name",
+        "strengthAxis"
+      ]
+    },
+    "Response_75614b169c143ecf": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "number" },
+        "brewedAt": { "type": "string", "format": "date-time" },
+        "beanId": { "type": "number" },
+        "beanName": { "type": "string" },
+        "methodId": { "type": "number" },
+        "methodName": { "type": "string" },
+        "rating": { "type": "number" },
+        "ratio": { "type": ["null", "number"] },
+        "time": { "type": ["null", "number"] },
+        "temperature": { "type": ["null", "number"] }
+      },
+      "required": [
+        "beanId",
+        "beanName",
+        "brewedAt",
+        "id",
+        "methodId",
+        "methodName",
+        "rating",
+        "ratio",
+        "temperature",
+        "time"
+      ]
+    },
+    "Response_dfe90e25fd579a44": {
+      "type": "object",
+      "properties": {
+        "cells": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_de93641b5a874d15" }
+        },
+        "streaks": { "$ref": "#/components/schemas/Response_8a85ef82de9b0a14" }
+      },
+      "required": ["cells", "streaks"]
+    },
+    "Response_de93641b5a874d15": {
+      "type": "object",
+      "properties": {
+        "weekday": { "type": "number" },
+        "hour": { "type": "number" },
+        "count": { "type": "number" }
+      },
+      "required": ["count", "hour", "weekday"]
+    },
+    "Response_8a85ef82de9b0a14": {
+      "type": "object",
+      "properties": {
+        "current": { "type": "number" },
+        "longest": { "type": "number" }
+      },
+      "required": ["current", "longest"]
+    },
+    "Response_51fea0aecf13589e": {
+      "type": "object",
+      "properties": {
+        "roasters": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_61e5cdb17fd68493" }
+        },
+        "origins": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_61e5cdb17fd68493" }
+        },
+        "processes": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_61e5cdb17fd68493" }
+        },
+        "roastLevels": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_61e5cdb17fd68493" }
+        },
+        "roastAge": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_840ea7780e5e7907" }
+        }
+      },
+      "required": [
+        "origins",
+        "processes",
+        "roastAge",
+        "roastLevels",
+        "roasters"
+      ]
+    },
+    "Response_61e5cdb17fd68493": {
+      "type": "object",
+      "properties": {
+        "avgRating": { "type": ["null", "number"] },
+        "name": { "type": ["null", "string"] },
+        "count": { "type": "number" }
+      },
+      "required": ["avgRating", "count", "name"]
+    },
+    "Response_840ea7780e5e7907": {
+      "type": "object",
+      "properties": {
+        "avgRating": { "type": ["null", "number"] },
+        "name": { "type": ["null", "string"] },
+        "count": { "type": "number" },
+        "sort": { "type": "number" }
+      },
+      "required": ["avgRating", "count", "name", "sort"]
+    },
+    "Response_77ed5c05b3918936": {
+      "type": "object",
+      "properties": {
+        "home": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_7c2823731480211f" }
+        }
+      },
+      "required": ["home"]
+    },
+    "Response_7c2823731480211f": {
+      "type": "object",
+      "properties": {
+        "currency": { "type": "string" },
+        "total": { "type": "number" },
+        "average": { "type": "number" },
+        "count": { "type": "number" }
+      },
+      "required": ["average", "count", "currency", "total"]
+    },
+    "Response_8c21014bb780c45b": {
+      "type": "object",
+      "properties": {
+        "total": { "type": "number" },
+        "previousTotal": { "type": ["null", "number"] },
+        "averageRating": { "type": ["null", "number"] },
+        "previousAverageRating": { "type": ["null", "number"] },
+        "totalRated": { "type": "number" },
+        "trend": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_88fc3653861e9c43" }
+        },
+        "drinkTypes": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_61e5cdb17fd68493" }
+        },
+        "cities": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_5eba43208ed9b66c" }
+        },
+        "tasteTags": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_29c900198bedcb92" }
+        },
+        "spend": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_7c2823731480211f" }
+        },
+        "streaks": { "$ref": "#/components/schemas/Response_8a85ef82de9b0a14" }
+      },
+      "required": [
+        "averageRating",
+        "cities",
+        "drinkTypes",
+        "previousAverageRating",
+        "previousTotal",
+        "spend",
+        "streaks",
+        "tasteTags",
+        "total",
+        "totalRated",
+        "trend"
+      ]
+    },
+    "Response_88fc3653861e9c43": {
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "count": { "type": "number" },
+        "averageRating": { "type": ["null", "number"] }
+      },
+      "required": ["averageRating", "count", "date"]
+    },
+    "Response_5eba43208ed9b66c": {
+      "type": "object",
+      "properties": {
+        "name": { "type": ["null", "string"] },
+        "count": { "type": "number" }
+      },
+      "required": ["count", "name"]
+    },
+    "Response_29c900198bedcb92": {
+      "type": "object",
+      "properties": {
+        "avgRating": { "type": ["null", "number"] },
+        "name": { "type": ["null", "string"] },
+        "count": { "type": "number" },
+        "id": { "type": "number" },
+        "category": { "type": ["null", "string"] }
+      },
+      "required": ["avgRating", "category", "count", "id", "name"]
+    },
+    "Response_7e36aab93aa9d56d": {
+      "type": "object",
+      "properties": {
+        "total": { "type": "number" },
+        "visited": { "type": "number" },
+        "favorites": { "type": "number" },
+        "topByVisits": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_2093e23fcb37c96a" }
+        }
+      },
+      "required": ["favorites", "topByVisits", "total", "visited"]
+    },
+    "Response_2093e23fcb37c96a": {
+      "type": "object",
+      "properties": {
+        "avgRating": { "type": ["null", "number"] },
+        "coffeeShopId": { "type": "number" },
+        "coffeeShopName": { "type": "string" },
+        "city": { "type": ["null", "string"] },
+        "visitCount": { "type": "number" }
+      },
+      "required": [
+        "avgRating",
+        "city",
+        "coffeeShopId",
+        "coffeeShopName",
+        "visitCount"
+      ]
+    },
+    "GetDashboardData": {
+      "type": "object",
+      "properties": {
+        "totalShots": { "type": "number" },
+        "activeBeans": { "type": "number" },
+        "shotsThisMonth": { "type": "number" },
+        "cafeVisits": { "type": "number" },
+        "coffeeShops": { "type": "number" }
+      },
+      "required": [
+        "activeBeans",
+        "cafeVisits",
+        "coffeeShops",
+        "shotsThisMonth",
+        "totalShots"
+      ]
+    },
+    "GetShotTargetData": {
+      "type": "object",
+      "properties": { "targetSeconds": { "type": ["null", "number"] } },
+      "required": ["targetSeconds"]
+    },
+    "UploadImageData": { "type": "object" }
+  }
+}

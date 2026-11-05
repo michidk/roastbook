@@ -1,6 +1,10 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import {
+  isReauthenticationCancelled,
+  useReauthentication,
+} from '@/components/auth/reauthentication-dialog'
 import { PanelSection } from '@/components/section-layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,6 +19,7 @@ import {
   requestExport,
 } from '@/lib/server/account'
 import { signOutOfAccount } from '@/lib/sign-out'
+import type { ReauthenticationAction } from '@/modules/auth/reauthentication'
 
 export const Route = createFileRoute('/settings/account')({
   loader: () => getCurrentAccount(),
@@ -32,6 +37,7 @@ function AccountPage() {
     Array<{ id: string; name?: string | null }>
   >([])
   const accountId = state.identity?.id
+  const reauthentication = useReauthentication()
   useEffect(() => {
     if (!deletionInitialized.current) {
       deletionInitialized.current = true
@@ -52,13 +58,22 @@ function AccountPage() {
   if (!state.identity)
     return <p>Account management is unavailable on this installation.</p>
   const identity = state.identity
-  async function action(work: () => Promise<unknown>, message: string) {
-    setBusy(true)
+  /** Runs an account action, first confirming it's you when it is sensitive. */
+  async function action(
+    work: (reauthToken: string | undefined) => Promise<unknown>,
+    message: string,
+    confirm?: ReauthenticationAction,
+  ) {
     try {
-      await work()
+      const reauthToken = confirm
+        ? await reauthentication.confirm(confirm)
+        : undefined
+      setBusy(true)
+      await work(reauthToken)
       toast.success(message)
       await router.invalidate()
     } catch (error) {
+      if (isReauthenticationCancelled(error)) return
       toast.error(error instanceof Error ? error.message : 'The action failed')
     } finally {
       setBusy(false)
@@ -70,6 +85,7 @@ function AccountPage() {
   }
   return (
     <>
+      {reauthentication.dialog}
       <PanelSection
         title="Email address"
         description="Your email address is used for passwordless sign-in and account confirmations."
@@ -88,6 +104,7 @@ function AccountPage() {
                   }),
                 ),
               'Check your current email to approve the change, then verify the new address.',
+              'change-email',
             )
           }}
         >
@@ -125,14 +142,18 @@ function AccountPage() {
                 disabled={busy}
                 variant="outline"
                 onClick={() =>
-                  void action(async () => {
-                    await checkResult(
-                      await authClient.passkey.deletePasskey({ id: key.id }),
-                    )
-                    setPasskeys((current) =>
-                      current.filter((p) => p.id !== key.id),
-                    )
-                  }, 'Passkey removed')
+                  void action(
+                    async () => {
+                      await checkResult(
+                        await authClient.passkey.deletePasskey({ id: key.id }),
+                      )
+                      setPasskeys((current) =>
+                        current.filter((p) => p.id !== key.id),
+                      )
+                    },
+                    'Passkey removed',
+                    'manage-passkeys',
+                  )
                 }
               >
                 Remove
@@ -142,11 +163,15 @@ function AccountPage() {
           <Button
             disabled={busy}
             onClick={() =>
-              void action(async () => {
-                await checkResult(await authClient.passkey.addPasskey())
-                const result = await authClient.passkey.listUserPasskeys()
-                if (result.data) setPasskeys(result.data)
-              }, 'Passkey added')
+              void action(
+                async () => {
+                  await checkResult(await authClient.passkey.addPasskey())
+                  const result = await authClient.passkey.listUserPasskeys()
+                  if (result.data) setPasskeys(result.data)
+                },
+                'Passkey added',
+                'manage-passkeys',
+              )
             }
           >
             Add a passkey
@@ -179,8 +204,8 @@ function AccountPage() {
           </Button>
         </div>
         <p className="text-sm text-muted-foreground">
-          For sensitive changes, sign in again if your session is older than 10
-          minutes.
+          Sensitive changes ask you to confirm it’s you with a passkey or an
+          email code first.
         </p>
       </PanelSection>
       <AccountSettingsExtensions />
@@ -193,8 +218,9 @@ function AccountPage() {
             disabled={busy}
             onClick={() =>
               void action(
-                () => requestExport(),
+                (reauthToken) => requestExport({ data: { reauthToken } }),
                 'Export requested. Refresh this page to check progress.',
+                'export-account',
               )
             }
           >
@@ -265,8 +291,9 @@ function AccountPage() {
             variant="destructive"
             onClick={() =>
               void action(
-                () => requestDeletion(),
+                (reauthToken) => requestDeletion({ data: { reauthToken } }),
                 'Check your email to confirm account deletion.',
+                'delete-account',
               )
             }
           >

@@ -14,7 +14,7 @@ export function isDemoServiceModule(id: string): boolean {
   )
 }
 
-/** The demo edition never calls server functions; every export fails cleanly. */
+/** The demo edition never calls server functions; exports use local presets or fail cleanly. */
 export function demoServiceModule(id: string): string {
   const name = basename(id, '.ts')
   const exports = parseSync(id, readFileSync(id, 'utf8'))

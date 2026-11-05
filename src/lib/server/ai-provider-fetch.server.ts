@@ -53,7 +53,11 @@ export async function resolveAiEndpoint(
     policy.deploymentMode === 'self-hosted' &&
     policy.privateOrigins.includes(url.origin)
   if (url.protocol !== 'https:' && !privateAllowed)
-    throw new Error('AI endpoints must use HTTPS')
+    throw new Error(
+      policy.deploymentMode === 'self-hosted'
+        ? 'HTTP AI endpoints require the administrator to add the exact origin (scheme, hostname, and port, without a path) to AI_ALLOWED_PRIVATE_ORIGINS and recreate the application container'
+        : 'AI endpoints must use HTTPS',
+    )
   const hostname = url.hostname.replace(/^\[|\]$/g, '')
   let addresses: readonly ResolvedAddress[]
   try {

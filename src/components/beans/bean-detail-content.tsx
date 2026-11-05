@@ -36,6 +36,7 @@ import { useCurrencyFormatter } from '@/hooks/use-currency-formatter'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
+import { DEMO_MODE } from '@/lib/build-mode'
 import {
   BEAN_TYPE_LABELS,
   type BeanType,
@@ -197,7 +198,7 @@ export function BeanDetailHeader({
               <AiRecommendationDialog
                 enabled={recommendationEnabled}
                 request={
-                  shotCount > 0
+                  shotCount > 0 || DEMO_MODE
                     ? {
                         beanId: bean.id,
                         beanPurchaseId: bean.purchaseId ?? undefined,

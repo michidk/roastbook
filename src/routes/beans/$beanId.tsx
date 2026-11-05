@@ -14,6 +14,7 @@ import {
   searchRecord,
   searchValidator,
 } from '@/lib/search-params'
+import { checkShotRecommendationEnabled } from '@/lib/server/shot-recommendations'
 import { BeanDetailPage } from '@/routes/beans/-components/bean-detail-page'
 
 type BeanDetailSearch = {
@@ -47,6 +48,7 @@ async function loadBeanDetail(beanId: number, deps: BeanDetailSearch) {
     roasters,
     visionEnabled,
     researchEnabled,
+    recommendation,
   ] = await Promise.all([
     getBean({ data: beanId }),
     getBeanShotPage({
@@ -61,6 +63,7 @@ async function loadBeanDetail(beanId: number, deps: BeanDetailSearch) {
     getRoasters(),
     checkVisionEnabled(),
     checkResearchEnabled(),
+    checkShotRecommendationEnabled(),
   ])
   return {
     bean,
@@ -69,6 +72,7 @@ async function loadBeanDetail(beanId: number, deps: BeanDetailSearch) {
     roasters,
     visionEnabled: visionEnabled.enabled,
     researchEnabled: researchEnabled.enabled,
+    recommendationEnabled: recommendation.enabled,
   }
 }
 
