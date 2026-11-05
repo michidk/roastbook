@@ -114,10 +114,9 @@ mode. Selected journal data and images go to the user's provider, which bills
 them.
 
 Every request's metadata, status, duration, and token usage are logged in the
-database and shown in Settings > AI. Costs are not estimated; the provider's
-dashboard shows them. Prompts and responses are stored only with
-`AI_TELEMETRY_STORE_PAYLOADS=true`; turning it off again redacts the stored
-ones. They contain private journal data.
+database and shown in Settings > AI. Prompts and responses are stored only
+with `AI_TELEMETRY_STORE_PAYLOADS=true` (off by default); turning it off again
+redacts the stored ones. They contain private journal data.
 
 ## MCP
 

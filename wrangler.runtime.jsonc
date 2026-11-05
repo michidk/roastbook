@@ -1,0 +1,63 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "roastbook-runtime-build",
+  "main": "src/cloudflare/worker.ts",
+  "compatibility_date": "2026-11-02",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": false,
+  "assets": {
+    "directory": "./dist/client",
+    "binding": "ASSETS",
+    "run_worker_first": [
+      "/media/*",
+      "/api/*",
+      "/mcp",
+      "/mcp/*",
+      "/.well-known/*"
+    ]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "roastbook-local",
+      "database_id": "00000000-0000-0000-0000-000000000000"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "roastbook-local-media"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "OAUTH_COORDINATOR",
+        "class_name": "OAuthCoordinator"
+      },
+      {
+        "name": "ACCOUNT_JOBS",
+        "class_name": "AccountJobs"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["OAuthCoordinator"]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["AccountJobs"]
+    }
+  ],
+  "images": {
+    "binding": "IMAGES"
+  },
+  "services": [
+    {
+      "binding": "ACCOUNT_EMAIL",
+      "service": "roastbook-local-email"
+    }
+  ]
+}
