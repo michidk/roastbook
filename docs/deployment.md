@@ -219,3 +219,17 @@ Maintainers must configure `RELEASER_APP_ID` and `RELEASER_APP_PRIVATE_KEY`
 for a GitHub App with Contents write access. Its token allows tag and release
 events to start downstream workflows. The workflow is managed by
 `common/release` in the shared workflows repository.
+
+## Dependent builds
+
+**Notify dependents** can notify a separately managed downstream application when
+CI passes for the current `main` revision. It uses the
+`peter-evans/repository-dispatch` action. Set `DEPENDENT_REPOSITORY` as a
+repository secret containing the downstream name under the same owner, and
+install the Releaser App there with Contents write permission. Without this
+secret, notification is disabled.
+
+The receiver gets a `dependency-updated` event containing the source repository,
+immutable revision and CI run ID. It must verify these values before consuming
+the source. Manual dispatch on `main` retries notification after successful CI;
+failed builds, PR builds and superseded revisions do not notify downstreams.

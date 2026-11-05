@@ -1,0 +1,84 @@
+name: Notify dependents
+
+on:
+  workflow_run:
+    workflows: [Checks and Build]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: notify-dependents
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  notify:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    steps:
+      - name: Select successful default-branch revision
+        id: source
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        env:
+          CI_WORKFLOW: ci.yml
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const branch = context.payload.repository.default_branch;
+            if (context.eventName === 'workflow_dispatch' && context.ref !== `refs/heads/${branch}`)
+              throw new Error('Dispatch from the default branch.');
+            const { data: workflow } = await github.rest.actions.getWorkflow({
+              owner, repo, workflow_id: process.env.CI_WORKFLOW,
+            });
+            const { data: head } = await github.rest.repos.getBranch({ owner, repo, branch });
+            const { data: runs } = await github.rest.actions.listWorkflowRuns({
+              owner, repo, workflow_id: workflow.id,
+              branch, event: 'push', head_sha: head.commit.sha, per_page: 1,
+            });
+            const run = runs.workflow_runs[0];
+            if (!run || run.conclusion !== 'success' || run.status !== 'completed' ||
+                run.head_sha !== head.commit.sha || run.head_branch !== branch ||
+                run.event !== 'push' || run.workflow_id !== workflow.id ||
+                run.head_repository?.full_name !== `${owner}/${repo}` ||
+                (context.eventName === 'workflow_run' && context.payload.workflow_run.id !== run.id)) {
+              if (context.eventName === 'workflow_dispatch')
+                throw new Error('Current default-branch push CI must succeed first.');
+              return;
+            }
+            core.setOutput('revision', run.head_sha);
+            core.setOutput('run-id', run.id);
+
+      - name: Check notification configuration
+        if: steps.source.outputs.revision != ''
+        id: config
+        env:
+          DEPENDENT_REPOSITORY: ${{ secrets.DEPENDENT_REPOSITORY }}
+        run: |
+          if [[ -n "$DEPENDENT_REPOSITORY" ]]; then
+            echo 'enabled=true' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create dependent dispatch token
+        if: steps.config.outputs.enabled == 'true'
+        id: token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.RELEASER_APP_ID }}
+          private-key: ${{ secrets.RELEASER_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ secrets.DEPENDENT_REPOSITORY }}
+          permission-contents: write
+
+      - name: Notify dependent repository
+        if: steps.config.outputs.enabled == 'true'
+        uses: peter-evans/repository-dispatch@ff45666b9427631e3450c54a1bcbee4d9ff4d7c0 # v3
+        with:
+          token: ${{ steps.token.outputs.token }}
+          repository: ${{ github.repository_owner }}/${{ secrets.DEPENDENT_REPOSITORY }}
+          event-type: dependency-updated
+          client-payload: >-
+            {"repository":${{ toJSON(github.repository) }},"revision":${{ toJSON(steps.source.outputs.revision) }},"runId":${{ steps.source.outputs.run-id }}}
