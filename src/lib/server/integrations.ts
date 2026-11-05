@@ -6,7 +6,7 @@ import {
   createIntegrationCredential,
   revokeIntegrationCredential,
   updateIntegrationCredential,
-} from './auth/integrations.server'
+} from '@/lib/server/auth/integrations.server'
 import { loadIntegrationSettings } from './integrations/settings.server'
 import { getMcpEndpoint } from './mcp/config.server'
 

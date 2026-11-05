@@ -2,11 +2,11 @@ import '@tanstack/react-start/server-only'
 import { z } from 'zod'
 import { requireIdentity } from '@/db/journal-context.server'
 import { DomainError } from '@/lib/domain-errors'
+import { touchIntegrationCredential } from '@/lib/server/auth/integrations.server'
 import {
   hasScope,
   type IntegrationResource,
 } from '@/modules/integrations/scopes'
-import { touchIntegrationCredential } from '../auth/integrations.server'
 import { IntegrationInputError } from './input-schema.server'
 import type {
   IntegrationContext,

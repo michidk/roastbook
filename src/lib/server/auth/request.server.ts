@@ -11,10 +11,10 @@ import {
   defaultIdentity,
   initializeUser,
 } from '@/lib/server/auth/identity.server'
+import { findIntegrationCredential } from '@/lib/server/auth/integrations.server'
 import { validateMcpRequest } from '../mcp/http-policy.server'
 import { getAuth } from './auth.server'
 import { handleAuthRequest } from './http.server'
-import { findIntegrationCredential } from './integrations.server'
 import { authorizeMcpRequest } from './mcp-authorization.server'
 import { isAdminEmail } from './registration.server'
 
