@@ -67,6 +67,7 @@ import type {
   getTasteTagSuggestions,
 } from '@/journal/suggestions'
 import type { getTasteTags } from '@/journal/taste-tags'
+import { beanPurchaseKey } from '@/lib/bean-selection'
 import {
   type DrinkConfiguration,
   drinkConfigurationForBrewingMethod,
@@ -146,7 +147,8 @@ function requestedBeanSelection(
   return requested
     ? {
         beanId: String(requested.id),
-        beanPurchaseId: String(requested.purchaseId),
+        beanPurchaseId:
+          requested.purchaseId == null ? '' : String(requested.purchaseId),
       }
     : undefined
 }
@@ -335,7 +337,8 @@ export function NewShotForm({ data, initialBean, onSaved }: NewShotFormProps) {
       const purchase = beans.find((bean) => String(bean.id) === loaded.beanId)
       return {
         ...loaded,
-        beanPurchaseId: purchase ? String(purchase.purchaseId) : '',
+        beanPurchaseId:
+          purchase?.purchaseId == null ? '' : String(purchase.purchaseId),
       }
     })
     toast.success(`Loaded ${recipe.name}`)
@@ -470,7 +473,9 @@ export function NewShotForm({ data, initialBean, onSaved }: NewShotFormProps) {
 
   const beanOptions = beans
   const selectedBean = beanOptions.find(
-    (bean) => String(bean.purchaseId) === values.beanPurchaseId,
+    (bean) =>
+      beanPurchaseKey(bean) ===
+      (values.beanPurchaseId || `bean:${values.beanId}`),
   )
   const gearOptions = availableGearForShot(values, gear)
   const availableRecipes = recipes.filter(
@@ -602,15 +607,22 @@ export function NewShotForm({ data, initialBean, onSaved }: NewShotFormProps) {
           <BeanPicker
             id="bean"
             label="Bean"
-            value={values.beanPurchaseId}
+            byPurchase
+            value={
+              values.beanPurchaseId ||
+              (values.beanId ? `bean:${values.beanId}` : '')
+            }
             onChange={(beanPurchaseId) => {
               const selected = beanOptions.find(
-                (bean) => String(bean.purchaseId) === beanPurchaseId,
+                (bean) => beanPurchaseKey(bean) === beanPurchaseId,
               )
               setValues((current) => ({
                 ...current,
                 beanId: selected ? String(selected.id) : '',
-                beanPurchaseId: beanPurchaseId ?? '',
+                beanPurchaseId:
+                  selected?.purchaseId == null
+                    ? ''
+                    : String(selected.purchaseId),
               }))
               setHasChosenBean(Boolean(beanPurchaseId))
               setIsDirty(true)

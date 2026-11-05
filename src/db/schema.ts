@@ -372,6 +372,9 @@ export const beans = pgTable(
   {
     ownerId: journalOwner(),
     id: serial('id').primaryKey(),
+    alwaysOnShelf: boolean('always_on_shelf').notNull().default(false),
+    rating: integer('rating'),
+    ratingNote: text('rating_note'),
     name: text('name').notNull(),
     type: beanTypeEnum('type'),
     isDecaf: boolean('is_decaf').notNull().default(false),
@@ -392,6 +395,8 @@ export const beans = pgTable(
   },
   (table) => [
     index('beans_owner_id_idx').on(table.ownerId),
+    uniqueIndex('beans_owner_id_id_unique').on(table.ownerId, table.id),
+    check('beans_rating_check', sql`${table.rating} between 1 and 5`),
     check(
       'beans_altitude_range_check',
       sql`(${table.altitudeMinMeters} is null or ${table.altitudeMinMeters} between 0 and 9000)
@@ -410,6 +415,7 @@ export const beansRelations = relations(beans, ({ one, many }) => ({
   }),
   images: many(beanImages),
   purchases: many(beanPurchases),
+  beanTags: many(beanTagAssignments),
   shots: many(shots),
 }))
 
@@ -473,7 +479,7 @@ export const beanImages = pgTable(
     beanId: integer('bean_id')
       .references(() => beans.id, { onDelete: 'cascade' })
       .notNull(),
-    beanPurchaseId: integer('bean_purchase_id').notNull(),
+    beanPurchaseId: integer('bean_purchase_id'),
     ...imageFile(),
     isThumbnail: boolean('is_thumbnail').default(false).notNull(),
     createdAt: createdAt(),
@@ -2470,4 +2476,60 @@ export const journalCommandReceipts = pgTable(
       .$defaultFn(journalNow),
   },
   (table) => [primaryKey({ columns: [table.ownerId, table.commandId] })],
+)
+
+export const beanTags = pgTable(
+  'bean_tags',
+  {
+    ownerId: journalOwner(),
+    id: serial('id').primaryKey(),
+    name: text('name').notNull(),
+    ...timestamps(),
+  },
+  (table) => [
+    index('bean_tags_owner_id_idx').on(table.ownerId),
+    uniqueIndex('bean_tags_owner_id_id_unique').on(table.ownerId, table.id),
+    uniqueIndex('bean_tags_owner_name_unique').on(
+      table.ownerId,
+      sql`lower(trim(${table.name}))`,
+    ),
+    check(
+      'bean_tags_name_check',
+      sql`length(trim(${table.name})) between 1 and 50`,
+    ),
+  ],
+)
+
+export const beanTagAssignments = pgTable(
+  'bean_tag_assignments',
+  {
+    ownerId: journalOwner(),
+    beanId: integer('bean_id').notNull(),
+    tagId: integer('tag_id').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.ownerId, table.beanId, table.tagId] }),
+    foreignKey({
+      columns: [table.ownerId, table.beanId],
+      foreignColumns: [beans.ownerId, beans.id],
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.ownerId, table.tagId],
+      foreignColumns: [beanTags.ownerId, beanTags.id],
+    }).onDelete('cascade'),
+  ],
+)
+
+export const beanTagAssignmentsRelations = relations(
+  beanTagAssignments,
+  ({ one }) => ({
+    tag: one(beanTags, {
+      fields: [beanTagAssignments.ownerId, beanTagAssignments.tagId],
+      references: [beanTags.ownerId, beanTags.id],
+    }),
+    bean: one(beans, {
+      fields: [beanTagAssignments.ownerId, beanTagAssignments.beanId],
+      references: [beans.ownerId, beans.id],
+    }),
+  }),
 )

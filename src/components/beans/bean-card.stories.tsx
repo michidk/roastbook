@@ -15,6 +15,9 @@ const meta = {
   args: {
     compact: true,
     bean: {
+      alwaysOnShelf: false,
+      rating: null,
+      ratingNote: null,
       ownerId: 'local',
       id: 1,
       name: 'Ethiopia Guji',

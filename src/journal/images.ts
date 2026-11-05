@@ -17,6 +17,7 @@ import {
 } from '@/lib/server-validation'
 
 export type EntityType =
+  | 'beans'
   | 'bean-purchases'
   | 'gear'
   | 'coffee-shops'

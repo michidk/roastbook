@@ -3,7 +3,19 @@
 import { afterEach, expect, mock, setDefaultTimeout, test } from 'bun:test'
 import { readdir, readFile } from 'node:fs/promises'
 import { PGlite } from '@electric-sql/pglite'
-import { createBean, getBeanCollection, updateBean } from '@/journal/beans'
+import {
+  createBeanTag,
+  deleteBeanTag,
+  getBeanTags,
+  updateBeanTag,
+} from '@/journal/bean-tags'
+import {
+  createBean,
+  getBean,
+  getBeanCollection,
+  updateBean,
+} from '@/journal/beans'
+import { createCafeVisit } from '@/journal/cafe-visits'
 import { decodeInput, rejectedPrefix } from '@/journal/codec'
 import { getJournalFunction } from '@/journal/function'
 import { currentScope, LocalJournal } from './client'
@@ -475,4 +487,147 @@ test('a synced journal takes every identifier from its reservation', async () =>
   const { createRoaster } = await import('@/journal/roasters')
   const roaster = await createRoaster({ data: { name: 'Reserved roaster' } })
   expect(roaster.id).toBe(950)
+})
+
+test('bagless coffees stay in the database and shelf membership ignores remaining weight', async () => {
+  const journal = await openJournal(false)
+  const cafe = await createBean({
+    data: { name: 'Tried at a café', createBag: false },
+  })
+  const pinned = await createBean({
+    data: { name: 'House coffee', createBag: false, alwaysOnShelf: true },
+  })
+  const empty = await createBean({ data: { name: 'Empty bag', weight: '0' } })
+  let collection = await getBeanCollection({ data: {} })
+  expect(collection.active.items.map((bean) => bean.id)).toEqual(
+    expect.arrayContaining([pinned.id, empty.id]),
+  )
+  expect(collection.archived.items.map((bean) => bean.id)).toContain(cafe.id)
+  expect(
+    (
+      await journal.client.query(
+        'select * from bean_purchases where bean_id = $1',
+        [cafe.id],
+      )
+    ).rows,
+  ).toHaveLength(0)
+  await updateBean({ data: { id: empty.id, isArchived: true } })
+  await updateBean({ data: { id: pinned.id, alwaysOnShelf: false } })
+  collection = await getBeanCollection({ data: {} })
+  expect(collection.active.items).toHaveLength(0)
+  expect(collection.archived.items).toHaveLength(3)
+})
+
+test('bean ratings average rated brews and personal ratings can be cleared independently of notes', async () => {
+  const journal = await openJournal(false)
+  const bean = await createBean({
+    data: { name: 'Rated coffee', createBag: false },
+  })
+  const method = (
+    await journal.client.query<{ id: number }>(
+      "insert into brewing_methods(owner_id, name) values ('owner-a', 'Filter') returning id",
+    )
+  ).rows[0]
+  if (!method) throw new Error('Missing method')
+  await journal.client.query(
+    "insert into brews(owner_id, bean_id, brewing_method_id, rating) values ('owner-a', $1, $2, 3), ('owner-a', $1, $2, 4), ('owner-a', $1, $2, null)",
+    [bean.id, method.id],
+  )
+  let detail = await getBean({ data: bean.id })
+  expect(detail).toMatchObject({
+    effectiveRating: 3.5,
+    ratedBrewCount: 2,
+    rating: null,
+  })
+  await updateBean({
+    data: { id: bean.id, rating: 5, ratingNote: 'Buy again' },
+  })
+  expect(await getBean({ data: bean.id })).toMatchObject({
+    effectiveRating: 5,
+    averageRating: 3.5,
+    ratingNote: 'Buy again',
+  })
+  await updateBean({ data: { id: bean.id, rating: null } })
+  await journal.client.query(
+    'delete from brews where bean_id = $1 and rating = 3',
+    [bean.id],
+  )
+  detail = await getBean({ data: bean.id })
+  expect(detail).toMatchObject({
+    effectiveRating: 4,
+    ratedBrewCount: 1,
+    ratingNote: 'Buy again',
+  })
+})
+
+test('bean tags can be renamed, filtered and deleted without removing coffees', async () => {
+  await openJournal(false)
+  const tag = await createBeanTag({ data: { name: 'Reorder' } })
+  if (!tag) throw new Error('Missing tag')
+  const bean = await createBean({
+    data: { name: 'Tagged coffee', createBag: false, beanTagIds: [tag.id] },
+  })
+  expect(
+    (await getBeanCollection({ data: { tagId: tag.id } })).totalItems,
+  ).toBe(1)
+  await updateBeanTag({ data: { id: tag.id, name: 'Buy again' } })
+  expect(
+    (await getBean({ data: bean.id }))?.tags.map((tag) => tag.name),
+  ).toEqual(['Buy again'])
+  await expect(
+    createBeanTag({ data: { name: ' BUY AGAIN ' } }),
+  ).rejects.toThrow()
+  await deleteBeanTag({ data: tag.id })
+  expect(await getBeanTags()).toEqual([])
+  expect((await getBean({ data: bean.id }))?.tags).toEqual([])
+})
+
+test('a café visit creates its draft coffee atomically without a bag, including offline replay metadata', async () => {
+  const journal = await openJournal(true)
+  await journal.client.query(
+    "insert into roastbook_local.id_pool(table_name,id) values ('beans', 820), ('cafe_visits', 821)",
+  )
+  const visit = await createCafeVisit({
+    data: { rating: 4, newBean: { name: 'Once at the café', rating: 5 } },
+  })
+  expect(visit.beanId).toBe(820)
+  expect(await getBean({ data: 820 })).toMatchObject({
+    rating: 5,
+    purchaseId: null,
+    isArchived: true,
+  })
+  const [entry] = await outbox(journal)
+  expect(entry?.name).toBe('cafe-visits/createCafeVisit')
+  expect(entry?.recorded['id:beans']).toEqual([820])
+  expect(entry?.recorded['id:cafe_visits']).toEqual([821])
+  expect(entry?.recorded['id:bean_purchases']).toBeUndefined()
+})
+
+test('a failed café draft save rolls back its coffee and rejects foreign owner tags', async () => {
+  const journal = await openJournal(false)
+  await journal.client.query(
+    "insert into bean_tags(owner_id,name) values ('owner-b','Private')",
+  )
+  const foreign = (
+    await journal.client.query<{ id: number }>(
+      "select id from bean_tags where owner_id = 'owner-b'",
+    )
+  ).rows[0]
+  if (!foreign) throw new Error('Missing foreign tag')
+  await expect(
+    createCafeVisit({
+      data: { newBean: { name: 'Must not persist', beanTagIds: [foreign.id] } },
+    }),
+  ).rejects.toThrow()
+  expect(
+    (
+      await journal.client.query(
+        "select * from beans where name = 'Must not persist'",
+      )
+    ).rows,
+  ).toHaveLength(0)
+  expect(
+    (await journal.client.query('select * from cafe_visits')).rows,
+  ).toHaveLength(0)
+  expect(await outbox(journal)).toEqual([])
 })

@@ -5,6 +5,8 @@ export const journalTables = [
   'basket_details',
   'bean_images',
   'bean_purchases',
+  'bean_tags',
+  'bean_tag_assignments',
   'beans',
   'brewer_details',
   'brewing_method_drink_types',

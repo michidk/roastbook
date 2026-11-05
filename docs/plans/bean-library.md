@@ -1,6 +1,7 @@
 # Bean library, optional bags, and café quick creation
 
-Status: proposed. This document describes planned behavior, not shipped features.
+Status: implemented. User-facing behavior is documented in
+[Coffee database and bags](../beans.md).
 
 ## Purpose
 

@@ -46,6 +46,10 @@
 > browser with fictional sample data — no account, no server database. Changes
 > stay in this browser only.
 
+Beans form a coffee database with optional bag tracking, shelf placement, personal
+ratings with brew-average fallback, and custom tags. Log a new café coffee inside
+the visit form. See [Coffee database and bags](docs/beans.md).
+
 ## ☕ What it is
 
 Roastbook is a self-hosted journal for your brews, beans, recipes, café visits,

@@ -11,6 +11,7 @@ import {
   type BeanFormData,
   BeanInfoDiffModal,
 } from '@/components/beans/bean-info-diff-modal'
+import { BeanLibraryFields } from '@/components/beans/bean-library-fields'
 import {
   EntityImageUploadRecovery,
   EntityImageUploadSection,
@@ -87,7 +88,10 @@ export function BeanForm({
   const imageUpload = useImageUpload()
   const { images } = imageUpload
 
-  const form = useFormState(createEmptyBeanFormValues(initialName))
+  const form = useFormState({
+    ...createEmptyBeanFormValues(initialName),
+    createBag: !isArchived,
+  })
 
   useEffect(() => {
     form.set('priceCurrency', defaultCurrency)
@@ -165,14 +169,10 @@ export function BeanForm({
     canSubmit: () => Boolean(form.values.name.trim()),
     submit: async () => {
       const bean = await createBean({
-        data: beanCreatePayload(form.values, { isArchived }),
+        data: beanCreatePayload(form.values),
       })
 
-      const uploadResult = await uploadEntityImages(
-        'bean-purchases',
-        bean.purchaseId,
-        images,
-      )
+      const uploadResult = await uploadEntityImages('beans', bean.id, images)
       imageUpload.removeImages(uploadResult.uploaded)
       if (uploadResult.failures.length > 0) {
         setCreatedBean(bean)
@@ -189,11 +189,7 @@ export function BeanForm({
     if (!createdBean) return
     setIsRetryingPictures(true)
     try {
-      const result = await uploadEntityImages(
-        'bean-purchases',
-        createdBean.purchaseId,
-        pictures,
-      )
+      const result = await uploadEntityImages('beans', createdBean.id, pictures)
       imageUpload.removeImages(result.uploaded)
       setUploadFailures(result.failures)
       if (result.failures.length === 0) await onCreated(createdBean)
@@ -286,6 +282,15 @@ export function BeanForm({
           values={form.values}
           onChange={form.set}
           roasters={roasterOptions}
+          showPurchaseFields={form.values.createBag}
+          showLibraryFields={false}
+          collectionFields={
+            <BeanLibraryFields
+              values={form.values}
+              onChange={form.set}
+              allowBagCreation
+            />
+          }
         />
       </EntityForm>
       {suggestedData ? (

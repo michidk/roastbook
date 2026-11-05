@@ -582,6 +582,20 @@
       "when": 1793836269153,
       "tag": "0082_remove-ai-cost",
       "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1793870430172,
+      "tag": "0083_colossal_bastion",
+      "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1793870611016,
+      "tag": "0084_lonely_satana",
+      "breakpoints": true
     }
   ]
 }

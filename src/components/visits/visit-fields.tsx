@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { BeanPicker } from '@/components/beans/bean-picker'
 import { CoffeeShopPicker } from '@/components/coffee-shops/coffee-shop-picker'
 import { DrinkSelectionFields } from '@/components/drinks/drink-selection-fields'
@@ -17,6 +18,7 @@ export type VisitFieldValues = CafeVisitFormValues & {
 }
 
 type VisitFieldsProps = {
+  readonly beanField?: ReactNode
   readonly values: VisitFieldValues
   readonly choices: {
     readonly coffeeShops: Awaited<ReturnType<typeof getCoffeeShops>>
@@ -44,6 +46,7 @@ type VisitFieldsProps = {
 
 export function VisitFields({
   values,
+  beanField,
   choices,
   visitedAt,
   tasting,
@@ -62,14 +65,16 @@ export function VisitFields({
           coffeeShops={choices.coffeeShops}
           autoFocus={autoFocusCoffeeShop}
         />
-        <BeanPicker
-          id="bean"
-          label="Beans"
-          value={values.beanId}
-          onChange={(value) => onFieldChange('beanId', value)}
-          beans={choices.beans}
-          createAsArchived
-        />
+        {beanField ?? (
+          <BeanPicker
+            id="bean"
+            label="Beans"
+            value={values.beanId}
+            onChange={(value) => onFieldChange('beanId', value)}
+            beans={choices.beans}
+            createAsArchived
+          />
+        )}
         <DateTimeField
           id="visitedAt"
           label="Visited at"

@@ -31,6 +31,7 @@ import {
   ProgressLabel,
   ProgressValue,
 } from '@/components/ui/progress'
+import { StarRating } from '@/components/ui/star-rating'
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
@@ -44,6 +45,12 @@ import {
 import { cn } from '@/lib/utils'
 
 type Bean = {
+  alwaysOnShelf: boolean
+  rating: number | null
+  ratingNote: string | null
+  effectiveRating: number | null
+  ratedBrewCount: number
+  tags: readonly { id: number; name: string }[]
   id: number
   purchaseId: number | null
   name: string
@@ -316,8 +323,8 @@ export function BeanEditContent({
       </div>
       <div className="space-y-4 md:space-y-6">
         <EntityImageGallery
-          entityType="bean-purchases"
-          entityId={bean.purchaseId ?? bean.purchases[0]?.id ?? bean.id}
+          entityType="beans"
+          entityId={bean.id}
           images={bean.images}
           editable
           imageAction={
@@ -374,9 +381,52 @@ export function BeanReadOnlyContent({
       <div className="space-y-4 md:space-y-6">
         <Card>
           <CardHeader>
+            <CardTitle>Your coffee</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {bean.alwaysOnShelf ? (
+              <Badge variant="secondary">Always on shelf</Badge>
+            ) : null}
+            {bean.effectiveRating == null ? (
+              <p className="text-muted-foreground">Not rated</p>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <StarRating
+                  value={bean.effectiveRating}
+                  readOnly
+                  variant="compact"
+                />
+                <span className="text-sm text-muted-foreground">
+                  {bean.rating == null
+                    ? `Brew average from ${bean.ratedBrewCount} rated brews`
+                    : 'Your rating'}
+                </span>
+              </div>
+            )}
+            {bean.ratingNote ? (
+              <p className="whitespace-pre-wrap">{bean.ratingNote}</p>
+            ) : null}
+            {bean.tags.length ? (
+              <div className="flex flex-wrap gap-2">
+                {bean.tags.map((tag) => (
+                  <Badge key={tag.id} variant="secondary">
+                    {tag.name}
+                  </Badge>
+                ))}
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
             <CardTitle>Bags</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {!bean.purchases.length ? (
+              <p className="text-sm text-muted-foreground">
+                No bags tracked for this coffee. Add a bag whenever you buy it.
+              </p>
+            ) : null}
             {bean.purchases.map((purchase) => {
               const used = purchase.shots.reduce(
                 (total, shot) => total + Number(shot.doseGrams ?? 0),
@@ -576,8 +626,8 @@ export function BeanReadOnlyContent({
           ) : null}
           {bean.images.length > 0 ? (
             <EntityImageGallery
-              entityType="bean-purchases"
-              entityId={bean.purchaseId ?? bean.purchases[0]?.id ?? bean.id}
+              entityType="beans"
+              entityId={bean.id}
               images={bean.images}
             />
           ) : null}

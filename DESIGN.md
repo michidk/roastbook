@@ -200,7 +200,11 @@ forms), `wide` (`max-w-5xl`, rich records, settings), `content` (`max-w-3xl`),
   values. The whole card is one named link; the image is decorative.
 - `/beans` card heights: 288px, 320px from `sm`, 304px from `lg`. The brew
   form's selected-bean card keeps the taller geometry.
-- A bean is a stable profile; purchases are bags (roast date, initial and
+- A bean is a stable profile with optional bags, a personal rating and note, and
+  customizable bean tags. Always on shelf or an unarchived bag keeps it active;
+  empty bags remain active until explicitly archived. Other profiles live in
+  Archive, including café-only coffees.
+- Purchases are bags (roast date, initial and
   remaining weight, price, shop name and URL, On shelf/Archived), newest first.
   "Add another bag" copies the latest bag's weight, price and shop, leaves the
   roast date empty, and never duplicates the profile. Pictures belong to the

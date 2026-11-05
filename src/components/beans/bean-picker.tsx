@@ -2,6 +2,7 @@ import { Bean as BeanIcon } from 'lucide-react'
 import { BeanForm } from '@/components/beans/bean-form'
 import { EntityPicker } from '@/components/form/entity-picker'
 import { ImageWithFallback } from '@/components/image-with-fallback'
+import { beanPurchaseKey } from '@/lib/bean-selection'
 import { thumbnailUrl } from '@/lib/image-url'
 import { cn } from '@/lib/utils'
 
@@ -35,6 +36,7 @@ interface BeanPickerProps {
   className?: string
   autoFocus?: boolean
   createAsArchived?: boolean
+  byPurchase?: boolean
 }
 
 export function BeanPicker({
@@ -50,13 +52,13 @@ export function BeanPicker({
   className,
   autoFocus,
   createAsArchived = false,
+  byPurchase = false,
 }: BeanPickerProps) {
+  const key = (bean: BeanOption) =>
+    byPurchase ? beanPurchaseKey(bean) : String(bean.id)
   const hydratedSuggestions = suggestions?.map((suggestion) => {
-    const suggestionKey = suggestion.purchaseId ?? suggestion.id
-    return (
-      beans.find((bean) => (bean.purchaseId ?? bean.id) === suggestionKey) ??
-      suggestion
-    )
+    const suggestionKey = key(suggestion)
+    return beans.find((bean) => key(bean) === suggestionKey) ?? suggestion
   })
 
   return (
@@ -67,7 +69,7 @@ export function BeanPicker({
       onChange={onChange}
       items={beans}
       suggestions={hydratedSuggestions}
-      getKey={(bean) => bean.purchaseId ?? bean.id}
+      getKey={key}
       getLabel={(bean) => bean.name}
       getDescription={(bean) =>
         [
@@ -102,14 +104,19 @@ export function BeanPicker({
       dialogTitle="Add beans"
       dialogDescription={
         createAsArchived
-          ? 'Create these beans in the archive without adding them to your shelf.'
+          ? 'Save this coffee without a bag or adding it to your shelf.'
           : 'Create the bag of beans without leaving this form.'
       }
       renderCreateForm={({ initialName, onCreated, onCancel }) => (
         <BeanForm
           initialName={initialName}
           isArchived={createAsArchived}
-          onCreated={(bean) => onCreated({ id: bean.id, name: bean.name })}
+          onCreated={(bean) =>
+            onCreated({
+              id: byPurchase ? beanPurchaseKey(bean) : bean.id,
+              name: bean.name,
+            })
+          }
           onCancel={onCancel}
         />
       )}

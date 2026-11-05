@@ -7,12 +7,14 @@ import { getControlDb } from '@/db/connection.server'
 import { type JournalIdentity, withJournal } from '@/db/journal-context.server'
 import { journalInsertValues, owned } from '@/db/journal-scope.server'
 import { authUsers, gear, gearImages } from '@/db/schema'
+import { createBean, getBean } from '@/journal/beans'
 import { storeEntityImage } from '@/journal/domain/entity-image-store'
 import {
   imageStoragePolicy,
   loadImageStorageUsage,
 } from '@/journal/domain/image-storage'
 import { deleteEntityWithMedia } from '@/journal/domain/media-lifecycle'
+import { deleteEntityImage, setImageAsThumbnail } from '@/journal/images'
 import { getStoredImagePaths } from '@/lib/image-path'
 import { getStorage } from '@/lib/storage'
 
@@ -148,6 +150,38 @@ suite('journal image storage', () => {
       expect((await loadImageStorageUsage()).totalBytes).toBe(0)
       await upload(otherItem)
       expect((await loadImageStorageUsage()).imageCount).toBe(1)
+    })
+  })
+  test('stores, selects and deletes coffee pictures without requiring a bag', async () => {
+    await asAlice(async () => {
+      const bean = await createBean({
+        data: { name: 'Café-only coffee', createBag: false },
+      })
+      try {
+        const image = await storeEntityImage({
+          entityType: 'beans',
+          entityId: bean.id,
+          filename: 'coffee.png',
+          mimeType: 'image/png',
+          binaryData: input,
+        })
+        await setImageAsThumbnail({
+          data: { entityType: 'beans', entityId: bean.id, imageId: image.id },
+        })
+        const detail = await getBean({ data: bean.id })
+        expect(detail?.purchases).toEqual([])
+        expect(detail?.images[0]).toMatchObject({
+          beanId: bean.id,
+          beanPurchaseId: null,
+          isThumbnail: true,
+        })
+        await deleteEntityImage({
+          data: { entityType: 'beans', entityId: bean.id, imageId: image.id },
+        })
+        expect((await getBean({ data: bean.id }))?.images).toEqual([])
+      } finally {
+        await deleteEntityWithMedia('beans', bean.id)
+      }
     })
   })
 })

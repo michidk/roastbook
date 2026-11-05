@@ -25,7 +25,7 @@ function NewBeanPage() {
     <Page width="form">
       <FormPageHeader
         title="Add beans"
-        description="Add a new bag of coffee to your collection"
+        description="Save a coffee profile and optionally track a bag"
         leading={
           <Button variant="outline" size="icon" asChild>
             <Link to="/beans" aria-label="Back to beans">

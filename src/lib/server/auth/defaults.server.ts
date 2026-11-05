@@ -2,6 +2,7 @@ import '@tanstack/react-start/server-only'
 import { sql } from 'drizzle-orm'
 import type { getControlDb } from '@/db/connection.server'
 import {
+  beanTags,
   brewingMethodDrinkTypes,
   brewingMethods,
   drinkOptionGroups,
@@ -18,6 +19,9 @@ type Transaction = Parameters<
 
 export async function createJournalDefaults(tx: Transaction, userId: string) {
   await tx.execute(sql`select set_config('roastbook.user_id', ${userId}, true)`)
+  await tx
+    .insert(beanTags)
+    .values([{ name: 'Reorder' }, { name: 'Want to try' }])
   const drinks = await tx
     .insert(drinkTypes)
     .values(
