@@ -18,9 +18,9 @@ browser-local demo is described in [Demo mode](demo-mode.md).
 - Terminate TLS at a reverse proxy, keep the application port private, reject
   unexpected Host values, and have the proxy overwrite `AUTH_IP_HEADER`. Do not
   cache authenticated HTML, RPC, media, or export responses.
-- Keep a new self-hosted instance private until the first verified account has
-  claimed the journal. With `DEPLOYMENT_MODE=hosted`, set `AUTH_ADMIN_EMAIL`
-  before accepting signups.
+- Set `AUTH_ADMIN_EMAIL` to your own address before enabling authentication;
+  only listed addresses become administrators, and the first of them to sign in
+  takes over the existing shared journal.
 - Administrators manage accounts but cannot read other journals.
 - Journal queries run as the restricted `roastbook_journal` PostgreSQL role
   under forced row-level security. Run migrations as the application's
@@ -50,8 +50,8 @@ blocked. Restart the application after changing the value.
 3. Keep `AUTH_ENABLED=false` to keep the shared journal; existing data stays
    owned by the default identity.
 4. To adopt accounts, sync pending offline changes, configure email,
-   `AUTH_URL`, and `AUTH_SECRET`, enable authentication, and sign in privately
-   as the intended administrator; that first account claims the journal.
+   `AUTH_URL`, `AUTH_SECRET`, and `AUTH_ADMIN_EMAIL`, enable authentication,
+   and sign in with that address; your account claims the journal.
 5. Start the account worker and check sign-in, images, and an export before
    admitting other users.
 

@@ -73,7 +73,8 @@ The Secret supplies `AUTH_URL`, `AUTH_SECRET`, `EMAIL_FROM`, and `SMTP_URL` or
 `EMAIL_PROVIDER=resend` with `RESEND_API_KEY`; optionally
 `AUTH_SIGNUP_ENABLED`, `DEPLOYMENT_MODE`, `AUTH_ADMIN_EMAIL`,
 `AUTH_ALLOWED_EMAILS`, and `AUTH_IP_HEADER`. Registration is closed unless an
-address is listed or `AUTH_SIGNUP_ENABLED=true`. The chart sets `AUTH_ENABLED`
+address is listed or `AUTH_SIGNUP_ENABLED=true`. Only `AUTH_ADMIN_EMAIL`
+addresses become administrators, so include yours. The chart sets `AUTH_ENABLED`
 from `auth.enabled` and adds a worker sidecar for exports and deletion; give it
 temporary disk for ZIP archives.
 

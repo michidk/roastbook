@@ -51,7 +51,7 @@ a new client; see [Journal architecture](client-data.md).
 | `AUTH_URL` | — | Auth/proxy | Public browser origin, also with auth disabled |
 | `AUTH_SECRET` | — | Auth | Random secret, at least 32 characters |
 | `AUTH_SIGNUP_ENABLED` | `false` | No | Open signup to any email |
-| `AUTH_ADMIN_EMAIL` | — | Hosted | Comma-separated admin emails |
+| `AUTH_ADMIN_EMAIL` | — | Hosted | Comma-separated admin emails; set yours |
 | `AUTH_ALLOWED_EMAILS` | — | No | Comma-separated signup emails |
 | `AUTH_IP_HEADER` | `x-real-ip` | No | Client IP header from the proxy |
 | `EMAIL_PROVIDER` | `smtp` | No | `smtp` or `resend` |
@@ -76,11 +76,14 @@ Signup is closed by default: only addresses in `AUTH_ADMIN_EMAIL` or
 addresses receive no sign-in email. A new account is created only after the
 person confirms it in a second step on the sign-in page.
 
-On a fresh self-hosted instance, the first verified account becomes
-administrator and claims the existing journal, even when signup is closed, so
-keep the instance private until then. `DEPLOYMENT_MODE=hosted` requires
-authentication, HTTPS, and `AUTH_ADMIN_EMAIL`; every other signup gets an empty
-private journal. Proxy requirements are in [Deployment](deployment.md).
+Administrators come only from `AUTH_ADMIN_EMAIL`: set it to your own address
+before enabling authentication. A listed user is made administrator at sign-in,
+and again on their next request if the list changes later. Removing an address
+does not demote anyone; change roles in Admin > Users. On a self-hosted
+instance, the first listed administrator to sign in takes over the existing
+shared journal; everyone else gets an empty private journal.
+`DEPLOYMENT_MODE=hosted` requires authentication, HTTPS, and
+`AUTH_ADMIN_EMAIL`. Proxy requirements are in [Deployment](deployment.md).
 
 ## S3-compatible storage
 

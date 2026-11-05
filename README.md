@@ -197,9 +197,11 @@ docker compose up --build
 
 Open <http://localhost:3000> after the migration completes.
 
-For private accounts, set `AUTH_URL`, `AUTH_SECRET`, and email delivery in
-`.env`, then run `docker compose -f docker-compose.auth.yaml up --build`. The
-first verified user becomes administrator. See
+For private accounts, set `AUTH_URL`, `AUTH_SECRET`, email delivery, and
+`AUTH_ADMIN_EMAIL` (your own email address) in `.env`, then run
+`docker compose -f docker-compose.auth.yaml up --build`. Only addresses in
+`AUTH_ADMIN_EMAIL` become administrators, and the first of them to sign in takes
+over an existing shared journal. See
 [Configuration](docs/configuration.md) and [Deployment](docs/deployment.md),
 including upgrade steps for an existing journal.
 
