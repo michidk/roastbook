@@ -6,12 +6,19 @@ import { PGlite } from '@electric-sql/pglite'
 import Ajv2020 from 'ajv/dist/2020'
 import addFormats from 'ajv-formats'
 import {
+  createBeanTag,
+  deleteBeanTag,
+  getBeanTags,
+  updateBeanTag,
+} from '@/journal/bean-tags'
+import {
   createBean,
   deleteBean,
   getBean,
   getBeanCollection,
   updateBean,
 } from '@/journal/beans'
+import { createCafeVisit } from '@/journal/cafe-visits'
 import { decodeInput, rejectedPrefix } from '@/journal/codec'
 import { getJournalFunction } from '@/journal/function'
 import responseSchemas from '@/lib/server/integrations/response-schemas.gen.json'
@@ -19,13 +26,6 @@ import { currentScope, LocalJournal } from './client'
 import { loadLocalMedia, localMediaObjectUrl } from './media'
 import { migrateJournal } from './migrate'
 import { applyJournalChanges, replaceJournalRows } from './snapshot'
-import {
-  createBeanTag,
-  deleteBeanTag,
-  getBeanTags,
-  updateBeanTag,
-} from '@/journal/bean-tags'
-import { createCafeVisit } from '@/journal/cafe-visits' 
 
 const migrations = Object.fromEntries(
   (await readdir('drizzle'))
