@@ -5,7 +5,7 @@ const suite = process.env.TEST_DATABASE_URL ? describe : describe.skip
 suite('shared journal writes behind a reverse proxy', () => {
   beforeAll(() => {
     process.env.AUTH_ENABLED = 'false'
-    process.env.AUTH_URL = 'https://coffee.example.test'
+    process.env.PUBLIC_URL = 'https://coffee.example.test'
   })
   test('accepts the public origin and rejects foreign or cross-site writes', async () => {
     for (const [origin, fetchSite, status] of [

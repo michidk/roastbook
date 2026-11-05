@@ -11,6 +11,7 @@ provides private accounts; Hodor is optional for a shared journal.
 - Local development and verification: `docs/development.md`
 - Runtime configuration: `docs/configuration.md`
 - Docker, Helm, and security boundary: `docs/deployment.md`
+- Upgrade steps between releases: `docs/upgrading.md`
 - Demo edition and Vercel build: `docs/demo-mode.md`
 - Visual and interaction rules: `DESIGN.md`
 - Design files, capture, and editor: `design/README.md`

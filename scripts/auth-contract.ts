@@ -23,7 +23,7 @@ type Message = { to: string; text: string }
 export async function verifyAuthContract(
   readMessages: () => Promise<Message[]>,
 ) {
-  const origin = new URL(getServerEnv().AUTH_URL ?? '').origin
+  const origin = new URL(getServerEnv().PUBLIC_URL ?? '').origin
   const database = getControlDb()
   const prefix = `contract-${randomUUID()}`
   const address = (name: string) => `${prefix}-${name}@example.test`
@@ -35,7 +35,9 @@ export async function verifyAuthContract(
   const flowB = address('flow-b')
   const termsEmail = address('terms')
   const policy = signUpPolicy()
+  const [listedAdminEmail] = getServerEnv().AUTH_ADMIN_EMAIL
   const emails = [
+    ...(listedAdminEmail ? [listedAdminEmail] : []),
     termsEmail,
     adminEmail,
     userEmail,
@@ -198,6 +200,27 @@ export async function verifyAuthContract(
             .where(eq(authUsers.email, termsEmail))
         ).length,
         0,
+      )
+    }
+    if (listedAdminEmail) {
+      const listed = await login(listedAdminEmail)
+      const role = async () =>
+        (
+          await database
+            .select({ role: authUsers.role })
+            .from(authUsers)
+            .where(eq(authUsers.id, listed.user.id))
+        )[0]?.role
+      assert.equal(await role(), 'admin', 'AUTH_ADMIN_EMAIL grants admin')
+      await database
+        .update(authUsers)
+        .set({ role: 'user' })
+        .where(eq(authUsers.id, listed.user.id))
+      await dispatch('/private', undefined, listed.cookie)
+      assert.equal(
+        await role(),
+        'admin',
+        'a listed admin is promoted again on the next request',
       )
     }
     const admin = await login(adminEmail)

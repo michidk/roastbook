@@ -31,7 +31,7 @@ const server = Bun.serve({
 })
 const origin = server.url.origin
 const resource = `${origin}/api/mcp`
-process.env.AUTH_URL = origin
+process.env.PUBLIC_URL = origin
 
 const { getControlDb, getJournalDb, getOAuthLockDb } = await import(
   '../src/db/connection.server'

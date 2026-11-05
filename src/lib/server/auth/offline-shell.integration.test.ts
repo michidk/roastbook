@@ -5,7 +5,7 @@ const suite = process.env.TEST_DATABASE_URL ? describe : describe.skip
 suite('public offline shell and private request boundaries', () => {
   beforeAll(() => {
     process.env.AUTH_ENABLED = 'true'
-    process.env.AUTH_URL = 'https://coffee.example'
+    process.env.PUBLIC_URL = 'https://coffee.example'
     process.env.AUTH_SECRET =
       'isolated-shell-test-secret-at-least-thirty-two-characters'
     process.env.EMAIL_FROM = 'coffee@example.test'

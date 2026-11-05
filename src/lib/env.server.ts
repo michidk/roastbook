@@ -29,7 +29,7 @@ const serverSchema = {
     .optional(),
   AUTH_ENABLED: booleanString,
   DEPLOYMENT_MODE: z.enum(['self-hosted', 'hosted']).default('self-hosted'),
-  AUTH_URL: z.url().optional(),
+  PUBLIC_URL: z.url().optional(),
   AUTH_SECRET: z.string().min(32).optional(),
   AUTH_SIGNUP_ENABLED: booleanString,
   AUTH_ADMIN_EMAIL: emailList,
@@ -119,7 +119,8 @@ export function parseServerEnv(
       ROASTBOOK_SOURCE_REVISION: runtimeEnvironment.ROASTBOOK_SOURCE_REVISION,
       AUTH_ENABLED: runtimeEnvironment.AUTH_ENABLED,
       DEPLOYMENT_MODE: runtimeEnvironment.DEPLOYMENT_MODE,
-      AUTH_URL: runtimeEnvironment.AUTH_URL,
+      // AUTH_URL is the former name, still accepted.
+      PUBLIC_URL: runtimeEnvironment.PUBLIC_URL ?? runtimeEnvironment.AUTH_URL,
       AUTH_SECRET: runtimeEnvironment.AUTH_SECRET,
       AUTH_SIGNUP_ENABLED: runtimeEnvironment.AUTH_SIGNUP_ENABLED,
       AUTH_ADMIN_EMAIL: runtimeEnvironment.AUTH_ADMIN_EMAIL,
@@ -206,7 +207,7 @@ export function parseServerEnv(
             })
         }
         if (environment.AUTH_ENABLED) {
-          requireVariable('AUTH_URL', environment.AUTH_URL)
+          requireVariable('PUBLIC_URL', environment.PUBLIC_URL)
           requireVariable('AUTH_SECRET', environment.AUTH_SECRET)
           requireVariable('EMAIL_FROM', environment.EMAIL_FROM)
           if (!managed)
@@ -224,12 +225,12 @@ export function parseServerEnv(
               environment.AUTH_ADMIN_EMAIL.length,
             )
             if (
-              environment.AUTH_URL &&
-              !environment.AUTH_URL.startsWith('https://')
+              environment.PUBLIC_URL &&
+              !environment.PUBLIC_URL.startsWith('https://')
             )
               context.addIssue({
                 code: 'custom',
-                path: ['AUTH_URL'],
+                path: ['PUBLIC_URL'],
                 message: 'Hosted authentication requires HTTPS',
               })
           }

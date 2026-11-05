@@ -16,6 +16,7 @@ import { validateMcpRequest } from '../mcp/http-policy.server'
 import { getAuth } from './auth.server'
 import { handleAuthRequest } from './http.server'
 import { authorizeMcpRequest } from './mcp-authorization.server'
+import { isAdminEmail } from './registration.server'
 
 export function hashIntegrationToken(token: string) {
   return createHash('sha256').update(token).digest('hex')
@@ -90,10 +91,18 @@ async function resolveJournalIdentity(
     .select({ role: authUsers.role })
     .from(authUsers)
     .where(eq(authUsers.id, session.user.id))
+  // AUTH_ADMIN_EMAIL can change between deploys; listed users are promoted on
+  // their next request. Admins granted in the UI or database stay admins.
+  const listed = isAdminEmail(env, session.user.email)
+  if (listed && current?.role !== 'admin')
+    await getControlDb()
+      .update(authUsers)
+      .set({ role: 'admin' })
+      .where(eq(authUsers.id, session.user.id))
   return {
     id: session.user.id,
     email: session.user.email,
-    role: current?.role === 'admin' ? 'admin' : 'user',
+    role: listed || current?.role === 'admin' ? 'admin' : 'user',
     authentication: true,
     authenticatedAt: session.session.createdAt,
   }
@@ -164,7 +173,7 @@ async function handlePrivateRequest(
     !path.startsWith('/api/shottimer/')
   ) {
     const origin = request.headers.get('origin')
-    if (origin && origin !== requestOrigin(request, getServerEnv().AUTH_URL))
+    if (origin && origin !== requestOrigin(request, getServerEnv().PUBLIC_URL))
       return new Response('Forbidden', { status: 403 })
     if (request.headers.get('sec-fetch-site') === 'cross-site')
       return new Response('Forbidden', { status: 403 })

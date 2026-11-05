@@ -18,9 +18,9 @@ browser-local demo is described in [Demo mode](demo-mode.md).
 - Terminate TLS at a reverse proxy, keep the application port private, reject
   unexpected Host values, and have the proxy overwrite `AUTH_IP_HEADER`. Do not
   cache authenticated HTML, RPC, media, or export responses.
-- Keep a new self-hosted instance private until the first verified account has
-  claimed the journal. With `DEPLOYMENT_MODE=hosted`, set `AUTH_ADMIN_EMAIL`
-  before accepting signups.
+- Set `AUTH_ADMIN_EMAIL` to your own address before enabling authentication;
+  only listed addresses become administrators, and the first of them to sign in
+  takes over the existing shared journal.
 - Administrators manage accounts but cannot read other journals.
 - Journal queries run as the restricted `roastbook_journal` PostgreSQL role
   under forced row-level security. Run migrations as the application's
@@ -32,10 +32,13 @@ browser-local demo is described in [Demo mode](demo-mode.md).
 
 ### Public URL behind a reverse proxy
 
-Set `AUTH_URL` to the URL used in the browser, for example
-`https://coffee.example.com`, even with `AUTH_ENABLED=false`. The Hodor Compose
-file forwards this value from `.env`; Helm accepts `auth.url`. With built-in
-accounts, `AUTH_URL` can also come from `auth.existingSecret`.
+Set `PUBLIC_URL` to the URL used in the browser, for example
+`https://coffee.example.com`. Built-in accounts require it for sign-in links,
+passkeys, cookies, and MCP. Without accounts it matters only when a proxy
+changes the `Host` header; otherwise the request's own origin is used. The
+Compose files forward it from `.env`; Helm accepts `publicUrl` or `PUBLIC_URL`
+in `auth.existingSecret`. `AUTH_URL` (Helm: `auth.url`) is the former name and
+still works.
 
 Both the journal boundary and server-function CSRF middleware use this origin.
 Without it, they use the incoming request URL, which may be an internal HTTP
@@ -45,13 +48,16 @@ blocked. Restart the application after changing the value.
 
 ## Upgrading an existing journal
 
+Upgrading from a release before accounts and the SQL journal? Follow
+[Upgrading](upgrading.md) first.
+
 1. Back up PostgreSQL and uploaded files and verify the restore.
 2. Stop writers and run `bun run db:migrate` as the database owner.
 3. Keep `AUTH_ENABLED=false` to keep the shared journal; existing data stays
    owned by the default identity.
 4. To adopt accounts, sync pending offline changes, configure email,
-   `AUTH_URL`, and `AUTH_SECRET`, enable authentication, and sign in privately
-   as the intended administrator; that first account claims the journal.
+   `PUBLIC_URL`, `AUTH_SECRET`, and `AUTH_ADMIN_EMAIL`, enable authentication,
+   and sign in with that address; your account claims the journal.
 5. Start the account worker and check sign-in, images, and an export before
    admitting other users.
 
@@ -65,7 +71,7 @@ in both authentication modes and exposes read tools plus `create_brew`; no
 tool edits or deletes data.
 
 With built-in accounts, MCP clients sign in through OAuth (Authorization Code
-with PKCE) and a consent page on the `AUTH_URL` origin:
+with PKCE) and a consent page on the `PUBLIC_URL` origin:
 
 ```bash
 codex mcp add roastbook --url https://coffee.example.com/api/mcp
@@ -133,7 +139,7 @@ For private accounts use the standalone `docker-compose.auth.yaml` instead,
 without Hodor:
 
 ```bash
-# Set AUTH_URL, AUTH_SECRET, EMAIL_FROM, and SMTP_URL or RESEND_API_KEY in .env.
+# Set PUBLIC_URL, AUTH_SECRET, EMAIL_FROM, and SMTP_URL or RESEND_API_KEY in .env.
 docker compose -f docker-compose.auth.yaml up --build
 ```
 

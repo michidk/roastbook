@@ -29,9 +29,9 @@ import {
 
 function createAuth() {
   const env = getServerEnv()
-  if (!env.AUTH_ENABLED || !env.AUTH_URL || !env.AUTH_SECRET)
+  if (!env.AUTH_ENABLED || !env.PUBLIC_URL || !env.AUTH_SECRET)
     throw new Error('Authentication is disabled or incomplete')
-  const origin = new URL(env.AUTH_URL).origin
+  const origin = new URL(env.PUBLIC_URL).origin
   const secret = env.AUTH_SECRET
   return betterAuth({
     appName: 'Roastbook',

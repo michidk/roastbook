@@ -218,7 +218,7 @@ export async function requestAccountDeletion() {
       expiresAt: new Date(Date.now() + 600_000),
     })
   })
-  const url = new URL('/settings/account', getServerEnv().AUTH_URL)
+  const url = new URL('/settings/account', getServerEnv().PUBLIC_URL)
   url.hash = new URLSearchParams({ delete: token }).toString()
   await sendAccountEmail(
     identity.email,

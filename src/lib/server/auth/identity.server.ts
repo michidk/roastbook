@@ -35,12 +35,15 @@ export async function initializeUser(user: {
       .where(eq(authUsers.id, user.id))
       .for('update')
     if (current?.journalInitializedAt) return
-    const firstSelfHost =
-      env.DEPLOYMENT_MODE === 'self-hosted' && !instance.bootstrapCompletedAt
-    if (!firstSelfHost && !mayRegister(env, user.email)) {
+    if (!mayRegister(env, user.email))
       throw new Error('Registration is disabled')
-    }
-    if (firstSelfHost) {
+    const admin = isAdminEmail(env, user.email)
+    // The first configured admin to sign in takes over the shared journal.
+    const claimsSharedJournal =
+      admin &&
+      env.DEPLOYMENT_MODE === 'self-hosted' &&
+      !instance.bootstrapCompletedAt
+    if (claimsSharedJournal) {
       await tx.execute(
         sql`select set_config('roastbook.bootstrap', 'true', true)`,
       )
@@ -78,12 +81,12 @@ export async function initializeUser(user: {
         .set({ defaultUserId: user.id, bootstrapCompletedAt: new Date() })
         .where(eq(instanceIdentity.id, 1))
     }
-    if (!firstSelfHost) await createJournalDefaults(tx, user.id)
+    if (!claimsSharedJournal) await createJournalDefaults(tx, user.id)
     await tx
       .update(authUsers)
       .set({ journalInitializedAt: new Date() })
       .where(eq(authUsers.id, user.id))
-    if (firstSelfHost || isAdminEmail(env, user.email))
+    if (admin)
       await tx
         .update(authUsers)
         .set({ role: 'admin' })

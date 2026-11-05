@@ -5,9 +5,9 @@ envFrom:
       name: {{ required "auth.existingSecret is required for built-in authentication" .Values.auth.existingSecret }}
 {{- end }}
 env:
-  {{- if .Values.auth.url }}
-  - name: AUTH_URL
-    value: {{ .Values.auth.url | quote }}
+  {{- with .Values.publicUrl | default .Values.auth.url }}
+  - name: PUBLIC_URL
+    value: {{ . | quote }}
   {{- end }}
   - name: AUTH_ENABLED
     value: {{ .Values.auth.enabled | quote }}

@@ -17,7 +17,7 @@ import {
 
 const matchesPublicOrigin = createServerOnlyFn(
   (origin: string, { request }: { request: Request }) =>
-    origin === requestOrigin(request, getServerEnv().AUTH_URL),
+    origin === requestOrigin(request, getServerEnv().PUBLIC_URL),
 )
 
 const identityRequestMiddleware = createMiddleware().server(

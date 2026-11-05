@@ -27,6 +27,21 @@ describe('server environment', () => {
     expect(environment.STORAGE_PATH).toBe('./uploads')
   })
 
+  test('reads the former AUTH_URL name when PUBLIC_URL is unset', () => {
+    const base = { DATABASE_URL: databaseUrl }
+    expect(
+      parseServerEnv({ ...base, AUTH_URL: 'https://old.example.test' })
+        .PUBLIC_URL,
+    ).toBe('https://old.example.test')
+    expect(
+      parseServerEnv({
+        ...base,
+        AUTH_URL: 'https://old.example.test',
+        PUBLIC_URL: 'https://new.example.test',
+      }).PUBLIC_URL,
+    ).toBe('https://new.example.test')
+  })
+
   test('requires the database URL', () => {
     expect(() => parseServerEnv({})).toThrow(
       'DATABASE_URL environment variable is required',
@@ -66,7 +81,7 @@ describe('authentication deployment configuration', () => {
   const authenticated = {
     DATABASE_URL: databaseUrl,
     AUTH_ENABLED: 'true',
-    AUTH_URL: 'https://coffee.example.test',
+    PUBLIC_URL: 'https://coffee.example.test',
     AUTH_SECRET: 'a'.repeat(64),
     EMAIL_FROM: 'coffee@example.test',
     SMTP_URL: 'smtp://localhost:1025',
@@ -89,7 +104,7 @@ describe('authentication deployment configuration', () => {
         ...authenticated,
         DEPLOYMENT_MODE: 'hosted',
         AUTH_ADMIN_EMAIL: 'owner@example.test',
-        AUTH_URL: 'http://coffee.example.test',
+        PUBLIC_URL: 'http://coffee.example.test',
       }),
     ).toThrow('HTTPS')
     expect(

@@ -17,10 +17,10 @@ export const OAUTH_DISCOVERY_PATHS = new Set([
 export function mcpAuthenticationRequired() {
   const env = getServerEnv()
   const headers = new Headers({ 'Cache-Control': 'no-store' })
-  if (env.AUTH_ENABLED && env.AUTH_URL)
+  if (env.AUTH_ENABLED && env.PUBLIC_URL)
     headers.set(
       'WWW-Authenticate',
-      `Bearer resource_metadata="${new URL('/.well-known/oauth-protected-resource/api/mcp', env.AUTH_URL).href}"`,
+      `Bearer resource_metadata="${new URL('/.well-known/oauth-protected-resource/api/mcp', env.PUBLIC_URL).href}"`,
     )
   else headers.set('WWW-Authenticate', 'Bearer realm="Roastbook MCP"')
   return Response.json(
@@ -37,7 +37,7 @@ export async function authorizeMcpRequest(
   next: () => Promise<Response>,
 ) {
   const env = getServerEnv()
-  if (!env.AUTH_ENABLED || !env.AUTH_URL) return mcpAuthenticationRequired()
+  if (!env.AUTH_ENABLED || !env.PUBLIC_URL) return mcpAuthenticationRequired()
   const protectedHandler = requireMcpAuth(
     getAuth(),
     async (_request, claims) => {
@@ -97,14 +97,14 @@ export async function authorizeMcpRequest(
       )
     },
     {
-      resource: `${new URL(env.AUTH_URL).origin}/api/mcp`,
+      resource: `${new URL(env.PUBLIC_URL).origin}/api/mcp`,
       challengeScopes: ['mcp:read'],
       requiredScopes: ['mcp:read'],
     },
   )
   // DPoP signs the public URL. Reverse proxies may expose an internal scheme
   // or host to the runtime, so use the configured resource, never forwarded input.
-  const publicRequest = new Request(new URL('/api/mcp', env.AUTH_URL), {
+  const publicRequest = new Request(new URL('/api/mcp', env.PUBLIC_URL), {
     method: request.method,
     headers: request.headers,
   })
