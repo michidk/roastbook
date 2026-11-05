@@ -250,6 +250,7 @@ migrations on start. See [Development and testing](docs/development.md).
 | [Development and testing](docs/development.md) | Workflow, tests, tooling |
 | [Configuration reference](docs/configuration.md) | Every environment variable |
 | [Deployment](docs/deployment.md) | Docker, Helm, security boundary, MCP |
+| [Upgrading](docs/upgrading.md) | Required changes for the multi-user release |
 | [Offline journaling](docs/offline.md) | Offline coverage, sync, and conflicts |
 | [Browser-local demo](docs/demo-mode.md) | Demo data, restrictions, and builds |
 | [Journal architecture](docs/client-data.md) | Journal functions, local database, sync |

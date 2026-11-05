@@ -45,6 +45,9 @@ blocked. Restart the application after changing the value.
 
 ## Upgrading an existing journal
 
+Upgrading from a release before accounts and the SQL journal? Follow
+[Upgrading](upgrading.md) first.
+
 1. Back up PostgreSQL and uploaded files and verify the restore.
 2. Stop writers and run `bun run db:migrate` as the database owner.
 3. Keep `AUTH_ENABLED=false` to keep the shared journal; existing data stays
