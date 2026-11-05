@@ -4,7 +4,10 @@ import {
   INTEGRATION_SCOPES,
 } from '@/modules/integrations/scopes'
 import { toInputJsonSchema } from './input-schema.server'
-import { INTEGRATION_OPERATIONS } from './operations.server'
+import {
+  INTEGRATION_OPERATIONS,
+  type IntegrationOperation,
+} from './operations.server'
 
 type JsonSchema = Record<string, unknown> & {
   properties?: Record<string, Record<string, unknown>>
@@ -34,111 +37,127 @@ function withoutPathParameters(schema: JsonSchema, parameters: string[]) {
   }
 }
 
+const JSON_SUCCESS = {
+  description: 'Success',
+  content: {
+    'application/json': {
+      schema: {
+        type: 'object',
+        properties: { data: {} },
+        required: ['data'],
+      },
+    },
+  },
+}
+
+const IMAGE_SUCCESS = {
+  description: 'The picture',
+  content: { 'image/*': { schema: { type: 'string', format: 'binary' } } },
+}
+
+const ERROR_RESPONSES = {
+  '400': errorResponse('Invalid input'),
+  '401': errorResponse('Missing, unknown or expired key'),
+  '403': errorResponse('The key lacks the required permission'),
+  '404': errorResponse('Not found'),
+  '429': errorResponse('Rate limit reached; see Retry-After'),
+}
+
+function requestBody(operation: IntegrationOperation, body: JsonSchema) {
+  if (operation.method === 'GET') return {}
+  const multipart =
+    operation.name === 'upload_image'
+      ? {
+          'multipart/form-data': {
+            schema: {
+              type: 'object',
+              properties: {
+                entityType: body.properties?.entityType,
+                entityId: body.properties?.entityId,
+                file: { type: 'string', format: 'binary' },
+              },
+              required: ['entityType', 'entityId', 'file'],
+            },
+          },
+        }
+      : {}
+  return {
+    requestBody: {
+      required: operation.method !== 'DELETE',
+      content: { 'application/json': { schema: body }, ...multipart },
+    },
+  }
+}
+
+function parametersOf(
+  operation: IntegrationOperation,
+  schema: JsonSchema,
+  pathParameters: string[],
+  rest: JsonSchema,
+) {
+  const query =
+    operation.method === 'GET'
+      ? Object.entries(rest.properties ?? {}).map(([name, property]) => ({
+          name,
+          in: 'query',
+          required: rest.required?.includes(name) ?? false,
+          schema: property,
+        }))
+      : []
+  return [
+    ...pathParameters.map((name) => ({
+      name,
+      in: 'path',
+      required: true,
+      schema: schema.properties?.[name] ?? { type: 'string' },
+    })),
+    ...query,
+  ]
+}
+
+/** One OpenAPI operation object. */
+function operationDocument(operation: IntegrationOperation) {
+  const pathParameters = [...operation.path.matchAll(/\{(\w+)\}/g)].map(
+    (match) => match[1] as string,
+  )
+  const { $schema: _, ...schema } = toInputJsonSchema(
+    operation.input.schema,
+  ) as JsonSchema & { $schema?: string }
+  const rest = withoutPathParameters(schema, pathParameters)
+  const scopes = operation.resources.map(
+    (resource) => `${resource}:${operation.access}`,
+  )
+  const created =
+    operation.method === 'POST' && operation.name.startsWith('create_')
+  return {
+    operationId: operation.name,
+    summary: operation.title,
+    description: `${operation.description}\n\nRequires ${
+      scopes.length === 1 ? scopes[0] : `one of ${scopes.join(', ')}`
+    }.`,
+    tags: [
+      INTEGRATION_RESOURCES.find(
+        (resource) => resource.id === operation.resources[0],
+      )?.label ?? 'Pictures',
+    ],
+    security: [{ bearer: scopes }],
+    parameters: parametersOf(operation, schema, pathParameters, rest),
+    ...requestBody(operation, rest),
+    responses: {
+      [created ? '201' : '200']:
+        operation.name === 'get_image' ? IMAGE_SUCCESS : JSON_SUCCESS,
+      ...ERROR_RESPONSES,
+    },
+  }
+}
+
 /** OpenAPI 3.1 description of `/api/v1`, generated from the operation catalog. */
 export function buildOpenApiDocument(origin: string) {
   const paths: Record<string, Record<string, unknown>> = {}
   for (const operation of INTEGRATION_OPERATIONS) {
-    const parameters = [...operation.path.matchAll(/\{(\w+)\}/g)].map(
-      (match) => match[1] as string,
-    )
-    const { $schema: _, ...schema } = toInputJsonSchema(
-      operation.input.schema,
-    ) as JsonSchema & { $schema?: string }
-    const rest = withoutPathParameters(schema, parameters)
-    const scopes =
-      operation.resources.length === 1
-        ? [`${operation.resources[0]}:${operation.access}`]
-        : operation.resources.map(
-            (resource) => `${resource}:${operation.access}`,
-          )
-    const query =
-      operation.method === 'GET'
-        ? Object.entries(rest.properties ?? {}).map(([name, property]) => ({
-            name,
-            in: 'query',
-            required: rest.required?.includes(name) ?? false,
-            schema: property,
-          }))
-        : []
-    const success =
-      operation.name === 'get_image'
-        ? {
-            description: 'The picture',
-            content: {
-              'image/*': { schema: { type: 'string', format: 'binary' } },
-            },
-          }
-        : {
-            description: 'Success',
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: { data: {} },
-                  required: ['data'],
-                },
-              },
-            },
-          }
     const path = `/api/v1${operation.path}`
     paths[path] ??= {}
-    paths[path][operation.method.toLowerCase()] = {
-      operationId: operation.name,
-      summary: operation.title,
-      description: `${operation.description}\n\nRequires ${
-        scopes.length === 1 ? scopes[0] : `one of ${scopes.join(', ')}`
-      }.`,
-      tags: [
-        INTEGRATION_RESOURCES.find(
-          (resource) => resource.id === operation.resources[0],
-        )?.label ?? 'Pictures',
-      ],
-      security: [{ bearer: scopes }],
-      parameters: [
-        ...parameters.map((name) => ({
-          name,
-          in: 'path',
-          required: true,
-          schema: schema.properties?.[name] ?? { type: 'string' },
-        })),
-        ...query,
-      ],
-      ...(operation.method === 'GET'
-        ? {}
-        : {
-            requestBody: {
-              required: operation.method !== 'DELETE',
-              content: {
-                'application/json': { schema: rest },
-                ...(operation.name === 'upload_image'
-                  ? {
-                      'multipart/form-data': {
-                        schema: {
-                          type: 'object',
-                          properties: {
-                            entityType: rest.properties?.entityType,
-                            entityId: rest.properties?.entityId,
-                            file: { type: 'string', format: 'binary' },
-                          },
-                          required: ['entityType', 'entityId', 'file'],
-                        },
-                      },
-                    }
-                  : {}),
-              },
-            },
-          }),
-      responses: {
-        [operation.method === 'POST' && operation.name.startsWith('create_')
-          ? '201'
-          : '200']: success,
-        '400': errorResponse('Invalid input'),
-        '401': errorResponse('Missing, unknown or expired key'),
-        '403': errorResponse('The key lacks the required permission'),
-        '404': errorResponse('Not found'),
-        '429': errorResponse('Rate limit reached; see Retry-After'),
-      },
-    }
+    paths[path][operation.method.toLowerCase()] = operationDocument(operation)
   }
   return {
     openapi: '3.1.0',

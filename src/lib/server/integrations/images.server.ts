@@ -15,7 +15,7 @@ import { createEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
 import { getSmallThumbnailPath, getThumbnailPath } from '@/lib/image-path'
 import { imageFilenameSchema, positiveIdSchema } from '@/lib/server-validation'
 import type { IntegrationResource } from '@/modules/integrations/scopes'
-import type { IntegrationContext } from './operations.server'
+import type { IntegrationContext } from './operation.server'
 
 /** Public entity names use journal vocabulary ("brews", "places"). */
 const IMAGE_ENTITIES = {

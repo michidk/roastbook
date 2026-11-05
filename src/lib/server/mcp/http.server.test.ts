@@ -109,6 +109,30 @@ describe('stateless MCP HTTP endpoint', () => {
     expect(good?.status).toBe(200)
   })
 
+  test('calling a tool outside the scopes asks for more access', async () => {
+    const handle = handlerFor()
+    const response = await handle(
+      new Request('http://upstream/api/mcp', {
+        method: 'POST',
+        headers: {
+          Host: 'localhost',
+          Accept: 'application/json, text/event-stream',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'tools/call',
+          params: { name: 'create_brew', arguments: {} },
+        }),
+      }),
+    )
+    expect(response?.status).toBe(403)
+    expect(response?.headers.get('www-authenticate')).toBe(
+      'Bearer error="insufficient_scope", scope="brews:write"',
+    )
+  })
+
   test('owner policy pauses the endpoint', async () => {
     const handle = createMcpHttpHandler(config, {
       policy: async () => ({ enabled: false, disabledTools: [] }),

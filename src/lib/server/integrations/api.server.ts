@@ -243,6 +243,107 @@ function withHeaders(response: Response, headers: Headers | undefined) {
   })
 }
 
+/** Index and usage endpoints that do not map to an operation. */
+async function builtInRoute(url: URL, path: string) {
+  const integration = requireIntegration()
+  if (path === '/')
+    return Response.json(
+      {
+        data: {
+          documentation: `${url.origin}${API_BASE_PATH}/openapi.json`,
+          scopes: integration.scopes,
+          operations: INTEGRATION_OPERATIONS.map((operation) =>
+            operationSummary(operation, integration.scopes),
+          ),
+        },
+      },
+      { headers: noStore },
+    )
+  if (path === '/rate-limit') {
+    const usage = await loadIntegrationUsage(requireIdentity().id, [
+      integration.credentialId,
+    ])
+    return Response.json(
+      {
+        data: {
+          ...usage.account,
+          requestsTodayByThisKey:
+            usage.requestsToday[integration.credentialId] ?? 0,
+        },
+      },
+      { headers: noStore },
+    )
+  }
+  return null
+}
+
+/** Query string, then body, then path parameters, which win on conflicts. */
+async function operationInput(
+  request: Request,
+  url: URL,
+  operation: IntegrationOperation,
+  params: Record<string, unknown>,
+) {
+  let input: Record<string, unknown> = apiQueryInput(
+    operation.input.schema,
+    url.searchParams,
+  )
+  if (operation.method !== 'GET') {
+    const body = await bodyInput(request, operation)
+    if (body instanceof Response) return body
+    input = { ...input, ...body }
+  }
+  return { ...input, ...params }
+}
+
+function operationResponse(operation: IntegrationOperation, result: unknown) {
+  if (result instanceof IntegrationImage)
+    return new Response(result.bytes as BodyInit, {
+      headers: {
+        ...noStore,
+        'Content-Type': result.mimeType,
+        'X-Content-Type-Options': 'nosniff',
+      },
+    })
+  const created =
+    operation.method === 'POST' && operation.name.startsWith('create_')
+  return Response.json(
+    { data: toJson(result) },
+    { status: created ? 201 : 200, headers: noStore },
+  )
+}
+
+async function routeRequest(request: Request, url: URL, path: string) {
+  if (request.method === 'GET') {
+    const response = await builtInRoute(url, path)
+    if (response) return response
+  }
+  const matched = matchApiRoute(request.method, path)
+  if (matched === null)
+    return failure({
+      status: 404,
+      code: 'not_found',
+      message: 'No such API route',
+    })
+  if (matched === 'method_not_allowed')
+    return failure({
+      status: 405,
+      code: 'invalid_input',
+      message: `${request.method} is not supported here`,
+    })
+  const { operation } = matched.route
+  const input = await operationInput(request, url, operation, matched.params)
+  if (input instanceof Response) return input
+  try {
+    return operationResponse(
+      operation,
+      await runIntegrationOperation(operation, input),
+    )
+  } catch (error) {
+    return failure(describeIntegrationError(error))
+  }
+}
+
 /**
  * `/api/v1`: the journal as a REST API. Runs inside the key owner's journal
  * scope (see request.server.ts); every route maps to one shared operation.
@@ -255,103 +356,7 @@ export async function handleApiRequest(request: Request): Promise<Response> {
     return Response.json(buildOpenApiDocument(url.origin), {
       headers: { 'Cache-Control': 'public, max-age=300' },
     })
-
   const admission = await admitIntegrationRequest()
   if (admission.rejected) return admission.rejected
-  const { headers } = admission
-  const integration = requireIntegration()
-
-  if (path === '/' && request.method === 'GET')
-    return withHeaders(
-      Response.json(
-        {
-          data: {
-            documentation: `${url.origin}${API_BASE_PATH}/openapi.json`,
-            scopes: integration.scopes,
-            operations: INTEGRATION_OPERATIONS.map((operation) =>
-              operationSummary(operation, integration.scopes),
-            ),
-          },
-        },
-        { headers: noStore },
-      ),
-      headers,
-    )
-  if (path === '/rate-limit' && request.method === 'GET') {
-    const usage = await loadIntegrationUsage(requireIdentity().id, [
-      integration.credentialId,
-    ])
-    return withHeaders(
-      Response.json(
-        {
-          data: {
-            ...usage.account,
-            requestsTodayByThisKey:
-              usage.requestsToday[integration.credentialId] ?? 0,
-          },
-        },
-        { headers: noStore },
-      ),
-      headers,
-    )
-  }
-
-  const matched = matchApiRoute(request.method, path)
-  if (matched === null)
-    return failure(
-      { status: 404, code: 'not_found', message: 'No such API route' },
-      headers,
-    )
-  if (matched === 'method_not_allowed')
-    return failure(
-      {
-        status: 405,
-        code: 'invalid_input',
-        message: `${request.method} is not supported here`,
-      },
-      headers,
-    )
-  const { route, params } = matched
-  const { operation } = route
-  let input: Record<string, unknown> = apiQueryInput(
-    operation.input.schema,
-    url.searchParams,
-  )
-  if (operation.method !== 'GET') {
-    const body = await bodyInput(request, operation)
-    if (body instanceof Response) return withHeaders(body, headers)
-    input = { ...input, ...body }
-  }
-  // Path parameters win over body fields of the same name.
-  input = { ...input, ...params }
-
-  try {
-    const result = await runIntegrationOperation(operation, input)
-    if (result instanceof IntegrationImage)
-      return withHeaders(
-        new Response(result.bytes as BodyInit, {
-          headers: {
-            ...noStore,
-            'Content-Type': result.mimeType,
-            'X-Content-Type-Options': 'nosniff',
-          },
-        }),
-        headers,
-      )
-    return withHeaders(
-      Response.json(
-        { data: toJson(result) },
-        {
-          status:
-            operation.method === 'POST' && /^create_/.test(operation.name)
-              ? 201
-              : 200,
-          headers: noStore,
-        },
-      ),
-      headers,
-    )
-  } catch (error) {
-    return failure(describeIntegrationError(error), headers)
-  }
+  return withHeaders(await routeRequest(request, url, path), admission.headers)
 }

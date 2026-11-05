@@ -5,9 +5,12 @@ import {
   hostHeaderValidationResponse,
   originValidationResponse,
 } from '@modelcontextprotocol/server'
+import { getJournalContext } from '@/db/journal-context.server'
 import { DEMO_MODE } from '@/lib/build-mode'
+import { getIntegrationOperation } from '../integrations/operations.server'
 import {
   admitIntegrationRequest,
+  canUseOperation,
   requireIntegration,
 } from '../integrations/runtime.server'
 import { getMcpConfig, type McpConfig } from './config.server'
@@ -22,6 +25,53 @@ const MCP_PATH = '/api/mcp'
 
 export function handlesMcpHttpPath(pathname: string) {
   return pathname === MCP_PATH
+}
+
+/**
+ * MCP step-up authorization: calling a tool outside the credential's scopes
+ * answers 403 insufficient_scope with a challenge, so OAuth clients can ask
+ * the owner for more access instead of seeing an unknown tool.
+ */
+async function insufficientScope(
+  request: Request,
+  scopes: readonly string[],
+): Promise<Response | null> {
+  let message: unknown
+  try {
+    message = await request.clone().json()
+  } catch {
+    return null
+  }
+  const call = message as {
+    method?: unknown
+    params?: { name?: unknown }
+  } | null
+  if (call?.method !== 'tools/call' || typeof call.params?.name !== 'string')
+    return null
+  const operation = getIntegrationOperation(call.params.name)
+  if (!operation || canUseOperation(operation, scopes)) return null
+  const oauth =
+    getJournalContext()?.identity.integration?.credentialId.startsWith(
+      'oauth:',
+    ) ?? false
+  // OAuth clients request protocol scopes; tokens show the permission needed.
+  const scope = oauth
+    ? operation.access === 'write'
+      ? 'mcp:read mcp:write'
+      : 'mcp:read'
+    : operation.resources
+        .map((resource) => `${resource}:${operation.access}`)
+        .join(' ')
+  return Response.json(
+    { error: 'insufficient_scope' },
+    {
+      status: 403,
+      headers: {
+        'WWW-Authenticate': `Bearer error="insufficient_scope", scope="${scope}"`,
+        'Cache-Control': 'no-store',
+      },
+    },
+  )
 }
 
 export function createMcpHttpHandler(
@@ -66,6 +116,8 @@ export function createMcpHttpHandler(
         },
         { status: 503, headers: { 'Cache-Control': 'no-store' } },
       )
+    const denied = await insufficientScope(request, scopes())
+    if (denied) return denied
     return protocol.fetch(request)
   }
 }
