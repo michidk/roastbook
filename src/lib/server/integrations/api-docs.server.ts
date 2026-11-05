@@ -52,7 +52,7 @@ body { margin: 0; font-family: var(--font-body); }
 :root, body, .scalar-app, .scalar-app .light-mode, .scalar-app .dark-mode {
   --scalar-font: var(--font-body);
   --scalar-font-code: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --scalar-radius: calc(var(--radius) - 4px);
+  --scalar-radius: 4px;
   --scalar-radius-lg: var(--radius);
   --scalar-radius-xl: calc(var(--radius) + 4px);
   --scalar-heading-1: 1.875rem;
@@ -107,6 +107,7 @@ body { margin: 0; font-family: var(--font-body); }
   flex-shrink: 0; color: var(--foreground); font-size: 1.25rem; font-weight: 800; text-decoration: none;
   font-family: var(--font-heading);
 }
+.roastbook-bar .schema { flex-shrink: 0; font-weight: 600; white-space: nowrap; }
 .roastbook-bar .status { text-align: right; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .scalar-app h1, .scalar-app h2, .scalar-app h3,
 .scalar-app .section-header-label, .scalar-app .sidebar-heading {
@@ -244,6 +245,7 @@ const PAGE_HEAD = `<meta charset="utf-8">
 const PAGE_HEADER = `<header class="roastbook-bar">
 <a class="brand" href="/">Roastbook</a>
 <span class="status" id="roastbook-session" role="status">API reference</span>
+<a class="schema" href="/api/v1/openapi.json">OpenAPI JSON</a>
 </header>
 <div id="roastbook-api-reference"></div>`
 

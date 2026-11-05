@@ -11,7 +11,8 @@ share one permission model and one rate limit.
 
 Open **Settings → API** and choose **Open API explorer** to browse endpoints
 and try requests. The adjacent **OpenAPI description (JSON)** button opens the
-machine-readable schema. Both links describe the running version.
+machine-readable schema. The explorer also links to it as **OpenAPI JSON** in
+its header. Both links describe the running version.
 
 ## Keys and permissions
 
