@@ -27,7 +27,7 @@ export function PasskeySetupDialog({
     setActivity('setup')
     setError('')
     try {
-      const result = await authClient.passkey.addPasskey({ name: 'My passkey' })
+      const result = await authClient.passkey.addPasskey()
       if (result.error)
         throw new Error(
           'Passkey setup was not completed. Try again or choose Next time.',

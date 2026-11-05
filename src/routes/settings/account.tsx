@@ -143,9 +143,7 @@ function AccountPage() {
             disabled={busy}
             onClick={() =>
               void action(async () => {
-                await checkResult(
-                  await authClient.passkey.addPasskey({ name: 'My passkey' }),
-                )
+                await checkResult(await authClient.passkey.addPasskey())
                 const result = await authClient.passkey.listUserPasskeys()
                 if (result.data) setPasskeys(result.data)
               }, 'Passkey added')

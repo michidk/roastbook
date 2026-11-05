@@ -64,6 +64,8 @@ there are no passwords. Codes expire after ten minutes. Sessions last 30 days;
 sensitive account and administrator actions require a sign-in within the last
 ten minutes.
 
+New passkeys use the account email as the username shown by password managers.
+
 With authentication disabled, one default identity owns a shared journal and
 account controls are hidden. The application refuses to disable authentication
 on a database with multiple accounts.
