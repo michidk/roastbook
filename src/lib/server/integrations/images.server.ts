@@ -1,13 +1,20 @@
 import '@tanstack/react-start/server-only'
 
-import { sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { z } from 'zod'
-import { db } from '@/db'
+import {
+  beanImages,
+  cafeVisitImages,
+  coffeeShopImages,
+  gearImages,
+  shotImages,
+} from '@/db/schema'
 import {
   deleteEntityImage,
   setImageAsThumbnail,
   uploadEntityImage,
 } from '@/journal/images'
+import { db, owned } from '@/journal/platform/database'
 import { getStorage } from '@/journal/platform/storage'
 import { decodeBase64 } from '@/lib/base64'
 import { IMAGE_MIME_TYPE_VALUES, MAX_IMAGE_BYTES } from '@/lib/domain-contracts'
@@ -100,19 +107,27 @@ const MIME_TYPES: Record<string, string> = {
   webp: 'image/webp',
 }
 
-/** Row-level security limits the lookup to the owner's own pictures. */
+const IMAGE_TABLES = [
+  [beanImages, 'beans'],
+  [gearImages, 'gear'],
+  [coffeeShopImages, 'places'],
+  [shotImages, 'brews'],
+  [cafeVisitImages, 'visits'],
+] as const
+
+/** The resource a stored picture belongs to, within the owner's journal. */
 async function imageResource(
   path: string,
 ): Promise<IntegrationResource | null> {
-  const [row] = await db.execute<{ resource: IntegrationResource }>(sql`
-    select 'beans' as resource from bean_images where storage_path = ${path}
-    union all select 'gear' from gear_images where storage_path = ${path}
-    union all select 'places' from coffee_shop_images where storage_path = ${path}
-    union all select 'brews' from brew_images where storage_path = ${path}
-    union all select 'visits' from cafe_visit_images where storage_path = ${path}
-    limit 1
-  `)
-  return row?.resource ?? null
+  for (const [table, resource] of IMAGE_TABLES) {
+    const [row] = await db
+      .select({ storagePath: table.storagePath })
+      .from(table)
+      .where(owned(table, eq(table.storagePath, path)))
+      .limit(1)
+    if (row) return resource
+  }
+  return null
 }
 
 export async function readIntegrationImage(

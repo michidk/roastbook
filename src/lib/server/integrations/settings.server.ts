@@ -4,7 +4,7 @@ import { DEMO_MODE } from '@/lib/build-mode'
 import {
   type CredentialKind,
   listIntegrationCredentials,
-} from '../auth/integrations.server'
+} from '@/lib/server/auth/integrations.server'
 import { loadIntegrationUsage } from './rate-limit.server'
 
 /** Keys of one kind with today's use, and the account's shared allowance. */
