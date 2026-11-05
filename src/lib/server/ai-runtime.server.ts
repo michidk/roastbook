@@ -24,14 +24,18 @@ export function createAiAdapter(
 ) {
   if (!config.apiKey)
     throw new Error('Connect your AI provider in Settings > AI')
-  return openaiCompatibleText(model, {
+  const options = {
     apiKey: config.apiKey,
     baseURL: config.baseURL,
-    api: config.api,
     fetch: config.fetch,
     maxRetries: 0,
     timeout: 120_000,
-  })
+  }
+  // The generic Responses adapter serializes hosted tools as function calls.
+  // Model names come from validated user settings, not the SDK's static catalog.
+  if (config.api === 'responses')
+    return createOpenaiChat(model as OpenAIChatModel, config.apiKey, options)
+  return openaiCompatibleText(model, { ...options, api: config.api })
 }
 export async function isVisionEnabled(): Promise<boolean> {
   return Boolean((await getOpenAIConfig()).apiKey)
@@ -49,3 +53,5 @@ export function aiChatLimits(
 ) {
   return {}
 }
+
+import { createOpenaiChat, type OpenAIChatModel } from '@tanstack/ai-openai'

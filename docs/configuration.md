@@ -128,6 +128,15 @@ database and shown in Settings > AI. Prompts and responses are stored only
 with `AI_TELEMETRY_STORE_PAYLOADS=true` (off by default); turning it off again
 redacts the stored ones. They contain private journal data.
 
+### Responses web research
+
+Responses endpoints use the OpenAI Responses adapter so web research is sent
+as the provider-hosted `web_search` tool. The provider must implement that
+hosted tool; a Responses-compatible text endpoint alone is not sufficient.
+Chat Completions endpoints retain the generic compatible adapter and do not
+support online research. Endpoint validation and the protected HTTP transport
+apply to both adapters.
+
 ## MCP
 
 | Variable | Default | Required | Description |
