@@ -1,4 +1,4 @@
-import { useRouter, useRouterState } from '@tanstack/react-router'
+import { ClientOnly, useRouter, useRouterState } from '@tanstack/react-router'
 import type { ComponentType } from 'react'
 import { Page } from '@/components/page-layout'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -117,7 +117,9 @@ export function AppPending() {
       <span className="sr-only">Loading</span>
       <div className="h-14 border-b border-border bg-card lg:h-[68px]" />
       <div className="mx-auto w-full max-w-7xl px-4 py-5 md:px-8 md:py-8">
-        <PagePending />
+        <ClientOnly fallback={<RoutePending />}>
+          <PagePending />
+        </ClientOnly>
       </div>
     </div>
   )
