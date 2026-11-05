@@ -1,5 +1,6 @@
-import { History, Loader2, RefreshCw, Sparkles } from 'lucide-react'
+import { History, RefreshCw, Sparkles } from 'lucide-react'
 import { useState } from 'react'
+import { AiThinking } from '@/components/ai-thinking'
 import {
   ChangeBlock,
   KeepConstantBlock,
@@ -344,22 +345,19 @@ export function AiRecommendationDialog({
                   </p>
                 </div>
               ) : loading ? (
-                <div
-                  className="flex min-h-56 flex-col items-center justify-center gap-3 text-center"
-                  aria-live="polite"
-                >
-                  <Loader2 className="size-7 animate-spin text-primary" />
-                  <div>
-                    <p className="font-medium">
-                      {isFocusedShot
-                        ? 'Analyzing this brew and its history…'
-                        : 'Analyzing brew history…'}
-                    </p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Comparing settings, extraction, strength, and flavor
-                      development.
-                    </p>
-                  </div>
+                <div className="flex min-h-56 flex-col items-center justify-center gap-3 text-center">
+                  <AiThinking
+                    className="font-medium"
+                    label={
+                      isFocusedShot
+                        ? 'Thinking about this brew…'
+                        : 'Thinking about your next brew…'
+                    }
+                  />
+                  <p className="max-w-sm text-sm text-muted-foreground">
+                    Comparing settings, extraction, strength, and flavor
+                    development.
+                  </p>
                 </div>
               ) : error ? (
                 <div

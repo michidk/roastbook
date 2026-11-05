@@ -38,7 +38,10 @@ demo database and removed with their record or on reset.
 
 AI recommendations, their suggested follow-up questions, and bean research use
 preset responses generated from the original sample journal. They never
-contact an AI provider. `generate-demo-snapshot.ts` writes
+contact an AI provider. Each preset recommendation, follow-up answer, and bean
+research response waits a random 1.5–3.5 seconds to simulate a request. The
+thinking animation is shared with the standard application, which waits only
+for its real AI provider. `generate-demo-snapshot.ts` writes
 `/demo-local/ai.json` alongside the journal, so rebuilding refreshes both from
 the same fixtures. Recommendations cover each sample brew and its matching
 equipment history. Beans without brew history have preset research and

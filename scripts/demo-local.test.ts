@@ -4,8 +4,13 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { getTableName } from 'drizzle-orm'
 import { journalTables } from '@/journal/tables'
+import { demoAiFunction } from '../packages/journal-demo/src/ai'
 import { demoAiResponsesSchema } from '../packages/journal-demo/src/ai-responses'
 import { demoFunction } from '../packages/journal-demo/src/functions'
+
+function presetResponse(operation: string) {
+  return (options?: unknown) => demoAiFunction(operation, options)
+}
 
 test('generated fictional fixtures cover every journal table', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'roastbook-fixtures-'))
@@ -62,13 +67,13 @@ test('generated fictional fixtures cover every journal table', async () => {
       })
       for (const bean of presets.beans) {
         expect(
-          await demoFunction('research/researchBeanInfo')({
+          await presetResponse('research/researchBeanInfo')({
             data: { beanName: bean.name },
           }),
         ).toEqual(bean.research)
         const latest = presets.brews.find((brew) => brew.beanId === bean.id)
         expect(
-          await demoFunction('shot-recommendations/getShotRecommendation')({
+          await presetResponse('shot-recommendations/getShotRecommendation')({
             data: { beanId: bean.id },
           }),
         ).toMatchObject({
@@ -80,7 +85,7 @@ test('generated fictional fixtures cover every journal table', async () => {
       for (const brew of presets.brews) {
         const request = { shotId: brew.id }
         expect(
-          await demoFunction('shot-recommendations/getShotRecommendation')({
+          await presetResponse('shot-recommendations/getShotRecommendation')({
             data: request,
           }),
         ).toEqual(brew.result)
@@ -89,7 +94,7 @@ test('generated fictional fixtures cover every journal table', async () => {
           question,
         ] of brew.result.recommendation.followUpQuestions.entries()) {
           expect(
-            await demoFunction(
+            await presetResponse(
               'shot-recommendations/chatAboutShotRecommendation',
             )({
               data: {
@@ -104,7 +109,9 @@ test('generated fictional fixtures cover every journal table', async () => {
       const brew = presets.brews[0]
       if (!brew) throw new Error('Expected sample brews')
       expect(
-        await demoFunction('shot-recommendations/chatAboutShotRecommendation')({
+        await presetResponse(
+          'shot-recommendations/chatAboutShotRecommendation',
+        )({
           data: {
             request: { shotId: brew.id },
             recommendation: brew.result.recommendation,
@@ -121,12 +128,12 @@ test('generated fictional fixtures cover every journal table', async () => {
         },
       })
       await expect(
-        demoFunction('shot-recommendations/getShotRecommendation')({
+        presetResponse('shot-recommendations/getShotRecommendation')({
           data: { shotId: 999999 },
         }),
       ).rejects.toThrow('No preset recommendation')
       await expect(
-        demoFunction('research/researchBeanInfo')({
+        presetResponse('research/researchBeanInfo')({
           data: { beanName: 'A new coffee' },
         }),
       ).rejects.toThrow('original demo beans')
