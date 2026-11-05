@@ -122,14 +122,86 @@ function parametersOf(
   ]
 }
 
+/** Schemas shared between operations, keyed by their definition. */
+type SharedSchemas = {
+  names: Map<string, string>
+  schemas: Record<string, unknown>
+}
+
+const JSON_VALUE_TYPES = 'array,boolean,null,number,object,string'
+
+function sharedSchemaName(
+  key: string,
+  definition: unknown,
+  taken: ReadonlySet<string>,
+) {
+  const types = (definition as { anyOf?: { type?: string }[] }).anyOf
+    ?.map((member) => member.type)
+    .sort()
+    .join(',')
+  const base = !key.startsWith('__schema')
+    ? key
+    : types === JSON_VALUE_TYPES
+      ? 'JsonValue'
+      : 'Schema'
+  let name = base
+  for (let index = 2; taken.has(name); index++) name = `${base}${index}`
+  return name
+}
+
+/**
+ * Zod puts recursive schemas (such as `z.json()`) in a local `$defs` block,
+ * but OpenAPI resolves `#/$defs/...` against the whole document. Moves them to
+ * `components.schemas` and points the references there.
+ */
+function hoistDefinitions(schema: JsonSchema, shared: SharedSchemas) {
+  const { $defs: definitions, ...rest } = schema as JsonSchema & {
+    $defs?: Record<string, unknown>
+  }
+  if (!definitions) return schema
+  const set = JSON.stringify(definitions)
+  let text = JSON.stringify({ rest, definitions })
+  const names: Record<string, string> = {}
+  for (const [key, definition] of Object.entries(definitions)) {
+    const known = shared.names.get(`${set}\u0000${key}`)
+    names[key] =
+      known ??
+      sharedSchemaName(
+        key,
+        definition,
+        new Set([
+          'Error',
+          ...Object.keys(shared.schemas),
+          ...Object.values(names),
+        ]),
+      )
+    shared.names.set(`${set}\u0000${key}`, names[key])
+    text = text.replaceAll(
+      JSON.stringify(`#/$defs/${key}`),
+      JSON.stringify(`#/components/schemas/${names[key]}`),
+    )
+  }
+  const hoisted = JSON.parse(text) as {
+    rest: JsonSchema
+    definitions: Record<string, unknown>
+  }
+  for (const [key, name] of Object.entries(names))
+    shared.schemas[name] ??= hoisted.definitions[key]
+  return hoisted.rest
+}
+
 /** One OpenAPI operation object. */
-function operationDocument(operation: IntegrationOperation) {
+function operationDocument(
+  operation: IntegrationOperation,
+  shared: SharedSchemas,
+) {
   const pathParameters = [...operation.path.matchAll(/\{(\w+)\}/g)].map(
     (match) => match[1] as string,
   )
-  const { $schema: _, ...schema } = toInputJsonSchema(
+  const { $schema: _, ...converted } = toInputJsonSchema(
     operation.input.schema,
   ) as JsonSchema & { $schema?: string }
+  const schema = hoistDefinitions(converted, shared)
   const rest = withoutPathParameters(schema, pathParameters)
   const scopes = requiredScopes(operation)
   const created =
@@ -160,10 +232,14 @@ function operationDocument(operation: IntegrationOperation) {
 /** OpenAPI 3.1 description of `/api/v1`, generated from the operation catalog. */
 export function buildOpenApiDocument(origin: string) {
   const paths: Record<string, Record<string, unknown>> = {}
+  const shared: SharedSchemas = { names: new Map(), schemas: {} }
   for (const operation of INTEGRATION_OPERATIONS) {
     const path = `/api/v1${operation.path}`
     paths[path] ??= {}
-    paths[path][operation.method.toLowerCase()] = operationDocument(operation)
+    paths[path][operation.method.toLowerCase()] = operationDocument(
+      operation,
+      shared,
+    )
   }
   return {
     openapi: '3.1.0',
@@ -184,6 +260,7 @@ export function buildOpenApiDocument(origin: string) {
         },
       },
       schemas: {
+        ...shared.schemas,
         Error: {
           type: 'object',
           required: ['error'],

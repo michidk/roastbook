@@ -57,19 +57,32 @@ export function ApiSettings({
         </pre>
         <p className="text-sm text-muted-foreground">
           JSON responses carry a <code>data</code> field and ISO 8601 dates;
-          picture downloads return the image itself. The OpenAPI description
-          lists every endpoint with its permission.{' '}
+          picture downloads return the image itself. The API reference lists
+          every endpoint with its parameters and permission, and lets you try
+          requests with a key.
+        </p>
+        <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+          <a
+            href={state.referenceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 font-medium text-link underline-offset-4 hover:underline pointer-coarse:min-h-11"
+          >
+            API reference
+            <ExternalLink aria-hidden="true" className="size-3.5" />
+            <span className="sr-only">(opens in a new tab)</span>
+          </a>
           <a
             href={state.documentationUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 font-medium text-link underline-offset-4 hover:underline"
+            className="inline-flex items-center gap-1 font-medium text-link underline-offset-4 hover:underline pointer-coarse:min-h-11"
           >
-            OpenAPI description
+            OpenAPI description (JSON)
             <ExternalLink aria-hidden="true" className="size-3.5" />
             <span className="sr-only">(opens in a new tab)</span>
           </a>
-        </p>
+        </div>
       </PanelSection>
 
       <PanelSection

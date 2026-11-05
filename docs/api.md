@@ -123,7 +123,39 @@ pictures), `gear`, `places`, or `visits`. Reading uses `:read`, the rest
   (`set_image_thumbnail`).
 
 `GET /api/v1`, `GET /api/v1/rate-limit`, and `GET /api/v1/openapi.json` need
-no particular scope.
+no particular scope. `GET /api/v1/openapi.json` and `GET /api/v1/docs` need
+no key at all.
+
+## Reference
+
+`/api/v1/docs` is an interactive API reference for the running version: every
+endpoint with its parameters, body, permission, and example requests in curl
+and other languages. Settings → API links to it. It needs no sign-in, so you
+can link to it from elsewhere. It follows the theme and palettes you last used
+in Roastbook on the same browser.
+
+**Test request** sends a real request:
+
+- Signed in to Roastbook (or past the Hodor login), it runs as your account
+  with every permission, like the app, without an API key. It changes your
+  journal for real and counts against the account's rate limit.
+- Paste a key under **Authentication** to test that key and its permissions
+  instead. The key stays in the page and is not saved.
+- Signed out, test requests need a key, as with curl. With
+  `AUTH_ENABLED=false` there is no sign-in: anyone who can reach the app counts
+  as signed in to the shared journal, which is why such instances belong
+  behind Hodor, another authenticating proxy, or a private network.
+
+Signed-in test requests go to `/api/try/v1/…`, the same routes behind the
+app's sign-in. They only accept the reference page's own requests (a required
+header and the same-origin check), and `/api/v1` itself never accepts a
+browser session.
+
+The reference and `/api/v1/openapi.json` are generated from the same operation
+catalog as the API and MCP tools, so they change with the code and need no
+upkeep. The page uses [Scalar](https://github.com/scalar/scalar), served by
+Roastbook itself with its telemetry, AI assistant, and request proxy turned
+off; its only outside requests are the Google Fonts the app uses too.
 
 ## Requests
 
@@ -134,7 +166,8 @@ curl -H "Authorization: Bearer $ROASTBOOK_API_KEY" \
 
 - `GET /api/v1` lists every operation and whether the key may use it.
 - `GET /api/v1/openapi.json` is the OpenAPI 3.1 description, readable without
-  a key. Each operation names its required scope.
+  a key. Each operation names its required scope. `GET /api/v1/docs` shows it
+  as a [reference](#reference).
 - Operation responses are JSON objects with a `data` field; picture downloads
   return the image itself, and `/api/v1/openapi.json` the OpenAPI document.
   Lists return the same pages the app shows. Their query parameters differ per

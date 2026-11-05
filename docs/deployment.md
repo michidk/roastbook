@@ -113,7 +113,11 @@ account's rate limits ([API](api.md#rate-limits)).
 
 `/api/v1` authenticates every request with an API key from Settings > API and
 never accepts a browser session, so Compose and Helm let `/api/v1/*` through
-Hodor without a login. See [API](api.md).
+Hodor without a login. The OpenAPI description and the API reference
+(`/api/v1/openapi.json`, `/api/v1/docs`) are public on every instance, so you
+can link to them; they describe the endpoints, never journal data. The
+reference's signed-in test requests use `/api/try/v1`, which stays behind the
+login; do not exempt it. See [API](api.md).
 
 ## Accounts and worker
 

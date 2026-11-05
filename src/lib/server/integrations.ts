@@ -22,6 +22,7 @@ export const getApiAccessState = createServerFn({ method: 'GET' }).handler(
     return {
       baseUrl: `${origin}/api/v1`,
       documentationUrl: `${origin}/api/v1/openapi.json`,
+      referenceUrl: `${origin}/api/v1/docs`,
       ...(await loadIntegrationSettings('api')),
     }
   },

@@ -1,6 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import { INTEGRATION_SCOPES } from '@/modules/integrations/scopes'
 import { apiQueryInput, matchApiRoute } from './api.server'
+import {
+  API_TRY_BASE_PATH,
+  handleApiDocsRequest,
+  isApiDocsPath,
+  isApiTryPath,
+} from './api-docs.server'
 import { toInputJsonSchema } from './input-schema.server'
 import { buildOpenApiDocument } from './openapi.server'
 import {
@@ -124,6 +130,58 @@ describe('REST routing', () => {
       INTEGRATION_OPERATIONS.map((operation) => operation.name).sort(),
     )
     expect(JSON.stringify(document)).not.toContain('"$schema"')
+  })
+
+  test('resolves every schema reference inside the OpenAPI document', () => {
+    const document = buildOpenApiDocument('https://coffee.example')
+    const text = JSON.stringify(document)
+    expect(text).not.toContain('$defs')
+    const references = [...text.matchAll(/"\$ref":"([^"]+)"/g)].map(
+      (match) => match[1] as string,
+    )
+    expect(references).toContain('#/components/schemas/JsonValue')
+    for (const reference of new Set(references)) {
+      const target = reference
+        .replace(/^#\//, '')
+        .split('/')
+        .reduce<unknown>(
+          (node, key) => (node as Record<string, unknown> | undefined)?.[key],
+          document,
+        )
+      expect(target, reference).toBeDefined()
+    }
+  })
+
+  test('keeps the API reference public and versioned with the bundle', () => {
+    expect(isApiDocsPath('/docs')).toBe(true)
+    expect(isApiDocsPath('/docs/scalar/1.0.0')).toBe(true)
+    expect(isApiDocsPath('/docs/other')).toBe(false)
+    expect(isApiDocsPath('/brews')).toBe(false)
+  })
+
+  test('serves only the installed Scalar bundle version', async () => {
+    const manifest = new URL(
+      '../../../../node_modules/@scalar/api-reference/package.json',
+      import.meta.url,
+    )
+    const { version } = (await Bun.file(manifest).json()) as {
+      version: string
+    }
+    const current = await handleApiDocsRequest(`/docs/scalar/${version}`)
+    expect(current?.status).toBe(200)
+    expect(current?.headers.get('Cache-Control')).toContain('immutable')
+    expect(await handleApiDocsRequest('/docs/scalar/0.0.1')).toBeNull()
+    expect(
+      await handleApiDocsRequest(`/docs/scalar/${version}/../package.json`),
+    ).toBeNull()
+  })
+
+  test('keeps signed-in test requests outside the public API prefix', () => {
+    expect(isApiTryPath('/api/try/v1')).toBe(true)
+    expect(isApiTryPath('/api/try/v1/brews')).toBe(true)
+    expect(isApiTryPath('/api/try/v10/brews')).toBe(false)
+    // Proxies let /api/v1/* through without a login; try requests need one.
+    expect(API_TRY_BASE_PATH.startsWith('/api/v1')).toBe(false)
   })
 })
 
