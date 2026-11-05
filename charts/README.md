@@ -59,6 +59,18 @@ storage:
     existingSecret: roastbook-s3
 ```
 
+### Bundled PostgreSQL volume labels
+
+Earlier charts labelled the bundled PostgreSQL volume claim template with the
+chart and app version, so an upgrade that changes either fails with
+`spec: Forbidden: updates to statefulset spec`. Upgrading once from such a
+release needs the StatefulSet object recreated; its Pod and volume stay:
+
+```bash
+kubectl delete statefulset <release>-postgresql --cascade=orphan
+helm upgrade <release> ./charts
+```
+
 ## Built-in accounts
 
 ```yaml
