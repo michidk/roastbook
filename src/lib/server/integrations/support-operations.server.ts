@@ -297,4 +297,4 @@ export const SUPPORT_OPERATIONS = [
     input: imageDeleteSchema,
     run: deleteIntegrationImage,
   }),
-]
+] as const

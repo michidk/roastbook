@@ -14,12 +14,12 @@ export type {
  * scope, so row-level security limits them to the credential owner's data.
  * Account, credential, sign-in and instance settings are deliberately absent.
  */
-export const INTEGRATION_OPERATIONS: readonly IntegrationOperation[] = [
+export const INTEGRATION_OPERATIONS = [
   ...COLLECTION_OPERATIONS,
   ...SUPPORT_OPERATIONS,
-]
+] as const satisfies readonly IntegrationOperation[]
 
-const byName = new Map(
+const byName = new Map<string, IntegrationOperation>(
   INTEGRATION_OPERATIONS.map((operation) => [operation.name, operation]),
 )
 

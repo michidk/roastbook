@@ -8,19 +8,84 @@ import {
   INTEGRATION_OPERATIONS,
   type IntegrationOperation,
 } from './operations.server'
-import { requiredScopes } from './runtime.server'
+import responseSchemas from './response-schemas.gen.json'
+import { type IntegrationFailure, requiredScopes } from './runtime.server'
 
 type JsonSchema = Record<string, unknown> & {
   properties?: Record<string, Record<string, unknown>>
   required?: string[]
 }
 
-const errorResponse = (description: string) => ({
-  description,
-  content: {
-    'application/json': { schema: { $ref: '#/components/schemas/Error' } },
-  },
-})
+function errorResponse(
+  status: number,
+  description: string,
+  code: IntegrationFailure['code'] | 'unauthorized' | 'rate_limited',
+) {
+  const properties: Record<string, unknown> = {
+    code: { type: 'string', const: code },
+    message: { type: 'string' },
+  }
+  if (code === 'insufficient_scope') properties.scope = { type: 'string' }
+  if (status === 400)
+    properties.issues = {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          message: { type: 'string' },
+          path: { type: 'array', items: { type: ['string', 'number'] } },
+        },
+        required: ['message', 'path'],
+      },
+    }
+  return {
+    description,
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            error: {
+              type: 'object',
+              properties,
+              required: ['code', 'message'],
+              additionalProperties: false,
+            },
+            ...(code === 'rate_limited'
+              ? { rateLimit: responseSchemas.rateLimit }
+              : {}),
+          },
+          required:
+            code === 'rate_limited' ? ['error', 'rateLimit'] : ['error'],
+          additionalProperties: false,
+        },
+        example: {
+          error: {
+            code,
+            message: description,
+            ...(code === 'insufficient_scope' ? { scope: 'brews:read' } : {}),
+          },
+          ...(code === 'rate_limited'
+            ? {
+                rateLimit: {
+                  allowed: false,
+                  windows: [
+                    {
+                      window: 'minute',
+                      limit: 60,
+                      used: 61,
+                      remaining: 0,
+                      resetAt: '2026-01-01T12:01:00.000Z',
+                    },
+                  ],
+                },
+              }
+            : {}),
+        },
+      },
+    },
+  }
+}
 
 /** Splits path parameters off an input schema and keeps the rest. */
 function withoutPathParameters(schema: JsonSchema, parameters: string[]) {
@@ -38,17 +103,22 @@ function withoutPathParameters(schema: JsonSchema, parameters: string[]) {
   }
 }
 
-const JSON_SUCCESS = {
-  description: 'Success',
-  content: {
-    'application/json': {
-      schema: {
-        type: 'object',
-        properties: { data: {} },
-        required: ['data'],
+function jsonSuccess(operation: IntegrationOperation) {
+  const schemas: Record<string, unknown> = responseSchemas.operations
+  const data = schemas[operation.name]
+  if (!data) throw new Error(`Missing response schema for ${operation.name}`)
+  return {
+    description: 'Success',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: { data },
+          required: ['data'],
+        },
       },
     },
-  },
+  }
 }
 
 const IMAGE_SUCCESS = {
@@ -57,17 +127,33 @@ const IMAGE_SUCCESS = {
 }
 
 const ERROR_RESPONSES = {
-  '400': errorResponse('Invalid input'),
-  '401': errorResponse('Missing, unknown or expired key'),
-  '403': errorResponse('The key lacks the required permission'),
-  '404': errorResponse('Not found'),
-  '405': errorResponse('The path does not support this method'),
-  '409': errorResponse('The record changed or is in use'),
-  '413': errorResponse('The request body is too large'),
-  '415': errorResponse('Unsupported Content-Type'),
-  '422': errorResponse('The journal refused the change'),
-  '429': errorResponse('Rate limit reached; see Retry-After'),
-  '500': errorResponse('Unexpected server error'),
+  '400': errorResponse(400, 'Invalid input', 'invalid_input'),
+  '401': errorResponse(401, 'Missing, unknown or expired key', 'unauthorized'),
+  '403': errorResponse(
+    403,
+    'The key lacks the required permission',
+    'insufficient_scope',
+  ),
+  '404': errorResponse(404, 'Not found', 'not_found'),
+  '405': errorResponse(
+    405,
+    'The path does not support this method',
+    'invalid_input',
+  ),
+  '409': errorResponse(409, 'The record changed or is in use', 'conflict'),
+  '413': errorResponse(413, 'The request body is too large', 'invalid_input'),
+  '415': errorResponse(415, 'Unsupported Content-Type', 'invalid_input'),
+  '422': errorResponse(
+    422,
+    'The journal refused the change',
+    'operation_failed',
+  ),
+  '429': errorResponse(
+    429,
+    'Rate limit reached; see Retry-After',
+    'rate_limited',
+  ),
+  '500': errorResponse(500, 'Unexpected server error', 'server_error'),
 }
 
 function requestBody(operation: IntegrationOperation, body: JsonSchema) {
@@ -223,7 +309,7 @@ function operationDocument(
     ...requestBody(operation, rest),
     responses: {
       [created ? '201' : '200']:
-        operation.name === 'get_image' ? IMAGE_SUCCESS : JSON_SUCCESS,
+        operation.name === 'get_image' ? IMAGE_SUCCESS : jsonSuccess(operation),
       ...ERROR_RESPONSES,
     },
   }
@@ -261,34 +347,7 @@ export function buildOpenApiDocument(origin: string) {
       },
       schemas: {
         ...shared.schemas,
-        Error: {
-          type: 'object',
-          required: ['error'],
-          properties: {
-            error: {
-              type: 'object',
-              required: ['code', 'message'],
-              properties: {
-                code: {
-                  type: 'string',
-                  enum: [
-                    'unauthorized',
-                    'invalid_input',
-                    'insufficient_scope',
-                    'not_found',
-                    'conflict',
-                    'operation_failed',
-                    'rate_limited',
-                    'server_error',
-                  ],
-                },
-                message: { type: 'string' },
-                scope: { type: 'string' },
-                issues: { type: 'array', items: { type: 'object' } },
-              },
-            },
-          },
-        },
+        ...responseSchemas.definitions,
       },
     },
   }

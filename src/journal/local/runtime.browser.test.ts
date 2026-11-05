@@ -3,9 +3,18 @@
 import { afterEach, expect, mock, setDefaultTimeout, test } from 'bun:test'
 import { readdir, readFile } from 'node:fs/promises'
 import { PGlite } from '@electric-sql/pglite'
-import { createBean, getBeanCollection, updateBean } from '@/journal/beans'
+import Ajv2020 from 'ajv/dist/2020'
+import addFormats from 'ajv-formats'
+import {
+  createBean,
+  deleteBean,
+  getBean,
+  getBeanCollection,
+  updateBean,
+} from '@/journal/beans'
 import { decodeInput, rejectedPrefix } from '@/journal/codec'
 import { getJournalFunction } from '@/journal/function'
+import responseSchemas from '@/lib/server/integrations/response-schemas.gen.json'
 import { currentScope, LocalJournal } from './client'
 import { loadLocalMedia, localMediaObjectUrl } from './media'
 import { migrateJournal } from './migrate'
@@ -115,6 +124,37 @@ test('a synced write runs the shared SQL locally and records a replayable outbox
     name: 'Local bean',
     weight: '250',
   })
+})
+
+test('published response schemas accept real journal results after JSON serialization', async () => {
+  const journal = await openJournal(true)
+  await journal.client.query(
+    "insert into roastbook_local.id_pool (table_name, id) values ('beans', 501), ('bean_purchases', 701)",
+  )
+  const ajv = new Ajv2020({ strict: false, allowUnionTypes: true })
+  addFormats(ajv)
+  function validate(
+    name: keyof typeof responseSchemas.operations,
+    value: unknown,
+  ) {
+    const accepts = ajv.compile({
+      ...responseSchemas.operations[name],
+      components: { schemas: responseSchemas.definitions },
+    })
+    expect(
+      accepts(JSON.parse(JSON.stringify(value ?? null))),
+      JSON.stringify(accepts.errors),
+    ).toBe(true)
+  }
+  const bean = await createBean({ data: { name: 'API bean', weight: '250' } })
+  validate('create_bean', bean)
+  validate('get_bean', await getBean({ data: bean.id }))
+  validate('list_beans', await getBeanCollection({ data: {} }))
+  validate(
+    'update_bean',
+    await updateBean({ data: { id: bean.id, name: 'Updated API bean' } }),
+  )
+  validate('delete_bean', await deleteBean({ data: bean.id }))
 })
 
 test('offline creates stop with a readable error when reserved identifiers run out', async () => {

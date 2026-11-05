@@ -1,4 +1,8 @@
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, spyOn, test } from 'bun:test'
+import Ajv2020 from 'ajv/dist/2020'
+import addFormats from 'ajv-formats'
+import { z } from 'zod'
+import { DomainError } from '@/lib/domain-errors'
 import { INTEGRATION_SCOPES } from '@/modules/integrations/scopes'
 import { apiQueryInput, matchApiRoute } from './api.server'
 import {
@@ -13,7 +17,32 @@ import {
   getIntegrationOperation,
   INTEGRATION_OPERATIONS,
 } from './operations.server'
-import { rateLimitHeaders } from './rate-limit.server'
+import { rateLimitedResponse, rateLimitHeaders } from './rate-limit.server'
+import responseSchemas from './response-schemas.gen.json'
+import {
+  describeIntegrationError,
+  InsufficientScopeError,
+} from './runtime.server'
+
+const ajv = new Ajv2020({ strict: false, allowUnionTypes: true })
+addFormats(ajv)
+
+function at(value: unknown, ...keys: string[]): unknown {
+  return keys.reduce<unknown>((node, key) => {
+    if (!node || typeof node !== 'object') throw new Error(`Missing ${key}`)
+    return Reflect.get(node, key)
+  }, value)
+}
+
+function responseValidator(path: string, method: string, status: number) {
+  const document = buildOpenApiDocument('https://coffee.example')
+  const pointer = path.replaceAll('~', '~0').replaceAll('/', '~1')
+  return ajv.compile({
+    components: document.components,
+    paths: document.paths,
+    $ref: `#/paths/${pointer}/${method}/responses/${status}/content/application~1json/schema`,
+  })
+}
 
 describe('integration operation catalog', () => {
   test('names and routes are unique', () => {
@@ -150,6 +179,158 @@ describe('REST routing', () => {
         )
       expect(target, reference).toBeDefined()
     }
+  })
+
+  test('describes the success payload of every JSON operation', () => {
+    expect(Object.keys(responseSchemas.operations).sort()).toEqual(
+      INTEGRATION_OPERATIONS.filter(({ name }) => name !== 'get_image')
+        .map(({ name }) => name)
+        .sort(),
+    )
+    for (const operation of INTEGRATION_OPERATIONS) {
+      if (operation.name === 'get_image') continue
+      const status =
+        operation.method === 'POST' && operation.name.startsWith('create_')
+          ? 201
+          : 200
+      const validate = responseValidator(
+        `/api/v1${operation.path}`,
+        operation.method.toLowerCase(),
+        status,
+      )
+      expect(validate({}), operation.name).toBe(false)
+    }
+    const validate = responseValidator(
+      '/api/v1/gear/{entityId}/brews',
+      'get',
+      200,
+    )
+    expect(validate({ data: null })).toBe(false)
+    expect(validate({ data: { items: [] } })).toBe(false)
+    expect(
+      validate({
+        data: {
+          scopeLabel: 'Grinder',
+          page: 1,
+          pageSize: 12,
+          totalItems: 0,
+          totalPages: 0,
+          items: [],
+        },
+      }),
+      JSON.stringify(validate.errors),
+    ).toBe(true)
+    expect(
+      responseValidator('/api/v1/brews/{id}', 'delete', 200)({ data: null }),
+    ).toBe(true)
+    expect(
+      responseValidator(
+        '/api/v1/shottimer',
+        'get',
+        200,
+      )({ data: { targetSeconds: null } }),
+    ).toBe(true)
+    expect(
+      responseValidator(
+        '/api/v1/shottimer',
+        'get',
+        200,
+      )({ data: { targetSeconds: '30' } }),
+    ).toBe(false)
+  })
+
+  test('error examples match their status and schema', () => {
+    const expected = {
+      400: 'invalid_input',
+      401: 'unauthorized',
+      403: 'insufficient_scope',
+      404: 'not_found',
+      405: 'invalid_input',
+      409: 'conflict',
+      413: 'invalid_input',
+      415: 'invalid_input',
+      422: 'operation_failed',
+      429: 'rate_limited',
+      500: 'server_error',
+    }
+    const document = buildOpenApiDocument('https://coffee.example')
+    for (const [status, code] of Object.entries(expected)) {
+      const content = at(
+        document.paths,
+        '/api/v1/brews',
+        'get',
+        'responses',
+        status,
+        'content',
+        'application/json',
+      )
+      const example = at(content, 'example')
+      expect(at(example, 'error', 'code')).toBe(code)
+      const validate = responseValidator('/api/v1/brews', 'get', Number(status))
+      expect(validate(example), JSON.stringify(validate.errors)).toBe(true)
+      expect(
+        validate({
+          error: {
+            code: code === 'server_error' ? 'unauthorized' : 'server_error',
+            message: 'Wrong code',
+          },
+        }),
+      ).toBe(false)
+      const properties = at(
+        content,
+        'schema',
+        'properties',
+        'error',
+        'properties',
+      )
+      expect(at(properties, 'scope') !== undefined).toBe(status === '403')
+      expect(at(properties, 'issues') !== undefined).toBe(status === '400')
+    }
+  })
+
+  test('runtime errors conform to their documented response schemas', async () => {
+    const invalid = z.object({ id: z.number() }).safeParse({ id: 'bad' })
+    if (invalid.success) throw new Error('Expected invalid input')
+    const errors = [
+      invalid.error,
+      new InsufficientScopeError('brews:read'),
+      new DomainError('validation', 'Invalid brew'),
+      new DomainError('not_found', 'Brew not found'),
+      new DomainError('conflict', 'Brew changed'),
+      new Error('Bean not found'),
+      new Error('This bean is in use'),
+      new TypeError('Private implementation detail'),
+    ]
+    const logging = spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      for (const error of errors) {
+        const { status, ...payload } = describeIntegrationError(error)
+        const validate = responseValidator('/api/v1/brews', 'get', status)
+        expect(
+          validate({ error: payload }),
+          JSON.stringify(validate.errors),
+        ).toBe(true)
+      }
+    } finally {
+      logging.mockRestore()
+    }
+    const response = rateLimitedResponse({
+      allowed: false,
+      windows: [
+        {
+          window: 'minute',
+          limit: 60,
+          used: 61,
+          remaining: 0,
+          resetAt: '2026-01-01T12:01:00.000Z',
+        },
+      ],
+    })
+    const validate = responseValidator('/api/v1/brews', 'get', response.status)
+    expect(
+      validate(await response.json()),
+      JSON.stringify(validate.errors),
+    ).toBe(true)
   })
 
   test('keeps the API reference public and versioned with the bundle', () => {

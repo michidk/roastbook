@@ -134,7 +134,8 @@ no key at all.
 ## Reference
 
 `/api/v1/docs` is an interactive API reference for the running version: every
-endpoint with its parameters, body, permission, and example requests in curl
+endpoint with its parameters, body, permission, response fields, and example
+requests in curl
 and other languages. Settings → API links to it. It needs no sign-in, so you
 can link to it from elsewhere. It follows the theme and palettes you last used
 in Roastbook on the same browser.
@@ -157,8 +158,11 @@ header and the same-origin check), and `/api/v1` itself never accepts a
 browser session.
 
 The reference and `/api/v1/openapi.json` are generated from the same operation
-catalog as the API and MCP tools, so they change with the code and need no
-upkeep. The page uses [Scalar](https://github.com/scalar/scalar), served by
+catalog as the API and MCP tools. Success response schemas come from the
+handlers’ TypeScript return types, including nested records, pagination, nulls,
+and dates serialized as ISO strings. Each error status specifies its actual
+error code and a matching example. The page uses
+[Scalar](https://github.com/scalar/scalar), served by
 Roastbook itself with its telemetry, AI assistant, and request proxy turned
 off; its only outside requests are the Google Fonts the app uses too.
 
