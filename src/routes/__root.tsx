@@ -1,5 +1,6 @@
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import {
+  ClientOnly,
   createRootRoute,
   HeadContent,
   Outlet,
@@ -154,12 +155,20 @@ export const Route = createRootRoute({
         : []),
     ],
   }),
-  component: RootComponent,
+  component: DEMO_MODE ? DemoRootComponent : RootComponent,
   pendingComponent: AppPending,
   shellComponent: RootDocument,
   errorComponent: RootErrorComponent,
   notFoundComponent: () => <RouteNotFound />,
 })
+
+function DemoRootComponent() {
+  return (
+    <ClientOnly fallback={<AppPending />}>
+      <RootComponent />
+    </ClientOnly>
+  )
+}
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   const settings = Route.useLoaderData()
