@@ -429,15 +429,12 @@ function CreateKeyDialog({
                     new key when it runs out.
                   </p>
                 ) : null}
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Permissions</p>
-                  <ScopePicker
-                    id={`${id}-scopes`}
-                    value={scopes}
-                    onChange={setScopes}
-                    disabled={busy}
-                  />
-                </div>
+                <PermissionsField
+                  id={`${id}-scopes`}
+                  value={scopes}
+                  onChange={setScopes}
+                  disabled={busy}
+                />
               </DialogBody>
               <DialogFooter>
                 <Button
@@ -524,15 +521,12 @@ function EditKeyDialog({
                   onChange={(event) => setName(event.target.value)}
                 />
               </div>
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Permissions</p>
-                <ScopePicker
-                  id={`${id}-scopes`}
-                  value={scopes}
-                  onChange={setScopes}
-                  disabled={busy}
-                />
-              </div>
+              <PermissionsField
+                id={`${id}-scopes`}
+                value={scopes}
+                onChange={setScopes}
+                disabled={busy}
+              />
             </DialogBody>
             <DialogFooter>
               <Button
@@ -554,5 +548,14 @@ function EditKeyDialog({
         </DialogContent>
       </Dialog>
     </>
+  )
+}
+
+function PermissionsField(props: Parameters<typeof ScopePicker>[0]) {
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-medium">Permissions</p>
+      <ScopePicker {...props} />
+    </div>
   )
 }

@@ -84,39 +84,84 @@ export function useReauthentication() {
   return { confirm, dialog }
 }
 
-function ReauthenticationDialog({
-  action,
-  email,
-  userId,
-  onConfirmed,
-  onCancel,
-}: {
+type FlowProps = {
   readonly action: ReauthenticationAction
   readonly email: string
   readonly userId: string
   readonly onConfirmed: (token: string | undefined) => void
-  readonly onCancel: () => void
-}) {
-  const [step, setStep] = useState<'choose' | 'code'>('choose')
-  const [code, setCode] = useState('')
+}
+
+async function signInWithPasskey() {
+  const result = await authClient.signIn.passkey()
+  if (result.error)
+    throw new Error('Your passkey was not confirmed. Try again or use email.')
+}
+
+async function emailCode(email: string) {
+  const result = await authClient.emailOtp.sendVerificationOtp({
+    email,
+    type: 'sign-in',
+  })
+  if (result.error)
+    throw new Error(result.error.message ?? 'Could not send your code')
+}
+
+async function signInWithCode(email: string, otp: string) {
+  const result = await authClient.signIn.emailOtp({ email, otp })
+  if (result.error)
+    throw new Error(result.error.message ?? 'This code is invalid or expired')
+}
+
+/** Seconds until another code may be sent. */
+function useResendCountdown(active: boolean) {
   const [sentAt, setSentAt] = useState(0)
   const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (!active) return
+    const timer = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [active])
+  return {
+    seconds: Math.max(0, Math.ceil((sentAt + RESEND_DELAY_MS - now) / 1000)),
+    restart() {
+      const time = Date.now()
+      setSentAt(time)
+      setNow(time)
+    },
+  }
+}
+
+/** The confirmation's sign-in: a passkey, or an emailed code. */
+function useReauthenticationFlow({
+  action,
+  email,
+  userId,
+  onConfirmed,
+}: FlowProps) {
+  const [step, setStep] = useState<'choose' | 'code'>('choose')
+  const [code, setCode] = useState('')
+  const countdown = useResendCountdown(step === 'code')
   const [busy, setBusy] = useState<'passkey' | 'sending' | 'verifying' | null>(
     null,
   )
   const [error, setError] = useState('')
-  const passkeys =
-    typeof window !== 'undefined' && Boolean(window.PublicKeyCredential)
-  const resendIn = Math.max(
-    0,
-    Math.ceil((sentAt + RESEND_DELAY_MS - now) / 1000),
-  )
 
-  useEffect(() => {
-    if (step !== 'code') return
-    const timer = window.setInterval(() => setNow(Date.now()), 1000)
-    return () => window.clearInterval(timer)
-  }, [step])
+  /** Runs one sign-in attempt; a failure keeps the dialog open with a reason. */
+  async function attempt(
+    kind: NonNullable<typeof busy>,
+    fallback: string,
+    work: () => Promise<void>,
+  ) {
+    setBusy(kind)
+    setError('')
+    try {
+      await work()
+    } catch (cause) {
+      setError(getErrorMessage(cause, fallback))
+    } finally {
+      setBusy(null)
+    }
+  }
 
   /** The fresh sign-in is exchanged for this action's confirmation. */
   async function finish() {
@@ -127,158 +172,73 @@ function ReauthenticationDialog({
     )
   }
 
-  async function confirmWithPasskey() {
-    setBusy('passkey')
-    setError('')
-    try {
-      const result = await authClient.signIn.passkey()
-      if (result.error)
-        throw new Error(
-          'Your passkey was not confirmed. Try again or use email.',
-        )
-      await finish()
-    } catch (cause) {
-      setError(getErrorMessage(cause, 'Could not use your passkey'))
-      setBusy(null)
-    }
-  }
-
-  async function sendCode() {
-    setBusy('sending')
-    setError('')
-    try {
-      const result = await authClient.emailOtp.sendVerificationOtp({
-        email,
-        type: 'sign-in',
+  return {
+    step,
+    code,
+    busy,
+    error,
+    resendIn: countdown.seconds,
+    setCode(value: string) {
+      setCode(value)
+      setError('')
+    },
+    confirmWithPasskey: () =>
+      attempt('passkey', 'Could not use your passkey', async () => {
+        await signInWithPasskey()
+        await finish()
+      }),
+    sendCode: () =>
+      attempt('sending', 'Could not send your code', async () => {
+        await emailCode(email)
+        countdown.restart()
+        setCode('')
+        setStep('code')
+      }),
+    verifyCode: (event: FormEvent) => {
+      event.preventDefault()
+      if (code.length !== SIGN_IN_CODE_LENGTH) return
+      return attempt('verifying', 'Could not confirm your code', async () => {
+        await signInWithCode(email, code)
+        await finish()
       })
-      if (result.error)
-        throw new Error(result.error.message ?? 'Could not send your code')
-      const time = Date.now()
-      setSentAt(time)
-      setNow(time)
-      setCode('')
-      setStep('code')
-    } catch (cause) {
-      setError(getErrorMessage(cause, 'Could not send your code'))
-    } finally {
-      setBusy(null)
-    }
+    },
   }
+}
 
-  async function verifyCode(event: FormEvent) {
-    event.preventDefault()
-    if (code.length !== SIGN_IN_CODE_LENGTH) return
-    setBusy('verifying')
-    setError('')
-    try {
-      const result = await authClient.signIn.emailOtp({ email, otp: code })
-      if (result.error)
-        throw new Error(
-          result.error.message ?? 'This code is invalid or expired',
-        )
-      await finish()
-    } catch (cause) {
-      setError(getErrorMessage(cause, 'Could not confirm your code'))
-      setBusy(null)
-    }
-  }
+type Flow = ReturnType<typeof useReauthenticationFlow>
 
+function ReauthenticationDialog({
+  onCancel,
+  ...props
+}: FlowProps & { readonly onCancel: () => void }) {
+  const flow = useReauthenticationFlow(props)
   return (
-    <Dialog open onOpenChange={(open) => !open && !busy && onCancel()}>
-      <DialogContent showCloseButton={!busy}>
-        <form onSubmit={(event) => void verifyCode(event)} className="contents">
+    <Dialog open onOpenChange={(open) => !open && !flow.busy && onCancel()}>
+      <DialogContent showCloseButton={!flow.busy}>
+        <form
+          onSubmit={(event) => void flow.verifyCode(event)}
+          className="contents"
+        >
           <DialogHeader>
             <DialogTitle>Confirm it’s you</DialogTitle>
             <DialogDescription>
-              To {REAUTHENTICATION_ACTIONS[action]}, sign in again. This
+              To {REAUTHENTICATION_ACTIONS[props.action]}, sign in again. This
               confirmation is for this action only.
             </DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-4">
-            {step === 'choose' ? (
-              <div className="grid gap-2">
-                {passkeys ? (
-                  <Button
-                    type="button"
-                    disabled={busy !== null}
-                    onClick={() => void confirmWithPasskey()}
-                  >
-                    <KeyRound aria-hidden="true" />
-                    {busy === 'passkey'
-                      ? 'Waiting for passkey…'
-                      : 'Use a passkey'}
-                  </Button>
-                ) : null}
-                <Button
-                  type="button"
-                  variant={passkeys ? 'outline' : 'default'}
-                  disabled={busy !== null}
-                  onClick={() => void sendCode()}
-                >
-                  <Mail aria-hidden="true" />
-                  {busy === 'sending' ? 'Sending…' : 'Email me a code'}
-                </Button>
-                <p className="text-sm text-muted-foreground">
-                  The code goes to {email}.
-                </p>
-              </div>
+            {flow.step === 'choose' ? (
+              <MethodChoice flow={flow} email={props.email} />
             ) : (
-              <div className="space-y-2">
-                <Label htmlFor="reauthentication-code">
-                  {SIGN_IN_CODE_LENGTH}-digit code sent to {email}
-                </Label>
-                <InputOTP
-                  id="reauthentication-code"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  pattern={REGEXP_ONLY_DIGITS}
-                  maxLength={SIGN_IN_CODE_LENGTH}
-                  pasteTransformer={(value) => value.replace(/\D/g, '')}
-                  value={code}
-                  onChange={(value) => {
-                    setCode(value)
-                    if (error) setError('')
-                  }}
-                  autoFocus
-                  aria-invalid={error ? true : undefined}
-                  aria-describedby={
-                    error ? 'reauthentication-error' : undefined
-                  }
-                  containerClassName="w-full justify-center gap-2"
-                >
-                  <InputOTPGroup aria-hidden="true">
-                    {[0, 1, 2].map((index) => (
-                      <InputOTPSlot key={index} index={index} />
-                    ))}
-                  </InputOTPGroup>
-                  <InputOTPSeparator
-                    aria-hidden="true"
-                    className="w-2 justify-center text-muted-foreground"
-                  />
-                  <InputOTPGroup aria-hidden="true">
-                    {[3, 4, 5].map((index) => (
-                      <InputOTPSlot key={index} index={index} />
-                    ))}
-                  </InputOTPGroup>
-                </InputOTP>
-                <Button
-                  type="button"
-                  variant="link"
-                  className="h-auto px-0"
-                  disabled={busy !== null || resendIn > 0}
-                  onClick={() => void sendCode()}
-                >
-                  {resendIn > 0 ? `Resend code in ${resendIn}s` : 'Resend code'}
-                </Button>
-              </div>
+              <CodeEntry flow={flow} email={props.email} />
             )}
-            {error ? (
+            {flow.error ? (
               <p
                 id="reauthentication-error"
                 role="alert"
                 className="text-sm text-destructive-text"
               >
-                {error}
+                {flow.error}
               </p>
             ) : null}
           </DialogBody>
@@ -286,22 +246,113 @@ function ReauthenticationDialog({
             <Button
               type="button"
               variant="outline"
-              disabled={busy !== null}
+              disabled={flow.busy !== null}
               onClick={onCancel}
             >
               Cancel
             </Button>
-            {step === 'code' ? (
+            {flow.step === 'code' ? (
               <Button
                 type="submit"
-                disabled={busy !== null || code.length !== SIGN_IN_CODE_LENGTH}
+                disabled={
+                  flow.busy !== null || flow.code.length !== SIGN_IN_CODE_LENGTH
+                }
               >
-                {busy === 'verifying' ? 'Confirming…' : 'Confirm'}
+                {flow.busy === 'verifying' ? 'Confirming…' : 'Confirm'}
               </Button>
             ) : null}
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function MethodChoice({
+  flow,
+  email,
+}: {
+  readonly flow: Flow
+  readonly email: string
+}) {
+  const passkeys =
+    typeof window !== 'undefined' && Boolean(window.PublicKeyCredential)
+  return (
+    <div className="grid gap-2">
+      {passkeys ? (
+        <Button
+          type="button"
+          disabled={flow.busy !== null}
+          onClick={() => void flow.confirmWithPasskey()}
+        >
+          <KeyRound aria-hidden="true" />
+          {flow.busy === 'passkey' ? 'Waiting for passkey…' : 'Use a passkey'}
+        </Button>
+      ) : null}
+      <Button
+        type="button"
+        variant={passkeys ? 'outline' : 'default'}
+        disabled={flow.busy !== null}
+        onClick={() => void flow.sendCode()}
+      >
+        <Mail aria-hidden="true" />
+        {flow.busy === 'sending' ? 'Sending…' : 'Email me a code'}
+      </Button>
+      <p className="text-sm text-muted-foreground">The code goes to {email}.</p>
+    </div>
+  )
+}
+
+function CodeEntry({
+  flow,
+  email,
+}: {
+  readonly flow: Flow
+  readonly email: string
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="reauthentication-code">
+        {SIGN_IN_CODE_LENGTH}-digit code sent to {email}
+      </Label>
+      <InputOTP
+        id="reauthentication-code"
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        pattern={REGEXP_ONLY_DIGITS}
+        maxLength={SIGN_IN_CODE_LENGTH}
+        pasteTransformer={(value) => value.replace(/\D/g, '')}
+        value={flow.code}
+        onChange={flow.setCode}
+        autoFocus
+        aria-invalid={flow.error ? true : undefined}
+        aria-describedby={flow.error ? 'reauthentication-error' : undefined}
+        containerClassName="w-full justify-center gap-2"
+      >
+        <InputOTPGroup aria-hidden="true">
+          {[0, 1, 2].map((index) => (
+            <InputOTPSlot key={index} index={index} />
+          ))}
+        </InputOTPGroup>
+        <InputOTPSeparator
+          aria-hidden="true"
+          className="w-2 justify-center text-muted-foreground"
+        />
+        <InputOTPGroup aria-hidden="true">
+          {[3, 4, 5].map((index) => (
+            <InputOTPSlot key={index} index={index} />
+          ))}
+        </InputOTPGroup>
+      </InputOTP>
+      <Button
+        type="button"
+        variant="link"
+        className="h-auto px-0"
+        disabled={flow.busy !== null || flow.resendIn > 0}
+        onClick={() => void flow.sendCode()}
+      >
+        {flow.resendIn > 0 ? `Resend code in ${flow.resendIn}s` : 'Resend code'}
+      </Button>
+    </div>
   )
 }

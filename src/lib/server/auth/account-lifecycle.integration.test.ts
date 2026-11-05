@@ -312,7 +312,12 @@ suite('private account lifecycle', () => {
     const [stored] = await database()
       .select()
       .from(integrationTokens)
-      .where(eq(integrationTokens.userId, second.id))
+      .where(
+        and(
+          eq(integrationTokens.userId, second.id),
+          eq(integrationTokens.kind, 'mcp'),
+        ),
+      )
     if (!stored) throw new Error('Missing token')
     await asFirst(() => revokeIntegrationCredential(stored.id))
     expect(
