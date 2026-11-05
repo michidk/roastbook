@@ -1,3 +1,5 @@
+import { useRouter, useRouterState } from '@tanstack/react-router'
+import type { ComponentType } from 'react'
 import { Page } from '@/components/page-layout'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -97,13 +99,26 @@ export function DetailPending() {
   )
 }
 
-/** The app frame while the app and its journal open: navigation and a page. */
+/** The app frame while the app and its journal open: navigation and the opened page's skeleton. */
 export function AppPending() {
+  const router = useRouter()
+  const routeId = useRouterState({
+    select: (state) => state.matches.at(-1)?.routeId,
+  })
+  const pending = routeId
+    ? (router.routesById[routeId]?.options.pendingComponent as
+        | ComponentType
+        | undefined)
+    : undefined
+  // The root route's own pending component is this frame.
+  const PagePending = pending && pending !== AppPending ? pending : RoutePending
   return (
     <div role="status">
       <span className="sr-only">Loading</span>
       <div className="h-14 border-b border-border bg-card lg:h-[68px]" />
-      <RoutePending />
+      <div className="mx-auto w-full max-w-7xl px-4 py-5 md:px-8 md:py-8">
+        <PagePending />
+      </div>
     </div>
   )
 }
