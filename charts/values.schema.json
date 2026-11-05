@@ -385,6 +385,20 @@
         }
       }
     },
+    "integrations": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "rateLimit": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "perMinute": { "type": "integer", "minimum": 1, "maximum": 100000 },
+            "perDay": { "type": "integer", "minimum": 1, "maximum": 10000000 }
+          }
+        }
+      }
+    },
     "migrations": {
       "type": "object",
       "additionalProperties": false,

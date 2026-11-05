@@ -7,6 +7,7 @@ import { createMcpHandler } from '@modelcontextprotocol/server'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { beans, brewingMethods, shots } from '@/db/schema'
+import { allScopes } from '@/modules/integrations/scopes'
 import { createRoastbookMcpServer } from './tools.server'
 
 const integrationDescribe = process.env.TEST_DATABASE_URL
@@ -17,9 +18,12 @@ integrationDescribe('MCP tools against PostgreSQL', () => {
   let beanId: number
   let methodId: number
   let brewId: number | undefined
-  const handler = createMcpHandler(() => createRoastbookMcpServer(), {
-    keepAliveMs: 0,
-  })
+  const handler = createMcpHandler(
+    () => createRoastbookMcpServer({ scopes: allScopes('write') }),
+    {
+      keepAliveMs: 0,
+    },
+  )
   const client = new Client(
     { name: 'integration', version: '1' },
     { versionNegotiation: { mode: { pin: '2026-07-28' } } },
@@ -71,7 +75,7 @@ integrationDescribe('MCP tools against PostgreSQL', () => {
     expect(JSON.stringify(brew.structuredContent)).toContain('mcp integration')
     const beansList = await client.callTool({
       name: 'list_beans',
-      arguments: { limit: 50 },
+      arguments: { page: 1 },
     })
     expect(beansList.isError).not.toBe(true)
     const methods = await client.callTool({

@@ -1,10 +1,9 @@
 import '@tanstack/react-start/server-only'
-import { createHash } from 'node:crypto'
-import { and, eq, gt, isNull } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { getControlDb } from '@/db/connection.server'
 import type { JournalIdentity } from '@/db/journal-context.server'
 import { withJournalResponse } from '@/db/journal-response.server'
-import { authUsers, integrationTokens } from '@/db/schema'
+import { authUsers } from '@/db/schema'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { getServerEnv } from '@/lib/env.server'
 import { requestOrigin } from '@/lib/request-origin'
@@ -12,14 +11,26 @@ import {
   defaultIdentity,
   initializeUser,
 } from '@/lib/server/auth/identity.server'
+import { findIntegrationCredential } from '@/lib/server/auth/integrations.server'
 import { validateMcpRequest } from '../mcp/http-policy.server'
 import { getAuth } from './auth.server'
 import { handleAuthRequest } from './http.server'
 import { authorizeMcpRequest } from './mcp-authorization.server'
 import { isAdminEmail } from './registration.server'
 
-export function hashIntegrationToken(token: string) {
-  return createHash('sha256').update(token).digest('hex')
+export function isApiPath(path: string) {
+  return path === '/api/v1' || path.startsWith('/api/v1/')
+}
+
+/** The public API description, readable without a key. */
+export function isPublicApiPath(path: string) {
+  return path === '/api/v1/openapi.json'
+}
+
+function integrationKind(path: string) {
+  if (path === '/api/mcp') return 'mcp'
+  if (isApiPath(path)) return 'api'
+  return null
 }
 
 async function resolveIdentity(request: Request) {
@@ -41,31 +52,15 @@ async function resolveJournalIdentity(
       authenticatedAt: null,
     }
   const path = new URL(request.url).pathname
-  const integration =
-    path === '/api/mcp'
-      ? 'mcp'
-      : path.startsWith('/api/shottimer/')
-        ? 'shottimer'
-        : null
+  const integration = integrationKind(path)
   const env = getServerEnv()
   if (integration) {
+    // Integrations authenticate with their own bearer token, never a session.
     const token = /^Bearer ([A-Za-z0-9_-]{32,200})$/i.exec(
       request.headers.get('authorization') ?? '',
     )?.[1]
     if (!token) return null
-    const [match] = await getControlDb()
-      .select({ user: authUsers })
-      .from(integrationTokens)
-      .innerJoin(authUsers, eq(integrationTokens.userId, authUsers.id))
-      .where(
-        and(
-          eq(integrationTokens.tokenHash, hashIntegrationToken(token)),
-          eq(integrationTokens.kind, integration),
-          gt(integrationTokens.expiresAt, new Date()),
-          isNull(authUsers.deletingAt),
-        ),
-      )
-      .limit(1)
+    const match = await findIntegrationCredential(token, integration)
     if (!match) return null
     return {
       id: match.user.id,
@@ -73,9 +68,11 @@ async function resolveJournalIdentity(
       role: match.user.role,
       authentication: env.AUTH_ENABLED,
       authenticatedAt: null,
-      ...(integration === 'mcp'
-        ? { mcpScopes: ['mcp:read', 'mcp:write'] }
-        : {}),
+      integration: {
+        channel: integration,
+        credentialId: match.id,
+        scopes: match.scopes,
+      },
     }
   }
   if (!env.AUTH_ENABLED) return defaultIdentity()
@@ -116,6 +113,7 @@ export async function handleJournalRequest(
   const path = new URL(request.url).pathname
   if (
     path === '/api/health' ||
+    (isPublicApiPath(path) && request.method === 'GET') ||
     (/^\/offline-shell\/?$/.test(path) && request.method === 'GET')
   )
     return next()
@@ -145,6 +143,23 @@ async function handlePrivateRequest(
   const path = new URL(request.url).pathname
   if (!identity) {
     if (path === '/api/mcp') return authorizeMcpRequest(request, next)
+    if (isApiPath(path))
+      return Response.json(
+        {
+          error: {
+            code: 'unauthorized',
+            message:
+              'Send an API key from Settings → API as Authorization: Bearer <key>',
+          },
+        },
+        {
+          status: 401,
+          headers: {
+            'Cache-Control': 'no-store',
+            'WWW-Authenticate': 'Bearer realm="Roastbook API"',
+          },
+        },
+      )
     if (path === '/login') return next()
     if (
       request.method === 'GET' &&
@@ -169,8 +184,7 @@ async function handlePrivateRequest(
     )
   if (
     !['GET', 'HEAD', 'OPTIONS'].includes(request.method) &&
-    path !== '/api/mcp' &&
-    !path.startsWith('/api/shottimer/')
+    !identity.integration
   ) {
     const origin = request.headers.get('origin')
     if (origin && origin !== requestOrigin(request, getServerEnv().PUBLIC_URL))

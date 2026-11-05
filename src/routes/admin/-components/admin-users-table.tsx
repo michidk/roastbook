@@ -1,5 +1,5 @@
+import { Link } from '@tanstack/react-router'
 import { ShieldCheck } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableBody,
@@ -34,7 +34,6 @@ export function AdminUsersTable({
             <TableHead scope="col" className="pl-4">
               Account
             </TableHead>
-            <TableHead scope="col">Role</TableHead>
             {adminUserColumns.map(({ id, header, align }) => (
               <TableHead
                 key={id}
@@ -54,40 +53,32 @@ export function AdminUsersTable({
             users.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="py-3 pl-4">
-                  <p
-                    className="max-w-64 truncate font-medium"
-                    title={user.email}
-                  >
-                    {user.email}
-                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <Link
+                      to="/admin/users/$userId"
+                      params={{ userId: user.id }}
+                      className="max-w-64 truncate font-medium underline-offset-4 hover:underline"
+                      title={user.email}
+                    >
+                      {user.email}
+                    </Link>
+                    {user.role === 'admin' ? (
+                      <ShieldCheck
+                        role="img"
+                        aria-label="Admin"
+                        className="size-4 shrink-0 text-link"
+                      >
+                        <title>Admin</title>
+                      </ShieldCheck>
+                    ) : null}
+                  </div>
                   <p
                     className="mt-0.5 text-xs text-muted-foreground"
                     title={dateTime(user.createdAt)}
                   >
                     Joined {date(user.createdAt)}
+                    {user.deletingAt ? ' · Deleting' : ''}
                   </p>
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    variant={
-                      user.deletingAt
-                        ? 'secondary'
-                        : user.role === 'admin'
-                          ? 'default'
-                          : 'outline'
-                    }
-                  >
-                    {user.deletingAt ? (
-                      'Deleting'
-                    ) : user.role === 'admin' ? (
-                      <>
-                        <ShieldCheck aria-hidden />
-                        Admin
-                      </>
-                    ) : (
-                      'User'
-                    )}
-                  </Badge>
                 </TableCell>
                 {adminUserColumns.map(({ id, align, cell }) => (
                   <TableCell
@@ -113,7 +104,7 @@ export function AdminUsersTable({
           ) : (
             <TableRow>
               <TableCell
-                colSpan={3 + adminUserColumns.length}
+                colSpan={2 + adminUserColumns.length}
                 className="py-12 text-center text-muted-foreground"
               >
                 No users on this page.

@@ -73,6 +73,18 @@ const serverSchema = {
   AI_TELEMETRY_STORE_PAYLOADS: booleanString,
   MCP_ALLOWED_HOSTS: optionalString,
   MCP_ALLOWED_ORIGINS: optionalString,
+  INTEGRATION_RATE_LIMIT_PER_MINUTE: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(100_000)
+    .default(120),
+  INTEGRATION_RATE_LIMIT_PER_DAY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(10_000_000)
+    .default(5_000),
 }
 
 const s3RequiredVariables = [
@@ -150,6 +162,10 @@ export function parseServerEnv(
         runtimeEnvironment.AI_TELEMETRY_STORE_PAYLOADS,
       MCP_ALLOWED_HOSTS: runtimeEnvironment.MCP_ALLOWED_HOSTS,
       MCP_ALLOWED_ORIGINS: runtimeEnvironment.MCP_ALLOWED_ORIGINS,
+      INTEGRATION_RATE_LIMIT_PER_MINUTE:
+        runtimeEnvironment.INTEGRATION_RATE_LIMIT_PER_MINUTE,
+      INTEGRATION_RATE_LIMIT_PER_DAY:
+        runtimeEnvironment.INTEGRATION_RATE_LIMIT_PER_DAY,
     },
     emptyStringAsUndefined: true,
     isServer: true,

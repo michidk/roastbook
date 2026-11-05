@@ -3,7 +3,6 @@ import { DECIMAL_CONSTRAINTS } from '@/lib/measurement-constraints'
 
 export type ShottimerSettings = {
   readonly enabled: boolean
-  readonly hasToken: boolean
 }
 
 export type ShottimerShot = {

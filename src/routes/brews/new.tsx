@@ -73,11 +73,8 @@ async function loadNewBrewReferenceData() {
     getDrinkTypeSuggestions(),
     getTasteTagSuggestions(),
     DEMO_MODE || !isConnectionOnline()
-      ? Promise.resolve({ enabled: false, hasToken: false })
-      : getShottimerSettings().catch(() => ({
-          enabled: false,
-          hasToken: false,
-        })),
+      ? Promise.resolve({ enabled: false })
+      : getShottimerSettings().catch(() => ({ enabled: false })),
   ])
   return {
     beans,

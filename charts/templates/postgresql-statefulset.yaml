@@ -79,10 +79,12 @@ spec:
       {{- end }}
   {{- if .Values.postgresql.primary.persistence.enabled }}
   volumeClaimTemplates:
+    # StatefulSets cannot change claim templates; only stable labels go here so
+    # chart and app version bumps still upgrade.
     - metadata:
         name: data
         labels:
-          {{- include "roastbook.labels" . | nindent 10 }}
+          {{- include "roastbook.selectorLabels" . | nindent 10 }}
           app.kubernetes.io/component: postgresql
       spec:
         accessModes:

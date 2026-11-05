@@ -1,5 +1,6 @@
 import {
   Bot,
+  Braces,
   CloudOff,
   Coffee,
   HardDrive,
@@ -27,6 +28,7 @@ export const SETTINGS_SECTIONS = [
   { to: '/settings/drinks', label: 'Drinks', icon: Coffee },
   { to: '/settings/taste-profile', label: 'Taste profile', icon: Sparkles },
   { to: '/settings/ai', label: 'AI Integration', icon: Bot },
+  { to: '/settings/api', label: 'API', icon: Braces },
   { to: '/settings/mcp', label: 'AI access (MCP)', icon: Plug },
   { to: '/settings/shottimer', label: 'Shottimer', icon: Timer },
   { to: '/settings/storage', label: 'Storage', icon: HardDrive },

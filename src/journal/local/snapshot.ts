@@ -26,8 +26,10 @@ export async function replaceJournalRows(
   const pendingUpTo = await journal.db.transaction(async (tx) => {
     // The rows already satisfy every constraint; load them in any order.
     await tx.execute(sql`set local session_replication_role = replica`)
+    // A device copy holds one owner. Rows seeded by the migrations belong to
+    // `local` and would collide with the downloaded identifiers.
     for (const [name, table] of tablesByName) {
-      await tx.execute(sql`delete from ${table} where owner_id = ${owner}`)
+      await tx.execute(sql`delete from ${table}`)
       await insertRows(tx, table, owner, tables[name] ?? [])
     }
     // Journals that never sync number their own records. A synced journal

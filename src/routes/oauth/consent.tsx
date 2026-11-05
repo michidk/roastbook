@@ -1,9 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
+import { ScopePicker } from '@/components/settings/scope-picker'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { authClient } from '@/lib/auth-client'
-import { getOAuthConsent } from '@/lib/server/oauth'
+import { approveOAuthConsentAccess, getOAuthConsent } from '@/lib/server/oauth'
+import type { IntegrationScope } from '@/modules/integrations/scopes'
 
 export const Route = createFileRoute('/oauth/consent')({
   loader: () =>
@@ -21,10 +23,15 @@ function ConsentPage() {
   const grant = Route.useLoaderData()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [access, setAccess] = useState<IntegrationScope[]>(grant.approvedAccess)
   async function consent(accept: boolean) {
     setBusy(true)
     setError('')
     try {
+      if (accept)
+        await approveOAuthConsentAccess({
+          data: { query: window.location.search.slice(1), scopes: access },
+        })
       const result = await authClient.oauth2.consent({ accept })
       if (result.error)
         throw new Error(
@@ -56,22 +63,26 @@ function ConsentPage() {
           <p>
             This application is asking to access your private coffee journal.
           </p>
-          <ul className="list-disc space-y-2 pl-5 text-sm">
-            <li>Read your brews, beans, recipes, equipment, and statistics.</li>
-            {grant.scopes.includes('mcp:write') ? (
-              <li>Log new brews in your journal.</li>
-            ) : null}
-            {grant.scopes.includes('offline_access') ? (
-              <li>
-                Stay connected when you are signed out, until you disconnect it
-                or its authorization expires.
-              </li>
-            ) : null}
-          </ul>
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Allow it to</p>
+            <ScopePicker
+              id="consent-scopes"
+              value={access}
+              allowed={grant.allowedAccess}
+              onChange={setAccess}
+              disabled={busy}
+            />
+          </div>
+          {grant.scopes.includes('offline_access') ? (
+            <p className="text-sm">
+              It stays connected when you are signed out, until you disconnect
+              it or its authorization expires.
+            </p>
+          ) : null}
           <p className="text-sm text-muted-foreground">
             It cannot administer accounts or read your AI provider key. Your MCP
-            tool switches still apply. You can disconnect it in Settings → AI
-            access (MCP).
+            tool switches still apply. You can change its permissions or
+            disconnect it in Settings → AI access (MCP).
           </p>
           <div className="text-sm">
             <p className="font-medium">Return address</p>
@@ -85,7 +96,10 @@ function ConsentPage() {
             </p>
           ) : null}
           <div className="flex flex-wrap gap-3">
-            <Button disabled={busy} onClick={() => void consent(true)}>
+            <Button
+              disabled={busy || !access.length}
+              onClick={() => void consent(true)}
+            >
               Allow access
             </Button>
             <Button

@@ -51,6 +51,7 @@ import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as SettingsAboutRouteImport } from './routes/settings/about'
 import { Route as SettingsAccountRouteImport } from './routes/settings/account'
 import { Route as SettingsAiRouteImport } from './routes/settings/ai'
+import { Route as SettingsApiRouteImport } from './routes/settings/api'
 import { Route as SettingsAppearanceRouteImport } from './routes/settings/appearance'
 import { Route as SettingsDrinksRouteImport } from './routes/settings/drinks'
 import { Route as SettingsMapRouteImport } from './routes/settings/map'
@@ -68,8 +69,8 @@ import { Route as ShotsNewRouteImport } from './routes/shots/new'
 import { Route as VisitsIndexRouteImport } from './routes/visits/index'
 import { Route as VisitsVisitIdRouteImport } from './routes/visits/$visitId'
 import { Route as VisitsNewRouteImport } from './routes/visits/new'
-import { Route as ApiShottimerShotsRouteImport } from './routes/api/shottimer/shots'
-import { Route as ApiShottimerTargetRouteImport } from './routes/api/shottimer/target'
+import { Route as AdminUsersUserIdRouteImport } from './routes/admin/users_/$userId'
+import { Route as ApiV1SplatRouteImport } from './routes/api/v1/$'
 import { Route as ApiAccountExportsJobIdRouteImport } from './routes/api/account/exports/$jobId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -283,6 +284,11 @@ const SettingsAiRoute = SettingsAiRouteImport.update({
   path: '/ai',
   getParentRoute: () => SettingsRoute,
 } as any)
+const SettingsApiRoute = SettingsApiRouteImport.update({
+  id: '/api',
+  path: '/api',
+  getParentRoute: () => SettingsRoute,
+} as any)
 const SettingsAppearanceRoute = SettingsAppearanceRouteImport.update({
   id: '/appearance',
   path: '/appearance',
@@ -368,14 +374,14 @@ const VisitsNewRoute = VisitsNewRouteImport.update({
   path: '/visits/new',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiShottimerShotsRoute = ApiShottimerShotsRouteImport.update({
-  id: '/api/shottimer/shots',
-  path: '/api/shottimer/shots',
-  getParentRoute: () => rootRouteImport,
+const AdminUsersUserIdRoute = AdminUsersUserIdRouteImport.update({
+  id: '/users_/$userId',
+  path: '/users/$userId',
+  getParentRoute: () => AdminRoute,
 } as any)
-const ApiShottimerTargetRoute = ApiShottimerTargetRouteImport.update({
-  id: '/api/shottimer/target',
-  path: '/api/shottimer/target',
+const ApiV1SplatRoute = ApiV1SplatRouteImport.update({
+  id: '/api/v1/$',
+  path: '/api/v1/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAccountExportsJobIdRoute = ApiAccountExportsJobIdRouteImport.update({
@@ -416,6 +422,7 @@ export interface FileRoutesByFullPath {
   '/settings/about': typeof SettingsAboutRoute
   '/settings/account': typeof SettingsAccountRoute
   '/settings/ai': typeof SettingsAiRoute
+  '/settings/api': typeof SettingsApiRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/drinks': typeof SettingsDrinksRoute
   '/settings/map': typeof SettingsMapRoute
@@ -444,8 +451,8 @@ export interface FileRoutesByFullPath {
   '/shops/': typeof ShopsIndexRoute
   '/shots/': typeof ShotsIndexRoute
   '/visits/': typeof VisitsIndexRoute
-  '/api/shottimer/shots': typeof ApiShottimerShotsRoute
-  '/api/shottimer/target': typeof ApiShottimerTargetRoute
+  '/admin/users/$userId': typeof AdminUsersUserIdRoute
+  '/api/v1/$': typeof ApiV1SplatRoute
   '/api/account/exports/$jobId': typeof ApiAccountExportsJobIdRoute
 }
 export interface FileRoutesByTo {
@@ -478,6 +485,7 @@ export interface FileRoutesByTo {
   '/settings/about': typeof SettingsAboutRoute
   '/settings/account': typeof SettingsAccountRoute
   '/settings/ai': typeof SettingsAiRoute
+  '/settings/api': typeof SettingsApiRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/drinks': typeof SettingsDrinksRoute
   '/settings/map': typeof SettingsMapRoute
@@ -506,8 +514,8 @@ export interface FileRoutesByTo {
   '/shops': typeof ShopsIndexRoute
   '/shots': typeof ShotsIndexRoute
   '/visits': typeof VisitsIndexRoute
-  '/api/shottimer/shots': typeof ApiShottimerShotsRoute
-  '/api/shottimer/target': typeof ApiShottimerTargetRoute
+  '/admin/users/$userId': typeof AdminUsersUserIdRoute
+  '/api/v1/$': typeof ApiV1SplatRoute
   '/api/account/exports/$jobId': typeof ApiAccountExportsJobIdRoute
 }
 export interface FileRoutesById {
@@ -543,6 +551,7 @@ export interface FileRoutesById {
   '/settings/about': typeof SettingsAboutRoute
   '/settings/account': typeof SettingsAccountRoute
   '/settings/ai': typeof SettingsAiRoute
+  '/settings/api': typeof SettingsApiRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/drinks': typeof SettingsDrinksRoute
   '/settings/map': typeof SettingsMapRoute
@@ -571,8 +580,8 @@ export interface FileRoutesById {
   '/shops/': typeof ShopsIndexRoute
   '/shots/': typeof ShotsIndexRoute
   '/visits/': typeof VisitsIndexRoute
-  '/api/shottimer/shots': typeof ApiShottimerShotsRoute
-  '/api/shottimer/target': typeof ApiShottimerTargetRoute
+  '/admin/users_/$userId': typeof AdminUsersUserIdRoute
+  '/api/v1/$': typeof ApiV1SplatRoute
   '/api/account/exports/$jobId': typeof ApiAccountExportsJobIdRoute
 }
 export interface FileRouteTypes {
@@ -609,6 +618,7 @@ export interface FileRouteTypes {
     | '/settings/about'
     | '/settings/account'
     | '/settings/ai'
+    | '/settings/api'
     | '/settings/appearance'
     | '/settings/drinks'
     | '/settings/map'
@@ -637,8 +647,8 @@ export interface FileRouteTypes {
     | '/shops/'
     | '/shots/'
     | '/visits/'
-    | '/api/shottimer/shots'
-    | '/api/shottimer/target'
+    | '/admin/users/$userId'
+    | '/api/v1/$'
     | '/api/account/exports/$jobId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -671,6 +681,7 @@ export interface FileRouteTypes {
     | '/settings/about'
     | '/settings/account'
     | '/settings/ai'
+    | '/settings/api'
     | '/settings/appearance'
     | '/settings/drinks'
     | '/settings/map'
@@ -699,8 +710,8 @@ export interface FileRouteTypes {
     | '/shops'
     | '/shots'
     | '/visits'
-    | '/api/shottimer/shots'
-    | '/api/shottimer/target'
+    | '/admin/users/$userId'
+    | '/api/v1/$'
     | '/api/account/exports/$jobId'
   id:
     | '__root__'
@@ -735,6 +746,7 @@ export interface FileRouteTypes {
     | '/settings/about'
     | '/settings/account'
     | '/settings/ai'
+    | '/settings/api'
     | '/settings/appearance'
     | '/settings/drinks'
     | '/settings/map'
@@ -763,8 +775,8 @@ export interface FileRouteTypes {
     | '/shops/'
     | '/shots/'
     | '/visits/'
-    | '/api/shottimer/shots'
-    | '/api/shottimer/target'
+    | '/admin/users_/$userId'
+    | '/api/v1/$'
     | '/api/account/exports/$jobId'
   fileRoutesById: FileRoutesById
 }
@@ -814,8 +826,7 @@ export interface RootRouteChildren {
   ShopsIndexRoute: typeof ShopsIndexRoute
   ShotsIndexRoute: typeof ShotsIndexRoute
   VisitsIndexRoute: typeof VisitsIndexRoute
-  ApiShottimerShotsRoute: typeof ApiShottimerShotsRoute
-  ApiShottimerTargetRoute: typeof ApiShottimerTargetRoute
+  ApiV1SplatRoute: typeof ApiV1SplatRoute
   ApiAccountExportsJobIdRoute: typeof ApiAccountExportsJobIdRoute
 }
 
@@ -1115,6 +1126,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsAiRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/settings/api': {
+      id: '/settings/api'
+      path: '/api'
+      fullPath: '/settings/api'
+      preLoaderRoute: typeof SettingsApiRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/settings/appearance': {
       id: '/settings/appearance'
       path: '/appearance'
@@ -1234,18 +1252,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VisitsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/shottimer/shots': {
-      id: '/api/shottimer/shots'
-      path: '/api/shottimer/shots'
-      fullPath: '/api/shottimer/shots'
-      preLoaderRoute: typeof ApiShottimerShotsRouteImport
-      parentRoute: typeof rootRouteImport
+    '/admin/users_/$userId': {
+      id: '/admin/users_/$userId'
+      path: '/users/$userId'
+      fullPath: '/admin/users/$userId'
+      preLoaderRoute: typeof AdminUsersUserIdRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/api/shottimer/target': {
-      id: '/api/shottimer/target'
-      path: '/api/shottimer/target'
-      fullPath: '/api/shottimer/target'
-      preLoaderRoute: typeof ApiShottimerTargetRouteImport
+    '/api/v1/$': {
+      id: '/api/v1/$'
+      path: '/api/v1/$'
+      fullPath: '/api/v1/$'
+      preLoaderRoute: typeof ApiV1SplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/account/exports/$jobId': {
@@ -1261,11 +1279,13 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  AdminUsersUserIdRoute: typeof AdminUsersUserIdRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
+  AdminUsersUserIdRoute: AdminUsersUserIdRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
@@ -1274,6 +1294,7 @@ interface SettingsRouteChildren {
   SettingsAboutRoute: typeof SettingsAboutRoute
   SettingsAccountRoute: typeof SettingsAccountRoute
   SettingsAiRoute: typeof SettingsAiRoute
+  SettingsApiRoute: typeof SettingsApiRoute
   SettingsAppearanceRoute: typeof SettingsAppearanceRoute
   SettingsDrinksRoute: typeof SettingsDrinksRoute
   SettingsMapRoute: typeof SettingsMapRoute
@@ -1289,6 +1310,7 @@ const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsAboutRoute: SettingsAboutRoute,
   SettingsAccountRoute: SettingsAccountRoute,
   SettingsAiRoute: SettingsAiRoute,
+  SettingsApiRoute: SettingsApiRoute,
   SettingsAppearanceRoute: SettingsAppearanceRoute,
   SettingsDrinksRoute: SettingsDrinksRoute,
   SettingsMapRoute: SettingsMapRoute,
@@ -1350,8 +1372,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShopsIndexRoute: ShopsIndexRoute,
   ShotsIndexRoute: ShotsIndexRoute,
   VisitsIndexRoute: VisitsIndexRoute,
-  ApiShottimerShotsRoute: ApiShottimerShotsRoute,
-  ApiShottimerTargetRoute: ApiShottimerTargetRoute,
+  ApiV1SplatRoute: ApiV1SplatRoute,
   ApiAccountExportsJobIdRoute: ApiAccountExportsJobIdRoute,
 }
 export const routeTree = rootRouteImport

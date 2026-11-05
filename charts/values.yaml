@@ -110,6 +110,12 @@ mcp:
   # Extra Origin hostnames. Native MCP clients send no Origin.
   allowedOrigins: []
 
+# Requests per account shared by API keys, MCP tokens and MCP applications.
+integrations:
+  rateLimit:
+    perMinute: 120
+    perDay: 5000
+
 migrations:
   enabled: true
   backoffLimit: 3

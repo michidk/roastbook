@@ -4,7 +4,6 @@ import {
   dismissShottimerShot,
   loadPendingShottimerShot,
   loadShottimerSettings,
-  regenerateShottimerToken,
   setShottimerEnabled,
   setShottimerTarget,
 } from '@/lib/server/shottimer.server'
@@ -17,10 +16,6 @@ export const getShottimerSettings = createServerFn({ method: 'GET' }).handler(
 export const updateShottimerEnabled = createServerFn({ method: 'POST' })
   .validator((value: unknown) => z.boolean().parse(value))
   .handler(({ data: enabled }) => setShottimerEnabled(enabled))
-
-export const createShottimerToken = createServerFn({ method: 'POST' }).handler(
-  () => regenerateShottimerToken(),
-)
 
 export const getPendingShottimerShot = createServerFn({
   method: 'GET',

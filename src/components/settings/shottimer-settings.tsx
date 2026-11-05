@@ -1,8 +1,9 @@
+import { Link } from '@tanstack/react-router'
 import { KeyRound, Loader2, Timer } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { PanelSection } from '@/components/section-layout'
-import { IntegrationTokenControl } from '@/components/settings/integration-token-control'
+import { buttonVariants } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { useAppSettings } from '@/hooks/use-app-settings'
@@ -10,7 +11,10 @@ import { useOnlineStatus } from '@/hooks/use-online-status'
 import { updateShottimerEnabled } from '@/lib/server/shottimer'
 import type { ShottimerSettings as ShottimerSettingsState } from '@/lib/shottimer'
 
-/** Enables the shottimer device API and issues its access token. */
+/**
+ * Enables the shottimer device API. The device authenticates with an API key
+ * limited to the shottimer scope.
+ */
 export function ShottimerSettings({
   settings,
   onSaved,
@@ -58,8 +62,8 @@ export function ShottimerSettings({
           <div className="space-y-1">
             <Label htmlFor="shottimer-enabled">Shottimer integration</Label>
             <p className="text-sm text-muted-foreground">
-              Accept requests to <code>/api/shottimer/*</code> that carry the
-              device token.
+              Accept requests to <code>/api/v1/shottimer</code> from API keys
+              with shottimer access.
             </p>
           </div>
           <Switch
@@ -72,16 +76,28 @@ export function ShottimerSettings({
       </PanelSection>
 
       <PanelSection
-        title="Device token"
-        description="Create a token and enter it in your shottimer configuration. Replacing a token disconnects devices using the old one."
+        title="Device key"
+        description="Create an API key that may only report brew times and read the target time, then enter it in your shottimer configuration. Revoke it in Settings → API to disconnect the device."
         action={<KeyRound className="size-5 text-link" />}
       >
         {demoMode ? (
           <p className="text-sm text-muted-foreground">
-            Device tokens are unavailable in the demo.
+            Device keys are unavailable in the demo.
           </p>
         ) : (
-          <IntegrationTokenControl kind="shottimer" onSaved={onSaved} />
+          <Link
+            to="/settings/api"
+            search={{
+              create: true,
+              name: 'Shottimer',
+              scopes: 'shottimer:write',
+              expires: '1y',
+            }}
+            className={buttonVariants({ variant: 'outline' })}
+          >
+            <KeyRound aria-hidden="true" />
+            Create a shottimer key
+          </Link>
         )}
       </PanelSection>
     </>

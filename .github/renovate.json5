@@ -33,6 +33,16 @@
       ],
       "groupName": "Better Auth",
       "groupSlug": "better-auth"
+    },
+    {
+      "description": "Keep postgres digest updates in one PR across Compose and CI",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "postgres"
+      ],
+      "groupName": "container images"
     }
   ]
 }

@@ -1,0 +1,300 @@
+import '@tanstack/react-start/server-only'
+
+import {
+  createBrewingMethod,
+  deleteBrewingMethod,
+  getBrewingMethod,
+  getBrewingMethods,
+  updateBrewingMethod,
+} from '@/journal/brewing-methods'
+import {
+  archiveDrinkOptionValue,
+  archiveDrinkType,
+  createDrinkOptionValue,
+  getDrinkConfiguration,
+  saveDrinkType,
+} from '@/journal/drink-options'
+import {
+  brewingMethodUpdateSchema,
+  brewingMethodWriteSchema,
+} from '@/journal/input/brewing-methods'
+import {
+  drinkTypeWriteSchema,
+  optionValueWriteSchema,
+} from '@/journal/input/drink-options'
+import { getDashboardStats, getDetailedStats } from '@/journal/stats'
+import {
+  createTasteTag,
+  deleteTasteTag,
+  getTasteTags,
+} from '@/journal/taste-tags'
+import { tasteTagCreateSchema } from '@/lib/server-validation'
+import { shottimerShotRequestSchema } from '@/lib/shottimer'
+import { loadShottimerTarget, recordShottimerShot } from '../shottimer.server'
+import {
+  deleteIntegrationImage,
+  imageCallResource,
+  imageDeleteSchema,
+  imageReadSchema,
+  imageThumbnailSchema,
+  imageUploadSchema,
+  readIntegrationImage,
+  setIntegrationImageThumbnail,
+  uploadIntegrationImage,
+} from './images.server'
+
+import { empty, id, operation, statsFilter } from './operation.server'
+
+/** Methods and drinks, taste tags, statistics, the shottimer and pictures. */
+export const SUPPORT_OPERATIONS = [
+  operation({
+    name: 'list_brewing_methods',
+    title: 'List brewing methods',
+    description:
+      'List brewing methods with their drink types. Use their ids when logging a brew.',
+    access: 'read',
+    resources: ['methods'],
+    method: 'GET',
+    path: '/brewing-methods',
+    input: empty,
+    run: () => getBrewingMethods(),
+  }),
+  operation({
+    name: 'get_brewing_method',
+    title: 'Get brewing method',
+    description: 'Read one brewing method with its parameters.',
+    access: 'read',
+    resources: ['methods'],
+    method: 'GET',
+    path: '/brewing-methods/{id}',
+    input: id,
+    run: ({ id }) => getBrewingMethod({ data: id }),
+  }),
+  operation({
+    name: 'create_brewing_method',
+    title: 'Create brewing method',
+    description: 'Add a brewing method.',
+    access: 'write',
+    resources: ['methods'],
+    method: 'POST',
+    path: '/brewing-methods',
+    input: brewingMethodWriteSchema,
+    run: (data) => createBrewingMethod({ data }),
+  }),
+  operation({
+    name: 'update_brewing_method',
+    title: 'Update brewing method',
+    description: 'Replace the editable fields of a brewing method.',
+    access: 'write',
+    resources: ['methods'],
+    method: 'PATCH',
+    path: '/brewing-methods/{id}',
+    input: brewingMethodUpdateSchema,
+    run: (data) => updateBrewingMethod({ data }),
+  }),
+  operation({
+    name: 'delete_brewing_method',
+    title: 'Delete brewing method',
+    description: 'Delete a brewing method that no brew uses.',
+    access: 'write',
+    resources: ['methods'],
+    method: 'DELETE',
+    path: '/brewing-methods/{id}',
+    input: id,
+    run: ({ id }) => deleteBrewingMethod({ data: id }),
+  }),
+  operation({
+    name: 'get_drink_configuration',
+    title: 'Get drinks',
+    description: 'List drink types, option groups and option values.',
+    access: 'read',
+    resources: ['methods'],
+    method: 'GET',
+    path: '/drinks',
+    input: empty,
+    run: () => getDrinkConfiguration(),
+  }),
+  operation({
+    name: 'save_drink_type',
+    title: 'Save drink type',
+    description: 'Create a drink type, or update it when an id is given.',
+    access: 'write',
+    resources: ['methods'],
+    method: 'POST',
+    path: '/drinks/types',
+    input: drinkTypeWriteSchema,
+    run: (data) => saveDrinkType({ data }),
+  }),
+  operation({
+    name: 'archive_drink_type',
+    title: 'Archive drink type',
+    description: 'Hide a drink type from new brews.',
+    access: 'write',
+    resources: ['methods'],
+    method: 'POST',
+    path: '/drinks/types/{id}/archive',
+    input: id,
+    run: ({ id }) => archiveDrinkType({ data: id }),
+  }),
+  operation({
+    name: 'create_drink_option',
+    title: 'Create drink option',
+    description: 'Add a value to a drink option group, such as a milk type.',
+    access: 'write',
+    resources: ['methods'],
+    method: 'POST',
+    path: '/drinks/options',
+    input: optionValueWriteSchema,
+    run: (data) => createDrinkOptionValue({ data }),
+  }),
+  operation({
+    name: 'archive_drink_option',
+    title: 'Archive drink option',
+    description: 'Hide a drink option value from new brews.',
+    access: 'write',
+    resources: ['methods'],
+    method: 'POST',
+    path: '/drinks/options/{id}/archive',
+    input: id,
+    run: ({ id }) => archiveDrinkOptionValue({ data: id }),
+  }),
+
+  operation({
+    name: 'list_taste_tags',
+    title: 'List taste tags',
+    description: 'List the taste tags available for brews and visits.',
+    access: 'read',
+    resources: ['tags'],
+    method: 'GET',
+    path: '/taste-tags',
+    input: empty,
+    run: () => getTasteTags(),
+  }),
+  operation({
+    name: 'create_taste_tag',
+    title: 'Create taste tag',
+    description: 'Add a taste tag.',
+    access: 'write',
+    resources: ['tags'],
+    method: 'POST',
+    path: '/taste-tags',
+    input: tasteTagCreateSchema,
+    run: (data) => createTasteTag({ data }),
+  }),
+  operation({
+    name: 'delete_taste_tag',
+    title: 'Delete taste tag',
+    description: 'Delete a taste tag and remove it from brews and visits.',
+    access: 'write',
+    resources: ['tags'],
+    method: 'DELETE',
+    path: '/taste-tags/{id}',
+    input: id,
+    run: ({ id }) => deleteTasteTag({ data: id }),
+  }),
+
+  operation({
+    name: 'get_stats',
+    title: 'Get statistics',
+    description:
+      'Brewing statistics for a period, optionally for one method or bean.',
+    access: 'read',
+    resources: ['stats'],
+    method: 'GET',
+    path: '/stats',
+    input: statsFilter,
+    run: (data) => getDetailedStats({ data }),
+  }),
+  operation({
+    name: 'get_dashboard',
+    title: 'Get dashboard',
+    description: 'The overview numbers shown on the dashboard.',
+    access: 'read',
+    resources: ['stats'],
+    method: 'GET',
+    path: '/stats/dashboard',
+    input: empty,
+    run: () => getDashboardStats(),
+  }),
+
+  operation({
+    name: 'report_shot_time',
+    title: 'Report shot time',
+    description:
+      'Offer a measured brew time to the next brew logged in the app, as a shottimer does.',
+    access: 'write',
+    resources: ['shottimer'],
+    method: 'POST',
+    path: '/shottimer',
+    input: shottimerShotRequestSchema,
+    run: async ({ seconds }) => {
+      await recordShottimerShot(
+        shottimerShotRequestSchema.parse({ seconds }).seconds,
+      )
+      return null
+    },
+  }),
+  operation({
+    name: 'get_shot_target',
+    title: 'Get target shot time',
+    description:
+      'The target time of the brew being logged in the app, for a shottimer display.',
+    access: 'read',
+    resources: ['shottimer'],
+    method: 'GET',
+    path: '/shottimer',
+    input: empty,
+    run: async () => ({ targetSeconds: await loadShottimerTarget() }),
+  }),
+
+  operation({
+    name: 'get_image',
+    title: 'Get picture',
+    description:
+      'Download a picture by the storagePath of an image record, as the original or a smaller size.',
+    access: 'read',
+    resources: ['brews', 'beans', 'gear', 'places', 'visits'],
+    method: 'GET',
+    path: '/images',
+    input: imageReadSchema,
+    run: readIntegrationImage,
+  }),
+  operation({
+    name: 'upload_image',
+    title: 'Upload picture',
+    description:
+      'Attach a JPEG, PNG, WebP or GIF picture (base64 data) to a brew, bag, gear item, place or visit.',
+    access: 'write',
+    resources: ['brews', 'beans', 'gear', 'places', 'visits'],
+    resourceFor: imageCallResource,
+    method: 'POST',
+    path: '/images',
+    input: imageUploadSchema,
+    run: uploadIntegrationImage,
+  }),
+  operation({
+    name: 'set_image_thumbnail',
+    title: 'Use picture as thumbnail',
+    description: 'Show this picture first for a bag or gear item.',
+    access: 'write',
+    resources: ['beans', 'gear'],
+    resourceFor: imageCallResource,
+    method: 'POST',
+    path: '/images/{entityType}/{entityId}/{imageId}/thumbnail',
+    input: imageThumbnailSchema,
+    run: setIntegrationImageThumbnail,
+  }),
+  operation({
+    name: 'delete_image',
+    title: 'Delete picture',
+    description:
+      'Delete a picture from a brew, bag, gear item, place or visit.',
+    access: 'write',
+    resources: ['brews', 'beans', 'gear', 'places', 'visits'],
+    resourceFor: imageCallResource,
+    method: 'DELETE',
+    path: '/images/{entityType}/{entityId}/{imageId}',
+    input: imageDeleteSchema,
+    run: deleteIntegrationImage,
+  }),
+]

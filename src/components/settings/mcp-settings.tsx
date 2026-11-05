@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { PanelSection } from '@/components/section-layout'
 import { McpConnections } from '@/components/settings/mcp-connections'
+import { RateLimitUsage } from '@/components/settings/rate-limit-usage'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -126,11 +127,11 @@ export function McpSettings({ state }: { readonly state: McpAdminState }) {
         </label>
       </PanelSection>
 
-      <McpConnections grants={state.grants} />
+      <McpConnections grants={state.grants} credentials={state.credentials} />
 
       <PanelSection
         title="Tools"
-        description="Disabled tools disappear from MCP discovery. Applications can use only tools allowed by both these switches and the access you approved. Manual tokens allow all enabled tools."
+        description="Disabled tools disappear from MCP discovery. Applications and tokens can use only tools allowed by both these switches and their permissions."
       >
         {groups.map(({ group, tools }) => (
           <fieldset key={group} className="space-y-1">
@@ -174,6 +175,8 @@ export function McpSettings({ state }: { readonly state: McpAdminState }) {
           {saving ? 'Saving…' : 'Save AI access'}
         </Button>
       </PanelSection>
+
+      <RateLimitUsage rateLimit={state.rateLimit} />
 
       <PanelSection
         title="Recent activity"

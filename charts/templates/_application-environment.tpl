@@ -68,6 +68,10 @@ env:
   {{- end }}
   - name: AI_TELEMETRY_STORE_PAYLOADS
     value: {{ .Values.openai.telemetryStorePayloads | default false | quote }}
+  - name: INTEGRATION_RATE_LIMIT_PER_MINUTE
+    value: {{ .Values.integrations.rateLimit.perMinute | quote }}
+  - name: INTEGRATION_RATE_LIMIT_PER_DAY
+    value: {{ .Values.integrations.rateLimit.perDay | quote }}
   {{- if .Values.mcp.enabled }}
   - name: MCP_ALLOWED_HOSTS
     value: {{ include "roastbook.mcpAllowedHosts" . | quote }}

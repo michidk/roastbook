@@ -6,6 +6,8 @@ export interface AdminUserColumn {
   id: string
   header: string
   align?: 'right'
+  /** Hidden on the user page, which shows the same value itself. */
+  listOnly?: boolean
   cell: (user: AdminUser) => ReactNode
 }
 

@@ -472,6 +472,33 @@ test('a download applies only what changed: replaced rows and deletions', async 
   ])
 })
 
+test('a download replaces the rows the migrations seeded', async () => {
+  const journal = await openJournal(true)
+  const methods = await journal.client.query<{ id: number }>(
+    'select id from brewing_methods order by id limit 1',
+  )
+  const types = await journal.client.query<{ id: number }>(
+    'select id from drink_types order by id limit 1',
+  )
+  const links = await journal.client.query<{ id: number }>(
+    'select id from brewing_method_drink_types order by id limit 1',
+  )
+  // Server identifiers start at 1, as the seeded rows do.
+  await replaceJournalRows(journal, {
+    brewing_method_drink_types: [
+      {
+        id: links.rows[0]?.id,
+        brewingMethodId: methods.rows[0]?.id,
+        drinkTypeId: types.rows[0]?.id,
+      },
+    ],
+  })
+  const owners = await journal.client.query<{ owner_id: string }>(
+    'select distinct owner_id from brewing_method_drink_types',
+  )
+  expect(owners.rows).toEqual([{ owner_id: 'owner-a' }])
+})
+
 test('a synced journal takes every identifier from its reservation', async () => {
   const journal = await openJournal(true)
   await replaceJournalRows(journal, {})
