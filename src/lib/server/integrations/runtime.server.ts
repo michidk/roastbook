@@ -114,7 +114,8 @@ export async function admitIntegrationRequest() {
     integration.credentialId,
   )
   if (!state.allowed) return { rejected: rateLimitedResponse(state), state }
-  if (!integration.credentialId.startsWith('oauth:'))
+  // MCP applications and signed-in API reference requests have no stored key.
+  if (!/^(?:oauth|session):/.test(integration.credentialId))
     await touchIntegrationCredential(integration.credentialId).catch(
       (error: unknown) =>
         console.error('[Roastbook] recording key use failed', error),

@@ -117,7 +117,8 @@ logged in the database without image payloads.
 
 > [!IMPORTANT]
 > **API and MCP server for your own scripts and agents.** `/api/v1` is a REST
-> API with an OpenAPI description, and `/api/mcp` a Streamable HTTP MCP
+> API with a generated OpenAPI description and a public, interactive reference
+> at `/api/v1/docs`, and `/api/mcp` a Streamable HTTP MCP
 > endpoint; both can read and change everything in your journal, including
 > pictures, but never administer accounts. API keys, MCP tokens, and MCP
 > applications get per-resource read or write permissions and shared rate

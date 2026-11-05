@@ -12,6 +12,12 @@ import {
   initializeUser,
 } from '@/lib/server/auth/identity.server'
 import { findIntegrationCredential } from '@/lib/server/auth/integrations.server'
+import {
+  API_TRY_HEADER,
+  isApiDocsPath,
+  isApiTryPath,
+} from '@/lib/server/integrations/api-docs.server'
+import { INTEGRATION_SCOPES } from '@/modules/integrations/scopes'
 import { validateMcpRequest } from '../mcp/http-policy.server'
 import { getAuth } from './auth.server'
 import { handleAuthRequest } from './http.server'
@@ -22,9 +28,12 @@ export function isApiPath(path: string) {
   return path === '/api/v1' || path.startsWith('/api/v1/')
 }
 
-/** The public API description, readable without a key. */
+/** The API description and reference, readable without a key. */
 export function isPublicApiPath(path: string) {
-  return path === '/api/v1/openapi.json'
+  return (
+    path === '/api/v1/openapi.json' ||
+    (isApiPath(path) && isApiDocsPath(path.slice('/api/v1'.length)))
+  )
 }
 
 function integrationKind(path: string) {
@@ -136,6 +145,21 @@ export async function handleJournalRequest(
   })
 }
 
+/**
+ * The API reference's test requests run as the signed-in account with every
+ * permission, like the app itself, and count against the shared rate limit.
+ */
+function asReferenceSession(identity: JournalIdentity): JournalIdentity {
+  return {
+    ...identity,
+    integration: {
+      channel: 'api',
+      credentialId: 'session:api-reference',
+      scopes: INTEGRATION_SCOPES,
+    },
+  }
+}
+
 async function handlePrivateRequest(
   request: Request,
   next: () => Promise<Response>,
@@ -193,9 +217,19 @@ async function handlePrivateRequest(
     if (request.headers.get('sec-fetch-site') === 'cross-site')
       return new Response('Forbidden', { status: 403 })
   }
-  const response = await withJournalResponse(identity, next, {
-    signal: request.signal,
-  })
+  const tryRequest = isApiTryPath(path)
+  if (tryRequest && request.headers.get(API_TRY_HEADER) !== '1')
+    return Response.json(
+      {
+        error: { code: 'unauthorized', message: 'Use the API reference page' },
+      },
+      { status: 403, headers: { 'Cache-Control': 'no-store' } },
+    )
+  const response = await withJournalResponse(
+    tryRequest ? asReferenceSession(identity) : identity,
+    next,
+    { signal: request.signal },
+  )
   const headers = new Headers(response.headers)
   headers.set('Cache-Control', 'private, no-store')
   headers.set(

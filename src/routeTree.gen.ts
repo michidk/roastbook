@@ -72,6 +72,7 @@ import { Route as VisitsNewRouteImport } from './routes/visits/new'
 import { Route as AdminUsersUserIdRouteImport } from './routes/admin/users_/$userId'
 import { Route as ApiV1SplatRouteImport } from './routes/api/v1/$'
 import { Route as ApiAccountExportsJobIdRouteImport } from './routes/api/account/exports/$jobId'
+import { Route as ApiTryV1SplatRouteImport } from './routes/api/try/v1/$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -389,6 +390,11 @@ const ApiAccountExportsJobIdRoute = ApiAccountExportsJobIdRouteImport.update({
   path: '/api/account/exports/$jobId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTryV1SplatRoute = ApiTryV1SplatRouteImport.update({
+  id: '/api/try/v1/$',
+  path: '/api/try/v1/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -454,6 +460,7 @@ export interface FileRoutesByFullPath {
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/api/v1/$': typeof ApiV1SplatRoute
   '/api/account/exports/$jobId': typeof ApiAccountExportsJobIdRoute
+  '/api/try/v1/$': typeof ApiTryV1SplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -517,6 +524,7 @@ export interface FileRoutesByTo {
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/api/v1/$': typeof ApiV1SplatRoute
   '/api/account/exports/$jobId': typeof ApiAccountExportsJobIdRoute
+  '/api/try/v1/$': typeof ApiTryV1SplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -583,6 +591,7 @@ export interface FileRoutesById {
   '/admin/users_/$userId': typeof AdminUsersUserIdRoute
   '/api/v1/$': typeof ApiV1SplatRoute
   '/api/account/exports/$jobId': typeof ApiAccountExportsJobIdRoute
+  '/api/try/v1/$': typeof ApiTryV1SplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -650,6 +659,7 @@ export interface FileRouteTypes {
     | '/admin/users/$userId'
     | '/api/v1/$'
     | '/api/account/exports/$jobId'
+    | '/api/try/v1/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -713,6 +723,7 @@ export interface FileRouteTypes {
     | '/admin/users/$userId'
     | '/api/v1/$'
     | '/api/account/exports/$jobId'
+    | '/api/try/v1/$'
   id:
     | '__root__'
     | '/'
@@ -778,6 +789,7 @@ export interface FileRouteTypes {
     | '/admin/users_/$userId'
     | '/api/v1/$'
     | '/api/account/exports/$jobId'
+    | '/api/try/v1/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -828,6 +840,7 @@ export interface RootRouteChildren {
   VisitsIndexRoute: typeof VisitsIndexRoute
   ApiV1SplatRoute: typeof ApiV1SplatRoute
   ApiAccountExportsJobIdRoute: typeof ApiAccountExportsJobIdRoute
+  ApiTryV1SplatRoute: typeof ApiTryV1SplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1273,6 +1286,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAccountExportsJobIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/try/v1/$': {
+      id: '/api/try/v1/$'
+      path: '/api/try/v1/$'
+      fullPath: '/api/try/v1/$'
+      preLoaderRoute: typeof ApiTryV1SplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1374,6 +1394,7 @@ const rootRouteChildren: RootRouteChildren = {
   VisitsIndexRoute: VisitsIndexRoute,
   ApiV1SplatRoute: ApiV1SplatRoute,
   ApiAccountExportsJobIdRoute: ApiAccountExportsJobIdRoute,
+  ApiTryV1SplatRoute: ApiTryV1SplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -21,7 +21,10 @@ export type JournalIdentity = {
   /** Set for API and MCP requests: the credential and what it may do. */
   integration?: {
     readonly channel: 'api' | 'mcp'
-    /** Token id, or `oauth:<client id>` for an MCP application. */
+    /**
+     * Token id, `oauth:<client id>` for an MCP application, or
+     * `session:api-reference` for the signed-in API reference.
+     */
     readonly credentialId: string
     readonly scopes: readonly IntegrationScope[]
   }
