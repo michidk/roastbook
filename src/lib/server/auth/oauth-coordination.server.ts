@@ -1,6 +1,11 @@
 import '@tanstack/react-start/server-only'
 import { and, eq } from 'drizzle-orm'
-import { oauthAccessToken, oauthConsent, oauthRefreshToken } from '@/db/schema'
+import {
+  oauthAccessToken,
+  oauthConsent,
+  oauthGrantScopes,
+  oauthRefreshToken,
+} from '@/db/schema'
 import { getAuth } from './auth.server'
 import { OAuthClientBusyError, withOAuthClientLock } from './oauth-lock.server'
 
@@ -54,6 +59,14 @@ export async function coordinateRevokeGrant({
         and(
           eq(oauthRefreshToken.userId, userId),
           eq(oauthRefreshToken.clientId, clientId),
+        ),
+      )
+    await tx
+      .delete(oauthGrantScopes)
+      .where(
+        and(
+          eq(oauthGrantScopes.userId, userId),
+          eq(oauthGrantScopes.clientId, clientId),
         ),
       )
   })

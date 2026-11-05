@@ -1,19 +1,47 @@
 import { useRouter } from '@tanstack/react-router'
-import { useState } from 'react'
+import { type FormEvent, useId, useState } from 'react'
 import { toast } from 'sonner'
 import { PanelSection } from '@/components/section-layout'
+import { IntegrationKeys } from '@/components/settings/integration-keys'
+import { ScopePicker } from '@/components/settings/scope-picker'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { useAppSettings } from '@/hooks/use-app-settings'
+import { useNumberFormatter } from '@/hooks/use-number-formatter'
+import { getErrorMessage } from '@/lib/error-message'
 import type { getMcpAdminState } from '@/lib/mcp/settings'
-import { disconnectOAuthGrant } from '@/lib/server/oauth'
-import { IntegrationTokenControl } from './integration-token-control'
+import {
+  disconnectOAuthGrant,
+  updateOAuthGrantPermissions,
+} from '@/lib/server/oauth'
+import {
+  describeScopes,
+  type IntegrationScope,
+} from '@/modules/integrations/scopes'
 
-type Grants = Awaited<ReturnType<typeof getMcpAdminState>>['grants']
+type McpAdminState = Awaited<ReturnType<typeof getMcpAdminState>>
+type Grant = McpAdminState['grants'][number]
 
-export function McpConnections({ grants }: { readonly grants: Grants }) {
+export function McpConnections({
+  grants,
+  credentials,
+}: {
+  readonly grants: McpAdminState['grants']
+  readonly credentials: McpAdminState['credentials']
+}) {
   const { account, demoMode } = useAppSettings()
   const router = useRouter()
+  const formatNumber = useNumberFormatter()
   const [disconnecting, setDisconnecting] = useState<string | null>(null)
+  const [editing, setEditing] = useState<Grant | null>(null)
 
   async function disconnect(id: string) {
     setDisconnecting(id)
@@ -23,9 +51,7 @@ export function McpConnections({ grants }: { readonly grants: Grants }) {
       toast.success('Application disconnected')
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : 'Could not disconnect the application',
+        getErrorMessage(error, 'Could not disconnect the application'),
       )
     } finally {
       setDisconnecting(null)
@@ -52,20 +78,31 @@ export function McpConnections({ grants }: { readonly grants: Grants }) {
                   <p className="break-all text-xs text-muted-foreground">
                     {grant.clientId}
                   </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {grant.scopes.includes('mcp:write')
-                      ? 'Read journal and log brews'
-                      : 'Read journal'}
+                  <p className="mt-1 text-sm">{describeScopes(grant.access)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatNumber(grant.requestsToday)} requests today
                   </p>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={disconnecting !== null}
-                  onClick={() => void disconnect(grant.id)}
-                >
-                  {disconnecting === grant.id ? 'Disconnecting…' : 'Disconnect'}
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={disconnecting !== null}
+                    onClick={() => setEditing(grant)}
+                  >
+                    Permissions
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={disconnecting !== null}
+                    onClick={() => void disconnect(grant.id)}
+                  >
+                    {disconnecting === grant.id
+                      ? 'Disconnecting…'
+                      : 'Disconnect'}
+                  </Button>
+                </div>
               </div>
             ))
           ) : (
@@ -79,11 +116,92 @@ export function McpConnections({ grants }: { readonly grants: Grants }) {
       {demoMode ? null : (
         <PanelSection
           title="MCP tokens"
-          description="For clients without browser sign-in. Tokens allow all enabled MCP tools and expire after one year."
+          description="For clients without browser sign-in: send the token as Authorization: Bearer <token>. Tokens use the same permissions as API keys."
         >
-          <IntegrationTokenControl kind="mcp" />
+          <IntegrationKeys
+            kind="mcp"
+            credentials={credentials}
+            onChanged={() => router.invalidate()}
+          />
         </PanelSection>
       )}
+      {editing ? (
+        <GrantPermissionsDialog
+          grant={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => router.invalidate()}
+        />
+      ) : null}
     </>
+  )
+}
+
+function GrantPermissionsDialog({
+  grant,
+  onClose,
+  onSaved,
+}: {
+  readonly grant: Grant
+  readonly onClose: () => void
+  readonly onSaved: () => Promise<void>
+}) {
+  const id = useId()
+  const [scopes, setScopes] = useState<IntegrationScope[]>(grant.access)
+  const [busy, setBusy] = useState(false)
+
+  async function submit(event: FormEvent) {
+    event.preventDefault()
+    setBusy(true)
+    try {
+      await updateOAuthGrantPermissions({ data: { id: grant.id, scopes } })
+      await onSaved()
+      toast.success('Permissions saved. New requests use them immediately.')
+      onClose()
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Could not save the permissions'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <form onSubmit={(event) => void submit(event)} className="contents">
+          <DialogHeader>
+            <DialogTitle>
+              Permissions for {grant.name ?? 'this application'}
+            </DialogTitle>
+            <DialogDescription>
+              {grant.allowedAccess.some((scope) => scope.endsWith(':write'))
+                ? 'The application asked for read and write access; allow only what it needs.'
+                : 'The application asked for read access only. Reconnect it to grant write access.'}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogBody>
+            <ScopePicker
+              id={`${id}-scopes`}
+              value={scopes}
+              allowed={grant.allowedAccess}
+              onChange={setScopes}
+              disabled={busy}
+            />
+          </DialogBody>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={busy}
+              onClick={onClose}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={busy || !scopes.length}>
+              {busy ? 'Saving…' : 'Save'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }

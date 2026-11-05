@@ -81,7 +81,7 @@ export function ShottimerSettings({
             Device tokens are unavailable in the demo.
           </p>
         ) : (
-          <IntegrationTokenControl kind="shottimer" onSaved={onSaved} />
+          <IntegrationTokenControl onSaved={onSaved} />
         )}
       </PanelSection>
     </>

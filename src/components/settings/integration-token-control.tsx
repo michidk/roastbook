@@ -5,20 +5,16 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
-import {
-  createToken,
-  deleteToken,
-  getIntegrationTokens,
-} from '@/lib/server/account'
+import { deleteToken, getIntegrationTokens } from '@/lib/server/account'
 import { createShottimerToken } from '@/lib/server/shottimer'
 
+/** The shottimer device token. API keys and MCP tokens use IntegrationKeys. */
 export function IntegrationTokenControl({
-  kind,
   onSaved,
 }: {
-  readonly kind: 'mcp' | 'shottimer'
   readonly onSaved?: () => void
 }) {
+  const kind = 'shottimer'
   const [token, setToken] = useState('')
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -114,7 +110,9 @@ export function IntegrationTokenControl({
           <div className="min-w-0">
             <p className="break-words font-medium">{item.name}</p>
             <p className="text-sm text-muted-foreground">
-              Expires {formatDate(item.expiresAt)}
+              {item.expiresAt
+                ? `Expires ${formatDate(item.expiresAt)}`
+                : 'Never expires'}
             </p>
           </div>
           <Button
@@ -134,7 +132,7 @@ export function IntegrationTokenControl({
       ))}
       {!loading && !loadError && visibleTokens.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No {kind === 'mcp' ? 'MCP' : 'device'} tokens created.
+          No device tokens created.
         </p>
       ) : null}
       <Button
@@ -143,23 +141,15 @@ export function IntegrationTokenControl({
         variant="outline"
         onClick={() =>
           void mutate(async () => {
-            setToken(
-              kind === 'mcp'
-                ? await createToken({
-                    data: { kind: 'mcp', name: 'MCP client' },
-                  })
-                : await createShottimerToken(),
-            )
+            setToken(await createShottimerToken())
           }, 'Token created. Copy it now; it will not be shown again.')
         }
       >
         {busy
           ? 'Updating…'
-          : kind === 'mcp'
-            ? 'Create MCP token'
-            : visibleTokens.length
-              ? 'Replace token'
-              : 'Create token'}
+          : visibleTokens.length
+            ? 'Replace token'
+            : 'Create token'}
       </Button>
       {token ? (
         <div className="space-y-2">
@@ -188,12 +178,6 @@ export function IntegrationTokenControl({
             Dismiss token
           </Button>
         </div>
-      ) : null}
-      {kind === 'mcp' ? (
-        <p className="text-sm text-muted-foreground">
-          Configure your client with an Authorization: Bearer token header.
-          Revoke unused tokens here.
-        </p>
       ) : null}
     </div>
   )

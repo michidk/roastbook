@@ -4,7 +4,6 @@ import {
   changeUserRole,
   confirmAccountDeletion,
   getAccountState,
-  issueToken,
   listIntegrationTokens,
   listUsers,
   loadUser,
@@ -43,14 +42,6 @@ export const confirmDeletion = createServerFn({ method: 'POST' })
 export const requestExport = createServerFn({ method: 'POST' }).handler(
   requestAccountExport,
 )
-export const createToken = createServerFn({ method: 'POST' })
-  .validator(
-    z.object({
-      kind: z.enum(['mcp', 'shottimer']),
-      name: z.string().trim().min(1).max(80),
-    }),
-  )
-  .handler(({ data }) => issueToken(data.kind, data.name))
 export const deleteToken = createServerFn({ method: 'POST' })
   .validator(z.object({ id: z.string().uuid() }))
   .handler(({ data }) => revokeToken(data.id))

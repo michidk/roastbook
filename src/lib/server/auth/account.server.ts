@@ -26,7 +26,6 @@ import { renderAccountEmail } from '@/lib/account-email'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { getServerEnv } from '@/lib/env.server'
 import { sendAccountEmail } from './email.server'
-import { createIntegrationToken } from './integrations.server'
 
 function accountIdentity() {
   const identity = requireIdentity()
@@ -396,16 +395,6 @@ export async function requestAccountExport() {
       .insert(accountJobs)
       .values({ id: randomUUID(), userId: identity.id, kind: 'export' })
   })
-}
-export async function issueToken(kind: 'mcp' | 'shottimer', name: string) {
-  const identity = requireIdentity()
-  const [total] = await getControlDb()
-    .select({ count: count() })
-    .from(integrationTokens)
-    .where(eq(integrationTokens.userId, identity.id))
-  if ((total?.count ?? 0) >= 10)
-    throw new Error('Revoke an existing token before creating another')
-  return createIntegrationToken(kind, name)
 }
 export async function revokeToken(id: string) {
   const identity = requireIdentity()

@@ -25,13 +25,13 @@ import { getStorage } from '@/lib/storage'
 import {
   changeUserRole,
   confirmAccountDeletion,
-  issueToken,
   listUsers,
   loadUser,
   requestAccountExport,
   revokeToken,
 } from './account.server'
 import { createJournalDefaults } from './defaults.server'
+import { createIntegrationCredential } from './integrations.server'
 import { runAccountJob } from './jobs.server'
 import { journalTables } from './journal-tables.server'
 import { handleJournalRequest } from './request.server'
@@ -206,7 +206,14 @@ suite('private account lifecycle', () => {
     expect(await response.text()).toContain('Private export bean')
   })
   test('requires correct token kind, owner, expiry, and revocation for integrations', async () => {
-    const token = await asSecond(() => issueToken('mcp', 'Lifecycle test'))
+    const token = await asSecond(() =>
+      createIntegrationCredential({
+        kind: 'mcp',
+        name: 'Lifecycle test',
+        scopes: ['beans:read'],
+        expiresAt: null,
+      }),
+    )
     const request = (path: string, value = token) =>
       new Request(`http://localhost${path}`, {
         method: 'POST',
@@ -234,6 +241,15 @@ suite('private account lifecycle', () => {
       (
         await handleJournalRequest(
           request('/api/shottimer/shots'),
+          async () => new Response(),
+        )
+      ).status,
+    ).toBe(401)
+    // MCP tokens and API keys are not interchangeable.
+    expect(
+      (
+        await handleJournalRequest(
+          request('/api/v1/beans'),
           async () => new Response(),
         )
       ).status,
@@ -315,7 +331,14 @@ suite('private account lifecycle', () => {
     )
   })
   test('requires a one-time email confirmation and removes journal, credentials, and files', async () => {
-    await asSecond(() => issueToken('mcp', 'Delete test'))
+    await asSecond(() =>
+      createIntegrationCredential({
+        kind: 'api',
+        name: 'Delete test',
+        scopes: ['beans:read'],
+        expiresAt: null,
+      }),
+    )
     await database()
       .insert(authVerifications)
       .values({

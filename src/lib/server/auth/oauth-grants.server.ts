@@ -5,6 +5,16 @@ import { getControlDb } from '@/db/connection.server'
 import { requireIdentity } from '@/db/journal-context.server'
 import { oauthClient, oauthConsent } from '@/db/schema'
 import { coordinateRevokeGrant } from '@/lib/server/auth/oauth-coordination.server'
+import {
+  type IntegrationScope,
+  normalizeScopes,
+  scopesAllowedByProtocol,
+} from '@/modules/integrations/scopes'
+import {
+  effectiveGrantScopes,
+  loadApprovedGrantScopes,
+  saveApprovedGrantScopes,
+} from '../integrations/oauth-scopes.server'
 import { getAuth } from './auth.server'
 import { MCP_SCOPES } from './mcp-options.server'
 
@@ -41,19 +51,42 @@ export async function loadConsent(query: string) {
     scopes.some((scope) => !MCP_SCOPES.includes(scope))
   )
     throw new Error('This application requested unsupported access')
+  const approved = await loadApprovedGrantScopes(identity.id, [client.clientId])
   return {
     clientId: client.clientId,
     clientName: client.name ?? 'Unnamed application',
     redirectUri: redirect,
     email: identity.email,
     scopes,
+    /** What the owner may approve: the request's protocol scopes decide. */
+    allowedAccess: scopesAllowedByProtocol(scopes),
+    /** A previous approval, or everything the application asked for. */
+    approvedAccess: approved.has(client.clientId)
+      ? effectiveGrantScopes(approved.get(client.clientId), scopes)
+      : scopesAllowedByProtocol(scopes),
   }
+}
+
+/** Stores the permissions chosen on the consent page before it is accepted. */
+export async function approveConsentAccess(
+  query: string,
+  scopes: readonly string[],
+) {
+  const consent = await loadConsent(query)
+  const allowed = new Set<string>(consent.allowedAccess)
+  const approved = normalizeScopes(scopes).filter((scope) => allowed.has(scope))
+  if (!approved.length) throw new Error('Choose at least one permission')
+  await saveApprovedGrantScopes(
+    requireIdentity().id,
+    consent.clientId,
+    approved,
+  )
 }
 
 export async function listOAuthGrants() {
   const identity = requireIdentity()
   if (!identity.authentication) return []
-  return getControlDb()
+  const grants = await getControlDb()
     .select({
       id: oauthConsent.id,
       clientId: oauthConsent.clientId,
@@ -64,6 +97,40 @@ export async function listOAuthGrants() {
     .from(oauthConsent)
     .innerJoin(oauthClient, eq(oauthClient.clientId, oauthConsent.clientId))
     .where(eq(oauthConsent.userId, identity.id))
+  const approved = await loadApprovedGrantScopes(
+    identity.id,
+    grants.map((grant) => grant.clientId),
+  )
+  return grants.map((grant) => ({
+    ...grant,
+    createdAt: grant.createdAt?.toISOString() ?? null,
+    access: effectiveGrantScopes(approved.get(grant.clientId), grant.scopes),
+    allowedAccess: scopesAllowedByProtocol(grant.scopes),
+  }))
+}
+
+/** Narrows or widens a connected application within what it was granted. */
+export async function updateOAuthGrantAccess(
+  id: string,
+  scopes: readonly string[],
+): Promise<IntegrationScope[]> {
+  const identity = requireIdentity()
+  if (
+    !identity.authentication ||
+    !identity.authenticatedAt ||
+    Date.now() - identity.authenticatedAt.getTime() > 600_000
+  )
+    throw new Error('Sign in again to change permissions')
+  const [grant] = await getControlDb()
+    .select({ clientId: oauthConsent.clientId, scopes: oauthConsent.scopes })
+    .from(oauthConsent)
+    .where(and(eq(oauthConsent.id, id), eq(oauthConsent.userId, identity.id)))
+  if (!grant) throw new Error('Application connection not found')
+  const allowed = new Set<string>(scopesAllowedByProtocol(grant.scopes))
+  const approved = normalizeScopes(scopes).filter((scope) => allowed.has(scope))
+  if (!approved.length) throw new Error('Choose at least one permission')
+  await saveApprovedGrantScopes(identity.id, grant.clientId, approved)
+  return approved
 }
 
 export async function revokeOAuthGrant(id: string) {

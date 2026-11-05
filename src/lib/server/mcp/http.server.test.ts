@@ -1,21 +1,20 @@
 import { describe, expect, test } from 'bun:test'
 import { resolveMcpConfig } from './config.server'
 import { createMcpHttpHandler, handlesMcpHttpPath } from './http.server'
-import type { McpLoaders } from './tools.server'
+import type { McpRunner } from './tools.server'
 
 const config = resolveMcpConfig({
   MCP_ALLOWED_HOSTS: 'roastbook.internal',
   MCP_ALLOWED_ORIGINS: 'https://client.internal',
 })
 
-const loaders = {
-  listBrews: async () => ({
-    items: [],
-    page: 1,
-    totalItems: 0,
-    scopeLabel: null,
-  }),
-} as unknown as McpLoaders
+const run: McpRunner = async () => ({
+  items: [],
+  page: 1,
+  totalItems: 0,
+  scopeLabel: null,
+})
+const scopes = () => ['brews:read']
 
 function request(host: string, headers: Record<string, string> = {}) {
   return new Request('http://upstream/api/mcp', {
@@ -73,7 +72,8 @@ describe('stateless MCP HTTP endpoint', () => {
     const audits: unknown[] = []
     const handle = createMcpHttpHandler(config, {
       audit: async (event) => void audits.push(event),
-      loaders,
+      run,
+      scopes,
     })
     for (const host of ['localhost:3000', '127.0.0.1', 'roastbook.internal']) {
       const response = await handle(request(host))
@@ -112,11 +112,12 @@ describe('stateless MCP HTTP endpoint', () => {
   test('owner policy pauses the endpoint', async () => {
     const handle = createMcpHttpHandler(config, {
       policy: async () => ({ enabled: false, disabledTools: [] }),
+      scopes,
     })
     expect((await handle(request('localhost')))?.status).toBe(503)
   })
 })
 
 function handlerFor() {
-  return createMcpHttpHandler(config, { loaders })
+  return createMcpHttpHandler(config, { run, scopes })
 }

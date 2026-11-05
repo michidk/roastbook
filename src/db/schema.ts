@@ -2158,11 +2158,17 @@ export const integrationTokens = pgTable(
     userId: text('user_id')
       .notNull()
       .references(() => authUsers.id, { onDelete: 'cascade' }),
-    kind: text('kind', { enum: ['mcp', 'shottimer'] }).notNull(),
+    kind: text('kind', { enum: ['api', 'mcp', 'shottimer'] }).notNull(),
     name: text('name').notNull(),
     tokenHash: text('token_hash').notNull().unique(),
+    /** The first characters of the token, shown so owners can tell keys apart. */
+    tokenPrefix: text('token_prefix'),
+    /** Integration scopes (`<resource>:<read|write>`); unused by shottimer tokens. */
+    scopes: text('scopes').array().notNull().default(sql`'{}'::text[]`),
     createdAt: createdAt(),
-    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    /** Null for API keys and MCP tokens the owner chose never to expire. */
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
+    lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
   },
   (table) => [index('integration_tokens_user_id_idx').on(table.userId)],
 )
@@ -2410,6 +2416,24 @@ export const oauthConsent = pgTable(
     index('oauth_consent_user_client_idx').on(table.userId, table.clientId),
     index('oauth_consent_client_idx').on(table.clientId),
   ],
+)
+
+// The integration scopes the owner approved for an MCP application. OAuth
+// protocol scopes (mcp:read, mcp:write) only cap what can be approved.
+export const oauthGrantScopes = pgTable(
+  'oauth_grant_scopes',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => authUsers.id, { onDelete: 'cascade' }),
+    clientId: text('client_id')
+      .notNull()
+      .references(() => oauthClient.clientId, { onDelete: 'cascade' }),
+    scopes: text('scopes').array().notNull(),
+    createdAt: createdAt(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.clientId] })],
 )
 
 export const oauthClientAssertion = pgTable('oauth_client_assertion', {

@@ -94,7 +94,7 @@ const recipeRelations = {
 } as const
 
 const RECIPES_PAGE_SIZE = 24
-const recipeListSchema = z.object({
+export const recipeListSchema = z.object({
   page: z.number().int().min(1).max(100_000).default(1),
   query: z.string().trim().max(200).default(''),
   sort: z.enum(['name', 'updated']).default('updated'),
