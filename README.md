@@ -281,3 +281,6 @@ charts/              Helm chart
 Release maintainers can run the **Release** GitHub Action with an automatic
 Conventional Commit version bump or an explicit override. See
 [releases](docs/deployment.md#releases) for the publication and image build flow.
+
+Downstream maintainers can opt into notifications after successful main CI. See
+[dependent builds](docs/deployment.md#dependent-builds) for configuration.
