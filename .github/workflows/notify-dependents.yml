@@ -1,7 +1,3 @@
-# @orcastrate
-# template: common/notify-dependents
-# @end-orcastrate
-
 name: Notify dependents
 
 on:
@@ -79,21 +75,10 @@ jobs:
 
       - name: Notify dependent repository
         if: steps.config.outputs.enabled == 'true'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
-        env:
-          DEPENDENT_REPOSITORY: ${{ secrets.DEPENDENT_REPOSITORY }}
-          REVISION: ${{ steps.source.outputs.revision }}
-          SOURCE_RUN_ID: ${{ steps.source.outputs.run-id }}
+        uses: peter-evans/repository-dispatch@ff45666b9427631e3450c54a1bcbee4d9ff4d7c0 # v3
         with:
-          github-token: ${{ steps.token.outputs.token }}
-          script: |
-            await github.rest.repos.createDispatchEvent({
-              owner: context.repo.owner,
-              repo: process.env.DEPENDENT_REPOSITORY,
-              event_type: 'dependency-updated',
-              client_payload: {
-                repository: `${context.repo.owner}/${context.repo.repo}`,
-                revision: process.env.REVISION,
-                runId: Number(process.env.SOURCE_RUN_ID),
-              },
-            });
+          token: ${{ steps.token.outputs.token }}
+          repository: ${{ github.repository_owner }}/${{ secrets.DEPENDENT_REPOSITORY }}
+          event-type: dependency-updated
+          client-payload: >-
+            {"repository":${{ toJSON(github.repository) }},"revision":${{ toJSON(steps.source.outputs.revision) }},"runId":${{ steps.source.outputs.run-id }}}

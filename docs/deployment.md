@@ -223,9 +223,9 @@ events to start downstream workflows. The workflow is managed by
 ## Dependent builds
 
 **Notify dependents** can notify a separately managed downstream application when
-CI passes for the current `main` revision. It uses the shared
-`common/notify-dependents` template. Set `DEPENDENT_REPOSITORY` as a repository
-secret containing the downstream repository name under the same owner, and
+CI passes for the current `main` revision. It uses the
+`peter-evans/repository-dispatch` action. Set `DEPENDENT_REPOSITORY` as a
+repository secret containing the downstream name under the same owner, and
 install the Releaser App there with Contents write permission. Without this
 secret, notification is disabled.
 
