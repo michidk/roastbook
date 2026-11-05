@@ -48,6 +48,9 @@ const { hashIntegrationToken } = await import(
   '../src/lib/server/auth/integrations.server'
 )
 const { allScopes } = await import('../src/modules/integrations/scopes')
+const { confirmAs } = await import(
+  '../src/lib/server/auth/reauthentication-fixture.server'
+)
 const { handleMcpHttpRequest } = await import(
   '../src/lib/server/mcp/http.server'
 )
@@ -502,23 +505,30 @@ try {
     (item) => item.clientId === client,
   )
   assert(connected)
-  // The owner grants write access within what the application asked for.
-  await withJournal(first, () =>
-    updateOAuthGrantAccess(connected.id, allScopes('write')),
+  // Changing what it may do needs a confirmation from a fresh sign-in.
+  await assert.rejects(
+    withJournal(first, () =>
+      updateOAuthGrantAccess(connected.id, allScopes('write')),
+    ),
+    /Confirm it’s you/,
   )
+  const grantAccess = async (scopes: string[]) => {
+    const token = await confirmAs(first, 'change-permissions')
+    await withJournal(first, () =>
+      updateOAuthGrantAccess(connected.id, scopes, token),
+    )
+  }
+  // The owner grants write access within what the application asked for.
+  await grantAccess(allScopes('write'))
   const toolsBody = await (await rpc('tools/list', {}, rw.access_token)).text()
   assert(toolsBody.includes('create_brew'), toolsBody)
   // And can narrow it to fewer permissions than it asked for.
-  await withJournal(first, () =>
-    updateOAuthGrantAccess(connected.id, ['beans:read']),
-  )
+  await grantAccess(['beans:read'])
   const narrowed = await (await rpc('tools/list', {}, rw.access_token)).text()
   assert(narrowed.includes('"name":"list_beans"'), narrowed)
   assert(!narrowed.includes('create_brew'), narrowed)
   assert(!narrowed.includes('"name":"list_brews"'), narrowed)
-  await withJournal(first, () =>
-    updateOAuthGrantAccess(connected.id, allScopes('write')),
-  )
+  await grantAccess(allScopes('write'))
   await withJournal(first, () =>
     saveMcpPolicy({ enabled: false, disabledTools: [] }),
   )

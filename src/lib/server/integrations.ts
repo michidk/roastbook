@@ -7,6 +7,7 @@ import {
   revokeIntegrationCredential,
   updateIntegrationCredential,
 } from '@/lib/server/auth/integrations.server'
+import { reauthenticationTokenSchema } from '@/modules/auth/reauthentication'
 import { loadIntegrationSettings } from './integrations/settings.server'
 import { getMcpEndpoint } from './mcp/config.server'
 
@@ -33,6 +34,7 @@ export const createIntegrationKey = createServerFn({ method: 'POST' })
       name,
       scopes,
       expiresAt: z.iso.datetime({ offset: true }).nullable(),
+      reauthToken: reauthenticationTokenSchema,
     }),
   )
   .handler(({ data }) =>
@@ -43,7 +45,14 @@ export const createIntegrationKey = createServerFn({ method: 'POST' })
   )
 
 export const updateIntegrationKey = createServerFn({ method: 'POST' })
-  .validator(z.object({ id: z.uuid(), name, scopes }))
+  .validator(
+    z.object({
+      id: z.uuid(),
+      name,
+      scopes,
+      reauthToken: reauthenticationTokenSchema,
+    }),
+  )
   .handler(({ data }) => updateIntegrationCredential(data))
 
 export const revokeIntegrationKey = createServerFn({ method: 'POST' })

@@ -60,9 +60,14 @@ a new client; see [Journal architecture](client-data.md).
 | `RESEND_API_KEY` | — | Resend | Resend API key |
 
 Sign-in uses emailed one-time codes (or the equivalent link) and passkeys;
-there are no passwords. Codes expire after ten minutes. Sessions last 30 days;
-sensitive account and administrator actions require a sign-in within the last
-ten minutes.
+there are no passwords. Codes expire after ten minutes. Sessions last 30 days.
+Sensitive actions ask the owner to confirm it’s them first, with a passkey or an
+emailed code, every time: creating API keys and MCP tokens, changing their or
+an application's permissions, saving an AI provider key, exporting or deleting
+the account, changing the email address or passkeys, and changing or deleting
+users as an administrator. One sign-in confirms one action: the confirmation
+is valid for five minutes, and email and passkey changes must follow within the
+ten minutes the session counts as fresh.
 
 New passkeys use the account email as the username shown by password managers.
 

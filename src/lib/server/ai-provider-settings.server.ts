@@ -13,6 +13,7 @@ import {
   normalizeAiEndpoint,
   resolveAiEndpoint,
 } from '@/lib/server/ai-provider-fetch.server'
+import { consumeReauthentication } from '@/lib/server/auth/reauthentication.server'
 import { decryptAiKey, encryptAiKey } from './ai-credential.server'
 
 export async function readAiProviderCredentials() {
@@ -41,16 +42,12 @@ export async function loadAiProviderSettings() {
 }
 function requireCredentialChange() {
   if (DEMO_MODE) throw new Error('AI settings cannot be changed in the demo')
-  const identity = requireIdentity()
-  if (
-    identity.authentication &&
-    (!identity.authenticatedAt ||
-      Date.now() - identity.authenticatedAt.getTime() > 600_000)
-  )
-    throw new Error('Sign in again before changing AI credentials')
-  return identity
+  return requireIdentity()
 }
-export async function saveAiProviderSettings(input: AiProviderSettingsInput) {
+export async function saveAiProviderSettings(
+  input: AiProviderSettingsInput,
+  reauthToken?: string,
+) {
   const identity = requireCredentialChange()
   if (!getServerEnv().AI_CREDENTIAL_ENCRYPTION_KEY)
     throw new Error(
@@ -67,6 +64,8 @@ export async function saveAiProviderSettings(input: AiProviderSettingsInput) {
     ? encryptAiKey(input.apiKey, identity.id, baseURL)
     : previous?.encryptedApiKey
   if (!encryptedApiKey) throw new Error('Enter your API key')
+  // Only a valid change uses up the confirmation.
+  await consumeReauthentication('save-ai-credentials', reauthToken)
   await getAiControlDb()
     .insert(aiProviderCredentials)
     .values({

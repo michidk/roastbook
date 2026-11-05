@@ -1,6 +1,10 @@
 import { useRouter } from '@tanstack/react-router'
 import { type FormEvent, useId, useState } from 'react'
 import { toast } from 'sonner'
+import {
+  isReauthenticationCancelled,
+  useReauthentication,
+} from '@/components/auth/reauthentication-dialog'
 import { PanelSection } from '@/components/section-layout'
 import { IntegrationKeys } from '@/components/settings/integration-keys'
 import { ScopePicker } from '@/components/settings/scope-picker'
@@ -148,16 +152,21 @@ function GrantPermissionsDialog({
   const id = useId()
   const [scopes, setScopes] = useState<IntegrationScope[]>(grant.access)
   const [busy, setBusy] = useState(false)
+  const reauthentication = useReauthentication()
 
   async function submit(event: FormEvent) {
     event.preventDefault()
-    setBusy(true)
     try {
-      await updateOAuthGrantPermissions({ data: { id: grant.id, scopes } })
+      const reauthToken = await reauthentication.confirm('change-permissions')
+      setBusy(true)
+      await updateOAuthGrantPermissions({
+        data: { id: grant.id, scopes, reauthToken },
+      })
       await onSaved()
       toast.success('Permissions saved. New requests use them immediately.')
       onClose()
     } catch (error) {
+      if (isReauthenticationCancelled(error)) return
       toast.error(getErrorMessage(error, 'Could not save the permissions'))
     } finally {
       setBusy(false)
@@ -165,43 +174,46 @@ function GrantPermissionsDialog({
   }
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <form onSubmit={(event) => void submit(event)} className="contents">
-          <DialogHeader>
-            <DialogTitle>
-              Permissions for {grant.name ?? 'this application'}
-            </DialogTitle>
-            <DialogDescription>
-              {grant.allowedAccess.some((scope) => scope.endsWith(':write'))
-                ? 'The application asked for read and write access; allow only what it needs.'
-                : 'The application asked for read access only. Reconnect it to grant write access.'}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogBody>
-            <ScopePicker
-              id={`${id}-scopes`}
-              value={scopes}
-              allowed={grant.allowedAccess}
-              onChange={setScopes}
-              disabled={busy}
-            />
-          </DialogBody>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={busy}
-              onClick={onClose}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={busy || !scopes.length}>
-              {busy ? 'Saving…' : 'Save'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <>
+      {reauthentication.dialog}
+      <Dialog open onOpenChange={(open) => !open && onClose()}>
+        <DialogContent>
+          <form onSubmit={(event) => void submit(event)} className="contents">
+            <DialogHeader>
+              <DialogTitle>
+                Permissions for {grant.name ?? 'this application'}
+              </DialogTitle>
+              <DialogDescription>
+                {grant.allowedAccess.some((scope) => scope.endsWith(':write'))
+                  ? 'The application asked for read and write access; allow only what it needs.'
+                  : 'The application asked for read access only. Reconnect it to grant write access.'}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogBody>
+              <ScopePicker
+                id={`${id}-scopes`}
+                value={scopes}
+                allowed={grant.allowedAccess}
+                onChange={setScopes}
+                disabled={busy}
+              />
+            </DialogBody>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={busy}
+                onClick={onClose}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={busy || !scopes.length}>
+                {busy ? 'Saving…' : 'Save'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

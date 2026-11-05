@@ -16,6 +16,7 @@ import {
   isResearchEnabled,
   isVisionEnabled,
 } from './ai-runtime.server'
+import { confirmAs } from './auth/reauthentication-fixture.server'
 
 const suite = process.env.TEST_DATABASE_URL ? describe : describe.skip
 const first: JournalIdentity = {
@@ -60,7 +61,10 @@ suite('private AI provider settings', () => {
   })
   test('saves encrypted credentials, returns only metadata, and isolates accounts', async () => {
     expect((await asSecond(getOpenAIConfig)).apiKey).toBeUndefined()
-    const metadata = await asFirst(() => saveAiProviderSettings(connection))
+    const token = await confirmAs(first, 'save-ai-credentials')
+    const metadata = await asFirst(() =>
+      saveAiProviderSettings(connection, token),
+    )
     expect(metadata.hasApiKey).toBe(true)
     expect(JSON.stringify(metadata)).not.toContain(key)
     expect(metadata).not.toHaveProperty('encryptedApiKey')
@@ -84,11 +88,10 @@ suite('private AI provider settings', () => {
       ),
     ).rejects.toThrow()
   })
-  test('requires fresh authentication and an explicit key when moving to another endpoint', async () => {
-    const stale = { ...first, authenticatedAt: new Date(Date.now() - 700_000) }
+  test('requires a confirmation and an explicit key when moving to another endpoint', async () => {
     await expect(
-      withJournal(stale, () => saveAiProviderSettings(connection)),
-    ).rejects.toThrow('Sign in again')
+      asFirst(() => saveAiProviderSettings(connection)),
+    ).rejects.toThrow('Confirm it’s you')
     await expect(
       asFirst(() =>
         saveAiProviderSettings({
@@ -106,13 +109,17 @@ suite('private AI provider settings', () => {
         }),
       ),
     ).rejects.toThrow('not allowed')
+    const confirmation = await confirmAs(first, 'save-ai-credentials')
     const updated = await asFirst(() =>
-      saveAiProviderSettings({
-        ...connection,
-        apiKey: undefined,
-        researchModel: 'custom-provider/reasoner',
-        api: 'chat-completions',
-      }),
+      saveAiProviderSettings(
+        {
+          ...connection,
+          apiKey: undefined,
+          researchModel: 'custom-provider/reasoner',
+          api: 'chat-completions',
+        },
+        confirmation,
+      ),
     )
     expect(updated.researchModel).toBe('custom-provider/reasoner')
     expect((await asFirst(getOpenAIConfig)).apiKey).toBe(key)
@@ -125,7 +132,8 @@ suite('private AI provider settings', () => {
     await asFirst(removeAiProviderSettings)
     expect((await asFirst(getOpenAIConfig)).apiKey).toBeUndefined()
     expect(await asFirst(isRecommendationsEnabled)).toBe(false)
-    await asFirst(() => saveAiProviderSettings(connection))
+    const confirmation = await confirmAs(first, 'save-ai-credentials')
+    await asFirst(() => saveAiProviderSettings(connection, confirmation))
     await getControlDb().delete(authUsers).where(eq(authUsers.id, first.id))
     expect(
       await getControlDb()

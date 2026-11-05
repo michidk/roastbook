@@ -11,8 +11,10 @@ share one permission model and one rate limit.
 
 ## Keys and permissions
 
-Create a key in **Settings → API**. Give it a name, an expiry (30 days to one
-year, a custom date, or none), and permissions. Keys are shown once; Roastbook
+Create a key in **Settings → API**. Give it a name, an expiry (one day to one
+year, seven days by default, a custom date, or none), and permissions. With
+built-in accounts, creating a key or changing its permissions first asks you to
+confirm it’s you with a passkey or an email code. Keys are shown once; Roastbook
 stores only a hash and the first characters (`rbk_api_…`) so you can tell keys
 apart. You can change a key's name and permissions later without rotating it,
 and revoke it at any time.
@@ -44,8 +46,8 @@ link never creates a key on its own:
 /settings/api?create=true&name=Backup%20script&scopes=brews:read,beans:read&expires=90d
 ```
 
-`scopes` is a comma-separated list; `expires` is `30d`, `90d`, `1y`, or
-`never`. Unknown scopes are ignored.
+`scopes` is a comma-separated list; `expires` is `1d`, `7d`, `30d`, `90d`,
+`1y`, or `never`. Unknown scopes are ignored.
 
 Scopes are written `<resource>:read` or `<resource>:write`; write includes
 read. A key only ever reaches the journal of the account that created it:
