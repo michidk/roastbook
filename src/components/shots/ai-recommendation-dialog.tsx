@@ -187,7 +187,7 @@ export function AiRecommendationDialog({
           <TooltipContent
             side="bottom"
             sideOffset={6}
-            className="w-72 items-start rounded-lg border border-border bg-popover p-3 text-sm leading-relaxed text-muted-foreground shadow-coffee [&>svg]:hidden"
+            className="w-72 items-start rounded-lg border border-border bg-popover p-3 text-sm leading-relaxed text-muted-foreground shadow-coffee"
           >
             {helpText}
           </TooltipContent>
