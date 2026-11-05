@@ -36,13 +36,23 @@ demo database and removed with their record or on reset.
 
 ## Restrictions
 
-AI, web research, remote image import, geocoding, map tiles, MCP/OAuth, email,
-authentication, administration, external devices, remote storage, and sync are
-unavailable; enter cafés and coordinates manually. The demo build replaces
-integration server functions with stubs that fail before any network access
-(`scripts/vite-demo-services.ts`). The deployed demo has no application server
-or API endpoints. Visitor edits
-never leave the browser.
+AI recommendations, their suggested follow-up questions, and bean research use
+preset responses generated from the original sample journal. They never
+contact an AI provider. `generate-demo-snapshot.ts` writes
+`/demo-local/ai.json` alongside the journal, so rebuilding refreshes both from
+the same fixtures. Recommendations cover each sample brew and its matching
+equipment history. Beans without brew history have preset research and
+guidance to record a first brew. New beans, new brews, and unsupported methods
+report that no preset exists. Edits do not change the presets; custom chat
+questions explain this limitation. Image extraction, gear and roaster research
+remain unavailable.
+
+Remote image import, geocoding, map tiles, MCP/OAuth, email, authentication,
+administration, external devices, remote storage, and sync are unavailable;
+enter cafés and coordinates manually. The demo build replaces integration
+server functions with local preset handlers or stubs that fail before any
+network access (`scripts/vite-demo-services.ts`). The deployed demo has no
+application server or API endpoints. Visitor edits never leave the browser.
 
 The demo is not installable and has no offline shell. Its service worker only
 removes earlier Roastbook workers and caches.

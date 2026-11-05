@@ -15,7 +15,7 @@ test('only unsuffixed server-function modules are replaced in the demo', () => {
   expect(isDemoServiceModule(resolve('src/lib/image-url.ts'))).toBe(false)
 })
 
-test('every runtime export becomes a disabled demo function', () => {
+test('every runtime export is routed through the local demo dispatcher', () => {
   const code = demoServiceModule(resolve('src/lib/server/research.ts'))
   expect(code).toContain(
     'export const extractBeanInfo = demoFunction("research/extractBeanInfo")',

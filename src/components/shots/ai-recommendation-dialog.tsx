@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/tooltip'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useFeatureAvailability } from '@/hooks/use-feature-availability'
+import { DEMO_MODE } from '@/lib/build-mode'
 import {
   getShotRecommendation,
   getShotRecommendationOptions,
@@ -210,10 +211,14 @@ export function AiRecommendationDialog({
             <DialogTitle>
               {isFocusedShot ? 'AI opinion on this brew' : 'AI recommendation'}
             </DialogTitle>
-            <DialogDescription className={cn(result && 'max-sm:sr-only')}>
-              {isFocusedShot
-                ? 'An assessment of this specific brew and a next-brew adjustment based on its beans, brewing method, exact gear, tasting result, and matching history.'
-                : 'A next-brew adjustment based on the latest completed brew for these beans, its brewing method and exact gear setup, and matching history. Unsaved form values are not used.'}
+            <DialogDescription
+              className={cn(result && !DEMO_MODE && 'max-sm:sr-only')}
+            >
+              {DEMO_MODE
+                ? 'Preset demo response. Edits and custom questions are not analyzed. No AI provider is contacted.'
+                : isFocusedShot
+                  ? 'An assessment of this specific brew and a next-brew adjustment based on its beans, brewing method, exact gear, tasting result, and matching history.'
+                  : 'A next-brew adjustment based on the latest completed brew for these beans, its brewing method and exact gear setup, and matching history. Unsaved form values are not used.'}
             </DialogDescription>
           </DialogHeader>
           {result && request ? (

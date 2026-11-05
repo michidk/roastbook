@@ -44,7 +44,8 @@
 > **Try it in ten seconds.** The
 > [editable demo](https://demo.roastbook.coffee/overview) runs entirely in your
 > browser with fictional sample data — no account, no server database. Changes
-> stay in this browser only.
+> stay in this browser only. AI recommendations and bean research use preset
+> responses from the sample data without contacting an AI provider.
 
 ## ☕ What it is
 

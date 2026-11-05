@@ -2,13 +2,8 @@ import { describe, expect, test } from 'bun:test'
 import { featureAvailability } from './app-capabilities'
 
 describe('application capabilities', () => {
-  test('demo permits local journal edits and blocks integrations and standard offline synchronization', () => {
-    for (const feature of [
-      'install',
-      'offline',
-      'server-write',
-      'ai',
-    ] as const) {
+  test('demo permits local journal edits and preset AI but blocks server integrations', () => {
+    for (const feature of ['install', 'offline', 'server-write'] as const) {
       expect(
         featureAvailability(feature, {
           demo: true,
@@ -17,6 +12,9 @@ describe('application capabilities', () => {
         }).available,
       ).toBe(false)
     }
+    expect(featureAvailability('ai', { demo: true })).toEqual({
+      available: true,
+    })
     expect(
       featureAvailability('journal-write', { demo: true, online: false }),
     ).toEqual({ available: true })
