@@ -8,18 +8,20 @@ target time to count against.
 
 1. Open **Settings → Shottimer** and turn on the integration.
 2. Select **Create a shottimer key**. It opens Settings → API with a new key
-   filled in: named *Shottimer*, limited to the `shottimer` permission, without
-   expiry. Check it, create it, and copy the key into the shottimer
-   configuration. The key is shown once and only reaches your journal.
+   filled in: named *Shottimer*, limited to the `shottimer` permission,
+   expiring after a year. Check it, create it, and copy the key into the
+   shottimer configuration. The key is shown once and only reaches your
+   journal. Create a new key before it expires.
 3. Point the device at the public Roastbook URL.
 
-The link is `https://<your Roastbook>/settings/api?create=true&name=Shottimer&scopes=shottimer:write&expires=never`,
+The link is `https://<your Roastbook>/settings/api?create=true&name=Shottimer&scopes=shottimer:write&expires=1y`,
 so device instructions can link to it directly. Revoke the key in Settings →
-API to disconnect the device. Device tokens created before API keys existed
-were converted to such keys.
+API to disconnect the device. Shottimer tokens from earlier versions were
+converted to such keys.
 
 The device uses the regular [API](api.md): the same base URL, key header,
-rate limits, and error format as any other client.
+rate limits, and error format as any other client. Its key needs only the
+[`shottimer` permission](api.md#permission-reference).
 
 ## Endpoints
 
@@ -31,7 +33,7 @@ the integration is turned off `422`. See [API](api.md) for headers and errors.
 ### Submit a brew time
 
 ```http
-POST /api/v1/shottimer/shots
+POST /api/v1/shottimer
 Content-Type: application/json
 
 {"seconds": 27.4}
@@ -49,7 +51,7 @@ no longer offered.
 ### Read the target time
 
 ```http
-GET /api/v1/shottimer/target
+GET /api/v1/shottimer
 ```
 
 ```json

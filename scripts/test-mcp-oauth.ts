@@ -567,23 +567,26 @@ try {
     .set({ deletingAt: null })
     .where(eq(schema.authUsers.id, first.id))
   const manual = randomBytes(32).toString('base64url'),
-    shottimer = randomBytes(32).toString('base64url')
+    apiKey = randomBytes(32).toString('base64url')
   await control.insert(schema.integrationTokens).values(
-    [
-      ['mcp', manual],
-      ['shottimer', shottimer],
-    ].map(([kind, token]) => ({
+    (
+      [
+        ['mcp', manual],
+        ['api', apiKey],
+      ] as const
+    ).map(([kind, token]) => ({
       id: randomUUID(),
       userId: first.id,
-      kind: kind === 'mcp' ? ('mcp' as const) : ('api' as const),
-      tokenHash: hashIntegrationToken(token ?? ''),
-      scopes: kind === 'mcp' ? ['brews:read'] : ['shottimer:write'],
+      kind,
+      tokenHash: hashIntegrationToken(token),
+      scopes: ['brews:read'],
       name: 'Test',
       expiresAt: new Date(Date.now() + 60_000),
     })),
   )
   assert.equal((await rpc('tools/list', {}, manual)).status, 200)
-  assert.equal((await rpc('tools/list', {}, shottimer)).status, 401)
+  // API keys are not MCP credentials, even with the same scopes.
+  assert.equal((await rpc('tools/list', {}, apiKey)).status, 401)
   assert.equal((await fetch(resource, { method: 'GET' })).status, 405)
   assert.equal(
     (await fetch(resource, { method: 'POST', body: 'no' })).status,

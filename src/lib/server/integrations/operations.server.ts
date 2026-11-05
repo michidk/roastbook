@@ -750,7 +750,7 @@ export const INTEGRATION_OPERATIONS: readonly IntegrationOperation[] = [
     access: 'write',
     resources: ['shottimer'],
     method: 'POST',
-    path: '/shottimer/shots',
+    path: '/shottimer',
     input: shottimerShotRequestSchema,
     run: async ({ seconds }) => {
       await recordShottimerShot(
@@ -767,7 +767,7 @@ export const INTEGRATION_OPERATIONS: readonly IntegrationOperation[] = [
     access: 'read',
     resources: ['shottimer'],
     method: 'GET',
-    path: '/shottimer/target',
+    path: '/shottimer',
     input: empty,
     run: async () => ({ targetSeconds: await loadShottimerTarget() }),
   }),

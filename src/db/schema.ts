@@ -137,14 +137,13 @@ export const settings = pgTable(
 )
 
 // Singleton state for the optional shottimer hardware integration. Only a
-// SHA-256 hash of the device token is stored; the token is shown once.
+// Shottimer state: the latest reported brew time and the target shown on the device.
 export const shottimer = pgTable(
   'shottimer',
   {
     ownerId: journalOwner(),
     id: integer('id').notNull().default(1),
     enabled: boolean('enabled').default(false).notNull(),
-    tokenHash: text('token_hash'),
     latestShotSeconds: doublePrecision('latest_shot_seconds'),
     latestShotAt: timestamp('latest_shot_at'),
     targetTimeSeconds: doublePrecision('target_time_seconds'),

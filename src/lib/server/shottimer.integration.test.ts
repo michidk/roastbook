@@ -23,7 +23,7 @@ const integrationDescribe = process.env.TEST_DATABASE_URL
   : describe.skip
 
 function postShot(token: string | null, body: unknown) {
-  const request = new Request('http://roastbook.test/api/v1/shottimer/shots', {
+  const request = new Request('http://roastbook.test/api/v1/shottimer', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -109,10 +109,9 @@ integrationDescribe('shottimer through the API', () => {
   test('serves the reported target time', async () => {
     const token = await createKey(['shottimer:read'])
     await scoped(() => setShottimerTarget(28))
-    const request = new Request(
-      'http://roastbook.test/api/v1/shottimer/target',
-      { headers: { Authorization: `Bearer ${token}` } },
-    )
+    const request = new Request('http://roastbook.test/api/v1/shottimer', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
     const response = await handleJournalRequest(request, () =>
       handleApiRequest(request),
     )

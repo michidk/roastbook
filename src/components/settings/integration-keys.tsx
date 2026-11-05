@@ -1,4 +1,4 @@
-import { Copy, KeyRound, Plus } from 'lucide-react'
+import { Copy, KeyRound, Plus, TriangleAlert } from 'lucide-react'
 import { type FormEvent, useId, useState } from 'react'
 import { toast } from 'sonner'
 import { DeleteConfirmation } from '@/components/delete-confirmation'
@@ -36,9 +36,10 @@ import {
   revokeIntegrationKey,
   updateIntegrationKey,
 } from '@/lib/server/integrations'
-import type {
-  IntegrationKeyPrefill,
-  KeyExpiry,
+import {
+  DEFAULT_KEY_EXPIRY,
+  type IntegrationKeyPrefill,
+  type KeyExpiry,
 } from '@/modules/integrations/key-link'
 import {
   allScopes,
@@ -51,6 +52,7 @@ type Credential = Awaited<
 >['credentials'][number]
 
 const EXPIRY_OPTIONS = [
+  { value: '7d', label: '7 days', days: 7 },
   { value: '30d', label: '30 days', days: 30 },
   { value: '90d', label: '90 days', days: 90 },
   { value: '1y', label: '1 year', days: 365 },
@@ -70,7 +72,7 @@ function expiryDate(expiry: KeyExpiry, customDate: string) {
     return Number.isNaN(date.getTime()) ? undefined : date.toISOString()
   }
   const days =
-    EXPIRY_OPTIONS.find((option) => option.value === expiry)?.days ?? 90
+    EXPIRY_OPTIONS.find((option) => option.value === expiry)?.days ?? 7
   return new Date(Date.now() + days * 86_400_000).toISOString()
 }
 
@@ -234,7 +236,9 @@ function CreateKeyDialog({
 }) {
   const id = useId()
   const [name, setName] = useState(initial?.name ?? '')
-  const [expiry, setExpiry] = useState<KeyExpiry>(initial?.expires ?? '90d')
+  const [expiry, setExpiry] = useState<KeyExpiry>(
+    initial?.expires ?? DEFAULT_KEY_EXPIRY,
+  )
   const [customDate, setCustomDate] = useState('')
   const [scopes, setScopes] = useState<IntegrationScope[]>(() =>
     initial?.scopes.length ? initial.scopes : allScopes('read'),
@@ -245,7 +249,7 @@ function CreateKeyDialog({
 
   function reset() {
     setName('')
-    setExpiry('90d')
+    setExpiry(DEFAULT_KEY_EXPIRY)
     setCustomDate('')
     setScopes(allScopes('read'))
     setPrefilled(false)
@@ -393,6 +397,20 @@ function CreateKeyDialog({
                   </div>
                 ) : null}
               </div>
+              {expiry === 'never' ? (
+                <p
+                  role="alert"
+                  className="flex gap-2 rounded-md border border-warning-border bg-warning px-3 py-2 text-sm text-warning-foreground"
+                >
+                  <TriangleAlert
+                    aria-hidden="true"
+                    className="mt-0.5 size-4 shrink-0"
+                  />
+                  Keys without expiry are not recommended. A leaked key keeps
+                  working until you revoke it; prefer an expiry and create a new
+                  key when it runs out.
+                </p>
+              ) : null}
               <div className="space-y-2">
                 <p className="text-sm font-medium">Permissions</p>
                 <ScopePicker

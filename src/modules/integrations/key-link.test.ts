@@ -29,6 +29,6 @@ describe('new-key links', () => {
     expect(integrationKeyPrefill({})).toBeNull()
     expect(
       parseIntegrationKeySearch({ create: true, expires: 'forever' }).expires,
-    ).toBe('90d')
+    ).toBe('7d')
   })
 })

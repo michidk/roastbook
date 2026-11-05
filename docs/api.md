@@ -52,6 +52,75 @@ read. A key only ever reaches the journal of the account that created it:
 requests run in that account's journal scope under PostgreSQL row-level
 security.
 
+## Permission reference
+
+Every endpoint below `/api/v1` and its MCP tool (in parentheses) needs one
+scope. `<resource>:write` also grants everything listed for
+`<resource>:read`.
+
+- `brews:read`: `GET /brews` (`list_brews`), `GET /brews/{id}` (`get_brew`),
+  `GET /beans/{entityId}/brews` (`list_bean_brews`), `GET /beans/{id}/analytics`
+  (`get_bean_brew_analytics`), `GET /gear/{entityId}/brews` (`list_gear_brews`).
+- `brews:write`: `POST /brews` (`create_brew`), `PATCH /brews/{id}`
+  (`update_brew`), `DELETE /brews/{id}` (`delete_brew`).
+- `beans:read`: `GET /beans` (`list_beans`), `GET /beans/{id}` (`get_bean`).
+- `beans:write`: `POST /beans` (`create_bean`), `PATCH /beans/{id}`
+  (`update_bean`), `DELETE /beans/{id}` (`delete_bean`),
+  `POST /beans/{beanId}/purchases` (`create_bean_purchase`),
+  `PATCH /beans/{beanId}/purchases/{id}` (`update_bean_purchase`),
+  `POST /beans/{beanId}/purchases/{id}/archive` (`archive_bean_purchase`).
+- `roasters:read`: `GET /roasters` (`list_roasters`), `GET /roasters/{id}`
+  (`get_roaster`).
+- `roasters:write`: `POST /roasters` (`create_roaster`), `PATCH /roasters/{id}`
+  (`update_roaster`), `DELETE /roasters/{id}` (`delete_roaster`).
+- `gear:read`: `GET /gear` (`list_gear`), `GET /gear/{id}` (`get_gear`),
+  `GET /gear-sets` (`list_gear_sets`), `GET /gear-sets/{id}` (`get_gear_set`).
+- `gear:write`: `POST /gear` (`create_gear`), `PATCH /gear/{id}`
+  (`update_gear`), `DELETE /gear/{id}` (`delete_gear`), `POST /gear-sets`
+  (`create_gear_set`), `PATCH /gear-sets/{id}` (`update_gear_set`),
+  `DELETE /gear-sets/{id}` (`delete_gear_set`).
+- `recipes:read`: `GET /recipes` (`list_recipes`), `GET /recipes/{id}`
+  (`get_recipe`).
+- `recipes:write`: `POST /brews/{shotId}/recipe` (`save_brew_as_recipe`),
+  `POST /recipes` (`create_recipe`), `PATCH /recipes/{id}` (`update_recipe`),
+  `DELETE /recipes/{id}` (`delete_recipe`).
+- `places:read`: `GET /places` (`list_places`), `GET /places/{id}`
+  (`get_place`).
+- `places:write`: `POST /places` (`create_place`), `PATCH /places/{id}`
+  (`update_place`), `DELETE /places/{id}` (`delete_place`).
+- `visits:read`: `GET /visits` (`list_visits`), `GET /visits/{id}`
+  (`get_visit`).
+- `visits:write`: `POST /visits` (`create_visit`), `PATCH /visits/{id}`
+  (`update_visit`), `DELETE /visits/{id}` (`delete_visit`).
+- `methods:read`: `GET /brewing-methods` (`list_brewing_methods`),
+  `GET /brewing-methods/{id}` (`get_brewing_method`), `GET /drinks`
+  (`get_drink_configuration`).
+- `methods:write`: `POST /brewing-methods` (`create_brewing_method`),
+  `PATCH /brewing-methods/{id}` (`update_brewing_method`),
+  `DELETE /brewing-methods/{id}` (`delete_brewing_method`), `POST /drinks/types`
+  (`save_drink_type`), `POST /drinks/types/{id}/archive` (`archive_drink_type`),
+  `POST /drinks/options` (`create_drink_option`),
+  `POST /drinks/options/{id}/archive` (`archive_drink_option`).
+- `tags:read`: `GET /taste-tags` (`list_taste_tags`).
+- `tags:write`: `POST /taste-tags` (`create_taste_tag`),
+  `DELETE /taste-tags/{id}` (`delete_taste_tag`).
+- `shottimer:read`: `GET /shottimer` (`get_shot_target`).
+- `shottimer:write`: `POST /shottimer` (`report_shot_time`).
+- `stats:read`: `GET /stats` (`get_stats`), `GET /stats/dashboard`
+  (`get_dashboard`).
+
+Pictures need the scope of the record they belong to: `brews`, `beans` (bag
+pictures), `gear`, `places`, or `visits`. Reading uses `:read`, the rest
+`:write`; thumbnails exist only for bags and gear.
+
+- `GET /images` (`get_image`), `POST /images` (`upload_image`),
+  `DELETE /images/{entityType}/{entityId}/{imageId}` (`delete_image`),
+  `POST /images/{entityType}/{entityId}/{imageId}/thumbnail`
+  (`set_image_thumbnail`).
+
+`GET /api/v1`, `GET /api/v1/rate-limit`, and `GET /api/v1/openapi.json` need
+no particular scope.
+
 ## Requests
 
 ```bash

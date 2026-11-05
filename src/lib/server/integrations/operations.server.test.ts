@@ -45,6 +45,35 @@ describe('integration operation catalog', () => {
     }
   })
 
+  test('docs/api.md lists every operation under its scope', async () => {
+    const docs = await Bun.file(
+      new URL('../../../../docs/api.md', import.meta.url),
+    ).text()
+    const reference = docs.slice(
+      docs.indexOf('## Permission reference'),
+      docs.indexOf('## Requests'),
+    )
+    // One bullet per scope, continued on indented lines.
+    const bullets = new Map(
+      reference
+        .split(/\n(?=- )/)
+        .map((bullet) => bullet.replace(/\s+/g, ' '))
+        .flatMap((bullet) => {
+          const scope = /^- `([a-z]+:(?:read|write))`:/.exec(bullet)?.[1]
+          return scope ? [[scope, bullet] as const] : []
+        }),
+    )
+    const flat = reference.replace(/\s+/g, ' ')
+    for (const operation of INTEGRATION_OPERATIONS) {
+      const entry = `\`${operation.method} ${operation.path}\` (\`${operation.name}\`)`
+      if (operation.resources.length === 1)
+        expect(
+          bullets.get(`${operation.resources[0]}:${operation.access}`) ?? '',
+        ).toContain(entry)
+      else expect(flat).toContain(entry)
+    }
+  })
+
   test('reads never use write methods', () => {
     for (const operation of INTEGRATION_OPERATIONS)
       expect(operation.method === 'GET').toBe(operation.access === 'read')

@@ -3,6 +3,7 @@ import { type IntegrationScope, normalizeScopes } from './scopes'
 
 /** Expiry choices for new keys; custom dates are picked in the dialog. */
 export const KEY_EXPIRY_VALUES = [
+  '7d',
   '30d',
   '90d',
   '1y',
@@ -10,6 +11,8 @@ export const KEY_EXPIRY_VALUES = [
   'never',
 ] as const
 export type KeyExpiry = (typeof KEY_EXPIRY_VALUES)[number]
+/** Short-lived by default; longer lifetimes are a deliberate choice. */
+export const DEFAULT_KEY_EXPIRY = '7d' satisfies KeyExpiry
 
 /**
  * `/settings/api` search parameters that open the new-key dialog with a name,
@@ -35,8 +38,8 @@ export function parseIntegrationKeySearch(
   )
   const expires = searchEnum(
     search.expires,
-    ['30d', '90d', '1y', 'never'] as const,
-    '90d',
+    ['7d', '30d', '90d', '1y', 'never'] as const,
+    DEFAULT_KEY_EXPIRY,
   )
   return {
     create: true,
@@ -60,6 +63,6 @@ export function integrationKeyPrefill(
   return {
     name: search.name ?? '',
     scopes: normalizeScopes(search.scopes?.split(',') ?? []),
-    expires: search.expires ?? '90d',
+    expires: search.expires ?? DEFAULT_KEY_EXPIRY,
   }
 }

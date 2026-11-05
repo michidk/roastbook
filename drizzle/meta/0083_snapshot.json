@@ -1,5 +1,5 @@
 {
-  "id": "932e2662-18f4-4a19-a7a2-a40a41bfa723",
+  "id": "95fa1330-2e98-429f-8d1f-d2b7759b29a1",
   "prevId": "5b030575-1624-4a36-840d-37ba9c7192c7",
   "version": "7",
   "dialect": "postgresql",
@@ -8546,12 +8546,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
-        },
-        "token_hash": {
-          "name": "token_hash",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         },
         "latest_shot_seconds": {
           "name": "latest_shot_seconds",
