@@ -119,9 +119,21 @@ encrypted per user and endpoint and never reach browsers, exports, or logs.
 
 User endpoints must use HTTPS; private, loopback, metadata, and reserved
 addresses are blocked and redirects are refused. `AI_ALLOWED_PRIVATE_ORIGINS`
-allows exact origins such as `http://ollama:11434` and is rejected in hosted
-mode. Selected journal data and images go to the user's provider, which bills
-them.
+accepts a comma-separated list of exact origins (scheme, hostname, and port,
+without a path) and is rejected in hosted mode. For example:
+
+```env
+AI_ALLOWED_PRIVATE_ORIGINS=http://ollama:11434,http://host.containers.internal:42000
+```
+
+In self-hosted mode, listed origins allow both HTTP and private addresses.
+Recreate the application container after changing this variable. In Settings > AI,
+enter the full API base URL, including the provider's API path, for example
+`http://host.containers.internal:42000/v1`. The hostname must resolve and the
+provider must be reachable from inside the application container; this setting
+does not configure DNS, networking, or TLS trust.
+
+Selected journal data and images go to the user's provider, which bills them.
 
 Every request's metadata, status, duration, and token usage are logged in the
 database and shown in Settings > AI. Prompts and responses are stored only
