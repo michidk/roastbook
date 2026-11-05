@@ -60,7 +60,8 @@ boundaries. Overrides and the settings previews use the same tokens in
 ## Typography
 
 - Display: `Bricolage Grotesque` (`font-display`, tight tracking). Body:
-  `Hanken Grotesk`. Aligned data uses tabular numerals.
+  `Hanken Grotesk`. Families and font weights live in `src/typography.css`,
+  shared by the app and API explorer. Aligned data uses tabular numerals.
 - Page title `1.875rem` mobile / `3rem` desktop, weight 800; compact variant
   `1.5rem` / `1.875rem` from `sm`.
 - Section title `1.125rem`/700; body `1rem`/400–600; small `0.875rem`/400–600.

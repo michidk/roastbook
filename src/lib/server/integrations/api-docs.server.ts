@@ -46,16 +46,24 @@ const PAGE_SECURITY_HEADERS = {
 
 /** Maps Scalar's variables onto the palette tokens in theme-tokens.css. */
 const SCALAR_THEME = `
-html, body { background: var(--background); }
-body.light-mode, body.dark-mode, .scalar-app.light-mode, .scalar-app.dark-mode {
-  --scalar-font: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+html { background: var(--background); color: var(--foreground); }
+body { margin: 0; font-family: var(--font-body); }
+
+:root, body, .scalar-app, .scalar-app .light-mode, .scalar-app .dark-mode {
+  --scalar-font: var(--font-body);
   --scalar-font-code: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --scalar-radius: 0.5rem;
-  --scalar-radius-lg: 0.75rem;
-  --scalar-radius-xl: 1rem;
+  --scalar-radius: calc(var(--radius) - 4px);
+  --scalar-radius-lg: var(--radius);
+  --scalar-radius-xl: calc(var(--radius) + 4px);
+  --scalar-heading-1: 1.875rem;
+  --scalar-heading-2: 1.125rem;
+  --scalar-heading-3: 1rem;
+  --scalar-bold: 700;
+  --scalar-semibold: 600;
+  --scalar-border-width: 1px;
   --scalar-background-1: var(--background);
   --scalar-background-2: var(--card);
-  --scalar-background-3: var(--accent);
+  --scalar-background-3: var(--muted);
   --scalar-background-accent: color-mix(in srgb, var(--primary) 14%, transparent);
   --scalar-color-1: var(--foreground);
   --scalar-color-2: var(--muted-foreground);
@@ -71,7 +79,7 @@ body.light-mode, body.dark-mode, .scalar-app.light-mode, .scalar-app.dark-mode {
   --scalar-button-1: var(--primary);
   --scalar-button-1-color: var(--primary-foreground);
   --scalar-button-1-hover: color-mix(in srgb, var(--primary) 88%, var(--foreground));
-  --scalar-sidebar-background-1: var(--background);
+  --scalar-sidebar-background-1: var(--card);
   --scalar-sidebar-color-1: var(--foreground);
   --scalar-sidebar-color-2: var(--muted-foreground);
   --scalar-sidebar-color-active: var(--accent-foreground);
@@ -83,7 +91,7 @@ body.light-mode, body.dark-mode, .scalar-app.light-mode, .scalar-app.dark-mode {
   --scalar-sidebar-search-border-color: var(--border);
   --scalar-sidebar-search-color: var(--muted-foreground);
 }
-:root { --scalar-custom-header-height: 2.75rem; }
+:root { --scalar-custom-header-height: 3.5rem; }
 .roastbook-bar {
   position: fixed; inset: 0 0 auto; z-index: 20;
   height: var(--scalar-custom-header-height);
@@ -91,18 +99,32 @@ body.light-mode, body.dark-mode, .scalar-app.light-mode, .scalar-app.dark-mode {
   padding: 0 1rem; box-sizing: border-box;
   background: var(--card); color: var(--muted-foreground);
   border-bottom: 1px solid var(--border);
-  font: 500 0.875rem/1.25 "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+  font: 500 0.875rem/1.4 var(--font-body);
 }
-.roastbook-bar a { color: var(--link); text-underline-offset: 4px; }
+.roastbook-bar a { display: inline-flex; align-items: center; min-height: 44px; color: var(--link); text-underline-offset: 4px; }
 .roastbook-bar a:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .roastbook-bar .brand {
-  color: var(--foreground); font-weight: 700; text-decoration: none;
-  font-family: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  flex-shrink: 0; color: var(--foreground); font-size: 1.25rem; font-weight: 800; text-decoration: none;
+  font-family: var(--font-heading);
 }
-.roastbook-bar .status { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.roastbook-bar .status { text-align: right; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .scalar-app h1, .scalar-app h2, .scalar-app h3,
 .scalar-app .section-header-label, .scalar-app .sidebar-heading {
-  font-family: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+.scalar-app h1 { font-weight: 800; line-height: 1.1; }
+.scalar-app .scalar-button {
+  border-radius: 9999px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+@media (min-width: 640px) { .scalar-app { --scalar-heading-1: 3rem; } }
+@media (pointer: coarse) { .scalar-app .scalar-button { min-height: 44px; } }
+@media (max-width: 639px) {
+  .roastbook-bar { gap: 0.75rem; }
+  .roastbook-bar .status { font-size: 0.75rem; }
 }
 `
 
@@ -217,7 +239,7 @@ const PAGE_HEAD = `<meta charset="utf-8">
 <title>Roastbook API reference</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap">`
+`
 
 const PAGE_HEADER = `<header class="roastbook-bar">
 <a class="brand" href="/">Roastbook</a>
@@ -226,10 +248,12 @@ const PAGE_HEADER = `<header class="roastbook-bar">
 <div id="roastbook-api-reference"></div>`
 
 async function docsPage() {
-  const [{ version }, { default: tokens }] = await Promise.all([
-    scalarBundle(),
-    import('@/theme-tokens.css?raw'),
-  ])
+  const [{ version }, { default: typography }, { default: tokens }] =
+    await Promise.all([
+      scalarBundle(),
+      import('@/typography.css?raw'),
+      import('@/theme-tokens.css?raw'),
+    ])
   const reference = {
     scriptUrl: `/api/v1${SCRIPT_PREFIX}${version}`,
     configuration: REFERENCE_CONFIGURATION,
@@ -238,7 +262,9 @@ async function docsPage() {
 <html lang="en">
 <head>
 ${PAGE_HEAD}
-<style>${tokens}</style>
+<style>${typography}
+${tokens}
+${SCALAR_THEME}</style>
 <script>${PALETTE_RESTORE_SCRIPT};
 ${THEME_BOOTSTRAP_SCRIPT}</script>
 </head>
