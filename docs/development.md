@@ -96,7 +96,7 @@ bun run check:pwa
   `test:coverage` reports coverage without a threshold.
 - `check:client-assets` enforces JavaScript and MapLibre chunk budgets and
   rejects server-only SDK code in browser assets. Pass another build's public
-  directory to check it, e.g. `.vercel/output/static`.
+  directory to check it, e.g. `dist/client`.
 - `check:pwa` validates the manifest, icons, offline page and built service
   worker.
 
