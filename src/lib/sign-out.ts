@@ -22,7 +22,7 @@ export async function signOutOfAccount() {
       await deleteLocalJournal(journal)
     }
     localStorage.removeItem('roastbook-active-owner')
-    // The choice belonged to this account; the installed app makes it again.
+    // The copy belonged to this account; the installed app creates it again.
     const { setDeviceCopy } = await import('@/journal/local/device-copy')
     setDeviceCopy(false)
     if ('caches' in window)

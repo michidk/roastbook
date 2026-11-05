@@ -1,8 +1,10 @@
 # Offline journaling
 
 The installed app keeps the signed-in account's journal on the device and works
-offline. A browser tab uses the server and downloads nothing, unless **Settings
-→ Offline → Keep this journal on this device** is on. A device copy downloads
+offline automatically. A browser tab uses the server without downloading a
+journal copy. If this browser profile already has a copy from the installed app
+or the former offline setting, tabs keep using it, including pending changes.
+There is no offline toggle. A device copy downloads
 the journal records once (pictures load as they are shown), reads and writes
 locally, and syncs with the account when a connection is available. See
 [Journal architecture](client-data.md) for the design.
@@ -36,7 +38,7 @@ resends it, **Discard** restores the account's version. Other changes keep
 syncing. Signing out requires everything to be synced.
 
 **Settings → Offline** shows sync state, the last sync, and storage use.
-Turning the device copy off deletes it once synced, and sign-out removes it.
+Signing out removes the account’s device copy once everything is synced.
 **Repair app shell** refreshes application files without touching the journal.
 
 ## Storage and privacy

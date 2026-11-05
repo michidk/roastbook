@@ -4,8 +4,9 @@ Every journal read and write is one SQL journal function in `src/journal/`. It
 runs on the server on PostgreSQL, and in browsers that keep a device copy
 on PGlite (sync replay, MCP and browser tabs without a copy use the server).
 `src/journal/local/device-copy.ts` decides: the demo and the installed app
-always keep a copy, a browser tab only when chosen in Settings → Offline;
-other tabs call `callJournal` in `src/lib/server/journal-sync.ts`. See
+always keep a copy. Browser tabs reuse existing copies, including those enabled
+by the former offline setting, without deleting pending changes. Other tabs call
+`callJournal` in `src/lib/server/journal-sync.ts`. See
 [ADR 0001](adr/0001-sql-journal.md) for the
 decision.
 
