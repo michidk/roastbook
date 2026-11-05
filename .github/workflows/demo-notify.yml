@@ -1,0 +1,53 @@
+name: Notify demo publisher
+
+on:
+  workflow_run:
+    workflows: [Static demo build]
+    types: [completed]
+  pull_request_target:
+    branches: [main]
+    types: [opened, reopened, synchronize, labeled, unlabeled, closed, edited]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    if: github.repository == 'michidk/roastbook'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check publisher configuration
+        id: config
+        env:
+          DEMO_PUBLISHER_REPOSITORY: ${{ secrets.DEMO_PUBLISHER_REPOSITORY }}
+        run: |
+          if [ -n "$DEMO_PUBLISHER_REPOSITORY" ]; then
+            echo 'enabled=true' >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
+        if: steps.config.outputs.enabled == 'true'
+        id: token
+        with:
+          app-id: ${{ secrets.RELEASER_APP_ID }}
+          private-key: ${{ secrets.RELEASER_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ secrets.DEMO_PUBLISHER_REPOSITORY }}
+          permission-contents: write
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        if: steps.config.outputs.enabled == 'true'
+        env:
+          DEMO_PUBLISHER_REPOSITORY: ${{ secrets.DEMO_PUBLISHER_REPOSITORY }}
+        with:
+          github-token: ${{ steps.token.outputs.token }}
+          script: |
+            await github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo: process.env.DEMO_PUBLISHER_REPOSITORY,
+              event_type: 'demo-updated',
+              client_payload: {
+                target: context.payload.pull_request
+                  ? `pr-${context.payload.pull_request.number}` : 'all',
+              },
+            });

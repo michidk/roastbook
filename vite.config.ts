@@ -172,7 +172,13 @@ const config = defineConfig({
     tailwindcss(),
     tanstackStart({
       ...(roastbookEdition === 'demo'
-        ? {}
+        ? {
+            spa: {
+              enabled: true,
+              maskPath: '/offline-shell',
+              prerender: { outputPath: '/index.html' },
+            },
+          }
         : {
             spa: {
               enabled: true,
@@ -192,18 +198,11 @@ const config = defineConfig({
         },
       },
     }),
-    ...(!extension
+    ...(!extension && roastbookEdition !== 'demo'
       ? [
           nitro({
-            preset: roastbookEdition === 'demo' ? 'vercel' : 'bun',
+            preset: 'bun',
             routeRules: {
-              ...(roastbookEdition === 'demo'
-                ? {
-                    '/demo-local/**': {
-                      headers: { 'cache-control': 'no-cache' },
-                    },
-                  }
-                : {}),
               '/sw.js': {
                 headers: {
                   'cache-control': 'no-cache, no-store, must-revalidate',
@@ -216,10 +215,7 @@ const config = defineConfig({
                 headers: { 'cache-control': 'no-cache' },
               },
             },
-            routes:
-              roastbookEdition === 'demo'
-                ? {}
-                : { '/media/**': './src/lib/server/media-handler.ts' },
+            routes: { '/media/**': './src/lib/server/media-handler.ts' },
           }),
         ]
       : []),

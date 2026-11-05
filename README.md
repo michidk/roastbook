@@ -240,7 +240,7 @@ migrations on start. See [Development and testing](docs/development.md).
 | `bun run lint:deadcode` | Find unused code and dependencies with Knip |
 | `bun run build` | Build production assets |
 | `bun run dev:demo` | Run the browser-local demo |
-| `bun run build:demo` | Build the browser-local demo for Vercel |
+| `bun run build:demo` | Build the static browser-local demo |
 | `bun run verify` | Run the complete local quality gate |
 | `bun run db:generate` | Generate a Drizzle migration after a schema change |
 | `bun run db:migrate` | Apply committed migrations |

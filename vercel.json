@@ -1,4 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "bun run build:demo"
+  "buildCommand": "bun run build:demo",
+  "outputDirectory": "dist/client",
+  "rewrites": [
+    { "source": "/((?!assets/|demo-local/).*)", "destination": "/index.html" }
+  ]
 }

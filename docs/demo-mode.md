@@ -40,9 +40,9 @@ AI, web research, remote image import, geocoding, map tiles, MCP/OAuth, email,
 authentication, administration, external devices, remote storage, and sync are
 unavailable; enter cafés and coordinates manually. The demo build replaces
 integration server functions with stubs that fail before any network access
-(`scripts/vite-demo-services.ts`). The server has no journal database: API and
-server-function requests are rejected except the health check, so visitor edits
-never reach the backend.
+(`scripts/vite-demo-services.ts`). The deployed demo has no application server
+or API endpoints. Visitor edits
+never leave the browser.
 
 The demo is not installable and has no offline shell. Its service worker only
 removes earlier Roastbook workers and caches.
@@ -55,11 +55,29 @@ database, storage, or credentials.
 ```bash
 bun run dev:demo
 bun run build:demo
-bun run check:client-assets .vercel/output/static
+bun run check:client-assets dist/client
 ```
 
 `dev:demo` regenerates the sample JSON before starting Vite; restart it after
-changing fixtures or migrations. `build:demo` writes `.vercel/output`; deploy it
-with `vercel deploy --prebuilt` (`vercel.json` uses `build:demo` for Git
-deployments). Do not run a Vite dev server and a production build at the same
-time in one checkout; they share Nitro build state.
+changing fixtures or migrations. `build:demo` writes the complete static site to
+`dist/client/`. Publish only that directory. The server bundle used to render
+the initial HTML during the build is not part of the deployment.
+
+Use HTTPS, serve JavaScript and WASM with their correct content types, and return
+`index.html` for application navigation paths such as `/overview`. Missing asset
+requests must return 404. Revalidate HTML, `/demo-local/**`, and `/sw.js` on each
+visit; hashed `/assets/**` files may be cached indefinitely. Every preview needs
+its own hostname to isolate browser data, and a stable hostname preserves that
+data between updates.
+
+The **Static demo build** workflow builds main and pull requests and publishes a
+`demo-static` artifact. Branches without a PR do not create previews. An optional
+publisher receives metadata notifications through `DEMO_PUBLISHER_REPOSITORY`,
+using the existing Releaser App. The notification workflow never checks out PR
+code. Build jobs have no publishing credentials. A publisher must independently
+verify the current PR, successful build, and authorization before using artifacts.
+Fork previews require the repository owner's `preview` label; removing it or
+closing the PR revokes the preview. Same-repository PRs are automatic.
+
+Do not run a Vite dev server and a production build at the same time in one
+checkout; they share generated build state.

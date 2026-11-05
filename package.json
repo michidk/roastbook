@@ -12,7 +12,7 @@
     "dev:log": "mkdir -p logs && bun run dev 2>&1 | tee logs/dev.log",
     "generate-routes": "tsr generate",
     "build": "bun --bun vite build && bun run scripts/build-service-worker.ts .output/public",
-    "build:demo": "bun run scripts/generate-demo-snapshot.ts && ROASTBOOK_EDITION=demo vite build && bun run scripts/build-demo-pwa.ts .vercel/output/static && bun run scripts/check-pwa.ts --demo .vercel/output/static",
+    "build:demo": "bun run scripts/generate-demo-snapshot.ts && ROASTBOOK_EDITION=demo bun --bun vite build && bun run scripts/build-demo-pwa.ts dist/client && bun run scripts/check-pwa.ts --demo dist/client",
     "start": "bun .output/server/index.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",

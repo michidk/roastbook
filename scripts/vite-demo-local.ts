@@ -23,7 +23,7 @@ export function demoLocalPlugin(): Plugin {
     configurePreviewServer(server) {
       server.middlewares.use(
         '/demo-local',
-        serveDemoAssets('.vercel/output/static/demo-local'),
+        serveDemoAssets('dist/client/demo-local'),
       )
     },
   }
