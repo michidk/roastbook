@@ -30,6 +30,15 @@ const IMAGE_ENTITIES = {
 >
 
 type ImageEntity = keyof typeof IMAGE_ENTITIES
+
+/** The resource a picture call targets, from its `entityType` argument. */
+export function imageCallResource(input: unknown): IntegrationResource | null {
+  const entityType = (input as { entityType?: unknown } | null)?.entityType
+  return typeof entityType === 'string' &&
+    Object.hasOwn(IMAGE_ENTITIES, entityType)
+    ? IMAGE_ENTITIES[entityType as ImageEntity].resource
+    : null
+}
 const imageEntitySchema = z.enum(
   Object.keys(IMAGE_ENTITIES) as [ImageEntity, ...ImageEntity[]],
 )

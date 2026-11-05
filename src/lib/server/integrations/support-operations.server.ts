@@ -33,6 +33,7 @@ import { shottimerShotRequestSchema } from '@/lib/shottimer'
 import { loadShottimerTarget, recordShottimerShot } from '../shottimer.server'
 import {
   deleteIntegrationImage,
+  imageCallResource,
   imageDeleteSchema,
   imageReadSchema,
   imageThumbnailSchema,
@@ -265,6 +266,7 @@ export const SUPPORT_OPERATIONS = [
       'Attach a JPEG, PNG, WebP or GIF picture (base64 data) to a brew, bag, gear item, place or visit.',
     access: 'write',
     resources: ['brews', 'beans', 'gear', 'places', 'visits'],
+    resourceFor: imageCallResource,
     method: 'POST',
     path: '/images',
     input: imageUploadSchema,
@@ -276,6 +278,7 @@ export const SUPPORT_OPERATIONS = [
     description: 'Show this picture first for a bag or gear item.',
     access: 'write',
     resources: ['beans', 'gear'],
+    resourceFor: imageCallResource,
     method: 'POST',
     path: '/images/{entityType}/{entityId}/{imageId}/thumbnail',
     input: imageThumbnailSchema,
@@ -288,6 +291,7 @@ export const SUPPORT_OPERATIONS = [
       'Delete a picture from a brew, bag, gear item, place or visit.',
     access: 'write',
     resources: ['brews', 'beans', 'gear', 'places', 'visits'],
+    resourceFor: imageCallResource,
     method: 'DELETE',
     path: '/images/{entityType}/{entityId}/{imageId}',
     input: imageDeleteSchema,

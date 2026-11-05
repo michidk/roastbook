@@ -7,10 +7,10 @@ import {
 } from '@modelcontextprotocol/server'
 import { getJournalContext } from '@/db/journal-context.server'
 import { DEMO_MODE } from '@/lib/build-mode'
+import { hasScope } from '@/modules/integrations/scopes'
 import { getIntegrationOperation } from '../integrations/operations.server'
 import {
   admitIntegrationRequest,
-  canUseOperation,
   missingScopes,
   requireIntegration,
 } from '../integrations/runtime.server'
@@ -45,12 +45,21 @@ async function insufficientScope(
   }
   const call = message as {
     method?: unknown
-    params?: { name?: unknown }
+    params?: { name?: unknown; arguments?: unknown }
   } | null
   if (call?.method !== 'tools/call' || typeof call.params?.name !== 'string')
     return null
   const operation = getIntegrationOperation(call.params.name)
-  if (!operation || canUseOperation(operation, scopes)) return null
+  if (!operation) return null
+  // Picture tools target one resource per call; judge and challenge that one.
+  const target = operation.resourceFor?.(call.params.arguments)
+  const resources = target ? [target] : operation.resources
+  const missing = missingScopes(operation, scopes)
+  if (
+    !missing.length &&
+    resources.some((resource) => hasScope(scopes, resource, operation.access))
+  )
+    return null
   const oauth =
     getJournalContext()?.identity.integration?.credentialId.startsWith(
       'oauth:',
@@ -61,10 +70,13 @@ async function insufficientScope(
       ? 'mcp:read mcp:write'
       : 'mcp:read'
     : [
-        ...operation.resources.map(
-          (resource) => `${resource}:${operation.access}`,
-        ),
-        ...missingScopes(operation, scopes),
+        ...(resources.some((resource) =>
+          hasScope(scopes, resource, operation.access),
+        )
+          ? []
+          : // Several alternatives: name the first; any one of them works.
+            [`${resources[0]}:${operation.access}`]),
+        ...missing,
       ].join(' ')
   return Response.json(
     { error: 'insufficient_scope' },

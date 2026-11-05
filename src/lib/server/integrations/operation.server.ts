@@ -27,6 +27,11 @@ export type IntegrationOperation = {
    * the operation runs; with several, the operation checks the one it uses.
    */
   readonly resources: readonly IntegrationResource[]
+  /**
+   * For operations spanning several resources: the one a call targets, read
+   * from its raw arguments, or null when only the operation can tell.
+   */
+  readonly resourceFor?: (input: unknown) => IntegrationResource | null
   /** Further scopes the operation always needs, checked like `resources`. */
   readonly alsoRequires?: readonly IntegrationScope[]
   readonly method: 'GET' | 'POST' | 'PATCH' | 'DELETE'

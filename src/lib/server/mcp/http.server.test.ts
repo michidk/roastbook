@@ -133,6 +133,39 @@ describe('stateless MCP HTTP endpoint', () => {
     )
   })
 
+  test('judges picture tools by the resource each call targets', async () => {
+    const handle = createMcpHttpHandler(config, {
+      run,
+      scopes: () => ['beans:write'],
+    })
+    const upload = (entityType: string) =>
+      handle(
+        new Request('http://upstream/api/mcp', {
+          method: 'POST',
+          headers: {
+            Host: 'localhost',
+            Accept: 'application/json, text/event-stream',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'tools/call',
+            params: {
+              name: 'upload_image',
+              arguments: { entityType, entityId: 1 },
+            },
+          }),
+        }),
+      )
+    const denied = await upload('brews')
+    expect(denied?.status).toBe(403)
+    expect(denied?.headers.get('www-authenticate')).toBe(
+      'Bearer error="insufficient_scope", scope="brews:write"',
+    )
+    expect((await upload('bean-purchases'))?.status).not.toBe(403)
+  })
+
   test('owner policy pauses the endpoint', async () => {
     const handle = createMcpHttpHandler(config, {
       policy: async () => ({ enabled: false, disabledTools: [] }),
