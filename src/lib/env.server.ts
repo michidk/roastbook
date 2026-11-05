@@ -70,6 +70,7 @@ const serverSchema = {
     )
     .optional(),
   AI_ALLOWED_PRIVATE_ORIGINS: optionalString,
+  AI_TELEMETRY_STORE_PAYLOADS: booleanString,
   MCP_ALLOWED_HOSTS: optionalString,
   MCP_ALLOWED_ORIGINS: optionalString,
 }
@@ -144,6 +145,8 @@ export function parseServerEnv(
       AI_CREDENTIAL_ENCRYPTION_KEY:
         runtimeEnvironment.AI_CREDENTIAL_ENCRYPTION_KEY,
       AI_ALLOWED_PRIVATE_ORIGINS: runtimeEnvironment.AI_ALLOWED_PRIVATE_ORIGINS,
+      AI_TELEMETRY_STORE_PAYLOADS:
+        runtimeEnvironment.AI_TELEMETRY_STORE_PAYLOADS,
       MCP_ALLOWED_HOSTS: runtimeEnvironment.MCP_ALLOWED_HOSTS,
       MCP_ALLOWED_ORIGINS: runtimeEnvironment.MCP_ALLOWED_ORIGINS,
     },

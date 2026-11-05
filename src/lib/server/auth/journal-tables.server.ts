@@ -2,7 +2,6 @@ import '@tanstack/react-start/server-only'
 
 export const journalTables = [
   'ai_request_logs',
-  'ai_usage',
   'basket_details',
   'bean_images',
   'bean_purchases',

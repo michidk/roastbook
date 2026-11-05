@@ -253,63 +253,11 @@ databaseDescribe('PostgreSQL schema', () => {
     )
   })
 
-  test('stores valid AI usage and rejects negative token counts', async () => {
-    const requestId = `ai-usage-${crypto.randomUUID()}`
-
-    try {
-      const [usage] = await database()<
-        [{ totalTokens: number; estimatedCostUsd: string }]
-      >`
-        insert into ai_usage (
-          request_id,
-          feature,
-          model,
-          prompt_tokens,
-          completion_tokens,
-          total_tokens,
-          estimated_cost_usd
-        ) values (${requestId}, 'test', 'gpt-4o', 100, 20, 120, 0.00045)
-        returning
-          total_tokens as "totalTokens",
-          estimated_cost_usd as "estimatedCostUsd"
-      `
-
-      expect(usage).toEqual({
-        totalTokens: 120,
-        estimatedCostUsd: '0.0004500000',
-      })
-    } finally {
-      await database()`delete from ai_usage where request_id = ${requestId}`
-    }
-
-    await expectPostgresError(
-      () =>
-        database()`
-          insert into ai_usage (
-            request_id,
-            feature,
-            model,
-            prompt_tokens,
-            completion_tokens,
-            total_tokens
-          ) values ('invalid-ai-usage', 'test', 'gpt-4o', -1, 0, 0)
-        `,
-      '23514',
-    )
-  })
-
-  test('stores priced AI request logs and validates cached tokens', async () => {
+  test('stores AI request token usage and validates cached tokens', async () => {
     const requestType = `ai-request-${crypto.randomUUID()}`
 
     try {
-      const [request] = await database()<
-        [
-          {
-            cachedPromptTokens: number
-            estimatedCostUsd: string
-          },
-        ]
-      >`
+      const [request] = await database()<[{ cachedPromptTokens: number }]>`
         insert into ai_request_logs (
           request_type,
           model,
@@ -317,18 +265,12 @@ databaseDescribe('PostgreSQL schema', () => {
           prompt_tokens,
           cached_prompt_tokens,
           completion_tokens,
-          total_tokens,
-          estimated_cost_usd
-        ) values (${requestType}, 'gpt-4o', '{}', 100, 25, 20, 120, 0.00045)
-        returning
-          cached_prompt_tokens as "cachedPromptTokens",
-          estimated_cost_usd as "estimatedCostUsd"
+          total_tokens
+        ) values (${requestType}, 'gpt-4o', '{}', 100, 25, 20, 120)
+        returning cached_prompt_tokens as "cachedPromptTokens"
       `
 
-      expect(request).toEqual({
-        cachedPromptTokens: 25,
-        estimatedCostUsd: '0.0004500000',
-      })
+      expect(request).toEqual({ cachedPromptTokens: 25 })
     } finally {
       await database()`delete from ai_request_logs where request_type = ${requestType}`
     }

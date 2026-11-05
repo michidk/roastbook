@@ -639,6 +639,9 @@
           "items": {
             "type": "string"
           }
+        },
+        "telemetryStorePayloads": {
+          "type": "boolean"
         }
       }
     },

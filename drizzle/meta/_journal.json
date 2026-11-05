@@ -575,6 +575,13 @@
       "when": 1793820552171,
       "tag": "0081_sign-up-consent",
       "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1793836269153,
+      "tag": "0082_remove-ai-cost",
+      "breakpoints": true
     }
   ]
 }

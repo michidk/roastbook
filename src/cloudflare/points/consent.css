@@ -1,0 +1,3 @@
+/* c15t declares a bare `components` layer early, which would rank its rules below
+   Tailwind's base reset; a named layer declared later keeps them on top. */
+@import "@c15t/react/styles.css" layer(c15t);
