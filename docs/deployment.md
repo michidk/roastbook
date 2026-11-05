@@ -188,3 +188,28 @@ storage drift without changing anything:
 ```bash
 bun run storage:orphans
 ```
+
+## Releases
+
+Run the **Release** GitHub Action on `main`. The default `auto` bump uses
+Conventional Commits and `cliff.toml`; `patch`, `minor`, and `major` are
+explicit overrides. Features bump minor, breaking changes bump major, and
+other changes bump patch. Automatic mode skips changes excluded by the
+changelog configuration. The first automatic release is `v0.1.0`; explicit
+bumps start from `v0.0.0`.
+
+The latest **Checks and Build** push run for the selected revision must
+succeed first. The workflow tags that exact commit and immediately publishes a
+GitHub release with generated notes. A repeated dispatch for the same tagged
+revision resumes an incomplete release or leaves the published release
+unchanged.
+
+The release tag triggers the image pipeline, which verifies and builds
+`linux/amd64` and `linux/arm64` images in GHCR. Wait for the tag's **Checks
+and Build** run before using its versioned image. Release versions come from
+Git tags; this workflow does not rewrite the Helm chart or package manifests.
+
+Maintainers must configure `RELEASER_APP_ID` and `RELEASER_APP_PRIVATE_KEY`
+for a GitHub App with Contents write access. Its token allows tag and release
+events to start downstream workflows. The workflow is managed by
+`common/release` in the shared workflows repository.

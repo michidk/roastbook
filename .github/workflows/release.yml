@@ -1,0 +1,159 @@
+# @orcastrate
+# template: common/release
+# @end-orcastrate
+
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: Version bump from Conventional Commits or an explicit override
+        required: true
+        type: choice
+        default: auto
+        options: [auto, patch, minor, major]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
+  queue: max
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  BUMP_TYPE: ${{ inputs.bump_type }}
+  DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+  GH_REPO: ${{ github.repository }}
+
+jobs:
+  release:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - name: Require default branch and successful source CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_WORKFLOW: ci.yml
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != "refs/heads/$DEFAULT_BRANCH" ]]; then
+            echo '::error::Run Release on the default branch.'
+            exit 1
+          fi
+          runs="$(gh api --method GET "repos/$GH_REPO/actions/workflows/$CI_WORKFLOW/runs" \
+            -f head_sha="$GITHUB_SHA" -f branch="$DEFAULT_BRANCH" -f event=push -f per_page=1)"
+          if ! jq -e --arg sha "$GITHUB_SHA" --arg repo "$GH_REPO" \
+            '.workflow_runs[0] | .head_sha == $sha and .head_repository.full_name == $repo and .conclusion == "success"' <<< "$runs" > /dev/null; then
+            echo '::error::The latest push CI run for this revision must succeed before releasing. Rerun Release after CI completes.'
+            exit 1
+          fi
+
+      - name: Checkout tested source and tags
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install git-cliff and inspect changes
+        uses: orhun/git-cliff-action@a9a95522b26fe6403f7bb24031f21fb573d0f5ff # v4
+        with:
+          version: v2.14.2
+          config: cliff.toml
+          args: --unreleased --output /tmp/unreleased.md
+
+      - name: Calculate version and release notes
+        id: version
+        run: |
+          set -euo pipefail
+          cliff="$RUNNER_TEMP/git-cliff/bin/git-cliff"
+          stable='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
+          latest="$(git tag --sort=-version:refname | { grep -E "$stable" || true; } | sed -n '1p')"
+          if [[ -n "$latest" ]] && ! git merge-base --is-ancestor "$latest" HEAD; then
+            echo '::error::The latest release tag must be an ancestor of this revision.'
+            exit 1
+          fi
+          if [[ -n "$latest" && "$(git rev-parse "$latest^{commit}")" == "$GITHUB_SHA" ]]; then
+            tag="$latest"
+            "$cliff" --current --strip header --output /tmp/release-notes.md
+          else
+            if [[ "$BUMP_TYPE" == auto ]]; then
+              if [[ -n "$latest" && "$("$cliff" --unreleased --context | jq '[.[].commits | length] | add // 0')" == 0 ]]; then
+                echo 'No unreleased Conventional Commits; nothing to release.'
+                echo 'skip=true' >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              tag="$("$cliff" --bump auto --bumped-version)"
+            else
+              current="${latest:-v0.0.0}"
+              IFS=. read -r major minor patch <<< "${current#v}"
+              case "$BUMP_TYPE" in
+                patch) ((patch += 1)) ;;
+                minor) ((minor += 1)); patch=0 ;;
+                major) ((major += 1)); minor=0; patch=0 ;;
+                *) echo '::error::Expected auto, patch, minor, or major.'; exit 1 ;;
+              esac
+              tag="v$major.$minor.$patch"
+            fi
+            "$cliff" --unreleased --tag "$tag" --strip header --output /tmp/release-notes.md
+          fi
+          if [[ ! "$tag" =~ $stable ]]; then
+            echo '::error::git-cliff must return a stable vX.Y.Z version.'
+            exit 1
+          fi
+          if [[ -n "$latest" && "$tag" != "$latest" && "$(printf '%s\n' "$latest" "$tag" | sort -V | sed -n '1p')" != "$latest" ]]; then
+            echo '::error::The calculated release version goes backwards.'
+            exit 1
+          fi
+          if git show-ref --verify --quiet "refs/tags/$tag"; then
+            if [[ "$(git rev-parse "$tag^{commit}")" != "$GITHUB_SHA" ]]; then
+              echo '::error::The calculated tag already points to another revision.'
+              exit 1
+            fi
+            echo 'existing=true' >> "$GITHUB_OUTPUT"
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Create release App token
+        if: steps.version.outputs.skip != 'true'
+        id: token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.RELEASER_APP_ID }}
+          private-key: ${{ secrets.RELEASER_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+
+      - name: Tag the tested revision
+        if: steps.version.outputs.skip != 'true' && steps.version.outputs.existing != 'true'
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          gh api "repos/$GH_REPO/git/refs" -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA"
+
+      - name: Publish release
+        if: steps.version.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          releases="$(gh api --paginate "repos/$GH_REPO/releases?per_page=100")"
+          state="$(jq -r --arg tag "$TAG" '.[] | select(.tag_name == $tag) | .draft' <<< "$releases")"
+          if [[ "$state" == false ]]; then
+            echo "Release $TAG is already published; leaving it unchanged."
+          elif [[ "$state" == true ]]; then
+            gh release edit "$TAG" --draft=false --notes-file /tmp/release-notes.md
+          else
+            gh release create "$TAG" --verify-tag --title "$TAG" --notes-file /tmp/release-notes.md
+          fi
+          gh release view "$TAG" --json url --jq '.url' >> "$GITHUB_STEP_SUMMARY"
