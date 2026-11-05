@@ -10,6 +10,7 @@ import {
 import {
   canUseOperation,
   describeIntegrationError,
+  requiredScopes,
   runIntegrationOperation,
   toJson,
 } from '../integrations/runtime.server'
@@ -77,14 +78,11 @@ export function createRoastbookMcpServer(options: {
 
   for (const operation of INTEGRATION_OPERATIONS) {
     if (!canUseOperation(operation, options.scopes)) continue
-    const scope = operation.resources
-      .map((resource) => `${resource}:${operation.access}`)
-      .join(' or ')
     server.registerTool(
       operation.name,
       {
         title: operation.title,
-        description: `${operation.description} Needs ${scope}.`,
+        description: `${operation.description} Needs ${requiredScopes(operation).join(' and ')}.`,
         inputSchema: operation.input,
         annotations: annotations(operation),
       },

@@ -5,7 +5,6 @@ import { DomainError } from '@/lib/domain-errors'
 import {
   hasScope,
   type IntegrationResource,
-  type IntegrationScope,
 } from '@/modules/integrations/scopes'
 import { touchIntegrationCredential } from '../auth/integrations.server'
 import { IntegrationInputError } from './input-schema.server'
@@ -20,7 +19,7 @@ import {
 } from './rate-limit.server'
 
 export class InsufficientScopeError extends Error {
-  constructor(readonly scope: IntegrationScope) {
+  constructor(readonly scope: string) {
     super(`This key needs the ${scope} permission`)
     this.name = 'InsufficientScopeError'
   }
@@ -38,9 +37,35 @@ export function canUseOperation(
   operation: IntegrationOperation,
   scopes: readonly string[],
 ) {
-  return operation.resources.some((resource) =>
-    hasScope(scopes, resource, operation.access),
+  return (
+    operation.resources.some((resource) =>
+      hasScope(scopes, resource, operation.access),
+    ) && missingScopes(operation, scopes).length === 0
   )
+}
+
+/** Required scopes beyond the operation's resources that a credential lacks. */
+export function missingScopes(
+  operation: IntegrationOperation,
+  scopes: readonly string[],
+) {
+  return (operation.alsoRequires ?? []).filter((scope) => {
+    const [resource, access] = scope.split(':') as [
+      IntegrationResource,
+      'read' | 'write',
+    ]
+    return !hasScope(scopes, resource, access)
+  })
+}
+
+/** Every scope a credential needs for the operation, for errors and docs. */
+export function requiredScopes(operation: IntegrationOperation) {
+  return [
+    operation.resources
+      .map((resource) => `${resource}:${operation.access}`)
+      .join(' or '),
+    ...(operation.alsoRequires ?? []),
+  ]
 }
 
 /**
@@ -60,6 +85,8 @@ export async function runIntegrationOperation(
       checked = true
     },
   }
+  const [missing] = missingScopes(operation, scopes)
+  if (missing) throw new InsufficientScopeError(missing)
   const [only] = operation.resources
   if (operation.resources.length === 1 && only)
     context.require(only, operation.access)
@@ -111,13 +138,24 @@ export type IntegrationFailure = {
     | 'server_error'
   message: string
   issues?: readonly { message: string; path: readonly (string | number)[] }[]
-  scope?: IntegrationScope
+  scope?: string
 }
 
-const isDatabaseError = (error: Error) =>
-  'code' in error &&
-  typeof error.code === 'string' &&
-  /^[0-9A-Z]{5}$/.test(error.code)
+/**
+ * Journal functions refuse changes with plain `Error`s written for people.
+ * Subclasses (TypeError, driver and system errors) and errors carrying a code
+ * or cause come from infrastructure and stay private.
+ */
+function isJournalMessage(error: unknown): error is Error {
+  return (
+    error instanceof Error &&
+    Object.getPrototypeOf(error) === Error.prototype &&
+    !('code' in error) &&
+    error.cause === undefined &&
+    error.message.length > 0 &&
+    error.message.length <= 300
+  )
+}
 
 /** Errors safe to show the caller; database and unknown errors stay private. */
 export function describeIntegrationError(error: unknown): IntegrationFailure {
@@ -163,7 +201,7 @@ export function describeIntegrationError(error: unknown): IntegrationFailure {
             : 'conflict',
       message: error.message,
     }
-  if (error instanceof Error && !isDatabaseError(error)) {
+  if (isJournalMessage(error)) {
     if (/not found/i.test(error.message))
       return { status: 404, code: 'not_found', message: error.message }
     return { status: 422, code: 'operation_failed', message: error.message }

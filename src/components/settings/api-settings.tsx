@@ -56,8 +56,9 @@ export function ApiSettings({
           {example}
         </pre>
         <p className="text-sm text-muted-foreground">
-          Responses are JSON with a <code>data</code> field; dates are ISO 8601.
-          The OpenAPI description lists every endpoint with its permission.{' '}
+          JSON responses carry a <code>data</code> field and ISO 8601 dates;
+          picture downloads return the image itself. The OpenAPI description
+          lists every endpoint with its permission.{' '}
           <a
             href={state.documentationUrl}
             target="_blank"

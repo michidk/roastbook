@@ -23,8 +23,14 @@ const windowStart = (milliseconds: number, now: number) =>
   Math.floor(now / milliseconds) * milliseconds
 const accountKey = (userId: string, window: string) =>
   `integration:user:${userId}:${window}`
-const credentialKey = (credentialId: string) =>
-  `integration:credential:${credentialId}:day`
+// Per account: OAuth applications share a client id across users.
+const credentialKey = (userId: string, credentialId: string) =>
+  `integration:credential:${userId}:${credentialId}:day`
+
+/** Prefixes of every rate-limit row that belongs to one account. */
+export function integrationRateLimitPrefixes(userId: string) {
+  return [`integration:user:${userId}:`, `integration:credential:${userId}:`]
+}
 
 /** Counts one request in a fixed window and returns the new total. */
 async function hit(key: string, start: number) {
@@ -98,7 +104,7 @@ export async function consumeIntegrationRequest(
       hit(accountKey(userId, name), windowStart(milliseconds, now)),
     ),
   )
-  await hit(credentialKey(credentialId), windowStart(86_400_000, now))
+  await hit(credentialKey(userId, credentialId), windowStart(86_400_000, now))
   const configured = limits()
   return {
     allowed: (minute ?? 0) <= configured.minute && (day ?? 0) <= configured.day,
@@ -118,7 +124,10 @@ export async function loadIntegrationUsage(
       key: accountKey(userId, name),
       start: windowStart(milliseconds, now),
     })),
-    ...credentialIds.map((id) => ({ key: credentialKey(id), start: dayStart })),
+    ...credentialIds.map((id) => ({
+      key: credentialKey(userId, id),
+      start: dayStart,
+    })),
   ])
   const account = describe(
     {
@@ -133,15 +142,21 @@ export async function loadIntegrationUsage(
       windows: account,
     } satisfies IntegrationRateLimit,
     requestsToday: Object.fromEntries(
-      credentialIds.map((id) => [id, counts.get(credentialKey(id)) ?? 0]),
+      credentialIds.map((id) => [
+        id,
+        counts.get(credentialKey(userId, id)) ?? 0,
+      ]),
     ) as Record<string, number>,
   }
 }
 
-export async function forgetCredentialUsage(credentialId: string) {
+export async function forgetCredentialUsage(
+  userId: string,
+  credentialId: string,
+) {
   await getControlDb()
     .delete(authRateLimits)
-    .where(inArray(authRateLimits.key, [credentialKey(credentialId)]))
+    .where(inArray(authRateLimits.key, [credentialKey(userId, credentialId)]))
 }
 
 /**

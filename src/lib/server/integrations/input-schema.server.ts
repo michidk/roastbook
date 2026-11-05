@@ -58,15 +58,22 @@ export function reviveDates(schema: z.ZodType, value: unknown): unknown {
       return def.left && def.right
         ? reviveDates(def.right, reviveDates(def.left, value))
         : value
-    case 'union':
-      return (def.options ?? []).reduce<unknown>(
-        (current, option) =>
-          // Strings only become dates when every option is a date.
-          typeof current === 'string' && defOf(option).type !== 'date'
-            ? current
-            : reviveDates(option, current),
+    case 'union': {
+      const options = def.options ?? []
+      // A string another member accepts as a string stays a string.
+      if (
+        typeof value === 'string' &&
+        options.some(
+          (option) =>
+            defOf(option).type !== 'date' && option.safeParse(value).success,
+        )
+      )
+        return value
+      return options.reduce<unknown>(
+        (current, option) => reviveDates(option, current),
         value,
       )
+    }
     case 'object': {
       if (!isPlainObject(value) || !def.shape) return value
       const shape = def.shape

@@ -6,6 +6,7 @@ import { STATS_PERIOD_VALUES } from '@/lib/stats-filters'
 import type {
   IntegrationAccess,
   IntegrationResource,
+  IntegrationScope,
 } from '@/modules/integrations/scopes'
 import type { IntegrationImage } from './images.server'
 import { type IntegrationInput, integrationInput } from './input-schema.server'
@@ -26,6 +27,8 @@ export type IntegrationOperation = {
    * the operation runs; with several, the operation checks the one it uses.
    */
   readonly resources: readonly IntegrationResource[]
+  /** Further scopes the operation always needs, checked like `resources`. */
+  readonly alsoRequires?: readonly IntegrationScope[]
   readonly method: 'GET' | 'POST' | 'PATCH' | 'DELETE'
   /** Path below `/api/v1`; `{name}` segments are taken from the input. */
   readonly path: string

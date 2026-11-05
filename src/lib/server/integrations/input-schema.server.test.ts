@@ -33,6 +33,17 @@ describe('integration input schemas', () => {
     expect(value.extra).toBe('2026-01-01')
   })
 
+  test('keeps strings that a string member of a union accepts', () => {
+    const either = z.object({ at: z.union([z.date(), z.string()]) })
+    const dateOnly = z.object({ at: z.union([z.date(), z.number()]) })
+    expect(reviveDates(either, { at: '2026-01-01' })).toEqual({
+      at: '2026-01-01',
+    })
+    expect(
+      (reviveDates(dateOnly, { at: '2026-01-01' }) as { at: unknown }).at,
+    ).toBeInstanceOf(Date)
+  })
+
   test('describes dates as ISO strings in JSON Schema', () => {
     const json = toInputJsonSchema(schema) as {
       properties: Record<string, { type?: string; format?: string }>

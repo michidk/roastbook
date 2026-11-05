@@ -141,7 +141,7 @@ spec:
               value: {{ .Values.hodor.logFormat | quote }}
             # The REST API (including shottimer devices) authenticates with its own keys.
             - name: BYPASS_PATHS
-              value: "/api/v1/*"
+              value: "/api/v1,/api/v1/*"
           livenessProbe:
             httpGet:
               path: /_gate/health

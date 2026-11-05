@@ -8,6 +8,7 @@ import {
   INTEGRATION_OPERATIONS,
   type IntegrationOperation,
 } from './operations.server'
+import { requiredScopes } from './runtime.server'
 
 type JsonSchema = Record<string, unknown> & {
   properties?: Record<string, Record<string, unknown>>
@@ -60,7 +61,13 @@ const ERROR_RESPONSES = {
   '401': errorResponse('Missing, unknown or expired key'),
   '403': errorResponse('The key lacks the required permission'),
   '404': errorResponse('Not found'),
+  '405': errorResponse('The path does not support this method'),
+  '409': errorResponse('The record changed or is in use'),
+  '413': errorResponse('The request body is too large'),
+  '415': errorResponse('Unsupported Content-Type'),
+  '422': errorResponse('The journal refused the change'),
   '429': errorResponse('Rate limit reached; see Retry-After'),
+  '500': errorResponse('Unexpected server error'),
 }
 
 function requestBody(operation: IntegrationOperation, body: JsonSchema) {
@@ -124,23 +131,22 @@ function operationDocument(operation: IntegrationOperation) {
     operation.input.schema,
   ) as JsonSchema & { $schema?: string }
   const rest = withoutPathParameters(schema, pathParameters)
-  const scopes = operation.resources.map(
-    (resource) => `${resource}:${operation.access}`,
-  )
+  const scopes = requiredScopes(operation)
   const created =
     operation.method === 'POST' && operation.name.startsWith('create_')
   return {
     operationId: operation.name,
     summary: operation.title,
-    description: `${operation.description}\n\nRequires ${
-      scopes.length === 1 ? scopes[0] : `one of ${scopes.join(', ')}`
-    }.`,
+    description: `${operation.description}\n\nRequires ${scopes.join(' and ')}.`,
     tags: [
       INTEGRATION_RESOURCES.find(
         (resource) => resource.id === operation.resources[0],
       )?.label ?? 'Pictures',
     ],
-    security: [{ bearer: scopes }],
+    // HTTP bearer schemes take no OAuth scopes; the API key's permissions are
+    // listed in x-required-scopes ("a or b" means either one).
+    security: [{ bearer: [] }],
+    'x-required-scopes': scopes,
     parameters: parametersOf(operation, schema, pathParameters, rest),
     ...requestBody(operation, rest),
     responses: {

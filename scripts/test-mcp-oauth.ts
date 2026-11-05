@@ -11,7 +11,7 @@ import {
   Client,
   StreamableHTTPClientTransport,
 } from '@modelcontextprotocol/client'
-import { eq, inArray } from 'drizzle-orm'
+import { eq, inArray, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 
 // A separate process keeps the ephemeral auth origin out of other test suites.
@@ -61,9 +61,8 @@ const { withOAuthClientLock } = await import(
   '../src/lib/server/auth/oauth-lock.server'
 )
 const { saveMcpPolicy } = await import('../src/lib/server/mcp/settings.server')
-const { consumeIntegrationRequest } = await import(
-  '../src/lib/server/integrations/rate-limit.server'
-)
+const { consumeIntegrationRequest, integrationRateLimitPrefixes } =
+  await import('../src/lib/server/integrations/rate-limit.server')
 const rateLimitKeys = (userId: string) => [
   `integration:user:${userId}:minute`,
   `integration:user:${userId}:day`,
@@ -643,13 +642,18 @@ try {
       await db.delete(schema.beans)
       await db.delete(schema.mcpSettings)
     })
+  // Account and per-credential usage rows, including OAuth and manual tokens.
   await control
     .delete(schema.authRateLimits)
     .where(
-      inArray(schema.authRateLimits.key, [
-        ...users.flatMap((user) => rateLimitKeys(user.id)),
-        'integration:credential:rate-limit-test:day',
-      ]),
+      or(
+        ...users
+          .flatMap((user) => integrationRateLimitPrefixes(user.id))
+          .map(
+            (prefix) =>
+              sql`left(${schema.authRateLimits.key}, ${prefix.length}) = ${prefix}`,
+          ),
+      ),
     )
   await control.delete(schema.authUsers).where(
     inArray(

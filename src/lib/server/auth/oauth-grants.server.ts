@@ -15,6 +15,7 @@ import {
   loadApprovedGrantScopes,
   saveApprovedGrantScopes,
 } from '../integrations/oauth-scopes.server'
+import { forgetCredentialUsage } from '../integrations/rate-limit.server'
 import { getAuth } from './auth.server'
 import { MCP_SCOPES } from './mcp-options.server'
 
@@ -151,4 +152,5 @@ export async function revokeOAuthGrant(id: string) {
     userId: identity.id,
     id,
   })
+  await forgetCredentialUsage(identity.id, `oauth:${connection.clientId}`)
 }

@@ -176,14 +176,12 @@ export const COLLECTION_OPERATIONS = [
       'Store a brew’s parameters as a new recipe (name) or update one (recipeId).',
     access: 'write',
     resources: ['recipes'],
+    // The recipe copies the brew's parameters.
+    alsoRequires: ['brews:read'],
     method: 'POST',
     path: '/brews/{shotId}/recipe',
     input: shotRecipeTargetSchema,
-    run: (data, context) => {
-      // The recipe copies the brew's parameters.
-      context.require('brews', 'read')
-      return saveShotAsRecipe({ data })
-    },
+    run: (data) => saveShotAsRecipe({ data }),
   }),
 
   ...crud(

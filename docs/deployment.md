@@ -89,8 +89,9 @@ and restarts; it encrypts the OAuth signing keys stored in PostgreSQL.
 
 On the consent page the owner chooses per-resource permissions within what
 the application requested (`mcp:read`, `mcp:write`), and can change them later
-under Settings > AI access (MCP). Applications connected before permissions
-existed keep read access plus logging brews.
+under Settings > AI access (MCP). Applications connected and MCP tokens created
+before permissions existed keep read access only; grant write access again
+where needed, since writing now includes editing and deleting.
 
 Without accounts, or for clients without browser sign-in, create an MCP token
 under Settings > AI access (MCP) with a name, permissions, and an optional

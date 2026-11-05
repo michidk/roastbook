@@ -11,6 +11,7 @@ import { getIntegrationOperation } from '../integrations/operations.server'
 import {
   admitIntegrationRequest,
   canUseOperation,
+  missingScopes,
   requireIntegration,
 } from '../integrations/runtime.server'
 import { getMcpConfig, type McpConfig } from './config.server'
@@ -59,9 +60,12 @@ async function insufficientScope(
     ? operation.access === 'write'
       ? 'mcp:read mcp:write'
       : 'mcp:read'
-    : operation.resources
-        .map((resource) => `${resource}:${operation.access}`)
-        .join(' ')
+    : [
+        ...operation.resources.map(
+          (resource) => `${resource}:${operation.access}`,
+        ),
+        ...missingScopes(operation, scopes),
+      ].join(' ')
   return Response.json(
     { error: 'insufficient_scope' },
     {

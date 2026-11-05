@@ -63,14 +63,21 @@ describe('integration operation catalog', () => {
           return scope ? [[scope, bullet] as const] : []
         }),
     )
-    const flat = reference.replace(/\s+/g, ' ')
+    // Operations spanning several resources share the pictures block.
+    const picturesStart = reference.indexOf('Pictures need the scope')
+    const picturesEnd = reference.indexOf('need\nno particular scope')
+    expect(picturesStart).toBeGreaterThan(-1)
+    expect(picturesEnd).toBeGreaterThan(picturesStart)
+    const pictures = reference
+      .slice(picturesStart, picturesEnd)
+      .replace(/\s+/g, ' ')
     for (const operation of INTEGRATION_OPERATIONS) {
       const entry = `\`${operation.method} ${operation.path}\` (\`${operation.name}\`)`
       if (operation.resources.length === 1)
         expect(
           bullets.get(`${operation.resources[0]}:${operation.access}`) ?? '',
         ).toContain(entry)
-      else expect(flat).toContain(entry)
+      else expect(pictures).toContain(entry)
     }
   })
 

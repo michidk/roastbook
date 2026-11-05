@@ -92,12 +92,19 @@ export function ScopePicker({
           return (
             <fieldset
               key={resource.id}
+              aria-describedby={`${id}-${resource.id}-description`}
               className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between"
             >
               <legend className="sr-only">{resource.label}</legend>
-              <div aria-hidden="true" className="min-w-0">
-                <p className="text-sm font-medium">{resource.label}</p>
-                <p className="text-xs text-muted-foreground">
+              <div className="min-w-0">
+                {/* The legend names the group for screen readers. */}
+                <p aria-hidden="true" className="text-sm font-medium">
+                  {resource.label}
+                </p>
+                <p
+                  id={`${id}-${resource.id}-description`}
+                  className="text-xs text-muted-foreground"
+                >
                   {resource.description}
                 </p>
               </div>

@@ -278,16 +278,24 @@ function CreateKeyDialog({
     }
   }
 
-  const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10)
+  // The earliest custom date, in the same local calendar as expiryDate().
+  const next = new Date(Date.now() + 86_400_000)
+  const tomorrow = [
+    next.getFullYear(),
+    String(next.getMonth() + 1).padStart(2, '0'),
+    String(next.getDate()).padStart(2, '0'),
+  ].join('-')
   return (
     <Dialog
       open={open}
-      onOpenChange={(next) => {
-        if (!next) reset()
-        onOpenChange(next)
+      onOpenChange={(nextOpen) => {
+        // Closing mid-request would lose the token shown only once.
+        if (!nextOpen && busy) return
+        if (!nextOpen) reset()
+        onOpenChange(nextOpen)
       }}
     >
-      <DialogContent>
+      <DialogContent showCloseButton={!busy}>
         {token ? (
           <>
             <DialogHeader>

@@ -118,10 +118,10 @@ logged in the database without image payloads.
 > API with an OpenAPI description, and `/api/mcp` a Streamable HTTP MCP
 > endpoint; both can read and change everything in your journal, including
 > pictures, but never administer accounts. API keys, MCP tokens, and MCP
-> applications get per-resource read or write permissions, optional expiry,
-> and shared rate limits shown in **Settings → API** and
-> **Settings → AI access (MCP)**. See [API](docs/api.md) and
-> [Deployment](docs/deployment.md#mcp).
+> applications get per-resource read or write permissions and shared rate
+> limits; keys and tokens also expire (seven days unless you choose longer).
+> Manage them in **Settings → API** and **Settings → AI access (MCP)**. See
+> [API](docs/api.md) and [Deployment](docs/deployment.md#mcp).
 
 ## 📦 Features
 

@@ -59,19 +59,26 @@ export const INTEGRATION_RESOURCES = [
 
 export type IntegrationResource = (typeof INTEGRATION_RESOURCES)[number]['id']
 export type IntegrationAccess = 'read' | 'write'
-export type IntegrationScope = `${IntegrationResource}:${IntegrationAccess}`
+type ResourceEntry = (typeof INTEGRATION_RESOURCES)[number]
+/** Every valid scope; read-only resources have no `:write` scope. */
+export type IntegrationScope = {
+  [Entry in ResourceEntry as Entry['id']]: Entry extends { readOnly: true }
+    ? `${Entry['id']}:read`
+    : `${Entry['id']}:${IntegrationAccess}`
+}[IntegrationResource]
 /** What a credential may do with one resource. */
 export type IntegrationAccessLevel = 'none' | IntegrationAccess
 
 const isReadOnly = (resource: (typeof INTEGRATION_RESOURCES)[number]) =>
   'readOnly' in resource && resource.readOnly
 
-export const INTEGRATION_SCOPES: readonly IntegrationScope[] =
-  INTEGRATION_RESOURCES.flatMap((resource) =>
+export const INTEGRATION_SCOPES = INTEGRATION_RESOURCES.flatMap(
+  (resource) =>
     isReadOnly(resource)
-      ? [`${resource.id}:read` as const]
-      : [`${resource.id}:read` as const, `${resource.id}:write` as const],
-  )
+      ? [`${resource.id}:read`]
+      : [`${resource.id}:read`, `${resource.id}:write`],
+  // Read-only resources get no write scope, as the type requires.
+) as readonly IntegrationScope[]
 
 const known = new Set<string>(INTEGRATION_SCOPES)
 

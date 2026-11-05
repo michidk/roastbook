@@ -1,6 +1,6 @@
 import '@tanstack/react-start/server-only'
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
-import { and, count, desc, eq, gt, inArray, isNull, ne, sql } from 'drizzle-orm'
+import { and, count, desc, eq, gt, isNull, ne, or, sql } from 'drizzle-orm'
 import { getControlDb } from '@/db/connection.server'
 import { requireIdentity } from '@/db/journal-context.server'
 import {
@@ -26,6 +26,7 @@ import {
 import { renderAccountEmail } from '@/lib/account-email'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { getServerEnv } from '@/lib/env.server'
+import { integrationRateLimitPrefixes } from '@/lib/server/integrations/rate-limit.server'
 import { sendAccountEmail } from './email.server'
 
 function accountIdentity() {
@@ -321,10 +322,12 @@ async function scheduleDeletion(
   await tx
     .delete(authRateLimits)
     .where(
-      inArray(authRateLimits.key, [
-        `integration:user:${userId}:minute`,
-        `integration:user:${userId}:day`,
-      ]),
+      or(
+        ...integrationRateLimitPrefixes(userId).map(
+          (prefix) =>
+            sql`left(${authRateLimits.key}, ${prefix.length}) = ${prefix}`,
+        ),
+      ),
     )
   await tx
     .insert(accountJobs)

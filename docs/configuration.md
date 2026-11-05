@@ -143,7 +143,9 @@ See [Deployment](deployment.md) for MCP authentication and exposure.
 | `INTEGRATION_RATE_LIMIT_PER_DAY` | `5000` | No | Requests per UTC day |
 
 The limits apply to all API keys, MCP tokens, and MCP applications of one
-account together. See [API](api.md).
+account together. Compose passes both variables through; Helm sets them with
+`integrations.rateLimit.perMinute` and `integrations.rateLimit.perDay`. See
+[API](api.md).
 
 ## Docker Compose
 

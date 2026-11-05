@@ -109,6 +109,8 @@ scope. `<resource>:write` also grants everything listed for
 - `stats:read`: `GET /stats` (`get_stats`), `GET /stats/dashboard`
   (`get_dashboard`).
 
+`save_brew_as_recipe` copies a brew, so it also needs `brews:read`.
+
 Pictures need the scope of the record they belong to: `brews`, `beans` (bag
 pictures), `gear`, `places`, or `visits`. Reading uses `:read`, the rest
 `:write`; thumbnails exist only for bags and gear.
@@ -131,10 +133,14 @@ curl -H "Authorization: Bearer $ROASTBOOK_API_KEY" \
 - `GET /api/v1` lists every operation and whether the key may use it.
 - `GET /api/v1/openapi.json` is the OpenAPI 3.1 description, readable without
   a key. Each operation names its required scope.
-- Successful responses are JSON objects with a `data` field. Lists return the
-  same pages the app shows (`page`, sorting, and filters as query parameters).
-- Request bodies are JSON (`Content-Type: application/json`), at most 1 MiB.
-  Path parameters such as `{id}` override body fields of the same name.
+- JSON responses are objects with a `data` field; picture downloads return the
+  image itself. Lists return the same pages the app shows. Their query
+  parameters differ per list (for example `page` for brews, `activePage` and
+  `archivedPage` for beans and gear); the OpenAPI description has each list's
+  parameters.
+- Request bodies are JSON (`Content-Type: application/json`), at most 1 MiB,
+  except picture uploads (see [Pictures](#pictures)). Path parameters such as
+  `{id}` override body fields of the same name.
 - Dates and times are ISO 8601 strings. Decimal measurements such as
   `doseGrams` are strings, exactly as the app stores them.
 - `PATCH` replaces the editable fields of a record, like saving its form in the
@@ -171,8 +177,9 @@ Upload with `POST /api/v1/images`, either as `multipart/form-data` with
 `entityType`, `entityId`, and `file`, or as JSON with `entityType`,
 `entityId`, `filename`, `mimeType`, and base64 `data`. `entityType` is one of
 `brews`, `bean-purchases`, `gear`, `places`, or `visits`, and needs write
-access to the matching resource. The per-item picture limit and storage
-allowance apply as in the app. Delete with
+access to the matching resource. A picture may be up to 10 MiB; the request
+may be correspondingly larger (base64 JSON adds a third). The per-item picture
+limit and storage allowance apply as in the app. Delete with
 `DELETE /api/v1/images/{entityType}/{entityId}/{imageId}`.
 
 ## Rate limits
@@ -183,7 +190,8 @@ per-minute and a per-day allowance (UTC days). Operators set them with
 [Configuration](configuration.md#api-and-mcp)). Settings → API and Settings →
 AI access (MCP) show current use and each key's requests today.
 
-Every response reports the limits:
+Every authenticated response reports the limits (the keyless
+`/api/v1/openapi.json` does not count against them and has no such headers):
 
 ```http
 RateLimit-Policy: "minute";q=120;w=60, "day";q=5000;w=86400

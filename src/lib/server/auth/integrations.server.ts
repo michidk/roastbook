@@ -1,6 +1,6 @@
 import '@tanstack/react-start/server-only'
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
-import { and, count, desc, eq, gt, isNull, lt, or } from 'drizzle-orm'
+import { and, count, desc, eq, gt, isNull, lt, or, sql } from 'drizzle-orm'
 import { getControlDb } from '@/db/connection.server'
 import {
   type JournalIdentity,
@@ -54,21 +54,25 @@ export async function createIntegrationCredential(input: {
   const scopes = requireScopes(input.scopes)
   if (input.expiresAt && input.expiresAt.getTime() <= Date.now())
     throw new Error('Choose an expiry date in the future')
-  const [existing] = await getControlDb()
-    .select({ count: count() })
-    .from(integrationTokens)
-    .where(
-      and(
-        eq(integrationTokens.userId, identity.id),
-        eq(integrationTokens.kind, input.kind),
-      ),
-    )
-  if ((existing?.count ?? 0) >= MAX_CREDENTIALS_PER_KIND)
-    throw new Error('Revoke an unused key before creating another')
   const token = `${TOKEN_PREFIXES[input.kind]}${randomBytes(32).toString('base64url')}`
-  await getControlDb()
-    .insert(integrationTokens)
-    .values({
+  // Count and insert under one per-account lock so parallel requests cannot
+  // exceed the limit.
+  await getControlDb().transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(${`integration-credentials:${identity.id}:${input.kind}`}, 0))`,
+    )
+    const [existing] = await tx
+      .select({ count: count() })
+      .from(integrationTokens)
+      .where(
+        and(
+          eq(integrationTokens.userId, identity.id),
+          eq(integrationTokens.kind, input.kind),
+        ),
+      )
+    if ((existing?.count ?? 0) >= MAX_CREDENTIALS_PER_KIND)
+      throw new Error('Revoke an unused key before creating another')
+    await tx.insert(integrationTokens).values({
       id: randomUUID(),
       userId: identity.id,
       kind: input.kind,
@@ -78,6 +82,7 @@ export async function createIntegrationCredential(input: {
       scopes,
       expiresAt: input.expiresAt,
     })
+  })
   return token
 }
 
@@ -113,7 +118,7 @@ export async function revokeIntegrationCredential(id: string) {
       ),
     )
     .returning({ id: integrationTokens.id })
-  if (deleted) await forgetCredentialUsage(deleted.id)
+  if (deleted) await forgetCredentialUsage(identity.id, deleted.id)
 }
 
 export async function listIntegrationCredentials(kind: CredentialKind) {

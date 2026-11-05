@@ -4,6 +4,7 @@ import {
   allScopes,
   describeScopes,
   hasScope,
+  INTEGRATION_RESOURCES,
   INTEGRATION_SCOPES,
   normalizeScopes,
   scopesAllowedByProtocol,
@@ -12,9 +13,21 @@ import {
 
 describe('integration scopes', () => {
   test('has read and write per resource, statistics read-only, no admin scopes', () => {
-    expect(INTEGRATION_SCOPES).toContain('brews:write')
-    expect(INTEGRATION_SCOPES).toContain('stats:read')
-    expect(INTEGRATION_SCOPES).not.toContain('stats:write')
+    expect<readonly string[]>(INTEGRATION_SCOPES).toEqual(
+      INTEGRATION_RESOURCES.flatMap<string>((resource) =>
+        'readOnly' in resource && resource.readOnly
+          ? [`${resource.id}:read`]
+          : [`${resource.id}:read`, `${resource.id}:write`],
+      ),
+    )
+    expect(
+      INTEGRATION_RESOURCES.filter(
+        (resource) => 'readOnly' in resource && resource.readOnly,
+      ).map((resource) => resource.id),
+    ).toEqual(['stats'])
+    expect(INTEGRATION_SCOPES).toHaveLength(
+      INTEGRATION_RESOURCES.length * 2 - 1,
+    )
     expect(
       INTEGRATION_SCOPES.some((scope) => /admin|account|user/.test(scope)),
     ).toBe(false)

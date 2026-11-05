@@ -10,14 +10,12 @@ import {
 } from '@/modules/integrations/scopes'
 
 /**
- * Applications authorized before scopes were selectable keep what they could
- * do then: read everything and, with mcp:write, log brews.
+ * Applications authorized before scopes were selectable keep read access.
+ * Their old brew logging is not widened to brews:write, which now also edits
+ * and deletes; the owner grants write access per application instead.
  */
-function legacyScopes(protocolScopes: readonly string[]) {
-  return normalizeScopes([
-    ...allScopes('read'),
-    ...(protocolScopes.includes('mcp:write') ? ['brews:write'] : []),
-  ])
+function legacyScopes() {
+  return allScopes('read')
 }
 
 /** What an application may do: the owner's choice within its OAuth scopes. */
@@ -27,9 +25,7 @@ export function effectiveGrantScopes(
 ): IntegrationScope[] {
   const allowed = new Set<string>(scopesAllowedByProtocol(protocolScopes))
   return normalizeScopes(
-    (approved ?? legacyScopes(protocolScopes)).filter((scope) =>
-      allowed.has(scope),
-    ),
+    (approved ?? legacyScopes()).filter((scope) => allowed.has(scope)),
   )
 }
 
