@@ -132,3 +132,9 @@ Set `auth.url` to the public browser origin, such as `https://coffee.example.com
 even when using Hodor with built-in accounts disabled. This configures origin
 checks for writes behind a reverse proxy. When empty, accounts can obtain
 `AUTH_URL` from `auth.existingSecret`.
+
+### Database maintenance
+
+Set `replicaCount=0` to stop application writers during database maintenance.
+The database and migration Job still run. Restore the desired replica count
+after verifying the database and schema migration.
