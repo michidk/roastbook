@@ -74,7 +74,8 @@ jobs:
           HODOR_SECRET: ci-signing-secret
         run: |
           docker compose config --quiet
-          AUTH_URL=https://coffee.example.test \
+          PUBLIC_URL=https://coffee.example.test \
+          AUTH_ADMIN_EMAIL=admin@example.test \
           AUTH_SECRET=ci-auth-secret-at-least-thirty-two-characters \
           EMAIL_FROM=coffee@example.test SMTP_URL=smtp://localhost:1025 \
             docker compose -f docker-compose.auth.yaml config --quiet
