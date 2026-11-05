@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 import { runInNewContext } from 'node:vm'
-import { THEME_BOOTSTRAP_SCRIPT, themeColor } from '@/lib/theme'
+import {
+  PALETTE_RESTORE_SCRIPT,
+  PALETTE_STORAGE_KEY,
+  THEME_BOOTSTRAP_SCRIPT,
+  themeColor,
+} from '@/lib/theme'
 
 function bootstrap(
   raw: string | null,
@@ -122,4 +127,28 @@ test('server settings override stale browser palette and grain choices', () => {
     backgroundGrain: 'false',
   })
   expect(result.metaColor).toBe('#191919')
+})
+
+test('pages without account settings restore the last applied palettes', () => {
+  const dataset: Record<string, string> = {}
+  const document = {
+    documentElement: {
+      dataset,
+      style: {} as Record<string, string>,
+      classList: { toggle: () => undefined },
+    },
+    querySelectorAll: () => [],
+  }
+  const saved = JSON.stringify({ lightTheme: 'pure-light', darkTheme: 'nope' })
+  runInNewContext(`${PALETTE_RESTORE_SCRIPT};\n${THEME_BOOTSTRAP_SCRIPT}`, {
+    localStorage: {
+      getItem: (key: string) => (key === PALETTE_STORAGE_KEY ? saved : null),
+    },
+    window: { matchMedia: () => ({ matches: false }) },
+    document,
+  })
+  // Known ids apply; unknown ones fall back to the default palette.
+  expect(dataset.lightTheme).toBe('pure-light')
+  expect(dataset.darkTheme).toBe('dark-roast')
+  expect(document.documentElement.style.backgroundColor).toBe('#ffffff')
 })

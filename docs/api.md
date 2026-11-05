@@ -131,8 +131,8 @@ no key at all.
 `/api/v1/docs` is an interactive API reference for the running version: every
 endpoint with its parameters, body, permission, and example requests in curl
 and other languages. Settings → API links to it. It needs no sign-in, so you
-can link to it from elsewhere, and it follows the theme you chose in
-Roastbook.
+can link to it from elsewhere. It follows the theme and palettes you last used
+in Roastbook on the same browser.
 
 **Test request** sends a real request:
 
@@ -141,7 +141,10 @@ Roastbook.
   journal for real and counts against the account's rate limit.
 - Paste a key under **Authentication** to test that key and its permissions
   instead. The key stays in the page and is not saved.
-- Signed out, test requests need a key, as with curl.
+- Signed out, test requests need a key, as with curl. With
+  `AUTH_ENABLED=false` there is no sign-in: anyone who can reach the app counts
+  as signed in to the shared journal, which is why such instances belong
+  behind Hodor, another authenticating proxy, or a private network.
 
 Signed-in test requests go to `/api/try/v1/…`, the same routes behind the
 app's sign-in. They only accept the reference page's own requests (a required

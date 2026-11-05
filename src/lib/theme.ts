@@ -91,6 +91,22 @@ export function themeColor(
         THEME_COLORS.light)
 }
 
+/**
+ * The palettes the app last applied. Account settings choose them, so pages
+ * that cannot read settings (the public API reference) restore them from here.
+ */
+export const PALETTE_STORAGE_KEY = 'roastbook-palettes'
+
+/** Runs before THEME_BOOTSTRAP_SCRIPT, which ignores unknown palette ids. */
+export const PALETTE_RESTORE_SCRIPT = `(function () {
+  try {
+    var saved = JSON.parse(localStorage.getItem('${PALETTE_STORAGE_KEY}') || 'null')
+    if (!saved || typeof saved !== 'object') return
+    if (typeof saved.lightTheme === 'string') document.documentElement.dataset.lightTheme = saved.lightTheme
+    if (typeof saved.darkTheme === 'string') document.documentElement.dataset.darkTheme = saved.darkTheme
+  } catch (error) {}
+})()`
+
 export const THEME_BOOTSTRAP_SCRIPT = `(function () {
   var state = {}
   try {

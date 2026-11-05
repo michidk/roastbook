@@ -3,6 +3,7 @@ import { INTEGRATION_SCOPES } from '@/modules/integrations/scopes'
 import { apiQueryInput, matchApiRoute } from './api.server'
 import {
   API_TRY_BASE_PATH,
+  handleApiDocsRequest,
   isApiDocsPath,
   isApiTryPath,
 } from './api-docs.server'
@@ -156,6 +157,23 @@ describe('REST routing', () => {
     expect(isApiDocsPath('/docs/scalar/1.0.0')).toBe(true)
     expect(isApiDocsPath('/docs/other')).toBe(false)
     expect(isApiDocsPath('/brews')).toBe(false)
+  })
+
+  test('serves only the installed Scalar bundle version', async () => {
+    const manifest = new URL(
+      '../../../../node_modules/@scalar/api-reference/package.json',
+      import.meta.url,
+    )
+    const { version } = (await Bun.file(manifest).json()) as {
+      version: string
+    }
+    const current = await handleApiDocsRequest(`/docs/scalar/${version}`)
+    expect(current?.status).toBe(200)
+    expect(current?.headers.get('Cache-Control')).toContain('immutable')
+    expect(await handleApiDocsRequest('/docs/scalar/0.0.1')).toBeNull()
+    expect(
+      await handleApiDocsRequest(`/docs/scalar/${version}/../package.json`),
+    ).toBeNull()
   })
 
   test('keeps signed-in test requests outside the public API prefix', () => {

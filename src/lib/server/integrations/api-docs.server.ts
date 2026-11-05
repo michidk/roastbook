@@ -2,7 +2,7 @@ import '@tanstack/react-start/server-only'
 import { readFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
-import { THEME_BOOTSTRAP_SCRIPT } from '@/lib/theme'
+import { PALETTE_RESTORE_SCRIPT, THEME_BOOTSTRAP_SCRIPT } from '@/lib/theme'
 
 /**
  * The public API reference at `/api/v1/docs`: Scalar's browser build reading
@@ -132,53 +132,33 @@ function inlineJson(value: unknown) {
   return JSON.stringify(value).replaceAll('<', '\\u003c')
 }
 
-async function docsPage() {
-  const [{ version }, { default: tokens }] = await Promise.all([
-    scalarBundle(),
-    import('@/theme-tokens.css?raw'),
-  ])
-  const configuration = {
-    url: '/api/v1/openapi.json',
-    theme: 'none',
-    customCss: SCALAR_THEME,
-    withDefaultFonts: false,
-    telemetry: false,
-    hideDarkModeToggle: true,
-    showDeveloperTools: 'never',
-    mcp: { disabled: true },
-    agent: { disabled: true },
-    persistAuth: false,
-    hideClientButton: true,
-    defaultHttpClient: { targetKey: 'shell', clientKey: 'curl' },
-    favicon: '/favicon.ico',
-    metaData: { title: 'Roastbook API reference' },
-    authentication: { preferredSecurityScheme: 'bearer' },
-  }
-  const html = `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex">
-<title>Roastbook API reference</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap">
-<style>${tokens}</style>
-<script>${THEME_BOOTSTRAP_SCRIPT}</script>
-</head>
-<body>
-<header class="roastbook-bar">
-<a class="brand" href="/">Roastbook</a>
-<span class="status" id="roastbook-session" role="status">API reference</span>
-</header>
-<div id="roastbook-api-reference"></div>
-<script>
+const REFERENCE_CONFIGURATION = {
+  url: '/api/v1/openapi.json',
+  theme: 'none',
+  customCss: SCALAR_THEME,
+  withDefaultFonts: false,
+  telemetry: false,
+  hideDarkModeToggle: true,
+  showDeveloperTools: 'never',
+  mcp: { disabled: true },
+  agent: { disabled: true },
+  persistAuth: false,
+  hideClientButton: true,
+  defaultHttpClient: { targetKey: 'shell', clientKey: 'curl' },
+  favicon: '/favicon.ico',
+  metaData: { title: 'Roastbook API reference' },
+  authentication: { preferredSecurityScheme: 'bearer' },
+}
+
+/**
+ * Runs in the page after `REFERENCE` ({ scriptUrl, configuration }) is set.
+ * Signed in (or inside the Hodor gate), test requests without a key run as
+ * the account through API_TRY_BASE_PATH; anyone else needs a key, as with curl.
+ */
+const CLIENT_SCRIPT = `
 var API_BASE = '/api/v1'
 var TRY_BASE = '${API_TRY_BASE_PATH}'
 var sessionStatus = document.getElementById('roastbook-session')
-// Signed in (or inside the Hodor gate): test requests without a key run as
-// the account through TRY_BASE. Anyone else needs a key, as with curl.
 var signedIn = fetch('/api/auth-probe', { cache: 'no-store', redirect: 'manual' })
   .then(function (response) { return response.status === 204 })
   .catch(function () { return false })
@@ -205,7 +185,7 @@ function referenceFetch(input, init) {
   var request = new Request(input, init)
   var url = new URL(request.url)
   var authorization = request.headers.get('authorization')
-  var hasKey = !!authorization && !/^Bearers*$/i.test(authorization)
+  var hasKey = !!authorization && !/^Bearer\\s*$/i.test(authorization)
   if (hasKey || !isApiOperation(url)) return fetch(request)
   return signedIn.then(function (yes) {
     if (!yes) return fetch(request)
@@ -229,11 +209,11 @@ function referenceFetch(input, init) {
 
 // Fetched rather than <script src> because Vite's dev server claims every
 // script request; the response is cached immutably either way.
+var configuration = REFERENCE.configuration
 var dark = document.documentElement.classList.contains('dark')
-var configuration = ${inlineJson(configuration)}
 configuration.forceDarkModeState = dark ? 'dark' : 'light'
 configuration.customFetch = referenceFetch
-fetch(API_BASE + '${SCRIPT_PREFIX}${version}')
+fetch(REFERENCE.scriptUrl)
   .then(function (response) {
     if (!response.ok) throw new Error('Could not load the API reference')
     return response.blob()
@@ -250,7 +230,43 @@ fetch(API_BASE + '${SCRIPT_PREFIX}${version}')
     document.getElementById('roastbook-api-reference').textContent =
       error.message + '. The OpenAPI description is at /api/v1/openapi.json.'
   })
-</script>
+`
+
+const PAGE_HEAD = `<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Roastbook API reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap">`
+
+const PAGE_HEADER = `<header class="roastbook-bar">
+<a class="brand" href="/">Roastbook</a>
+<span class="status" id="roastbook-session" role="status">API reference</span>
+</header>
+<div id="roastbook-api-reference"></div>`
+
+async function docsPage() {
+  const [{ version }, { default: tokens }] = await Promise.all([
+    scalarBundle(),
+    import('@/theme-tokens.css?raw'),
+  ])
+  const reference = {
+    scriptUrl: `/api/v1${SCRIPT_PREFIX}${version}`,
+    configuration: REFERENCE_CONFIGURATION,
+  }
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+${PAGE_HEAD}
+<style>${tokens}</style>
+<script>${PALETTE_RESTORE_SCRIPT};
+${THEME_BOOTSTRAP_SCRIPT}</script>
+</head>
+<body>
+${PAGE_HEADER}
+<script>var REFERENCE = ${inlineJson(reference)}</script>
+<script>${CLIENT_SCRIPT}</script>
 </body>
 </html>`
   return new Response(html, {
