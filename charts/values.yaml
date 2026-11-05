@@ -177,8 +177,6 @@ openai:
   allowedPrivateOrigins: []
   # Request log: store prompts and responses only for short diagnostics.
   telemetryStorePayloads: false
-  telemetryRetentionDays: 1
-  telemetryMaxPayloadBytes: 65536
 
 hodor:
   enabled: true

@@ -82,8 +82,8 @@ temporary disk for ZIP archives.
 - `openai.credentialExistingSecret` holds the key that encrypts users' own
   provider keys; without it, BYOAI is unavailable.
 - `openai.allowedPrivateOrigins` allows exact private origins.
-- `openai.telemetryStorePayloads` stores prompts and responses in the AI
-  request log for `telemetryRetentionDays`, capped at `telemetryMaxPayloadBytes`.
+- `openai.telemetryStorePayloads` also stores prompts and responses in the AI
+  request log.
 
 ## MCP
 

@@ -1,5 +1,5 @@
 import type { ChatMiddleware, StreamChunk, TokenUsage } from '@tanstack/ai'
-import { and, desc, eq, lt, sql } from 'drizzle-orm'
+import { desc, eq, lt, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { requireIdentity } from '@/db/journal-context.server'
 import { owned } from '@/db/journal-scope.server'
@@ -99,26 +99,22 @@ async function updateLogSafely(
   }
 }
 
-export async function scrubExpiredAiRequestPayloads({
+// Redacts stored payloads once storing them is turned off, or on request.
+export async function scrubAiRequestPayloads({
   force = false,
   policy,
-  now = new Date(),
 }: {
   force?: boolean
   policy?: ReturnType<typeof getAiTelemetryPolicy>
-  now?: Date
 } = {}): Promise<number> {
   if (DEMO_MODE) return 0
-  policy ??= getAiTelemetryPolicy()
+  if (!force && (policy ?? getAiTelemetryPolicy()).storePayloads) return 0
 
   const hasDetailedPayload = sql<boolean>`(
     ${aiRequestLogs.requestPayload} <> ${sql.param(REDACTED_AI_PAYLOAD, aiRequestLogs.requestPayload)}
     or ${aiRequestLogs.responsePayload} is not null
     or ${aiRequestLogs.errorMessage} is not null
   )`
-  const retentionCutoff = new Date(
-    now.getTime() - policy.retentionDays * 24 * 60 * 60 * 1_000,
-  )
   const rows = await db
     .update(aiRequestLogs)
     .set({
@@ -126,23 +122,13 @@ export async function scrubExpiredAiRequestPayloads({
       responsePayload: null,
       errorMessage: null,
     })
-    .where(
-      owned(
-        aiRequestLogs,
-        force || !policy.storePayloads
-          ? hasDetailedPayload
-          : and(
-              lt(aiRequestLogs.createdAt, retentionCutoff),
-              hasDetailedPayload,
-            ),
-      ),
-    )
+    .where(owned(aiRequestLogs, hasDetailedPayload))
     .returning({ id: aiRequestLogs.id })
   return rows.length
 }
 
 export async function purgeAiRequestLogPayloads(): Promise<number> {
-  return scrubExpiredAiRequestPayloads({ force: true })
+  return scrubAiRequestPayloads({ force: true })
 }
 
 export async function startAiRequestLog({
@@ -306,7 +292,7 @@ export const aiRequestStatsSelection = {
 }
 
 export async function loadAiRequestStats(): Promise<AiRequestStats> {
-  await scrubExpiredAiRequestPayloads()
+  await scrubAiRequestPayloads()
   const [stats] = await db
     .select(aiRequestStatsSelection)
     .from(aiRequestLogs)
@@ -330,7 +316,7 @@ export async function loadAiRequestLogs({
   cursor?: number
   limit: number
 }): Promise<AiRequestLogPage> {
-  await scrubExpiredAiRequestPayloads()
+  await scrubAiRequestPayloads()
   const rows = await db
     .select({
       id: aiRequestLogs.id,
@@ -371,7 +357,7 @@ export async function loadAiRequestLogs({
 }
 
 export async function loadAiRequestLog(id: number): Promise<AiRequestLogEntry> {
-  await scrubExpiredAiRequestPayloads()
+  await scrubAiRequestPayloads()
   const entry = await db.query.aiRequestLogs.findFirst({
     where: owned(aiRequestLogs, eq(aiRequestLogs.id, id)),
   })

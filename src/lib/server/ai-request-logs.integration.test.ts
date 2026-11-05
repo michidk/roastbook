@@ -4,7 +4,7 @@ import { db } from '@/db'
 import { aiRequestLogs } from '@/db/schema'
 import {
   loadAiRequestLog,
-  scrubExpiredAiRequestPayloads,
+  scrubAiRequestPayloads,
 } from '@/lib/server/ai-request-logs.server'
 
 const integrationDescribe = process.env.TEST_DATABASE_URL
@@ -12,35 +12,30 @@ const integrationDescribe = process.env.TEST_DATABASE_URL
   : describe.skip
 let logId: number | undefined
 
-integrationDescribe('AI request log retention', () => {
+integrationDescribe('AI request log payloads', () => {
   afterAll(async () => {
     if (logId === undefined) return
     await db.delete(aiRequestLogs).where(eq(aiRequestLogs.id, logId))
   })
 
-  test('scrubs sensitive fields after the detailed-payload retention period', async () => {
+  test('scrubs stored payloads once storing them is off', async () => {
     const [entry] = await db
       .insert(aiRequestLogs)
       .values({
-        requestType: `retention-test-${crypto.randomUUID()}`,
+        requestType: `payload-test-${crypto.randomUUID()}`,
         model: 'test-model',
         requestPayload: { prompt: 'private brew notes' },
         responsePayload: { content: 'private provider output' },
         errorMessage: 'private provider error',
-        createdAt: new Date('2026-01-01T00:00:00Z'),
       })
       .returning({ id: aiRequestLogs.id })
     logId = entry?.id
     if (logId === undefined) throw new Error('AI request log was not created')
 
-    await scrubExpiredAiRequestPayloads({
-      policy: {
-        storePayloads: true,
-        retentionDays: 1,
-        maxPayloadBytes: 65_536,
-      },
-      now: new Date('2026-01-03T00:00:00Z'),
-    })
+    expect(
+      await scrubAiRequestPayloads({ policy: { storePayloads: true } }),
+    ).toBe(0)
+    await scrubAiRequestPayloads({ policy: { storePayloads: false } })
 
     const scrubbed = await loadAiRequestLog(logId)
     expect(scrubbed.requestPayload).toEqual({ redacted: true })

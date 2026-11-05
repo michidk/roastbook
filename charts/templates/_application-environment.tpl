@@ -68,10 +68,6 @@ env:
   {{- end }}
   - name: AI_TELEMETRY_STORE_PAYLOADS
     value: {{ .Values.openai.telemetryStorePayloads | default false | quote }}
-  - name: AI_TELEMETRY_RETENTION_DAYS
-    value: {{ .Values.openai.telemetryRetentionDays | default 1 | quote }}
-  - name: AI_TELEMETRY_MAX_PAYLOAD_BYTES
-    value: {{ .Values.openai.telemetryMaxPayloadBytes | default 65536 | quote }}
   {{- if .Values.mcp.enabled }}
   - name: MCP_ALLOWED_HOSTS
     value: {{ include "roastbook.mcpAllowedHosts" . | quote }}

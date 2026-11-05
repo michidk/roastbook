@@ -7,9 +7,9 @@ test('demo log retention skips production configuration and database writes', ()
       '--define',
       '__ROASTBOOK_DEMO_MODE__=true',
       '-e',
-      `const { scrubExpiredAiRequestPayloads } = await import('./src/lib/server/ai-request-logs.server')
-       console.log(await scrubExpiredAiRequestPayloads())
-       console.log(await scrubExpiredAiRequestPayloads({ force: true }))`,
+      `const { scrubAiRequestPayloads } = await import('./src/lib/server/ai-request-logs.server')
+       console.log(await scrubAiRequestPayloads())
+       console.log(await scrubAiRequestPayloads({ force: true }))`,
     ],
     {
       cwd: process.cwd(),
