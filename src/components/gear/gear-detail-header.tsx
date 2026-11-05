@@ -1,3 +1,5 @@
+import { Badge } from '@roastbook/ui/badge'
+import { Button } from '@roastbook/ui/button'
 import { Link } from '@tanstack/react-router'
 import {
   Archive,
@@ -9,8 +11,6 @@ import {
 import { DeleteConfirmation } from '@/components/delete-confirmation'
 import type { GearFormValues } from '@/components/gear/gear-form-values'
 import { PageHeader } from '@/components/page-layout'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import type { getGearById } from '@/journal/gear'
 import { GEAR_TYPE_LABELS } from '@/lib/constants'
 

@@ -1,6 +1,6 @@
+import { Button } from '@roastbook/ui/button'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Page, PageHeader } from './page-layout'
-import { Button } from './ui/button'
 
 const meta = {
   title: 'Journal/Page layout',

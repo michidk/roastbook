@@ -1,5 +1,3 @@
-import type { Meta, StoryObj } from '@storybook/react-vite'
-import { fn } from 'storybook/test'
 import {
   Command,
   CommandEmpty,
@@ -7,7 +5,9 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from './command'
+} from '@roastbook/ui/command'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { fn } from 'storybook/test'
 
 const meta = {
   title: 'UI/Command search',

@@ -1,6 +1,6 @@
+import { Button } from '@roastbook/ui/button'
 import { Pause, Play, RotateCcw, Volume2, VolumeX } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Button } from '@/components/ui/button'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { usePreferencesStore } from '@/lib/preferences-store'
 import { cn } from '@/lib/utils'

@@ -1,10 +1,10 @@
-import type { Meta, StoryObj } from '@storybook/react-vite'
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
   InputGroupText,
-} from './input-group'
+} from '@roastbook/ui/input-group'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 
 const meta = {
   title: 'UI/Input group',

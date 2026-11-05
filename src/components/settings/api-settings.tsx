@@ -1,10 +1,10 @@
+import { Button, buttonVariants } from '@roastbook/ui/button'
 import { useRouter } from '@tanstack/react-router'
 import { Braces, Copy, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
 import { PanelSection } from '@/components/section-layout'
 import { IntegrationKeys } from '@/components/settings/integration-keys'
 import { RateLimitUsage } from '@/components/settings/rate-limit-usage'
-import { Button, buttonVariants } from '@/components/ui/button'
 import type { getApiAccessState } from '@/lib/server/integrations'
 import type { IntegrationKeyPrefill } from '@/modules/integrations/key-link'
 

@@ -1,12 +1,12 @@
-import { Check, ChevronDown, Copy } from 'lucide-react'
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@roastbook/ui/button'
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/components/ui/collapsible'
-import { ScrollArea } from '@/components/ui/scroll-area'
+} from '@roastbook/ui/collapsible'
+import { ScrollArea } from '@roastbook/ui/scroll-area'
+import { Check, ChevronDown, Copy } from 'lucide-react'
+import { useState } from 'react'
 
 interface ErrorDetailsProps {
   error: unknown

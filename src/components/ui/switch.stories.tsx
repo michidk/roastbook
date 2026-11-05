@@ -1,7 +1,7 @@
+import { Switch } from '@roastbook/ui/switch'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useArgs } from 'storybook/preview-api'
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
-import { Switch } from './switch'
 
 const meta = {
   title: 'UI/Switch',

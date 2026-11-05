@@ -1,16 +1,16 @@
-import { ExternalLink } from 'lucide-react'
-import type { ReactNode } from 'react'
-import {
-  ShotsTable,
-  type ShotsTableServerPagination,
-} from '@/components/shots/shots-table'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
+} from '@roastbook/ui/card'
+import { ExternalLink } from 'lucide-react'
+import type { ReactNode } from 'react'
+import {
+  ShotsTable,
+  type ShotsTableServerPagination,
+} from '@/components/shots/shots-table'
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'

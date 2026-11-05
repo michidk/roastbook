@@ -50,7 +50,6 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1068.0",
     "@aws-sdk/lib-storage": "^3.1161.0",
-    "@base-ui/react": "^1.5.0",
     "@better-auth/cimd": "1.7.15",
     "@better-auth/mcp": "1.7.15",
     "@better-auth/oauth-provider": "1.7.15",
@@ -68,8 +67,6 @@
     "@tanstack/react-start": "^1.168.60",
     "archiver": "^8.0.0",
     "better-auth": "1.7.15",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
     "input-otp": "^1.5.0",
     "lucide-react": "^1.0.0",
@@ -81,11 +78,12 @@
     "recharts": "^3.8.1",
     "sharp": "^0.35.4",
     "sonner": "^2.0.7",
-    "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.1.18",
     "tslib": "^2.9.1",
     "zod": "^4.4.3",
-    "zustand": "^5.0.14"
+    "zustand": "^5.0.14",
+    "@roastbook/ui": "github:roastbook/ui#0beed4e76a4807a4f3ef42c814912625f5949ac7",
+    "@base-ui/react": "^1.5.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.4",

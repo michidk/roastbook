@@ -1,12 +1,6 @@
-import { Search, SlidersHorizontal, X } from 'lucide-react'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+import { Button } from '@roastbook/ui/button'
+import { Input } from '@roastbook/ui/input'
+import { Popover, PopoverContent, PopoverTrigger } from '@roastbook/ui/popover'
 import {
   Sheet,
   SheetClose,
@@ -16,7 +10,9 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@/components/ui/sheet'
+} from '@roastbook/ui/sheet'
+import { Search, SlidersHorizontal, X } from 'lucide-react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { collectionSearchPlaceholder } from '@/lib/collection-toolbar-labels'
 import { cn } from '@/lib/utils'
 

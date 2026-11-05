@@ -1,6 +1,6 @@
+import { Button } from '@roastbook/ui/button'
 import { Link } from '@tanstack/react-router'
 import { Wifi, WifiOff } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { useOnlineStatus } from '@/hooks/use-online-status'
 import { usePwaMode } from '@/hooks/use-pwa-mode'
 

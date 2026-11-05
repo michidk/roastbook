@@ -1,3 +1,5 @@
+import { Button } from '@roastbook/ui/button'
+import { StarRating } from '@roastbook/ui/star-rating'
 import {
   createFileRoute,
   Link,
@@ -13,8 +15,6 @@ import { RoutePending } from '@/components/route-pending'
 import { StatsActivityCalendar } from '@/components/stats/stats-activity-calendar'
 import { StatsFilters } from '@/components/stats/stats-filters'
 import { StatsSections } from '@/components/stats/stats-sections'
-import { Button } from '@/components/ui/button'
-import { StarRating } from '@/components/ui/star-rating'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'

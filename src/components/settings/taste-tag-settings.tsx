@@ -1,9 +1,5 @@
-import { Plus } from 'lucide-react'
-import { useState } from 'react'
-import { toast } from 'sonner'
-import { DeleteConfirmation } from '@/components/delete-confirmation'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Badge } from '@roastbook/ui/badge'
+import { Button } from '@roastbook/ui/button'
 import {
   Dialog,
   DialogBody,
@@ -14,8 +10,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
+} from '@roastbook/ui/dialog'
+import { Input } from '@roastbook/ui/input'
+import { Plus } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
+import { DeleteConfirmation } from '@/components/delete-confirmation'
 import { createTasteTag, deleteTasteTag } from '@/journal/taste-tags'
 import { isNegativeTasteTag } from '@/lib/taste-tags'
 

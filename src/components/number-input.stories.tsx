@@ -1,8 +1,8 @@
+import { Label } from '@roastbook/ui/label'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useArgs } from 'storybook/preview-api'
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import { NumberInput } from './number-input'
-import { Label } from './ui/label'
 
 const meta = {
   title: 'Forms/Number input',

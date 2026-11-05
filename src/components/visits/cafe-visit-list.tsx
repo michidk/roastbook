@@ -1,5 +1,5 @@
+import { StarRating } from '@roastbook/ui/star-rating'
 import { Link } from '@tanstack/react-router'
-import { StarRating } from '@/components/ui/star-rating'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 

@@ -1,5 +1,4 @@
-import { ArrowRight, Check } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@roastbook/ui/button'
 import {
   Dialog,
   DialogBody,
@@ -8,7 +7,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@roastbook/ui/dialog'
+import { ArrowRight, Check } from 'lucide-react'
 import {
   type SelectableDiff,
   useSelectableDiffs,

@@ -1,8 +1,8 @@
+import { Button } from '@roastbook/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@roastbook/ui/card'
 import { Link } from '@tanstack/react-router'
 import { Compass, Home } from 'lucide-react'
 import { Page } from '@/components/page-layout'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export function RouteNotFound() {
   return (

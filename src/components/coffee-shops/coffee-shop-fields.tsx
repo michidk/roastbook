@@ -1,3 +1,4 @@
+import { StarRating } from '@roastbook/ui/star-rating'
 import type { CoffeeShopFormValues } from '@/components/coffee-shops/coffee-shop-form-values'
 import {
   CoffeeShopOsmSearch,
@@ -5,7 +6,6 @@ import {
 } from '@/components/coffee-shops/coffee-shop-osm-search'
 import { InputField, TextareaField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
-import { StarRating } from '@/components/ui/star-rating'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 
 type CoffeeShopRatingField = {

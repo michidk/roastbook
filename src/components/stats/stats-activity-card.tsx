@@ -1,10 +1,10 @@
-import { Bar, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from 'recharts'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@roastbook/ui/card'
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from '@/components/ui/chart'
+} from '@roastbook/ui/chart'
+import { Bar, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from 'recharts'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'

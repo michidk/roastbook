@@ -1,10 +1,10 @@
-import type { Meta, StoryObj } from '@storybook/react-vite'
-import { Button } from './button'
+import { Button } from '@roastbook/ui/button'
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from './collapsible'
+} from '@roastbook/ui/collapsible'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 
 const meta = {
   title: 'UI/Collapsible',

@@ -44,7 +44,7 @@ const PAGE_SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
 }
 
-/** Maps Scalar's variables onto the palette tokens in theme-tokens.css. */
+/** Maps Scalar's variables onto the shared Roastbook palette tokens. */
 const SCALAR_THEME = `
 html { background: var(--background); color: var(--foreground); }
 body { margin: 0; font-family: var(--font-body); }
@@ -254,7 +254,7 @@ async function docsPage() {
     await Promise.all([
       scalarBundle(),
       import('@/typography.css?raw'),
-      import('@/theme-tokens.css?raw'),
+      import('@roastbook/ui/tokens.css?raw'),
     ])
   const reference = {
     scriptUrl: `/api/v1${SCRIPT_PREFIX}${version}`,

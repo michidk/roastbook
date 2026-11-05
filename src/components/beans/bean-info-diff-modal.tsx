@@ -1,7 +1,4 @@
-import { ArrowRight, Check, Store } from 'lucide-react'
-import { useMemo } from 'react'
-import type { BeanFormValues } from '@/components/beans/bean-form-values'
-import { Button } from '@/components/ui/button'
+import { Button } from '@roastbook/ui/button'
 import {
   Dialog,
   DialogBody,
@@ -10,7 +7,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@roastbook/ui/dialog'
+import { ArrowRight, Check, Store } from 'lucide-react'
+import { useMemo } from 'react'
+import type { BeanFormValues } from '@/components/beans/bean-form-values'
 import {
   buildSelectableDiffs,
   type SelectableDiff,

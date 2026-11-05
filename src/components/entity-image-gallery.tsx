@@ -1,17 +1,5 @@
-import {
-  ChevronLeft,
-  ChevronRight,
-  CircleAlert,
-  Loader2,
-  Sparkles,
-  Star,
-  X,
-} from 'lucide-react'
-import { type ReactNode, useState } from 'react'
-import { ImageWithFallback } from '@/components/image-with-fallback'
-import { PictureUploader } from '@/components/picture-uploader'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@roastbook/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@roastbook/ui/card'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +13,19 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@roastbook/ui/dialog'
+import {
+  ChevronLeft,
+  ChevronRight,
+  CircleAlert,
+  Loader2,
+  Sparkles,
+  Star,
+  X,
+} from 'lucide-react'
+import { type ReactNode, useState } from 'react'
+import { ImageWithFallback } from '@/components/image-with-fallback'
+import { PictureUploader } from '@/components/picture-uploader'
 import { useImageUpload } from '@/hooks/use-image-upload'
 import {
   deleteEntityImage,

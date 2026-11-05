@@ -1,8 +1,8 @@
+import { Button } from '@roastbook/ui/button'
 import { Bot, Bug } from 'lucide-react'
 import { useState } from 'react'
 import { PanelSection } from '@/components/section-layout'
 import { AiRequestLogDialog } from '@/components/settings/ai-request-log-dialog'
-import { Button } from '@/components/ui/button'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import type { AiRequestStats } from '@/lib/server/ai-request-logs'
 

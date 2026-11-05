@@ -1,3 +1,4 @@
+import { TooltipProvider } from '@roastbook/ui/tooltip'
 import { withThemeByClassName } from '@storybook/addon-themes'
 import type { Preview } from '@storybook/react-vite'
 import {
@@ -7,7 +8,6 @@ import {
   RouterContextProvider,
 } from '@tanstack/react-router'
 import { Toaster } from 'sonner'
-import { TooltipProvider } from '../src/components/ui/tooltip'
 import type { AppSettings } from '../src/lib/app-settings'
 import { DEFAULT_TASTE_PROFILE_CONFIG } from '../src/lib/taste-profile'
 import '../src/styles.css'

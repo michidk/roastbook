@@ -1,6 +1,6 @@
+import { Label } from '@roastbook/ui/label'
+import { Switch } from '@roastbook/ui/switch'
 import { TasteScalePicker } from '@/components/settings/taste-scale-picker'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import {
   TASTE_PROFILE_FIELD_META,
   type TasteProfileConfig,

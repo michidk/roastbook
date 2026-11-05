@@ -1,3 +1,13 @@
+import { Button } from '@roastbook/ui/button'
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@roastbook/ui/dialog'
 import { useRouter } from '@tanstack/react-router'
 import { type FormEvent, useId, useState } from 'react'
 import { toast } from 'sonner'
@@ -8,16 +18,6 @@ import {
 import { PanelSection } from '@/components/section-layout'
 import { IntegrationKeys } from '@/components/settings/integration-keys'
 import { ScopePicker } from '@/components/settings/scope-picker'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogBody,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { getErrorMessage } from '@/lib/error-message'

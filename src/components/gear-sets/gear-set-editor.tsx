@@ -1,3 +1,4 @@
+import { Button } from '@roastbook/ui/button'
 import { Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { GearSetFields } from '@/components/gear-sets/gear-set-fields'
@@ -5,7 +6,6 @@ import {
   gearSetFormValuesFrom,
   gearSetWritePayload,
 } from '@/components/gear-sets/gear-set-form-values'
-import { Button } from '@/components/ui/button'
 import { useFormState } from '@/hooks/use-form-state'
 import { useFormSubmission } from '@/hooks/use-form-submission'
 import { type getGearSetById, updateGearSet } from '@/journal/gear-sets'

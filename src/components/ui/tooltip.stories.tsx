@@ -1,6 +1,6 @@
+import { Button } from '@roastbook/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@roastbook/ui/tooltip'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { Button } from './button'
-import { Tooltip, TooltipContent, TooltipTrigger } from './tooltip'
 
 const meta = {
   title: 'UI/Tooltip',

@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button'
+import { Button } from '@roastbook/ui/button'
 import { cn } from '@/lib/utils'
 import {
   accessLevelsFromScopes,

@@ -1,5 +1,5 @@
+import { Badge } from '@roastbook/ui/badge'
 import { Check, Moon, Sun } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
 interface ThemePalettePickerProps<T extends string> {

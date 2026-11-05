@@ -1,5 +1,5 @@
+import { Button } from '@roastbook/ui/button'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { getPaginationItems, type PaginationItem } from '@/lib/pagination'
 import { cn } from '@/lib/utils'
 

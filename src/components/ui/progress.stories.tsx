@@ -1,5 +1,5 @@
+import { Progress } from '@roastbook/ui/progress'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { Progress } from './progress'
 
 const meta = {
   title: 'UI/Progress',

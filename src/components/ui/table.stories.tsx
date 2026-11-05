@@ -1,4 +1,3 @@
-import type { Meta, StoryObj } from '@storybook/react-vite'
 import {
   Table,
   TableBody,
@@ -7,7 +6,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from './table'
+} from '@roastbook/ui/table'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 
 const meta = {
   title: 'UI/Table',

@@ -1,3 +1,6 @@
+import { Button } from '@roastbook/ui/button'
+import { ScrollArea } from '@roastbook/ui/scroll-area'
+import { Textarea } from '@roastbook/ui/textarea'
 import { MessageCircle, RefreshCw, Send } from 'lucide-react'
 import {
   type FormEvent,
@@ -13,9 +16,6 @@ import {
   NoteBlock,
   RichText,
 } from '@/components/shots/recommendation-blocks'
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Textarea } from '@/components/ui/textarea'
 import { chatAboutShotRecommendation } from '@/lib/client/ai-recommendations'
 import { getErrorMessage } from '@/lib/error-message'
 import type {

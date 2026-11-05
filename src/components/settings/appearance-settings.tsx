@@ -1,9 +1,9 @@
+import { Label } from '@roastbook/ui/label'
+import { Switch } from '@roastbook/ui/switch'
 import { useEffect, useState } from 'react'
 import { PanelSection } from '@/components/section-layout'
 import { ColorModePicker } from '@/components/settings/color-mode-picker'
 import { ThemePalettePicker } from '@/components/settings/theme-palette-picker'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useSettingMutation } from '@/hooks/use-setting-mutation'
 import {

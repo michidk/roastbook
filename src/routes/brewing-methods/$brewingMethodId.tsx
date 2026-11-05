@@ -1,3 +1,4 @@
+import { Button } from '@roastbook/ui/button'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -7,7 +8,6 @@ import { EntityNotFound } from '@/components/entity-not-found'
 import { Page, PageHeader } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
-import { Button } from '@/components/ui/button'
 import {
   deleteBrewingMethod,
   getBrewingMethod,

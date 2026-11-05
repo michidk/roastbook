@@ -1,7 +1,7 @@
+import { Button } from '@roastbook/ui/button'
 import { Download, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
 import { DEMO_INSTALL_MESSAGE } from '@/lib/app-capabilities'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { usePreferencesStore } from '@/lib/preferences-store'

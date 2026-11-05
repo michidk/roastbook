@@ -1,7 +1,7 @@
+import { Button } from '@roastbook/ui/button'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Plus } from 'lucide-react'
 import { fn } from 'storybook/test'
-import { Button } from './button'
 
 const meta = {
   title: 'UI/Button',

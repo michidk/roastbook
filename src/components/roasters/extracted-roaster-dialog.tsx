@@ -1,8 +1,4 @@
-import { ArrowRight, Store } from 'lucide-react'
-import { RoasterForm } from '@/components/roasters/roaster-form'
-import type { RoasterFormValues } from '@/components/roasters/roaster-form-values'
-import type { RoasterOption } from '@/components/roasters/roaster-picker'
-import { Button } from '@/components/ui/button'
+import { Button } from '@roastbook/ui/button'
 import {
   Dialog,
   DialogBody,
@@ -11,7 +7,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@roastbook/ui/dialog'
+import { ArrowRight, Store } from 'lucide-react'
+import { RoasterForm } from '@/components/roasters/roaster-form'
+import type { RoasterFormValues } from '@/components/roasters/roaster-form-values'
+import type { RoasterOption } from '@/components/roasters/roaster-picker'
 import { findRoasterByName } from '@/lib/roaster-match'
 import type { ExtractedBeanInfo } from '@/modules/ai/read-models'
 

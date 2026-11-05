@@ -1,18 +1,18 @@
-import { type ReactNode, useMemo } from 'react'
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
+} from '@roastbook/ui/card'
 import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from '@/components/ui/chart'
+} from '@roastbook/ui/chart'
+import { type ReactNode, useMemo } from 'react'
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 
 type Shot = {

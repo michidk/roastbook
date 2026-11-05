@@ -1,3 +1,4 @@
+import { Button } from '@roastbook/ui/button'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import { type SyntheticEvent, useEffect, useState } from 'react'
@@ -11,7 +12,6 @@ import {
 import { Page } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
-import { Button } from '@/components/ui/button'
 import { VisitFields } from '@/components/visits/visit-fields'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useFormState } from '@/hooks/use-form-state'

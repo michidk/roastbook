@@ -1,6 +1,4 @@
-import { KeyRound, LoaderCircle } from 'lucide-react'
-import { useRef, useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@roastbook/ui/button'
 import {
   Dialog,
   DialogBody,
@@ -9,7 +7,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@roastbook/ui/dialog'
+import { KeyRound, LoaderCircle } from 'lucide-react'
+import { useRef, useState } from 'react'
 import { authClient } from '@/lib/auth-client'
 import { dismissPasskeySetupOffer } from '@/lib/server/passkey-prompt'
 

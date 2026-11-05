@@ -1,6 +1,6 @@
+import { Button } from '@roastbook/ui/button'
 import { ArrowDown, ArrowUp } from 'lucide-react'
 import { SelectField } from '@/components/form/form-field'
-import { Button } from '@/components/ui/button'
 import type { SortDirection } from '@/lib/collection-sort'
 
 interface SortOption<Key extends string> {

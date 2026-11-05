@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react'
 import {
   Dialog,
   DialogBody,
@@ -6,7 +5,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@roastbook/ui/dialog'
+import type { ReactNode } from 'react'
 
 interface EntityCreateDialogProps {
   open: boolean

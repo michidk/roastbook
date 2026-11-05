@@ -1,13 +1,8 @@
-import { Link } from '@tanstack/react-router'
-import { ChevronRight, type LucideIcon } from 'lucide-react'
-import type { ReactNode } from 'react'
-import { ImageWithFallback } from '@/components/image-with-fallback'
-import { SortableTableHead } from '@/components/sortable-table-head'
 import {
   Card,
   CardContent,
   interactiveCardLinkClassName,
-} from '@/components/ui/card'
+} from '@roastbook/ui/card'
 import {
   Table,
   TableBody,
@@ -15,7 +10,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@roastbook/ui/table'
+import { Link } from '@tanstack/react-router'
+import { ChevronRight, type LucideIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { ImageWithFallback } from '@/components/image-with-fallback'
+import { SortableTableHead } from '@/components/sortable-table-head'
 import type { CollectionView } from '@/lib/collection-view'
 import { cn } from '@/lib/utils'
 

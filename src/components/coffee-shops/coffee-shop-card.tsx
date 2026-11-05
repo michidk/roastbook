@@ -1,6 +1,6 @@
+import { interactiveCardLinkClassName } from '@roastbook/ui/card'
 import { Link } from '@tanstack/react-router'
 import { Bookmark, ChevronRight, Heart } from 'lucide-react'
-import { interactiveCardLinkClassName } from '@/components/ui/card'
 import { WebsiteLogo } from '@/components/website-logo'
 import { cn } from '@/lib/utils'
 

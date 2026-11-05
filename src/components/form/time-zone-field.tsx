@@ -6,8 +6,8 @@ import {
   ComboboxItem,
   ComboboxList,
   ComboboxTrigger,
-} from '@/components/ui/combobox'
-import { Label } from '@/components/ui/label'
+} from '@roastbook/ui/combobox'
+import { Label } from '@roastbook/ui/label'
 
 const TIME_ZONES = ['UTC', ...Intl.supportedValuesOf('timeZone')]
 

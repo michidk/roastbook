@@ -1,7 +1,7 @@
+import { Toggle } from '@roastbook/ui/toggle'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useArgs } from 'storybook/preview-api'
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
-import { Toggle } from './toggle'
 
 const meta = {
   title: 'UI/Toggle',

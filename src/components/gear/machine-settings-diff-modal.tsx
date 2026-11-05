@@ -1,7 +1,4 @@
-import { ArrowRight, Check, ExternalLink } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
-import type { GearSubtypeFormValues } from '@/components/gear/gear-form-values'
-import { Button } from '@/components/ui/button'
+import { Button } from '@roastbook/ui/button'
 import {
   Dialog,
   DialogBody,
@@ -10,7 +7,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@roastbook/ui/dialog'
+import { ArrowRight, Check, ExternalLink } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import type { GearSubtypeFormValues } from '@/components/gear/gear-form-values'
 import {
   MACHINE_FLOW_CONTROL_OPTIONS,
   MACHINE_HEATING_ARCHITECTURE_OPTIONS,

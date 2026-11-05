@@ -291,3 +291,11 @@ charts/              Helm chart
 Release maintainers can run the **Release** GitHub Action with an automatic
 Conventional Commit version bump or an explicit override. See
 [releases](docs/deployment.md#releases) for the publication and image build flow.
+
+## Shared UI
+
+The app imports shadcn primitives and theme tokens from
+[`@roastbook/ui`](https://github.com/roastbook/ui), pinned to a Git commit in
+`package.json` and `bun.lock`. Add shared primitives in that repository.
+The app keeps its feature components, preferences and document layout locally.
+The existing UI stories render the shared package components.

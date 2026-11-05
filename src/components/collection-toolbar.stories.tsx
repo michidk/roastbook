@@ -1,8 +1,8 @@
+import { Label } from '@roastbook/ui/label'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useArgs } from 'storybook/preview-api'
 import { fn } from 'storybook/test'
 import { CollectionToolbar } from './collection-toolbar'
-import { Label } from './ui/label'
 
 const meta = {
   title: 'Journal/Collection toolbar',

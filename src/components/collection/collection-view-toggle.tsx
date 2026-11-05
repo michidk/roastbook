@@ -1,5 +1,5 @@
+import { Button } from '@roastbook/ui/button'
 import { LayoutGrid, Table2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import type { CollectionView } from '@/lib/collection-view'
 
 const VIEW_BUTTONS = [

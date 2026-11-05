@@ -1,7 +1,4 @@
-import { REGEXP_ONLY_DIGITS } from 'input-otp'
-import { KeyRound, Mail } from 'lucide-react'
-import { type FormEvent, useCallback, useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@roastbook/ui/button'
 import {
   Dialog,
   DialogBody,
@@ -10,14 +7,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@roastbook/ui/dialog'
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSeparator,
   InputOTPSlot,
-} from '@/components/ui/input-otp'
-import { Label } from '@/components/ui/label'
+} from '@roastbook/ui/input-otp'
+import { Label } from '@roastbook/ui/label'
+import { REGEXP_ONLY_DIGITS } from 'input-otp'
+import { KeyRound, Mail } from 'lucide-react'
+import { type FormEvent, useCallback, useEffect, useState } from 'react'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { authClient } from '@/lib/auth-client'
 import { getErrorMessage } from '@/lib/error-message'

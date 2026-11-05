@@ -1,10 +1,10 @@
+import { Button } from '@roastbook/ui/button'
 import {
   createFileRoute,
   useRouter,
   useRouterState,
 } from '@tanstack/react-router'
 import { PanelSection } from '@/components/section-layout'
-import { Button } from '@/components/ui/button'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { getUsers } from '@/lib/server/account'
 import { AdminUsersTable } from './-components/admin-users-table'

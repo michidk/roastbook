@@ -1,3 +1,5 @@
+import { ScrollArea } from '@roastbook/ui/scroll-area'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@roastbook/ui/tabs'
 import { Link, type LinkProps, useLocation } from '@tanstack/react-router'
 import {
   type ComponentType,
@@ -6,8 +8,6 @@ import {
   useId,
   useState,
 } from 'react'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 
 export type SectionNavigationItem = {

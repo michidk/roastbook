@@ -1,6 +1,6 @@
+import { Button } from '@roastbook/ui/button'
+import { Label } from '@roastbook/ui/label'
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 
 type TasteTag = {

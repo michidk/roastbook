@@ -1,5 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react-vite'
-import { Button } from './button'
+import { Button } from '@roastbook/ui/button'
 import {
   Card,
   CardContent,
@@ -7,8 +6,9 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from './card'
-import { Skeleton } from './skeleton'
+} from '@roastbook/ui/card'
+import { Skeleton } from '@roastbook/ui/skeleton'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 
 const meta = {
   title: 'UI/Card',

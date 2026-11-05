@@ -1,5 +1,5 @@
+import { Button } from '@roastbook/ui/button'
 import { ListTree } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 
 type ShotsViewToggleProps = {
   readonly grouped: boolean

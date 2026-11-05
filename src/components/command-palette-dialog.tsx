@@ -1,11 +1,3 @@
-import { Link, useNavigate } from '@tanstack/react-router'
-import { Search } from 'lucide-react'
-import { type ReactNode, useEffect, useMemo, useState } from 'react'
-import {
-  buildCommandGroups,
-  buildEntityCommandGroups,
-  type CommandAction,
-} from '@/components/command-palette-actions'
 import {
   Command,
   CommandDialog,
@@ -14,8 +6,16 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@/components/ui/command'
-import { DialogFooter, DialogHeader } from '@/components/ui/dialog'
+} from '@roastbook/ui/command'
+import { DialogFooter, DialogHeader } from '@roastbook/ui/dialog'
+import { Link, useNavigate } from '@tanstack/react-router'
+import { Search } from 'lucide-react'
+import { type ReactNode, useEffect, useMemo, useState } from 'react'
+import {
+  buildCommandGroups,
+  buildEntityCommandGroups,
+  type CommandAction,
+} from '@/components/command-palette-actions'
 import { searchCommandEntities } from '@/journal/command-search'
 import {
   COMMAND_ENTITY_SEARCH_MIN_LENGTH,

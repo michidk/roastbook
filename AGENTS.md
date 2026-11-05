@@ -28,8 +28,8 @@ entry points, stack); never describe planned work as shipped.
 ## Architecture boundaries
 
 - Routes live in `src/routes/` (TanStack Router file-based routing).
-- Shared UI primitives live in `src/components/ui/`; extend them with `cn()`
-  instead of recreating their behavior in routes.
+- Shared UI primitives come from `@roastbook/ui` in `Roastbook/ui`; extend
+  them with `cn()` instead of copying their implementation into this app.
 - Reusable page, form, dialog, and entity components live in
   `src/components/`.
 - Client-side feature contracts and pure feature logic move to
@@ -112,8 +112,8 @@ Do not claim integration or browser coverage when it was skipped or unavailable.
 
 ## UI rules
 
-- Prefer existing shadcn/ui components; install a missing primitive with
-  `bunx shadcn@latest add <component>`.
+- Prefer existing `@roastbook/ui` components. Add missing shadcn primitives
+  in the shared `Roastbook/ui` repository, then update the pinned dependency.
 - Follow `DESIGN.md` for tokens, shared page widths, responsive behavior,
   accessibility, and dialog structure.
 - Use Lucide icons and accessible names for icon-only controls.

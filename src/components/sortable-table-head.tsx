@@ -1,5 +1,5 @@
+import { TableHead } from '@roastbook/ui/table'
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
-import { TableHead } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
 
 interface SortableTableHeadProps {

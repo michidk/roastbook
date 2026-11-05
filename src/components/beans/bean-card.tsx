@@ -1,11 +1,11 @@
-import { Link } from '@tanstack/react-router'
-import { ArrowUpRight, Bean, CalendarDays, MapPin, Scale } from 'lucide-react'
-import { ImageWithFallback } from '@/components/image-with-fallback'
 import {
   Card,
   CardContent,
   interactiveCardLinkClassName,
-} from '@/components/ui/card'
+} from '@roastbook/ui/card'
+import { Link } from '@tanstack/react-router'
+import { ArrowUpRight, Bean, CalendarDays, MapPin, Scale } from 'lucide-react'
+import { ImageWithFallback } from '@/components/image-with-fallback'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import type { getBeans } from '@/journal/beans'

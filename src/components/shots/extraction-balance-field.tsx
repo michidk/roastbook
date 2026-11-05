@@ -1,10 +1,6 @@
+import { Button } from '@roastbook/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@roastbook/ui/tooltip'
 import { Citrus, Info, Leaf } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
 import {
   EXTRACTION_BALANCE_BALANCED,
   EXTRACTION_BALANCE_LEVELS,

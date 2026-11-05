@@ -1,15 +1,15 @@
-import { ExternalLink, Search, Sparkles } from 'lucide-react'
-import { useState } from 'react'
-import { toast } from 'sonner'
-import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
+import { Badge } from '@roastbook/ui/badge'
+import { Card } from '@roastbook/ui/card'
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
-} from '@/components/ui/input-group'
-import { Label } from '@/components/ui/label'
+} from '@roastbook/ui/input-group'
+import { Label } from '@roastbook/ui/label'
+import { ExternalLink, Search, Sparkles } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { searchCoffeeShopCandidates } from '@/lib/server/geocoding'
 

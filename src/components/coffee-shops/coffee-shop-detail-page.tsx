@@ -1,3 +1,7 @@
+import { Badge } from '@roastbook/ui/badge'
+import { Button } from '@roastbook/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@roastbook/ui/card'
+import { StarRating } from '@roastbook/ui/star-rating'
 import { Link, useNavigate } from '@tanstack/react-router'
 import {
   ArrowLeft,
@@ -29,10 +33,6 @@ import { DeleteConfirmation } from '@/components/delete-confirmation'
 import { EntityNotFound } from '@/components/entity-not-found'
 import { MetricCard } from '@/components/metric-card'
 import { Page, PageHeader } from '@/components/page-layout'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { StarRating } from '@/components/ui/star-rating'
 import {
   CafeVisitList,
   sortCafeVisitsByDate,
