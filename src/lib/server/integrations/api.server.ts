@@ -51,7 +51,13 @@ export function matchApiRoute(method: string, path: string) {
     if (route.operation.method !== method) continue
     const params = Object.fromEntries(
       route.parameters.map((name, index) => {
-        const value = decodeURIComponent(match[index + 1] ?? '')
+        const raw = match[index + 1] ?? ''
+        let value = raw
+        try {
+          value = decodeURIComponent(raw)
+        } catch {
+          // Malformed escapes stay as sent and fail input validation.
+        }
         return [name, /^\d{1,15}$/.test(value) ? Number(value) : value]
       }),
     )
@@ -166,16 +172,22 @@ async function bodyInput(
 
 /** `entityType`, `entityId` and `file` fields, converted to the JSON shape. */
 async function multipartUpload(request: Request, limit: number) {
-  const length = request.headers.get('content-length')
-  if (length && (!/^\d+$/.test(length) || Number(length) > limit))
+  // Read with a bound first: chunked uploads carry no Content-Length.
+  const body = await readBoundedRequestBody(request, limit)
+  if (body instanceof Response)
     return failure({
-      status: 413,
+      status: body.status,
       code: 'invalid_input',
-      message: 'The picture is too large',
+      message:
+        body.status === 413
+          ? 'The picture is too large'
+          : 'Could not read the form data',
     })
   let form: FormData
   try {
-    form = await request.formData()
+    form = await new Response(body, {
+      headers: { 'Content-Type': request.headers.get('content-type') ?? '' },
+    }).formData()
   } catch {
     return failure({
       status: 400,

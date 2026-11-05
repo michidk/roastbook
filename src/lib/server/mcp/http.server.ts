@@ -85,6 +85,18 @@ export async function handleMcpHttpRequest(
     })
     const admission = await admitIntegrationRequest()
     if (admission.rejected) return admission.rejected
+    try {
+      await request.clone().json()
+    } catch {
+      return Response.json(
+        {
+          jsonrpc: '2.0',
+          id: null,
+          error: { code: -32700, message: 'Parse error' },
+        },
+        { status: 400, headers: { 'Cache-Control': 'no-store' } },
+      )
+    }
     const response = await liveHandler(request)
     if (!response) return null
     const headers = new Headers(response.headers)
