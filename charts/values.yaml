@@ -175,6 +175,8 @@ openai:
   credentialExistingSecret: ""
   credentialExistingSecretKey: "encryption-key"
   allowedPrivateOrigins: []
+  # Request log: store prompts and responses only for short diagnostics.
+  telemetryStorePayloads: false
 
 hodor:
   enabled: true

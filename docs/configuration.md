@@ -101,6 +101,7 @@ authorized endpoints; do not put a public bucket or CDN in front of them.
 | --- | --- | --- | --- |
 | `AI_CREDENTIAL_ENCRYPTION_KEY` | — | AI | Base64 32-byte key |
 | `AI_ALLOWED_PRIVATE_ORIGINS` | — | No | Allowed private origins |
+| `AI_TELEMETRY_STORE_PAYLOADS` | `false` | No | Store prompts and responses |
 
 Each user connects their own OpenAI-compatible provider in Settings > AI; the
 operator supplies only `AI_CREDENTIAL_ENCRYPTION_KEY`. Generate it once with
@@ -113,6 +114,11 @@ addresses are blocked and redirects are refused. `AI_ALLOWED_PRIVATE_ORIGINS`
 allows exact origins such as `http://ollama:11434` and is rejected in hosted
 mode. Selected journal data and images go to the user's provider, which bills
 them.
+
+Every request's metadata, status, duration, and token usage are logged in the
+database and shown in Settings > AI. Prompts and responses are stored only
+with `AI_TELEMETRY_STORE_PAYLOADS=true` (off by default); turning it off again
+redacts the stored ones. They contain private journal data.
 
 ## MCP
 

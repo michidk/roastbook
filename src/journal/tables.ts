@@ -5,7 +5,6 @@ import * as schema from '@/db/schema'
 // sync bookkeeping. Every other owner table is journal data and is synced.
 const serverOnly = new Set([
   'ai_request_logs',
-  'ai_usage',
   'journal_command_receipts',
   'journal_id_reservations',
   'journal_changes',

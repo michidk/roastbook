@@ -66,6 +66,8 @@ env:
   - name: AI_ALLOWED_PRIVATE_ORIGINS
     value: {{ join "," .Values.openai.allowedPrivateOrigins | quote }}
   {{- end }}
+  - name: AI_TELEMETRY_STORE_PAYLOADS
+    value: {{ .Values.openai.telemetryStorePayloads | default false | quote }}
   {{- if .Values.mcp.enabled }}
   - name: MCP_ALLOWED_HOSTS
     value: {{ include "roastbook.mcpAllowedHosts" . | quote }}
