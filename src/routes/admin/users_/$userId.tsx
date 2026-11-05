@@ -60,9 +60,9 @@ function UserPage() {
             ['Last sign-in', when(user.lastLoginAt)],
             ['Email verified', user.emailVerified ? 'Yes' : 'No'],
             ['Journal created', when(user.journalInitializedAt)],
-            ...adminUserColumns.map(
-              ({ header, cell }) => [header, cell(user)] as const,
-            ),
+            ...adminUserColumns
+              .filter(({ listOnly }) => !listOnly)
+              .map(({ header, cell }) => [header, cell(user)] as const),
           ]}
         />
       </PanelSection>
