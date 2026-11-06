@@ -1,4 +1,5 @@
-import { resolve } from 'node:path'
+import { createReadStream, statSync } from 'node:fs'
+import { resolve, sep } from 'node:path'
 import type { Plugin } from 'vite'
 
 const platform =
@@ -33,6 +34,24 @@ export function journalPlatform(
       if (edition === 'demo' && source === '@/journal/local/edition')
         return resolve('packages/journal-demo/src/edition.ts')
       return null
+    },
+    configureServer(server) {
+      // The dev server passes only known asset types to Vite; the engine's
+      // file system bundle would get the app's 404 page and the journal
+      // would never open. Builds emit it as an asset.
+      const modules = resolve(server.config.root, 'node_modules') + sep
+      server.middlewares.use((request, response, next) => {
+        const path = request.url?.split('?')[0] ?? ''
+        if (!path.endsWith('/pglite.data')) return next()
+        const file = resolve(server.config.root, `.${decodeURIComponent(path)}`)
+        if (
+          !file.startsWith(modules) ||
+          !statSync(file, { throwIfNoEntry: false })?.isFile()
+        )
+          return next()
+        response.setHeader('Content-Type', 'application/octet-stream')
+        createReadStream(file).pipe(response)
+      })
     },
   }
 }
