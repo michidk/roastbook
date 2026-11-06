@@ -20,13 +20,18 @@ import {
 } from '@roastbook/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@roastbook/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@roastbook/ui/tooltip'
-import { CircleCheck, History, RefreshCw, Sparkles, Target } from 'lucide-react'
+import {
+  ArrowRight,
+  CircleCheck,
+  History,
+  RefreshCw,
+  Sparkles,
+} from 'lucide-react'
 import { useState } from 'react'
 import { AiThinking } from '@/components/ai-thinking'
 import {
-  ChangeBlock,
-  KeepConstantBlock,
   NoteBlock,
+  ParameterChip,
   RichText,
 } from '@/components/shots/recommendation-blocks'
 import { RecommendationChat } from '@/components/shots/recommendation-chat'
@@ -426,48 +431,81 @@ function RecommendationResultView({
 }) {
   const formatDate = useDateFormatter()
 
+  const { recommendation } = result
+
   return (
     <div className="space-y-6">
       <section className="space-y-3">
-        <p className="flex items-center gap-1.5 text-sm font-semibold text-primary">
-          <Target aria-hidden className="size-3.5" />
-          Next brew
-        </p>
         <h3 className="font-display text-xl leading-snug font-bold">
-          <RichText text={result.recommendation.headline} />
+          <RichText text={recommendation.headline} />
         </h3>
-        {result.recommendation.changes.length > 0 ? (
-          <ol aria-label="Changes for the next brew" className="space-y-2">
-            {result.recommendation.changes.map((change) => (
-              <li key={change.parameter}>
-                <ChangeBlock change={change} />
-              </li>
-            ))}
-          </ol>
-        ) : (
+        <div className="flex flex-wrap gap-1.5">
+          <Badge variant="secondary">
+            {DIAGNOSIS_LABELS[recommendation.diagnosis]}
+          </Badge>
+          <Badge variant="outline" className="capitalize">
+            {recommendation.confidence} confidence
+          </Badge>
+        </div>
+      </section>
+
+      <section className="space-y-2">
+        <h4 className="text-sm font-semibold">Next brew</h4>
+        {recommendation.changes.length === 0 ? (
           <p className="flex gap-2 text-sm text-positive-text">
             <CircleCheck aria-hidden className="mt-0.5 size-4 shrink-0" />
             No parameter change is recommended. Repeat{' '}
             {isFocusedShot ? 'this' : 'the latest'} brew as consistently as
             possible.
           </p>
-        )}
+        ) : null}
+        <ul className="divide-y divide-border/70 border-y border-border/70">
+          {recommendation.changes.map((change) => (
+            <li
+              key={change.parameter}
+              className="space-y-1 bg-primary/8 px-2 py-2.5"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                <ParameterChip
+                  parameter={change.parameter}
+                  className="text-sm"
+                />
+                <p className="flex items-center gap-2 text-sm tabular-nums">
+                  <span className="sr-only">from </span>
+                  <span className="text-muted-foreground">
+                    {change.currentValue}
+                  </span>
+                  <ArrowRight aria-hidden className="size-4 text-primary" />
+                  <span className="sr-only">to </span>
+                  <span className="font-bold">{change.recommendedValue}</span>
+                </p>
+              </div>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                <RichText text={change.reason} />
+              </p>
+            </li>
+          ))}
+          {recommendation.keepConstant.map((item) => (
+            <li key={item.parameter} className="space-y-0.5 px-2 py-2">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                <ParameterChip parameter={item.parameter} className="text-sm" />
+                <p className="text-sm tabular-nums">
+                  <span className="sr-only">keep at </span>
+                  {item.currentValue}
+                </p>
+              </div>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                <RichText text={item.reason} />
+              </p>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-semibold">Why</h3>
-          <div className="flex flex-wrap gap-1.5">
-            <Badge variant="secondary">
-              {DIAGNOSIS_LABELS[result.recommendation.diagnosis]}
-            </Badge>
-            <Badge variant="outline" className="capitalize">
-              {result.recommendation.confidence} confidence
-            </Badge>
-          </div>
-        </div>
+        <h4 className="text-sm font-semibold">Why</h4>
         <ul className="space-y-2">
-          {result.recommendation.reasoning.map((point, index) => (
+          {recommendation.reasoning.map((point, index) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: the points never change once received
             <li key={index} className="flex gap-2.5 leading-relaxed">
               <span
@@ -488,23 +526,10 @@ function RecommendationResultView({
               : 'How this setup developed'}
           </h4>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            <RichText text={result.recommendation.historyInsight} />
+            <RichText text={recommendation.historyInsight} />
           </p>
         </div>
       </section>
-
-      {result.recommendation.keepConstant.length > 0 ? (
-        <section className="space-y-2">
-          <h3 className="font-semibold">Keep constant</h3>
-          <ul className="space-y-2">
-            {result.recommendation.keepConstant.map((item) => (
-              <li key={item.parameter}>
-                <KeepConstantBlock item={item} />
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
 
       <NoteBlock text={result.recommendation.caveat} />
 

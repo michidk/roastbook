@@ -68,7 +68,7 @@ export function ParameterChip({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-md bg-primary/12 px-1.5 py-px align-baseline text-[0.9em] leading-snug font-medium whitespace-nowrap text-foreground',
+        'inline-flex items-center gap-1 rounded-md bg-primary/12 px-1.5 py-px align-middle text-[0.9em] leading-snug font-medium whitespace-nowrap text-foreground',
         className,
       )}
     >
