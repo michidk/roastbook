@@ -13,7 +13,7 @@ const recommendation: ShotRecommendation = {
   diagnosis: 'balanced',
   confidence: 'medium',
   headline: 'Keep it as is',
-  summary: 'Recent brews are well balanced.',
+  reasoning: ['Recent brews are well balanced.'],
   historyInsight: 'Ratings improved after the finer grind.',
   changes: [],
   keepConstant: [],

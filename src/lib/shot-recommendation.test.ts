@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import {
   buildShotRecommendationPrompt,
+  enforceShotRecommendation,
   haveSameAccessoryGear,
   shotRecommendationRequestSchema,
   shotRecommendationSchema,
@@ -94,7 +95,7 @@ describe('brew recommendation evidence', () => {
     const recommendationWithoutConfidence = {
       diagnosis: 'balanced',
       headline: 'Repeat this brew',
-      summary: 'The recent brews show that this recipe is working well.',
+      reasoning: ['The recent brews show that this recipe is working well.'],
       historyInsight: 'Recent ratings are consistently high.',
       changes: [],
       keepConstant: [],
@@ -158,7 +159,7 @@ describe('brew recommendation evidence', () => {
       diagnosis: 'balanced' as const,
       confidence: 'high' as const,
       headline: 'Repeat this brew',
-      summary: 'The latest brew is the strongest result.',
+      reasoning: ['The latest brew is the strongest result.'],
       historyInsight: 'Ratings improved as yield increased.',
       keepConstant: [],
       caveat: 'Taste the next brew before changing another variable.',
@@ -192,7 +193,7 @@ describe('brew recommendation evidence', () => {
       diagnosis: 'balanced' as const,
       confidence: 'high' as const,
       headline: 'Repeat this brew',
-      summary: 'The latest brew is the strongest result.',
+      reasoning: ['The latest brew is the strongest result.'],
       historyInsight: 'Ratings improved as yield increased.',
       changes: [],
       keepConstant: [],
@@ -217,5 +218,47 @@ describe('brew recommendation evidence', () => {
       }).success,
     ).toBe(false)
     expect(shotRecommendationSchema.safeParse(base).success).toBe(false)
+  })
+
+  test('rejects unusable changes and drops contradicting keep-constant items', () => {
+    const change = {
+      parameter: 'grindSetting' as const,
+      currentValue: '11',
+      recommendedValue: '12',
+      reason: 'The best brew used it.',
+    }
+    const keep = (parameter: 'doseGrams' | 'grindSetting' | 'tampForceKg') => ({
+      parameter,
+      currentValue: '18',
+      reason: 'Baseline.',
+    })
+    const recommendation = {
+      diagnosis: 'balanced' as const,
+      confidence: 'medium' as const,
+      headline: 'Return [[grindSetting]] to 12',
+      reasoning: ['The best brew used it.'],
+      historyInsight: 'Ratings peaked at 12.',
+      changes: [change],
+      keepConstant: [
+        keep('doseGrams'),
+        keep('doseGrams'),
+        keep('grindSetting'),
+        keep('tampForceKg'),
+      ],
+      caveat: 'Taste is subjective.',
+      followUpQuestions: ['Why?', 'What else?', 'How to test?'],
+    }
+    const enabled = ['doseGrams', 'grindSetting']
+
+    expect(
+      enforceShotRecommendation(recommendation, enabled)?.keepConstant,
+    ).toEqual([keep('doseGrams')])
+    expect(
+      enforceShotRecommendation(
+        { ...recommendation, changes: [change, change] },
+        enabled,
+      ),
+    ).toBeNull()
+    expect(enforceShotRecommendation(recommendation, ['doseGrams'])).toBeNull()
   })
 })

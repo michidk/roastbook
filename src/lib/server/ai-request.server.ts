@@ -36,7 +36,7 @@ type AiRequestOptions<T> = {
   execute(context: AiRequestContext): Promise<T>
 }
 
-class AiOutputError extends Error {}
+export class AiOutputError extends Error {}
 
 export async function runAiRequest<T>(
   options: AiRequestOptions<T>,

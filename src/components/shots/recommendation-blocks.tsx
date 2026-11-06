@@ -68,7 +68,7 @@ export function ParameterChip({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-md bg-primary/12 px-1.5 py-px align-baseline text-[0.9em] leading-snug font-medium whitespace-nowrap text-foreground',
+        'inline-flex items-center gap-1 rounded-md bg-primary/12 px-1.5 py-px align-middle text-[0.9em] leading-snug font-medium whitespace-nowrap text-foreground',
         className,
       )}
     >
@@ -104,16 +104,18 @@ export function ChangeBlock({
   readonly change: RecommendationChange
 }) {
   return (
-    <div className="rounded-xl border border-border p-4">
-      <ParameterChip parameter={change.parameter} className="text-sm" />
-      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
-        <span className="rounded-md bg-muted px-2 py-1">
-          {change.currentValue}
-        </span>
-        <ArrowRight aria-hidden className="size-4 text-muted-foreground" />
-        <span className="rounded-md bg-primary/12 px-2 py-1 font-semibold text-foreground">
-          {change.recommendedValue}
-        </span>
+    <div className="rounded-xl border border-border bg-card p-3.5 sm:p-4">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <ParameterChip parameter={change.parameter} className="text-sm" />
+        <p className="flex flex-wrap items-center gap-2 text-sm tabular-nums">
+          <span className="sr-only">from </span>
+          <span className="text-muted-foreground">{change.currentValue}</span>
+          <ArrowRight aria-hidden className="size-4 text-primary" />
+          <span className="sr-only">to </span>
+          <span className="rounded-md bg-primary/12 px-2 py-0.5 text-base font-bold text-foreground">
+            {change.recommendedValue}
+          </span>
+        </p>
       </div>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
         <RichText text={change.reason} />
@@ -128,17 +130,15 @@ export function KeepConstantBlock({
   readonly item: RecommendationKeepConstant
 }) {
   return (
-    <div className="rounded-xl border border-border bg-muted/35 p-3 text-sm">
+    <div className="rounded-xl border border-border px-3 py-2.5 text-sm">
       <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <Lock aria-hidden className="size-3.5 text-muted-foreground" />
-        <span className="font-medium">Keep</span>
+        <span className="sr-only">Keep </span>
         <ParameterChip parameter={item.parameter} />
-        <span className="text-muted-foreground">at</span>
-        <span className="rounded-md bg-muted px-2 py-0.5">
-          {item.currentValue}
-        </span>
+        <span className="sr-only">at </span>
+        <span className="font-medium tabular-nums">{item.currentValue}</span>
       </p>
-      <p className="mt-1.5 leading-relaxed text-muted-foreground">
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
         <RichText text={item.reason} />
       </p>
     </div>

@@ -30,13 +30,13 @@ export const recommendationChangeSchema = z.object({
   parameter: shotRecommendationParameterSchema,
   currentValue: z.string().trim().min(1).max(100),
   recommendedValue: z.string().trim().min(1).max(100),
-  reason: z.string().trim().min(1).max(500),
+  reason: z.string().trim().min(1).max(240),
 })
 
 export const recommendationKeepConstantSchema = z.object({
   parameter: shotRecommendationParameterSchema,
   currentValue: z.string().trim().min(1).max(100),
-  reason: z.string().trim().min(1).max(300),
+  reason: z.string().trim().min(1).max(200),
 })
 
 export const shotRecommendationSchema = z.object({
@@ -51,7 +51,8 @@ export const shotRecommendationSchema = z.object({
   ]),
   confidence: z.enum(['low', 'medium', 'high']),
   headline: z.string().trim().min(1).max(120),
-  summary: z.string().trim().min(1).max(1_000),
+  // Short points instead of one paragraph keep the reasoning scannable.
+  reasoning: z.array(z.string().trim().min(1).max(240)).min(1).max(4),
   historyInsight: z.string().trim().min(1).max(1_000),
   changes: z.array(recommendationChangeSchema).max(3),
   keepConstant: z.array(recommendationKeepConstantSchema).max(4),
@@ -60,6 +61,40 @@ export const shotRecommendationSchema = z.object({
 })
 
 export type ShotRecommendation = z.infer<typeof shotRecommendationSchema>
+
+/**
+ * Holds model output to what the brewing method records. Returns null when a
+ * change is unusable (a parameter the method does not record, or the same
+ * parameter twice), since the headline would then describe a dropped change.
+ * Keep-constant items that are unusable or contradict a change are dropped.
+ */
+export function enforceShotRecommendation(
+  recommendation: ShotRecommendation,
+  enabledParameters: readonly string[],
+): ShotRecommendation | null {
+  const changed = new Set(
+    recommendation.changes.map((change) => change.parameter),
+  )
+  if (
+    changed.size !== recommendation.changes.length ||
+    [...changed].some((key) => !enabledParameters.includes(key))
+  )
+    return null
+  const kept = new Set<string>()
+  return {
+    ...recommendation,
+    keepConstant: recommendation.keepConstant.filter(({ parameter }) => {
+      if (
+        !enabledParameters.includes(parameter) ||
+        changed.has(parameter) ||
+        kept.has(parameter)
+      )
+        return false
+      kept.add(parameter)
+      return true
+    }),
+  }
+}
 
 const shotRecommendationParameterValueSchema = z.union([
   z.string().trim().max(500),
@@ -154,7 +189,7 @@ Use this evidence hierarchy:
 3. Treat flavorTags and their compass metadata as secondary clues only. Tags can add nuance, but they are optional, subjective descriptors and must never outweigh or contradict the numeric overall or sensory ratings on their own.
 
 All entries are recorded by humans and may contain typos, measurement errors, missing values, subjective judgments, or outliers. This is especially true of the taste profile: sensory sliders, sour-to-bitter balance, overall ratings, flavor tags, and tasting notes are imperfect observations, not objective measurements. The evidence hierarchy sets relative priority, not certainty. Prefer repeated, comparable patterns over isolated extremes. Cross-check suspicious entries against the surrounding history and notes, acknowledge possible errors, and lower confidence rather than overfitting a recipe to one unusual result. Do not silently correct records or dismiss a genuine preference merely because it differs from conventional expectations. Say when evidence is sparse, missing, contradictory, or may reflect either recording noise or uneven extraction; do not assume contradictions prove uneven extraction.
-- When focusedShot is present, it is the exact completed brew the user asked about. Center the diagnosis, headline, summary, current values, and proposed next-brew changes on that brew even when newer matching brews exist. Use the rest of the matching history to compare it with earlier and later results, but never silently substitute the newest brew as the subject. Treat the focused brew's recorded tasting as evidence; if it has no useful tasting evidence, do not diagnose extraction from parameters alone.
+- When focusedShot is present, it is the exact completed brew the user asked about. Center the diagnosis, headline, reasoning, current values, and proposed next-brew changes on that brew even when newer matching brews exist. Use the rest of the matching history to compare it with earlier and later results, but never silently substitute the newest brew as the subject. Treat the focused brew's recorded tasting as evidence; if it has no useful tasting evidence, do not diagnose extraction from parameters alone.
 - When currentDraft is present, it is the user's proposed brew before tasting: use its populated parameters as the current baseline, use the matching history as evidence, and never attribute a flavor or outcome to the draft. For draft parameters that are not populated, use the newest matching brew as the baseline when one exists.
 - When focusedShot and currentDraft are both null, use the newest matching brew as the current baseline. Use earlier matching brews to explain how the result developed and whether a previous setting performed better.
 - If a current draft has no matching history, give conservative starting guidance from the bean, brewing method, equipment, and populated draft only. Set diagnosis to insufficient_evidence and confidence to low, clearly say there is no matching taste evidence, and do not pretend the draft has been brewed.
@@ -186,8 +221,8 @@ Decision rules:
 - currentValue must describe the focused shot when focusedShot is present. Otherwise it must describe the current draft when that parameter is populated, then fall back to the newest matching brew, or say that it is not set. recommendedValue must be directly actionable for the next brew.
 - Every keepConstant item must name one parameter, copy its human-readable value from the current baseline, and explain why it should stay fixed. Never return a raw field key as prose.
 - Write followUpQuestions as exactly three short questions the user is likely to ask next about this specific recommendation, phrased in the first person as the user would type them (for example “Could I adjust the grind instead?”). Make them distinct and tied to this recommendation: the reasoning behind a change, an alternative parameter or a trade-off, or how to test the change. Each must be answerable from the supplied evidence and general coffee knowledge, and must not repeat the headline.
-- Inline formatting: when text in summary, historyInsight, or a reason mentions one of the parameters, write it as [[parameterKey]] using the exact key from the allowed parameter list (for example [[grindSetting]]) instead of its name. It is rendered as a labelled chip. Never put these markers inside currentValue or recommendedValue.
-- Lead with the conclusion. When focusedShot is present, make historyInsight explain where that brew sits in the observed progression. Otherwise, make historyInsight describe the observed progression. Never replace it with generic coffee advice.
+- Inline formatting: when text in headline, reasoning, historyInsight, caveat, or a reason mentions one of the parameters, write it as [[parameterKey]] using the exact key from the allowed parameter list (for example [[grindSetting]]) instead of its name. It is rendered as a labelled chip. Never put these markers inside currentValue or recommendedValue.
+- Lead with the action. The user reads the headline and changes first, then the reasoning. Write headline as the instruction for the next brew (for example “Grind [[grindSetting]] one step finer” or “Repeat this brew unchanged”), not as a diagnosis. Keep each change reason to one sentence. Write reasoning as one to four short points of one sentence each, most important first: what the evidence shows and why the change (or no change) follows from it. Do not repeat the headline or the change values in reasoning. When focusedShot is present, make historyInsight explain where that brew sits in the observed progression. Otherwise, make historyInsight describe the observed progression. Never replace it with generic coffee advice.
 
 Exact filtered evidence (JSON):
 ${JSON.stringify(context, null, 2)}`
