@@ -428,7 +428,7 @@ function RecommendationResultView({
 
   return (
     <div className="space-y-6">
-      <section className="space-y-3 rounded-2xl border border-primary/25 bg-primary/8 p-4 sm:p-5">
+      <section className="space-y-3">
         <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-primary uppercase">
           <Target aria-hidden className="size-3.5" />
           Next brew
@@ -480,7 +480,7 @@ function RecommendationResultView({
             </li>
           ))}
         </ul>
-        <div className="rounded-xl border border-border bg-muted/35 p-4">
+        <div className="border-t border-border/70 pt-3">
           <h4 className="flex items-center gap-2 text-sm font-semibold">
             <History aria-hidden className="size-4 text-primary" />
             {isFocusedShot
