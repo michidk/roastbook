@@ -1,8 +1,8 @@
+import { Button } from '@roastbook/ui/button'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { DeleteConfirmation } from '@/components/delete-confirmation'
 import { InputField } from '@/components/form/form-field'
-import { Button } from '@/components/ui/button'
 import {
   createBeanTag,
   deleteBeanTag,

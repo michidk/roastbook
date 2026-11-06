@@ -14,10 +14,12 @@ import { Bean, ChevronDown, Plus } from 'lucide-react'
 import { BeanCard } from '@/components/beans/bean-card'
 import { CollectionToolbar } from '@/components/collection-toolbar'
 import { EmptyState } from '@/components/empty-state'
+import { SelectField } from '@/components/form/form-field'
 import { Page, PageHeader } from '@/components/page-layout'
 import { PaginationControls } from '@/components/pagination-controls'
 import { RouteError } from '@/components/route-error'
 import { ListPending } from '@/components/route-pending'
+import { getBeanTags } from '@/journal/bean-tags'
 import { getBeanCollection } from '@/journal/beans'
 import {
   searchInteger,
@@ -32,6 +34,7 @@ const parseBeanSearch = (input: unknown) => {
     activePage: searchInteger(search.activePage, 1, 1) ?? 1,
     archivedPage: searchInteger(search.archivedPage, 1, 1) ?? 1,
     query: searchString(search.query),
+    tagId: searchInteger(search.tagId, undefined, 1),
   }
 }
 
@@ -46,8 +49,15 @@ export const Route = createFileRoute('/beans/')({
     activePage: search.activePage,
     archivedPage: search.archivedPage,
     query: search.query,
+    tagId: search.tagId,
   }),
-  loader: ({ deps }) => getBeanCollection({ data: deps }),
+  loader: async ({ deps }) => {
+    const [collection, tags] = await Promise.all([
+      getBeanCollection({ data: deps }),
+      getBeanTags(),
+    ])
+    return { ...collection, tags }
+  },
   staleTime: 15_000,
   component: BeansPage,
   pendingComponent: ListPending,
@@ -75,7 +85,7 @@ function BeansPage() {
     <Page>
       <PageHeader
         title="Beans"
-        description="Keep track of the coffee beans you brew."
+        description="Your coffee database, with bags when you want to track them."
         help="Beans represent the coffees in your collection. Save their roaster, origin, process, roast details, and tasting notes, then select them when you log a brew."
       />
 
@@ -107,7 +117,26 @@ function BeansPage() {
         }
       />
 
-      {collection.totalItems === 0 && !search.query ? (
+      <SelectField
+        id="bean-tag-filter"
+        label="Filter by bean tag"
+        value={search.tagId ? String(search.tagId) : ''}
+        onChange={(value) =>
+          updateSearch({
+            tagId: value ? Number(value) : undefined,
+            activePage: 1,
+            archivedPage: 1,
+          })
+        }
+        options={[
+          { value: '', label: 'All tags' },
+          ...collection.tags.map((tag) => ({
+            value: String(tag.id),
+            label: tag.name,
+          })),
+        ]}
+      />
+      {collection.totalItems === 0 && !search.query && !search.tagId ? (
         <EmptyState
           icon={Bean}
           title="No beans added yet"
@@ -150,7 +179,11 @@ function BeansPage() {
             )}
 
           {collection.archived.totalItems > 0 && (
-            <Collapsible className="space-y-4">
+            <Collapsible
+              key={`${search.query}-${search.tagId ?? ''}`}
+              defaultOpen={Boolean(search.query || search.tagId)}
+              className="space-y-4"
+            >
               <CollapsibleTrigger className="group -mx-2 flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 <ChevronDown className="h-4 w-4 transition-transform group-data-[open]:rotate-180" />
                 Archive ({collection.archived.totalItems})
@@ -173,9 +206,9 @@ function BeansPage() {
               </CollapsibleContent>
             </Collapsible>
           )}
-          {collection.totalItems === 0 && search.query && (
+          {collection.totalItems === 0 && (search.query || search.tagId) && (
             <p className="py-4 text-sm text-muted-foreground">
-              No beans match “{search.query}”.
+              No coffees match your search and tags.
             </p>
           )}
         </>

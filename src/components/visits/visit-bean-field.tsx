@@ -1,3 +1,4 @@
+import { Button } from '@roastbook/ui/button'
 import { BeanFields } from '@/components/beans/bean-fields'
 import {
   type BeanFormValues,
@@ -11,7 +12,6 @@ import {
   type RoasterOption,
   RoasterPicker,
 } from '@/components/roasters/roaster-picker'
-import { Button } from '@/components/ui/button'
 import type { useImageUpload } from '@/hooks/use-image-upload'
 import type { getBeans } from '@/journal/beans'
 
