@@ -6,6 +6,44 @@ import {
 } from '@/lib/shot-recommendation'
 import { demoAiResponsesSchema } from '../packages/journal-demo/src/ai-responses'
 
+/** Preset values and reasons for the settings the sample brews record. */
+const KEEP_CONSTANT: Partial<
+  Record<
+    (typeof SHOT_RECOMMENDATION_PARAMETER_KEYS)[number],
+    { readonly unit: string; readonly reason: string }
+  >
+> = {
+  doseGrams: {
+    unit: 'g',
+    reason: 'A fixed [[doseGrams]] keeps strength comparable between brews.',
+  },
+  brewWaterGrams: {
+    unit: 'g',
+    reason:
+      'The same [[brewWaterGrams]] keeps the ratio and strength comparable.',
+  },
+  yieldGrams: {
+    unit: 'g',
+    reason:
+      'The same [[yieldGrams]] keeps the ratio comparable so taste differences reflect extraction.',
+  },
+  grindSetting: {
+    unit: '',
+    reason:
+      'Changing [[grindSetting]] alongside anything else would hide which change mattered.',
+  },
+  targetTimeSeconds: {
+    unit: 's',
+    reason:
+      'The same [[targetTimeSeconds]] shows whether the next brew flows faster or slower.',
+  },
+  brewTemperatureCelsius: {
+    unit: '°C',
+    reason:
+      'Temperature shifts extraction on its own, so hold [[brewTemperatureCelsius]] while testing one variable.',
+  },
+}
+
 /** Materialize canned answers while the sample database is available. No provider is used. */
 export async function generateDemoAi(database: PgliteDatabase<typeof schema>) {
   const beans = await database.query.beans.findMany({
@@ -144,13 +182,14 @@ export async function generateDemoAi(database: PgliteDatabase<typeof schema>) {
         )
           .flatMap((parameter) => {
             const value = brew[parameter]
-            return value === null
+            const preset = KEEP_CONSTANT[parameter]
+            return value === null || !preset
               ? []
               : [
                   {
                     parameter,
-                    currentValue: String(value),
-                    reason: 'Hold it so the next result stays comparable.',
+                    currentValue: `${Number(value)} ${preset.unit}`.trim(),
+                    reason: preset.reason,
                   },
                 ]
           })
