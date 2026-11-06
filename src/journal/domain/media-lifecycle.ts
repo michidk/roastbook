@@ -183,15 +183,20 @@ export async function deleteEntityWithMedia(
       conditions.push(eq(shots.updatedAt, options.expectedUpdatedAt))
   }
   const where = owned(table, ...conditions)
-  const path = images.storagePath
-  const base = sql`substr(${path}, 1, length(${path}) - case when ${path} like '%.webp' or ${path} like '%.jpeg' then 5 else 4 end)`
   const selected = owned(images, eq(foreignKey, entityId))
-  // Select and enqueue paths inside the write batch, so an upload cannot enter
-  // between the path snapshot and the cascading parent deletion.
+  const selections = [images.storagePath, images.originalStoragePath].flatMap(
+    (path) => {
+      const base = sql`substr(${path}, 1, length(${path}) - case when ${path} like '%.webp' or ${path} like '%.jpeg' then 5 else 4 end)`
+      const condition = sql`${selected} and ${path} is not null`
+      return [
+        sql`select ${images.ownerId}, ${path} from ${images} where ${condition}`,
+        sql`select ${images.ownerId}, ${base} || '.thumb.webp' from ${images} where ${condition}`,
+        sql`select ${images.ownerId}, ${base} || '.small.webp' from ${images} where ${condition}`,
+      ]
+    },
+  )
   const cleanup = sql`insert into ${mediaCleanupJobs} (owner_id, storage_path)
-    select ${images.ownerId}, ${path} from ${images} where ${selected}
-    union all select ${images.ownerId}, ${base} || '.thumb.webp' from ${images} where ${selected}
-    union all select ${images.ownerId}, ${base} || '.small.webp' from ${images} where ${selected}
+    ${sql.join(selections, sql` union all `)}
     on conflict(owner_id, storage_path) do nothing`
   await runJournalMutations([
     {

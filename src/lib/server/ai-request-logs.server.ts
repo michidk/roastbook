@@ -30,6 +30,7 @@ export type AiRequestLogSummary = {
   cachedPromptTokens: number
   completionTokens: number
   totalTokens: number
+  imageAccounting?: JsonValue | null
   durationMs: number | null
   completedAt: Date | null
   createdAt: Date
@@ -245,6 +246,7 @@ export async function loadAiRequestLogs({
       cachedPromptTokens: aiRequestLogs.cachedPromptTokens,
       completionTokens: aiRequestLogs.completionTokens,
       totalTokens: aiRequestLogs.totalTokens,
+      imageAccounting: aiRequestLogs.imageAccounting,
       durationMs: aiRequestLogs.durationMs,
       completedAt: aiRequestLogs.completedAt,
       createdAt: aiRequestLogs.createdAt,

@@ -19,6 +19,7 @@ import { ChevronDown, Loader2, RefreshCw, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { DeleteConfirmation } from '@/components/delete-confirmation'
+import { ImageEditCost } from '@/components/image-edit-cost'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import {
@@ -170,6 +171,9 @@ function AiRequestEntry({ entry }: { entry: AiRequestLogSummary }) {
               </div>
             </dl>
 
+            {entry.imageAccounting && (
+              <ImageEditCost value={entry.imageAccounting} />
+            )}
             {entry.errorMessage ? (
               <div
                 role="alert"

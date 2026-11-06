@@ -110,3 +110,11 @@ export const updateBackgroundGrainEnabled = journalWrite(
   .handler(({ data: backgroundGrainEnabled }) =>
     saveSettings({ backgroundGrainEnabled }, 'Could not save background grain'),
   )
+
+export const updateBeautifyImages = journalWrite(
+  'settings/updateBeautifyImages',
+)
+  .validator(z.boolean())
+  .handler(({ data: beautifyImages }) =>
+    saveSettings({ beautifyImages }, 'Could not save the image setting'),
+  )

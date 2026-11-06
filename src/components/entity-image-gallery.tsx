@@ -24,6 +24,7 @@ import {
   X,
 } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
+import { BeautifyImageToggle } from '@/components/beautify-image-toggle'
 import { ImageWithFallback } from '@/components/image-with-fallback'
 import { PictureUploader } from '@/components/picture-uploader'
 import { useImageUpload } from '@/hooks/use-image-upload'
@@ -32,6 +33,11 @@ import {
   setImageAsThumbnail,
   uploadEntityImage,
 } from '@/journal/images'
+import { DEMO_MODE } from '@/lib/build-mode'
+import {
+  beautifyEntityImage,
+  beautifyUploadedImage,
+} from '@/lib/client/beautify-image'
 import { createEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
 import { getErrorMessage } from '@/lib/error-message'
 import type { ImageFile } from '@/lib/image-file'
@@ -41,6 +47,7 @@ import { cn } from '@/lib/utils'
 
 export interface EntityImage {
   readonly id: number
+  readonly originalStoragePath?: string | null
   readonly storagePath: string
   readonly isThumbnail?: boolean
   readonly beanPurchaseId?: number
@@ -73,6 +80,7 @@ export function EntityImageGallery({
     null,
   )
   const [isDeletingImage, setIsDeletingImage] = useState<number | null>(null)
+  const [beautifyingImage, setBeautifyingImage] = useState<number | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadFailures, setUploadFailures] = useState<
     readonly EntityImageUploadFailure[]
@@ -113,13 +121,18 @@ export function EntityImageGallery({
     try {
       for (const picture of pictures) {
         try {
-          await uploadEntityImage({
+          const saved = await uploadEntityImage({
             data: createEntityImageUploadFormData(
               entityType,
               entityId,
               picture.file,
               picture,
             ),
+          })
+          await beautifyUploadedImage({
+            entityType,
+            entityId,
+            imageId: saved.id,
           })
           uploaded.push(picture)
         } catch (error) {
@@ -157,11 +170,37 @@ export function EntityImageGallery({
             imageId: image.id,
           },
         })
+        await beautifyUploadedImage({
+          entityType,
+          entityId: entityIdForImage(image),
+          imageId: image.id,
+        })
       } catch (error) {
         setGalleryError(getErrorMessage(error, 'Failed to set thumbnail'))
       }
     } finally {
       setIsSettingThumbnail(null)
+    }
+  }
+
+  const handleBeautify = async (image: EntityImage) => {
+    setGalleryError(null)
+    setBeautifyingImage(image.id)
+    try {
+      await beautifyEntityImage({
+        entityType,
+        entityId: entityIdForImage(image),
+        imageId: image.id,
+      })
+    } catch (error) {
+      setGalleryError(
+        getErrorMessage(
+          error,
+          'Could not beautify this picture. Your original is safe.',
+        ),
+      )
+    } finally {
+      setBeautifyingImage(null)
     }
   }
 
@@ -313,9 +352,47 @@ export function EntityImageGallery({
                     </AlertDialog>
                   </div>
                 )}
+                {editable && !DEMO_MODE && !image.originalStoragePath && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="mt-2 w-full min-h-11"
+                    disabled={
+                      beautifyingImage !== null ||
+                      isUploading ||
+                      isDeletingImage !== null
+                    }
+                    aria-busy={beautifyingImage === image.id}
+                    onClick={() => void handleBeautify(image)}
+                  >
+                    {beautifyingImage === image.id ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="size-4" />
+                    )}
+                    {beautifyingImage === image.id
+                      ? 'Beautifying…'
+                      : 'Beautify'}
+                  </Button>
+                )}
+                {image.originalStoragePath && (
+                  <a
+                    href={imageUrl(image.originalStoragePath)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 flex min-h-11 items-center justify-center rounded-md text-sm font-semibold text-link underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    View original
+                  </a>
+                )}
               </div>
             ))}
           </div>
+        )}
+        {editable && (
+          <BeautifyImageToggle
+            disabled={isUploading || beautifyingImage !== null}
+          />
         )}
         {editable && (
           <PictureUploader
@@ -358,8 +435,12 @@ export function EntityImageGallery({
                   ? 'Gear'
                   : 'Brew'
             }
-            isBusy={isUploading}
-            statusText={isUploading ? 'Uploading pictures' : undefined}
+            isBusy={isUploading || beautifyingImage !== null}
+            statusText={
+              isUploading
+                ? 'Saving pictures and beautifying the primary picture'
+                : undefined
+            }
             imageErrors={uploadFailures.map(({ image, error }) => ({
               preview: image.preview,
               filename: image.file.name,

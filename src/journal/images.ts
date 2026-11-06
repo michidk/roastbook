@@ -1,3 +1,5 @@
+import { z } from 'zod'
+import { replaceWithBeautifiedImage } from '@/journal/domain/beautified-image'
 import {
   entityImageSelection,
   setEntityImageThumbnail,
@@ -10,6 +12,7 @@ import {
 } from '@/journal/domain/media-lifecycle'
 import { journalRead, journalWrite } from '@/journal/function'
 import { db, runJournalMutations } from '@/journal/platform/database'
+import { decodeBase64 } from '@/lib/base64'
 import { parseEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
 import {
   entityImageIdSchema,
@@ -45,7 +48,10 @@ export const deleteEntityImage = journalWrite('images/deleteEntityImage')
   .handler(async ({ data }) => {
     const { table, where } = entityImageSelection(data)
     const [image] = await db
-      .select({ storagePath: table.storagePath })
+      .select({
+        storagePath: table.storagePath,
+        originalStoragePath: table.originalStoragePath,
+      })
       .from(table)
       .where(where)
       .limit(1)
@@ -59,7 +65,10 @@ export const deleteEntityImage = journalWrite('images/deleteEntityImage')
         expectedChanges: 1,
         conflictMessage: 'Image changed. Reload and try again.',
       },
-      ...queueMediaCleanup([image.storagePath]),
+      ...queueMediaCleanup([
+        image.storagePath,
+        ...(image.originalStoragePath ? [image.originalStoragePath] : []),
+      ]),
     ])
     await drainMediaCleanupQueue()
   })
@@ -67,3 +76,21 @@ export const deleteEntityImage = journalWrite('images/deleteEntityImage')
 export const getImageUploadPolicy = journalRead(
   'images/getImageUploadPolicy',
 ).handler(() => imageStoragePolicy())
+
+export const saveBeautifiedImage = journalWrite('images/saveBeautifiedImage')
+  .validator(
+    entityImageIdSchema.extend({
+      expectedStoragePath: z.string().min(1).max(500),
+      imageBase64: z
+        .string()
+        .min(1)
+        .max(16 * 1024 * 1024),
+      mimeType: z.enum(['image/png', 'image/jpeg', 'image/webp']),
+    }),
+  )
+  .handler(({ data: { imageBase64, ...data } }) =>
+    replaceWithBeautifiedImage({
+      ...data,
+      binaryData: decodeBase64(imageBase64),
+    }),
+  )

@@ -62,6 +62,7 @@ export type AppSettings = {
     email: string
     role: 'user' | 'admin'
   } | null
+  readonly beautifyImages: boolean
   readonly demoMode: boolean
   readonly lightTheme: LightTheme
   readonly darkTheme: DarkTheme

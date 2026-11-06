@@ -48,6 +48,7 @@ const meta = {
           id: 1,
           beanId: 1,
           beanPurchaseId: 1,
+          originalStoragePath: null,
           storagePath: 'storybook/kraft-orange.webp',
           isThumbnail: true,
           originalFilename: 'kraft-orange.webp',
