@@ -55,6 +55,7 @@ export interface CreatableComboboxProps<T> {
   renderSelectedLeading?: (item: T) => ReactNode
   suggestions?: readonly PickerSuggestion[]
   onCreateRequest?: (query: string) => void
+  emptyCreateLabel?: string
   createLabel?: (query: string) => string
   noMatchHint?: (query: string) => string
   /**
@@ -87,6 +88,7 @@ export function CreatableCombobox<T>({
   renderSelectedLeading,
   suggestions = [],
   onCreateRequest,
+  emptyCreateLabel = 'Create new entry',
   createLabel = (query) => `Create “${query}”`,
   noMatchHint = (query) => `Nothing here matches “${query}” yet`,
   placeholder = 'Select an option',
@@ -137,15 +139,17 @@ export function CreatableCombobox<T>({
   )
 
   const entries: Entry[] =
-    onCreateRequest && normalizedQuery.length > 0 && !hasExactMatch
+    onCreateRequest && !hasExactMatch
       ? [
           ...itemEntries,
           {
             kind: 'create',
             key: CREATE_ENTRY_KEY,
-            label: createLabel(trimmedQuery),
+            label: trimmedQuery ? createLabel(trimmedQuery) : emptyCreateLabel,
             hint:
-              visibleItemCount === 0 ? noMatchHint(trimmedQuery) : undefined,
+              trimmedQuery && visibleItemCount === 0
+                ? noMatchHint(trimmedQuery)
+                : undefined,
             query: trimmedQuery,
           },
         ]
@@ -160,7 +164,8 @@ export function CreatableCombobox<T>({
     itemEntries.find((entry) => entry.key === value) ?? fallbackEntry
   const singleItemKey =
     itemEntries.length === 1 ? itemEntries[0]?.key : undefined
-  const showEmptyState = itemEntries.length === 0 && Boolean(emptyStateMessage)
+  const showEmptyState =
+    !onCreateRequest && itemEntries.length === 0 && Boolean(emptyStateMessage)
   const labelContent = (
     <>
       {label}
@@ -261,15 +266,20 @@ export function CreatableCombobox<T>({
                     <ComboboxItem
                       key={entry.key}
                       value={entry}
-                      className="border-t border-border text-link"
+                      className="rounded-md bg-primary/5 px-3 py-3 text-link data-highlighted:bg-primary/15 data-highlighted:text-link [@media(hover:hover)_and_(pointer:fine)]:py-2.5 [&>span:first-child]:min-w-0 [&>span:first-child]:shrink"
                     >
-                      <Plus className="mt-0.5 self-start" />
-                      <span className="flex min-w-0 flex-col gap-0.5">
-                        <span className="truncate font-medium">
+                      <span
+                        className="flex size-8 shrink-0 items-center justify-center self-center rounded-full bg-primary/10"
+                        aria-hidden="true"
+                      >
+                        <Plus className="size-4" />
+                      </span>
+                      <span className="flex min-w-0 flex-col justify-center gap-0.5">
+                        <span className="whitespace-normal break-words font-medium">
                           {entry.label}
                         </span>
                         {entry.hint ? (
-                          <span className="truncate text-xs font-normal text-muted-foreground">
+                          <span className="whitespace-normal break-words text-xs font-normal text-muted-foreground">
                             {entry.hint}
                           </span>
                         ) : null}

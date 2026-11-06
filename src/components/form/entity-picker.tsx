@@ -59,6 +59,7 @@ export function EntityPicker<T>({
   return (
     <>
       <CreatableCombobox
+        emptyCreateLabel={dialogTitle}
         {...comboboxProps}
         getKey={getKey}
         getLabel={getLabel}

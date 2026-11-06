@@ -239,8 +239,11 @@ forms), `wide` (`max-w-5xl`, rich records, settings), `content` (`max-w-3xl`),
 - Persistent label, native or shadcn control, optional helper or error; default,
   focus, disabled, invalid and loading states. Markup is deterministic across
   server and client renders; never hide the caret.
-- A picker without options shows a noninteractive setup hint; with setup
-  defaults enabled, a sole option may be preselected.
+- A picker that supports inline creation always offers its add action before
+  typing, including when there are no options. A typed name prefills creation;
+  an exact match hides the add action. Pickers without inline creation show a
+  noninteractive setup hint when empty. With setup defaults enabled, a sole
+  option may be preselected.
 - Suggestions: a persistent Suggestions label with wrapping compact buttons
   above the picker, primary tokens when selected, updating the same picker.
 - Number inputs: localized text between decrement and increment buttons (no

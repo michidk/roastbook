@@ -44,3 +44,8 @@ export const Default: Story = {
 export const Enabled: Story = { args: { checked: true } }
 export const Disabled: Story = { args: { disabled: true } }
 export const Small: Story = { args: { size: 'sm' } }
+
+export const SmallEnabled: Story = { args: { size: 'sm', checked: true } }
+export const DisabledEnabled: Story = {
+  args: { disabled: true, checked: true },
+}
