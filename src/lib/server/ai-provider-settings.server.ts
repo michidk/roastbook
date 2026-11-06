@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import { getAiControlDb } from '@/db/connection.server'
 import { requireIdentity } from '@/db/journal-context.server'
 import { aiProviderCredentials } from '@/db/schema'
+import { trackEvent } from '@/extension-points/analytics.server'
 import {
   type AiProviderSettingsInput,
   DEFAULT_AI_PROVIDER,
@@ -87,6 +88,7 @@ export async function saveAiProviderSettings(
         updatedAt: new Date(),
       },
     })
+  if (input.apiKey) trackEvent('ai_key_saved')
   return loadAiProviderSettings()
 }
 export async function removeAiProviderSettings() {
