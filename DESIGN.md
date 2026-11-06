@@ -321,9 +321,10 @@ forms), `wide` (`max-w-5xl`, rich records, settings), `content` (`max-w-3xl`),
   confirmed Reset demo. Integration settings explain why they are unavailable.
   Show a loading message during initialization; storage errors keep data and
   offer retry and confirmed reset (with the demo avatar menu).
-- Product: writes save to the device first. The pending banner distinguishes
-  local persistence from server confirmation and offers recovery for conflicts,
-  failed writes and expired sessions. Never call a demo operation queued for
-  sync.
+- Product: online, pages read and write on the account; offline, and until
+  changes made offline have synced, the device copy answers. The pending
+  banner distinguishes local persistence from server confirmation and offers
+  recovery for conflicts, failed writes and expired sessions. Never call a demo
+  operation queued for sync.
 - A missing initial journal is an error, not an empty collection. Quota and
   unsupported-format errors keep saved work and offer retry without reseeding.
