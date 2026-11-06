@@ -10,7 +10,7 @@ import {
   localDatabaseName,
   openLocalJournal,
 } from './client'
-import { hasDeviceCopy } from './device-copy'
+import { keepsDeviceCopy } from './device-copy'
 import { migrateLegacyOffline } from './legacy-offline'
 import {
   downloadJournal,
@@ -84,7 +84,7 @@ export async function openEditionJournal() {
 
 /** Starts a sync now, for app start, reconnecting and manual retries. */
 export async function synchronizeEditionJournal() {
-  if (getOfflineOwner() === undefined || !hasDeviceCopy()) return
+  if (getOfflineOwner() === undefined || !keepsDeviceCopy()) return
   const journal = await openEditionJournal()
   await synchronizeJournal(journal)
   account = await loadAccount(journal)

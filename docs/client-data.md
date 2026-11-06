@@ -6,13 +6,13 @@ runs on the server on PostgreSQL, and offline on a device copy on PGlite.
 
 - While the server can be reached, browsers call `callJournal` in
   `src/lib/server/journal-sync.ts`, so pages always show the account's journal.
-- A browser holding a copy (`hasDeviceCopy` in
-  `src/journal/local/device-copy.ts`) runs functions on it while offline, when
-  a read cannot reach the server, and while the copy has unsynced changes
-  (`hasUnsyncedChanges`), so new writes queue behind them. A write that fails
-  in flight is not repeated locally; the server may have applied it.
-- The installed app creates the copy (`keepsDeviceCopy`); every tab of that
-  browser syncs it in the background and removes it on sign-out.
+- A browser keeping a copy runs functions on it while offline, when a read
+  cannot reach the server, and while the copy has unsynced changes, so new
+  writes queue behind them. A write that fails in flight is not repeated
+  locally; the server may have applied it.
+- `src/journal/local/device-copy.ts` decides who keeps a copy: the installed
+  app, and browser tabs of a profile where it ran or the former offline setting
+  was on. They sync it in the background and remove it on sign-out.
 - The demo always runs on its copy.
 
 See [ADR 0001](adr/0001-sql-journal.md) for the decision.

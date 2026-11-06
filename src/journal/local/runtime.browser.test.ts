@@ -79,7 +79,7 @@ mock.module('@/journal/local/edition', () => ({
 let deviceCopy = true
 let unsynced = true
 mock.module('@/journal/local/device-copy', () => ({
-  hasDeviceCopy: () => deviceCopy,
+  keepsDeviceCopy: () => deviceCopy,
   hasUnsyncedChanges: () => unsynced,
   setUnsyncedChanges: () => {},
 }))

@@ -4,7 +4,10 @@
 import { encodeInput } from '@/journal/codec'
 import type { JournalFunctionInfo } from '@/journal/function'
 import { notifyLocalChange } from '@/journal/local/changes'
-import { hasDeviceCopy, hasUnsyncedChanges } from '@/journal/local/device-copy'
+import {
+  hasUnsyncedChanges,
+  keepsDeviceCopy,
+} from '@/journal/local/device-copy'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { isConnectionOnline } from '@/lib/connection-status'
 
@@ -13,7 +16,7 @@ export async function runJournalFunction(
   input: unknown,
 ) {
   if (DEMO_MODE) return runOnDevice(info, input)
-  const copy = hasDeviceCopy()
+  const copy = keepsDeviceCopy()
   // The account lacks changes still waiting in the copy, so the copy answers
   // (and records new ones behind them) until they have synced.
   if (copy && (!isConnectionOnline() || hasUnsyncedChanges()))

@@ -369,13 +369,12 @@ function RootComponent() {
   }, [login, router])
   useEffect(() => {
     if (login || DEMO_MODE) return
-    // A browser holding a device copy syncs it, even in tabs that read from
-    // the server, so the installed app's pending changes still go out.
+    // Only a browser with a device copy syncs; others use the server directly.
     const sync = () =>
       void import('@/journal/local/device-copy')
-        .then(async ({ hasDeviceCopyFor }) => {
+        .then(async ({ keepsDeviceCopyFor }) => {
           const owner = getOfflineOwner()
-          if (owner === undefined || !(await hasDeviceCopyFor(owner))) return
+          if (owner === undefined || !(await keepsDeviceCopyFor(owner))) return
           const { synchronizeEditionJournal } = await import(
             '@/journal/local/edition'
           )
