@@ -1,7 +1,7 @@
 export async function signOutOfAccount() {
   // Only a device copy can hold changes that have not reached the account.
-  const { keepsDeviceCopy } = await import('@/journal/local/device-copy')
-  const journal = keepsDeviceCopy()
+  const { hasDeviceCopy } = await import('@/journal/local/device-copy')
+  const journal = hasDeviceCopy()
     ? await import('@/journal/local/edition')
         .then(({ openEditionJournal }) => openEditionJournal())
         .catch(() => undefined)

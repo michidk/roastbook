@@ -10,7 +10,7 @@ import {
   localDatabaseName,
   openLocalJournal,
 } from './client'
-import { keepsDeviceCopy } from './device-copy'
+import { hasDeviceCopy, keepsDeviceCopy } from './device-copy'
 import { migrateLegacyOffline } from './legacy-offline'
 import {
   downloadJournal,
@@ -70,6 +70,8 @@ async function prepare(journal: LocalJournal) {
  * refresh them. A slow sync marks the copy as updating.
  */
 function catchUp(journal: LocalJournal) {
+  // Tabs read from the server; their background sync needs no notice.
+  if (!keepsDeviceCopy()) return
   if (typeof navigator !== 'undefined' && !navigator.onLine) return
   void waitForSync(
     synchronizeJournal(journal).catch(() => undefined),
@@ -101,7 +103,7 @@ export async function openEditionJournal() {
 
 /** Starts a sync now, for app start, reconnecting and manual retries. */
 export async function synchronizeEditionJournal() {
-  if (getOfflineOwner() === undefined || !keepsDeviceCopy()) return
+  if (getOfflineOwner() === undefined || !hasDeviceCopy()) return
   const journal = await openEditionJournal()
   await synchronizeJournal(journal)
   account = await loadAccount(journal)

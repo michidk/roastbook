@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from 'bun:test'
-import { keepsDeviceCopy } from './device-copy'
+import { hasDeviceCopy, keepsDeviceCopy } from './device-copy'
 
 const originals = new Map(
   ['window', 'localStorage'].map((key) => [
@@ -49,23 +49,26 @@ test('a fresh browser tab uses the server without creating a copy', () => {
   expect(stored.size).toBe(0)
 })
 
-test('opening the installed app enables a copy that browser tabs retain', () => {
+test('only the installed app reads the copy; browser tabs keep syncing it', () => {
   standalone = true
   expect(keepsDeviceCopy()).toBe(true)
   standalone = false
-  expect(keepsDeviceCopy()).toBe(true)
+  expect(keepsDeviceCopy()).toBe(false)
+  expect(hasDeviceCopy()).toBe(true)
 })
 
-test('the iOS installed app also enables a copy', () => {
+test('the iOS installed app also reads the copy', () => {
   Object.defineProperty(navigator, 'standalone', { value: true })
   expect(keepsDeviceCopy()).toBe(true)
   Object.defineProperty(navigator, 'standalone', { value: false })
-  expect(keepsDeviceCopy()).toBe(true)
+  expect(keepsDeviceCopy()).toBe(false)
+  expect(hasDeviceCopy()).toBe(true)
 })
 
-test('browser tabs preserve copies enabled with the former setting', () => {
+test('browser tabs use the server but sync copies from the former setting', () => {
   stored.set('roastbook-device-copy', 'on')
-  expect(keepsDeviceCopy()).toBe(true)
+  expect(keepsDeviceCopy()).toBe(false)
+  expect(hasDeviceCopy()).toBe(true)
   expect(stored.get('roastbook-device-copy')).toBe('on')
 })
 
