@@ -429,7 +429,7 @@ function RecommendationResultView({
   return (
     <div className="space-y-6">
       <section className="space-y-3">
-        <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-primary uppercase">
+        <p className="flex items-center gap-1.5 text-sm font-semibold text-primary">
           <Target aria-hidden className="size-3.5" />
           Next brew
         </p>
@@ -461,7 +461,7 @@ function RecommendationResultView({
             <Badge variant="secondary">
               {DIAGNOSIS_LABELS[result.recommendation.diagnosis]}
             </Badge>
-            <Badge variant="outline">
+            <Badge variant="outline" className="capitalize">
               {result.recommendation.confidence} confidence
             </Badge>
           </div>
