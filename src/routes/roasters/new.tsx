@@ -4,8 +4,10 @@ import { ArrowLeft } from 'lucide-react'
 import { FormPageHeader } from '@/components/form/form-shell'
 import { Page } from '@/components/page-layout'
 import { RoasterForm } from '@/components/roasters/roaster-form'
+import { FormPending } from '@/components/route-pending'
 
 export const Route = createFileRoute('/roasters/new')({
+  pendingComponent: FormPending,
   component: NewRoasterPage,
 })
 

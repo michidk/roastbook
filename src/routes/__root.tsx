@@ -411,6 +411,7 @@ function RootComponent() {
 
   return (
     <TooltipProvider>
+      <NavigationProgress />
       <div className="flex h-[100dvh] flex-col overflow-hidden">
         <AppNavbar demoMode={settings.demoMode} account={settings.account} />
         {settings.demoMode ? null : <JournalSyncStatus />}
@@ -434,5 +435,18 @@ function RootComponent() {
       <Toaster />
       <AppExtensions userId={settings.account?.id ?? null} />
     </TooltipProvider>
+  )
+}
+
+/** A thin bar while the next page loads, before its skeleton would show. */
+function NavigationProgress() {
+  const loading = useRouterState({ select: (state) => state.isLoading })
+  if (!loading) return null
+  return (
+    <div
+      role="progressbar"
+      aria-label="Loading page"
+      className="roastbook-navigation-progress fixed inset-x-0 top-0 z-50 h-0.5 bg-primary"
+    />
   )
 }

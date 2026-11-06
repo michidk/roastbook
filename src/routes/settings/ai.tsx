@@ -1,11 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { DemoIntegrationNotice } from '@/components/edition-ui'
+import { PanelPending } from '@/components/route-pending'
 import { AiProviderSettings } from '@/components/settings/ai-provider-settings'
 import { AiSettingsPanels } from '@/extension-points/ai-settings-panels'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { getAiProviderSettings } from '@/lib/server/ai-provider-settings'
 
 export const Route = createFileRoute('/settings/ai')({
+  pendingComponent: PanelPending,
   loader: async () => (DEMO_MODE ? null : getAiProviderSettings()),
   component: AiSettingsSection,
 })

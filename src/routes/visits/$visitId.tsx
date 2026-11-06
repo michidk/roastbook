@@ -12,7 +12,7 @@ import { DeleteConfirmation } from '@/components/delete-confirmation'
 import { EntityNotFound } from '@/components/entity-not-found'
 import { Page, PageHeader } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
-import { DetailPending } from '@/components/route-pending'
+import { WideDetailPending } from '@/components/route-pending'
 import { CafeVisitList } from '@/components/visits/cafe-visit-list'
 import { VisitEditForm } from '@/components/visits/visit-edit-form'
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter'
@@ -55,7 +55,7 @@ export const Route = createFileRoute('/visits/$visitId')({
     }
   },
   component: VisitDetailPage,
-  pendingComponent: DetailPending,
+  pendingComponent: WideDetailPending,
   errorComponent: ({ error }) => (
     <RouteError error={error} backTo="/visits" backLabel="Back to visits" />
   ),

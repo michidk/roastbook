@@ -7,7 +7,7 @@ import {
 import { Users } from 'lucide-react'
 import { Page, PageHeader } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
-import { RoutePending } from '@/components/route-pending'
+import { SectionLayoutPending } from '@/components/route-pending'
 import {
   SectionLayout,
   type SectionNavigationItem,
@@ -29,7 +29,7 @@ export const Route = createFileRoute('/admin')({
     if (account.identity?.role !== 'admin') throw redirect({ to: '/settings' })
   },
   component: AdminLayout,
-  pendingComponent: RoutePending,
+  pendingComponent: SectionLayoutPending,
   errorComponent: ({ error }) => (
     <RouteError error={error} backTo="/settings" backLabel="Go to settings" />
   ),

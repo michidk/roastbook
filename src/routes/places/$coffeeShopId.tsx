@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { CoffeeShopDetailPage } from '@/components/coffee-shops/coffee-shop-detail-page'
 import { RouteError } from '@/components/route-error'
-import { DetailPending } from '@/components/route-pending'
+import { WideDetailPending } from '@/components/route-pending'
 import { getCoffeeShop } from '@/journal/coffee-shops'
 import { parseEditModeSearch } from '@/lib/edit-mode'
 import { parseIdParam } from '@/lib/route-params'
@@ -12,7 +12,7 @@ export const Route = createFileRoute('/places/$coffeeShopId')({
   loader: ({ params }) =>
     getCoffeeShop({ data: parseIdParam(params.coffeeShopId) }),
   component: CoffeeShopDetailRoute,
-  pendingComponent: DetailPending,
+  pendingComponent: WideDetailPending,
   errorComponent: ({ error }) => (
     <RouteError error={error} backTo="/places" backLabel="Back to places" />
   ),

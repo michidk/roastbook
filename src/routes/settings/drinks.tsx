@@ -7,6 +7,7 @@ import { Coffee, Milk, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { DeleteConfirmation } from '@/components/delete-confirmation'
+import { PanelPending } from '@/components/route-pending'
 import { PanelSection } from '@/components/section-layout'
 import {
   archiveDrinkOptionValue,
@@ -17,6 +18,7 @@ import {
 } from '@/journal/drink-options'
 
 export const Route = createFileRoute('/settings/drinks')({
+  pendingComponent: PanelPending,
   loader: () => getDrinkConfiguration(),
   component: DrinkSettings,
 })

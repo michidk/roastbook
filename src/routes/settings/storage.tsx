@@ -1,10 +1,12 @@
 import { Button } from '@roastbook/ui/button'
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
+import { PanelPending } from '@/components/route-pending'
 import { StorageSettings } from '@/components/settings/storage-settings'
 import { getInternalStats } from '@/journal/internal-stats'
 
 export const Route = createFileRoute('/settings/storage')({
+  pendingComponent: PanelPending,
   loader: () => getInternalStats(),
   component: StorageSettingsSection,
 })

@@ -11,7 +11,7 @@ import { EmptyState } from '@/components/empty-state'
 import { MetricCard } from '@/components/metric-card'
 import { Page, PageHeader } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
-import { RoutePending } from '@/components/route-pending'
+import { StatsPending } from '@/components/route-pending'
 import { StatsActivityCalendar } from '@/components/stats/stats-activity-calendar'
 import { StatsFilters } from '@/components/stats/stats-filters'
 import { StatsSections } from '@/components/stats/stats-sections'
@@ -36,7 +36,7 @@ export const Route = createFileRoute('/stats')({
   }),
   loader: ({ deps }) => getDetailedStats({ data: deps }),
   staleTime: 15_000,
-  pendingComponent: RoutePending,
+  pendingComponent: StatsPending,
   errorComponent: ({ error }) => (
     <RouteError error={error} backTo="/overview" backLabel="Go to overview" />
   ),

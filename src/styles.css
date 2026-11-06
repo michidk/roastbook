@@ -178,6 +178,22 @@
   }
 }
 
+/* Page loads under 150ms show nothing; longer ones grow towards the end. */
+.roastbook-navigation-progress {
+  transform-origin: left;
+  animation: roastbook-navigation-progress 8s cubic-bezier(0.1, 0.7, 0.2, 1)
+    150ms both;
+}
+
+@keyframes roastbook-navigation-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(0.9);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

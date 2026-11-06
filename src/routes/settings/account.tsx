@@ -8,6 +8,7 @@ import {
   isReauthenticationCancelled,
   useReauthentication,
 } from '@/components/auth/reauthentication-dialog'
+import { PanelPending } from '@/components/route-pending'
 import { PanelSection } from '@/components/section-layout'
 import { AccountSettingsExtensions } from '@/extension-points/account-settings'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
@@ -22,6 +23,7 @@ import { signOutOfAccount } from '@/lib/sign-out'
 import type { ReauthenticationAction } from '@/modules/auth/reauthentication'
 
 export const Route = createFileRoute('/settings/account')({
+  pendingComponent: PanelPending,
   loader: () => getCurrentAccount(),
   component: AccountPage,
 })

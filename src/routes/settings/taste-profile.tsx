@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Loader2, Sparkles, Tags } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { PanelPending } from '@/components/route-pending'
 import { PanelSection } from '@/components/section-layout'
 import {
   TasteProfileFieldToggle,
@@ -18,6 +19,7 @@ import {
 } from '@/lib/taste-profile'
 
 export const Route = createFileRoute('/settings/taste-profile')({
+  pendingComponent: PanelPending,
   loader: () => getTasteTags(),
   component: TasteProfileSection,
 })

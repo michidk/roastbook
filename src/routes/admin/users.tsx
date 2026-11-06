@@ -4,12 +4,14 @@ import {
   useRouter,
   useRouterState,
 } from '@tanstack/react-router'
+import { PanelPending } from '@/components/route-pending'
 import { PanelSection } from '@/components/section-layout'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { getUsers } from '@/lib/server/account'
 import { AdminUsersTable } from './-components/admin-users-table'
 
 export const Route = createFileRoute('/admin/users')({
+  pendingComponent: PanelPending,
   validateSearch: (search: Record<string, unknown>) => ({
     page:
       typeof search.page === 'number' &&
