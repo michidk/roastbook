@@ -1,6 +1,6 @@
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
 import { RouteError } from '@/components/route-error'
-import { DetailPending } from '@/components/route-pending'
+import { WideDetailPending } from '@/components/route-pending'
 
 import { getBean } from '@/journal/beans'
 import { getRoasters } from '@/journal/roasters'
@@ -101,7 +101,7 @@ export const Route = createFileRoute('/beans/$beanId')({
     }))()
   },
   component: BeanDetailPage,
-  pendingComponent: DetailPending,
+  pendingComponent: WideDetailPending,
   errorComponent: ({ error }) => (
     <RouteError error={error} backTo="/beans" backLabel="Back to beans" />
   ),

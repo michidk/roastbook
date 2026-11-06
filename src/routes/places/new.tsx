@@ -5,11 +5,11 @@ import { CoffeeShopForm } from '@/components/coffee-shops/coffee-shop-form'
 import { FormPageHeader } from '@/components/form/form-shell'
 import { Page } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
-import { DetailPending } from '@/components/route-pending'
+import { FormPending } from '@/components/route-pending'
 
 export const Route = createFileRoute('/places/new')({
   component: NewCoffeeShopPage,
-  pendingComponent: DetailPending,
+  pendingComponent: FormPending,
   errorComponent: ({ error }) => (
     <RouteError error={error} backTo="/places" backLabel="Back to places" />
   ),

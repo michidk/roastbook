@@ -4,9 +4,11 @@ import { ArrowLeft } from 'lucide-react'
 import { BrewingMethodForm } from '@/components/brewing-methods/brewing-method-form'
 import { FormPageHeader } from '@/components/form/form-shell'
 import { Page } from '@/components/page-layout'
+import { FormPending } from '@/components/route-pending'
 import { getDrinkConfiguration } from '@/journal/drink-options'
 
 export const Route = createFileRoute('/brewing-methods/new')({
+  pendingComponent: FormPending,
   loader: () => getDrinkConfiguration(),
   component: NewBrewingMethodPage,
 })

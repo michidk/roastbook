@@ -5,13 +5,13 @@ import { BeanForm } from '@/components/beans/bean-form'
 import { FormPageHeader } from '@/components/form/form-shell'
 import { Page } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
-import { DetailPending } from '@/components/route-pending'
+import { FormPending } from '@/components/route-pending'
 import { getRoasters } from '@/journal/roasters'
 
 export const Route = createFileRoute('/beans/new')({
   loader: () => getRoasters(),
   component: NewBeanPage,
-  pendingComponent: DetailPending,
+  pendingComponent: FormPending,
   errorComponent: ({ error }) => (
     <RouteError error={error} backTo="/beans" backLabel="Back to beans" />
   ),

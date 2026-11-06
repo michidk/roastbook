@@ -5,13 +5,13 @@ import { FormPageHeader } from '@/components/form/form-shell'
 import { GearSetForm } from '@/components/gear-sets/gear-set-form'
 import { Page } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
-import { DetailPending } from '@/components/route-pending'
+import { FormPending } from '@/components/route-pending'
 import { getGear } from '@/journal/gear'
 
 export const Route = createFileRoute('/gear-sets/new')({
   loader: () => getGear(),
   component: NewGearSetPage,
-  pendingComponent: DetailPending,
+  pendingComponent: FormPending,
   errorComponent: ({ error }) => (
     <RouteError
       error={error}

@@ -3,6 +3,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import { Page, PageHeader } from '@/components/page-layout'
+import { BrewFormPending } from '@/components/route-pending'
 import { NewShotForm } from '@/components/shots/new-shot-form'
 import { getActiveBeanPurchases } from '@/journal/beans'
 import { getBrewingMethods } from '@/journal/brewing-methods'
@@ -27,6 +28,7 @@ import { getShottimerSettings } from '@/lib/server/shottimer'
 import { parseNewBrewSearch } from '@/routes/brews/-lib/new-brew-search'
 
 export const Route = createFileRoute('/brews/new')({
+  pendingComponent: BrewFormPending,
   validateSearch: searchValidator(parseNewBrewSearch),
   loader: async (): Promise<NewBrewLoaderData> => {
     const defaultBrewedAt = new Date().toISOString()

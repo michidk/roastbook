@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Loader2, MapPinned } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { PanelPending } from '@/components/route-pending'
 import { PanelSection } from '@/components/section-layout'
 import { MapLocationSettings } from '@/components/settings/map-location-settings'
 import { useAppSettings } from '@/hooks/use-app-settings'
@@ -8,6 +9,7 @@ import { useSettingMutation } from '@/hooks/use-setting-mutation'
 import { updateDefaultMapLocation } from '@/journal/settings'
 
 export const Route = createFileRoute('/settings/map')({
+  pendingComponent: PanelPending,
   component: MapSettingsSection,
 })
 

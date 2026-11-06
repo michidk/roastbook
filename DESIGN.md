@@ -305,6 +305,13 @@ forms), `wide` (`max-w-5xl`, rich records, settings), `content` (`max-w-3xl`),
   animate.
 - Respect `prefers-reduced-motion` (camera moves become immediate).
 
+## Loading
+
+- A page load shows a 2px progress bar after 150ms and the route's skeleton
+  after one second. Skeletons in `src/components/route-pending.tsx` reuse the
+  page's grid, widths and control heights, so the loaded page does not move;
+  a new page layout gets a matching skeleton.
+
 ## Depth and surface
 
 - `--coffee-shadow` is card elevation, `--coffee-shadow-inline` shades trailing

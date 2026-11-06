@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { DemoIntegrationNotice } from '@/components/edition-ui'
+import { PanelPending } from '@/components/route-pending'
 import { ApiSettings } from '@/components/settings/api-settings'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { searchValidator } from '@/lib/search-params'
@@ -10,6 +11,7 @@ import {
 } from '@/modules/integrations/key-link'
 
 export const Route = createFileRoute('/settings/api')({
+  pendingComponent: PanelPending,
   // ?create=true&name=…&scopes=a:read,b:write&expires=never opens a filled-in
   // new-key dialog, like GitHub's token links.
   validateSearch: searchValidator(parseIntegrationKeySearch),

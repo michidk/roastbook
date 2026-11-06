@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router'
 import { Page, PageHeader } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
-import { RoutePending } from '@/components/route-pending'
+import { SectionLayoutPending } from '@/components/route-pending'
 import { SETTINGS_SECTIONS } from '@/components/settings/settings-sections'
 import { SettingsShell } from '@/components/settings/settings-shell'
 import { useAppSettings } from '@/hooks/use-app-settings'
@@ -9,7 +9,7 @@ import { DEMO_MODE } from '@/lib/build-mode'
 
 export const Route = createFileRoute('/settings')({
   component: SettingsLayout,
-  pendingComponent: RoutePending,
+  pendingComponent: SectionLayoutPending,
   errorComponent: ({ error }) => (
     <RouteError error={error} backTo="/overview" backLabel="Go to overview" />
   ),

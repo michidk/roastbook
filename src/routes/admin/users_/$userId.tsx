@@ -4,6 +4,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { MetricCard } from '@/components/metric-card'
+import { PanelPending } from '@/components/route-pending'
 import { PanelSection } from '@/components/section-layout'
 import { adminUserColumns } from '@/extension-points/admin-user-extras'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
@@ -12,6 +13,7 @@ import { getUser } from '@/lib/server/account'
 import { AdminUserActions } from '../-components/admin-user-actions'
 
 export const Route = createFileRoute('/admin/users_/$userId')({
+  pendingComponent: PanelPending,
   loader: ({ params }) => getUser({ data: { userId: params.userId } }),
   component: UserPage,
 })

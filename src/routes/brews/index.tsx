@@ -1,6 +1,6 @@
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
 import { RouteError } from '@/components/route-error'
-import { ListPending } from '@/components/route-pending'
+import { BrewsPending } from '@/components/route-pending'
 import { searchValidator } from '@/lib/search-params'
 import { BrewsPage } from '@/routes/brews/-components/brews-page'
 import { parseBrewsSearch } from '@/routes/brews/-lib/brews-search'
@@ -22,7 +22,7 @@ export const Route = createFileRoute('/brews/')({
   loader: ({ deps }) => loadBrewsPage(deps),
   staleTime: 15_000,
   component: BrewsRoute,
-  pendingComponent: ListPending,
+  pendingComponent: BrewsPending,
   errorComponent: ({ error }) => (
     <RouteError error={error} backTo="/overview" backLabel="Go to overview" />
   ),

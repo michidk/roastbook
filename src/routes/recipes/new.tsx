@@ -5,7 +5,7 @@ import { FormPageHeader } from '@/components/form/form-shell'
 import { Page } from '@/components/page-layout'
 import { RecipeForm } from '@/components/recipes/recipe-form'
 import { RouteError } from '@/components/route-error'
-import { DetailPending } from '@/components/route-pending'
+import { FormPending } from '@/components/route-pending'
 
 import { getActiveBeans } from '@/journal/beans'
 import { getBrewingMethods } from '@/journal/brewing-methods'
@@ -35,7 +35,7 @@ export const Route = createFileRoute('/recipes/new')({
     return loadRecipeNewData()
   },
   component: NewRecipePage,
-  pendingComponent: DetailPending,
+  pendingComponent: FormPending,
   errorComponent: ({ error }) => (
     <RouteError error={error} backTo="/recipes" backLabel="Back to recipes" />
   ),

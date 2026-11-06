@@ -11,7 +11,7 @@ import {
 } from '@/components/form/form-shell'
 import { Page } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
-import { DetailPending } from '@/components/route-pending'
+import { FormPending } from '@/components/route-pending'
 import { VisitFields } from '@/components/visits/visit-fields'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useFormState } from '@/hooks/use-form-state'
@@ -60,7 +60,7 @@ export const Route = createFileRoute('/visits/new')({
     }
   },
   component: NewVisitPage,
-  pendingComponent: DetailPending,
+  pendingComponent: FormPending,
   errorComponent: ({ error }) => (
     <RouteError error={error} backTo="/visits" backLabel="Back to visits" />
   ),
