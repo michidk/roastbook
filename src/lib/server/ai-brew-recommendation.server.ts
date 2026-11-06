@@ -1,6 +1,7 @@
 import type { ModelMessage } from '@tanstack/ai'
 import {
   buildShotRecommendationPrompt,
+  enforceShotRecommendation,
   type ShotRecommendation,
   type ShotRecommendationContext,
   shotRecommendationSchema,
@@ -12,7 +13,7 @@ import {
   type ShotRecommendationChatMessage,
   shotRecommendationAnswerWireSchema,
 } from '@/lib/shot-recommendation-chat'
-import { runAiRequest } from './ai-request.server'
+import { AiOutputError, runAiRequest } from './ai-request.server'
 import { getAiProviderConfig } from './ai-runtime.server'
 
 export async function recommendShotFromHistory(
@@ -41,12 +42,21 @@ export async function recommendShotFromHistory(
       messages,
       outputSchema: 'shotRecommendationSchema',
     },
-    execute: ({ generateObject }) =>
-      generateObject({
-        systemPrompts,
-        messages,
-        outputSchema: shotRecommendationSchema,
-      }),
+    execute: async ({ generateObject }) => {
+      const recommendation = enforceShotRecommendation(
+        await generateObject({
+          systemPrompts,
+          messages,
+          outputSchema: shotRecommendationSchema,
+        }),
+        context.enabledParameters,
+      )
+      if (!recommendation)
+        throw new AiOutputError(
+          'The AI suggested a change this brewing method does not record. Please try again.',
+        )
+      return recommendation
+    },
   })
 }
 

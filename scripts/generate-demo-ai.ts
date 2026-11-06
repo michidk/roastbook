@@ -41,7 +41,10 @@ export async function generateDemoAi(database: PgliteDatabase<typeof schema>) {
           diagnosis: 'insufficient_evidence',
           confidence: 'low',
           headline: `Start a brew history for ${bean.name}`,
-          summary: `The sample journal has no brews for ${bean.name}. Record a baseline [[doseGrams]], [[grindSetting]], and tasting notes before drawing conclusions about extraction.`,
+          reasoning: [
+            `The sample journal has no brews for ${bean.name}.`,
+            'Record a baseline [[doseGrams]], [[grindSetting]], and tasting notes before drawing conclusions about extraction.',
+          ],
           historyInsight: `These sample beans are recorded as ${bean.roastLevel ?? 'an unspecified roast'} from ${bean.origin ?? 'an unspecified origin'}. There is no recorded brewing outcome to compare.`,
           changes: [],
           keepConstant: [],
@@ -147,8 +150,7 @@ export async function generateDemoAi(database: PgliteDatabase<typeof schema>) {
                   {
                     parameter,
                     currentValue: String(value),
-                    reason:
-                      'Repeat this recorded setting to establish a comparable baseline before changing one variable.',
+                    reason: 'Hold it so the next result stays comparable.',
                   },
                 ]
           })
@@ -159,11 +161,18 @@ export async function generateDemoAi(database: PgliteDatabase<typeof schema>) {
         headline: changes[0]
           ? `Return [[grindSetting]] to ${changes[0].recommendedValue}`
           : 'Repeat this brew unchanged',
-        summary: `This ${brew.brewingMethod.name} was rated ${brew.rating ?? 'not recorded'}${brew.rating === null ? '' : '/5'}. ${
-          changes[0]
-            ? `A matching brew at [[grindSetting]] ${changes[0].recommendedValue} was rated higher, so test that setting while [[doseGrams]] and the rest of the recipe stay fixed.`
-            : 'No matching brew was rated higher with a different [[grindSetting]], so repeat its recipe and record how sweetness, acidity, and bitterness compare before changing one variable.'
-        }`,
+        reasoning: [
+          `This ${brew.brewingMethod.name} was rated ${brew.rating ?? 'not recorded'}${brew.rating === null ? '' : '/5'}.`,
+          ...(changes[0]
+            ? [
+                `A matching brew at [[grindSetting]] ${changes[0].recommendedValue} was rated ${best.rating}/5.`,
+                'Testing that setting with [[doseGrams]] and the rest of the recipe fixed shows whether the better result repeats.',
+              ]
+            : [
+                'No matching brew was rated higher with a different [[grindSetting]].',
+                'Repeating the recipe and recording sweetness, acidity, and bitterness gives a baseline before changing one variable.',
+              ]),
+        ],
         historyInsight: `${history.length} sample brews match these beans, method, and equipment.${ratings.length ? ` Their recorded overall ratings range from ${Math.min(...ratings)} to ${Math.max(...ratings)} out of 5.` : ' No overall ratings are recorded.'} Overall ratings alone do not identify an extraction problem.`,
         changes,
         keepConstant,

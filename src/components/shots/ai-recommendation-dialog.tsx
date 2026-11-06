@@ -20,7 +20,7 @@ import {
 } from '@roastbook/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@roastbook/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@roastbook/ui/tooltip'
-import { History, RefreshCw, Sparkles } from 'lucide-react'
+import { CircleCheck, History, RefreshCw, Sparkles, Target } from 'lucide-react'
 import { useState } from 'react'
 import { AiThinking } from '@/components/ai-thinking'
 import {
@@ -427,22 +427,17 @@ function RecommendationResultView({
   const formatDate = useDateFormatter()
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap gap-2">
-        <Badge variant="secondary">
-          {DIAGNOSIS_LABELS[result.recommendation.diagnosis]}
-        </Badge>
-        <Badge variant="outline">
-          {result.recommendation.confidence} confidence
-        </Badge>
-      </div>
-
-      <section className="space-y-3">
-        <h3 className="font-display text-lg font-bold">
+    <div className="space-y-6">
+      <section className="space-y-3 rounded-2xl border border-primary/25 bg-primary/8 p-4 sm:p-5">
+        <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-primary uppercase">
+          <Target aria-hidden className="size-3.5" />
+          Next brew
+        </p>
+        <h3 className="font-display text-xl leading-snug font-bold">
           <RichText text={result.recommendation.headline} />
         </h3>
         {result.recommendation.changes.length > 0 ? (
-          <ol aria-label="Change for the next brew" className="space-y-3">
+          <ol aria-label="Changes for the next brew" className="space-y-2">
             {result.recommendation.changes.map((change) => (
               <li key={change.parameter}>
                 <ChangeBlock change={change} />
@@ -450,7 +445,8 @@ function RecommendationResultView({
             ))}
           </ol>
         ) : (
-          <p className="rounded-xl border border-positive/35 bg-positive/10 p-4 text-sm text-positive-text">
+          <p className="flex gap-2 text-sm text-positive-text">
+            <CircleCheck aria-hidden className="mt-0.5 size-4 shrink-0" />
             No parameter change is recommended. Repeat{' '}
             {isFocusedShot ? 'this' : 'the latest'} brew as consistently as
             possible.
@@ -458,23 +454,43 @@ function RecommendationResultView({
         )}
       </section>
 
-      <section className="space-y-2">
-        <h3 className="font-semibold">Why</h3>
-        <p className="leading-relaxed">
-          <RichText text={result.recommendation.summary} />
-        </p>
-      </section>
-
-      <section className="rounded-xl border border-border bg-muted/35 p-4">
-        <h3 className="flex items-center gap-2 font-semibold">
-          <History className="size-4 text-primary" />
-          {isFocusedShot
-            ? 'How this brew compares'
-            : 'How this setup developed'}
-        </h3>
-        <p className="mt-2 leading-relaxed text-muted-foreground">
-          <RichText text={result.recommendation.historyInsight} />
-        </p>
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-semibold">Why</h3>
+          <div className="flex flex-wrap gap-1.5">
+            <Badge variant="secondary">
+              {DIAGNOSIS_LABELS[result.recommendation.diagnosis]}
+            </Badge>
+            <Badge variant="outline">
+              {result.recommendation.confidence} confidence
+            </Badge>
+          </div>
+        </div>
+        <ul className="space-y-2">
+          {result.recommendation.reasoning.map((point, index) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: the points never change once received
+            <li key={index} className="flex gap-2.5 leading-relaxed">
+              <span
+                aria-hidden
+                className="mt-2.5 size-1.5 shrink-0 rounded-full bg-primary"
+              />
+              <span>
+                <RichText text={point} />
+              </span>
+            </li>
+          ))}
+        </ul>
+        <div className="rounded-xl border border-border bg-muted/35 p-4">
+          <h4 className="flex items-center gap-2 text-sm font-semibold">
+            <History aria-hidden className="size-4 text-primary" />
+            {isFocusedShot
+              ? 'How this brew compares'
+              : 'How this setup developed'}
+          </h4>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            <RichText text={result.recommendation.historyInsight} />
+          </p>
+        </div>
       </section>
 
       {result.recommendation.keepConstant.length > 0 ? (
