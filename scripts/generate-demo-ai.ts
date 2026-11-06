@@ -41,7 +41,7 @@ export async function generateDemoAi(database: PgliteDatabase<typeof schema>) {
           diagnosis: 'insufficient_evidence',
           confidence: 'low',
           headline: `Start a brew history for ${bean.name}`,
-          summary: `The sample journal has no brews for ${bean.name}. Record a baseline recipe and tasting notes before drawing conclusions about extraction.`,
+          summary: `The sample journal has no brews for ${bean.name}. Record a baseline [[doseGrams]], [[grindSetting]], and tasting notes before drawing conclusions about extraction.`,
           historyInsight: `These sample beans are recorded as ${bean.roastLevel ?? 'an unspecified roast'} from ${bean.origin ?? 'an unspecified origin'}. There is no recorded brewing outcome to compare.`,
           changes: [],
           keepConstant: [],
@@ -69,7 +69,7 @@ export async function generateDemoAi(database: PgliteDatabase<typeof schema>) {
           blocks: [
             {
               type: 'text',
-              text: 'Record the beans, brewing method, equipment, dose, grind setting, water or beverage weight, time, and temperature where your method supports them. Add a taste rating and notes.',
+              text: 'Record the beans, brewing method, equipment, [[doseGrams]], [[grindSetting]], water or beverage weight, time, and [[brewTemperatureCelsius]] where your method supports them. Add a taste rating and notes.',
             },
           ],
         },
@@ -115,9 +115,29 @@ export async function generateDemoAi(database: PgliteDatabase<typeof schema>) {
         brew.basket?.name,
         ...brew.accessoryGearLinks.map((link) => link.gear.name),
       ].filter((name): name is string => Boolean(name))
+      // Newest first, so ties keep the most recent best-rated brew.
+      const best = history.reduce((top, other) =>
+        (other.rating ?? 0) > (top.rating ?? 0) ? other : top,
+      )
+      const changes: ShotRecommendation['changes'] =
+        best.rating !== null &&
+        best.rating > (brew.rating ?? 0) &&
+        best.grindSetting !== null &&
+        best.grindSetting !== brew.grindSetting
+          ? [
+              {
+                parameter: 'grindSetting',
+                currentValue: brew.grindSetting ?? 'Not set',
+                recommendedValue: best.grindSetting,
+                reason: `The best-rated matching brew (${best.rating}/5) used this [[grindSetting]]. Return to it and change nothing else.`,
+              },
+            ]
+          : []
       const keepConstant: ShotRecommendation['keepConstant'] =
-        SHOT_RECOMMENDATION_PARAMETER_KEYS.filter((key) =>
-          brew.brewingMethod.enabledParameters.includes(key),
+        SHOT_RECOMMENDATION_PARAMETER_KEYS.filter(
+          (key) =>
+            brew.brewingMethod.enabledParameters.includes(key) &&
+            !changes.some((change) => change.parameter === key),
         )
           .flatMap((parameter) => {
             const value = brew[parameter]
@@ -136,16 +156,26 @@ export async function generateDemoAi(database: PgliteDatabase<typeof schema>) {
       const recommendation: ShotRecommendation = {
         diagnosis: 'insufficient_evidence',
         confidence: 'low',
-        headline: `Repeat a baseline for ${bean.name}`,
-        summary: `This ${brew.brewingMethod.name} was rated ${brew.rating ?? 'not recorded'}${brew.rating === null ? '' : '/5'}. Repeat its recipe and record how sweetness, acidity, and bitterness compare before changing one variable.`,
+        headline: changes[0]
+          ? `Return [[grindSetting]] to ${changes[0].recommendedValue}`
+          : 'Repeat this brew unchanged',
+        summary: `This ${brew.brewingMethod.name} was rated ${brew.rating ?? 'not recorded'}${brew.rating === null ? '' : '/5'}. ${
+          changes[0]
+            ? `A matching brew at [[grindSetting]] ${changes[0].recommendedValue} was rated higher, so test that setting while [[doseGrams]] and the rest of the recipe stay fixed.`
+            : 'No matching brew was rated higher with a different [[grindSetting]], so repeat its recipe and record how sweetness, acidity, and bitterness compare before changing one variable.'
+        }`,
         historyInsight: `${history.length} sample brews match these beans, method, and equipment.${ratings.length ? ` Their recorded overall ratings range from ${Math.min(...ratings)} to ${Math.max(...ratings)} out of 5.` : ' No overall ratings are recorded.'} Overall ratings alone do not identify an extraction problem.`,
-        changes: [],
+        changes,
         keepConstant,
         caveat:
           'Preset demo response based on the original sample journal. Edits and new brews are not analyzed. No AI provider is contacted.',
         followUpQuestions: [
-          'Why should I repeat this recipe?',
-          'Could I adjust the grind instead?',
+          changes[0]
+            ? 'Why go back to that grind?'
+            : 'Why should I repeat this recipe?',
+          changes[0]
+            ? 'Could I adjust the grind further?'
+            : 'Could I adjust the grind instead?',
           'How should I compare my next brew?',
         ],
       }
@@ -178,7 +208,9 @@ export async function generateDemoAi(database: PgliteDatabase<typeof schema>) {
             blocks: [
               {
                 type: 'text',
-                text: `Repeating this ${bean.name} recipe gives you a comparison with the sample brew's recorded ${brew.rating ?? 'missing'} rating. A rating alone cannot tell us whether to extract more or less.`,
+                text: changes[0]
+                  ? `A matching ${bean.name} brew at [[grindSetting]] ${changes[0].recommendedValue} was rated ${best.rating}/5, higher than this brew's ${brew.rating ?? 'missing'} rating. Returning to it tests whether that result repeats. A rating alone cannot tell us whether to extract more or less.`
+                  : `Repeating this ${bean.name} recipe gives you a comparison with the sample brew's recorded ${brew.rating ?? 'missing'} rating. A rating alone cannot tell us whether to extract more or less.`,
               },
             ],
           },
@@ -186,7 +218,7 @@ export async function generateDemoAi(database: PgliteDatabase<typeof schema>) {
             blocks: [
               {
                 type: 'text',
-                text: 'You can test a small grind adjustment while keeping dose and the other recipe settings fixed. Finer grinding generally increases extraction, but grinder scales differ. This preset does not infer a scale direction or a new numeric setting.',
+                text: 'You can test a small [[grindSetting]] adjustment while keeping [[doseGrams]] and the other recipe settings fixed. Finer grinding generally increases extraction, but grinder scales differ. This preset does not infer a scale direction or a new numeric setting.',
               },
             ],
           },

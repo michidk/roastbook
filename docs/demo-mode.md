@@ -44,11 +44,12 @@ thinking animation is shared with the standard application, which waits only
 for its real AI provider. `generate-demo-snapshot.ts` writes
 `/demo-local/ai.json` alongside the journal, so rebuilding refreshes both from
 the same fixtures. Recommendations cover each sample brew and its matching
-equipment history. Beans without brew history have preset research and
-guidance to record a first brew. New beans, new brews, and unsupported methods
-report that no preset exists. Edits do not change the presets; custom chat
-questions explain this limitation. Image extraction, gear and roaster research
-remain unavailable.
+equipment history: they suggest returning to the grind setting of a higher-rated
+matching brew when one exists, and otherwise repeating the brew. Beans without
+brew history have preset research and guidance to record a first brew. New
+beans, new brews, and unsupported methods report that no preset exists. Edits do
+not change the presets; custom chat questions explain this limitation. Image
+extraction, gear and roaster research remain unavailable.
 
 Remote image import, geocoding, map tiles, MCP/OAuth, email, authentication,
 administration, external devices, remote storage, and sync are unavailable;

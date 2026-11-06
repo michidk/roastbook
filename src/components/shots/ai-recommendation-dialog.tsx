@@ -437,10 +437,29 @@ function RecommendationResultView({
         </Badge>
       </div>
 
-      <section className="space-y-2">
+      <section className="space-y-3">
         <h3 className="font-display text-lg font-bold">
-          {result.recommendation.headline}
+          <RichText text={result.recommendation.headline} />
         </h3>
+        {result.recommendation.changes.length > 0 ? (
+          <ol aria-label="Change for the next brew" className="space-y-3">
+            {result.recommendation.changes.map((change) => (
+              <li key={change.parameter}>
+                <ChangeBlock change={change} />
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="rounded-xl border border-positive/35 bg-positive/10 p-4 text-sm text-positive-text">
+            No parameter change is recommended. Repeat{' '}
+            {isFocusedShot ? 'this' : 'the latest'} brew as consistently as
+            possible.
+          </p>
+        )}
+      </section>
+
+      <section className="space-y-2">
+        <h3 className="font-semibold">Why</h3>
         <p className="leading-relaxed">
           <RichText text={result.recommendation.summary} />
         </p>
@@ -456,25 +475,6 @@ function RecommendationResultView({
         <p className="mt-2 leading-relaxed text-muted-foreground">
           <RichText text={result.recommendation.historyInsight} />
         </p>
-      </section>
-
-      <section className="space-y-3">
-        <h3 className="font-semibold">Change for the next brew</h3>
-        {result.recommendation.changes.length > 0 ? (
-          <ol className="space-y-3">
-            {result.recommendation.changes.map((change) => (
-              <li key={change.parameter}>
-                <ChangeBlock change={change} />
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p className="rounded-xl border border-positive/35 bg-positive/10 p-4 text-sm text-positive-text">
-            No parameter change is recommended. Repeat{' '}
-            {isFocusedShot ? 'this' : 'the latest'} brew as consistently as
-            possible.
-          </p>
-        )}
       </section>
 
       {result.recommendation.keepConstant.length > 0 ? (
