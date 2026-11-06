@@ -1,7 +1,4 @@
-import { Trash2 } from 'lucide-react'
-import { useState } from 'react'
-import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
+import { Button } from '@roastbook/ui/button'
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -11,7 +8,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/dialog'
+} from '@roastbook/ui/dialog'
+import { Trash2 } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
 import { getErrorMessage } from '@/lib/error-message'
 
 interface DeleteConfirmationProps {

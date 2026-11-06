@@ -1,8 +1,5 @@
-import { X } from 'lucide-react'
-import type { ReactNode } from 'react'
-import { NumberInput } from '@/components/number-input'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Input } from '@roastbook/ui/input'
+import { Label } from '@roastbook/ui/label'
 import {
   Select,
   SelectContent,
@@ -10,8 +7,11 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
+} from '@roastbook/ui/select'
+import { Textarea } from '@roastbook/ui/textarea'
+import { X } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { NumberInput } from '@/components/number-input'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { CURRENCIES } from '@/lib/constants'
 import { getCurrencyAffix } from '@/lib/currency-format'

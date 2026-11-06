@@ -1,13 +1,13 @@
-import { CircleDollarSign, Compass, Wrench } from 'lucide-react'
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@roastbook/ui/card'
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from '@/components/ui/chart'
-import { Progress } from '@/components/ui/progress'
-import { StarRating } from '@/components/ui/star-rating'
+} from '@roastbook/ui/chart'
+import { Progress } from '@roastbook/ui/progress'
+import { StarRating } from '@roastbook/ui/star-rating'
+import { CircleDollarSign, Compass, Wrench } from 'lucide-react'
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { useCurrencyFormatter } from '@/hooks/use-currency-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'

@@ -1,3 +1,10 @@
+import { Button } from '@roastbook/ui/button'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@roastbook/ui/collapsible'
+import { Input } from '@roastbook/ui/input'
 import {
   Camera,
   ChevronDown,
@@ -21,13 +28,6 @@ import {
   useRef,
   useState,
 } from 'react'
-import { Button } from '@/components/ui/button'
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible'
-import { Input } from '@/components/ui/input'
 import { DEMO_MODE } from '@/lib/build-mode'
 import type { ImageFile } from '@/lib/image-file'
 import { getImageUploadErrorMessage } from '@/lib/image-upload-error'

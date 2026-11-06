@@ -1,6 +1,6 @@
+import { Button } from '@roastbook/ui/button'
 import { Link } from '@tanstack/react-router'
 import { Page } from '@/components/page-layout'
-import { Button } from '@/components/ui/button'
 
 interface EntityNotFoundProps {
   entity: string

@@ -1,6 +1,6 @@
+import { Button } from '@roastbook/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@roastbook/ui/popover'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { Button } from './button'
-import { Popover, PopoverContent, PopoverTrigger } from './popover'
 
 const meta = {
   title: 'UI/Popover',

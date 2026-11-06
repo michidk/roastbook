@@ -1,9 +1,3 @@
-import { Plus, X } from 'lucide-react'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
-import {
-  type PickerSuggestion,
-  SuggestionChips,
-} from '@/components/form/suggestion-chips'
 import {
   Combobox,
   ComboboxClear,
@@ -13,8 +7,14 @@ import {
   ComboboxItem,
   ComboboxList,
   ComboboxTrigger,
-} from '@/components/ui/combobox'
-import { Label } from '@/components/ui/label'
+} from '@roastbook/ui/combobox'
+import { Label } from '@roastbook/ui/label'
+import { Plus, X } from 'lucide-react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
+import {
+  type PickerSuggestion,
+  SuggestionChips,
+} from '@/components/form/suggestion-chips'
 import { cn, normalizeForComparison } from '@/lib/utils'
 
 const CREATE_ENTRY_KEY = '__create__'

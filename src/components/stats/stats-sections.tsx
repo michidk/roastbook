@@ -1,15 +1,15 @@
-import { Link } from '@tanstack/react-router'
-import { Star } from 'lucide-react'
-import type { ReactNode } from 'react'
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@roastbook/ui/card'
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from '@/components/ui/chart'
-import { Progress } from '@/components/ui/progress'
-import { StarRating } from '@/components/ui/star-rating'
+} from '@roastbook/ui/chart'
+import { Progress } from '@roastbook/ui/progress'
+import { StarRating } from '@roastbook/ui/star-rating'
+import { Link } from '@tanstack/react-router'
+import { Star } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 import { StatsActivityCard } from './stats-activity-card'

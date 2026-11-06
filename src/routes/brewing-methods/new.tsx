@@ -1,9 +1,9 @@
+import { Button } from '@roastbook/ui/button'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import { BrewingMethodForm } from '@/components/brewing-methods/brewing-method-form'
 import { FormPageHeader } from '@/components/form/form-shell'
 import { Page } from '@/components/page-layout'
-import { Button } from '@/components/ui/button'
 import { getDrinkConfiguration } from '@/journal/drink-options'
 
 export const Route = createFileRoute('/brewing-methods/new')({

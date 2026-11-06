@@ -1,9 +1,9 @@
+import { Badge } from '@roastbook/ui/badge'
+import { Button } from '@roastbook/ui/button'
+import { StarRating } from '@roastbook/ui/star-rating'
 import { Link } from '@tanstack/react-router'
 import { Bookmark, ExternalLink, Heart, MapPin, Plus, X } from 'lucide-react'
 import { useEffect, useRef } from 'react'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { StarRating } from '@/components/ui/star-rating'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 import type { SavedMapPlace } from './visits-map-utils'
 

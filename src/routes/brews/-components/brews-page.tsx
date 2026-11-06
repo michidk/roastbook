@@ -1,3 +1,12 @@
+import { Button } from '@roastbook/ui/button'
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@roastbook/ui/card'
+import { StarRating } from '@roastbook/ui/star-rating'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Coffee, Plus } from 'lucide-react'
 import {
@@ -14,15 +23,6 @@ import { PaginationControls } from '@/components/pagination-controls'
 import { BrewCollectionFilters } from '@/components/shots/brew-collection-toolbar'
 import { ShotsViewToggle } from '@/components/shots/shots-overview'
 import { ShotsTable } from '@/components/shots/shots-table'
-import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { StarRating } from '@/components/ui/star-rating'
 import { useCollectionView } from '@/hooks/use-collection-view'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'

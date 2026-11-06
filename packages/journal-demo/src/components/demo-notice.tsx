@@ -1,7 +1,7 @@
+import { Button } from '@roastbook/ui/button'
 import { useRouter } from '@tanstack/react-router'
 import { HardDrive, RotateCcw } from 'lucide-react'
 import { DeleteConfirmation } from '@/components/delete-confirmation'
-import { Button } from '@/components/ui/button'
 import { usePreferencesStore } from '@/lib/preferences-store'
 import { resetDemoJournal } from '../edition'
 

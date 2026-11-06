@@ -1,3 +1,8 @@
+import {
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@roastbook/ui/dropdown-menu'
 import { Link, useRouterState } from '@tanstack/react-router'
 import {
   BarChart3,
@@ -13,11 +18,6 @@ import {
   UtensilsCrossed,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
-import {
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
 export type NavItem = {

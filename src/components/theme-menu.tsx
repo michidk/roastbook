@@ -1,11 +1,11 @@
-import { Monitor, Moon, Sun, SunMoon } from 'lucide-react'
 import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@roastbook/ui/dropdown-menu'
+import { Monitor, Moon, Sun, SunMoon } from 'lucide-react'
 import {
   isThemePreference,
   THEME_OPTIONS,

@@ -1,7 +1,7 @@
+import { Checkbox } from '@roastbook/ui/checkbox'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useArgs } from 'storybook/preview-api'
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
-import { Checkbox } from './checkbox'
 
 const meta = {
   title: 'UI/Checkbox',

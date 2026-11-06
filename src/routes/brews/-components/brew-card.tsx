@@ -1,3 +1,5 @@
+import { Card, interactiveCardLinkClassName } from '@roastbook/ui/card'
+import { StarRating } from '@roastbook/ui/star-rating'
 import { Link } from '@tanstack/react-router'
 import {
   Bean,
@@ -10,8 +12,6 @@ import {
   Timer,
 } from 'lucide-react'
 import { ImageWithFallback } from '@/components/image-with-fallback'
-import { Card, interactiveCardLinkClassName } from '@/components/ui/card'
-import { StarRating } from '@/components/ui/star-rating'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { thumbnailUrl } from '@/lib/image-url'

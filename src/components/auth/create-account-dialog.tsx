@@ -1,8 +1,5 @@
-import { AlertCircle, LoaderCircle } from 'lucide-react'
-import { useState } from 'react'
-import { PageHelp } from '@/components/page-help'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@roastbook/ui/button'
+import { Checkbox } from '@roastbook/ui/checkbox'
 import {
   Dialog,
   DialogBody,
@@ -11,8 +8,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
+} from '@roastbook/ui/dialog'
+import { Label } from '@roastbook/ui/label'
+import { AlertCircle, LoaderCircle } from 'lucide-react'
+import { useState } from 'react'
+import { PageHelp } from '@/components/page-help'
 import { type SignUpChoice, signUpChoices } from '@/extension-points/sign-up'
 
 export function CreateAccountDialog({

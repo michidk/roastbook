@@ -1,14 +1,5 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "ignoreIssues": {
-    "src/components/ui/card.tsx": ["exports"],
-    "src/components/ui/combobox.tsx": ["exports"],
-    "src/components/ui/dropdown-menu.tsx": ["exports"],
-    "src/components/ui/input-group.tsx": ["exports"],
-    "src/components/ui/select.tsx": ["exports"],
-    "src/components/ui/table.tsx": ["exports"],
-    "src/components/ui/tooltip.tsx": ["exports"]
-  },
   "ignoreExportsUsedInFile": true,
   "ignoreDependencies": ["tailwindcss", "@roastbook/journal-demo", "tslib"],
   "workspaces": {

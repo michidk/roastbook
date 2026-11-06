@@ -1,7 +1,7 @@
+import { Button } from '@roastbook/ui/button'
 import type { ComponentProps } from 'react'
 import { FormSection } from '@/components/form/form-shell'
 import { PictureUploader } from '@/components/picture-uploader'
-import { Button } from '@/components/ui/button'
 import type { useImageUpload } from '@/hooks/use-image-upload'
 
 type ImageUploadDisplayProps = Pick<

@@ -1,13 +1,13 @@
-import type { Meta, StoryObj } from '@storybook/react-vite'
-import { fn } from 'storybook/test'
-import { Button } from './button'
+import { Button } from '@roastbook/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from './dropdown-menu'
+} from '@roastbook/ui/dropdown-menu'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { fn } from 'storybook/test'
 
 const meta = {
   title: 'UI/Dropdown menu',

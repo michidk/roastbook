@@ -1,5 +1,5 @@
+import { Textarea } from '@roastbook/ui/textarea'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { Textarea } from './textarea'
 
 const meta = {
   title: 'UI/Textarea',

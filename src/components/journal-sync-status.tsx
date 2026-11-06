@@ -1,8 +1,4 @@
-import { Link } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
-import { DeleteConfirmation } from '@/components/delete-confirmation'
-import { Button } from '@/components/ui/button'
+import { Button } from '@roastbook/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -10,7 +6,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
+} from '@roastbook/ui/dialog'
+import { Link } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
+import { DeleteConfirmation } from '@/components/delete-confirmation'
 import type { PendingChange } from '@/journal/local/sync'
 import { useSyncStatus } from '@/journal/local/sync-status'
 import { getErrorMessage } from '@/lib/error-message'

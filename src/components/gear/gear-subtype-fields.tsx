@@ -1,9 +1,9 @@
+import { Button } from '@roastbook/ui/button'
 import { Loader2, Search } from 'lucide-react'
 import { AiActionHelp } from '@/components/ai-action-help'
 import { InputField, SelectField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
 import type { GearSubtypeFormValues } from '@/components/gear/gear-form-values'
-import { Button } from '@/components/ui/button'
 import {
   type GearType,
   isEspressoMachineGearType,

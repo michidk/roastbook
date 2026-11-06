@@ -1,4 +1,4 @@
-import type { ChartConfig } from '@/components/ui/chart'
+import type { ChartConfig } from '@roastbook/ui/chart'
 
 export const activityChartConfig = {
   count: { label: 'Brews', color: 'var(--chart-1)' },

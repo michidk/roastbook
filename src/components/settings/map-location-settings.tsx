@@ -1,7 +1,7 @@
+import { Button } from '@roastbook/ui/button'
 import { Loader2, Search } from 'lucide-react'
 import { type SyntheticEvent, useEffect, useState } from 'react'
 import { InputField } from '@/components/form/form-field'
-import { Button } from '@/components/ui/button'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import type { DefaultMapLocation } from '@/lib/app-settings'
 import { DEMO_MODE } from '@/lib/build-mode'

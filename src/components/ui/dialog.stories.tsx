@@ -1,6 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, waitFor, within } from 'storybook/test'
-import { Button } from './button'
+import { Button } from '@roastbook/ui/button'
 import {
   Dialog,
   DialogBody,
@@ -11,7 +9,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from './dialog'
+} from '@roastbook/ui/dialog'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 
 const meta = {
   title: 'UI/Dialog',

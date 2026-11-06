@@ -1,6 +1,6 @@
+import { Button } from '@roastbook/ui/button'
+import { Skeleton } from '@roastbook/ui/skeleton'
 import type { RefObject } from 'react'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
 
 type VisitsMapStatusProps = {
   readonly status: 'loading' | 'ready' | 'error'

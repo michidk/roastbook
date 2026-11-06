@@ -1,10 +1,10 @@
+import { Button } from '@roastbook/ui/button'
 import { Loader2, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { AiActionHelp } from '@/components/ai-action-help'
 import type { RoasterFormValues } from '@/components/roasters/roaster-form-values'
 import { RoasterInfoDiffModal } from '@/components/roasters/roaster-info-diff-modal'
-import { Button } from '@/components/ui/button'
 import { useOnlineStatus } from '@/hooks/use-online-status'
 import {
   checkRoasterResearchEnabled,

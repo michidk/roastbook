@@ -1,7 +1,7 @@
+import { StarRating } from '@roastbook/ui/star-rating'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useArgs } from 'storybook/preview-api'
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
-import { StarRating } from './star-rating'
 
 const meta = {
   title: 'UI/Star rating',

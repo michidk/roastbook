@@ -1,7 +1,7 @@
+import { Button } from '@roastbook/ui/button'
+import { Card, CardContent } from '@roastbook/ui/card'
 import { Link } from '@tanstack/react-router'
 import type { LucideIcon } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 
 interface EmptyStateProps {
   icon: LucideIcon

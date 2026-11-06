@@ -1,3 +1,4 @@
+import { Button } from '@roastbook/ui/button'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import { FormPageHeader } from '@/components/form/form-shell'
@@ -5,7 +6,6 @@ import { GearForm } from '@/components/gear/gear-form'
 import { Page } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
-import { Button } from '@/components/ui/button'
 
 export const Route = createFileRoute('/gear/new')({
   component: NewGearPage,

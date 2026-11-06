@@ -1,8 +1,8 @@
+import { Button } from '@roastbook/ui/button'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
 import { fn } from 'storybook/test'
 import { SelectableDiffDialog } from './selectable-diff-dialog'
-import { Button } from './ui/button'
 
 const meta = {
   title: 'Forms/Suggested changes',

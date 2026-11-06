@@ -1,3 +1,5 @@
+import { Label } from '@roastbook/ui/label'
+import { Switch } from '@roastbook/ui/switch'
 import type { ReactNode } from 'react'
 import { AltitudeRangeField } from '@/components/beans/altitude-range-field'
 import type { BeanFormValues } from '@/components/beans/bean-form-values'
@@ -15,8 +17,6 @@ import {
   type RoasterOption,
   RoasterPicker,
 } from '@/components/roasters/roaster-picker'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import {
   BEAN_TYPES,
   type BeanType,

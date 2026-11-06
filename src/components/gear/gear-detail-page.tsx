@@ -1,3 +1,14 @@
+import { Button } from '@roastbook/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@roastbook/ui/dialog'
 import { Link, useNavigate } from '@tanstack/react-router'
 import type { FormEvent } from 'react'
 import { useState } from 'react'
@@ -14,17 +25,6 @@ import { GearReadOnlyContent } from '@/components/gear/gear-read-only-content'
 import { MachineResearchDiffModal } from '@/components/gear/machine-settings-diff-modal'
 import { Page } from '@/components/page-layout'
 import type { ShotsTableServerPagination } from '@/components/shots/shots-table'
-import { Button } from '@/components/ui/button'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/dialog'
 import { useOnlineStatus } from '@/hooks/use-online-status'
 import { deleteGear, type getGearById, updateGear } from '@/journal/gear'
 import type { getGearShotPage } from '@/journal/shots'

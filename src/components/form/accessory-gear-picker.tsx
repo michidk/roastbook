@@ -1,4 +1,4 @@
-import { Toggle } from '@/components/ui/toggle'
+import { Toggle } from '@roastbook/ui/toggle'
 
 type AccessoryGear = {
   readonly id: number

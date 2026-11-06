@@ -1,9 +1,9 @@
+import { Toggle } from '@roastbook/ui/toggle'
 import type { ReactNode } from 'react'
 import { AccessoryGearPicker } from '@/components/form/accessory-gear-picker'
 import { CreatableCombobox } from '@/components/form/creatable-combobox'
 import { InputField, SelectField } from '@/components/form/form-field'
 import { FormSection } from '@/components/form/form-shell'
-import { Toggle } from '@/components/ui/toggle'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import {
   DISTRIBUTION_METHOD_OPTIONS,

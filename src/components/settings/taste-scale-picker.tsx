@@ -1,8 +1,8 @@
+import { StarRating } from '@roastbook/ui/star-rating'
 import { Check } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { ExtractionBalanceReadout } from '@/components/shots/extraction-balance-field'
 import { ShotSensoryRatingReadout } from '@/components/shots/shot-sensory-ratings'
-import { StarRating } from '@/components/ui/star-rating'
 import { EXTRACTION_BALANCE_BALANCED } from '@/lib/extraction-balance'
 import {
   TASTE_PROFILE_FIELD_META,

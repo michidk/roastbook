@@ -1,3 +1,25 @@
+import { Badge } from '@roastbook/ui/badge'
+import { Button } from '@roastbook/ui/button'
+import {
+  Dialog,
+  DialogBody,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@roastbook/ui/dialog'
+import { ScrollArea } from '@roastbook/ui/scroll-area'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@roastbook/ui/select'
+import { Tabs, TabsList, TabsTrigger } from '@roastbook/ui/tabs'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@roastbook/ui/tooltip'
 import { History, RefreshCw, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { AiThinking } from '@/components/ai-thinking'
@@ -8,32 +30,6 @@ import {
   RichText,
 } from '@/components/shots/recommendation-blocks'
 import { RecommendationChat } from '@/components/shots/recommendation-chat'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogBody,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useFeatureAvailability } from '@/hooks/use-feature-availability'
 import { DEMO_MODE } from '@/lib/build-mode'

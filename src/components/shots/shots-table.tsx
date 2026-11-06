@@ -1,18 +1,18 @@
-import { Link } from '@tanstack/react-router'
-import { ChevronRight } from 'lucide-react'
-import { useMemo } from 'react'
-import { ImageWithFallback } from '@/components/image-with-fallback'
-import { PaginationControls } from '@/components/pagination-controls'
-import { SortableTableHead } from '@/components/sortable-table-head'
-import { Card, interactiveCardLinkClassName } from '@/components/ui/card'
-import { StarRating } from '@/components/ui/star-rating'
+import { Card, interactiveCardLinkClassName } from '@roastbook/ui/card'
+import { StarRating } from '@roastbook/ui/star-rating'
 import {
   Table,
   TableBody,
   TableCell,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@roastbook/ui/table'
+import { Link } from '@tanstack/react-router'
+import { ChevronRight } from 'lucide-react'
+import { useMemo } from 'react'
+import { ImageWithFallback } from '@/components/image-with-fallback'
+import { PaginationControls } from '@/components/pagination-controls'
+import { SortableTableHead } from '@/components/sortable-table-head'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import {

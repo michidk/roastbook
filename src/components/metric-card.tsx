@@ -1,10 +1,10 @@
-import { Link } from '@tanstack/react-router'
-import type { ComponentType, ReactNode } from 'react'
 import {
   Card,
   CardContent,
   interactiveCardLinkClassName,
-} from '@/components/ui/card'
+} from '@roastbook/ui/card'
+import { Link } from '@tanstack/react-router'
+import type { ComponentType, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 interface MetricCardProps {

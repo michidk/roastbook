@@ -1,21 +1,21 @@
-import { Link } from '@tanstack/react-router'
-import { CalendarDays, Heart, MapPin, Star } from 'lucide-react'
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
-import { MetricCard } from '@/components/metric-card'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-} from '@/components/ui/card'
+} from '@roastbook/ui/card'
 import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from '@/components/ui/chart'
-import { Progress } from '@/components/ui/progress'
-import { StarRating } from '@/components/ui/star-rating'
+} from '@roastbook/ui/chart'
+import { Progress } from '@roastbook/ui/progress'
+import { StarRating } from '@roastbook/ui/star-rating'
+import { Link } from '@tanstack/react-router'
+import { CalendarDays, Heart, MapPin, Star } from 'lucide-react'
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
+import { MetricCard } from '@/components/metric-card'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useTasteProfile } from '@/hooks/use-taste-profile'

@@ -1,5 +1,3 @@
-import { Link } from '@tanstack/react-router'
-import { ShieldCheck } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -8,7 +6,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@roastbook/ui/table'
+import { Link } from '@tanstack/react-router'
+import { ShieldCheck } from 'lucide-react'
 import { adminUserColumns } from '@/extension-points/admin-user-extras'
 import {
   useDateFormatter,

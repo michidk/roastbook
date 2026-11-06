@@ -1,10 +1,6 @@
+import { Popover, PopoverContent, PopoverTrigger } from '@roastbook/ui/popover'
 import { CircleHelp } from 'lucide-react'
 import type { ReactNode } from 'react'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
 
 export function PageHelp({
   children,

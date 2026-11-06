@@ -1,3 +1,5 @@
+import { Button } from '@roastbook/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@roastbook/ui/tooltip'
 import {
   Bean,
   Candy,
@@ -7,12 +9,6 @@ import {
   Leaf,
   type LucideIcon,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
 import { useTasteProfile } from '@/hooks/use-taste-profile'
 import {
   SHOT_SENSORY_RATING_META,

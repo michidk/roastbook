@@ -1,3 +1,4 @@
+import { Button } from '@roastbook/ui/button'
 import {
   AlertTriangle,
   Clock3,
@@ -12,7 +13,6 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { JournalSyncStatus } from '@/components/journal-sync-status'
 import { PanelSection } from '@/components/section-layout'
-import { Button } from '@/components/ui/button'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useOnlineStatus } from '@/hooks/use-online-status'

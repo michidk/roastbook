@@ -1,6 +1,6 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@roastbook/ui/tabs'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, within } from 'storybook/test'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs'
 
 const meta = {
   title: 'UI/Tabs',

@@ -1,10 +1,6 @@
-import { type ClassValue, clsx } from 'clsx'
-import { twMerge } from 'tailwind-merge'
-import type { DateFormat } from '@/lib/app-settings'
+export { cn } from '@roastbook/ui/utils'
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-}
+import type { DateFormat } from '@/lib/app-settings'
 
 const URL_SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*:\/\//i
 

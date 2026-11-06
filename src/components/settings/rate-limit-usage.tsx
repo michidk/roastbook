@@ -1,10 +1,6 @@
+import { Progress, ProgressLabel, ProgressValue } from '@roastbook/ui/progress'
 import { Gauge } from 'lucide-react'
 import { PanelSection } from '@/components/section-layout'
-import {
-  Progress,
-  ProgressLabel,
-  ProgressValue,
-} from '@/components/ui/progress'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { cn } from '@/lib/utils'
