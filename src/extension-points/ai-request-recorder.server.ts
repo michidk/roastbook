@@ -11,7 +11,6 @@ export interface AiRequestStart {
 // An extension can replace this module to account for usage differently.
 export {
   completeAiRequestLog,
-  createAiRequestLogMiddleware,
   failAiRequestLog,
   startAiRequestLog,
 } from '@/lib/server/ai-request-logs.server'

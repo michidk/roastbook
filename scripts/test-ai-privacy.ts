@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
+import sharp from 'sharp'
 
 assert(process.env.TEST_DATABASE_URL, 'An isolated test database is required')
 process.env.DATABASE_URL = process.env.TEST_DATABASE_URL
@@ -19,7 +20,31 @@ const output = 'PRIVATE_OUTPUT_FIXTURE'
 const provider = Bun.serve({
   hostname: '127.0.0.1',
   port: 0,
-  fetch() {
+  async fetch(request) {
+    const body = await request.json()
+    assert.equal(body.store, false)
+    if (new URL(request.url).pathname.endsWith('/chat/completions') && !fail) {
+      return new Response(
+        `data: ${JSON.stringify({
+          id: 'chat_fixture',
+          object: 'chat.completion.chunk',
+          created: 0,
+          model: 'fixture-vision',
+          choices: [
+            {
+              index: 0,
+              delta: {
+                role: 'assistant',
+                content: JSON.stringify({ name: output }),
+              },
+              finish_reason: 'stop',
+            },
+          ],
+          usage: { prompt_tokens: 20, completion_tokens: 10, total_tokens: 30 },
+        })}\n\ndata: [DONE]\n\n`,
+        { headers: { 'content-type': 'text/event-stream' } },
+      )
+    }
     if (fail)
       return Response.json(
         { error: 'PRIVATE_PROVIDER_ERROR_FIXTURE' },
@@ -70,6 +95,13 @@ const { confirmAs } = await import(
 const { researchBeanFromWeb } = await import(
   '../src/lib/server/ai-web-research.server'
 )
+const { extractBeanInfoFromImages } = await import(
+  '../src/lib/server/ai-image-extraction.server'
+)
+const { prepareAiImages } = await import('../src/lib/server/ai-images.server')
+const { loadAiRequestLogs, loadAiRequestLog } = await import(
+  '../src/lib/server/ai-request-logs.server'
+)
 const user = {
   id: `privacy-${randomUUID()}`,
   email: `${randomUUID()}@example.test`,
@@ -116,6 +148,46 @@ try {
       researchBeanFromWeb('PRIVATE_FAILURE_INPUT_FIXTURE'),
     ),
   )
+  fail = false
+  const image = await sharp({
+    create: { width: 12, height: 12, channels: 3, background: '#c7352c' },
+  })
+    .png()
+    .toBuffer()
+  const images = await prepareAiImages([
+    { imageBase64: image.toString('base64'), mimeType: 'image/png' },
+  ])
+  for (const api of ['responses', 'chat-completions'] as const) {
+    const token = await confirmAs(user, 'save-ai-credentials')
+    await withJournal(user, () =>
+      saveAiProviderSettings(
+        {
+          baseURL: `http://127.0.0.1:${provider.port}/v1`,
+          api,
+          visionModel: 'fixture-vision',
+          researchModel: 'fixture-research',
+        },
+        token,
+      ),
+    )
+    const extracted = await withJournal(user, () =>
+      extractBeanInfoFromImages(images),
+    )
+    assert.equal(extracted.name, output)
+    const page = await withJournal(user, () => loadAiRequestLogs({ limit: 10 }))
+    const summary = page.items.find(
+      (entry) => entry.requestType === 'bean-image-extraction',
+    )
+    assert(summary)
+    assert.equal(summary.status, 'succeeded')
+    assert.equal(summary.totalTokens, 30)
+    const entry = await withJournal(user, () => loadAiRequestLog(summary.id))
+    assert(
+      !JSON.stringify(entry).includes(image.toString('base64')),
+      'Image bytes must never be stored in telemetry',
+    )
+    assert(!JSON.stringify(entry).includes('fixture-user-key'))
+  }
   assert(logs.length > 0, 'Operational metadata should still be logged')
   assert(
     !logs.join('\n').includes('PRIVATE_'),

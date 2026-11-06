@@ -53,3 +53,10 @@ describe('bean image research fields', () => {
     },
   )
 })
+
+test('image prompt uses visible label evidence without web research instructions', () => {
+  const prompt = beanInfoPrompt('Read this label.', 'Do not guess.')
+  expect(prompt).not.toContain('inspect deeper sources')
+  expect(prompt).toContain('visible')
+  expect(prompt).toContain('instructions printed')
+})

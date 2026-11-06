@@ -1,20 +1,11 @@
-import { chat, type ModelMessage } from '@tanstack/ai'
+import type { ModelMessage } from '@tanstack/ai'
 import { webSearchTool } from '@tanstack/ai-openai/tools'
-import {
-  createAiRequestLogMiddleware,
-  startAiRequestLog,
-} from '@/extension-points/ai-request-recorder.server'
 import {
   BEAN_INFO_FIELDS,
   MACHINE_RESEARCH_FIELDS,
   normalizeMachineResearchResult,
   ROASTER_INFO_FIELDS,
 } from '@/lib/server/ai-research-fields.server'
-import {
-  aiChatLimits,
-  createAiAdapter,
-  getOpenAIConfig,
-} from '@/lib/server/ai-runtime.server'
 import {
   buildStructuredResearchPrompt,
   buildStructuredResearchSubjectPrompt,
@@ -27,6 +18,8 @@ import type {
   ExtractedMachineResearch,
   ExtractedRoasterInfo,
 } from '@/modules/ai/read-models'
+import { runAiRequest } from './ai-request.server'
+import { getAiProviderConfig } from './ai-runtime.server'
 
 type StructuredWebResearchRequest<TFields extends StructuredResearchFields> = {
   readonly subject: string
@@ -53,8 +46,7 @@ async function researchStructuredDataFromWeb<
 }: StructuredWebResearchRequest<TFields>): Promise<
   StructuredResearchResult<TFields>
 > {
-  const config = await getOpenAIConfig()
-  if (!config.apiKey) return {}
+  const config = await getAiProviderConfig()
   if (config.api !== 'responses')
     throw new Error(
       'Online research requires a Responses-compatible provider with web search',
@@ -73,52 +65,29 @@ async function researchStructuredDataFromWeb<
       }),
     },
   ]
-  const requestLogId = await startAiRequestLog({
-    providerMode: config.providerMode,
-    requestType: `${logLabel}-web-research`,
+  return runAiRequest({
+    config,
     model: config.researchModel,
+    requestType: `${logLabel}-web-research`,
+    timeoutMs: 120_000,
+    recordContent: true,
     requestPayload: {
       model: config.researchModel,
       systemPrompts,
       messages,
       tools: [{ type: 'web_search' }],
-      stream: false,
     },
+    execute: async ({ generateText }) =>
+      parseStructuredResearchResult(
+        await generateText({
+          systemPrompts,
+          messages,
+          tools: [webSearchTool({ type: 'web_search' })],
+          format: 'text',
+        }),
+        fields,
+      ),
   })
-  const abortController = new AbortController()
-  const timeout = setTimeout(() => abortController.abort(), 120_000)
-
-  try {
-    const { text: content } = await chat({
-      adapter: createAiAdapter(config.researchModel, config),
-      ...aiChatLimits(config),
-      systemPrompts,
-      messages,
-      tools: [webSearchTool({ type: 'web_search' })],
-      threadId: crypto.randomUUID(),
-      middleware: [
-        createAiRequestLogMiddleware(requestLogId, config.researchModel),
-      ],
-      abortController,
-      stream: false,
-    })
-    console.info(`[AI research:${logLabel}] complete`, {
-      requestLogId,
-      hasContent: content.length > 0,
-    })
-    return content ? parseStructuredResearchResult(content, fields) : {}
-  } catch (error) {
-    console.error(`[AI research:${logLabel}] failed`, {
-      requestLogId,
-      aborted: abortController.signal.aborted,
-    })
-    if (abortController.signal.aborted) {
-      throw new Error('Online research timed out. Please try again.')
-    }
-    throw error
-  } finally {
-    clearTimeout(timeout)
-  }
 }
 
 export async function researchBeanFromWeb(

@@ -7,6 +7,7 @@ import {
   roastLevelSchema,
 } from '@/journal/input/beans'
 import { GEAR_TYPE_VALUES } from '@/lib/domain-contracts'
+import { prepareAiImages } from '@/lib/server/ai-images.server'
 import {
   extractBeanInfoFromImages,
   isResearchEnabled,
@@ -16,13 +17,11 @@ import {
   researchRoasterFromWeb,
 } from '@/lib/server/ai-operations.server'
 import {
-  imageBase64Schema,
-  imageMimeTypeSchema,
+  aiImageInputsSchema,
   nameSchema,
   notesSchema,
   shortTextSchema,
 } from '@/lib/server-validation'
-import { createAiImage, validateImageBuffer } from '@/lib/thumbnail-image'
 import type {
   ExtractedBeanInfo,
   ExtractedMachineResearch,
@@ -32,15 +31,7 @@ import type {
 /** AI research and label reading always run on the server, never offline or in the demo. */
 
 const extractBeanInfoSchema = z.object({
-  images: z
-    .array(
-      z.object({
-        imageBase64: imageBase64Schema,
-        mimeType: imageMimeTypeSchema,
-      }),
-    )
-    .min(1)
-    .max(6),
+  images: aiImageInputsSchema,
 })
 
 const researchBeanInfoSchema = z.object({
@@ -77,16 +68,10 @@ export const extractBeanInfo = createServerFn({ method: 'POST' })
     if (!(await isVisionEnabled())) {
       throw new Error('Connect your AI provider in Settings > AI')
     }
-    const aiImages = await Promise.all(
-      data.images.map(async ({ imageBase64, mimeType }) => {
-        const image = Buffer.from(imageBase64, 'base64')
-        await validateImageBuffer(image, mimeType)
-        return (await createAiImage(image)).toString('base64')
-      }),
-    )
-    return withResourceLimits('bean-image-extraction', () =>
-      extractBeanInfoFromImages(aiImages, 'image/jpeg'),
-    )
+    return withResourceLimits('bean-image-extraction', async () => {
+      const aiImages = await prepareAiImages(data.images)
+      return extractBeanInfoFromImages(aiImages)
+    })
   })
 
 export const checkResearchEnabled = createServerFn({ method: 'GET' }).handler(

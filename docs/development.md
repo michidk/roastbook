@@ -23,6 +23,16 @@ again when Vite restarts. Migrations generated while Vite runs are applied and
 trigger a full reload. A failure at startup stops the server; a failure seen by
 the watcher is logged.
 
+## AI adapter dependency patch
+
+Bun applies the committed `@tanstack/openai-base@1.0.0` patch during installation.
+It preserves token usage on Responses `response.failed` and
+`response.incomplete` events; the shared request runner records that usage
+when handling the SDK's terminal error event. Both Docker stages copy the
+patch before installing dependencies. When upgrading the adapter, run
+`src/lib/server/ai-request.server.test.ts` and remove the patch once upstream
+preserves usage on both events.
+
 ## Component stories
 
 ```bash

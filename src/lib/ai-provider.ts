@@ -3,8 +3,8 @@ import { z } from 'zod'
 export const DEFAULT_AI_PROVIDER = {
   baseURL: 'https://api.openai.com/v1',
   api: 'responses' as const,
-  visionModel: 'gpt-5.1-codex',
-  researchModel: 'gpt-5.1-codex',
+  visionModel: '',
+  researchModel: '',
 }
 
 const model = z

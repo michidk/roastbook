@@ -1,5 +1,18 @@
 # Upgrading to the multi-user release
 
+## AI provider requests
+
+Image extraction now uses the API format selected in Settings > AI, as
+recommendations already do. If a custom provider previously accepted image
+requests only on Chat Completions, select that format; Responses remains
+required for hosted web research. Saved endpoints, credentials, and model IDs
+are unchanged. New configurations require explicit model IDs.
+
+Label extraction preserves suitable images instead of always converting them
+to JPEG. Direct animated/multipage inputs and prepared batches above 32 MiB are
+rejected. Invalid, refused, or incomplete model responses now produce an error
+instead of appearing as successful empty extraction.
+
 This release adds private accounts, a SQL journal that also runs in the
 browser, and bring-your-own AI. Read every step before starting; step 3
 applies only with accounts enabled (`AUTH_ENABLED=true`).

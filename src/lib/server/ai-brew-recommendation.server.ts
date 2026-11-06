@@ -1,13 +1,4 @@
-import { chat, type ModelMessage } from '@tanstack/ai'
-import {
-  createAiRequestLogMiddleware,
-  startAiRequestLog,
-} from '@/extension-points/ai-request-recorder.server'
-import {
-  aiChatLimits,
-  createAiAdapter,
-  getOpenAIConfig,
-} from '@/lib/server/ai-runtime.server'
+import type { ModelMessage } from '@tanstack/ai'
 import {
   buildShotRecommendationPrompt,
   type ShotRecommendation,
@@ -21,11 +12,13 @@ import {
   type ShotRecommendationChatMessage,
   shotRecommendationAnswerWireSchema,
 } from '@/lib/shot-recommendation-chat'
+import { runAiRequest } from './ai-request.server'
+import { getAiProviderConfig } from './ai-runtime.server'
 
 export async function recommendShotFromHistory(
   context: ShotRecommendationContext,
 ): Promise<ShotRecommendation> {
-  const config = await getOpenAIConfig()
+  const config = await getAiProviderConfig()
   if (!config.apiKey) {
     throw new Error('Connect your AI provider in Settings > AI')
   }
@@ -36,38 +29,25 @@ export async function recommendShotFromHistory(
   const messages: Array<ModelMessage> = [
     { role: 'user', content: buildShotRecommendationPrompt(context) },
   ]
-  const requestLogId = await startAiRequestLog({
-    providerMode: config.providerMode,
-    requestType: 'shot-recommendation',
+  return runAiRequest({
+    config,
     model: config.researchModel,
+    requestType: 'shot-recommendation',
+    timeoutMs: 45_000,
+    recordContent: true,
     requestPayload: {
       model: config.researchModel,
       systemPrompts,
       messages,
       outputSchema: 'shotRecommendationSchema',
-      stream: false,
     },
+    execute: ({ generateObject }) =>
+      generateObject({
+        systemPrompts,
+        messages,
+        outputSchema: shotRecommendationSchema,
+      }),
   })
-  const abortController = new AbortController()
-  const timeout = setTimeout(() => abortController.abort(), 45_000)
-
-  try {
-    return await chat({
-      adapter: createAiAdapter(config.researchModel, config),
-      ...aiChatLimits(config),
-      systemPrompts,
-      messages,
-      outputSchema: shotRecommendationSchema,
-      abortController,
-      threadId: crypto.randomUUID(),
-      middleware: [
-        createAiRequestLogMiddleware(requestLogId, config.researchModel),
-      ],
-      stream: false,
-    })
-  } finally {
-    clearTimeout(timeout)
-  }
 }
 
 export async function answerShotRecommendationQuestion(
@@ -75,7 +55,7 @@ export async function answerShotRecommendationQuestion(
   recommendation: ShotRecommendation,
   conversation: readonly ShotRecommendationChatMessage[],
 ): Promise<ShotRecommendationAnswer> {
-  const config = await getOpenAIConfig()
+  const config = await getAiProviderConfig()
   if (!config.apiKey) {
     throw new Error('Connect your AI provider in Settings > AI')
   }
@@ -85,37 +65,25 @@ export async function answerShotRecommendationQuestion(
     recommendation,
     conversation,
   )
-  const requestLogId = await startAiRequestLog({
-    providerMode: config.providerMode,
-    requestType: 'shot-recommendation-chat',
+  return runAiRequest({
+    config,
     model: config.researchModel,
+    requestType: 'shot-recommendation-chat',
+    timeoutMs: 45_000,
+    recordContent: true,
     requestPayload: {
       model: config.researchModel,
       systemPrompts,
       messages,
       outputSchema: 'shotRecommendationAnswerWireSchema',
-      stream: false,
     },
+    execute: async ({ generateObject }) =>
+      parseShotRecommendationAnswer(
+        await generateObject({
+          systemPrompts,
+          messages,
+          outputSchema: shotRecommendationAnswerWireSchema,
+        }),
+      ),
   })
-  const abortController = new AbortController()
-  const timeout = setTimeout(() => abortController.abort(), 45_000)
-
-  try {
-    const wire = await chat({
-      adapter: createAiAdapter(config.researchModel, config),
-      ...aiChatLimits(config),
-      systemPrompts,
-      messages,
-      outputSchema: shotRecommendationAnswerWireSchema,
-      abortController,
-      threadId: crypto.randomUUID(),
-      middleware: [
-        createAiRequestLogMiddleware(requestLogId, config.researchModel),
-      ],
-      stream: false,
-    })
-    return parseShotRecommendationAnswer(wire)
-  } finally {
-    clearTimeout(timeout)
-  }
 }

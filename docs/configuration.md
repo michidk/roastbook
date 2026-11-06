@@ -135,6 +135,32 @@ does not configure DNS, networking, or TLS trust.
 
 Selected journal data and images go to the user's provider, which bills them.
 
+The selected API format applies to image extraction, recommendations, and
+research. Responses is the default; Chat Completions remains supported for
+image extraction and recommendations. Enter model IDs supported by your
+provider; new configurations do not preselect a model. Saving settings does
+not run a paid model-capability test. Existing saved models are preserved.
+
+Image extraction accepts up to six images and validates the existing upload
+limits before processing them sequentially. Static JPEG, PNG, and WebP images
+within 2048 pixels per side and without sensitive photo metadata pass through
+without recompression. Other supported images are oriented, resized without
+enlargement, stripped of metadata, and converted to JPEG at quality 85. The
+prepared batch must fit within 32 MiB before base64 encoding. Animated or
+multipage inputs sent directly to extraction are rejected; the picture picker
+already converts browser-decodable animation to a still image.
+
+Images use high detail to preserve label text. Smaller file sizes reduce
+transfer overhead; image token charges depend on the model, dimensions,
+detail level, and image count. JPEG compression alone does not imply a lower
+provider bill.
+
+Requests explicitly set `store: false` on both APIs. This requests that the
+provider not retain response objects; it does not override its other retention
+policies. Calls are not automatically retried. The existing per-process limits
+admit image preprocessing as well as inference; they do not implement the
+provider's token quota or a distributed limit across replicas.
+
 Every request's metadata, status, duration, and token usage are logged in the
 database and shown in Settings > AI. Prompts and responses are stored only
 with `AI_TELEMETRY_STORE_PAYLOADS=true` (off by default); turning it off again

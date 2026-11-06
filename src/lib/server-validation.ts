@@ -89,6 +89,16 @@ export const imageBase64Schema = z
   .regex(/^[A-Za-z0-9+/]*={0,2}$/, 'Expected base64-encoded image data')
   .refine((value) => value.length % 4 === 0, 'Expected valid base64 padding')
 
+export const aiImageInputsSchema = z
+  .array(
+    z.object({
+      imageBase64: imageBase64Schema,
+      mimeType: imageMimeTypeSchema,
+    }),
+  )
+  .min(1)
+  .max(6)
+
 export const imageFilenameSchema = z
   .string()
   .trim()

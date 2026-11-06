@@ -227,10 +227,11 @@ export function AiProviderSettings({ settings }: { settings: Settings }) {
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Model IDs must be supported by your provider. Image extraction
-                  uses Chat Completions with image input. Recommendations
-                  require structured output. Online research additionally
-                  requires Responses API web search.
+                  Model IDs must be supported by your provider. The selected API
+                  format applies to all AI features. Image extraction requires
+                  image input support. Recommendations require structured
+                  output. Online research additionally requires Responses API
+                  web search.
                 </p>
                 <Button type="submit" disabled={busy}>
                   {busy ? 'Saving…' : 'Save AI provider'}

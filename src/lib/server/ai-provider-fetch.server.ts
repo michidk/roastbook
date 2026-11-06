@@ -10,6 +10,20 @@ import {
   type ResolveHost,
 } from './remote-url-policy.server'
 
+export class AiProviderRequestError extends Error {
+  constructor(readonly status: number) {
+    super(
+      status === 401 || status === 403
+        ? 'AI provider rejected your API key. Check Settings > AI.'
+        : status === 429
+          ? 'AI provider rate limit reached. Please try again later.'
+          : status >= 500
+            ? 'AI provider is temporarily unavailable. Please try again later.'
+            : `AI provider request failed (${status}). Check the API format and model in Settings > AI.`,
+    )
+  }
+}
+
 const MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 const resolveHost: ResolveHost = (hostname) => lookup(hostname, { all: true })
 
@@ -154,13 +168,7 @@ export function createAiProviderFetch(
           if (status < 200 || status >= 300) {
             incoming.destroy()
             // Never forward redirects, provider error bodies, headers, or reflected keys.
-            reject(
-              new Error(
-                status === 401 || status === 403
-                  ? 'AI provider rejected your API key'
-                  : `AI provider request failed (${status})`,
-              ),
-            )
+            reject(new AiProviderRequestError(status))
             return
           }
           const chunks = incoming[Symbol.asyncIterator]()

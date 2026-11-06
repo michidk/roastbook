@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 import { chat } from '@tanstack/ai'
 import { webSearchTool } from '@tanstack/ai-openai/tools'
-import { createAiAdapter, type getOpenAIConfig } from './ai-runtime.server'
+import { createAiAdapter, type getAiProviderConfig } from './ai-runtime.server'
 
-type Config = Awaited<ReturnType<typeof getOpenAIConfig>>
+type Config = Awaited<ReturnType<typeof getAiProviderConfig>>
 
 async function captureRequest(api: Config['api'], research = false) {
   let request: Request | undefined
@@ -14,8 +14,6 @@ async function captureRequest(api: Config['api'], research = false) {
     visionModel: 'gpt-4.1-mini',
     researchModel: 'gpt-5-mini',
     providerMode: 'byo',
-    visionRequestLimits: {},
-    authFailureMessage: 'Fixture authentication error',
     fetch: Object.assign(
       async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
         request = new Request(input, init)

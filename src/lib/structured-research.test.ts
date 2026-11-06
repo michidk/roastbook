@@ -74,14 +74,17 @@ describe('structured research contracts', () => {
     expect(result).toEqual({ score: 95 })
   })
 
-  test('returns an empty result for non-JSON output', () => {
-    expect(parseStructuredResearchResult('not JSON', fields)).toEqual({})
+  test('rejects malformed output but accepts valid empty extraction', () => {
+    expect(() => parseStructuredResearchResult('not JSON', fields)).toThrow(
+      'JSON',
+    )
+    expect(parseStructuredResearchResult('{}', fields)).toEqual({})
   })
 
   test.each(['null', '[]', '"text"'])(
-    'returns an empty result for non-object JSON %s',
+    'rejects non-object JSON %s',
     (content) => {
-      expect(parseStructuredResearchResult(content, fields)).toEqual({})
+      expect(() => parseStructuredResearchResult(content, fields)).toThrow()
     },
   )
 

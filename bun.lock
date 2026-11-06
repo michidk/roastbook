@@ -77,6 +77,9 @@
       "name": "@roastbook/journal-demo",
     },
   },
+  "patchedDependencies": {
+    "@tanstack/openai-base@1.0.0": "patches/@tanstack%2Fopenai-base@1.0.0.patch",
+  },
   "overrides": {
     "esbuild": "^0.28.2",
     "glob": "^14.0.2",

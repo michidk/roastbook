@@ -11,7 +11,7 @@ import {
   saveAiProviderSettings,
 } from './ai-provider-settings.server'
 import {
-  getOpenAIConfig,
+  getAiProviderConfig,
   isRecommendationsEnabled,
   isResearchEnabled,
   isVisionEnabled,
@@ -36,6 +36,8 @@ const key = 'fixture-user-provider-key'
 const connection = {
   ...DEFAULT_AI_PROVIDER,
   baseURL: 'https://8.8.8.8/v1',
+  visionModel: 'fixture-vision',
+  researchModel: 'fixture-research',
   apiKey: key,
 }
 const asFirst = <T>(work: () => Promise<T>) => withJournal(first, work)
@@ -60,7 +62,7 @@ suite('private AI provider settings', () => {
       .where(inArray(authUsers.id, [first.id, second.id]))
   })
   test('saves encrypted credentials, returns only metadata, and isolates accounts', async () => {
-    expect((await asSecond(getOpenAIConfig)).apiKey).toBeUndefined()
+    expect((await asSecond(getAiProviderConfig)).apiKey).toBeUndefined()
     const token = await confirmAs(first, 'save-ai-credentials')
     const metadata = await asFirst(() =>
       saveAiProviderSettings(connection, token),
@@ -73,11 +75,11 @@ suite('private AI provider settings', () => {
       .from(aiProviderCredentials)
       .where(eq(aiProviderCredentials.userId, first.id))
     expect(stored?.encryptedApiKey).not.toContain(key)
-    expect((await asFirst(getOpenAIConfig)).apiKey).toBe(key)
+    expect((await asFirst(getAiProviderConfig)).apiKey).toBe(key)
     expect(await asFirst(isVisionEnabled)).toBe(true)
     expect(await asFirst(isResearchEnabled)).toBe(true)
     expect((await asSecond(loadAiProviderSettings)).hasApiKey).toBe(false)
-    expect((await asSecond(getOpenAIConfig)).apiKey).toBeUndefined()
+    expect((await asSecond(getAiProviderConfig)).apiKey).toBeUndefined()
     expect(await asSecond(isVisionEnabled)).toBe(false)
     await expect(
       asFirst(() =>
@@ -122,7 +124,7 @@ suite('private AI provider settings', () => {
       ),
     )
     expect(updated.researchModel).toBe('custom-provider/reasoner')
-    expect((await asFirst(getOpenAIConfig)).apiKey).toBe(key)
+    expect((await asFirst(getAiProviderConfig)).apiKey).toBe(key)
     expect(await asFirst(isRecommendationsEnabled)).toBe(true)
     expect(await asFirst(isResearchEnabled)).toBe(false)
   })
@@ -130,7 +132,7 @@ suite('private AI provider settings', () => {
     await asSecond(removeAiProviderSettings)
     expect((await asFirst(loadAiProviderSettings)).hasApiKey).toBe(true)
     await asFirst(removeAiProviderSettings)
-    expect((await asFirst(getOpenAIConfig)).apiKey).toBeUndefined()
+    expect((await asFirst(getAiProviderConfig)).apiKey).toBeUndefined()
     expect(await asFirst(isRecommendationsEnabled)).toBe(false)
     const confirmation = await confirmAs(first, 'save-ai-credentials')
     await asFirst(() => saveAiProviderSettings(connection, confirmation))

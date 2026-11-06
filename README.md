@@ -114,7 +114,9 @@ own OpenAI-compatible endpoint in **Settings → AI**. See
 </p>
 
 AI calls run server-side only and are rate-limited, schema-validated, and
-logged in the database without image payloads.
+logged in the database without image payloads. Label extraction and
+recommendations honor the selected Responses or Chat Completions API format;
+online research requires Responses with hosted web search.
 
 > [!IMPORTANT]
 > **API and MCP server for your own scripts and agents.** `/api/v1` is a REST

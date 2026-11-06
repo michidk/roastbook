@@ -2,9 +2,6 @@ import { createServerOnlyFn } from '@tanstack/react-start'
 import { type PictureSize, pictureSizes } from '@/lib/picture-sizes'
 import { MAX_IMAGE_BYTES } from '@/lib/server-validation'
 
-const AI_IMAGE_MAX_DIMENSION = 2_048
-const AI_IMAGE_QUALITY = 85
-
 const IMAGE_FORMAT_BY_MIME_TYPE: Readonly<Record<string, readonly string[]>> = {
   'image/avif': ['avif', 'heif'],
   'image/gif': ['gif'],
@@ -18,7 +15,7 @@ const IMAGE_FORMAT_BY_MIME_TYPE: Readonly<Record<string, readonly string[]>> = {
 type SharpFactory = typeof import('sharp').default
 let sharpFactoryPromise: Promise<SharpFactory> | undefined
 
-function loadSharp(): Promise<SharpFactory> {
+export function loadSharp(): Promise<SharpFactory> {
   sharpFactoryPromise ??= import('sharp').then(({ default: sharp }) => {
     // Image extraction is bursty and runs in a memory-constrained web process.
     // Do not retain decoded image buffers after the request completes, and keep
@@ -82,20 +79,4 @@ export const createThumbnail = createServerOnlyFn((buffer: Buffer) =>
 )
 export const createSmallThumbnail = createServerOnlyFn((buffer: Buffer) =>
   encode(buffer, 'small'),
-)
-
-export const createAiImage = createServerOnlyFn(
-  async (buffer: Buffer): Promise<Buffer> => {
-    const sharp = await loadSharp()
-    return sharp(buffer)
-      .rotate()
-      .resize({
-        width: AI_IMAGE_MAX_DIMENSION,
-        height: AI_IMAGE_MAX_DIMENSION,
-        fit: 'inside',
-        withoutEnlargement: true,
-      })
-      .jpeg({ quality: AI_IMAGE_QUALITY })
-      .toBuffer()
-  },
 )

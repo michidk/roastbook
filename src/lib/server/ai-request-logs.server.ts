@@ -1,15 +1,10 @@
-import type { ChatMiddleware, StreamChunk, TokenUsage } from '@tanstack/ai'
 import { desc, eq, lt, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { requireIdentity } from '@/db/journal-context.server'
 import { owned } from '@/db/journal-scope.server'
 import { aiRequestLogs } from '@/db/schema'
 import type { AiRequestStart } from '@/extension-points/ai-request-recorder.server'
-import {
-  type AiTokenTotals,
-  addAiTokenUsage,
-  EMPTY_AI_TOKEN_TOTALS,
-} from '@/lib/ai-token-usage'
+import { type AiTokenTotals, EMPTY_AI_TOKEN_TOTALS } from '@/lib/ai-token-usage'
 import { DEMO_MODE } from '@/lib/build-mode'
 import type { JsonValue } from '@/lib/json-value'
 import {
@@ -173,31 +168,27 @@ export async function failAiRequestLog({
   logId,
   error,
   durationMs,
+  usage = EMPTY_AI_TOKEN_TOTALS,
+  aborted = false,
 }: {
   logId: number | undefined
   model: string
   error: unknown
   durationMs: number
+  usage?: AiTokenTotals
+  aborted?: boolean
 }) {
   const policy = getAiTelemetryPolicy()
   await updateLogSafely(logId, {
-    status: 'failed',
+    status: aborted ? 'aborted' : 'failed',
     responsePayload: policy.storePayloads
       ? storedAiPayload({ error: errorPayload(error) }, policy)
       : null,
     errorMessage: storedAiErrorMessage(errorMessage(error), policy),
-    ...usageValues(EMPTY_AI_TOKEN_TOTALS),
+    ...usageValues(usage),
     durationMs,
     completedAt: new Date(),
   })
-}
-
-function usageForResponse(
-  accumulated: AiTokenTotals,
-  finalUsage: TokenUsage | undefined,
-): AiTokenTotals {
-  if (accumulated.totalTokens > 0 || !finalUsage) return accumulated
-  return addAiTokenUsage(EMPTY_AI_TOKEN_TOTALS, finalUsage)
 }
 
 function usageValues(usage: AiTokenTotals) {
@@ -206,80 +197,6 @@ function usageValues(usage: AiTokenTotals) {
     cachedPromptTokens: usage.promptTokensDetails?.cachedTokens ?? 0,
     completionTokens: usage.completionTokens,
     totalTokens: usage.totalTokens,
-  }
-}
-
-export function retainTerminalAiEvent(
-  events: ReadonlyArray<StreamChunk>,
-  chunk: StreamChunk,
-): ReadonlyArray<StreamChunk> {
-  return chunk.type === 'RUN_FINISHED' || chunk.type === 'RUN_ERROR'
-    ? [chunk]
-    : events
-}
-
-export function createAiRequestLogMiddleware(
-  logId: number | undefined,
-  _model: string,
-): ChatMiddleware {
-  const policy = getAiTelemetryPolicy()
-  let events: ReadonlyArray<StreamChunk> = []
-  let usage = EMPTY_AI_TOKEN_TOTALS
-
-  return {
-    name: 'roastbook-ai-request-log',
-    onChunk: (_context, chunk) => {
-      if (policy.storePayloads) events = retainTerminalAiEvent(events, chunk)
-    },
-    onUsage: (_context, nextUsage) => {
-      usage = addAiTokenUsage(usage, nextUsage)
-    },
-    onFinish: async (_context, info) => {
-      const totals = usageForResponse(usage, info.usage)
-      await updateLogSafely(logId, {
-        status: 'succeeded',
-        responsePayload: policy.storePayloads
-          ? storedAiPayload(
-              {
-                content: info.content,
-                finishReason: info.finishReason,
-                events,
-                usage: totals,
-              },
-              policy,
-            )
-          : null,
-        ...usageValues(totals),
-        durationMs: info.duration,
-        completedAt: new Date(),
-      })
-    },
-    onAbort: async (_context, info) => {
-      await updateLogSafely(logId, {
-        status: 'aborted',
-        responsePayload: policy.storePayloads
-          ? storedAiPayload({ events, reason: info.reason ?? null }, policy)
-          : null,
-        errorMessage: policy.storePayloads
-          ? storedAiErrorMessage(info.reason ?? 'Request aborted', policy)
-          : 'AI request aborted',
-        ...usageValues(usage),
-        durationMs: info.duration,
-        completedAt: new Date(),
-      })
-    },
-    onError: async (_context, info) => {
-      await updateLogSafely(logId, {
-        status: 'failed',
-        responsePayload: policy.storePayloads
-          ? storedAiPayload({ events, error: errorPayload(info.error) }, policy)
-          : null,
-        errorMessage: storedAiErrorMessage(errorMessage(info.error), policy),
-        ...usageValues(usage),
-        durationMs: info.duration,
-        completedAt: new Date(),
-      })
-    },
   }
 }
 
