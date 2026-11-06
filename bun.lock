@@ -14,7 +14,7 @@
         "@better-auth/passkey": "1.7.15",
         "@modelcontextprotocol/server": "^2.4.0",
         "@roastbook/open-coffee-schema": "0.4.0",
-        "@roastbook/ui": "github:roastbook/ui#1bea1a9eef2bbf2bf8861e1ddb64ced8b3395925",
+        "@roastbook/ui": "github:roastbook/ui#3b045a6c367b9910250bb7b897e7b343f258322b",
         "@scalar/api-reference": "1.77.0",
         "@simplewebauthn/server": "14.0.3",
         "@t3-oss/env-core": "^0.13.11",
@@ -600,7 +600,7 @@
 
     "@roastbook/open-coffee-schema": ["@roastbook/open-coffee-schema@0.4.0", "", {}, "sha512-1Ep5p667OrvGrvzpXukuDhqgM1hc2zpPi67byc1Gfk6deLQarGBaUrPl9mo7D98G0tyzR+Y9YUSkWLU8dtZyYg=="],
 
-    "@roastbook/ui": ["@roastbook/ui@github:roastbook/ui#1bea1a9", { "dependencies": { "@base-ui/react": "^1.5.0", "@fontsource-variable/bricolage-grotesque": "^5.2.0", "@fontsource-variable/hanken-grotesk": "^5.2.0", "class-variance-authority": "^0.7.1", "clsx": "^2.1.1", "input-otp": "^1.5.0", "lucide-react": "^1.0.0", "recharts": "^3.8.1", "sonner": "^2.0.7", "tailwind-merge": "^3.6.0" }, "peerDependencies": { "astro": "^7.0.0", "react": "^19.0.0", "react-dom": "^19.0.0", "tailwindcss": "^4.1.0" }, "optionalPeers": ["astro", "react", "react-dom", "tailwindcss"] }, "roastbook-ui-1bea1a9", "sha512-qBY9aGI6o1Eny/e+a3ancFyjYINWRGbE62qQIjo2rOSKiCNVsQdgeq1OIt9+Kz5OY/L6ZEvF2sqJASc5d6ez7w=="],
+    "@roastbook/ui": ["@roastbook/ui@github:roastbook/ui#3b045a6", { "dependencies": { "@base-ui/react": "^1.5.0", "@fontsource-variable/bricolage-grotesque": "^5.2.0", "@fontsource-variable/hanken-grotesk": "^5.2.0", "class-variance-authority": "^0.7.1", "clsx": "^2.1.1", "input-otp": "^1.5.0", "lucide-react": "^1.0.0", "recharts": "^3.8.1", "sonner": "^2.0.7", "tailwind-merge": "^3.6.0" }, "peerDependencies": { "astro": "^7.0.0", "react": "^19.0.0", "react-dom": "^19.0.0", "tailwindcss": "^4.1.0" }, "optionalPeers": ["astro", "react", "react-dom", "tailwindcss"] }, "roastbook-ui-3b045a6", "sha512-ARdp1RBpk96YOrpzxpfMKyVEzFrFx9H6uxTDt+7HDwb3QuCfhBRiyO8cnJlZqsc38cE7Qex4iqC7fZ6U8/3EBA=="],
 
     "@rolldown/binding-android-arm-eabi": ["@rolldown/binding-android-arm-eabi@1.2.15", "", { "os": "android", "cpu": "arm" }, "sha512-aLcgK9gIJ3YRvrrtfSBbRa27F5WrpiTaPulnFpsHPxpUHgFlSgnU4854MHwoRGEBhfRJDWCS2WQ7lIjskE9Olw=="],
 
