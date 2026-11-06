@@ -5,6 +5,7 @@ import { WideDetailPending } from '@/components/route-pending'
 import { getBean } from '@/journal/beans'
 import { getRoasters } from '@/journal/roasters'
 import { getBeanShotAnalytics, getBeanShotPage } from '@/journal/shots'
+import { integrationCapability } from '@/lib/client/integration-capability'
 import { checkResearchEnabled, checkVisionEnabled } from '@/lib/client/research'
 import { parseEditModeSearch } from '@/lib/edit-mode'
 import { parseIdParam } from '@/lib/route-params'
@@ -63,7 +64,7 @@ async function loadBeanDetail(beanId: number, deps: BeanDetailSearch) {
     getRoasters(),
     checkVisionEnabled(),
     checkResearchEnabled(),
-    checkShotRecommendationEnabled(),
+    integrationCapability(checkShotRecommendationEnabled)(),
   ])
   return {
     bean,
