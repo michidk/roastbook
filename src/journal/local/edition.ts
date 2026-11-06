@@ -18,6 +18,7 @@ import {
   refreshSyncStatus,
   synchronizeJournal,
 } from './sync'
+import { waitForSync } from './sync-status'
 
 let account: Awaited<ReturnType<typeof loadAccount>> = null
 
@@ -64,6 +65,18 @@ async function prepare(journal: LocalJournal) {
     : moveLegacy())
 }
 
+/**
+ * Online, pages open once the copy has caught up, not on what this device
+ * last saw; a slow connection gets the device copy, marked as updating.
+ */
+async function catchUp(journal: LocalJournal) {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) return
+  await waitForSync(
+    synchronizeJournal(journal).catch(() => undefined),
+    1_000,
+  )
+}
+
 export async function openEditionJournal() {
   const journal = await openLocalJournal((owner) => ({
     database: localDatabaseName('journal', owner),
@@ -77,7 +90,11 @@ export async function openEditionJournal() {
       await downloadJournal(opened)
     },
   }))
-  if (setup?.journal !== journal) setup = { journal, ready: prepare(journal) }
+  if (setup?.journal !== journal)
+    setup = {
+      journal,
+      ready: prepare(journal).then(() => catchUp(journal)),
+    }
   await setup.ready
   return journal
 }

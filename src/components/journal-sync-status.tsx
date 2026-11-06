@@ -40,7 +40,17 @@ export function JournalSyncStatus() {
       .catch(() => setChanges('failed'))
   }, [open, status.pending, status.conflicts])
 
-  if (!status.pending && !status.conflicts && !status.authRequired) return null
+  if (!status.pending && !status.conflicts && !status.authRequired)
+    return status.updating ? (
+      <aside
+        className="border-b border-border bg-secondary px-4 py-2 text-secondary-foreground"
+        aria-label="Journal synchronization"
+      >
+        <p role="status" className="mx-auto max-w-7xl text-center text-sm">
+          Showing the journal saved in this browser while it updates…
+        </p>
+      </aside>
+    ) : null
 
   async function resolve(change: PendingChange, action: 'retry' | 'discard') {
     setBusy(true)
