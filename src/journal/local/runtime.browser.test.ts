@@ -521,6 +521,29 @@ test('a read the server cannot answer comes from the device copy; a write fails'
   }
 })
 
+test('a read the server leaves unanswered falls back to the device copy', async () => {
+  const journal = await openJournal(true)
+  await journal.client.query(
+    "insert into roastbook_local.id_pool (table_name, id) values ('beans', 530), ('bean_purchases', 730)",
+  )
+  await createBean({ data: { name: 'Hung connection' } })
+  unsynced = false
+  callServer = async () => {
+    // The request times out without the browser noticing a lost connection.
+    throw new DOMException('The operation timed out.', 'TimeoutError')
+  }
+  const timeout = AbortSignal.timeout
+  AbortSignal.timeout = () => AbortSignal.abort()
+  try {
+    const page = JSON.stringify(await getBeanCollection({ data: {} }))
+    expect(page).toContain('Hung connection')
+  } finally {
+    AbortSignal.timeout = timeout
+    unsynced = true
+    callServer = async () => ({ id: 42 })
+  }
+})
+
 test('a download applies only what changed: replaced rows and deletions', async () => {
   const journal = await openJournal(true)
   const at = new Date('2026-11-01T08:00:00.000Z')

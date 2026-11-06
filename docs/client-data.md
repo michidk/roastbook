@@ -7,8 +7,9 @@ runs on the server on PostgreSQL, and offline on a device copy on PGlite.
 - While the server can be reached, browsers call `callJournal` in
   `src/lib/server/journal-sync.ts`, so pages always show the account's journal.
 - A browser keeping a copy runs functions on it while offline, when a read
-  cannot reach the server, and while the copy has unsynced changes, so new
-  writes queue behind them. A write that fails in flight is not repeated
+  gets no answer within 10 seconds, and while the copy has unsynced changes
+  (assumed until the copy has been checked once), so new writes queue behind
+  them. A write that fails in flight is not repeated
   locally; the server may have applied it.
 - `src/journal/local/device-copy.ts` decides who keeps a copy: the installed
   app, and browser tabs of a profile where it ran or the former offline setting

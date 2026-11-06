@@ -25,10 +25,13 @@ export async function runJournalFunction(
     throw new Error(
       'You are offline. Install Roastbook and open it once while online to keep your journal available offline.',
     )
+  // Reads are bounded like other requests, so a hung connection falls back.
+  const timeout = info.kind === 'read' ? AbortSignal.timeout(10_000) : undefined
   try {
     const { callJournal } = await import('@/lib/server/journal-sync')
     const result = await callJournal({
       data: { name: info.name, input: await encodeInput(input) },
+      signal: timeout,
     })
     // Pages refresh after a write, as they do for the device copy.
     if (info.kind === 'write') await notifyLocalChange('write')
@@ -36,7 +39,8 @@ export async function runJournalFunction(
   } catch (error) {
     // A read the server could not answer comes from the copy. A write is not
     // repeated: the server may have applied it before the connection failed.
-    if (copy && info.kind === 'read' && !isConnectionOnline())
+    const unanswered = timeout?.aborted || !isConnectionOnline()
+    if (copy && info.kind === 'read' && unanswered)
       return runOnDevice(info, input)
     throw error
   }

@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, expect, test } from 'bun:test'
-import { keepsDeviceCopy } from './device-copy'
+import {
+  hasUnsyncedChanges,
+  keepsDeviceCopy,
+  setUnsyncedChanges,
+} from './device-copy'
 
 const originals = new Map(
   ['window', 'localStorage'].map((key) => [
@@ -67,6 +71,14 @@ test('browser tabs preserve copies enabled with the former setting', () => {
   stored.set('roastbook-device-copy', 'on')
   expect(keepsDeviceCopy()).toBe(true)
   expect(stored.get('roastbook-device-copy')).toBe('on')
+})
+
+test('a copy counts as unsynced until it has been checked', () => {
+  expect(hasUnsyncedChanges()).toBe(true)
+  setUnsyncedChanges(false)
+  expect(hasUnsyncedChanges()).toBe(false)
+  setUnsyncedChanges(true)
+  expect(hasUnsyncedChanges()).toBe(true)
 })
 
 test('server rendering does not access browser storage', () => {
