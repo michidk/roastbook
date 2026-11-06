@@ -1,12 +1,12 @@
 # Offline journaling
 
 The installed app keeps the signed-in account's journal on the device and works
-offline automatically. A browser tab always reads and writes on the server,
-even when the installed app keeps a copy in the same browser profile; such a
-tab still syncs that copy in the background, so its pending changes reach the
-account. There is no offline toggle. A device copy downloads
-the journal records once (pictures load as they are shown), reads and writes
-locally, and syncs with the account when a connection is available. See
+offline automatically. Online, the app and browser tabs always show the
+account's journal from the server; the device copy takes over without a
+connection, and until changes made offline have synced. Browser tabs in a
+browser profile with the installed app share its copy. There is no offline
+toggle. A device copy downloads the journal records once (pictures load as
+they are shown) and syncs with the account when a connection is available. See
 [Journal architecture](client-data.md) for the design.
 
 ## What works offline
@@ -30,8 +30,7 @@ Each change is saved locally with its sync record in one transaction and sent
 after the change, at startup, on reconnect or focus, every 30 seconds, and from
 **Sync now**. The server applies each change exactly once. Changes from other
 devices download when the account's journal changed, only the records that
-changed. At startup the app shows the device copy at once and refreshes
-when changes arrive, with an updating notice if they take more than a second.
+changed.
 
 A change that no longer fits the latest journal, such as an edit to a record
 deleted elsewhere, appears in the sync banner as needing review: **Try again**

@@ -1,15 +1,21 @@
 # Journal architecture
 
 Every journal read and write is one SQL journal function in `src/journal/`. It
-runs on the server on PostgreSQL, and in browsers that keep a device copy
-on PGlite (sync replay, MCP and browser tabs without a copy use the server).
-`src/journal/local/device-copy.ts` decides: the demo and the installed app
-run functions on a copy (`keepsDeviceCopy`). Browser tabs call `callJournal` in
-`src/lib/server/journal-sync.ts`; when the browser holds a copy
-(`hasDeviceCopy`: the installed app's, or one from the former offline setting),
-they sync it in the background and remove it on sign-out. See
-[ADR 0001](adr/0001-sql-journal.md) for the
-decision.
+runs on the server on PostgreSQL, and offline on a device copy on PGlite.
+`src/journal/platform/runtime.browser.ts` decides per call:
+
+- While the server can be reached, browsers call `callJournal` in
+  `src/lib/server/journal-sync.ts`, so pages always show the account's journal.
+- A browser holding a copy (`hasDeviceCopy` in
+  `src/journal/local/device-copy.ts`) runs functions on it while offline, when
+  a read cannot reach the server, and while the copy has unsynced changes
+  (`hasUnsyncedChanges`), so new writes queue behind them. A write that fails
+  in flight is not repeated locally; the server may have applied it.
+- The installed app creates the copy (`keepsDeviceCopy`); every tab of that
+  browser syncs it in the background and removes it on sign-out.
+- The demo always runs on its copy.
+
+See [ADR 0001](adr/0001-sql-journal.md) for the decision.
 
 ## Journal functions
 
@@ -83,10 +89,8 @@ client build by `scripts/vite-journal-platform.ts` (the demo build also selects
   count. A device without pending writes downloads only the rows changed since
   its revision (a key without a row was deleted); otherwise, or past 5,000
   changes, it replaces the owner's rows and reruns pending writes on top.
-- **Startup.** In the installed app, pages open on the copy at once while it
-  syncs, and reload when the sync downloads changes; a sync that takes over a
-  second adds an updating notice. Browser tabs reload their page when they
-  become visible after more than 30 seconds hidden.
+- **Freshness.** Pages reload when the app becomes visible after more than 30
+  seconds hidden.
 - **Reservations.** The server reserves 256 identifiers per table and device
   (`journal_id_reservations`), reusing the oldest once more than 1024 are
   unused. Every insert into a table with a serial `id` takes it from

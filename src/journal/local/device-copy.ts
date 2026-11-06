@@ -6,9 +6,8 @@ import { isStandalone } from '@/lib/standalone'
 const choice = 'roastbook-device-copy'
 
 /**
- * The demo and the installed app read and write the journal on the device, for
- * offline use. Browser tabs always use the server, even in a browser whose
- * installed app keeps a copy.
+ * The demo and the installed app keep the journal on the device, for offline
+ * use. Browser tabs create no copy.
  */
 export function keepsDeviceCopy() {
   if (typeof window === 'undefined') return false
@@ -19,9 +18,9 @@ export function keepsDeviceCopy() {
 }
 
 /**
- * Whether this browser holds a copy: from the installed app, the former
- * offline setting, or tabs before they used the server. Tabs still sync it, so
- * its pending changes reach the account, and remove it on sign-out.
+ * Whether this browser holds a copy, from the installed app or the former
+ * offline setting. Every tab of the browser syncs it, reads it offline and
+ * removes it on sign-out.
  */
 export function hasDeviceCopy() {
   return keepsDeviceCopy() || localStorage.getItem(choice) === 'on'
@@ -30,6 +29,21 @@ export function hasDeviceCopy() {
 export function setDeviceCopy(keep: boolean) {
   if (keep) localStorage.setItem(choice, 'on')
   else localStorage.removeItem(choice)
+}
+
+const unsynced = 'roastbook-unsynced-changes'
+
+/**
+ * Whether the copy holds changes the account does not have yet. Kept outside
+ * the copy so pages can choose the server without opening it.
+ */
+export function hasUnsyncedChanges() {
+  return localStorage.getItem(unsynced) === 'yes'
+}
+
+export function setUnsyncedChanges(value: boolean) {
+  if (value) localStorage.setItem(unsynced, 'yes')
+  else localStorage.removeItem(unsynced)
 }
 
 /** Where the earlier offline mode (RxDB) kept an owner's queued changes. */

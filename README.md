@@ -74,8 +74,8 @@ roasters, brewing methods, and gear. Website:
   timing, and cost.
 - 📴 **Installable and offline.** Use it in the browser or install it as a
   PWA. The installed app automatically keeps the journal on the device, works
-  without a connection, and syncs only what changed when you reconnect. Browser
-  tabs always use the server.
+  without a connection, and syncs only what changed when you reconnect. Online,
+  it reads from the server, so it never shows outdated data.
   [See what works offline.](docs/offline.md)
 - 🔒 **Yours, end to end.** Your own PostgreSQL and storage. Private accounts
   with email codes and passkeys, or one shared journal behind your own auth

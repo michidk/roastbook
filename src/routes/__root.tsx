@@ -30,7 +30,6 @@ import { RouteNotFound } from '@/components/route-not-found'
 import { AppPending } from '@/components/route-pending'
 import { Toaster } from '@/components/toaster'
 import { useOnlineStatus } from '@/hooks/use-online-status'
-import { keepsDeviceCopy } from '@/journal/local/device-copy'
 import { DEMO_MODE, PREFERENCES_STORAGE_KEY } from '@/lib/build-mode'
 import { isConnectionOnline } from '@/lib/connection-status'
 import { DEFAULT_APP_SETTINGS } from '@/lib/default-app-settings'
@@ -351,16 +350,15 @@ function RootComponent() {
   const router = useRouter()
   useEffect(() => {
     if (login || DEMO_MODE) return
-    // Tabs reading from the server reload pages they return to after a while,
-    // since the journal may have changed elsewhere; device copies sync instead.
+    // Pages reload when the app returns after a while, since the journal may
+    // have changed elsewhere.
     let hiddenAt: number | undefined
     const reload = () => {
       if (document.visibilityState === 'hidden') hiddenAt = Date.now()
       else if (
         hiddenAt !== undefined &&
         Date.now() - hiddenAt > 30_000 &&
-        isConnectionOnline() &&
-        !keepsDeviceCopy()
+        isConnectionOnline()
       ) {
         hiddenAt = undefined
         void router.invalidate()

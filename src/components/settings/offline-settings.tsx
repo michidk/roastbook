@@ -16,7 +16,7 @@ import { PanelSection } from '@/components/section-layout'
 import { useDateTimeFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import { useOnlineStatus } from '@/hooks/use-online-status'
-import { keepsDeviceCopy } from '@/journal/local/device-copy'
+import { hasDeviceCopy } from '@/journal/local/device-copy'
 import { useSyncStatus } from '@/journal/local/sync-status'
 import { getErrorMessage } from '@/lib/error-message'
 import { formatBytes } from '@/lib/utils'
@@ -60,7 +60,7 @@ export function OfflineSettings() {
   )
   const [legacyFailed, setLegacyFailed] = useState(0)
   const [isResettingShell, setIsResettingShell] = useState(false)
-  const keep = keepsDeviceCopy()
+  const keep = hasDeviceCopy()
 
   useEffect(() => {
     void navigator.storage
