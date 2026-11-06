@@ -3,6 +3,7 @@ import { Switch } from '@roastbook/ui/switch'
 import type { ReactNode } from 'react'
 import { AltitudeRangeField } from '@/components/beans/altitude-range-field'
 import type { BeanFormValues } from '@/components/beans/bean-form-values'
+import { BeanLibraryFields } from '@/components/beans/bean-library-fields'
 import { DateField } from '@/components/form/date-field'
 import {
   CurrencyField,
@@ -33,7 +34,10 @@ type BeanFieldsProps = {
   readonly roasters: readonly RoasterOption[]
   readonly idPrefix?: string
   readonly basicAction?: ReactNode
+  readonly collectionFields?: ReactNode
+  readonly showBasicInfo?: boolean
   readonly showPurchaseFields?: boolean
+  readonly showLibraryFields?: boolean
 }
 
 export function BeanFields({
@@ -42,7 +46,10 @@ export function BeanFields({
   roasters,
   idPrefix = 'bean',
   basicAction,
+  collectionFields,
   showPurchaseFields = true,
+  showBasicInfo = true,
+  showLibraryFields = true,
 }: BeanFieldsProps) {
   const id = (field: string) => `${idPrefix}-${field}`
 
@@ -50,22 +57,26 @@ export function BeanFields({
     <>
       <FormSection title="Basic info" action={basicAction}>
         <div className="grid gap-4 sm:grid-cols-2">
-          <InputField
-            id={id('name')}
-            label="Name"
-            placeholder="e.g., Ethiopia Yirgacheffe"
-            value={values.name}
-            onChange={(value) => onChange('name', value)}
-            required
-          />
-          <RoasterPicker
-            id={id('roasterId')}
-            label="Roaster"
-            placeholder="Select roaster"
-            value={values.roasterId}
-            onChange={(value) => onChange('roasterId', value)}
-            roasters={roasters}
-          />
+          {showBasicInfo ? (
+            <>
+              <InputField
+                id={id('name')}
+                label="Name"
+                placeholder="e.g., Ethiopia Yirgacheffe"
+                value={values.name}
+                onChange={(value) => onChange('name', value)}
+                required
+              />
+              <RoasterPicker
+                id={id('roasterId')}
+                label="Roaster"
+                placeholder="Select roaster"
+                value={values.roasterId}
+                onChange={(value) => onChange('roasterId', value)}
+                roasters={roasters}
+              />
+            </>
+          ) : null}
           <SelectField
             id={id('type')}
             label="Type"
@@ -138,6 +149,14 @@ export function BeanFields({
         </div>
       </FormSection>
 
+      {collectionFields}
+      {showLibraryFields && !showPurchaseFields ? (
+        <BeanLibraryFields
+          values={values}
+          onChange={onChange}
+          idPrefix={idPrefix}
+        />
+      ) : null}
       <FormSection title="Origin">
         <div className="grid gap-4 sm:grid-cols-2">
           <InputField

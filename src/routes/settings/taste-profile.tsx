@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Loader2, Sparkles, Tags } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { PanelSection } from '@/components/section-layout'
+import { BeanTagSettings } from '@/components/settings/bean-tag-settings'
 import {
   TasteProfileFieldToggle,
   TasteProfileSettings,
@@ -9,6 +10,7 @@ import {
 import { TasteTagSettings } from '@/components/settings/taste-tag-settings'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useSettingMutation } from '@/hooks/use-setting-mutation'
+import { getBeanTags } from '@/journal/bean-tags'
 import { updateTasteProfileFields } from '@/journal/settings'
 import { getTasteTags } from '@/journal/taste-tags'
 import {
@@ -18,12 +20,18 @@ import {
 } from '@/lib/taste-profile'
 
 export const Route = createFileRoute('/settings/taste-profile')({
-  loader: () => getTasteTags(),
+  loader: async () => {
+    const [tasteTags, beanTags] = await Promise.all([
+      getTasteTags(),
+      getBeanTags(),
+    ])
+    return { tasteTags, beanTags }
+  },
   component: TasteProfileSection,
 })
 
 function TasteProfileSection() {
-  const tasteTags = Route.useLoaderData()
+  const { tasteTags, beanTags } = Route.useLoaderData()
   const savedTasteProfile = useAppSettings().tasteProfile
   const [tasteProfile, setTasteProfile] = useState(savedTasteProfile)
 
@@ -46,6 +54,12 @@ function TasteProfileSection() {
 
   return (
     <>
+      <PanelSection
+        title="Bean tags"
+        description="Organize your coffee database. Rename or delete the defaults, or add your own tags."
+      >
+        <BeanTagSettings tags={beanTags} />
+      </PanelSection>
       <PanelSection
         title="Taste profile"
         description="Choose which tasting inputs Roastbook captures for brews and café visits. A disabled input is hidden everywhere, including on entries that already recorded it."

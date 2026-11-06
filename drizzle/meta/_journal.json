@@ -589,6 +589,20 @@
       "when": 1793875181988,
       "tag": "0083_integration-scopes",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1793875181989,
+      "tag": "0084_colossal_bastion",
+      "breakpoints": true
+    },
+    {
+      "idx": 85,
+      "version": "7",
+      "when": 1793875181990,
+      "tag": "0085_lonely_satana",
+      "breakpoints": true
     }
   ]
 }

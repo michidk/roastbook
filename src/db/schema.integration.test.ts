@@ -549,3 +549,35 @@ databaseDescribe('PostgreSQL schema', () => {
     })
   })
 })
+
+// Bootstrap transfers the shared journal one table at a time in one transaction.
+databaseDescribe('bean library ownership', () => {
+  test('moves tag assignments and their parents together during shared-journal adoption', async () => {
+    const suffix = crypto.randomUUID()
+    const owner = `bean-library-before-${suffix}`
+    const nextOwner = `bean-library-after-${suffix}`
+    try {
+      await database().begin(async (tx) => {
+        const [bean] =
+          await tx`insert into beans(owner_id,name) values (${owner}, 'Shared coffee') returning id`
+        const [tag] =
+          await tx`insert into bean_tags(owner_id,name) values (${owner}, 'Reorder') returning id`
+        if (!bean || !tag) throw new Error('Missing adoption fixture')
+        await tx`insert into bean_tag_assignments(owner_id,bean_id,tag_id) values (${owner},${bean.id},${tag.id})`
+      })
+      await database().begin(async (tx) => {
+        await tx`select set_config('roastbook.bootstrap', 'true', true)`
+        await tx`update bean_tags set owner_id = ${nextOwner} where owner_id = ${owner}`
+        await tx`update bean_tag_assignments set owner_id = ${nextOwner} where owner_id = ${owner}`
+        await tx`update beans set owner_id = ${nextOwner} where owner_id = ${owner}`
+      })
+      expect(
+        await database()`select 1 from bean_tag_assignments where owner_id = ${nextOwner}`,
+      ).toHaveLength(1)
+    } finally {
+      await database()`delete from bean_tag_assignments where owner_id in (${owner},${nextOwner})`
+      await database()`delete from bean_tags where owner_id in (${owner},${nextOwner})`
+      await database()`delete from beans where owner_id in (${owner},${nextOwner})`
+    }
+  })
+})

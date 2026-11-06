@@ -3,6 +3,7 @@ import type { z } from 'zod'
 import {
   beanImages,
   beanPurchases,
+  beans,
   cafeVisitImages,
   cafeVisits,
   coffeeShopImages,
@@ -23,6 +24,13 @@ type EntityType = z.infer<typeof entityTypeSchema>
 
 export function entityImageTarget(entityType: EntityType) {
   switch (entityType) {
+    case 'beans':
+      return {
+        table: beanImages,
+        foreignKey: beanImages.beanId,
+        parent: beans,
+        storageType: 'beans' as const,
+      }
     case 'bean-purchases':
       return {
         table: beanImages,
@@ -99,11 +107,13 @@ export function entityImageSelection(
 export async function setEntityImageThumbnail(
   data: z.infer<typeof thumbnailImageIdSchema>,
 ) {
-  const table = data.entityType === 'bean-purchases' ? beanImages : gearImages
+  const table = data.entityType === 'gear' ? gearImages : beanImages
   const foreignKey =
-    data.entityType === 'bean-purchases'
-      ? beanImages.beanPurchaseId
-      : gearImages.gearId
+    data.entityType === 'beans'
+      ? beanImages.beanId
+      : data.entityType === 'bean-purchases'
+        ? beanImages.beanPurchaseId
+        : gearImages.gearId
 
   await runJournalMutations([
     {

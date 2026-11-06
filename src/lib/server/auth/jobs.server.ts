@@ -210,6 +210,8 @@ async function deleteJournal(job: Job) {
     'cafe_visits',
     'gear_set_accessory_gear',
     'gear_sets',
+    'bean_tag_assignments',
+    'bean_tags',
     'bean_images',
     'bean_purchases',
     'beans',

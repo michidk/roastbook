@@ -1,7 +1,19 @@
-import { and, count, desc, eq, exists, not, or } from 'drizzle-orm'
-import { beanPurchases, beans, cafeVisits, recipes, shots } from '@/db/schema'
+import { and, count, desc, eq, exists, inArray, not, or } from 'drizzle-orm'
 import {
-  createBeanPurchaseMutations,
+  beanPurchases,
+  beans,
+  beanTagAssignments,
+  cafeVisits,
+  recipes,
+  shots,
+} from '@/db/schema'
+import {
+  beanRatings,
+  createBeanMutations,
+  replaceBeanTags,
+  shelfCondition,
+} from '@/journal/domain/bean-library'
+import {
   newestPurchase,
   purchaseUsageById,
 } from '@/journal/domain/bean-purchases'
@@ -15,13 +27,7 @@ import {
   checkAltitudeRange,
 } from '@/journal/input/beans'
 import { journalNow } from '@/journal/platform/clock'
-import {
-  allocateJournalIds,
-  db,
-  journalInsertValues,
-  owned,
-  runJournalMutations,
-} from '@/journal/platform/database'
+import { db, owned, runJournalMutations } from '@/journal/platform/database'
 import { trackEvent } from '@/journal/platform/effects'
 import {
   escapedContainsPattern,
@@ -43,11 +49,12 @@ export const getBeans = journalRead('beans/getBeans').handler(async () => {
       purchases: { orderBy: [desc(beanPurchases.createdAt)] },
     },
   })
-  return rows.map(flattenBeanPurchase)
+  return enrichBeans(rows)
 })
 
 function flattenBeanPurchase<
   Bean extends {
+    readonly alwaysOnShelf: boolean
     readonly purchases: readonly (typeof beanPurchases.$inferSelect)[]
   },
 >(bean: Bean) {
@@ -65,7 +72,7 @@ function flattenBeanPurchase<
     shopName: purchase?.shopName ?? null,
     shopUrl: purchase?.shopUrl ?? null,
     isArchived:
-      purchases.length > 0 && purchases.every((item) => item.isArchived),
+      !bean.alwaysOnShelf && purchases.every((item) => item.isArchived),
   }
 }
 
@@ -88,22 +95,25 @@ export const getBeanCollection = journalRead('beans/getBeanCollection')
       const pageSize = isArchived
         ? ARCHIVED_BEANS_PAGE_SIZE
         : ACTIVE_BEANS_PAGE_SIZE
-      const activePurchase = exists(
-        db
-          .select({ id: beanPurchases.id })
-          .from(beanPurchases)
-          .where(
-            owned(
-              beanPurchases,
-              and(
-                eq(beanPurchases.beanId, beans.id),
-                eq(beanPurchases.isArchived, false),
+      const onShelf = shelfCondition()
+      const archiveState = isArchived ? not(onShelf) : onShelf
+      const tagFilter = data.tagId
+        ? exists(
+            db
+              .select({ id: beanTagAssignments.tagId })
+              .from(beanTagAssignments)
+              .where(
+                owned(
+                  beanTagAssignments,
+                  and(
+                    eq(beanTagAssignments.beanId, beans.id),
+                    eq(beanTagAssignments.tagId, data.tagId),
+                  ),
+                ),
               ),
-            ),
-          ),
-      )
-      const archiveState = isArchived ? not(activePurchase) : activePurchase
-      const where = search ? and(archiveState, search) : archiveState
+          )
+        : undefined
+      const where = and(archiveState, search, tagFilter)
       const countRows = await db
         .select({ value: count() })
         .from(beans)
@@ -127,6 +137,9 @@ export const getBeanCollection = journalRead('beans/getBeanCollection')
 
     async function includeWeightUsage<
       Bean extends {
+        readonly id: number
+        readonly rating: number | null
+        readonly alwaysOnShelf: boolean
         readonly purchases: readonly (typeof beanPurchases.$inferSelect)[]
       },
     >(items: readonly Bean[]) {
@@ -134,10 +147,9 @@ export const getBeanCollection = journalRead('beans/getBeanCollection')
       const usage = await purchaseUsageById(
         flattened.flatMap((bean) => (bean.purchaseId ? [bean.purchaseId] : [])),
       )
-      return items.map((bean) => ({
-        ...flattenBeanPurchase(bean),
-        usedWeightGrams:
-          usage.get(flattenBeanPurchase(bean).purchaseId ?? 0) ?? '0',
+      return (await enrichBeans(items)).map((bean) => ({
+        ...bean,
+        usedWeightGrams: usage.get(bean.purchaseId ?? 0) ?? '0',
       }))
     }
 
@@ -181,33 +193,18 @@ export const getBean = journalRead('beans/getBean')
           },
         },
       })
-      .then((bean) =>
-        bean
-          ? { ...flattenBeanPurchase(bean), purchases: bean.purchases }
-          : undefined,
-      )
+      .then(async (bean) => {
+        if (!bean) return undefined
+        const [enriched] = await enrichBeans([bean])
+        if (!enriched) return undefined
+        return { ...enriched, purchases: bean.purchases }
+      })
   })
 
 export const getActiveBeans = journalRead('beans/getActiveBeans').handler(
   async () => {
     const rows = await db.query.beans.findMany({
-      where: owned(
-        beans,
-        exists(
-          db
-            .select({ id: beanPurchases.id })
-            .from(beanPurchases)
-            .where(
-              owned(
-                beanPurchases,
-                and(
-                  eq(beanPurchases.beanId, beans.id),
-                  eq(beanPurchases.isArchived, false),
-                ),
-              ),
-            ),
-        ),
-      ),
+      where: owned(beans, shelfCondition()),
       orderBy: [desc(beans.createdAt)],
       with: {
         images: true,
@@ -218,7 +215,7 @@ export const getActiveBeans = journalRead('beans/getActiveBeans').handler(
         },
       },
     })
-    return rows.map(flattenBeanPurchase)
+    return enrichBeans(rows)
   },
 )
 
@@ -234,7 +231,7 @@ export const getActiveBeanPurchases = journalRead(
     },
   })
   const usage = await purchaseUsageById(rows.map((row) => row.id))
-  return rows.map((purchase) => ({
+  const purchases = rows.map((purchase) => ({
     ...purchase.bean,
     images: purchase.images,
     purchaseId: purchase.id,
@@ -247,49 +244,38 @@ export const getActiveBeanPurchases = journalRead(
     isArchived: purchase.isArchived,
     usedWeightGrams: usage.get(purchase.id) ?? '0',
   }))
+  const profiles = await enrichBeans(
+    await db.query.beans.findMany({
+      where: owned(beans),
+      orderBy: [desc(beans.alwaysOnShelf), desc(beans.createdAt)],
+      with: {
+        images: true,
+        roasterRef: true,
+        purchases: { orderBy: [desc(beanPurchases.createdAt)] },
+      },
+    }),
+  )
+  return [
+    ...purchases,
+    ...profiles
+      .filter((bean) => !rows.some((purchase) => purchase.beanId === bean.id))
+      .map((bean) => ({ ...bean, purchaseId: null, usedWeightGrams: '0' })),
+  ]
 })
 
 export const createBean = journalWrite('beans/createBean')
   .validator(beanCreateSchema.superRefine(checkAltitudeRange))
   .handler(async ({ data }) => {
-    const {
-      roastDate,
-      weight,
-      price,
-      priceCurrency,
-      shopName,
-      shopUrl,
-      isArchived,
-      ...profile
-    } = data
-    const [id] = await allocateJournalIds(beans)
-    if (id === undefined) throw new Error('Could not allocate bean identifier')
-    const purchase = await createBeanPurchaseMutations(id, {
-      roastDate,
-      initialWeightGrams: weight,
-      price,
-      priceCurrency,
-      shopName,
-      shopUrl,
-      isArchived,
-    })
-    await runJournalMutations([
-      {
-        statement: db
-          .insert(beans)
-          .values(journalInsertValues({ id, ...profile }))
-          .getSQL(),
-      },
-      ...purchase.mutations,
-    ])
+    const created = await createBeanMutations(data)
+    await runJournalMutations(created.mutations)
     const savedBean = expectReturnedRow(
       await db.query.beans.findFirst({
-        where: owned(beans, eq(beans.id, id)),
+        where: owned(beans, eq(beans.id, created.id)),
       }),
       'Bean',
     )
     trackEvent('bean_created')
-    return { ...savedBean, purchaseId: purchase.id }
+    return { ...savedBean, purchaseId: created.purchaseId }
   })
 
 export const updateBean = journalWrite('beans/updateBean')
@@ -304,18 +290,31 @@ export const updateBean = journalWrite('beans/updateBean')
       shopName: _shopName,
       shopUrl: _shopUrl,
       isArchived,
+      createBag: _createBag,
+      beanTagIds,
       ...values
     } = data
     await runJournalMutations([
       {
         statement: db
           .update(beans)
-          .set({ ...values, updatedAt: journalNow() })
+          .set({
+            ...values,
+            ...(isArchived === true
+              ? { alwaysOnShelf: false }
+              : isArchived === false
+                ? { alwaysOnShelf: true }
+                : {}),
+            updatedAt: journalNow(),
+          })
           .where(owned(beans, eq(beans.id, id)))
           .getSQL(),
         expectedChanges: 1,
         conflictMessage: 'Bean not found',
       },
+      ...(beanTagIds === undefined
+        ? []
+        : await replaceBeanTags(id, beanTagIds)),
       ...(isArchived === undefined
         ? []
         : [
@@ -354,10 +353,24 @@ export const deleteBean = journalWrite('beans/deleteBean')
       }),
     ])
     if (brew || recipe || visit) {
-      await db
-        .update(beanPurchases)
-        .set({ isArchived: true, updatedAt: journalNow() })
-        .where(owned(beanPurchases, eq(beanPurchases.beanId, id)))
+      await runJournalMutations([
+        {
+          statement: db
+            .update(beans)
+            .set({ alwaysOnShelf: false, updatedAt: journalNow() })
+            .where(owned(beans, eq(beans.id, id)))
+            .getSQL(),
+          expectedChanges: 1,
+          conflictMessage: 'Bean not found',
+        },
+        {
+          statement: db
+            .update(beanPurchases)
+            .set({ isArchived: true, updatedAt: journalNow() })
+            .where(owned(beanPurchases, eq(beanPurchases.beanId, id)))
+            .getSQL(),
+        },
+      ])
       return { archived: true }
     }
     await db
@@ -366,3 +379,40 @@ export const deleteBean = journalWrite('beans/deleteBean')
     await deleteEntityWithMedia('beans', id)
     return { archived: false }
   })
+
+async function enrichBeans<
+  Bean extends {
+    id: number
+    alwaysOnShelf: boolean
+    rating: number | null
+    purchases: readonly (typeof beanPurchases.$inferSelect)[]
+  },
+>(rows: readonly Bean[]) {
+  const ratings = await beanRatings(rows.map((bean) => bean.id))
+  const assignments = rows.length
+    ? await db.query.beanTagAssignments.findMany({
+        where: owned(
+          beanTagAssignments,
+          inArray(
+            beanTagAssignments.beanId,
+            rows.map((bean) => bean.id),
+          ),
+        ),
+        with: { tag: true },
+      })
+    : []
+  return rows.map((bean) => {
+    const derived = ratings.get(bean.id) ?? {
+      averageRating: null,
+      ratedBrewCount: 0,
+    }
+    return {
+      ...flattenBeanPurchase(bean),
+      ...derived,
+      effectiveRating: bean.rating ?? derived.averageRating,
+      tags: assignments
+        .filter((item) => item.beanId === bean.id)
+        .map((item) => item.tag),
+    }
+  })
+}

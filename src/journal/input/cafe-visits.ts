@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { beanCreateSchema, checkAltitudeRange } from '@/journal/input/beans'
 import { DECIMAL_CONSTRAINTS } from '@/lib/measurement-constraints'
 import {
   boundedDecimalStringSchema,
@@ -26,6 +27,19 @@ const cafeVisitSchema = z.object({
   tasteTagIds: z.array(positiveIdSchema).max(100).optional(),
 })
 
+const cafeVisitCreateSchema = cafeVisitSchema
+  .extend({
+    newBean: beanCreateSchema.superRefine(checkAltitudeRange).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.newBean && data.beanId)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['newBean'],
+        message: 'Choose an existing coffee or create one.',
+      })
+  })
+
 const cafeVisitUpdateSchema = cafeVisitSchema.partial().extend({
   id: positiveIdSchema,
   drinkTypeId: optionalNullablePositiveIdSchema,
@@ -44,4 +58,9 @@ const cafeVisitListSchema = z.object({
   query: z.string().trim().max(200).default(''),
 })
 
-export { cafeVisitListSchema, cafeVisitSchema, cafeVisitUpdateSchema }
+export {
+  cafeVisitCreateSchema,
+  cafeVisitListSchema,
+  cafeVisitSchema,
+  cafeVisitUpdateSchema,
+}

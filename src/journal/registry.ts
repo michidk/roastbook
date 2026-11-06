@@ -2,6 +2,7 @@
 // function.test.ts keeps this list complete.
 import './app-settings'
 import './bean-purchases'
+import './bean-tags'
 import './beans'
 import './brewing-methods'
 import './cafe-visits'

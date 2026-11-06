@@ -6,6 +6,7 @@ import {
   coffeeShops,
   drinkTypes,
 } from '@/db/schema'
+import { createBeanMutations } from '@/journal/domain/bean-library'
 import {
   assertDrinkSelection,
   replaceCafeVisitDrinkOptions,
@@ -13,8 +14,8 @@ import {
 import { deleteEntityWithMedia } from '@/journal/domain/media-lifecycle'
 import { journalRead, journalWrite } from '@/journal/function'
 import {
+  cafeVisitCreateSchema,
   cafeVisitListSchema,
-  cafeVisitSchema,
   cafeVisitUpdateSchema,
 } from '@/journal/input/cafe-visits'
 import { journalNow } from '@/journal/platform/clock'
@@ -145,18 +146,36 @@ async function replaceCafeVisitTasteTags(
 }
 
 export const createCafeVisit = journalWrite('cafe-visits/createCafeVisit')
-  .validator(cafeVisitSchema)
+  .validator(cafeVisitCreateSchema)
   .handler(async ({ data }) => {
-    const { tasteTagIds = [], drinkOptionValueIds = [], ...visitData } = data
+    const {
+      tasteTagIds = [],
+      drinkOptionValueIds = [],
+      newBean,
+      ...visitData
+    } = data
     await assertDrinkSelection(db, visitData.drinkTypeId, drinkOptionValueIds)
     const [id] = await allocateJournalIds(cafeVisits)
     if (id === undefined)
       throw new Error('Could not allocate a visit identifier')
+    const createdBean = newBean
+      ? await createBeanMutations({
+          ...newBean,
+          createBag: newBean.createBag ?? false,
+        })
+      : null
     await runJournalMutations([
+      ...(createdBean?.mutations ?? []),
       {
         statement: db
           .insert(cafeVisits)
-          .values(journalInsertValues({ id, ...visitData }))
+          .values(
+            journalInsertValues({
+              id,
+              ...visitData,
+              beanId: createdBean?.id ?? visitData.beanId,
+            }),
+          )
           .getSQL(),
       },
       ...(await replaceCafeVisitDrinkOptions(id, drinkOptionValueIds)),

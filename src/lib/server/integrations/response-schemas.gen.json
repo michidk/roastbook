@@ -178,7 +178,7 @@
         "totalPages": { "type": "number" },
         "items": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_fe4430b91d271e5f" }
+          "items": { "$ref": "#/components/schemas/Response_3bd952fea53bdaef" }
         }
       },
       "required": [
@@ -190,12 +190,12 @@
         "totalPages"
       ]
     },
-    "Response_fe4430b91d271e5f": {
+    "Response_3bd952fea53bdaef": {
       "type": "object",
       "properties": {
         "id": { "type": "number" },
-        "brewedAt": { "type": "string", "format": "date-time" },
         "rating": { "type": ["null", "number"] },
+        "brewedAt": { "type": "string", "format": "date-time" },
         "doseGrams": { "type": ["null", "string"] },
         "brewWaterGrams": { "type": ["null", "string"] },
         "ratioBasis": { "type": ["null", "string"] },
@@ -205,7 +205,7 @@
         "brewTemperatureCelsius": { "type": ["null", "string"] },
         "bean": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_9ae0df235e5f4a3e" },
+            { "$ref": "#/components/schemas/Response_8c8aa06ce30aec28" },
             { "type": "null" }
           ]
         },
@@ -228,7 +228,7 @@
         "yieldGrams"
       ]
     },
-    "Response_9ae0df235e5f4a3e": {
+    "Response_8c8aa06ce30aec28": {
       "type": "object",
       "properties": {
         "name": { "type": "string" },
@@ -245,7 +245,7 @@
         },
         "images": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_2e80fe294621193d" }
+          "items": { "$ref": "#/components/schemas/Response_6b40a1a8de77bf12" }
         }
       },
       "required": [
@@ -264,14 +264,14 @@
       "properties": { "name": { "type": "string" } },
       "required": ["name"]
     },
-    "Response_2e80fe294621193d": {
+    "Response_6b40a1a8de77bf12": {
       "type": "object",
       "properties": {
         "ownerId": { "type": "string" },
         "id": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" },
         "beanId": { "type": "number" },
-        "beanPurchaseId": { "type": "number" },
+        "beanPurchaseId": { "type": ["null", "number"] },
         "isThumbnail": { "type": "boolean" },
         "storagePath": { "type": "string" },
         "originalFilename": { "type": ["null", "string"] },
@@ -329,6 +329,7 @@
           ]
         },
         "notes": { "type": ["null", "string"] },
+        "rating": { "type": ["null", "number"] },
         "images": {
           "type": "array",
           "items": { "$ref": "#/components/schemas/Response_d98dd5bcc9aeae95" }
@@ -341,7 +342,6 @@
         "preinfusionTimeSeconds": { "type": ["null", "string"] },
         "preinfusionPressureBar": { "type": ["null", "string"] },
         "machineSettingRevisionId": { "type": ["null", "number"] },
-        "rating": { "type": ["null", "number"] },
         "extractionBalance": { "type": ["null", "number"] },
         "bitterness": { "type": ["null", "number"] },
         "acidity": { "type": ["null", "number"] },
@@ -367,7 +367,7 @@
         "brewingMethodId": { "type": "number" },
         "bean": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_ced4f9621585b019" },
+            { "$ref": "#/components/schemas/Response_b92fade2016fae22" },
             { "type": "null" }
           ]
         },
@@ -549,7 +549,7 @@
         "storagePath"
       ]
     },
-    "Response_ced4f9621585b019": {
+    "Response_b92fade2016fae22": {
       "type": "object",
       "properties": {
         "name": { "type": "string" },
@@ -558,6 +558,9 @@
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" },
         "notes": { "type": ["null", "string"] },
+        "alwaysOnShelf": { "type": "boolean" },
+        "rating": { "type": ["null", "number"] },
+        "ratingNote": { "type": ["null", "string"] },
         "type": {
           "anyOf": [
             { "enum": ["espresso", "filter", "omni"], "type": "string" },
@@ -593,6 +596,7 @@
       "required": [
         "altitudeMaxMeters",
         "altitudeMinMeters",
+        "alwaysOnShelf",
         "createdAt",
         "farm",
         "id",
@@ -602,6 +606,8 @@
         "origin",
         "ownerId",
         "process",
+        "rating",
+        "ratingNote",
         "region",
         "roastLevel",
         "roaster",
@@ -777,6 +783,7 @@
         "targetTimeSeconds": { "type": ["null", "string"] },
         "drinkTypeId": { "type": ["null", "number"] },
         "notes": { "type": ["null", "string"] },
+        "rating": { "type": ["null", "number"] },
         "beanId": { "type": ["null", "number"] },
         "beanPurchaseId": { "type": ["null", "number"] },
         "brewedAt": { "type": "string", "format": "date-time" },
@@ -785,7 +792,6 @@
         "preinfusionTimeSeconds": { "type": ["null", "string"] },
         "preinfusionPressureBar": { "type": ["null", "string"] },
         "machineSettingRevisionId": { "type": ["null", "number"] },
-        "rating": { "type": ["null", "number"] },
         "extractionBalance": { "type": ["null", "number"] },
         "bitterness": { "type": ["null", "number"] },
         "acidity": { "type": ["null", "number"] },
@@ -861,7 +867,7 @@
         "totalPages": { "type": "number" },
         "items": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_fe4430b91d271e5f" }
+          "items": { "$ref": "#/components/schemas/Response_3bd952fea53bdaef" }
         }
       },
       "required": ["items", "page", "pageSize", "totalItems", "totalPages"]
@@ -985,21 +991,21 @@
     "ListBeansData": {
       "type": "object",
       "properties": {
-        "active": { "$ref": "#/components/schemas/Response_647adf06191454ac" },
+        "active": { "$ref": "#/components/schemas/Response_7fc69542add4373a" },
         "archived": {
-          "$ref": "#/components/schemas/Response_5a88f9fe4d44843d"
+          "$ref": "#/components/schemas/Response_63825d7c73e8d709"
         },
         "totalItems": { "type": "number" },
         "totalBags": { "type": "number" }
       },
       "required": ["active", "archived", "totalBags", "totalItems"]
     },
-    "Response_647adf06191454ac": {
+    "Response_7fc69542add4373a": {
       "type": "object",
       "properties": {
         "items": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_d17067f6e5a40237" }
+          "items": { "$ref": "#/components/schemas/Response_bbdc992f4cedcadc" }
         },
         "page": { "type": "number" },
         "pageSize": { "type": "number" },
@@ -1008,7 +1014,7 @@
       },
       "required": ["items", "page", "pageSize", "totalItems", "totalPages"]
     },
-    "Response_d17067f6e5a40237": {
+    "Response_bbdc992f4cedcadc": {
       "type": "object",
       "properties": {
         "name": { "type": "string" },
@@ -1017,6 +1023,9 @@
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" },
         "notes": { "type": ["null", "string"] },
+        "alwaysOnShelf": { "type": "boolean" },
+        "rating": { "type": ["null", "number"] },
+        "ratingNote": { "type": ["null", "string"] },
         "type": {
           "anyOf": [
             { "enum": ["espresso", "filter", "omni"], "type": "string" },
@@ -1056,9 +1065,16 @@
         },
         "images": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_2e80fe294621193d" }
+          "items": { "$ref": "#/components/schemas/Response_6b40a1a8de77bf12" }
         },
         "usedWeightGrams": { "type": "string" },
+        "effectiveRating": { "type": ["null", "number"] },
+        "tags": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_35325bbc16eec796" }
+        },
+        "averageRating": { "type": ["null", "number"] },
+        "ratedBrewCount": { "type": "number" },
         "purchaseId": { "type": ["null", "number"] },
         "roastDate": {
           "anyOf": [
@@ -1076,7 +1092,10 @@
       "required": [
         "altitudeMaxMeters",
         "altitudeMinMeters",
+        "alwaysOnShelf",
+        "averageRating",
         "createdAt",
+        "effectiveRating",
         "farm",
         "id",
         "images",
@@ -1090,6 +1109,9 @@
         "priceCurrency",
         "process",
         "purchaseId",
+        "ratedBrewCount",
+        "rating",
+        "ratingNote",
         "region",
         "roastDate",
         "roastLevel",
@@ -1098,6 +1120,7 @@
         "roasterRef",
         "shopName",
         "shopUrl",
+        "tags",
         "type",
         "updatedAt",
         "usedWeightGrams",
@@ -1132,12 +1155,23 @@
         "website"
       ]
     },
-    "Response_5a88f9fe4d44843d": {
+    "Response_35325bbc16eec796": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "id": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["createdAt", "id", "name", "ownerId", "updatedAt"]
+    },
+    "Response_63825d7c73e8d709": {
       "type": "object",
       "properties": {
         "items": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_d17067f6e5a40237" }
+          "items": { "$ref": "#/components/schemas/Response_bbdc992f4cedcadc" }
         },
         "page": { "type": "number" },
         "pageSize": { "type": "number" },
@@ -1159,6 +1193,9 @@
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" },
         "notes": { "type": ["null", "string"] },
+        "alwaysOnShelf": { "type": "boolean" },
+        "rating": { "type": ["null", "number"] },
+        "ratingNote": { "type": ["null", "string"] },
         "type": {
           "anyOf": [
             { "enum": ["espresso", "filter", "omni"], "type": "string" },
@@ -1198,8 +1235,15 @@
         },
         "images": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_2e80fe294621193d" }
+          "items": { "$ref": "#/components/schemas/Response_6b40a1a8de77bf12" }
         },
+        "effectiveRating": { "type": ["null", "number"] },
+        "tags": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/Response_35325bbc16eec796" }
+        },
+        "averageRating": { "type": ["null", "number"] },
+        "ratedBrewCount": { "type": "number" },
         "purchaseId": { "type": ["null", "number"] },
         "roastDate": {
           "anyOf": [
@@ -1217,7 +1261,10 @@
       "required": [
         "altitudeMaxMeters",
         "altitudeMinMeters",
+        "alwaysOnShelf",
+        "averageRating",
         "createdAt",
+        "effectiveRating",
         "farm",
         "id",
         "images",
@@ -1232,6 +1279,9 @@
         "process",
         "purchaseId",
         "purchases",
+        "ratedBrewCount",
+        "rating",
+        "ratingNote",
         "region",
         "roastDate",
         "roastLevel",
@@ -1240,6 +1290,7 @@
         "roasterRef",
         "shopName",
         "shopUrl",
+        "tags",
         "type",
         "updatedAt",
         "variety",
@@ -1302,13 +1353,16 @@
     "CreateBeanData": {
       "type": "object",
       "properties": {
-        "purchaseId": { "type": "number" },
+        "purchaseId": { "type": ["null", "number"] },
         "name": { "type": "string" },
         "ownerId": { "type": "string" },
         "id": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" },
         "notes": { "type": ["null", "string"] },
+        "alwaysOnShelf": { "type": "boolean" },
+        "rating": { "type": ["null", "number"] },
+        "ratingNote": { "type": ["null", "string"] },
         "type": {
           "anyOf": [
             { "enum": ["espresso", "filter", "omni"], "type": "string" },
@@ -1344,6 +1398,7 @@
       "required": [
         "altitudeMaxMeters",
         "altitudeMinMeters",
+        "alwaysOnShelf",
         "createdAt",
         "farm",
         "id",
@@ -1354,6 +1409,8 @@
         "ownerId",
         "process",
         "purchaseId",
+        "rating",
+        "ratingNote",
         "region",
         "roastLevel",
         "roaster",
@@ -1372,6 +1429,9 @@
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" },
         "notes": { "type": ["null", "string"] },
+        "alwaysOnShelf": { "type": "boolean" },
+        "rating": { "type": ["null", "number"] },
+        "ratingNote": { "type": ["null", "string"] },
         "type": {
           "anyOf": [
             { "enum": ["espresso", "filter", "omni"], "type": "string" },
@@ -1407,6 +1467,7 @@
       "required": [
         "altitudeMaxMeters",
         "altitudeMinMeters",
+        "alwaysOnShelf",
         "createdAt",
         "farm",
         "id",
@@ -1416,6 +1477,8 @@
         "origin",
         "ownerId",
         "process",
+        "rating",
+        "ratingNote",
         "region",
         "roastLevel",
         "roaster",
@@ -1525,7 +1588,7 @@
         "notes": { "type": ["null", "string"] },
         "beans": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_ced4f9621585b019" }
+          "items": { "$ref": "#/components/schemas/Response_b92fade2016fae22" }
         }
       },
       "required": [
@@ -2320,12 +2383,12 @@
         "totalPages": { "type": "number" },
         "items": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_cb9abeb7cfff18d6" }
+          "items": { "$ref": "#/components/schemas/Response_3747e07b60a9ba85" }
         }
       },
       "required": ["items", "page", "pageSize", "totalItems", "totalPages"]
     },
-    "Response_cb9abeb7cfff18d6": {
+    "Response_3747e07b60a9ba85": {
       "type": "object",
       "properties": {
         "name": { "type": "string" },
@@ -2378,7 +2441,7 @@
         },
         "bean": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_5b59e68e72f885ec" },
+            { "$ref": "#/components/schemas/Response_ef5ee8e6c08ac334" },
             { "type": "null" }
           ]
         },
@@ -2441,7 +2504,7 @@
         "yieldGrams"
       ]
     },
-    "Response_5b59e68e72f885ec": {
+    "Response_ef5ee8e6c08ac334": {
       "type": "object",
       "properties": {
         "name": { "type": "string" },
@@ -2450,6 +2513,9 @@
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" },
         "notes": { "type": ["null", "string"] },
+        "alwaysOnShelf": { "type": "boolean" },
+        "rating": { "type": ["null", "number"] },
+        "ratingNote": { "type": ["null", "string"] },
         "type": {
           "anyOf": [
             { "enum": ["espresso", "filter", "omni"], "type": "string" },
@@ -2489,12 +2555,13 @@
         },
         "images": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_2e80fe294621193d" }
+          "items": { "$ref": "#/components/schemas/Response_6b40a1a8de77bf12" }
         }
       },
       "required": [
         "altitudeMaxMeters",
         "altitudeMinMeters",
+        "alwaysOnShelf",
         "createdAt",
         "farm",
         "id",
@@ -2505,6 +2572,8 @@
         "origin",
         "ownerId",
         "process",
+        "rating",
+        "ratingNote",
         "region",
         "roastLevel",
         "roaster",
@@ -2606,7 +2675,7 @@
         "brewingMethodId": { "type": "number" },
         "bean": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_5b59e68e72f885ec" },
+            { "$ref": "#/components/schemas/Response_ef5ee8e6c08ac334" },
             { "type": "null" }
           ]
         },
@@ -2762,7 +2831,7 @@
         },
         "cafeVisits": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_a3435a30ab38d780" }
+          "items": { "$ref": "#/components/schemas/Response_5705c1f8afad2638" }
         }
       },
       "required": [
@@ -2811,7 +2880,7 @@
         "storagePath"
       ]
     },
-    "Response_a3435a30ab38d780": {
+    "Response_5705c1f8afad2638": {
       "type": "object",
       "properties": {
         "ownerId": { "type": "string" },
@@ -2820,9 +2889,9 @@
         "updatedAt": { "type": "string", "format": "date-time" },
         "drinkTypeId": { "type": ["null", "number"] },
         "notes": { "type": ["null", "string"] },
+        "rating": { "type": ["null", "number"] },
         "beanId": { "type": ["null", "number"] },
         "price": { "type": ["null", "string"] },
-        "rating": { "type": ["null", "number"] },
         "coffeeShopId": { "type": ["null", "number"] },
         "currency": { "type": ["null", "string"] },
         "visitedAt": { "type": "string", "format": "date-time" },
@@ -2936,12 +3005,12 @@
         "totalPages": { "type": "number" },
         "items": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_816080b699129719" }
+          "items": { "$ref": "#/components/schemas/Response_9da92e31bfd44ed2" }
         }
       },
       "required": ["items", "page", "pageSize", "totalItems", "totalPages"]
     },
-    "Response_816080b699129719": {
+    "Response_9da92e31bfd44ed2": {
       "type": "object",
       "properties": {
         "ownerId": { "type": "string" },
@@ -2950,9 +3019,9 @@
         "updatedAt": { "type": "string", "format": "date-time" },
         "drinkTypeId": { "type": ["null", "number"] },
         "notes": { "type": ["null", "string"] },
+        "rating": { "type": ["null", "number"] },
         "beanId": { "type": ["null", "number"] },
         "price": { "type": ["null", "string"] },
-        "rating": { "type": ["null", "number"] },
         "coffeeShopId": { "type": ["null", "number"] },
         "currency": { "type": ["null", "string"] },
         "visitedAt": { "type": "string", "format": "date-time" },
@@ -2964,7 +3033,7 @@
         },
         "bean": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_ced4f9621585b019" },
+            { "$ref": "#/components/schemas/Response_b92fade2016fae22" },
             { "type": "null" }
           ]
         },
@@ -3057,9 +3126,9 @@
         "updatedAt": { "type": "string", "format": "date-time" },
         "drinkTypeId": { "type": ["null", "number"] },
         "notes": { "type": ["null", "string"] },
+        "rating": { "type": ["null", "number"] },
         "beanId": { "type": ["null", "number"] },
         "price": { "type": ["null", "string"] },
-        "rating": { "type": ["null", "number"] },
         "coffeeShopId": { "type": ["null", "number"] },
         "currency": { "type": ["null", "string"] },
         "visitedAt": { "type": "string", "format": "date-time" },
@@ -3075,7 +3144,7 @@
         },
         "bean": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_ced4f9621585b019" },
+            { "$ref": "#/components/schemas/Response_b92fade2016fae22" },
             { "type": "null" }
           ]
         },
@@ -3202,9 +3271,9 @@
         "updatedAt": { "type": "string", "format": "date-time" },
         "drinkTypeId": { "type": ["null", "number"] },
         "notes": { "type": ["null", "string"] },
+        "rating": { "type": ["null", "number"] },
         "beanId": { "type": ["null", "number"] },
         "price": { "type": ["null", "string"] },
-        "rating": { "type": ["null", "number"] },
         "coffeeShopId": { "type": ["null", "number"] },
         "currency": { "type": ["null", "string"] },
         "visitedAt": { "type": "string", "format": "date-time" }

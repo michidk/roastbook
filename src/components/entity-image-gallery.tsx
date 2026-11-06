@@ -43,7 +43,7 @@ export interface EntityImage {
   readonly id: number
   readonly storagePath: string
   readonly isThumbnail?: boolean
-  readonly beanPurchaseId?: number
+  readonly beanPurchaseId?: number | null
 }
 
 interface EntityImageAction {
@@ -55,7 +55,7 @@ interface EntityImageAction {
 }
 
 interface EntityImageGalleryProps {
-  readonly entityType: 'bean-purchases' | 'gear' | 'shots'
+  readonly entityType: 'beans' | 'bean-purchases' | 'gear' | 'shots'
   readonly entityId: number
   readonly images: readonly EntityImage[]
   readonly imageAction?: EntityImageAction
@@ -187,7 +187,7 @@ export function EntityImageGallery({
   }
 
   const entityLabel =
-    entityType === 'bean-purchases'
+    entityType === 'beans' || entityType === 'bean-purchases'
       ? 'Coffee'
       : entityType === 'gear'
         ? 'Gear'
@@ -345,14 +345,14 @@ export function EntityImageGallery({
             }}
             onOpenFilePicker={openFilePicker}
             prompt={
-              entityType === 'bean-purchases'
+              entityType === 'beans' || entityType === 'bean-purchases'
                 ? 'Add pictures of this coffee'
                 : entityType === 'gear'
                   ? 'Add equipment pictures'
                   : 'Add pictures of this brew'
             }
             previewAltPrefix={
-              entityType === 'bean-purchases'
+              entityType === 'beans' || entityType === 'bean-purchases'
                 ? 'Coffee'
                 : entityType === 'gear'
                   ? 'Gear'

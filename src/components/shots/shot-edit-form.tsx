@@ -21,6 +21,7 @@ import type { getGear } from '@/journal/gear'
 import type { getShot } from '@/journal/shots'
 import { updateShot } from '@/journal/shots'
 import type { getTasteTags } from '@/journal/taste-tags'
+import { beanPurchaseKey } from '@/lib/bean-selection'
 import { localDateTimeInputToDate } from '@/lib/date-input'
 import {
   type DrinkConfiguration,
@@ -171,15 +172,20 @@ export function ShotEditForm({
         <BeanPicker
           id="edit-bean"
           label="Beans"
-          value={values.beanPurchaseId}
+          byPurchase
+          value={
+            values.beanPurchaseId ||
+            (values.beanId ? `bean:${values.beanId}` : '')
+          }
           onChange={(beanPurchaseId) => {
             const selected = beans.find(
-              (bean) => String(bean.purchaseId) === beanPurchaseId,
+              (bean) => beanPurchaseKey(bean) === beanPurchaseId,
             )
             setValues((current) => ({
               ...current,
               beanId: selected ? String(selected.id) : '',
-              beanPurchaseId: beanPurchaseId ?? '',
+              beanPurchaseId:
+                selected?.purchaseId == null ? '' : String(selected.purchaseId),
             }))
           }}
           beans={beans}

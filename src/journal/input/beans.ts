@@ -5,6 +5,7 @@ import {
   decimalStringSchema,
   nameSchema,
   notesSchema,
+  optionalNullableRatingSchema,
   optionalPositiveIdSchema,
   optionalUrlSchema,
   positiveIdSchema,
@@ -36,6 +37,11 @@ function checkAltitudeRange(
 
 const beanCreateSchema = z.object({
   name: nameSchema,
+  createBag: z.boolean().optional(),
+  alwaysOnShelf: z.boolean().optional(),
+  rating: optionalNullableRatingSchema,
+  ratingNote: notesSchema.nullable().optional(),
+  beanTagIds: z.array(positiveIdSchema).max(100).optional(),
   type: beanTypeSchema.optional(),
   isDecaf: z.boolean().optional(),
   roaster: shortTextSchema.optional(),
@@ -78,6 +84,7 @@ const beanListSchema = z.object({
   activePage: z.number().int().min(1).max(100_000).default(1),
   archivedPage: z.number().int().min(1).max(100_000).default(1),
   query: z.string().trim().max(200).default(''),
+  tagId: positiveIdSchema.optional(),
 })
 
 export {

@@ -3,6 +3,11 @@ import type { BeanType, RoastLevel } from '@/lib/constants'
 import { blankToNull, blankToUndefined } from '@/lib/form-value-normalization'
 
 export type BeanFormValues = {
+  readonly createBag: boolean
+  readonly alwaysOnShelf: boolean
+  readonly rating: number
+  readonly ratingNote: string
+  readonly beanTagIds: number[]
   readonly name: string
   readonly type: BeanType | ''
   readonly isDecaf: boolean
@@ -25,6 +30,10 @@ export type BeanFormValues = {
 }
 
 type BeanFormValueSource = {
+  readonly alwaysOnShelf?: boolean
+  readonly rating?: number | null
+  readonly ratingNote?: string | null
+  readonly tags?: readonly { id: number }[]
   readonly name: string | null
   readonly type: BeanType | null
   readonly isDecaf: boolean
@@ -49,6 +58,11 @@ type BeanFormValueSource = {
 export function createEmptyBeanFormValues(initialName = ''): BeanFormValues {
   return {
     name: initialName,
+    createBag: true,
+    alwaysOnShelf: false,
+    rating: 0,
+    ratingNote: '',
+    beanTagIds: [],
     type: '',
     isDecaf: false,
     roasterId: '',
@@ -73,6 +87,11 @@ export function createEmptyBeanFormValues(initialName = ''): BeanFormValues {
 export function toBeanFormValues(bean: BeanFormValueSource): BeanFormValues {
   return {
     name: bean.name ?? '',
+    createBag: false,
+    alwaysOnShelf: bean.alwaysOnShelf ?? false,
+    rating: bean.rating ?? 0,
+    ratingNote: bean.ratingNote ?? '',
+    beanTagIds: bean.tags?.map((tag) => tag.id) ?? [],
     type: bean.type ?? '',
     isDecaf: bean.isDecaf,
     roasterId: bean.roasterId ? String(bean.roasterId) : '',
@@ -108,6 +127,11 @@ export function beanCreatePayload(
 ) {
   return {
     name: values.name,
+    createBag: values.createBag,
+    alwaysOnShelf: values.alwaysOnShelf,
+    rating: values.rating || null,
+    ratingNote: blankToNull(values.ratingNote),
+    beanTagIds: values.beanTagIds,
     type: values.type || undefined,
     isDecaf: values.isDecaf,
     roasterId: values.roasterId ? Number(values.roasterId) : undefined,
@@ -136,6 +160,11 @@ export function beanUpdatePayload(id: number, values: BeanFormValues) {
   return {
     id,
     name: values.name,
+    createBag: values.createBag,
+    alwaysOnShelf: values.alwaysOnShelf,
+    rating: values.rating || null,
+    ratingNote: blankToNull(values.ratingNote),
+    beanTagIds: values.beanTagIds,
     type: values.type || null,
     isDecaf: values.isDecaf,
     roasterId: values.roasterId ? Number(values.roasterId) : null,
