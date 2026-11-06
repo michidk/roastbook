@@ -1,12 +1,11 @@
-import { Link } from '@tanstack/react-router'
-import { ArrowUpRight, Bean, CalendarDays, MapPin, Scale } from 'lucide-react'
-import { ImageWithFallback } from '@/components/image-with-fallback'
 import {
   Card,
   CardContent,
   interactiveCardLinkClassName,
-} from '@/components/ui/card'
-import { StarRating } from '@/components/ui/star-rating'
+} from '@roastbook/ui/card'
+import { Link } from '@tanstack/react-router'
+import { ArrowUpRight, Bean, CalendarDays, MapPin, Scale } from 'lucide-react'
+import { ImageWithFallback } from '@/components/image-with-fallback'
 import { useDateFormatter } from '@/hooks/use-date-formatter'
 import { useNumberFormatter } from '@/hooks/use-number-formatter'
 import type { getBeans } from '@/journal/beans'
@@ -19,18 +18,9 @@ import {
 import { thumbnailUrl } from '@/lib/image-url'
 import { cn } from '@/lib/utils'
 
-type BeanRecord = Omit<
-  Awaited<ReturnType<typeof getBeans>>[number],
-  'averageRating' | 'ratedBrewCount' | 'effectiveRating' | 'tags'
-> &
-  Partial<
-    Pick<
-      Awaited<ReturnType<typeof getBeans>>[number],
-      'averageRating' | 'ratedBrewCount' | 'effectiveRating' | 'tags'
-    >
-  > & {
-    readonly usedWeightGrams?: string
-  }
+type BeanRecord = Awaited<ReturnType<typeof getBeans>>[number] & {
+  readonly usedWeightGrams?: string
+}
 
 type BeanCardProps = {
   readonly bean: BeanRecord
@@ -170,31 +160,6 @@ export function BeanCard({
               </div>
             )}
 
-            <div className="mt-2 space-y-1 text-sm text-white/90">
-              {bean.effectiveRating != null ? (
-                <span className="inline-flex flex-wrap items-center gap-2">
-                  <StarRating
-                    value={bean.effectiveRating}
-                    readOnly
-                    variant="compact"
-                    className="text-white"
-                    sizeClassName="size-4"
-                  />
-                  <span>
-                    {bean.rating != null
-                      ? 'Your rating'
-                      : `Brew average · ${bean.ratedBrewCount ?? 0}`}
-                  </span>
-                </span>
-              ) : (
-                <span>Not rated</span>
-              )}
-              {bean.tags?.length ? (
-                <p className="truncate">
-                  {bean.tags.map((tag) => tag.name).join(' · ')}
-                </p>
-              ) : null}
-            </div>
             {(roastDate || weightLabel !== null) && (
               <div
                 className={`mt-4 grid border-t border-white/35 pt-4 text-xs text-white/85 lg:text-base ${roastDate && weightLabel !== null ? 'grid-cols-2' : 'grid-cols-1'}`}

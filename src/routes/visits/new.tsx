@@ -1,12 +1,8 @@
+import { Button } from '@roastbook/ui/button'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import { type SyntheticEvent, useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import {
-  type BeanFormValues,
-  beanCreatePayload,
-} from '@/components/beans/bean-form-values'
-import { EntityImageUploadRecovery } from '@/components/form/entity-image-upload-section'
 import {
   EntityForm,
   FormActions,
@@ -16,12 +12,9 @@ import {
 import { Page } from '@/components/page-layout'
 import { RouteError } from '@/components/route-error'
 import { DetailPending } from '@/components/route-pending'
-import { Button } from '@/components/ui/button'
-import { VisitBeanField } from '@/components/visits/visit-bean-field'
 import { VisitFields } from '@/components/visits/visit-fields'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useFormState } from '@/hooks/use-form-state'
-import { useImageUpload } from '@/hooks/use-image-upload'
 import {
   useCurrentLocalDateTimeLimit,
   useLocalDateTimeInput,
@@ -31,7 +24,6 @@ import { getBeans } from '@/journal/beans'
 import { createCafeVisit } from '@/journal/cafe-visits'
 import { getCoffeeShops } from '@/journal/coffee-shops'
 import { getDrinkConfiguration } from '@/journal/drink-options'
-import { getRoasters } from '@/journal/roasters'
 import { getTasteTags } from '@/journal/taste-tags'
 import { cafeVisitCreatePayload } from '@/lib/cafe-visit-payload'
 import { localDateTimeInputToDate } from '@/lib/date-input'
@@ -44,10 +36,6 @@ import {
   searchValidator,
 } from '@/lib/search-params'
 import { getCafeVisitUpdateErrors } from '@/lib/update-validation'
-import {
-  type EntityImageUploadFailure,
-  uploadEntityImages,
-} from '@/lib/upload-entity-images'
 
 const parseNewVisitSearch = (input: unknown) => {
   const search = searchRecord(input)
@@ -57,18 +45,14 @@ const parseNewVisitSearch = (input: unknown) => {
 export const Route = createFileRoute('/visits/new')({
   validateSearch: searchValidator(parseNewVisitSearch),
   loader: async () => {
-    const [coffeeShops, tasteTags, beans, drinks, roasters] = await Promise.all(
-      [
-        getCoffeeShops(),
-        getTasteTags(),
-        getBeans(),
-        getDrinkConfiguration(),
-        getRoasters(),
-      ],
-    )
+    const [coffeeShops, tasteTags, beans, drinks] = await Promise.all([
+      getCoffeeShops(),
+      getTasteTags(),
+      getBeans(),
+      getDrinkConfiguration(),
+    ])
     return {
       coffeeShops,
-      roasters,
       tasteTags,
       beans,
       drinks,
@@ -84,7 +68,7 @@ export const Route = createFileRoute('/visits/new')({
 
 function NewVisitPage() {
   const { defaultCurrency } = useAppSettings()
-  const { coffeeShops, tasteTags, beans, drinks, roasters, defaultVisitedAt } =
+  const { coffeeShops, tasteTags, beans, drinks, defaultVisitedAt } =
     Route.useLoaderData()
   const search = Route.useSearch()
   const navigate = useNavigate()
@@ -102,15 +86,6 @@ function NewVisitPage() {
     Readonly<Record<string, string>>
   >({})
   const [isDirty, setIsDirty] = useState(false)
-  const [beanDraft, setBeanDraft] = useState<BeanFormValues | null>(null)
-  const imageUpload = useImageUpload()
-  const [createdVisit, setCreatedVisit] = useState<Awaited<
-    ReturnType<typeof createCafeVisit>
-  > | null>(null)
-  const [uploadFailures, setUploadFailures] = useState<
-    readonly EntityImageUploadFailure[]
-  >([])
-  const [isRetrying, setIsRetrying] = useState(false)
 
   const form = useFormState({
     coffeeShopId: initialCoffeeShopId,
@@ -146,7 +121,6 @@ function NewVisitPage() {
         ? Number(form.values.coffeeShopId)
         : undefined,
       ...cafeVisitCreatePayload(form.values),
-      newBean: beanDraft ? beanCreatePayload(beanDraft) : undefined,
       visitedAt: localDateTimeInputToDate(visitedAt) ?? undefined,
       rating: toNullableRating(form.values.rating),
       tasteTagIds: selectedTags.length > 0 ? selectedTags : undefined,
@@ -160,19 +134,8 @@ function NewVisitPage() {
 
     setIsSubmitting(true)
     try {
-      const visit = await createCafeVisit({ data })
-      setCreatedVisit(visit)
+      await createCafeVisit({ data })
       setIsDirty(false)
-      if (visit.beanId && beanDraft && imageUpload.images.length) {
-        const result = await uploadEntityImages(
-          'beans',
-          visit.beanId,
-          imageUpload.images,
-        )
-        imageUpload.removeImages(result.uploaded)
-        setUploadFailures(result.failures)
-        if (result.failures.length) return
-      }
       await navigate({ to: '/visits' })
     } catch (error) {
       toast.error(getErrorMessage(error, 'Could not save this visit'))
@@ -180,51 +143,6 @@ function NewVisitPage() {
       setIsSubmitting(false)
     }
   }
-
-  if (createdVisit)
-    return (
-      <Page width="form">
-        <EntityImageUploadRecovery
-          upload={imageUpload}
-          title="Visit saved"
-          description="Your visit and coffee are saved. Retry the pictures or continue without them."
-          continueLabel="View visits"
-          previewAltPrefix="Coffee"
-          isBusy={isRetrying || isSubmitting}
-          imageErrors={uploadFailures.map(({ image, error }) => ({
-            preview: image.preview,
-            filename: image.file.name,
-            message: getErrorMessage(error, 'Could not upload picture'),
-          }))}
-          onRetryImages={async (pictures) => {
-            if (!createdVisit.beanId) return
-            setIsRetrying(true)
-            try {
-              const result = await uploadEntityImages(
-                'beans',
-                createdVisit.beanId,
-                pictures,
-              )
-              imageUpload.removeImages(result.uploaded)
-              setUploadFailures(result.failures)
-              if (!result.failures.length) await navigate({ to: '/visits' })
-            } finally {
-              setIsRetrying(false)
-            }
-          }}
-          onRemoveImage={(index) => {
-            const image = imageUpload.images[index]
-            imageUpload.removeImage(index)
-            setUploadFailures((current) =>
-              current.filter(
-                (failure) => failure.image.preview !== image?.preview,
-              ),
-            )
-          }}
-          onContinue={() => navigate({ to: '/visits' })}
-        />
-      </Page>
-    )
 
   return (
     <Page width="form">
@@ -243,23 +161,6 @@ function NewVisitPage() {
       <EntityForm onSubmit={handleSubmit}>
         <FormErrorSummary errors={fieldErrors} />
         <VisitFields
-          beanField={
-            <VisitBeanField
-              beans={beans}
-              roasters={roasters}
-              value={form.values.beanId}
-              onChange={(value) => {
-                form.set('beanId', value)
-                setIsDirty(true)
-              }}
-              draft={beanDraft}
-              onDraftChange={(value) => {
-                setBeanDraft(value)
-                setIsDirty(true)
-              }}
-              upload={imageUpload}
-            />
-          }
           values={form.values}
           choices={{ coffeeShops, beans, tasteTags, drinks }}
           visitedAt={{
