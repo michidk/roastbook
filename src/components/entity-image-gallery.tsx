@@ -24,7 +24,10 @@ import {
   X,
 } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
-import { BeautifyImageToggle } from '@/components/beautify-image-toggle'
+import {
+  BeautifyImageToggle,
+  useBeautifyAvailable,
+} from '@/components/beautify-image-toggle'
 import { ImageWithFallback } from '@/components/image-with-fallback'
 import { PictureUploader } from '@/components/picture-uploader'
 import { useImageUpload } from '@/hooks/use-image-upload'
@@ -33,7 +36,6 @@ import {
   setImageAsThumbnail,
   uploadEntityImage,
 } from '@/journal/images'
-import { DEMO_MODE } from '@/lib/build-mode'
 import {
   beautifyEntityImage,
   beautifyUploadedImage,
@@ -81,6 +83,7 @@ export function EntityImageGallery({
   )
   const [isDeletingImage, setIsDeletingImage] = useState<number | null>(null)
   const [beautifyingImage, setBeautifyingImage] = useState<number | null>(null)
+  const canBeautify = useBeautifyAvailable() && editable
   const [isUploading, setIsUploading] = useState(false)
   const [uploadFailures, setUploadFailures] = useState<
     readonly EntityImageUploadFailure[]
@@ -319,6 +322,32 @@ export function EntityImageGallery({
                         />
                       </Button>
                     ) : null}
+                    {canBeautify && !image.originalStoragePath ? (
+                      <Button
+                        size="icon"
+                        variant="secondary"
+                        className="pointer-events-auto absolute bottom-1 left-1 size-7 after:absolute after:-inset-2 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary"
+                        disabled={
+                          beautifyingImage !== null ||
+                          isUploading ||
+                          isDeletingImage !== null
+                        }
+                        aria-busy={beautifyingImage === image.id}
+                        aria-label={
+                          beautifyingImage === image.id
+                            ? `Beautifying picture ${index + 1}…`
+                            : `Beautify picture ${index + 1}`
+                        }
+                        title="Beautify with AI"
+                        onClick={() => void handleBeautify(image)}
+                      >
+                        {beautifyingImage === image.id ? (
+                          <Loader2 className="size-3.5 animate-spin" />
+                        ) : (
+                          <Sparkles className="size-3.5" />
+                        )}
+                      </Button>
+                    ) : null}
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button
@@ -351,39 +380,6 @@ export function EntityImageGallery({
                       </AlertDialogContent>
                     </AlertDialog>
                   </div>
-                )}
-                {editable && !DEMO_MODE && !image.originalStoragePath && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="mt-2 w-full min-h-11"
-                    disabled={
-                      beautifyingImage !== null ||
-                      isUploading ||
-                      isDeletingImage !== null
-                    }
-                    aria-busy={beautifyingImage === image.id}
-                    onClick={() => void handleBeautify(image)}
-                  >
-                    {beautifyingImage === image.id ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <Sparkles className="size-4" />
-                    )}
-                    {beautifyingImage === image.id
-                      ? 'Beautifying…'
-                      : 'Beautify'}
-                  </Button>
-                )}
-                {image.originalStoragePath && (
-                  <a
-                    href={imageUrl(image.originalStoragePath)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-2 flex min-h-11 items-center justify-center rounded-md text-sm font-semibold text-link underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    View original
-                  </a>
                 )}
               </div>
             ))}
@@ -517,6 +513,16 @@ export function EntityImageGallery({
                 alt={`${entityLabel} picture ${lightboxIndex + 1}`}
                 className="max-h-[80dvh] w-auto max-w-full rounded-xl object-contain"
               />
+              {lightboxImage.originalStoragePath && (
+                <a
+                  href={imageUrl(lightboxImage.originalStoragePath)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mx-auto flex min-h-11 w-fit items-center rounded-md px-2 text-sm font-semibold text-link underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  View original
+                </a>
+              )}
               {images.length > 1 && (
                 <div className="flex items-center justify-center gap-3 pt-2">
                   <Button

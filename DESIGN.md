@@ -271,6 +271,8 @@ forms), `wide` (`max-w-5xl`, rich records, settings), `content` (`max-w-3xl`),
   pictures share one preview grid. Validation errors sit by the intake, upload
   failures by the grid with one batch retry; no toasts or retry queue. Status
   changes are announced.
+- Picture actions (thumbnail, beautify, delete) are icon buttons on the tile;
+  secondary links such as **View original** live in the full-size viewer.
 
 ### Navigation
 

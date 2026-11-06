@@ -226,7 +226,8 @@ The **Beautify image** upload switch is off initially and remembers the last
 choice in the journal database. When enabled, uploads automatically beautify
 only the primary picture. The first picture is primary until a thumbnail is
 explicitly selected. Selecting another thumbnail also applies the remembered
-choice. Gallery pictures have a **Beautify** button for individual edits.
+choice. Each unedited gallery picture has a **Beautify** action for individual
+edits. The switch and actions appear only while the AI provider is connected.
 
 Beautification uses the configured user's endpoint and API key with
 `POST /images/edits`, independently of the selected chat API format. The provider
@@ -234,7 +235,8 @@ must support `gpt-image-1.5` image edits. Each request creates one medium-qualit
 1024 × 1024 WebP image with a fixed product-photography prompt. The prompt asks
 the model to preserve packaging and label text, reduce artifacts, even the
 lighting, and replace clutter with a softly blurred warm cafe background.
-AI can still alter details, so compare the result with **View original**.
+AI can still alter details, so compare the result with **View original** in the
+full-size picture viewer.
 
 The uploaded picture remains stored. The edited version becomes the displayed
 picture and supplies its thumbnails, without consuming another gallery slot.
