@@ -8,6 +8,7 @@ import {
 } from '@/lib/server/journal-sync'
 import { notifyLocalChange } from './changes'
 import type { LocalJournal } from './client'
+import { setUnsyncedChanges } from './device-copy'
 import {
   applyJournalChanges,
   replaceJournalRows,
@@ -249,6 +250,7 @@ export async function refreshSyncStatus(journal: LocalJournal) {
     'select status, count(*)::int as n from roastbook_local.outbox group by status',
   )
   const byStatus = new Map(counts.rows.map((row) => [row.status, row.n]))
+  setUnsyncedChanges(byStatus.size > 0)
   setSyncStatus({
     pending: byStatus.get('pending') ?? 0,
     conflicts: byStatus.get('conflict') ?? 0,

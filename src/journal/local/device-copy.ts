@@ -24,6 +24,21 @@ export function setDeviceCopy(keep: boolean) {
   else localStorage.removeItem(choice)
 }
 
+const unsynced = 'roastbook-unsynced-changes'
+
+/**
+ * Whether the copy holds changes the account does not have yet. Kept outside
+ * the copy so pages can choose the server without opening it; until the copy
+ * has been checked once, it may.
+ */
+export function hasUnsyncedChanges() {
+  return localStorage.getItem(unsynced) !== 'no'
+}
+
+export function setUnsyncedChanges(value: boolean) {
+  localStorage.setItem(unsynced, value ? 'yes' : 'no')
+}
+
 /** Where the earlier offline mode (RxDB) kept an owner's queued changes. */
 export function legacyOfflineDatabase(owner: string) {
   return owner === 'local'

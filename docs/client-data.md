@@ -1,14 +1,22 @@
 # Journal architecture
 
 Every journal read and write is one SQL journal function in `src/journal/`. It
-runs on the server on PostgreSQL, and in browsers that keep a device copy
-on PGlite (sync replay, MCP and browser tabs without a copy use the server).
-`src/journal/local/device-copy.ts` decides: the demo and the installed app
-always keep a copy. Browser tabs reuse existing copies, including those enabled
-by the former offline setting, without deleting pending changes. Other tabs call
-`callJournal` in `src/lib/server/journal-sync.ts`. See
-[ADR 0001](adr/0001-sql-journal.md) for the
-decision.
+runs on the server on PostgreSQL, and offline on a device copy on PGlite.
+`src/journal/platform/runtime.browser.ts` decides per call:
+
+- While the server can be reached, browsers call `callJournal` in
+  `src/lib/server/journal-sync.ts`, so pages always show the account's journal.
+- A browser keeping a copy runs functions on it while offline, when a read
+  gets no answer within 10 seconds, and while the copy has unsynced changes
+  (assumed until the copy has been checked once), so new writes queue behind
+  them. A write that fails in flight is not repeated
+  locally; the server may have applied it.
+- `src/journal/local/device-copy.ts` decides who keeps a copy: the installed
+  app, and browser tabs of a profile where it ran or the former offline setting
+  was on. They sync it in the background and remove it on sign-out.
+- The demo always runs on its copy.
+
+See [ADR 0001](adr/0001-sql-journal.md) for the decision.
 
 ## Journal functions
 
@@ -82,6 +90,8 @@ client build by `scripts/vite-journal-platform.ts` (the demo build also selects
   count. A device without pending writes downloads only the rows changed since
   its revision (a key without a row was deleted); otherwise, or past 5,000
   changes, it replaces the owner's rows and reruns pending writes on top.
+- **Freshness.** Pages reload when the app becomes visible after more than 30
+  seconds hidden.
 - **Reservations.** The server reserves 256 identifiers per table and device
   (`journal_id_reservations`), reusing the oldest once more than 1024 are
   unused. Every insert into a table with a serial `id` takes it from

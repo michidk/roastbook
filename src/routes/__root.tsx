@@ -31,6 +31,7 @@ import { AppPending } from '@/components/route-pending'
 import { Toaster } from '@/components/toaster'
 import { useOnlineStatus } from '@/hooks/use-online-status'
 import { DEMO_MODE, PREFERENCES_STORAGE_KEY } from '@/lib/build-mode'
+import { isConnectionOnline } from '@/lib/connection-status'
 import { DEFAULT_APP_SETTINGS } from '@/lib/default-app-settings'
 import { getErrorDisplayState } from '@/lib/error-display'
 import {
@@ -348,18 +349,24 @@ function RootComponent() {
 
   const router = useRouter()
   useEffect(() => {
-    let disposed = false
-    let unsubscribe: (() => void) | undefined
-    void import('@/journal/local/changes').then(({ subscribeLocalChanges }) => {
-      if (!disposed)
-        // Writes in this tab wait for this, so their pages show the change.
-        unsubscribe = subscribeLocalChanges(() => router.invalidate())
-    })
-    return () => {
-      disposed = true
-      unsubscribe?.()
+    if (login || DEMO_MODE) return
+    // Pages reload when the app returns after a while, since the journal may
+    // have changed elsewhere.
+    let hiddenAt: number | undefined
+    const reload = () => {
+      if (document.visibilityState === 'hidden') hiddenAt = Date.now()
+      else if (
+        hiddenAt !== undefined &&
+        Date.now() - hiddenAt > 30_000 &&
+        isConnectionOnline()
+      ) {
+        hiddenAt = undefined
+        void router.invalidate()
+      }
     }
-  }, [router])
+    document.addEventListener('visibilitychange', reload)
+    return () => document.removeEventListener('visibilitychange', reload)
+  }, [login, router])
   useEffect(() => {
     if (login || DEMO_MODE) return
     // Only a browser with a device copy syncs; others use the server directly.

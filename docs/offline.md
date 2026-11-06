@@ -1,12 +1,12 @@
 # Offline journaling
 
 The installed app keeps the signed-in account's journal on the device and works
-offline automatically. A browser tab uses the server without downloading a
-journal copy. If this browser profile already has a copy from the installed app
-or the former offline setting, tabs keep using it, including pending changes.
-There is no offline toggle. A device copy downloads
-the journal records once (pictures load as they are shown), reads and writes
-locally, and syncs with the account when a connection is available. See
+offline automatically. Online, the app and browser tabs always show the
+account's journal from the server; the device copy takes over without a
+connection, and until changes made offline have synced. Browser tabs in a
+browser profile with the installed app share its copy. There is no offline
+toggle. A device copy downloads the journal records once (pictures load as
+they are shown) and syncs with the account when a connection is available. See
 [Journal architecture](client-data.md) for the design.
 
 ## What works offline

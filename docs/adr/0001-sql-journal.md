@@ -13,8 +13,9 @@ in-memory journal or a server cache.
 ## Decision
 
 Journal reads and writes are SQL journal functions in `src/journal/`. The
-browser runs them on PGlite in a shared worker, persisted in IndexedDB; the
-server runs them on PostgreSQL or D1. Platform modules
+server runs them on PostgreSQL or D1. Online, browsers call them on the server;
+offline, and until local changes have synced, they run on PGlite in a shared
+worker, persisted in IndexedDB. Platform modules
 (`src/journal/platform/*`) supply database, storage, images, clock,
 configuration and side effects for each side.
 

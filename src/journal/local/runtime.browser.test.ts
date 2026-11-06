@@ -74,10 +74,14 @@ async function openTestJournal(client: PGlite, sync: boolean) {
 mock.module('@/journal/local/edition', () => ({
   openEditionJournal: async () => current,
 }))
-// These tests keep a device copy unless one says otherwise.
+// These tests keep a device copy unless one says otherwise. Its changes have
+// not synced, so functions run on it even online.
 let deviceCopy = true
+let unsynced = true
 mock.module('@/journal/local/device-copy', () => ({
   keepsDeviceCopy: () => deviceCopy,
+  hasUnsyncedChanges: () => unsynced,
+  setUnsyncedChanges: () => {},
 }))
 
 async function outbox(journal: LocalJournal) {
@@ -219,6 +223,11 @@ test('a refreshed journal reapplies pending writes with their recorded identifie
   expect(ids.rows[0]?.id).toBe(900)
 })
 
+// Without a window the reachability probe never runs; the browser flag decides.
+mock.module('@/lib/connection-status', () => ({
+  isConnectionOnline: () => navigator.onLine,
+}))
+
 // Sync runs only online; tests that need offline override this.
 const setOnline = (value: boolean) =>
   Object.defineProperty(globalThis.navigator, 'onLine', {
@@ -247,10 +256,11 @@ mock.module('@/lib/server/journal-sync', () => ({
   reserveJournalIds: async () => ({}),
   callJournal: async ({ data }: { data: { name: string; input: unknown } }) => {
     called.push(data)
-    return { id: 42 }
+    return callServer()
   },
 }))
 const called: Array<{ name: string; input: unknown }> = []
+let callServer = async (): Promise<unknown> => ({ id: 42 })
 const sync = await import('./sync')
 
 async function pendingBeans(journal: LocalJournal, names: string[]) {
@@ -468,6 +478,69 @@ test('a browser without a device copy runs journal functions on the server', asy
   } finally {
     unsubscribe()
     deviceCopy = true
+  }
+})
+
+test('online, a synced device copy leaves functions to the server', async () => {
+  await openJournal(true)
+  unsynced = false
+  called.length = 0
+  try {
+    expect(await getBean({ data: 1 })).toEqual({ id: 42 } as never)
+    expect(called.map((call) => call.name)).toEqual(['beans/getBean'])
+  } finally {
+    unsynced = true
+  }
+})
+
+test('a read the server cannot answer comes from the device copy; a write fails', async () => {
+  const journal = await openJournal(true)
+  await journal.client.query(
+    "insert into roastbook_local.id_pool (table_name, id) values ('beans', 520), ('bean_purchases', 720)",
+  )
+  await createBean({ data: { name: 'Kept on device' } })
+  unsynced = false
+  callServer = async () => {
+    // The connection drops while the request is under way.
+    setOnline(false)
+    throw new TypeError('Failed to fetch Roastbook')
+  }
+  try {
+    const page = JSON.stringify(await getBeanCollection({ data: {} }))
+    expect(page).toContain('Kept on device')
+    setOnline(true)
+    // The server may have applied it, so it is not recorded again locally.
+    await expect(createBean({ data: { name: 'Lost' } })).rejects.toThrow(
+      'Failed to fetch',
+    )
+    expect(await outbox(journal)).toHaveLength(1)
+  } finally {
+    setOnline(true)
+    unsynced = true
+    callServer = async () => ({ id: 42 })
+  }
+})
+
+test('a read the server leaves unanswered falls back to the device copy', async () => {
+  const journal = await openJournal(true)
+  await journal.client.query(
+    "insert into roastbook_local.id_pool (table_name, id) values ('beans', 530), ('bean_purchases', 730)",
+  )
+  await createBean({ data: { name: 'Hung connection' } })
+  unsynced = false
+  callServer = async () => {
+    // The request times out without the browser noticing a lost connection.
+    throw new DOMException('The operation timed out.', 'TimeoutError')
+  }
+  const timeout = AbortSignal.timeout
+  AbortSignal.timeout = () => AbortSignal.abort()
+  try {
+    const page = JSON.stringify(await getBeanCollection({ data: {} }))
+    expect(page).toContain('Hung connection')
+  } finally {
+    AbortSignal.timeout = timeout
+    unsynced = true
+    callServer = async () => ({ id: 42 })
   }
 })
 
