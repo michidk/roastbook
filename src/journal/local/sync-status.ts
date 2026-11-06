@@ -31,7 +31,7 @@ export function setSyncStatus(change: Partial<SyncStatus>) {
 
 export const getSyncStatus = () => status
 
-/** Waits up to `budgetMs` for a sync; past that, pages show `updating` until it ends. */
+/** Resolves when a sync ends or after `budgetMs`; past that, pages show `updating` until it ends. */
 export async function waitForSync(sync: Promise<unknown>, budgetMs: number) {
   let timer: ReturnType<typeof setTimeout> | undefined
   const finished = await Promise.race([

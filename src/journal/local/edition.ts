@@ -66,12 +66,12 @@ async function prepare(journal: LocalJournal) {
 }
 
 /**
- * Online, pages open once the copy has caught up, not on what this device
- * last saw; a slow connection gets the device copy, marked as updating.
+ * Pages open on the device copy at once while it syncs; downloaded changes
+ * refresh them. A slow sync marks the copy as updating.
  */
-async function catchUp(journal: LocalJournal) {
+function catchUp(journal: LocalJournal) {
   if (typeof navigator !== 'undefined' && !navigator.onLine) return
-  await waitForSync(
+  void waitForSync(
     synchronizeJournal(journal).catch(() => undefined),
     1_000,
   )

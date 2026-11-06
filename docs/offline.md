@@ -30,9 +30,8 @@ Each change is saved locally with its sync record in one transaction and sent
 after the change, at startup, on reconnect or focus, every 30 seconds, and from
 **Sync now**. The server applies each change exactly once. Changes from other
 devices download when the account's journal changed, only the records that
-changed. Online, the app waits up to a second at startup for these changes;
-on a slower connection it shows the device copy, says it is updating, and
-refreshes once the changes arrive.
+changed. At startup the app shows the device copy at once and refreshes
+when changes arrive, with an updating notice if they take more than a second.
 
 A change that no longer fits the latest journal, such as an edit to a record
 deleted elsewhere, appears in the sync banner as needing review: **Try again**

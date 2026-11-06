@@ -82,11 +82,10 @@ client build by `scripts/vite-journal-platform.ts` (the demo build also selects
   count. A device without pending writes downloads only the rows changed since
   its revision (a key without a row was deleted); otherwise, or past 5,000
   changes, it replaces the owner's rows and reruns pending writes on top.
-- **Startup.** Online, opening the device copy waits up to a second for a
-  sync, so pages open on the account's journal rather than this device's last
-  view; past that, pages show the device copy with an updating notice and
-  reload when the sync finishes. Tabs without a copy reload their page when
-  they become visible after more than 30 seconds hidden.
+- **Startup.** Pages open on the device copy at once while it syncs, and
+  reload when the sync downloads changes; a sync that takes over a second adds
+  an updating notice. Tabs without a copy reload their page when they become
+  visible after more than 30 seconds hidden.
 - **Reservations.** The server reserves 256 identifiers per table and device
   (`journal_id_reservations`), reusing the oldest once more than 1024 are
   unused. Every insert into a table with a serial `id` takes it from
