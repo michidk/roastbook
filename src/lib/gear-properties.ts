@@ -158,7 +158,7 @@ export const GRINDER_GRIND_SETTING_FORMAT_OPTIONS = optionsFromLabels(
 
 export const GRINDER_BREW_RANGE_OPTIONS = optionsFromLabels(
   GRINDER_BREW_RANGE_VALUES,
-  { espresso: 'Espresso', filter: 'Filter' },
+  { espresso: 'Espresso', filter: 'Filter', turkish: 'Turkish' },
 )
 
 export const GRINDER_BEAN_FEED_OPTIONS = optionsFromLabels(
@@ -177,7 +177,12 @@ export const GRINDER_DOSE_CONTROL_MODE_OPTIONS = optionsFromLabels(
 
 export const GRINDER_BURR_MATERIAL_OPTIONS = optionsFromLabels(
   GRINDER_BURR_MATERIAL_VALUES,
-  { steel: 'Steel', ceramic: 'Ceramic', other: 'Other' },
+  {
+    steel: 'Steel',
+    ceramic: 'Ceramic',
+    titanium_coated: 'Titanium coated',
+    other: 'Other',
+  },
 )
 
 export const BREWER_MECHANISM_OPTIONS = optionsFromLabels(
@@ -188,6 +193,7 @@ export const BREWER_MECHANISM_OPTIONS = optionsFromLabels(
     hybrid: 'Hybrid',
     press: 'Press',
     vacuum: 'Vacuum',
+    boiling: 'Boiling',
     other: 'Other',
   },
 )

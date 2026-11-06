@@ -39,6 +39,8 @@ const PARAMETER_ICONS: Partial<Record<RecommendationParameter, LucideIcon>> = {
   targetTimeSeconds: Timer,
   preinfusionTimeSeconds: Timer,
   bloomTimeSeconds: Timer,
+  steepTimeSeconds: Timer,
+  bloomWaterGrams: Scale,
   brewTemperatureCelsius: Thermometer,
   brewPressureBar: Gauge,
   preinfusionPressureBar: Gauge,

@@ -589,6 +589,20 @@
       "when": 1793875181988,
       "tag": "0083_integration-scopes",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1793953623002,
+      "tag": "0084_open-coffee-taxonomies",
+      "breakpoints": true
+    },
+    {
+      "idx": 85,
+      "version": "7",
+      "when": 1793953624122,
+      "tag": "0085_open-coffee-data",
+      "breakpoints": true
     }
   ]
 }

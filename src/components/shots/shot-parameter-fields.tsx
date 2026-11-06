@@ -76,6 +76,8 @@ export function ShotParameterFields({
     show('grindSetting') ||
     show('shotTimeSeconds') ||
     show('targetTimeSeconds') ||
+    show('steepTimeSeconds') ||
+    show('pourCount') ||
     show('brewTemperatureCelsius') ||
     show('brewPressureBar') ||
     show('flowRateMlPerSecond')
@@ -267,6 +269,31 @@ export function ShotParameterFields({
                 error={errors.targetTimeSeconds}
               />
             ) : null}
+            {show('steepTimeSeconds') ? (
+              <InputField
+                id="steep-time"
+                label="Steep time"
+                type="number"
+                min="0"
+                step="1"
+                unit="s"
+                unitPlacement="inline"
+                value={values.steepTimeSeconds}
+                onChange={(value) => onChange('steepTimeSeconds', value)}
+              />
+            ) : null}
+            {show('pourCount') ? (
+              <InputField
+                id="pour-count"
+                label="Pours"
+                type="number"
+                inputMode="numeric"
+                min="0"
+                step="1"
+                value={values.pourCount}
+                onChange={(value) => onChange('pourCount', value)}
+              />
+            ) : null}
             {show('brewTemperatureCelsius') ? (
               <InputField
                 id="temperature"
@@ -323,6 +350,7 @@ export function ShotParameterFields({
       {show('preinfusionTimeSeconds') ||
       show('preinfusionPressureBar') ||
       show('bloomTimeSeconds') ||
+      show('bloomWaterGrams') ||
       show('usesPuckScreen') ||
       show('paperFilterPosition') ||
       show('distributionMethod') ||
@@ -366,6 +394,19 @@ export function ShotParameterFields({
                 unitPlacement="inline"
                 value={values.bloomTimeSeconds}
                 onChange={(value) => onChange('bloomTimeSeconds', value)}
+              />
+            ) : null}
+            {show('bloomWaterGrams') ? (
+              <InputField
+                id="bloom-water"
+                label="Bloom water"
+                type="number"
+                min="0"
+                step="5"
+                unit="g"
+                unitPlacement="inline"
+                value={values.bloomWaterGrams}
+                onChange={(value) => onChange('bloomWaterGrams', value)}
               />
             ) : null}
             {show('paperFilterPosition') ? (

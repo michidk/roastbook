@@ -5,6 +5,12 @@ import { PGlite } from '@electric-sql/pglite'
 import { DEFAULT_BREWING_METHODS } from '@/lib/brewing-methods'
 
 const migrationName = '0063_normalize_drink_and_method_defaults.sql'
+// Parameters added to the presets by later migrations.
+const laterParameters = new Set<string>([
+  'steepTimeSeconds',
+  'bloomWaterGrams',
+  'pourCount',
+])
 
 describe('drink and brewing method defaults migration', () => {
   let client: PGlite
@@ -106,7 +112,11 @@ describe('drink and brewing method defaults migration', () => {
         methods.rows
           .find((row) => row.name === method.name)
           ?.enabled_parameters.sort(),
-      ).toEqual([...method.enabledParameters].sort())
+      ).toEqual(
+        method.enabledParameters
+          .filter((key) => !laterParameters.has(key))
+          .sort(),
+      )
     }
     expect(
       methods.rows.find((row) => row.name === 'AeroPress')?.enabled_parameters,

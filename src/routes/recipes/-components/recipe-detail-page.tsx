@@ -253,6 +253,10 @@ function RecipeSummary({
       'Target time',
       recipe.targetTimeSeconds && `${formatNumber(recipe.targetTimeSeconds)} s`,
     ],
+    enabled.has('steepTimeSeconds') && [
+      'Steep time',
+      recipe.steepTimeSeconds && `${formatNumber(recipe.steepTimeSeconds)} s`,
+    ],
     enabled.has('grindSetting') && ['Grind setting', recipe.grindSetting],
     enabled.has('brewTemperatureCelsius') && [
       'Temperature',
@@ -276,6 +280,14 @@ function RecipeSummary({
     enabled.has('bloomTimeSeconds') && [
       'Bloom',
       recipe.bloomTimeSeconds && `${formatNumber(recipe.bloomTimeSeconds)} s`,
+    ],
+    enabled.has('bloomWaterGrams') && [
+      'Bloom water',
+      recipe.bloomWaterGrams && `${formatNumber(recipe.bloomWaterGrams)} g`,
+    ],
+    enabled.has('pourCount') && [
+      'Pours',
+      recipe.pourCount === null ? null : formatNumber(recipe.pourCount),
     ],
   ].filter(Boolean) as [string, string | null][]
   const accessories = gear.filter((item) =>

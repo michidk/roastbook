@@ -22,6 +22,11 @@ export const DECIMAL_CONSTRAINTS = {
     maximum: 9_999.99,
     fractionDigits: 2,
   },
+  steepTimeSeconds: {
+    label: 'Steep time',
+    maximum: 999_999.99,
+    fractionDigits: 2,
+  },
   brewTemperatureCelsius: {
     label: 'Water temperature',
     maximum: 999.9,
@@ -39,6 +44,11 @@ export const DECIMAL_CONSTRAINTS = {
   },
   bloomTimeSeconds: {
     label: 'Bloom time',
+    maximum: 99_999.99,
+    fractionDigits: 2,
+  },
+  bloomWaterGrams: {
+    label: 'Bloom water',
     maximum: 99_999.99,
     fractionDigits: 2,
   },

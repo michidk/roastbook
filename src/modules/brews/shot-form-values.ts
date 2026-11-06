@@ -1,10 +1,10 @@
 import { isEspressoMachineGearType, isGrinderGearType } from '@/lib/constants'
 import {
   type DistributionMethod,
-  isDistributionMethod,
   type PaperFilterPosition,
   type RatioBasis,
   type ShotParameterValues,
+  toDistributionMethod,
 } from '@/lib/shot-parameters'
 import { EMPTY_SHOT_SENSORY_RATINGS } from '@/lib/shot-sensory'
 
@@ -23,10 +23,13 @@ export type ShotFormValues = {
   yieldGrams: string
   shotTimeSeconds: string
   targetTimeSeconds: string
+  steepTimeSeconds: string
   brewTemperatureCelsius: string
   preinfusionTimeSeconds: string
   preinfusionPressureBar: string
   bloomTimeSeconds: string
+  bloomWaterGrams: string
+  pourCount: string
   brewPressureBar: string
   flowRateMlPerSecond: string
   basketId: string
@@ -61,10 +64,13 @@ export const EMPTY_SHOT_FORM_VALUES: ShotFormValues = {
   yieldGrams: '',
   shotTimeSeconds: '',
   targetTimeSeconds: '',
+  steepTimeSeconds: '',
   brewTemperatureCelsius: '',
   preinfusionTimeSeconds: '',
   preinfusionPressureBar: '',
   bloomTimeSeconds: '',
+  bloomWaterGrams: '',
+  pourCount: '',
   brewPressureBar: '',
   flowRateMlPerSecond: '',
   basketId: '',
@@ -119,10 +125,13 @@ export function shotFormValuesFrom(
     yieldGrams: source.yieldGrams ?? '',
     shotTimeSeconds: source.shotTimeSeconds ?? '',
     targetTimeSeconds: source.targetTimeSeconds ?? '',
+    steepTimeSeconds: source.steepTimeSeconds ?? '',
     brewTemperatureCelsius: source.brewTemperatureCelsius ?? '',
     preinfusionTimeSeconds: source.preinfusionTimeSeconds ?? '',
     preinfusionPressureBar: source.preinfusionPressureBar ?? '',
     bloomTimeSeconds: source.bloomTimeSeconds ?? '',
+    bloomWaterGrams: source.bloomWaterGrams ?? '',
+    pourCount: source.pourCount === null ? '' : String(source.pourCount),
     brewPressureBar: source.brewPressureBar ?? '',
     flowRateMlPerSecond: source.flowRateMlPerSecond ?? '',
     basketId: source.basketId ? String(source.basketId) : '',
@@ -134,11 +143,7 @@ export function shotFormValuesFrom(
       source.paperFilterPosition === 'both'
         ? source.paperFilterPosition
         : '',
-    distributionMethod:
-      source.distributionMethod &&
-      isDistributionMethod(source.distributionMethod)
-        ? source.distributionMethod
-        : '',
+    distributionMethod: toDistributionMethod(source.distributionMethod) ?? '',
     tampForceKg: source.tampForceKg ?? '',
     accessoryGearIds: [...source.accessoryGearIds],
   }
@@ -157,10 +162,13 @@ const RECIPE_FORM_KEYS = [
   'yieldGrams',
   'shotTimeSeconds',
   'targetTimeSeconds',
+  'steepTimeSeconds',
   'brewTemperatureCelsius',
   'preinfusionTimeSeconds',
   'preinfusionPressureBar',
   'bloomTimeSeconds',
+  'bloomWaterGrams',
+  'pourCount',
   'brewPressureBar',
   'flowRateMlPerSecond',
   'basketId',

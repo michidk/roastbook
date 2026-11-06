@@ -30,10 +30,18 @@ describe('shot parameter projection', () => {
 
   test('keeps supported distribution methods', () => {
     expect(
+      projectShotParameters({ distributionMethod: 'distribution_tool' }, [
+        'distributionMethod',
+      ]).distributionMethod,
+    ).toBe('distribution_tool')
+  })
+
+  test('maps distribution methods sent as display labels', () => {
+    expect(
       projectShotParameters({ distributionMethod: 'Distribution tool' }, [
         'distributionMethod',
       ]).distributionMethod,
-    ).toBe('Distribution tool')
+    ).toBe('distribution_tool')
   })
 
   test('drops legacy distribution methods', () => {

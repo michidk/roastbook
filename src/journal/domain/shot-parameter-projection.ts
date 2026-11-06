@@ -1,7 +1,7 @@
 import { normalizeShotParameterKeys } from '@/lib/brewing-methods'
 import {
-  isDistributionMethod,
   type ShotParameterInput,
+  toDistributionMethod,
 } from '@/lib/shot-parameters'
 
 export function projectAccessoryGearIds(
@@ -37,6 +37,9 @@ export function projectShotParameters(
     targetTimeSeconds: enabled.has('targetTimeSeconds')
       ? (data.targetTimeSeconds ?? null)
       : null,
+    steepTimeSeconds: enabled.has('steepTimeSeconds')
+      ? (data.steepTimeSeconds ?? null)
+      : null,
     brewTemperatureCelsius: enabled.has('brewTemperatureCelsius')
       ? (data.brewTemperatureCelsius ?? null)
       : null,
@@ -49,6 +52,10 @@ export function projectShotParameters(
     bloomTimeSeconds: enabled.has('bloomTimeSeconds')
       ? (data.bloomTimeSeconds ?? null)
       : null,
+    bloomWaterGrams: enabled.has('bloomWaterGrams')
+      ? (data.bloomWaterGrams ?? null)
+      : null,
+    pourCount: enabled.has('pourCount') ? (data.pourCount ?? null) : null,
     brewPressureBar: enabled.has('brewPressureBar')
       ? (data.brewPressureBar ?? null)
       : null,
@@ -63,9 +70,7 @@ export function projectShotParameters(
       ? (data.paperFilterPosition ?? null)
       : null,
     distributionMethod: enabled.has('distributionMethod')
-      ? data.distributionMethod && isDistributionMethod(data.distributionMethod)
-        ? data.distributionMethod
-        : null
+      ? toDistributionMethod(data.distributionMethod)
       : null,
     tampForceKg: enabled.has('tampForceKg') ? (data.tampForceKg ?? null) : null,
   }

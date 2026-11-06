@@ -75,6 +75,10 @@ const GEAR_TYPE_LABELS_BY_VALUE = {
   tamper: 'Tamper',
   wdt: 'WDT Tool',
   basket: 'Basket',
+  filter: 'Filter',
+  roaster: 'Roaster',
+  milk_frother: 'Milk Frother',
+  accessory: 'Accessory',
   other: 'Other',
 } as const
 

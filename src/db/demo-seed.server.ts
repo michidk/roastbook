@@ -37,6 +37,7 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
         description: method.description,
         enabledParameters: [...method.enabledParameters],
         timerEnabled: method.timerEnabled,
+        brewMethodId: method.brewMethodId,
       })),
     )
     .onConflictDoNothing()

@@ -6,6 +6,7 @@ import {
 import {
   nameSchema,
   notesSchema,
+  openCoffeeIdSchema,
   positiveIdSchema,
 } from '@/lib/server-validation'
 
@@ -22,6 +23,8 @@ const brewingMethodWriteSchema = z.object({
   enabledParameters: z.array(z.string().max(100)).max(50),
   timerEnabled: z.boolean(),
   drinkTypeIds: z.array(positiveIdSchema).max(100).default([]),
+  // Omitted on update keeps the stored link.
+  brewMethodId: openCoffeeIdSchema.nullable().optional(),
 })
 
 const brewingMethodUpdateSchema = brewingMethodWriteSchema.extend({
@@ -48,6 +51,7 @@ function normalizeBrewingMethodWrite(
     enabledParameters: [...normalizeShotParameterKeys(data.enabledParameters)],
     timerEnabled: data.timerEnabled,
     drinkTypeIds: [...new Set(data.drinkTypeIds)],
+    brewMethodId: data.brewMethodId,
   }
 }
 

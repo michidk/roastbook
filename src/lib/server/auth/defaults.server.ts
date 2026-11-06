@@ -49,6 +49,7 @@ export async function createJournalDefaults(tx: Transaction, userId: string) {
         description: m.description,
         enabledParameters: [...m.enabledParameters],
         timerEnabled: m.timerEnabled,
+        brewMethodId: m.brewMethodId,
       })),
     )
     .returning()

@@ -138,6 +138,7 @@ export const getBrewingMethodPage = journalRead(
         description: brewingMethods.description,
         enabledParameters: brewingMethods.enabledParameters,
         timerEnabled: brewingMethods.timerEnabled,
+        brewMethodId: brewingMethods.brewMethodId,
         recipeCount: sql<number>`cast((select count(*) from ${recipes} where ${owned(recipes)} and ${recipes.brewingMethodId} = ${brewingMethods.id}) as integer)`,
         shotCount: sql<number>`cast((select count(*) from ${shots} where ${owned(shots)} and ${shots.brewingMethodId} = ${brewingMethods.id}) as integer)`,
       })
@@ -229,6 +230,7 @@ export const updateBrewingMethod = journalWrite(
             description: data.description,
             enabledParameters: [...data.enabledParameters],
             timerEnabled: data.timerEnabled,
+            brewMethodId: data.brewMethodId,
             updatedAt: journalNow(),
           })
           .where(owned(brewingMethods, eq(brewingMethods.id, data.id)))

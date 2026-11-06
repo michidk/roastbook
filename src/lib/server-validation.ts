@@ -11,6 +11,7 @@ import {
   THUMBNAIL_ENTITY_TYPE_VALUES,
 } from '@/lib/domain-contracts'
 import { DECIMAL_CONSTRAINTS } from '@/lib/measurement-constraints'
+import { toDistributionMethod } from '@/lib/shot-parameters'
 
 export { MAX_IMAGE_BYTES }
 
@@ -21,6 +22,14 @@ export const optionalPositiveIdSchema = positiveIdSchema.optional()
 export const nullablePositiveIdSchema = positiveIdSchema.nullable()
 export const optionalNullablePositiveIdSchema =
   nullablePositiveIdSchema.optional()
+
+/** A permanent Open Coffee identifier, such as `pour-over` or `cp-7k2m9x4qvd`. */
+export const openCoffeeIdSchema = z
+  .string()
+  .trim()
+  .min(3)
+  .max(64)
+  .regex(/^[a-z0-9][a-z0-9_.-]*[a-z0-9]$/)
 
 export const ratingSchema = z.number().int().min(1).max(5)
 export const optionalNullableRatingSchema = ratingSchema.nullable().optional()
@@ -160,6 +169,12 @@ export const shotCreateSchema = z.object({
   )
     .nullable()
     .optional(),
+  steepTimeSeconds: boundedDecimalStringSchema(
+    DECIMAL_CONSTRAINTS.steepTimeSeconds.maximum,
+    DECIMAL_CONSTRAINTS.steepTimeSeconds.fractionDigits,
+  )
+    .nullable()
+    .optional(),
   preinfusionTimeSeconds: nullableShotDecimal,
   preinfusionPressureBar: boundedDecimalStringSchema(
     DECIMAL_CONSTRAINTS.preinfusionPressureBar.maximum,
@@ -168,6 +183,13 @@ export const shotCreateSchema = z.object({
     .nullable()
     .optional(),
   bloomTimeSeconds: nullableShotDecimal,
+  bloomWaterGrams: boundedDecimalStringSchema(
+    DECIMAL_CONSTRAINTS.bloomWaterGrams.maximum,
+    DECIMAL_CONSTRAINTS.bloomWaterGrams.fractionDigits,
+  )
+    .nullable()
+    .optional(),
+  pourCount: z.number().int().min(0).max(1_000).nullable().optional(),
   brewPressureBar: boundedDecimalStringSchema(
     DECIMAL_CONSTRAINTS.brewPressureBar.maximum,
     DECIMAL_CONSTRAINTS.brewPressureBar.fractionDigits,
@@ -186,7 +208,16 @@ export const shotCreateSchema = z.object({
     .enum(PAPER_FILTER_POSITION_VALUES)
     .nullable()
     .optional(),
-  distributionMethod: z.enum(DISTRIBUTION_METHOD_VALUES).nullable().optional(),
+  distributionMethod: z
+    .union([
+      z.enum(DISTRIBUTION_METHOD_VALUES),
+      // Display labels stored before the Open Coffee ids.
+      z
+        .enum(['WDT', 'Blind shaker', 'Distribution tool', 'Stockfleth move'])
+        .transform(toDistributionMethod),
+    ])
+    .nullable()
+    .optional(),
   tampForceKg: nullableShotDecimal,
   accessoryGearIds: z.array(positiveIdSchema).max(100).optional(),
   rating: optionalNullableRatingSchema,

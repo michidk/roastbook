@@ -6,6 +6,7 @@ import {
 
 type DefaultBrewingMethod = {
   readonly name: string
+  readonly brewMethodId: string | null
   readonly description: string
   readonly enabledParameters: readonly ShotParameterKey[]
   readonly timerEnabled: boolean
@@ -15,6 +16,7 @@ type DefaultBrewingMethod = {
 export const DEFAULT_BREWING_METHODS = [
   {
     name: 'Espresso',
+    brewMethodId: 'espresso',
     description: 'Concentrated coffee brewed under pressure.',
     timerEnabled: true,
     drinkTypeNames: [
@@ -46,6 +48,7 @@ export const DEFAULT_BREWING_METHODS = [
   },
   {
     name: 'Pour over',
+    brewMethodId: 'pour-over',
     description: 'Filter coffee brewed by pouring water over the grounds.',
     timerEnabled: true,
     drinkTypeNames: ['Filter', 'Iced Coffee', 'Other'],
@@ -61,11 +64,14 @@ export const DEFAULT_BREWING_METHODS = [
       'targetTimeSeconds',
       'brewTemperatureCelsius',
       'bloomTimeSeconds',
+      'bloomWaterGrams',
+      'pourCount',
       'accessoryGearIds',
     ],
   },
   {
     name: 'AeroPress',
+    brewMethodId: 'aeropress',
     description: 'Immersion brewing finished with gentle manual pressure.',
     timerEnabled: true,
     drinkTypeNames: ['Filter', 'Iced Coffee', 'Other'],
@@ -79,12 +85,14 @@ export const DEFAULT_BREWING_METHODS = [
       'yieldGrams',
       'shotTimeSeconds',
       'targetTimeSeconds',
+      'steepTimeSeconds',
       'brewTemperatureCelsius',
       'accessoryGearIds',
     ],
   },
   {
     name: 'French press',
+    brewMethodId: 'french-press',
     description: 'Full-immersion coffee separated with a mesh plunger.',
     timerEnabled: true,
     drinkTypeNames: ['Filter', 'Iced Coffee', 'Other'],
@@ -98,12 +106,14 @@ export const DEFAULT_BREWING_METHODS = [
       'yieldGrams',
       'shotTimeSeconds',
       'targetTimeSeconds',
+      'steepTimeSeconds',
       'brewTemperatureCelsius',
       'accessoryGearIds',
     ],
   },
   {
     name: 'Moka pot',
+    brewMethodId: 'moka-pot',
     description:
       'Stovetop coffee brewed as steam pressure pushes water upward.',
     timerEnabled: true,
@@ -134,6 +144,7 @@ export const DEFAULT_BREWING_METHODS = [
   },
   {
     name: 'Cold brew',
+    brewMethodId: 'cold-brew',
     description: 'Coffee extracted slowly with cool water.',
     timerEnabled: true,
     drinkTypeNames: ['Cold Brew', 'Other'],
@@ -147,11 +158,13 @@ export const DEFAULT_BREWING_METHODS = [
       'yieldGrams',
       'shotTimeSeconds',
       'targetTimeSeconds',
+      'steepTimeSeconds',
       'accessoryGearIds',
     ],
   },
   {
     name: 'Other',
+    brewMethodId: null,
     description: 'A flexible method for custom brewing workflows.',
     timerEnabled: true,
     drinkTypeNames: [],

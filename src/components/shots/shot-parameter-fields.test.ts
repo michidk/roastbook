@@ -24,10 +24,13 @@ function shotParameters(
     yieldGrams: null,
     shotTimeSeconds: null,
     targetTimeSeconds: null,
+    steepTimeSeconds: null,
     brewTemperatureCelsius: null,
     preinfusionTimeSeconds: null,
     preinfusionPressureBar: null,
     bloomTimeSeconds: null,
+    bloomWaterGrams: null,
+    pourCount: null,
     brewPressureBar: null,
     flowRateMlPerSecond: null,
     basketId: null,
@@ -65,17 +68,23 @@ describe('shot form values', () => {
 
   test('offers only the supported distribution methods', () => {
     expect(DISTRIBUTION_METHOD_OPTIONS).toEqual([
-      { value: 'WDT', label: 'WDT' },
-      { value: 'Blind shaker', label: 'Blind shaker' },
-      { value: 'Distribution tool', label: 'Distribution tool' },
-      { value: 'Stockfleth move', label: 'Stockfleth move' },
+      { value: 'wdt', label: 'WDT' },
+      { value: 'blind_shaker', label: 'Blind shaker' },
+      { value: 'distribution_tool', label: 'Distribution tool' },
+      { value: 'stockfleth_move', label: 'Stockfleth move' },
     ])
   })
 
   test('keeps supported distribution methods', () => {
     expect(
+      shotFormValuesFrom(shotParameters('blind_shaker')).distributionMethod,
+    ).toBe('blind_shaker')
+  })
+
+  test('reads distribution methods stored as display labels', () => {
+    expect(
       shotFormValuesFrom(shotParameters('Blind shaker')).distributionMethod,
-    ).toBe('Blind shaker')
+    ).toBe('blind_shaker')
   })
 
   test('drops legacy distribution methods', () => {

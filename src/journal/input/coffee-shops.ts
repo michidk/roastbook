@@ -2,6 +2,7 @@ import { z } from 'zod'
 import {
   nameSchema,
   notesSchema,
+  openCoffeeIdSchema,
   optionalNullableRatingSchema,
   optionalUrlSchema,
   positiveIdSchema,
@@ -24,6 +25,7 @@ const coffeeShopCreateSchema = z.object({
   website: optionalUrlSchema,
   instagramHandle: z.string().trim().max(100).optional(),
   notes: notesSchema.optional(),
+  openCoffeePlaceId: openCoffeeIdSchema.nullable().optional(),
 })
 
 const coffeeShopUpdateSchema = coffeeShopCreateSchema.partial().extend({

@@ -99,7 +99,7 @@
     "delete_visit": { "type": "null" },
     "list_brewing_methods": {
       "type": "array",
-      "items": { "$ref": "#/components/schemas/Response_6fb81392969cea25" }
+      "items": { "$ref": "#/components/schemas/Response_bc1c2f1da65bffd2" }
     },
     "get_brewing_method": {
       "anyOf": [
@@ -178,7 +178,7 @@
         "totalPages": { "type": "number" },
         "items": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_fe4430b91d271e5f" }
+          "items": { "$ref": "#/components/schemas/Response_4735ee02ad7fac35" }
         }
       },
       "required": [
@@ -190,7 +190,7 @@
         "totalPages"
       ]
     },
-    "Response_fe4430b91d271e5f": {
+    "Response_4735ee02ad7fac35": {
       "type": "object",
       "properties": {
         "id": { "type": "number" },
@@ -205,7 +205,7 @@
         "brewTemperatureCelsius": { "type": ["null", "string"] },
         "bean": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_9ae0df235e5f4a3e" },
+            { "$ref": "#/components/schemas/Response_8e9773d124cf0368" },
             { "type": "null" }
           ]
         },
@@ -228,12 +228,12 @@
         "yieldGrams"
       ]
     },
-    "Response_9ae0df235e5f4a3e": {
+    "Response_8e9773d124cf0368": {
       "type": "object",
       "properties": {
+        "roaster": { "type": ["null", "string"] },
         "name": { "type": "string" },
         "id": { "type": "number" },
-        "roaster": { "type": ["null", "string"] },
         "origin": { "type": ["null", "string"] },
         "region": { "type": ["null", "string"] },
         "process": { "type": ["null", "string"] },
@@ -306,13 +306,13 @@
       "properties": {
         "grinder": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_aa8903cb4c9efe79" },
+            { "$ref": "#/components/schemas/Response_a3e1cbb97a71a3f5" },
             { "type": "null" }
           ]
         },
         "basket": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_aa8903cb4c9efe79" },
+            { "$ref": "#/components/schemas/Response_a3e1cbb97a71a3f5" },
             { "type": "null" }
           ]
         },
@@ -356,8 +356,11 @@
         "grindSetting": { "type": ["null", "string"] },
         "yieldGrams": { "type": ["null", "string"] },
         "shotTimeSeconds": { "type": ["null", "string"] },
+        "steepTimeSeconds": { "type": ["null", "string"] },
         "brewTemperatureCelsius": { "type": ["null", "string"] },
         "bloomTimeSeconds": { "type": ["null", "string"] },
+        "bloomWaterGrams": { "type": ["null", "string"] },
+        "pourCount": { "type": ["null", "number"] },
         "flowRateMlPerSecond": { "type": ["null", "string"] },
         "basketId": { "type": ["null", "number"] },
         "usesPuckScreen": { "type": ["null", "boolean"] },
@@ -367,18 +370,18 @@
         "brewingMethodId": { "type": "number" },
         "bean": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_ced4f9621585b019" },
+            { "$ref": "#/components/schemas/Response_1b6e78686481bd15" },
             { "type": "null" }
           ]
         },
         "machine": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_aa8903cb4c9efe79" },
+            { "$ref": "#/components/schemas/Response_a3e1cbb97a71a3f5" },
             { "type": "null" }
           ]
         },
         "brewingMethod": {
-          "$ref": "#/components/schemas/Response_87e892bd623bc6d1"
+          "$ref": "#/components/schemas/Response_14fc97086629612a"
         },
         "drinkOptions": {
           "type": "array",
@@ -407,6 +410,7 @@
         "beanPurchaseId",
         "bitterness",
         "bloomTimeSeconds",
+        "bloomWaterGrams",
         "body",
         "brewPressureBar",
         "brewTemperatureCelsius",
@@ -434,12 +438,14 @@
         "notes",
         "ownerId",
         "paperFilterPosition",
+        "pourCount",
         "preinfusionPressureBar",
         "preinfusionTimeSeconds",
         "rating",
         "ratioBasis",
         "revision",
         "shotTimeSeconds",
+        "steepTimeSeconds",
         "sweetness",
         "tampForceKg",
         "targetTimeSeconds",
@@ -449,7 +455,7 @@
         "yieldGrams"
       ]
     },
-    "Response_aa8903cb4c9efe79": {
+    "Response_a3e1cbb97a71a3f5": {
       "type": "object",
       "properties": {
         "brand": { "type": ["null", "string"] },
@@ -463,13 +469,17 @@
         "notes": { "type": ["null", "string"] },
         "type": {
           "enum": [
+            "accessory",
             "basket",
             "brewer",
             "espresso_machine",
             "espresso_machine_with_grinder",
+            "filter",
             "grinder",
             "kettle",
+            "milk_frother",
             "other",
+            "roaster",
             "scale",
             "tamper",
             "wdt"
@@ -549,9 +559,10 @@
         "storagePath"
       ]
     },
-    "Response_ced4f9621585b019": {
+    "Response_1b6e78686481bd15": {
       "type": "object",
       "properties": {
+        "roaster": { "type": ["null", "string"] },
         "name": { "type": "string" },
         "ownerId": { "type": "string" },
         "id": { "type": "number" },
@@ -565,7 +576,6 @@
           ]
         },
         "isDecaf": { "type": "boolean" },
-        "roaster": { "type": ["null", "string"] },
         "roasterId": { "type": ["null", "number"] },
         "origin": { "type": ["null", "string"] },
         "region": { "type": ["null", "string"] },
@@ -611,7 +621,7 @@
         "variety"
       ]
     },
-    "Response_87e892bd623bc6d1": {
+    "Response_14fc97086629612a": {
       "type": "object",
       "properties": {
         "name": { "type": "string" },
@@ -621,9 +631,11 @@
         "updatedAt": { "type": "string", "format": "date-time" },
         "description": { "type": ["null", "string"] },
         "enabledParameters": { "type": "array", "items": { "type": "string" } },
-        "timerEnabled": { "type": "boolean" }
+        "timerEnabled": { "type": "boolean" },
+        "brewMethodId": { "type": ["null", "string"] }
       },
       "required": [
+        "brewMethodId",
         "createdAt",
         "description",
         "enabledParameters",
@@ -800,8 +812,11 @@
         "grindSetting": { "type": ["null", "string"] },
         "yieldGrams": { "type": ["null", "string"] },
         "shotTimeSeconds": { "type": ["null", "string"] },
+        "steepTimeSeconds": { "type": ["null", "string"] },
         "brewTemperatureCelsius": { "type": ["null", "string"] },
         "bloomTimeSeconds": { "type": ["null", "string"] },
+        "bloomWaterGrams": { "type": ["null", "string"] },
+        "pourCount": { "type": ["null", "number"] },
         "flowRateMlPerSecond": { "type": ["null", "string"] },
         "basketId": { "type": ["null", "number"] },
         "usesPuckScreen": { "type": ["null", "boolean"] },
@@ -818,6 +833,7 @@
         "beanPurchaseId",
         "bitterness",
         "bloomTimeSeconds",
+        "bloomWaterGrams",
         "body",
         "brewPressureBar",
         "brewTemperatureCelsius",
@@ -838,12 +854,14 @@
         "notes",
         "ownerId",
         "paperFilterPosition",
+        "pourCount",
         "preinfusionPressureBar",
         "preinfusionTimeSeconds",
         "rating",
         "ratioBasis",
         "revision",
         "shotTimeSeconds",
+        "steepTimeSeconds",
         "sweetness",
         "tampForceKg",
         "targetTimeSeconds",
@@ -861,7 +879,7 @@
         "totalPages": { "type": "number" },
         "items": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_fe4430b91d271e5f" }
+          "items": { "$ref": "#/components/schemas/Response_4735ee02ad7fac35" }
         }
       },
       "required": ["items", "page", "pageSize", "totalItems", "totalPages"]
@@ -938,8 +956,11 @@
         "grindSetting": { "type": ["null", "string"] },
         "yieldGrams": { "type": ["null", "string"] },
         "shotTimeSeconds": { "type": ["null", "string"] },
+        "steepTimeSeconds": { "type": ["null", "string"] },
         "brewTemperatureCelsius": { "type": ["null", "string"] },
         "bloomTimeSeconds": { "type": ["null", "string"] },
+        "bloomWaterGrams": { "type": ["null", "string"] },
+        "pourCount": { "type": ["null", "number"] },
         "flowRateMlPerSecond": { "type": ["null", "string"] },
         "basketId": { "type": ["null", "number"] },
         "usesPuckScreen": { "type": ["null", "boolean"] },
@@ -953,6 +974,7 @@
         "basketId",
         "beanId",
         "bloomTimeSeconds",
+        "bloomWaterGrams",
         "brewPressureBar",
         "brewTemperatureCelsius",
         "brewWaterGrams",
@@ -969,11 +991,13 @@
         "name",
         "ownerId",
         "paperFilterPosition",
+        "pourCount",
         "preinfusionPressureBar",
         "preinfusionTimeSeconds",
         "ratioBasis",
         "revision",
         "shotTimeSeconds",
+        "steepTimeSeconds",
         "syncId",
         "tampForceKg",
         "targetTimeSeconds",
@@ -985,21 +1009,21 @@
     "ListBeansData": {
       "type": "object",
       "properties": {
-        "active": { "$ref": "#/components/schemas/Response_647adf06191454ac" },
+        "active": { "$ref": "#/components/schemas/Response_d3c487cc5acec704" },
         "archived": {
-          "$ref": "#/components/schemas/Response_5a88f9fe4d44843d"
+          "$ref": "#/components/schemas/Response_034d0e50878a64ce"
         },
         "totalItems": { "type": "number" },
         "totalBags": { "type": "number" }
       },
       "required": ["active", "archived", "totalBags", "totalItems"]
     },
-    "Response_647adf06191454ac": {
+    "Response_d3c487cc5acec704": {
       "type": "object",
       "properties": {
         "items": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_d17067f6e5a40237" }
+          "items": { "$ref": "#/components/schemas/Response_df0999e057802129" }
         },
         "page": { "type": "number" },
         "pageSize": { "type": "number" },
@@ -1008,9 +1032,10 @@
       },
       "required": ["items", "page", "pageSize", "totalItems", "totalPages"]
     },
-    "Response_d17067f6e5a40237": {
+    "Response_df0999e057802129": {
       "type": "object",
       "properties": {
+        "roaster": { "type": ["null", "string"] },
         "name": { "type": "string" },
         "ownerId": { "type": "string" },
         "id": { "type": "number" },
@@ -1024,7 +1049,6 @@
           ]
         },
         "isDecaf": { "type": "boolean" },
-        "roaster": { "type": ["null", "string"] },
         "roasterId": { "type": ["null", "number"] },
         "origin": { "type": ["null", "string"] },
         "region": { "type": ["null", "string"] },
@@ -1132,12 +1156,12 @@
         "website"
       ]
     },
-    "Response_5a88f9fe4d44843d": {
+    "Response_034d0e50878a64ce": {
       "type": "object",
       "properties": {
         "items": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_d17067f6e5a40237" }
+          "items": { "$ref": "#/components/schemas/Response_df0999e057802129" }
         },
         "page": { "type": "number" },
         "pageSize": { "type": "number" },
@@ -1153,6 +1177,7 @@
           "type": "array",
           "items": { "$ref": "#/components/schemas/Response_b7db6781758408c4" }
         },
+        "roaster": { "type": ["null", "string"] },
         "name": { "type": "string" },
         "ownerId": { "type": "string" },
         "id": { "type": "number" },
@@ -1166,7 +1191,6 @@
           ]
         },
         "isDecaf": { "type": "boolean" },
-        "roaster": { "type": ["null", "string"] },
         "roasterId": { "type": ["null", "number"] },
         "origin": { "type": ["null", "string"] },
         "region": { "type": ["null", "string"] },
@@ -1303,6 +1327,7 @@
       "type": "object",
       "properties": {
         "purchaseId": { "type": "number" },
+        "roaster": { "type": ["null", "string"] },
         "name": { "type": "string" },
         "ownerId": { "type": "string" },
         "id": { "type": "number" },
@@ -1316,7 +1341,6 @@
           ]
         },
         "isDecaf": { "type": "boolean" },
-        "roaster": { "type": ["null", "string"] },
         "roasterId": { "type": ["null", "number"] },
         "origin": { "type": ["null", "string"] },
         "region": { "type": ["null", "string"] },
@@ -1366,6 +1390,7 @@
     "UpdateBeanData": {
       "type": "object",
       "properties": {
+        "roaster": { "type": ["null", "string"] },
         "name": { "type": "string" },
         "ownerId": { "type": "string" },
         "id": { "type": "number" },
@@ -1379,7 +1404,6 @@
           ]
         },
         "isDecaf": { "type": "boolean" },
-        "roaster": { "type": ["null", "string"] },
         "roasterId": { "type": ["null", "number"] },
         "origin": { "type": ["null", "string"] },
         "region": { "type": ["null", "string"] },
@@ -1525,7 +1549,7 @@
         "notes": { "type": ["null", "string"] },
         "beans": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_ced4f9621585b019" }
+          "items": { "$ref": "#/components/schemas/Response_1b6e78686481bd15" }
         }
       },
       "required": [
@@ -1599,15 +1623,15 @@
     "ListGearData": {
       "type": "object",
       "properties": {
-        "active": { "$ref": "#/components/schemas/Response_8f8b12239d900612" },
+        "active": { "$ref": "#/components/schemas/Response_36ec8962ce5cc05e" },
         "archived": {
-          "$ref": "#/components/schemas/Response_8f8b12239d900612"
+          "$ref": "#/components/schemas/Response_36ec8962ce5cc05e"
         },
         "totalItems": { "type": "number" }
       },
       "required": ["active", "archived", "totalItems"]
     },
-    "Response_8f8b12239d900612": {
+    "Response_36ec8962ce5cc05e": {
       "type": "object",
       "properties": {
         "page": { "type": "number" },
@@ -1616,12 +1640,12 @@
         "totalPages": { "type": "number" },
         "items": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_af8dbe0b466d6cac" }
+          "items": { "$ref": "#/components/schemas/Response_dd01d201cc045493" }
         }
       },
       "required": ["items", "page", "pageSize", "totalItems", "totalPages"]
     },
-    "Response_af8dbe0b466d6cac": {
+    "Response_dd01d201cc045493": {
       "type": "object",
       "properties": {
         "brand": { "type": ["null", "string"] },
@@ -1635,13 +1659,17 @@
         "notes": { "type": ["null", "string"] },
         "type": {
           "enum": [
+            "accessory",
             "basket",
             "brewer",
             "espresso_machine",
             "espresso_machine_with_grinder",
+            "filter",
             "grinder",
             "kettle",
+            "milk_frother",
             "other",
+            "roaster",
             "scale",
             "tamper",
             "wdt"
@@ -1723,13 +1751,17 @@
         "notes": { "type": ["null", "string"] },
         "type": {
           "enum": [
+            "accessory",
             "basket",
             "brewer",
             "espresso_machine",
             "espresso_machine_with_grinder",
+            "filter",
             "grinder",
             "kettle",
+            "milk_frother",
             "other",
+            "roaster",
             "scale",
             "tamper",
             "wdt"
@@ -2145,13 +2177,17 @@
         "notes": { "type": ["null", "string"] },
         "type": {
           "enum": [
+            "accessory",
             "basket",
             "brewer",
             "espresso_machine",
             "espresso_machine_with_grinder",
+            "filter",
             "grinder",
             "kettle",
+            "milk_frother",
             "other",
+            "roaster",
             "scale",
             "tamper",
             "wdt"
@@ -2320,12 +2356,12 @@
         "totalPages": { "type": "number" },
         "items": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_cb9abeb7cfff18d6" }
+          "items": { "$ref": "#/components/schemas/Response_9fafd65dfae2705f" }
         }
       },
       "required": ["items", "page", "pageSize", "totalItems", "totalPages"]
     },
-    "Response_cb9abeb7cfff18d6": {
+    "Response_9fafd65dfae2705f": {
       "type": "object",
       "properties": {
         "name": { "type": "string" },
@@ -2348,8 +2384,11 @@
         "grindSetting": { "type": ["null", "string"] },
         "yieldGrams": { "type": ["null", "string"] },
         "shotTimeSeconds": { "type": ["null", "string"] },
+        "steepTimeSeconds": { "type": ["null", "string"] },
         "brewTemperatureCelsius": { "type": ["null", "string"] },
         "bloomTimeSeconds": { "type": ["null", "string"] },
+        "bloomWaterGrams": { "type": ["null", "string"] },
+        "pourCount": { "type": ["null", "number"] },
         "flowRateMlPerSecond": { "type": ["null", "string"] },
         "basketId": { "type": ["null", "number"] },
         "usesPuckScreen": { "type": ["null", "boolean"] },
@@ -2360,13 +2399,13 @@
         "syncId": { "type": "string" },
         "grinder": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_aa8903cb4c9efe79" },
+            { "$ref": "#/components/schemas/Response_a3e1cbb97a71a3f5" },
             { "type": "null" }
           ]
         },
         "basket": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_aa8903cb4c9efe79" },
+            { "$ref": "#/components/schemas/Response_a3e1cbb97a71a3f5" },
             { "type": "null" }
           ]
         },
@@ -2378,13 +2417,13 @@
         },
         "bean": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_5b59e68e72f885ec" },
+            { "$ref": "#/components/schemas/Response_9e88ba73ed6115d2" },
             { "type": "null" }
           ]
         },
         "machine": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_aa8903cb4c9efe79" },
+            { "$ref": "#/components/schemas/Response_a3e1cbb97a71a3f5" },
             { "type": "null" }
           ]
         },
@@ -2393,7 +2432,7 @@
           "items": { "$ref": "#/components/schemas/Response_94ccf78a70e313ad" }
         },
         "brewingMethod": {
-          "$ref": "#/components/schemas/Response_87e892bd623bc6d1"
+          "$ref": "#/components/schemas/Response_14fc97086629612a"
         },
         "drinkOptions": {
           "type": "array",
@@ -2407,6 +2446,7 @@
         "bean",
         "beanId",
         "bloomTimeSeconds",
+        "bloomWaterGrams",
         "brewPressureBar",
         "brewTemperatureCelsius",
         "brewWaterGrams",
@@ -2428,11 +2468,13 @@
         "name",
         "ownerId",
         "paperFilterPosition",
+        "pourCount",
         "preinfusionPressureBar",
         "preinfusionTimeSeconds",
         "ratioBasis",
         "revision",
         "shotTimeSeconds",
+        "steepTimeSeconds",
         "syncId",
         "tampForceKg",
         "targetTimeSeconds",
@@ -2441,9 +2483,10 @@
         "yieldGrams"
       ]
     },
-    "Response_5b59e68e72f885ec": {
+    "Response_9e88ba73ed6115d2": {
       "type": "object",
       "properties": {
+        "roaster": { "type": ["null", "string"] },
         "name": { "type": "string" },
         "ownerId": { "type": "string" },
         "id": { "type": "number" },
@@ -2457,7 +2500,6 @@
           ]
         },
         "isDecaf": { "type": "boolean" },
-        "roaster": { "type": ["null", "string"] },
         "roasterId": { "type": ["null", "number"] },
         "origin": { "type": ["null", "string"] },
         "region": { "type": ["null", "string"] },
@@ -2559,13 +2601,13 @@
       "properties": {
         "grinder": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_aa8903cb4c9efe79" },
+            { "$ref": "#/components/schemas/Response_a3e1cbb97a71a3f5" },
             { "type": "null" }
           ]
         },
         "basket": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_aa8903cb4c9efe79" },
+            { "$ref": "#/components/schemas/Response_a3e1cbb97a71a3f5" },
             { "type": "null" }
           ]
         },
@@ -2595,8 +2637,11 @@
         "grindSetting": { "type": ["null", "string"] },
         "yieldGrams": { "type": ["null", "string"] },
         "shotTimeSeconds": { "type": ["null", "string"] },
+        "steepTimeSeconds": { "type": ["null", "string"] },
         "brewTemperatureCelsius": { "type": ["null", "string"] },
         "bloomTimeSeconds": { "type": ["null", "string"] },
+        "bloomWaterGrams": { "type": ["null", "string"] },
+        "pourCount": { "type": ["null", "number"] },
         "flowRateMlPerSecond": { "type": ["null", "string"] },
         "basketId": { "type": ["null", "number"] },
         "usesPuckScreen": { "type": ["null", "boolean"] },
@@ -2606,19 +2651,19 @@
         "brewingMethodId": { "type": "number" },
         "bean": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_5b59e68e72f885ec" },
+            { "$ref": "#/components/schemas/Response_9e88ba73ed6115d2" },
             { "type": "null" }
           ]
         },
         "syncId": { "type": "string" },
         "machine": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_aa8903cb4c9efe79" },
+            { "$ref": "#/components/schemas/Response_a3e1cbb97a71a3f5" },
             { "type": "null" }
           ]
         },
         "brewingMethod": {
-          "$ref": "#/components/schemas/Response_87e892bd623bc6d1"
+          "$ref": "#/components/schemas/Response_14fc97086629612a"
         },
         "drinkOptions": {
           "type": "array",
@@ -2633,6 +2678,7 @@
         "bean",
         "beanId",
         "bloomTimeSeconds",
+        "bloomWaterGrams",
         "brewPressureBar",
         "brewTemperatureCelsius",
         "brewWaterGrams",
@@ -2654,11 +2700,13 @@
         "name",
         "ownerId",
         "paperFilterPosition",
+        "pourCount",
         "preinfusionPressureBar",
         "preinfusionTimeSeconds",
         "ratioBasis",
         "revision",
         "shotTimeSeconds",
+        "steepTimeSeconds",
         "syncId",
         "tampForceKg",
         "targetTimeSeconds",
@@ -2679,7 +2727,7 @@
         "totalPages": { "type": "number" },
         "items": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_fd84d0a0de68dee4" }
+          "items": { "$ref": "#/components/schemas/Response_d8e21827278da030" }
         }
       },
       "required": [
@@ -2700,7 +2748,7 @@
       },
       "required": ["all", "favorites", "wantToVisit"]
     },
-    "Response_fd84d0a0de68dee4": {
+    "Response_d8e21827278da030": {
       "type": "object",
       "properties": {
         "id": { "type": "number" },
@@ -2711,6 +2759,7 @@
         "latitude": { "type": ["null", "string"] },
         "longitude": { "type": ["null", "string"] },
         "website": { "type": ["null", "string"] },
+        "openCoffeePlaceId": { "type": ["null", "string"] },
         "updatedAt": { "type": "string", "format": "date-time" },
         "rating": { "type": ["null", "number"] },
         "isFavorite": { "type": "boolean" },
@@ -2730,6 +2779,7 @@
         "latitude",
         "longitude",
         "name",
+        "openCoffeePlaceId",
         "rating",
         "updatedAt",
         "visitCount",
@@ -2756,6 +2806,7 @@
         "longitude": { "type": ["null", "string"] },
         "isFavorite": { "type": "boolean" },
         "wantsToVisit": { "type": "boolean" },
+        "openCoffeePlaceId": { "type": ["null", "string"] },
         "images": {
           "type": "array",
           "items": { "$ref": "#/components/schemas/Response_16f60b8dfe40bf5e" }
@@ -2779,6 +2830,7 @@
         "longitude",
         "name",
         "notes",
+        "openCoffeePlaceId",
         "ownerId",
         "rating",
         "updatedAt",
@@ -2867,7 +2919,8 @@
         "latitude": { "type": ["null", "string"] },
         "longitude": { "type": ["null", "string"] },
         "isFavorite": { "type": "boolean" },
-        "wantsToVisit": { "type": "boolean" }
+        "wantsToVisit": { "type": "boolean" },
+        "openCoffeePlaceId": { "type": ["null", "string"] }
       },
       "required": [
         "address",
@@ -2881,6 +2934,7 @@
         "longitude",
         "name",
         "notes",
+        "openCoffeePlaceId",
         "ownerId",
         "rating",
         "updatedAt",
@@ -2906,7 +2960,8 @@
         "notes": { "type": ["null", "string"] },
         "rating": { "type": ["null", "number"] },
         "isFavorite": { "type": "boolean" },
-        "wantsToVisit": { "type": "boolean" }
+        "wantsToVisit": { "type": "boolean" },
+        "openCoffeePlaceId": { "type": ["null", "string"] }
       },
       "required": [
         "address",
@@ -2920,6 +2975,7 @@
         "longitude",
         "name",
         "notes",
+        "openCoffeePlaceId",
         "ownerId",
         "rating",
         "updatedAt",
@@ -2936,12 +2992,12 @@
         "totalPages": { "type": "number" },
         "items": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_816080b699129719" }
+          "items": { "$ref": "#/components/schemas/Response_d3758c39dc803d76" }
         }
       },
       "required": ["items", "page", "pageSize", "totalItems", "totalPages"]
     },
-    "Response_816080b699129719": {
+    "Response_d3758c39dc803d76": {
       "type": "object",
       "properties": {
         "ownerId": { "type": "string" },
@@ -2964,13 +3020,13 @@
         },
         "bean": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_ced4f9621585b019" },
+            { "$ref": "#/components/schemas/Response_1b6e78686481bd15" },
             { "type": "null" }
           ]
         },
         "coffeeShop": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_e57d65d0dd97852d" },
+            { "$ref": "#/components/schemas/Response_f7f768da18422fe0" },
             { "type": "null" }
           ]
         },
@@ -2998,7 +3054,7 @@
         "visitedAt"
       ]
     },
-    "Response_e57d65d0dd97852d": {
+    "Response_f7f768da18422fe0": {
       "type": "object",
       "properties": {
         "name": { "type": "string" },
@@ -3016,7 +3072,8 @@
         "latitude": { "type": ["null", "string"] },
         "longitude": { "type": ["null", "string"] },
         "isFavorite": { "type": "boolean" },
-        "wantsToVisit": { "type": "boolean" }
+        "wantsToVisit": { "type": "boolean" },
+        "openCoffeePlaceId": { "type": ["null", "string"] }
       },
       "required": [
         "address",
@@ -3030,6 +3087,7 @@
         "longitude",
         "name",
         "notes",
+        "openCoffeePlaceId",
         "ownerId",
         "rating",
         "updatedAt",
@@ -3075,7 +3133,7 @@
         },
         "bean": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_ced4f9621585b019" },
+            { "$ref": "#/components/schemas/Response_1b6e78686481bd15" },
             { "type": "null" }
           ]
         },
@@ -3085,7 +3143,7 @@
         },
         "coffeeShop": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_e57d65d0dd97852d" },
+            { "$ref": "#/components/schemas/Response_f7f768da18422fe0" },
             { "type": "null" }
           ]
         },
@@ -3224,7 +3282,7 @@
         "visitedAt"
       ]
     },
-    "Response_6fb81392969cea25": {
+    "Response_bc1c2f1da65bffd2": {
       "type": "object",
       "properties": {
         "name": { "type": "string" },
@@ -3235,9 +3293,11 @@
         "description": { "type": ["null", "string"] },
         "enabledParameters": { "type": "array", "items": { "type": "string" } },
         "timerEnabled": { "type": "boolean" },
+        "brewMethodId": { "type": ["null", "string"] },
         "drinkTypeIds": { "type": "array", "items": { "type": "number" } }
       },
       "required": [
+        "brewMethodId",
         "createdAt",
         "description",
         "drinkTypeIds",
@@ -3260,9 +3320,11 @@
         "description": { "type": ["null", "string"] },
         "enabledParameters": { "type": "array", "items": { "type": "string" } },
         "timerEnabled": { "type": "boolean" },
+        "brewMethodId": { "type": ["null", "string"] },
         "drinkTypeIds": { "type": "array", "items": { "type": "number" } }
       },
       "required": [
+        "brewMethodId",
         "createdAt",
         "description",
         "drinkTypeIds",
@@ -3285,9 +3347,11 @@
         "updatedAt": { "type": "string", "format": "date-time" },
         "description": { "type": ["null", "string"] },
         "enabledParameters": { "type": "array", "items": { "type": "string" } },
-        "timerEnabled": { "type": "boolean" }
+        "timerEnabled": { "type": "boolean" },
+        "brewMethodId": { "type": ["null", "string"] }
       },
       "required": [
+        "brewMethodId",
         "createdAt",
         "description",
         "drinkTypeIds",
@@ -3310,9 +3374,11 @@
         "updatedAt": { "type": "string", "format": "date-time" },
         "description": { "type": ["null", "string"] },
         "enabledParameters": { "type": "array", "items": { "type": "string" } },
-        "timerEnabled": { "type": "boolean" }
+        "timerEnabled": { "type": "boolean" },
+        "brewMethodId": { "type": ["null", "string"] }
       },
       "required": [
+        "brewMethodId",
         "createdAt",
         "description",
         "drinkTypeIds",

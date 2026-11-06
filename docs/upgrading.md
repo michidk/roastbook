@@ -63,7 +63,23 @@ gone. Under `openai`, only `credentialExistingSecret`,
 `AUTH_ADMIN_EMAIL` and, if needed, `AUTH_ALLOWED_EMAILS` or
 `AUTH_SIGNUP_ENABLED` to the Secret named by `auth.existingSecret`.
 
-## 6. After the upgrade
+## 6. Open Coffee values
+
+Gear and brew values now follow the
+[Open Coffee](https://schema.roastbook.coffee/) standard.
+
+- Brews and recipes store distribution methods as ids (`wdt`, `blind_shaker`,
+  `distribution_tool`, `stockfleth_move`) instead of display labels. A
+  migration converts stored values; unknown values stay as they are. The API
+  and MCP return the ids and still accept the old labels.
+- New gear types (filter, roaster, milk frother, accessory), grinder brew range
+  `turkish`, burr material `titanium_coated` and brewer mechanism `boiling`.
+  Integrations that read gear should accept them.
+- Brews and recipes gain bloom water, pour count and steep time. The default
+  methods enable them where they fit; methods whose fields you changed keep
+  your selection.
+
+## 7. After the upgrade
 
 Start the new version; migrations run before the application (the Compose
 `migrate` service or the chart's migration job). Then check sign-in, a picture

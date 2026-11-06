@@ -10,10 +10,13 @@ export const SHOT_PARAMETER_KEYS = [
   'yieldGrams',
   'shotTimeSeconds',
   'targetTimeSeconds',
+  'steepTimeSeconds',
   'brewTemperatureCelsius',
   'preinfusionTimeSeconds',
   'preinfusionPressureBar',
   'bloomTimeSeconds',
+  'bloomWaterGrams',
+  'pourCount',
   'brewPressureBar',
   'flowRateMlPerSecond',
   'basketId',
@@ -36,6 +39,7 @@ export const SHOT_PARAMETER_META = {
   yieldGrams: { label: 'Yield', group: 'Extraction' },
   shotTimeSeconds: { label: 'Brew time', group: 'Extraction' },
   targetTimeSeconds: { label: 'Target time', group: 'Extraction' },
+  steepTimeSeconds: { label: 'Steep time', group: 'Extraction' },
   brewTemperatureCelsius: { label: 'Brew temperature', group: 'Extraction' },
   preinfusionTimeSeconds: { label: 'Pre-infusion time', group: 'Preparation' },
   preinfusionPressureBar: {
@@ -43,6 +47,8 @@ export const SHOT_PARAMETER_META = {
     group: 'Preparation',
   },
   bloomTimeSeconds: { label: 'Bloom time', group: 'Preparation' },
+  bloomWaterGrams: { label: 'Bloom water', group: 'Preparation' },
+  pourCount: { label: 'Pours', group: 'Extraction' },
   brewPressureBar: { label: 'Brew pressure', group: 'Extraction' },
   flowRateMlPerSecond: { label: 'Flow rate', group: 'Extraction' },
   basketId: { label: 'Basket', group: 'Equipment' },
@@ -72,16 +78,40 @@ export const PAPER_FILTER_OPTIONS = [
 
 export type PaperFilterPosition = (typeof PAPER_FILTER_OPTIONS)[number]['value']
 
-export const DISTRIBUTION_METHOD_OPTIONS = DISTRIBUTION_METHOD_VALUES.map(
-  (value) => ({ value, label: value }),
-)
-
 export type DistributionMethod = (typeof DISTRIBUTION_METHOD_VALUES)[number]
+
+const DISTRIBUTION_METHOD_LABELS = {
+  wdt: 'WDT',
+  blind_shaker: 'Blind shaker',
+  distribution_tool: 'Distribution tool',
+  stockfleth_move: 'Stockfleth move',
+} as const satisfies Record<DistributionMethod, string>
+
+export const DISTRIBUTION_METHOD_OPTIONS = DISTRIBUTION_METHOD_VALUES.map(
+  (value) => ({ value, label: DISTRIBUTION_METHOD_LABELS[value] }),
+)
 
 export function isDistributionMethod(
   value: string,
 ): value is DistributionMethod {
   return DISTRIBUTION_METHOD_VALUES.some((method) => method === value)
+}
+
+/**
+ * Reads a stored or submitted distribution method. Versions before the Open
+ * Coffee ids stored the display label; queued writes and API clients may still
+ * send it.
+ */
+export function toDistributionMethod(
+  value: string | null | undefined,
+): DistributionMethod | null {
+  if (!value) return null
+  if (isDistributionMethod(value)) return value
+  return (
+    DISTRIBUTION_METHOD_VALUES.find(
+      (method) => DISTRIBUTION_METHOD_LABELS[method] === value,
+    ) ?? null
+  )
 }
 
 export type ShotParameterValues = {
@@ -97,10 +127,13 @@ export type ShotParameterValues = {
   readonly yieldGrams: string | null
   readonly shotTimeSeconds: string | null
   readonly targetTimeSeconds: string | null
+  readonly steepTimeSeconds: string | null
   readonly brewTemperatureCelsius: string | null
   readonly preinfusionTimeSeconds: string | null
   readonly preinfusionPressureBar: string | null
   readonly bloomTimeSeconds: string | null
+  readonly bloomWaterGrams: string | null
+  readonly pourCount: number | null
   readonly brewPressureBar: string | null
   readonly flowRateMlPerSecond: string | null
   readonly basketId: number | null

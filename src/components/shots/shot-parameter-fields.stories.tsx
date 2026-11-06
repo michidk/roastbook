@@ -54,6 +54,8 @@ export const Filter: Story = {
       doseGrams: '15',
       brewWaterGrams: '250',
       bloomTimeSeconds: '30',
+      bloomWaterGrams: '45',
+      pourCount: '3',
     },
     enabledParameters: [
       'doseGrams',
@@ -61,6 +63,8 @@ export const Filter: Story = {
       'grindSetting',
       'targetTimeSeconds',
       'bloomTimeSeconds',
+      'bloomWaterGrams',
+      'pourCount',
       'brewTemperatureCelsius',
     ],
   },

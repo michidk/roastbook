@@ -50,6 +50,7 @@ const coffeeShopOverviewSelection = () => ({
   latitude: coffeeShops.latitude,
   longitude: coffeeShops.longitude,
   website: coffeeShops.website,
+  openCoffeePlaceId: coffeeShops.openCoffeePlaceId,
   updatedAt: coffeeShops.updatedAt,
   rating: coffeeShops.rating,
   isFavorite: coffeeShops.isFavorite,

@@ -742,7 +742,7 @@ export const grinderDetails = pgTable(
     ),
     check(
       'grinder_details_brew_range_check',
-      sql`${table.brewRange} <@ ARRAY['espresso', 'filter']::text[]`,
+      sql`${table.brewRange} <@ ARRAY['espresso', 'filter', 'turkish']::text[]`,
     ),
     check(
       'grinder_details_bean_feed_check',
@@ -754,7 +754,7 @@ export const grinderDetails = pgTable(
     ),
     check(
       'grinder_details_burr_material_check',
-      sql`${table.burrMaterial} in ('steel', 'ceramic', 'other')`,
+      sql`${table.burrMaterial} in ('steel', 'ceramic', 'titanium_coated', 'other')`,
     ),
     check(
       'grinder_details_burr_diameter_check',
@@ -788,7 +788,7 @@ export const brewerDetails = pgTable(
     index('brewer_details_owner_id_idx').on(table.ownerId),
     check(
       'brewer_details_mechanism_check',
-      sql`${table.mechanism} in ('percolation', 'immersion', 'hybrid', 'press', 'vacuum', 'other')`,
+      sql`${table.mechanism} in ('percolation', 'immersion', 'hybrid', 'press', 'vacuum', 'boiling', 'other')`,
     ),
     check(
       'brewer_details_flow_control_check',
@@ -1216,6 +1216,8 @@ export const brewingMethods = pgTable(
       .default(sql`'{}'::text[]`)
       .notNull(),
     timerEnabled: boolean('timer_enabled').default(false).notNull(),
+    // Open Coffee brew-method id, e.g. `pour-over`.
+    brewMethodId: text('brew_method_id'),
     ...timestamps(),
   },
   (table) => [
@@ -1287,6 +1289,7 @@ const shotParameterColumns = (dosePrecision = 6) => ({
     precision: 8,
     scale: 2,
   }),
+  steepTimeSeconds: decimal('steep_time_seconds', { precision: 8, scale: 2 }),
   brewTemperatureCelsius: decimal('brew_temperature_celsius', {
     precision: 4,
     scale: 1,
@@ -1300,6 +1303,8 @@ const shotParameterColumns = (dosePrecision = 6) => ({
     scale: 2,
   }),
   bloomTimeSeconds: decimal('bloom_time_seconds', { precision: 5, scale: 2 }),
+  bloomWaterGrams: decimal('bloom_water_grams', { precision: 7, scale: 2 }),
+  pourCount: integer('pour_count'),
   brewPressureBar: decimal('brew_pressure_bar', { precision: 4, scale: 2 }),
   flowRateMlPerSecond: decimal('flow_rate_ml_per_second', {
     precision: 4,
@@ -1353,6 +1358,9 @@ export const recipes = pgTable(
         and (${table.preinfusionTimeSeconds} is null or ${table.preinfusionTimeSeconds} >= 0)
         and (${table.preinfusionPressureBar} is null or ${table.preinfusionPressureBar} >= 0)
         and (${table.bloomTimeSeconds} is null or ${table.bloomTimeSeconds} >= 0)
+        and (${table.bloomWaterGrams} is null or ${table.bloomWaterGrams} >= 0)
+        and (${table.pourCount} is null or ${table.pourCount} >= 0)
+        and (${table.steepTimeSeconds} is null or ${table.steepTimeSeconds} >= 0)
         and (${table.brewPressureBar} is null or ${table.brewPressureBar} >= 0)
         and (${table.flowRateMlPerSecond} is null or ${table.flowRateMlPerSecond} >= 0)
         and (${table.tampForceKg} is null or ${table.tampForceKg} >= 0)`,
@@ -1412,6 +1420,8 @@ export const coffeeShops = pgTable(
     rating: integer('rating'),
     isFavorite: boolean('is_favorite').default(false).notNull(),
     wantsToVisit: boolean('wants_to_visit').default(false).notNull(),
+    // Open Coffee place id (`cp-…`).
+    openCoffeePlaceId: text('open_coffee_place_id'),
     ...timestamps(),
   },
   (table) => [
@@ -1526,6 +1536,9 @@ export const shots = pgTable(
         and (${table.preinfusionTimeSeconds} is null or ${table.preinfusionTimeSeconds} >= 0)
         and (${table.preinfusionPressureBar} is null or ${table.preinfusionPressureBar} >= 0)
         and (${table.bloomTimeSeconds} is null or ${table.bloomTimeSeconds} >= 0)
+        and (${table.bloomWaterGrams} is null or ${table.bloomWaterGrams} >= 0)
+        and (${table.pourCount} is null or ${table.pourCount} >= 0)
+        and (${table.steepTimeSeconds} is null or ${table.steepTimeSeconds} >= 0)
         and (${table.brewPressureBar} is null or ${table.brewPressureBar} >= 0)
         and (${table.flowRateMlPerSecond} is null or ${table.flowRateMlPerSecond} >= 0)
         and (${table.tampForceKg} is null or ${table.tampForceKg} >= 0)`,
