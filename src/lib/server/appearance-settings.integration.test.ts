@@ -40,6 +40,10 @@ suite('server appearance preferences', () => {
   })
   test('persists each appearance setting across requests and isolates journals', async () => {
     const defaults = await withJournal(first, loadAppSettings)
+    expect(defaults.beautifyImages).toBe(false)
+    await withJournal(first, () =>
+      updateSettings({ beautifyImages: true }, 'save failed'),
+    )
     expect(defaults.lightTheme).toBe('light-roast')
     expect(defaults.darkTheme).toBe('dark-roast')
     expect(defaults.backgroundGrainEnabled).toBe(true)
@@ -57,12 +61,14 @@ suite('server appearance preferences', () => {
     )
     const saved = await withJournal(first, loadAppSettings)
     expect(saved).toMatchObject({
+      beautifyImages: true,
       lightTheme: 'classic-light',
       darkTheme: 'pure-dark',
       backgroundGrainEnabled: false,
       backgroundTextureEnabled: false,
     })
     expect(await withJournal(second, loadAppSettings)).toMatchObject({
+      beautifyImages: false,
       lightTheme: 'light-roast',
       darkTheme: 'dark-roast',
       backgroundGrainEnabled: true,

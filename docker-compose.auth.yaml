@@ -64,6 +64,8 @@ services:
       STORAGE_URL: /media
       AI_CREDENTIAL_ENCRYPTION_KEY: ${AI_CREDENTIAL_ENCRYPTION_KEY:-}
       AI_ALLOWED_PRIVATE_ORIGINS: ${AI_ALLOWED_PRIVATE_ORIGINS:-}
+      POSTHOG_PROJECT_KEY: ${POSTHOG_PROJECT_KEY:-}
+      POSTHOG_HOST: ${POSTHOG_HOST:-https://eu.i.posthog.com}
     volumes:
       - uploads:/uploads
 

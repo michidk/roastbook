@@ -8,7 +8,7 @@ import {
   mediaCleanupJobs,
   shotImages,
 } from '../src/db/schema'
-import { getThumbnailPath } from '../src/lib/image-path'
+import { getStoredImagePaths, getThumbnailPath } from '../src/lib/image-path'
 import { getStorage } from '../src/lib/storage'
 
 const connectionString = process.env.DATABASE_URL
@@ -21,14 +21,35 @@ const database = drizzle(client)
 
 try {
   const imageSelections = await Promise.all([
-    database.select({ storagePath: beanImages.storagePath }).from(beanImages),
-    database.select({ storagePath: gearImages.storagePath }).from(gearImages),
     database
-      .select({ storagePath: coffeeShopImages.storagePath })
+      .select({
+        storagePath: beanImages.storagePath,
+        originalStoragePath: beanImages.originalStoragePath,
+      })
+      .from(beanImages),
+    database
+      .select({
+        storagePath: gearImages.storagePath,
+        originalStoragePath: gearImages.originalStoragePath,
+      })
+      .from(gearImages),
+    database
+      .select({
+        storagePath: coffeeShopImages.storagePath,
+        originalStoragePath: coffeeShopImages.originalStoragePath,
+      })
       .from(coffeeShopImages),
-    database.select({ storagePath: shotImages.storagePath }).from(shotImages),
     database
-      .select({ storagePath: cafeVisitImages.storagePath })
+      .select({
+        storagePath: shotImages.storagePath,
+        originalStoragePath: shotImages.originalStoragePath,
+      })
+      .from(shotImages),
+    database
+      .select({
+        storagePath: cafeVisitImages.storagePath,
+        originalStoragePath: cafeVisitImages.originalStoragePath,
+      })
       .from(cafeVisitImages),
   ])
   const cleanupJobs = await database
@@ -36,10 +57,15 @@ try {
     .from(mediaCleanupJobs)
 
   const originals = new Set(
-    imageSelections.flat().map((image) => image.storagePath),
+    imageSelections
+      .flat()
+      .flatMap((image) => [
+        image.storagePath,
+        ...(image.originalStoragePath ? [image.originalStoragePath] : []),
+      ]),
   )
   const thumbnails = new Set([...originals].map(getThumbnailPath))
-  const referenced = new Set([...originals, ...thumbnails])
+  const referenced = new Set(getStoredImagePaths([...originals]))
   const pendingCleanup = new Set(cleanupJobs.map((job) => job.storagePath))
   const stored = new Set(await getStorage().list())
 

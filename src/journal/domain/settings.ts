@@ -20,6 +20,7 @@ import { resolveDarkTheme, resolveLightTheme } from '@/lib/theme'
 
 type EditableSettings = Pick<
   typeof settingsTable.$inferInsert,
+  | 'beautifyImages'
   | 'backgroundTextureEnabled'
   | 'lightTheme'
   | 'darkTheme'
@@ -46,6 +47,7 @@ function toAppSettings(row: typeof settingsTable.$inferSelect): AppSettings {
 
   return {
     demoMode: DEMO_MODE,
+    beautifyImages: row.beautifyImages,
     backgroundTextureEnabled: row.backgroundTextureEnabled,
     backgroundGrainEnabled: row.backgroundGrainEnabled,
     lightTheme: resolveLightTheme(row.lightTheme),

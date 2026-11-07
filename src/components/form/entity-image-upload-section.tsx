@@ -1,5 +1,6 @@
 import { Button } from '@roastbook/ui/button'
 import type { ComponentProps } from 'react'
+import { BeautifyImageToggle } from '@/components/beautify-image-toggle'
 import { FormSection } from '@/components/form/form-shell'
 import { PictureUploader } from '@/components/picture-uploader'
 import type { useImageUpload } from '@/hooks/use-image-upload'
@@ -29,6 +30,7 @@ export function EntityImageUploadSection({
 }: EntityImageUploadSectionProps) {
   return (
     <FormSection title="Pictures">
+      <BeautifyImageToggle disabled={displayProps.isBusy} />
       <PictureUploader
         maxImages={upload.maxImages}
         images={upload.images}

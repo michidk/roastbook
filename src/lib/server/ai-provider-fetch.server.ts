@@ -113,12 +113,20 @@ export function createAiProviderFetch(
     const target = new URL(request.url)
     if (
       request.method !== 'POST' ||
-      ![`${endpoint}/responses`, `${endpoint}/chat/completions`].includes(
-        target.href,
-      )
+      ![
+        `${endpoint}/responses`,
+        `${endpoint}/chat/completions`,
+        `${endpoint}/images/edits`,
+      ].includes(target.href)
     )
       throw new Error('Unexpected AI provider request')
     const { addresses } = await resolveAiEndpoint(endpoint, options)
+    // Materialize multipart boundaries before consuming Bun's lazy request body.
+    const headers = Object.fromEntries(
+      [...request.headers].filter(([name]) =>
+        ['authorization', 'content-type', 'accept'].includes(name),
+      ),
+    )
     const body = Buffer.from(await request.arrayBuffer())
     if (body.byteLength > 64 * 1024 * 1024)
       throw new Error('AI request is too large')
@@ -138,11 +146,7 @@ export function createAiProviderFetch(
         {
           method: 'POST',
           agent: false,
-          headers: Object.fromEntries(
-            [...request.headers].filter(([name]) =>
-              ['authorization', 'content-type', 'accept'].includes(name),
-            ),
-          ),
+          headers,
           maxHeaderSize: 16_384,
           lookup: (_hostname, options, callback) => {
             const family =
@@ -181,7 +185,12 @@ export function createAiProviderFetch(
                     const chunk = await chunks.next()
                     if (chunk.done) return controller.close()
                     size += chunk.value.byteLength
-                    if (size > MAX_RESPONSE_BYTES)
+                    if (
+                      size >
+                      (target.href === `${endpoint}/images/edits`
+                        ? 24 * 1024 * 1024
+                        : MAX_RESPONSE_BYTES)
+                    )
                       throw new Error('AI response is too large')
                     controller.enqueue(new Uint8Array(chunk.value))
                   } catch {
