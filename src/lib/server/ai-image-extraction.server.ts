@@ -34,8 +34,9 @@ export async function extractBeanInfoFromImages(
         })),
         {
           type: 'text',
+          // JSON-object output requires the word "JSON" in the input messages.
           content:
-            'Extract the coffee bean information from these images of the same coffee.',
+            'Extract the coffee bean information from these images of the same coffee as a JSON object.',
         },
       ],
     },
