@@ -1,6 +1,7 @@
 import '@tanstack/react-start/server-only'
 import { verifyOAuthQueryParams } from '@better-auth/oauth-provider'
 import { and, eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { getControlDb } from '@/db/connection.server'
 import { requireIdentity } from '@/db/journal-context.server'
 import { oauthClient, oauthConsent } from '@/db/schema'
@@ -59,6 +60,7 @@ export async function loadConsent(query: string) {
     clientName: client.name ?? 'Unnamed application',
     redirectUri: redirect,
     email: identity.email,
+    userId: identity.id,
     scopes,
     /** What the owner may approve: the request's protocol scopes decide. */
     allowedAccess: scopesAllowedByProtocol(scopes),
@@ -69,20 +71,50 @@ export async function loadConsent(query: string) {
   }
 }
 
-/** Stores the permissions chosen on the consent page before it is accepted. */
+/** Confirms the owner, stores the chosen permissions, and accepts consent. */
 export async function approveConsentAccess(
   query: string,
   scopes: readonly string[],
+  headers: Headers,
+  reauthToken?: string,
 ) {
   const consent = await loadConsent(query)
   const allowed = new Set<string>(consent.allowedAccess)
   const approved = normalizeScopes(scopes).filter((scope) => allowed.has(scope))
   if (!approved.length) throw new Error('Choose at least one permission')
+  await consumeReauthentication('connect-application', reauthToken)
   await saveApprovedGrantScopes(
     requireIdentity().id,
     consent.clientId,
     approved,
   )
+  return submitConsent(query, headers, true)
+}
+
+export async function denyConsentAccess(query: string, headers: Headers) {
+  await loadConsent(query)
+  return submitConsent(query, headers, false)
+}
+
+async function submitConsent(query: string, headers: Headers, accept: boolean) {
+  const auth = getAuth()
+  const { baseURL } = await auth.$context
+  const requestHeaders = new Headers(headers)
+  requestHeaders.delete('content-length')
+  requestHeaders.delete('transfer-encoding')
+  requestHeaders.set('content-type', 'application/json')
+  const response = await auth.handler(
+    new Request(`${baseURL}/oauth2/consent`, {
+      method: 'POST',
+      headers: requestHeaders,
+      body: JSON.stringify({ accept, oauth_query: query }),
+    }),
+  )
+  if (!response.ok)
+    throw new Error(
+      'Could not authorize this application. Start again from your application.',
+    )
+  return z.object({ url: z.url() }).parse(await response.json())
 }
 
 export async function listOAuthGrants() {

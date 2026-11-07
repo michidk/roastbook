@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { reauthenticationTokenSchema } from '@/modules/auth/reauthentication'
 import {
   approveConsentAccess,
+  denyConsentAccess,
   loadConsent,
   revokeOAuthGrant,
   updateOAuthGrantAccess,
@@ -23,10 +24,24 @@ export const getOAuthConsent = createServerFn({ method: 'GET' })
   .handler(({ data }) => loadConsent(consentQuery(data.query)))
 export const approveOAuthConsentAccess = createServerFn({ method: 'POST' })
   .validator(
-    z.object({ query: z.string().min(1).max(16_384), scopes: scopeList }),
+    z.object({
+      query: z.string().min(1).max(16_384),
+      scopes: scopeList,
+      reauthToken: reauthenticationTokenSchema,
+    }),
   )
   .handler(({ data }) =>
-    approveConsentAccess(consentQuery(data.query), data.scopes),
+    approveConsentAccess(
+      consentQuery(data.query),
+      data.scopes,
+      getRequest().headers,
+      data.reauthToken,
+    ),
+  )
+export const denyOAuthConsent = createServerFn({ method: 'POST' })
+  .validator(z.object({ query: z.string().min(1).max(16_384) }))
+  .handler(({ data }) =>
+    denyConsentAccess(consentQuery(data.query), getRequest().headers),
   )
 export const updateOAuthGrantPermissions = createServerFn({ method: 'POST' })
   .validator(
