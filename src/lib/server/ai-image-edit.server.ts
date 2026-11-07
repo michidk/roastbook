@@ -14,7 +14,7 @@ import {
 import { reportImageEdit } from '@/lib/server/image-edit-telemetry.server'
 
 export const BEAUTIFY_IMAGE_PROMPT =
-  'Retouch this photograph into a beautiful, realistic product photograph of the exact same coffee packaging or object. Preserve its shape, colors, branding, logos, typography, and all readable label text exactly. Do not invent, remove, translate, or change product details. Reduce compression artifacts and sensor noise. Correct white balance and use soft, even natural lighting with realistic shadows. Remove distracting background clutter and replace the background with a tasteful, softly blurred warm neutral cafe setting. Keep the entire product clearly visible, sharp and naturally grounded. Return only the edited photograph.'
+  'Edit this photo into a clean product shot of the coffee label or packaging. The label is the focus: preserve its shape, colors, branding, logos, typography and every readable word exactly, and do not invent, remove, translate or change any label detail. Remove everything that is not part of the label or its packaging, such as hands, tables, cups, beans, props and clutter. Place the product on a plain, seamless background of one solid neutral color, with no scene, objects, texture or coffee-related elements. If the photo shows only a loose label or card, show it applied to a plain unbranded matte bag in a neutral color. Flatten and straighten the label where possible. Remove glare, reflections, compression artifacts and sensor noise, correct white balance, and use soft, even studio lighting with a subtle natural shadow. Keep the whole product visible, centered and sharp. Return only the edited photograph.'
 
 const imageResponse = z.object({
   data: z
