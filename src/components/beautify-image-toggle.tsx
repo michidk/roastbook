@@ -47,13 +47,7 @@ export function BeautifyImageToggle({
   })
   if (!available) return null
   return (
-    <div className="flex min-h-11 items-center justify-between gap-4 rounded-xl border border-border/70 px-3 py-2.5">
-      <div className="min-w-0 space-y-0.5">
-        <Label htmlFor={id}>Beautify image</Label>
-        <p id={`${id}-help`} className="text-xs text-muted-foreground">
-          AI retouches the primary picture and keeps the original.
-        </p>
-      </div>
+    <div className="flex min-h-11 items-center gap-3">
       <Switch
         id={id}
         checked={enabled}
@@ -61,6 +55,17 @@ export function BeautifyImageToggle({
         aria-describedby={`${id}-help`}
         onCheckedChange={(checked) => void mutation.save(checked)}
       />
+      <div className="min-w-0">
+        <Label
+          htmlFor={id}
+          className="text-sm font-normal text-muted-foreground"
+        >
+          Beautify thumbnail with AI
+        </Label>
+        <p id={`${id}-help`} className="sr-only">
+          AI retouches the thumbnail and keeps the original.
+        </p>
+      </div>
     </div>
   )
 }

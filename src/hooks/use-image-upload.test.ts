@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'bun:test'
-import { ImageUploadError, validateImageFiles } from '@/hooks/use-image-upload'
+import {
+  ImageUploadError,
+  moveFirst,
+  validateImageFiles,
+} from '@/hooks/use-image-upload'
 
 describe('image upload file validation', () => {
   test('accepts every image format supported by the server', () => {
@@ -43,4 +47,10 @@ describe('image upload file validation', () => {
       'huge.jpg is larger than the 10 MB limit',
     )
   })
+})
+
+test('moves the chosen thumbnail first and keeps the rest in order', () => {
+  expect(moveFirst(['a', 'b', 'c'], 2)).toEqual(['c', 'a', 'b'])
+  expect(moveFirst(['a', 'b'], 0)).toEqual(['a', 'b'])
+  expect(moveFirst(['a'], 3)).toEqual(['a'])
 })

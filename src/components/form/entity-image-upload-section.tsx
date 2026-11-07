@@ -30,7 +30,6 @@ export function EntityImageUploadSection({
 }: EntityImageUploadSectionProps) {
   return (
     <FormSection title="Pictures">
-      <BeautifyImageToggle disabled={displayProps.isBusy} />
       <PictureUploader
         maxImages={upload.maxImages}
         images={upload.images}
@@ -38,9 +37,11 @@ export function EntityImageUploadSection({
         onFilesAdded={upload.addFiles}
         onImportFromUrl={upload.importFromUrl}
         onRemoveImage={onRemoveImage ?? upload.removeImage}
+        onMakePrimary={upload.makePrimary}
         onOpenFilePicker={upload.openFilePicker}
         {...displayProps}
       />
+      <BeautifyImageToggle disabled={displayProps.isBusy} />
     </FormSection>
   )
 }

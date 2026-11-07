@@ -13,6 +13,7 @@ import {
   Link2,
   Loader2,
   RotateCw,
+  Star,
   UploadCloud,
   X,
 } from 'lucide-react'
@@ -42,6 +43,8 @@ interface PictureUploaderProps {
   ) => Promise<readonly ImageFile[]>
   readonly onImportFromUrl: (url: string) => Promise<ImageFile>
   readonly onRemoveImage: (index: number) => void
+  /** Moves a picture first, which makes it the thumbnail. */
+  readonly onMakePrimary?: (index: number) => void
   readonly onOpenFilePicker: () => void
   readonly prompt: string
   readonly previewAltPrefix: string
@@ -125,6 +128,7 @@ export function PictureUploader({
   showIntake = true,
   imageErrors = [],
   onRetryImages,
+  onMakePrimary,
 }: PictureUploaderProps) {
   const [urlOpen, setUrlOpen] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
@@ -301,6 +305,24 @@ export function PictureUploader({
                     <Loader2 className="size-3.5 animate-spin" />
                     {statusText ?? 'Working…'}
                   </span>
+                ) : onMakePrimary && images.length > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => onMakePrimary(index)}
+                    disabled={intakeBusy || index === 0}
+                    aria-pressed={index === 0}
+                    className="absolute bottom-1 left-1 flex size-11 items-center justify-center rounded-full border border-white/30 bg-foreground/80 text-background shadow-sm backdrop-blur-sm transition-colors hover:bg-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default [@media(hover:hover)_and_(pointer:fine)]:size-8"
+                    aria-label={
+                      index === 0
+                        ? `${previewAltPrefix} picture 1 is the thumbnail`
+                        : `Use ${previewAltPrefix.toLowerCase()} picture ${index + 1} as thumbnail`
+                    }
+                    title={index === 0 ? 'Thumbnail' : 'Use as thumbnail'}
+                  >
+                    <Star
+                      className={cn('size-4', index === 0 && 'fill-current')}
+                    />
+                  </button>
                 ) : null}
               </li>
             )

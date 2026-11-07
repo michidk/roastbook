@@ -398,11 +398,6 @@ export function EntityImageGallery({
           </div>
         )}
         {editable && (
-          <BeautifyImageToggle
-            disabled={isUploading || beautifyingImage !== null}
-          />
-        )}
-        {editable && (
           <PictureUploader
             maxImages={maxImages}
             images={queuedImages}
@@ -444,11 +439,7 @@ export function EntityImageGallery({
                   : 'Brew'
             }
             isBusy={isUploading || beautifyingImage !== null}
-            statusText={
-              isUploading
-                ? 'Saving pictures and beautifying the primary picture'
-                : undefined
-            }
+            statusText={isUploading ? 'Saving pictures…' : undefined}
             imageErrors={uploadFailures.map(({ image, error }) => ({
               preview: image.preview,
               filename: image.file.name,
@@ -458,6 +449,11 @@ export function EntityImageGallery({
               ),
             }))}
             onRetryImages={uploadPictures}
+          />
+        )}
+        {editable && (
+          <BeautifyImageToggle
+            disabled={isUploading || beautifyingImage !== null}
           />
         )}
         {editable && imageAction && (
