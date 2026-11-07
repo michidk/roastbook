@@ -157,6 +157,11 @@ there before returning to `bun run dev` on the same origin. Offline behavior is
 described in [Offline journaling](offline.md); `scripts/service-worker.test.ts`
 covers the worker's runtime behavior.
 
+The device copy also runs under `bun run dev`: set `localStorage` key
+`roastbook-device-copy` to `on` and reload, and the tab keeps the journal on
+PGlite and syncs it like the installed app. Reads still go to the server while
+it can be reached.
+
 The demo (`bun run dev:demo`, `bun run build:demo`) has no install manifest or
 server sync; see [Browser-local demo](demo-mode.md).
 
