@@ -110,6 +110,7 @@ export function createMcpHttpHandler(
     async () =>
       createRoastbookMcpServer({
         scopes: scopes(),
+        publicUrl: config.publicUrl,
         disabledTools: new Set((await loadPolicy()).disabledTools),
         audit: options.audit,
         run: options.run,

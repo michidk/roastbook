@@ -6,6 +6,7 @@ import { z } from 'zod'
  * is valid for that one action only.
  */
 export const REAUTHENTICATION_ACTIONS = {
+  'connect-application': 'connect an application to your journal',
   'create-credential': 'create an API key or MCP token',
   'change-permissions': 'change what a key or application may do',
   'save-ai-credentials': 'save your AI provider key',
