@@ -178,7 +178,7 @@
         "totalPages": { "type": "number" },
         "items": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_4735ee02ad7fac35" }
+          "items": { "$ref": "#/components/schemas/Response_0dc0ca4443e274b8" }
         }
       },
       "required": [
@@ -190,7 +190,7 @@
         "totalPages"
       ]
     },
-    "Response_4735ee02ad7fac35": {
+    "Response_0dc0ca4443e274b8": {
       "type": "object",
       "properties": {
         "id": { "type": "number" },
@@ -205,7 +205,7 @@
         "brewTemperatureCelsius": { "type": ["null", "string"] },
         "bean": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_8e9773d124cf0368" },
+            { "$ref": "#/components/schemas/Response_eef4c99c743adadb" },
             { "type": "null" }
           ]
         },
@@ -228,7 +228,7 @@
         "yieldGrams"
       ]
     },
-    "Response_8e9773d124cf0368": {
+    "Response_eef4c99c743adadb": {
       "type": "object",
       "properties": {
         "roaster": { "type": ["null", "string"] },
@@ -245,7 +245,7 @@
         },
         "images": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_2e80fe294621193d" }
+          "items": { "$ref": "#/components/schemas/Response_e83b050919c278c0" }
         }
       },
       "required": [
@@ -264,7 +264,7 @@
       "properties": { "name": { "type": "string" } },
       "required": ["name"]
     },
-    "Response_2e80fe294621193d": {
+    "Response_e83b050919c278c0": {
       "type": "object",
       "properties": {
         "ownerId": { "type": "string" },
@@ -274,6 +274,7 @@
         "beanPurchaseId": { "type": "number" },
         "isThumbnail": { "type": "boolean" },
         "storagePath": { "type": "string" },
+        "originalStoragePath": { "type": ["null", "string"] },
         "originalFilename": { "type": ["null", "string"] },
         "mimeType": { "type": ["null", "string"] },
         "sizeBytes": { "type": ["null", "number"] },
@@ -287,6 +288,7 @@
         "isThumbnail",
         "mimeType",
         "originalFilename",
+        "originalStoragePath",
         "ownerId",
         "sizeBytes",
         "storageBytes",
@@ -331,7 +333,7 @@
         "notes": { "type": ["null", "string"] },
         "images": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_d98dd5bcc9aeae95" }
+          "items": { "$ref": "#/components/schemas/Response_efdb85d52d38f606" }
         },
         "beanId": { "type": ["null", "number"] },
         "beanPurchaseId": { "type": ["null", "number"] },
@@ -534,13 +536,14 @@
         "updatedAt"
       ]
     },
-    "Response_d98dd5bcc9aeae95": {
+    "Response_efdb85d52d38f606": {
       "type": "object",
       "properties": {
         "ownerId": { "type": "string" },
         "id": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" },
         "storagePath": { "type": "string" },
+        "originalStoragePath": { "type": ["null", "string"] },
         "originalFilename": { "type": ["null", "string"] },
         "mimeType": { "type": ["null", "string"] },
         "sizeBytes": { "type": ["null", "number"] },
@@ -552,6 +555,7 @@
         "id",
         "mimeType",
         "originalFilename",
+        "originalStoragePath",
         "ownerId",
         "shotId",
         "sizeBytes",
@@ -879,7 +883,7 @@
         "totalPages": { "type": "number" },
         "items": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_4735ee02ad7fac35" }
+          "items": { "$ref": "#/components/schemas/Response_0dc0ca4443e274b8" }
         }
       },
       "required": ["items", "page", "pageSize", "totalItems", "totalPages"]
@@ -1009,21 +1013,21 @@
     "ListBeansData": {
       "type": "object",
       "properties": {
-        "active": { "$ref": "#/components/schemas/Response_d3c487cc5acec704" },
+        "active": { "$ref": "#/components/schemas/Response_b758e3d753ea4025" },
         "archived": {
-          "$ref": "#/components/schemas/Response_034d0e50878a64ce"
+          "$ref": "#/components/schemas/Response_e9678443bf510edf"
         },
         "totalItems": { "type": "number" },
         "totalBags": { "type": "number" }
       },
       "required": ["active", "archived", "totalBags", "totalItems"]
     },
-    "Response_d3c487cc5acec704": {
+    "Response_b758e3d753ea4025": {
       "type": "object",
       "properties": {
         "items": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_df0999e057802129" }
+          "items": { "$ref": "#/components/schemas/Response_3ea4c8ac5dc447c5" }
         },
         "page": { "type": "number" },
         "pageSize": { "type": "number" },
@@ -1032,7 +1036,7 @@
       },
       "required": ["items", "page", "pageSize", "totalItems", "totalPages"]
     },
-    "Response_df0999e057802129": {
+    "Response_3ea4c8ac5dc447c5": {
       "type": "object",
       "properties": {
         "roaster": { "type": ["null", "string"] },
@@ -1080,7 +1084,7 @@
         },
         "images": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_2e80fe294621193d" }
+          "items": { "$ref": "#/components/schemas/Response_e83b050919c278c0" }
         },
         "usedWeightGrams": { "type": "string" },
         "purchaseId": { "type": ["null", "number"] },
@@ -1156,12 +1160,12 @@
         "website"
       ]
     },
-    "Response_034d0e50878a64ce": {
+    "Response_e9678443bf510edf": {
       "type": "object",
       "properties": {
         "items": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_df0999e057802129" }
+          "items": { "$ref": "#/components/schemas/Response_3ea4c8ac5dc447c5" }
         },
         "page": { "type": "number" },
         "pageSize": { "type": "number" },
@@ -1222,7 +1226,7 @@
         },
         "images": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_2e80fe294621193d" }
+          "items": { "$ref": "#/components/schemas/Response_e83b050919c278c0" }
         },
         "purchaseId": { "type": ["null", "number"] },
         "roastDate": {
@@ -1623,15 +1627,15 @@
     "ListGearData": {
       "type": "object",
       "properties": {
-        "active": { "$ref": "#/components/schemas/Response_36ec8962ce5cc05e" },
+        "active": { "$ref": "#/components/schemas/Response_e9b535539659d1e4" },
         "archived": {
-          "$ref": "#/components/schemas/Response_36ec8962ce5cc05e"
+          "$ref": "#/components/schemas/Response_e9b535539659d1e4"
         },
         "totalItems": { "type": "number" }
       },
       "required": ["active", "archived", "totalItems"]
     },
-    "Response_36ec8962ce5cc05e": {
+    "Response_e9b535539659d1e4": {
       "type": "object",
       "properties": {
         "page": { "type": "number" },
@@ -1640,12 +1644,12 @@
         "totalPages": { "type": "number" },
         "items": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_dd01d201cc045493" }
+          "items": { "$ref": "#/components/schemas/Response_95ecd1060722fc8a" }
         }
       },
       "required": ["items", "page", "pageSize", "totalItems", "totalPages"]
     },
-    "Response_dd01d201cc045493": {
+    "Response_95ecd1060722fc8a": {
       "type": "object",
       "properties": {
         "brand": { "type": ["null", "string"] },
@@ -1688,7 +1692,7 @@
         "productUrl": { "type": ["null", "string"] },
         "images": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_7bc3fb395a83a31e" }
+          "items": { "$ref": "#/components/schemas/Response_2491c1eb35fe7318" }
         }
       },
       "required": [
@@ -1710,7 +1714,7 @@
         "updatedAt"
       ]
     },
-    "Response_7bc3fb395a83a31e": {
+    "Response_2491c1eb35fe7318": {
       "type": "object",
       "properties": {
         "ownerId": { "type": "string" },
@@ -1718,6 +1722,7 @@
         "createdAt": { "type": "string", "format": "date-time" },
         "isThumbnail": { "type": "boolean" },
         "storagePath": { "type": "string" },
+        "originalStoragePath": { "type": ["null", "string"] },
         "originalFilename": { "type": ["null", "string"] },
         "mimeType": { "type": ["null", "string"] },
         "sizeBytes": { "type": ["null", "number"] },
@@ -1731,6 +1736,7 @@
         "isThumbnail",
         "mimeType",
         "originalFilename",
+        "originalStoragePath",
         "ownerId",
         "sizeBytes",
         "storageBytes",
@@ -1780,7 +1786,7 @@
         "productUrl": { "type": ["null", "string"] },
         "images": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_7bc3fb395a83a31e" }
+          "items": { "$ref": "#/components/schemas/Response_2491c1eb35fe7318" }
         },
         "espressoMachineDetails": {
           "anyOf": [
@@ -2356,12 +2362,12 @@
         "totalPages": { "type": "number" },
         "items": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_9fafd65dfae2705f" }
+          "items": { "$ref": "#/components/schemas/Response_e05a7c0f203aebfc" }
         }
       },
       "required": ["items", "page", "pageSize", "totalItems", "totalPages"]
     },
-    "Response_9fafd65dfae2705f": {
+    "Response_e05a7c0f203aebfc": {
       "type": "object",
       "properties": {
         "name": { "type": "string" },
@@ -2417,7 +2423,7 @@
         },
         "bean": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_9e88ba73ed6115d2" },
+            { "$ref": "#/components/schemas/Response_d07c2ca3f01d92f5" },
             { "type": "null" }
           ]
         },
@@ -2483,7 +2489,7 @@
         "yieldGrams"
       ]
     },
-    "Response_9e88ba73ed6115d2": {
+    "Response_d07c2ca3f01d92f5": {
       "type": "object",
       "properties": {
         "roaster": { "type": ["null", "string"] },
@@ -2531,7 +2537,7 @@
         },
         "images": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_2e80fe294621193d" }
+          "items": { "$ref": "#/components/schemas/Response_e83b050919c278c0" }
         }
       },
       "required": [
@@ -2651,7 +2657,7 @@
         "brewingMethodId": { "type": "number" },
         "bean": {
           "anyOf": [
-            { "$ref": "#/components/schemas/Response_9e88ba73ed6115d2" },
+            { "$ref": "#/components/schemas/Response_d07c2ca3f01d92f5" },
             { "type": "null" }
           ]
         },
@@ -2809,7 +2815,7 @@
         "openCoffeePlaceId": { "type": ["null", "string"] },
         "images": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_16f60b8dfe40bf5e" }
+          "items": { "$ref": "#/components/schemas/Response_1323ae9f60653d2d" }
         },
         "cafeVisits": {
           "type": "array",
@@ -2838,13 +2844,14 @@
         "website"
       ]
     },
-    "Response_16f60b8dfe40bf5e": {
+    "Response_1323ae9f60653d2d": {
       "type": "object",
       "properties": {
         "ownerId": { "type": "string" },
         "id": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" },
         "storagePath": { "type": "string" },
+        "originalStoragePath": { "type": ["null", "string"] },
         "originalFilename": { "type": ["null", "string"] },
         "mimeType": { "type": ["null", "string"] },
         "sizeBytes": { "type": ["null", "number"] },
@@ -2857,6 +2864,7 @@
         "id",
         "mimeType",
         "originalFilename",
+        "originalStoragePath",
         "ownerId",
         "sizeBytes",
         "storageBytes",
@@ -3129,7 +3137,7 @@
         },
         "images": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_e7f6a3c6d171d7de" }
+          "items": { "$ref": "#/components/schemas/Response_dc6b7ca2a8e5468a" }
         },
         "bean": {
           "anyOf": [
@@ -3173,13 +3181,14 @@
         "visitedAt"
       ]
     },
-    "Response_e7f6a3c6d171d7de": {
+    "Response_dc6b7ca2a8e5468a": {
       "type": "object",
       "properties": {
         "ownerId": { "type": "string" },
         "id": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" },
         "storagePath": { "type": "string" },
+        "originalStoragePath": { "type": ["null", "string"] },
         "originalFilename": { "type": ["null", "string"] },
         "mimeType": { "type": ["null", "string"] },
         "sizeBytes": { "type": ["null", "number"] },
@@ -3192,6 +3201,7 @@
         "id",
         "mimeType",
         "originalFilename",
+        "originalStoragePath",
         "ownerId",
         "sizeBytes",
         "storageBytes",

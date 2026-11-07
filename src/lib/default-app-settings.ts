@@ -3,6 +3,7 @@ import { DEFAULT_TASTE_PROFILE_CONFIG } from '@/lib/taste-profile'
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
   demoMode: false,
+  beautifyImages: false,
   lightTheme: 'light-roast',
   darkTheme: 'dark-roast',
   backgroundGrainEnabled: true,

@@ -70,6 +70,7 @@ async function confirmed<T>(
 }
 let directory: string | undefined
 let imagePath = '',
+  retainedImagePath = '',
   gearImagePath = '',
   exportedPath = ''
 
@@ -107,6 +108,11 @@ suite('private account lifecycle', () => {
         .returning()
       if (!bean || !device) throw new Error('Missing fixture')
       imagePath = `beans/${bean.id}/${randomUUID()}.webp`
+      retainedImagePath = `beans/${bean.id}/${randomUUID()}.webp`
+      await getStorage().upload(
+        new Blob(['Retained original']),
+        retainedImagePath,
+      )
       gearImagePath = `gear/${device.id}/${randomUUID()}.webp`
       await getStorage().upload(new Blob(['Original bean image']), imagePath)
       await getStorage().upload(
@@ -122,6 +128,7 @@ suite('private account lifecycle', () => {
         beanId: bean.id,
         beanPurchaseId: purchase.id,
         storagePath: imagePath,
+        originalStoragePath: retainedImagePath,
       })
       await db
         .insert(gearImages)
@@ -149,7 +156,12 @@ suite('private account lifecycle', () => {
     await database()
       .delete(authUsers)
       .where(inArray(authUsers.id, [first.id, second.id]))
-    for (const path of [imagePath, gearImagePath, exportedPath].filter(Boolean))
+    for (const path of [
+      imagePath,
+      retainedImagePath,
+      gearImagePath,
+      exportedPath,
+    ].filter(Boolean))
       await getStorage().delete(path)
     if (directory) await rm(directory, { recursive: true, force: true })
   })
@@ -371,6 +383,7 @@ suite('private account lifecycle', () => {
     expect(listing.exitCode).toBe(0)
     const entries = listing.stdout.toString()
     expect(entries).toContain(`images/${imagePath}`)
+    expect(entries).toContain(`images/${retainedImagePath}`)
     expect(entries).toContain(`images/${gearImagePath}`)
     expect(entries).not.toContain('auth_')
     expect(entries).not.toContain('integration_tokens')
@@ -478,6 +491,7 @@ suite('private account lifecycle', () => {
         .where(eq(aiProviderCredentials.userId, second.id)),
     ).toHaveLength(0)
     expect(await getStorage().exists(imagePath)).toBe(false)
+    expect(await getStorage().exists(retainedImagePath)).toBe(false)
     expect(await getStorage().exists(gearImagePath)).toBe(false)
     expect(await getStorage().exists(exportedPath)).toBe(false)
     expect(await getStorage().exists(unfinishedExportPath)).toBe(false)

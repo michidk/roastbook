@@ -96,6 +96,9 @@ AI is optional; everything else works without it. Each user connects their
 own OpenAI-compatible endpoint in **Settings → AI**. See
 [AI configuration](docs/configuration.md).
 
+- **Picture beautification** — remember an upload toggle to retouch the primary
+  picture, or beautify individual pictures. Originals remain available, and
+  the request log shows image-edit usage and cost when pricing is known.
 - **Label scanning** — extract bean details from up to six pictures of a bag.
 - **Bean, roaster, and machine research** — fill in origin, process, tasting
   notes, a roaster's website and location, or a machine's sourced capabilities

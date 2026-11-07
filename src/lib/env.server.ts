@@ -69,6 +69,22 @@ const serverSchema = {
       'Use a base64-encoded 32-byte encryption key',
     )
     .optional(),
+  POSTHOG_PROJECT_KEY: optionalString,
+  POSTHOG_HOST: z
+    .url()
+    .default('https://eu.i.posthog.com')
+    .refine((value) => {
+      const url = new URL(value)
+      return (
+        url.protocol === 'https:' &&
+        !url.username &&
+        !url.password &&
+        !url.search &&
+        !url.hash &&
+        url.pathname === '/'
+      )
+    }, 'Use an HTTPS PostHog origin')
+    .transform((value) => value.replace(/\/$/, '')),
   AI_ALLOWED_PRIVATE_ORIGINS: optionalString,
   AI_TELEMETRY_STORE_PAYLOADS: booleanString,
   MCP_ALLOWED_HOSTS: optionalString,
@@ -157,6 +173,8 @@ export function parseServerEnv(
       S3_SECRET_ACCESS_KEY: runtimeEnvironment.S3_SECRET_ACCESS_KEY,
       AI_CREDENTIAL_ENCRYPTION_KEY:
         runtimeEnvironment.AI_CREDENTIAL_ENCRYPTION_KEY,
+      POSTHOG_PROJECT_KEY: runtimeEnvironment.POSTHOG_PROJECT_KEY,
+      POSTHOG_HOST: runtimeEnvironment.POSTHOG_HOST,
       AI_ALLOWED_PRIVATE_ORIGINS: runtimeEnvironment.AI_ALLOWED_PRIVATE_ORIGINS,
       AI_TELEMETRY_STORE_PAYLOADS:
         runtimeEnvironment.AI_TELEMETRY_STORE_PAYLOADS,

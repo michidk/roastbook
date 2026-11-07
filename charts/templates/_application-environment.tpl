@@ -80,4 +80,13 @@ env:
     value: {{ join "," .Values.mcp.allowedOrigins | quote }}
   {{- end }}
   {{- end }}
+  {{- if .Values.posthog.existingSecret }}
+  - name: POSTHOG_PROJECT_KEY
+    valueFrom:
+      secretKeyRef:
+        name: {{ .Values.posthog.existingSecret }}
+        key: {{ .Values.posthog.existingSecretProjectKeyKey }}
+  - name: POSTHOG_HOST
+    value: {{ .Values.posthog.host | quote }}
+  {{- end }}
 {{- end -}}

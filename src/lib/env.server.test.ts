@@ -215,3 +215,21 @@ describe('image limit configuration', () => {
     ).toThrow('IMAGE_STORAGE_LIMIT_MIB')
   })
 })
+
+test('PostHog is opt-in and requires a safe HTTPS ingestion origin', () => {
+  expect(
+    parseServerEnv({ DATABASE_URL: databaseUrl }).POSTHOG_PROJECT_KEY,
+  ).toBeUndefined()
+  expect(parseServerEnv({ DATABASE_URL: databaseUrl }).POSTHOG_HOST).toBe(
+    'https://eu.i.posthog.com',
+  )
+  for (const host of [
+    'http://analytics.example',
+    'https://user:secret@analytics.example',
+    'https://analytics.example/?key=secret',
+    'https://analytics.example/path',
+  ])
+    expect(() =>
+      parseServerEnv({ DATABASE_URL: databaseUrl, POSTHOG_HOST: host }),
+    ).toThrow()
+})

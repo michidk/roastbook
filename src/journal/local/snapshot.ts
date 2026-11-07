@@ -118,7 +118,10 @@ export async function applyJournalChanges(
 export async function collectMedia(journal: LocalJournal) {
   const referenced = await journal.client.query<{ path: string }>(
     imageTables
-      .map((table) => `select storage_path as path from ${table}`)
+      .map(
+        (table) =>
+          `select storage_path as path from ${table} union select original_storage_path as path from ${table} where original_storage_path is not null`,
+      )
       .join(' union '),
   )
   const keep = new Set(
