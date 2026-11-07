@@ -56,6 +56,8 @@ const { handleMcpHttpRequest } = await import(
 )
 const {
   loadConsent,
+  approveConsentAccess,
+  denyConsentAccess,
   listOAuthGrants,
   revokeOAuthGrant,
   updateOAuthGrantAccess,
@@ -189,12 +191,63 @@ async function authorize(
       loadConsent(signed.replace('mcp%3Aread', 'mcp%3Awrite')),
     ),
   )
-  const decision = z
-    .object({ url: z.string() })
-    .parse(
-      await json(
-        await api('/oauth2/consent', { accept, oauth_query: signed }, cookie),
+  const headers = new Headers({ cookie, origin })
+  assert.equal(
+    (await api('/oauth2/consent', { accept, oauth_query: signed }, cookie))
+      .status,
+    404,
+  )
+  if (accept) {
+    await assert.rejects(
+      withJournal(first, () =>
+        approveConsentAccess(signed, grant.approvedAccess, headers),
       ),
+      /Confirm it’s you/,
+    )
+    const otherOwner = await confirmAs(second, 'connect-application')
+    await assert.rejects(
+      withJournal(first, () =>
+        approveConsentAccess(signed, grant.approvedAccess, headers, otherOwner),
+      ),
+      /Confirm it’s you/,
+    )
+    const wrongAction = await confirmAs(first, 'change-permissions')
+    await assert.rejects(
+      withJournal(first, () =>
+        approveConsentAccess(
+          signed,
+          grant.approvedAccess,
+          headers,
+          wrongAction,
+        ),
+      ),
+      /Confirm it’s you/,
+    )
+  }
+  const confirmation = accept
+    ? await confirmAs(first, 'connect-application')
+    : undefined
+  const decision = await withJournal(first, () =>
+    accept
+      ? approveConsentAccess(
+          signed,
+          grant.approvedAccess,
+          headers,
+          confirmation,
+        )
+      : denyConsentAccess(signed, headers),
+  )
+  if (accept)
+    await assert.rejects(
+      withJournal(first, () =>
+        approveConsentAccess(
+          signed,
+          grant.approvedAccess,
+          headers,
+          confirmation,
+        ),
+      ),
+      /Confirm it’s you/,
     )
   const redirect = new URL(decision.url)
   assert.equal(redirect.searchParams.get('state'), query.get('state'))
@@ -494,8 +547,8 @@ try {
   const rw = tokenSchema.parse(
     await json(await exchange(client, readWrite.code, readWrite.verifier)),
   )
-  // Without permissions chosen on the consent page, an application keeps
-  // read access only, even when it asked for mcp:write.
+  // A previously approved read-only connection keeps those permissions until
+  // the owner explicitly widens them, even when it now asks for mcp:write.
   const readOnlyTools = await (
     await rpc('tools/list', {}, rw.access_token)
   ).text()
@@ -645,12 +698,6 @@ try {
   )
   assert.equal(limits.filter((limit) => limit.allowed).length, 120)
   assert.equal((await rpc('tools/list', {}, manual)).status, 429)
-  // Untrusted metadata must never reach internal services, including through DNS names.
-  const { fetchClientMetadataResource } = await import('@better-auth/cimd/node')
-  for (const host of ['127.0.0.1', 'localhost', '169.254.169.254'])
-    await assert.rejects(async () =>
-      fetchClientMetadataResource(`https://${host}/client.json`),
-    )
   console.info(
     'MCP OAuth, PKCE, real SDK calls, scopes, isolation, rotation, revocation, transport, and rate limit passed',
   )

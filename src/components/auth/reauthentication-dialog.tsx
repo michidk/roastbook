@@ -204,7 +204,7 @@ function useReauthenticationFlow({
 
 type Flow = ReturnType<typeof useReauthenticationFlow>
 
-function ReauthenticationDialog({
+export function ReauthenticationDialog({
   onCancel,
   ...props
 }: FlowProps & { readonly onCancel: () => void }) {

@@ -11,7 +11,6 @@ const allowed = new Set([
   '/oauth2/token',
   '/oauth2/register',
   '/oauth2/revoke',
-  '/oauth2/consent',
   '/oauth2/continue',
   '/oauth2/public-client',
   '/jwks',

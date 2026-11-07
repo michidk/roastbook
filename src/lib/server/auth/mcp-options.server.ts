@@ -1,6 +1,4 @@
 import '@tanstack/react-start/server-only'
-import { cimd } from '@better-auth/cimd'
-import { fetchClientMetadataResource } from '@better-auth/cimd/node'
 import { mcp } from '@better-auth/mcp'
 import { jwt } from 'better-auth/plugins'
 import { and, eq } from 'drizzle-orm'
@@ -55,7 +53,5 @@ export function mcpAuthPlugins(origin: string) {
         },
       ],
     }),
-    // The build selects the runtime's public-network transport for client metadata.
-    cimd({ fetchClientMetadataResource, metadataProfile: 'mcp-2026-07-28' }),
   ] as const
 }

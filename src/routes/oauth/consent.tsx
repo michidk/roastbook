@@ -2,9 +2,13 @@ import { Button } from '@roastbook/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@roastbook/ui/card'
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
+import { ReauthenticationDialog } from '@/components/auth/reauthentication-dialog'
 import { ScopePicker } from '@/components/settings/scope-picker'
-import { authClient } from '@/lib/auth-client'
-import { approveOAuthConsentAccess, getOAuthConsent } from '@/lib/server/oauth'
+import {
+  approveOAuthConsentAccess,
+  denyOAuthConsent,
+  getOAuthConsent,
+} from '@/lib/server/oauth'
 import type { IntegrationScope } from '@/modules/integrations/scopes'
 
 export const Route = createFileRoute('/oauth/consent')({
@@ -21,6 +25,8 @@ export const Route = createFileRoute('/oauth/consent')({
 })
 function ConsentPage() {
   const grant = Route.useLoaderData()
+  const [reauthToken, setReauthToken] = useState<string | null>(null)
+  const [confirming, setConfirming] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [access, setAccess] = useState<IntegrationScope[]>(grant.approvedAccess)
@@ -28,24 +34,40 @@ function ConsentPage() {
     setBusy(true)
     setError('')
     try {
-      if (accept)
-        await approveOAuthConsentAccess({
-          data: { query: window.location.search.slice(1), scopes: access },
-        })
-      const result = await authClient.oauth2.consent({ accept })
-      if (result.error)
-        throw new Error(
-          result.error.message ?? 'Could not authorize this application',
-        )
-      if (result.data?.url) window.location.assign(result.data.url)
+      const query = window.location.search.slice(1)
+      const result = accept
+        ? await approveOAuthConsentAccess({
+            data: {
+              query,
+              scopes: access,
+              reauthToken: reauthToken ?? undefined,
+            },
+          })
+        : await denyOAuthConsent({ data: { query } })
+      if (result.url) window.location.assign(result.url)
       else throw new Error('Start authorization again from your application')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Authorization failed')
       setBusy(false)
+      if (accept) setReauthToken(null)
     }
   }
   return (
     <div className="flex min-h-[80dvh] items-center justify-center px-4 py-8">
+      {confirming && !reauthToken ? (
+        <ReauthenticationDialog
+          action="connect-application"
+          email={grant.email}
+          userId={grant.userId}
+          onConfirmed={(token) => {
+            if (token) {
+              setReauthToken(token)
+              setConfirming(false)
+            }
+          }}
+          onCancel={() => setConfirming(false)}
+        />
+      ) : null}
       <Card className="w-full max-w-lg">
         <CardHeader>
           <CardTitle>Connect an application</CardTitle>
@@ -63,16 +85,22 @@ function ConsentPage() {
           <p>
             This application is asking to access your private coffee journal.
           </p>
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Allow it to</p>
-            <ScopePicker
-              id="consent-scopes"
-              value={access}
-              allowed={grant.allowedAccess}
-              onChange={setAccess}
-              disabled={busy}
-            />
-          </div>
+          {reauthToken ? (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Allow it to</p>
+              <ScopePicker
+                id="consent-scopes"
+                value={access}
+                allowed={grant.allowedAccess}
+                onChange={setAccess}
+                disabled={busy}
+              />
+            </div>
+          ) : (
+            <p>
+              Confirm it’s you before choosing this application’s permissions.
+            </p>
+          )}
           {grant.scopes.includes('offline_access') ? (
             <p className="text-sm">
               It stays connected when you are signed out, until you disconnect
@@ -96,12 +124,18 @@ function ConsentPage() {
             </p>
           ) : null}
           <div className="flex flex-wrap gap-3">
-            <Button
-              disabled={busy || !access.length}
-              onClick={() => void consent(true)}
-            >
-              Allow access
-            </Button>
+            {reauthToken ? (
+              <Button
+                disabled={busy || !access.length}
+                onClick={() => void consent(true)}
+              >
+                Allow access
+              </Button>
+            ) : (
+              <Button disabled={busy} onClick={() => setConfirming(true)}>
+                Confirm it’s you
+              </Button>
+            )}
             <Button
               variant="outline"
               disabled={busy}
