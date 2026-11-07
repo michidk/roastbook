@@ -51,7 +51,7 @@ export function uploadEntityImages(
   return uploadEntityImagesWith(
     async (input) => {
       const saved = await uploadEntityImage(input)
-      await beautifyUploadedImage({ entityType, entityId, imageId: saved.id })
+      beautifyUploadedImage({ entityType, entityId, imageId: saved.id })
       return saved
     },
     entityType,

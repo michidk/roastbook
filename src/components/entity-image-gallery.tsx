@@ -132,7 +132,7 @@ export function EntityImageGallery({
               picture,
             ),
           })
-          await beautifyUploadedImage({
+          beautifyUploadedImage({
             entityType,
             entityId,
             imageId: saved.id,
@@ -173,7 +173,7 @@ export function EntityImageGallery({
             imageId: image.id,
           },
         })
-        await beautifyUploadedImage({
+        beautifyUploadedImage({
           entityType,
           entityId: entityIdForImage(image),
           imageId: image.id,
