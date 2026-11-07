@@ -21,6 +21,7 @@ import {
   Loader2,
   Sparkles,
   Star,
+  WandSparkles,
   X,
 } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
@@ -38,7 +39,9 @@ import {
 } from '@/journal/images'
 import {
   beautifyEntityImage,
+  beautifyKey,
   beautifyUploadedImage,
+  useBeautifyingImages,
 } from '@/lib/client/beautify-image'
 import { createEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
 import { getErrorMessage } from '@/lib/error-message'
@@ -84,6 +87,7 @@ export function EntityImageGallery({
   const [isDeletingImage, setIsDeletingImage] = useState<number | null>(null)
   const [beautifyingImage, setBeautifyingImage] = useState<number | null>(null)
   const canBeautify = useBeautifyAvailable() && editable
+  const beautifying = useBeautifyingImages()
   const [isUploading, setIsUploading] = useState(false)
   const [uploadFailures, setUploadFailures] = useState<
     readonly EntityImageUploadFailure[]
@@ -274,115 +278,123 @@ export function EntityImageGallery({
               !imageAction && 'sm:grid-cols-3',
             )}
           >
-            {images.map((image, index) => (
-              <div key={image.id} className="group relative">
-                <button
-                  type="button"
-                  className="block w-full cursor-zoom-in rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  onClick={() => setLightboxIndex(index)}
-                  aria-label={`View ${entityLabel.toLowerCase()} picture ${index + 1} in full size`}
-                >
-                  <ImageWithFallback
-                    src={thumbnailUrl(image.storagePath)}
-                    alt={`${entityLabel} picture ${index + 1}`}
-                    loading="lazy"
-                    decoding="async"
-                    width={640}
-                    height={640}
-                    className="aspect-square w-full rounded-lg object-cover"
-                  />
-                </button>
-                {editable && (
-                  <div className="pointer-events-none absolute inset-0 rounded-lg opacity-100 transition-colors [@media(hover:hover)]:group-hover:bg-foreground/55">
-                    {entityType !== 'shots' ? (
-                      <Button
-                        size="icon"
-                        variant={image.isThumbnail ? 'default' : 'secondary'}
-                        className="pointer-events-auto absolute left-1 top-1 size-7 after:absolute after:-inset-2 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary"
-                        onClick={() => handleSetThumbnail(image)}
-                        disabled={
-                          isSettingThumbnail === image.id || image.isThumbnail
-                        }
-                        aria-label={
-                          image.isThumbnail
-                            ? 'Current thumbnail'
-                            : `Set picture ${index + 1} as thumbnail`
-                        }
-                        title={
-                          image.isThumbnail
-                            ? 'Current thumbnail'
-                            : 'Set as thumbnail'
-                        }
-                      >
-                        <Star
-                          className={cn(
-                            'size-3.5',
-                            image.isThumbnail && 'fill-current',
-                          )}
-                        />
-                      </Button>
-                    ) : null}
-                    {canBeautify && !image.originalStoragePath ? (
-                      <Button
-                        size="icon"
-                        variant="secondary"
-                        className="pointer-events-auto absolute bottom-1 left-1 size-7 after:absolute after:-inset-2 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary"
-                        disabled={
-                          beautifyingImage !== null ||
-                          isUploading ||
-                          isDeletingImage !== null
-                        }
-                        aria-busy={beautifyingImage === image.id}
-                        aria-label={
-                          beautifyingImage === image.id
-                            ? `Beautifying picture ${index + 1}…`
-                            : `Beautify picture ${index + 1}`
-                        }
-                        title="Beautify with AI"
-                        onClick={() => void handleBeautify(image)}
-                      >
-                        {beautifyingImage === image.id ? (
-                          <Loader2 className="size-3.5 animate-spin" />
-                        ) : (
-                          <Sparkles className="size-3.5" />
-                        )}
-                      </Button>
-                    ) : null}
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
+            {images.map((image, index) => {
+              const isBeautifying = beautifying.has(
+                beautifyKey(entityType, image.id),
+              )
+              return (
+                <div key={image.id} className="group relative">
+                  <button
+                    type="button"
+                    className="block w-full cursor-zoom-in rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    onClick={() => setLightboxIndex(index)}
+                    aria-label={`View ${entityLabel.toLowerCase()} picture ${index + 1} in full size`}
+                  >
+                    <ImageWithFallback
+                      src={thumbnailUrl(image.storagePath)}
+                      alt={`${entityLabel} picture ${index + 1}`}
+                      loading="lazy"
+                      decoding="async"
+                      width={640}
+                      height={640}
+                      className="aspect-square w-full rounded-lg object-cover"
+                    />
+                  </button>
+                  {editable && (
+                    <div className="pointer-events-none absolute inset-0 rounded-lg opacity-100 transition-colors [@media(hover:hover)]:group-hover:bg-foreground/55">
+                      {entityType !== 'shots' ? (
                         <Button
                           size="icon"
-                          variant="destructive"
-                          className="pointer-events-auto absolute right-1 top-1 size-7 after:absolute after:-inset-2 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary"
-                          disabled={isDeletingImage === image.id}
-                          aria-label={`Delete picture ${index + 1}`}
+                          variant={image.isThumbnail ? 'default' : 'secondary'}
+                          className="pointer-events-auto absolute left-1 top-1 size-7 after:absolute after:-inset-2 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary"
+                          onClick={() => handleSetThumbnail(image)}
+                          disabled={
+                            isSettingThumbnail === image.id || image.isThumbnail
+                          }
+                          aria-label={
+                            image.isThumbnail
+                              ? 'Current thumbnail'
+                              : `Set picture ${index + 1} as thumbnail`
+                          }
+                          title={
+                            image.isThumbnail
+                              ? 'Current thumbnail'
+                              : 'Set as thumbnail'
+                          }
                         >
-                          <X className="size-3.5" />
+                          <Star
+                            className={cn(
+                              'size-3.5',
+                              image.isThumbnail && 'fill-current',
+                            )}
+                          />
                         </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            Delete this picture?
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDeleteImage(image)}
+                      ) : null}
+                      {canBeautify && !image.originalStoragePath ? (
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          className="pointer-events-auto absolute bottom-1 left-1 size-7 after:absolute after:-inset-2 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary"
+                          disabled={
+                            isBeautifying ||
+                            beautifyingImage !== null ||
+                            isUploading ||
+                            isDeletingImage !== null
+                          }
+                          aria-busy={isBeautifying}
+                          aria-label={
+                            isBeautifying
+                              ? `Beautifying picture ${index + 1}…`
+                              : `Beautify picture ${index + 1}`
+                          }
+                          title={
+                            isBeautifying ? 'Beautifying…' : 'Beautify with AI'
+                          }
+                          onClick={() => void handleBeautify(image)}
+                        >
+                          {isBeautifying ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                          ) : (
+                            <WandSparkles className="size-3.5" />
+                          )}
+                        </Button>
+                      ) : null}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="destructive"
+                            className="pointer-events-auto absolute right-1 top-1 size-7 after:absolute after:-inset-2 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary"
+                            disabled={isDeletingImage === image.id}
+                            aria-label={`Delete picture ${index + 1}`}
                           >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                )}
-              </div>
-            ))}
+                            <X className="size-3.5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Delete this picture?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteImage(image)}
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
         {editable && (

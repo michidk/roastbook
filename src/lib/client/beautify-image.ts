@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react'
 import { toast } from 'sonner'
 import type { EntityType } from '@/journal/images'
 import { notifyLocalChange } from '@/journal/local/changes'
@@ -15,10 +16,43 @@ type ImageSelection = {
   entityId: number
   imageId: number
 }
+let beautifying: ReadonlySet<string> = new Set()
+const listeners = new Set<() => void>()
+export const beautifyKey = (entityType: EntityType, imageId: number) =>
+  `${entityType}:${imageId}`
+function markBeautifying(key: string, active: boolean) {
+  const next = new Set(beautifying)
+  if (active) next.add(key)
+  else next.delete(key)
+  beautifying = next
+  for (const listener of listeners) listener()
+}
+/** Keys of pictures with an edit in flight, including background ones. */
+export function useBeautifyingImages() {
+  return useSyncExternalStore(
+    (listener) => {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+    () => beautifying,
+    () => beautifying,
+  )
+}
+
 export async function beautifyEntityImage(
   data: ImageSelection,
   automatic = false,
 ) {
+  const key = beautifyKey(data.entityType, data.imageId)
+  markBeautifying(key, true)
+  try {
+    await runBeautify(data, automatic)
+  } finally {
+    markBeautifying(key, false)
+  }
+}
+
+async function runBeautify(data: ImageSelection, automatic: boolean) {
   if (DEMO_MODE || !isConnectionOnline()) {
     if (automatic) return
     throw new Error('Connect to the server to beautify this picture')

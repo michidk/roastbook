@@ -4,6 +4,7 @@ import { IMAGE_EDIT_MODEL } from '@/lib/image-edit-accounting'
 import {
   BEAUTIFY_IMAGE_PROMPT,
   editImageWithProvider,
+  imageMimeType,
 } from './ai-image-edit.server'
 import type { AiProviderConfig } from './ai-runtime.server'
 
@@ -113,4 +114,15 @@ test('a configured image model replaces the default and is never priced', async 
   })
   expect(result.accounting.model).toBe('other-image-model')
   expect(result.accounting.totalCost).toBeNull()
+})
+
+test('detects the returned format when a provider ignores output_format', async () => {
+  const encode = (format: 'png' | 'jpeg' | 'webp') =>
+    sharp(image)
+      .toFormat(format)
+      .toBuffer()
+      .then((b) => b.toString('base64'))
+  expect(imageMimeType(await encode('png'))).toBe('image/png')
+  expect(imageMimeType(await encode('jpeg'))).toBe('image/jpeg')
+  expect(imageMimeType(await encode('webp'))).toBe('image/webp')
 })

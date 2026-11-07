@@ -98,8 +98,9 @@ export async function beautifyImageBytes(bytes: Uint8Array, mimeType: string) {
     const decoded = Buffer.from(encoded, 'base64')
     if (decoded.toString('base64') !== encoded)
       throw new Error('The image provider returned invalid image data')
+    // Some providers ignore output_format, so trust the bytes over the request.
     const [image] = await prepareAiImages([
-      { imageBase64: encoded, mimeType: 'image/webp' },
+      { imageBase64: encoded, mimeType: imageMimeType(encoded) },
     ])
     if (!image) throw new Error('The image provider returned no picture')
     await recorder.completeAiRequestLog({
@@ -117,7 +118,11 @@ export async function beautifyImageBytes(bytes: Uint8Array, mimeType: string) {
       failed: false,
     })
     return { binaryData: new Uint8Array(image.bytes), mimeType: image.mimeType }
-  } catch {
+  } catch (cause) {
+    console.error('Image beautification failed', {
+      requestLogId: logId,
+      cause,
+    })
     const error = new Error(
       'Could not beautify this picture. Your original is safe. Check Settings > AI and try again.',
     )
@@ -137,6 +142,12 @@ export async function beautifyImageBytes(bytes: Uint8Array, mimeType: string) {
     })
     throw error
   }
+}
+
+export function imageMimeType(encoded: string) {
+  if (encoded.startsWith('iVBOR')) return 'image/png'
+  if (encoded.startsWith('/9j/')) return 'image/jpeg'
+  return 'image/webp'
 }
 
 function tokenTotals(accounting: ReturnType<typeof imageEditAccounting>) {
