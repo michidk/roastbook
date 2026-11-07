@@ -42,6 +42,9 @@ export async function isRecommendationsEnabled(): Promise<boolean> {
   return Boolean((await getAiProviderConfig()).apiKey)
 }
 
-export type AiProviderConfig = Awaited<ReturnType<typeof getAiProviderConfig>>
+// A build extension may supply its own image edit model.
+export type AiProviderConfig = Awaited<
+  ReturnType<typeof getAiProviderConfig>
+> & { imageModel?: string }
 
 import { createOpenaiChat, type OpenAIChatModel } from '@tanstack/ai-openai'

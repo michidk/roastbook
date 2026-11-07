@@ -99,3 +99,18 @@ test('retains usage even when the provider returns an invalid picture', async ()
   )
   expect(result.accounting.usage).toEqual(usage)
 })
+
+test('a configured image model replaces the default and is never priced', async () => {
+  const result = await editImageWithProvider(image, 'image/webp', {
+    ...config(async (request) => {
+      expect((await request.formData()).get('model')).toBe('other-image-model')
+      return Response.json({
+        data: [{ b64_json: image.toString('base64') }],
+        usage,
+      })
+    }),
+    imageModel: 'other-image-model',
+  })
+  expect(result.accounting.model).toBe('other-image-model')
+  expect(result.accounting.totalCost).toBeNull()
+})

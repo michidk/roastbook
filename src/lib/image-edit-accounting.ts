@@ -48,12 +48,17 @@ export const imageEditUsageSchema = z
       })
   })
 
-export function imageEditAccounting(raw: unknown, baseURL: string) {
+export function imageEditAccounting(
+  raw: unknown,
+  baseURL: string,
+  model: string = IMAGE_EDIT_MODEL,
+) {
   const parsed = imageEditUsageSchema.safeParse(raw)
   const usage = parsed.success ? parsed.data : null
   const details = usage?.input_tokens_details
   const cached = details?.cached_tokens_details
   const official =
+    model === IMAGE_EDIT_MODEL &&
     new URL(baseURL).href.replace(/\/$/, '') === 'https://api.openai.com/v1'
   const priced =
     official && usage && details && (!(details.cached_tokens ?? 0) || cached)
@@ -70,7 +75,7 @@ export function imageEditAccounting(raw: unknown, baseURL: string) {
     ? (usage.output_tokens * IMAGE_EDIT_PRICING.imageOutput) / 1_000_000
     : null
   return {
-    model: IMAGE_EDIT_MODEL,
+    model,
     usage,
     currency: 'USD',
     pricing: official ? IMAGE_EDIT_PRICING : null,

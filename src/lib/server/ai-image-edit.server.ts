@@ -42,7 +42,7 @@ export async function editImageWithProvider(
   ])
   if (!image) throw new Error('Choose a picture to beautify')
   const form = new FormData()
-  form.set('model', IMAGE_EDIT_MODEL)
+  form.set('model', config.imageModel ?? IMAGE_EDIT_MODEL)
   form.set('prompt', BEAUTIFY_IMAGE_PROMPT)
   form.set(
     'image',
@@ -67,23 +67,28 @@ export async function editImageWithProvider(
     throw new Error('The image provider could not complete this edit')
   const raw: unknown = await response.json()
   const envelope = z.object({ usage: z.unknown().optional() }).parse(raw)
-  const accounting = imageEditAccounting(envelope.usage, config.baseURL)
+  const accounting = imageEditAccounting(
+    envelope.usage,
+    config.baseURL,
+    config.imageModel,
+  )
   // Preserve billable usage even if the returned image is invalid.
   return { raw, accounting }
 }
 
 export async function beautifyImageBytes(bytes: Uint8Array, mimeType: string) {
-  const config = await getAiProviderConfig()
+  const config: AiProviderConfig = await getAiProviderConfig()
   if (!config.apiKey)
     throw new Error('Connect your AI provider in Settings > AI')
+  const model = config.imageModel ?? IMAGE_EDIT_MODEL
   const logId = await recorder.startAiRequestLog({
     providerMode: config.providerMode,
-    model: IMAGE_EDIT_MODEL,
+    model,
     requestType: 'image-beautification',
     requestPayload: { imageCount: 1, quality: 'medium', size: '1024x1024' },
   })
   const startedAt = Date.now()
-  let accounting = imageEditAccounting(undefined, config.baseURL)
+  let accounting = imageEditAccounting(undefined, config.baseURL, model)
   try {
     const result = await editImageWithProvider(bytes, mimeType, config)
     accounting = result.accounting
@@ -99,7 +104,7 @@ export async function beautifyImageBytes(bytes: Uint8Array, mimeType: string) {
     if (!image) throw new Error('The image provider returned no picture')
     await recorder.completeAiRequestLog({
       logId,
-      model: IMAGE_EDIT_MODEL,
+      model,
       usage: tokenTotals(accounting),
       responsePayload: { completed: true },
       durationMs: Date.now() - startedAt,
@@ -118,7 +123,7 @@ export async function beautifyImageBytes(bytes: Uint8Array, mimeType: string) {
     )
     await recorder.failAiRequestLog({
       logId,
-      model: IMAGE_EDIT_MODEL,
+      model,
       error,
       usage: tokenTotals(accounting),
       durationMs: Date.now() - startedAt,

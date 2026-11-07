@@ -17,6 +17,8 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as DotwellKnownSplatRouteImport } from './routes/[.]well-known/$'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminAiRouteImport } from './routes/admin/ai'
+import { Route as AdminPlatformRouteImport } from './routes/admin/platform'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as ApiAuthProbeRouteImport } from './routes/api/auth-probe'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
@@ -112,6 +114,16 @@ const DotwellKnownSplatRoute = DotwellKnownSplatRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAiRoute = AdminAiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPlatformRoute = AdminPlatformRouteImport.update({
+  id: '/platform',
+  path: '/platform',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
@@ -404,6 +416,8 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRouteWithChildren
   '/stats': typeof StatsRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
+  '/admin/ai': typeof AdminAiRoute
+  '/admin/platform': typeof AdminPlatformRoute
   '/admin/users': typeof AdminUsersRoute
   '/api/auth-probe': typeof ApiAuthProbeRoute
   '/api/health': typeof ApiHealthRoute
@@ -468,6 +482,8 @@ export interface FileRoutesByTo {
   '/offline-shell': typeof OfflineShellRoute
   '/stats': typeof StatsRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
+  '/admin/ai': typeof AdminAiRoute
+  '/admin/platform': typeof AdminPlatformRoute
   '/admin/users': typeof AdminUsersRoute
   '/api/auth-probe': typeof ApiAuthProbeRoute
   '/api/health': typeof ApiHealthRoute
@@ -535,6 +551,8 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRouteWithChildren
   '/stats': typeof StatsRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
+  '/admin/ai': typeof AdminAiRoute
+  '/admin/platform': typeof AdminPlatformRoute
   '/admin/users': typeof AdminUsersRoute
   '/api/auth-probe': typeof ApiAuthProbeRoute
   '/api/health': typeof ApiHealthRoute
@@ -603,6 +621,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/stats'
     | '/.well-known/$'
+    | '/admin/ai'
+    | '/admin/platform'
     | '/admin/users'
     | '/api/auth-probe'
     | '/api/health'
@@ -667,6 +687,8 @@ export interface FileRouteTypes {
     | '/offline-shell'
     | '/stats'
     | '/.well-known/$'
+    | '/admin/ai'
+    | '/admin/platform'
     | '/admin/users'
     | '/api/auth-probe'
     | '/api/health'
@@ -733,6 +755,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/stats'
     | '/.well-known/$'
+    | '/admin/ai'
+    | '/admin/platform'
     | '/admin/users'
     | '/api/auth-probe'
     | '/api/health'
@@ -899,6 +923,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/ai': {
+      id: '/admin/ai'
+      path: '/ai'
+      fullPath: '/admin/ai'
+      preLoaderRoute: typeof AdminAiRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/platform': {
+      id: '/admin/platform'
+      path: '/platform'
+      fullPath: '/admin/platform'
+      preLoaderRoute: typeof AdminPlatformRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/users': {
@@ -1297,12 +1335,16 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminAiRoute: typeof AdminAiRoute
+  AdminPlatformRoute: typeof AdminPlatformRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminUsersUserIdRoute: typeof AdminUsersUserIdRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminAiRoute: AdminAiRoute,
+  AdminPlatformRoute: AdminPlatformRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminUsersUserIdRoute: AdminUsersUserIdRoute,
