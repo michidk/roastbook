@@ -51,8 +51,7 @@ export function BeautifyImageToggle({
       <div className="min-w-0 space-y-0.5">
         <Label htmlFor={id}>Beautify image</Label>
         <p id={`${id}-help`} className="text-xs text-muted-foreground">
-          AI retouches the primary picture and keeps the original. Provider
-          charges apply.
+          AI retouches the primary picture and keeps the original.
         </p>
       </div>
       <Switch
