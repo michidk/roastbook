@@ -126,3 +126,27 @@ test('picture tools check the scope of the entity they touch', async () => {
     await connected.close()
   }
 })
+
+test('publishes journal branding with an icon on the configured instance', async () => {
+  const connected = await connect({
+    scopes: [],
+    publicUrl: 'https://coffee.example.test',
+  })
+  try {
+    expect(connected.client.getServerVersion()).toMatchObject({
+      name: 'roastbook',
+      title: 'Roastbook',
+      description: expect.stringContaining('Your coffee journal.'),
+      websiteUrl: 'https://roastbook.coffee/',
+      icons: [
+        {
+          src: 'https://coffee.example.test/logo512.png',
+          mimeType: 'image/png',
+          sizes: ['512x512'],
+        },
+      ],
+    })
+  } finally {
+    await connected.close()
+  }
+})

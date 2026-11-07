@@ -93,6 +93,19 @@ under Settings > AI access (MCP). Applications connected and MCP tokens created
 before permissions existed keep read access only; grant write access again
 where needed, since writing now includes editing and deleting.
 
+MCP server metadata includes the Roastbook name, description, and website.
+When `PUBLIC_URL` is set, it also advertises the instance's `/logo512.png` icon.
+Clients decide whether to display this metadata; ChatGPT's custom connector
+form may still require a manually entered description and uploaded icon.
+
+In ChatGPT, use the server URL with OAuth and leave the discovered endpoints
+unchanged. Roastbook supports both Client Identifier Metadata Documents
+(CIMD) and Dynamic Client Registration (DCR). If sign-in returns `invalid_client`
+with "Failed to fetch metadata document", endpoint discovery has succeeded but
+Roastbook could not fetch the client's metadata. Select DCR in ChatGPT's
+advanced OAuth settings to avoid that metadata fetch. OIDC is not required for
+MCP access and can remain disabled.
+
 Without accounts, or for clients without browser sign-in, create an MCP token
 under Settings > AI access (MCP) with a name, permissions, and an optional
 expiry. It is shown once:

@@ -64,12 +64,31 @@ export type McpRunner = (
  */
 export function createRoastbookMcpServer(options: {
   scopes: readonly string[]
+  publicUrl?: string
   disabledTools?: ReadonlySet<string>
   audit?: ToolAudit
   /** Tests replace the journal behind the operations. */
   run?: McpRunner
 }) {
-  const server = new McpServer({ name: 'roastbook', version: '2.0.0' })
+  const server = new McpServer({
+    name: 'roastbook',
+    title: 'Roastbook',
+    version: '2.0.0',
+    description:
+      'Your coffee journal. Explore beans, brews, recipes, equipment, and tasting notes, and manage records with your permission.',
+    websiteUrl: 'https://roastbook.coffee/',
+    ...(options.publicUrl
+      ? {
+          icons: [
+            {
+              src: new URL('/logo512.png', options.publicUrl).href,
+              mimeType: 'image/png',
+              sizes: ['512x512'],
+            },
+          ],
+        }
+      : {}),
+  })
   applyToolPolicy(server, {
     disabledTools: options.disabledTools ?? new Set(),
     audit: options.audit,

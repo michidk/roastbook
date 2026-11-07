@@ -7,6 +7,7 @@ import {
 import { getServerEnv } from '@/lib/env.server'
 
 export type McpConfig = {
+  publicUrl?: string
   allowedHostnames: string[]
   allowedOrigins: string[]
 }
@@ -41,6 +42,7 @@ function toHostname(entry: string) {
  */
 export function resolveMcpConfig(environment: McpEnvironment): McpConfig {
   return {
+    publicUrl: environment.PUBLIC_URL,
     allowedHostnames: [
       ...new Set([
         ...localhostAllowedHostnames(),
