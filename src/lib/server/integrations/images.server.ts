@@ -1,6 +1,6 @@
 import '@tanstack/react-start/server-only'
 
-import { eq, or } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import {
   beanImages,
@@ -123,12 +123,7 @@ async function imageResource(
     const [row] = await db
       .select({ storagePath: table.storagePath })
       .from(table)
-      .where(
-        owned(
-          table,
-          or(eq(table.storagePath, path), eq(table.originalStoragePath, path)),
-        ),
-      )
+      .where(owned(table, eq(table.storagePath, path)))
       .limit(1)
     if (row) return resource
   }

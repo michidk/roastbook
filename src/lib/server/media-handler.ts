@@ -75,11 +75,11 @@ async function ownsImage(path: string) {
   if (path.startsWith('favicons/')) return true
   const original = path.replace(/\.(?:thumb|small)\.webp$/, '.webp')
   const result = await db.execute(sql`
-    select 1 from bean_images where storage_path in (${path}, ${original}) or original_storage_path in (${path}, ${original})
-    union all select 1 from gear_images where storage_path in (${path}, ${original}) or original_storage_path in (${path}, ${original})
-    union all select 1 from coffee_shop_images where storage_path in (${path}, ${original}) or original_storage_path in (${path}, ${original})
-    union all select 1 from brew_images where storage_path in (${path}, ${original}) or original_storage_path in (${path}, ${original})
-    union all select 1 from cafe_visit_images where storage_path in (${path}, ${original}) or original_storage_path in (${path}, ${original}) limit 1
+    select 1 from bean_images where storage_path in (${path}, ${original})
+    union all select 1 from gear_images where storage_path in (${path}, ${original})
+    union all select 1 from coffee_shop_images where storage_path in (${path}, ${original})
+    union all select 1 from brew_images where storage_path in (${path}, ${original})
+    union all select 1 from cafe_visit_images where storage_path in (${path}, ${original}) limit 1
   `)
   return result.length > 0
 }

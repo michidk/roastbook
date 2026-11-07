@@ -60,20 +60,15 @@ export async function measureLegacyImageStorage(limit = 6): Promise<void> {
   for (const table of imageTables) {
     if (!remaining) break
     const rows = await db
-      .select({
-        id: table.id,
-        storagePath: table.storagePath,
-        originalStoragePath: table.originalStoragePath,
-      })
+      .select({ id: table.id, storagePath: table.storagePath })
       .from(table)
       .where(owned(table, isNull(table.storageBytes)))
       .limit(remaining)
     for (const row of rows) {
       const objects = await Promise.all(
-        getStoredImagePaths([
-          row.storagePath,
-          ...(row.originalStoragePath ? [row.originalStoragePath] : []),
-        ]).map((path) => storage.stat(path)),
+        getStoredImagePaths([row.storagePath]).map((path) =>
+          storage.stat(path),
+        ),
       )
       const storageBytes = objects.reduce(
         (sum, object) => sum + (object?.sizeBytes ?? 0),

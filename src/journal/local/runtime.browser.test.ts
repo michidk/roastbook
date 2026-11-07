@@ -14,16 +14,11 @@ import {
 } from '@/journal/beans'
 import { decodeInput, rejectedPrefix } from '@/journal/codec'
 import { getJournalFunction } from '@/journal/function'
-import { getStoredImagePaths } from '@/lib/image-path'
 import responseSchemas from '@/lib/server/integrations/response-schemas.gen.json'
 import { currentScope, LocalJournal } from './client'
 import { loadLocalMedia, localMediaObjectUrl } from './media'
 import { migrateJournal } from './migrate'
-import {
-  applyJournalChanges,
-  collectMedia,
-  replaceJournalRows,
-} from './snapshot'
+import { applyJournalChanges, replaceJournalRows } from './snapshot'
 
 const migrations = Object.fromEntries(
   (await readdir('drizzle'))
@@ -620,28 +615,4 @@ test('a synced journal takes every identifier from its reservation', async () =>
   const { createRoaster } = await import('@/journal/roasters')
   const roaster = await createRoaster({ data: { name: 'Reserved roaster' } })
   expect(roaster.id).toBe(950)
-})
-
-test('sync media collection preserves retained originals and all picture sizes', async () => {
-  const journal = await openJournal(true)
-  await journal.client.query(
-    "insert into gear (id, owner_id, name, type) values (9801, 'owner-a', 'Camera', 'tamper')",
-  )
-  await journal.client.query(
-    "insert into gear_images (id, owner_id, gear_id, storage_path, original_storage_path) values (9802, 'owner-a', 9801, 'gear/9801/edit.webp', 'gear/9801/original.webp')",
-  )
-  const paths = getStoredImagePaths([
-    'gear/9801/edit.webp',
-    'gear/9801/original.webp',
-  ])
-  for (const path of [...paths, 'gear/9801/orphan.webp'])
-    await journal.client.query(
-      "insert into roastbook_local.media (path, mime_type, data) values ($1, 'image/webp', '\\x00'::bytea)",
-      [path],
-    )
-  await collectMedia(journal)
-  const remaining = await journal.client.query<{ path: string }>(
-    'select path from roastbook_local.media',
-  )
-  expect(remaining.rows.map((row) => row.path).sort()).toEqual(paths.sort())
 })

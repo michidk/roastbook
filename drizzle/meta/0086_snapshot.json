@@ -1,5 +1,5 @@
 {
-  "id": "b50a6d4c-5f91-4fff-833d-a90918c5376b",
+  "id": "dbdfabb6-6f1f-47cb-9855-30989f9bbdbc",
   "prevId": "70cb24a4-6344-4231-aeb5-8a0ab490c078",
   "version": "7",
   "dialect": "postgresql",
@@ -1132,9 +1132,9 @@
           "primaryKey": false,
           "notNull": true
         },
-        "original_storage_path": {
-          "name": "original_storage_path",
-          "type": "text",
+        "beautified_from_image_id": {
+          "name": "beautified_from_image_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
@@ -2147,9 +2147,9 @@
           "primaryKey": false,
           "notNull": true
         },
-        "original_storage_path": {
-          "name": "original_storage_path",
-          "type": "text",
+        "beautified_from_image_id": {
+          "name": "beautified_from_image_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
@@ -2609,9 +2609,9 @@
           "primaryKey": false,
           "notNull": true
         },
-        "original_storage_path": {
-          "name": "original_storage_path",
-          "type": "text",
+        "beautified_from_image_id": {
+          "name": "beautified_from_image_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
@@ -3894,9 +3894,9 @@
           "primaryKey": false,
           "notNull": true
         },
-        "original_storage_path": {
-          "name": "original_storage_path",
-          "type": "text",
+        "beautified_from_image_id": {
+          "name": "beautified_from_image_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
@@ -7827,9 +7827,9 @@
           "primaryKey": false,
           "notNull": true
         },
-        "original_storage_path": {
-          "name": "original_storage_path",
-          "type": "text",
+        "beautified_from_image_id": {
+          "name": "beautified_from_image_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },

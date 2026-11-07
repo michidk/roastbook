@@ -52,7 +52,7 @@ import { cn } from '@/lib/utils'
 
 export interface EntityImage {
   readonly id: number
-  readonly originalStoragePath?: string | null
+  readonly beautifiedFromImageId?: number | null
   readonly storagePath: string
   readonly isThumbnail?: boolean
   readonly beanPurchaseId?: number
@@ -104,10 +104,12 @@ export function EntityImageGallery({
     removeImages,
     openFilePicker,
   } = useImageUpload({
-    existingImageCount:
-      entityType === 'bean-purchases'
-        ? images.filter((image) => image.beanPurchaseId === entityId).length
-        : images.length,
+    // Beautified copies do not use up the per-item picture limit.
+    existingImageCount: images.filter(
+      (image) =>
+        image.beautifiedFromImageId == null &&
+        (entityType !== 'bean-purchases' || image.beanPurchaseId === entityId),
+    ).length,
   })
 
   if (images.length === 0 && !editable) return null
@@ -330,7 +332,11 @@ export function EntityImageGallery({
                           />
                         </Button>
                       ) : null}
-                      {canBeautify && !image.originalStoragePath ? (
+                      {canBeautify &&
+                      image.beautifiedFromImageId == null &&
+                      !images.some(
+                        (copy) => copy.beautifiedFromImageId === image.id,
+                      ) ? (
                         <Button
                           size="icon"
                           variant="secondary"
@@ -521,16 +527,6 @@ export function EntityImageGallery({
                 alt={`${entityLabel} picture ${lightboxIndex + 1}`}
                 className="max-h-[80dvh] w-auto max-w-full rounded-xl object-contain"
               />
-              {lightboxImage.originalStoragePath && (
-                <a
-                  href={imageUrl(lightboxImage.originalStoragePath)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mx-auto flex min-h-11 w-fit items-center rounded-md px-2 text-sm font-semibold text-link underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  View original
-                </a>
-              )}
               {images.length > 1 && (
                 <div className="flex items-center justify-center gap-3 pt-2">
                   <Button

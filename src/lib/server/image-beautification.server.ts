@@ -1,6 +1,6 @@
 import '@tanstack/react-start/server-only'
 import { eq } from 'drizzle-orm'
-import { loadEntityImage } from '@/journal/domain/beautified-image'
+import { isBeautified } from '@/journal/domain/beautified-image'
 import { entityImageTarget } from '@/journal/domain/entity-image-records'
 import {
   imageStoragePolicy,
@@ -15,7 +15,7 @@ import { DEMO_MODE } from '@/lib/build-mode'
 import { beautifyImageBytes } from '@/lib/server/ai-image-edit.server'
 import { getStorage } from '@/lib/storage'
 
-type ImageSelection = Parameters<typeof loadEntityImage>[0] & {
+type ImageSelection = Parameters<typeof isBeautified>[0] & {
   automatic: boolean
 }
 
@@ -25,8 +25,8 @@ export async function prepareEntityImageBeautification(
 ) {
   if (DEMO_MODE)
     throw new Error('Image beautification is unavailable in the demo')
-  const image = await loadEntityImage(data)
-  if (image.originalStoragePath) return null
+  const { image, beautified } = await isBeautified(data)
+  if (beautified) return null
   if (data.automatic) {
     if (!(await loadAppSettings()).beautifyImages) return null
     const { table, foreignKey } = entityImageTarget(data.entityType)
@@ -63,7 +63,6 @@ export async function prepareEntityImageBeautification(
       entityType: data.entityType,
       entityId: data.entityId,
       imageId: data.imageId,
-      expectedStoragePath: image.storagePath,
       imageBase64: Buffer.from(edited.binaryData).toString('base64'),
       mimeType: edited.mimeType,
     },

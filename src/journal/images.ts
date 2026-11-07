@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { replaceWithBeautifiedImage } from '@/journal/domain/beautified-image'
+import { isBeautified } from '@/journal/domain/beautified-image'
 import {
   entityImageSelection,
   setEntityImageThumbnail,
@@ -48,10 +48,7 @@ export const deleteEntityImage = journalWrite('images/deleteEntityImage')
   .handler(async ({ data }) => {
     const { table, where } = entityImageSelection(data)
     const [image] = await db
-      .select({
-        storagePath: table.storagePath,
-        originalStoragePath: table.originalStoragePath,
-      })
+      .select({ storagePath: table.storagePath })
       .from(table)
       .where(where)
       .limit(1)
@@ -65,10 +62,7 @@ export const deleteEntityImage = journalWrite('images/deleteEntityImage')
         expectedChanges: 1,
         conflictMessage: 'Image changed. Reload and try again.',
       },
-      ...queueMediaCleanup([
-        image.storagePath,
-        ...(image.originalStoragePath ? [image.originalStoragePath] : []),
-      ]),
+      ...queueMediaCleanup([image.storagePath]),
     ])
     await drainMediaCleanupQueue()
   })
@@ -80,7 +74,6 @@ export const getImageUploadPolicy = journalRead(
 export const saveBeautifiedImage = journalWrite('images/saveBeautifiedImage')
   .validator(
     entityImageIdSchema.extend({
-      expectedStoragePath: z.string().min(1).max(500),
       imageBase64: z
         .string()
         .min(1)
@@ -88,9 +81,24 @@ export const saveBeautifiedImage = journalWrite('images/saveBeautifiedImage')
       mimeType: z.enum(['image/png', 'image/jpeg', 'image/webp']),
     }),
   )
-  .handler(({ data: { imageBase64, ...data } }) =>
-    replaceWithBeautifiedImage({
+  .handler(async ({ data: { imageBase64, imageId, ...data } }) => {
+    const { image: source, beautified } = await isBeautified({
       ...data,
+      imageId,
+    })
+    if (beautified) throw new Error('This picture is already beautified')
+    // The copy becomes the main picture; the source stays as a regular one.
+    const image = await storeEntityImage({
+      ...data,
+      filename: source.originalFilename ?? 'beautified.webp',
       binaryData: decodeBase64(imageBase64),
-    }),
-  )
+      beautifiedFromImageId: imageId,
+    })
+    if (data.entityType === 'bean-purchases' || data.entityType === 'gear')
+      await setEntityImageThumbnail({
+        entityType: data.entityType,
+        entityId: data.entityId,
+        imageId: image.id,
+      })
+    return image
+  })

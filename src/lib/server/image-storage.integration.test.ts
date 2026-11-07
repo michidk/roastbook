@@ -7,7 +7,6 @@ import { getControlDb } from '@/db/connection.server'
 import { type JournalIdentity, withJournal } from '@/db/journal-context.server'
 import { journalInsertValues, owned } from '@/db/journal-scope.server'
 import { authUsers, gear, gearImages } from '@/db/schema'
-import { replaceWithBeautifiedImage } from '@/journal/domain/beautified-image'
 import { setEntityImageThumbnail } from '@/journal/domain/entity-image-records'
 import { storeEntityImage } from '@/journal/domain/entity-image-store'
 import {
@@ -16,7 +15,7 @@ import {
 } from '@/journal/domain/image-storage'
 import { deleteEntityWithMedia } from '@/journal/domain/media-lifecycle'
 import { loadAppSettings, updateSettings } from '@/journal/domain/settings'
-import { deleteEntityImage } from '@/journal/images'
+import { deleteEntityImage, saveBeautifiedImage } from '@/journal/images'
 import { getStoredImagePaths } from '@/lib/image-path'
 import { prepareEntityImageBeautification } from '@/lib/server/image-beautification.server'
 import { getStorage } from '@/lib/storage'
@@ -164,6 +163,7 @@ suite('beautified image storage', () => {
   let gearId = 0
   let originalPath = ''
   let editPath = ''
+  let editId = 0
   const scoped = <T>(work: () => Promise<T>) => withJournal(owner, work)
   beforeAll(async () => {
     owner = {
@@ -206,80 +206,71 @@ suite('beautified image storage', () => {
         .delete(authUsers)
         .where(eq(authUsers.id, identity.id))
   })
-  test('rejects another owner and stale updates without touching the original', async () => {
-    const selection = {
-      entityType: 'gear' as const,
-      entityId: gearId,
-      imageId: pictureId,
-    }
-    await expect(
-      withJournal(stranger, () =>
-        replaceWithBeautifiedImage({
-          ...selection,
-          expectedStoragePath: originalPath,
-          mimeType: 'image/png',
-          binaryData: input,
-        }),
-      ),
-    ).rejects.toThrow('Image not found')
-    await expect(
-      scoped(() =>
-        replaceWithBeautifiedImage({
-          ...selection,
-          expectedStoragePath: 'stale.webp',
-          mimeType: 'image/png',
-          binaryData: input,
-        }),
-      ),
-    ).rejects.toThrow('Picture changed')
-    expect(await getStorage().exists(originalPath)).toBe(true)
-  })
-  test('retains original files, updates all displayed sizes, counts both versions, and prevents repeated edits', async () => {
-    await scoped(async () => {
-      const before = await loadImageStorageUsage()
-      const edited = await replaceWithBeautifiedImage({
+  const save = (imageId: number) =>
+    saveBeautifiedImage({
+      data: {
         entityType: 'gear',
         entityId: gearId,
-        imageId: pictureId,
-        expectedStoragePath: originalPath,
+        imageId,
         mimeType: 'image/png',
-        binaryData: input,
-      })
+        imageBase64: input.toString('base64'),
+      },
+    })
+  test('rejects another owner without touching the original', async () => {
+    await expect(withJournal(stranger, () => save(pictureId))).rejects.toThrow(
+      'Image not found',
+    )
+    expect(await getStorage().exists(originalPath)).toBe(true)
+  })
+  test('adds the copy as the thumbnail, keeps the original, and prevents repeated edits', async () => {
+    await scoped(async () => {
+      const before = await loadImageStorageUsage()
+      const edited = await save(pictureId)
       editPath = edited.storagePath
-      expect(edited.originalStoragePath).toBe(originalPath)
+      editId = edited.id
+      expect(edited.beautifiedFromImageId).toBe(pictureId)
       expect(editPath).not.toBe(originalPath)
-      const paths = getStoredImagePaths([originalPath, editPath])
+      const rows = await db
+        .select()
+        .from(gearImages)
+        .where(owned(gearImages, eq(gearImages.gearId, gearId)))
+      expect(rows.map((row) => [row.id, row.isThumbnail]).sort()).toEqual(
+        [
+          [pictureId, false],
+          [editId, true],
+        ].sort(),
+      )
       const objects = await Promise.all(
-        paths.map((path) => getStorage().stat(path)),
+        getStoredImagePaths([originalPath, editPath]).map((path) =>
+          getStorage().stat(path),
+        ),
       )
       expect(objects.every(Boolean)).toBe(true)
-      const bytes = objects.reduce(
-        (sum, object) => sum + (object?.sizeBytes ?? 0),
-        0,
+      const usage = await loadImageStorageUsage()
+      expect(usage.totalBytes).toBe(
+        objects.reduce((sum, object) => sum + (object?.sizeBytes ?? 0), 0),
       )
-      expect(edited.storageBytes).toBe(bytes)
-      expect((await loadImageStorageUsage()).totalBytes).toBe(bytes)
-      expect((await loadImageStorageUsage()).imageCount).toBe(before.imageCount)
-      await expect(
-        replaceWithBeautifiedImage({
-          entityType: 'gear',
-          entityId: gearId,
-          imageId: pictureId,
-          expectedStoragePath: editPath,
-          mimeType: 'image/png',
-          binaryData: input,
-        }),
-      ).rejects.toThrow('already beautified')
+      expect(usage.imageCount).toBe(before.imageCount + 1)
+      await expect(save(pictureId)).rejects.toThrow('already beautified')
+      await expect(save(editId)).rejects.toThrow('already beautified')
     })
   })
-  test('deleting a picture cleans original and edited files', async () => {
+  test('copies do not count toward the per-item picture limit', async () => {
     await scoped(async () => {
-      await deleteEntityImage({
-        data: { entityType: 'gear', entityId: gearId, imageId: pictureId },
-      })
+      const { maxImagesPerItem } = imageStoragePolicy()
+      for (let index = 1; index < maxImagesPerItem; index++)
+        await upload(gearId)
+      await expect(upload(gearId)).rejects.toThrow('at most')
+    })
+  })
+  test('deleting pictures cleans original and edited files', async () => {
+    await scoped(async () => {
+      for (const imageId of [pictureId, editId])
+        await deleteEntityImage({
+          data: { entityType: 'gear', entityId: gearId, imageId },
+        })
       for (const path of getStoredImagePaths([originalPath, editPath]))
         expect(await getStorage().exists(path)).toBe(false)
-      expect((await loadImageStorageUsage()).totalBytes).toBe(0)
     })
   })
 })
@@ -335,7 +326,7 @@ suite('automatic image beautification selection', () => {
         selection(firstImage.id),
         edit,
       )
-      expect(result?.originalStoragePath).toBe(firstImage.storagePath)
+      expect(result?.beautifiedFromImageId).toBe(firstImage.id)
       expect(
         await prepareEntityImageBeautification(selection(secondImage.id), edit),
       ).toBeNull()
@@ -378,9 +369,8 @@ suite('automatic image beautification selection', () => {
         .from(gearImages)
         .where(owned(gearImages, eq(gearImages.id, picture.id)))
       expect(record?.storagePath).toBe(picture.storagePath)
-      expect(record?.originalStoragePath).toBeNull()
       const edited = await prepareEntityImageBeautification(data, edit)
-      expect(edited?.originalStoragePath).toBe(picture.storagePath)
+      expect(edited?.beautifiedFromImageId).toBe(picture.id)
       const paths = getStoredImagePaths([
         picture.storagePath,
         edited?.storagePath ?? '',
@@ -425,13 +415,14 @@ suite('automatic image beautification selection', () => {
         .where(owned(gearImages, eq(gearImages.id, quotaImage.id)))
       const before = await getStorage().listObjects(`gear/${id}`)
       await expect(
-        replaceWithBeautifiedImage({
-          entityType: 'gear',
-          entityId: id,
-          imageId: quotaImage.id,
-          expectedStoragePath: quotaImage.storagePath,
-          binaryData: input,
-          mimeType: 'image/png',
+        saveBeautifiedImage({
+          data: {
+            entityType: 'gear',
+            entityId: id,
+            imageId: quotaImage.id,
+            imageBase64: input.toString('base64'),
+            mimeType: 'image/png',
+          },
         }),
       ).rejects.toThrow('storage allowance')
       expect(await getStorage().listObjects(`gear/${id}`)).toEqual(before)
