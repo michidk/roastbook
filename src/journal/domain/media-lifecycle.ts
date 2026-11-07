@@ -184,20 +184,22 @@ export async function deleteEntityWithMedia(
   }
   const where = owned(table, ...conditions)
   const selected = owned(images, eq(foreignKey, entityId))
-  const selections = [images.storagePath, images.originalStoragePath].flatMap(
+  // One insert per path column: some SQL engines cap a compound SELECT at five terms.
+  const cleanups = [images.storagePath, images.originalStoragePath].map(
     (path) => {
       const base = sql`substr(${path}, 1, length(${path}) - case when ${path} like '%.webp' or ${path} like '%.jpeg' then 5 else 4 end)`
       const condition = sql`${selected} and ${path} is not null`
-      return [
-        sql`select ${images.ownerId}, ${path} from ${images} where ${condition}`,
-        sql`select ${images.ownerId}, ${base} || '.thumb.webp' from ${images} where ${condition}`,
-        sql`select ${images.ownerId}, ${base} || '.small.webp' from ${images} where ${condition}`,
-      ]
+      // Select and enqueue paths inside the write batch, so an upload cannot enter
+      // between the path snapshot and the cascading parent deletion.
+      return {
+        statement: sql`insert into ${mediaCleanupJobs} (owner_id, storage_path)
+    select ${images.ownerId}, ${path} from ${images} where ${condition}
+    union all select ${images.ownerId}, ${base} || '.thumb.webp' from ${images} where ${condition}
+    union all select ${images.ownerId}, ${base} || '.small.webp' from ${images} where ${condition}
+    on conflict(owner_id, storage_path) do nothing`,
+      }
     },
   )
-  const cleanup = sql`insert into ${mediaCleanupJobs} (owner_id, storage_path)
-    ${sql.join(selections, sql` union all `)}
-    on conflict(owner_id, storage_path) do nothing`
   await runJournalMutations([
     {
       statement: db
@@ -209,7 +211,7 @@ export async function deleteEntityWithMedia(
       conflictMessage:
         'This record changed on the server. Reload and try again.',
     },
-    { statement: cleanup },
+    ...cleanups,
     { statement: db.delete(table).where(where).getSQL(), expectedChanges: 1 },
   ])
   await drainMediaCleanupQueue()
