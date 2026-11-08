@@ -178,3 +178,45 @@ describe('AI endpoint policy and transport', () => {
     }
   })
 })
+
+test('image edits use the same pinned transport with multipart input and exact endpoint matching', async () => {
+  const server = Bun.serve({
+    hostname: '127.0.0.1',
+    port: 0,
+    async fetch(request) {
+      const form = await request.formData()
+      expect(new URL(request.url).pathname).toBe('/v1/images/edits')
+      expect(form.get('model')).toBe('gpt-image-1.5')
+      expect(form.get('image')).toBeInstanceOf(File)
+      return Response.json({ data: [{ b64_json: 'fixture' }] })
+    },
+  })
+  const endpoint = `http://does-not-resolve.invalid:${server.port}/v1`
+  const transport = createAiProviderFetch(endpoint, {
+    policy: {
+      deploymentMode: 'self-hosted',
+      privateOrigins: [new URL(endpoint).origin],
+    },
+    resolve: async () => [{ address: '127.0.0.1' }],
+  })
+  try {
+    const body = new FormData()
+    body.set('model', 'gpt-image-1.5')
+    body.set(
+      'image',
+      new File(['picture'], 'picture.webp', { type: 'image/webp' }),
+    )
+    expect(
+      (
+        await (
+          await transport(`${endpoint}/images/edits`, { method: 'POST', body })
+        ).json()
+      ).data,
+    ).toHaveLength(1)
+    await expect(
+      transport(`${endpoint}/images/generations`, { method: 'POST', body }),
+    ).rejects.toThrow('Unexpected')
+  } finally {
+    server.stop(true)
+  }
+})

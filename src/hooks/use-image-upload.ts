@@ -82,6 +82,12 @@ async function prepareImageFiles(
   return prepared
 }
 
+export function moveFirst<T>(items: readonly T[], index: number) {
+  const item = items[index]
+  if (item === undefined) return items
+  return [item, ...items.filter((_, itemIndex) => itemIndex !== index)]
+}
+
 export function validateImageFiles(files: readonly File[]): readonly File[] {
   if (files.length === 0) {
     throw new ImageUploadError('Choose, drop, or paste an image to continue')
@@ -244,6 +250,11 @@ export function useImageUpload({
     })
   }, [])
 
+  /** The first picture becomes the thumbnail when the item has none. */
+  const makePrimary = useCallback((index: number) => {
+    setImages((current) => moveFirst(current, index))
+  }, [])
+
   const clearImages = useCallback(() => {
     setImages((current) => {
       for (const image of current) URL.revokeObjectURL(image.preview)
@@ -272,6 +283,7 @@ export function useImageUpload({
     importFromUrl,
     removeImage,
     removeImages,
+    makePrimary,
     clearImages,
     openFilePicker,
   }

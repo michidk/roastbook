@@ -220,3 +220,70 @@ These variables are read by the Compose files, not by the application.
 
 Chart defaults live in `charts/values.yaml`, validated by
 `charts/values.schema.json`. See `charts/README.md`.
+
+## Picture beautification
+
+The **Beautify image** upload switch is off initially and remembers the last
+choice in the journal database. When enabled, uploads automatically beautify
+only the primary picture. The first picture is primary until a thumbnail is
+explicitly selected. Selecting another thumbnail also applies the remembered
+choice. Each unedited gallery picture has a **Beautify** action for individual
+edits. The switch and actions appear only while the AI provider is connected.
+
+Beautification uses the configured user's endpoint and API key with
+`POST /images/edits`, independently of the selected chat API format. The provider
+must support `gpt-image-1.5` image edits. Each request creates one medium-quality
+1024 × 1024 WebP image with a fixed product-photography prompt. The prompt asks
+the model to preserve packaging and label text, reduce artifacts, even the
+lighting, and replace clutter with a softly blurred warm cafe background.
+AI can still alter details, so compare the result with **View original** in the
+full-size picture viewer.
+
+The uploaded picture remains stored. The edited version becomes the displayed
+picture and supplies its thumbnails, without consuming another gallery slot.
+Both versions and their generated sizes count toward the storage allowance.
+Deleting the picture or its parent deletes both versions. Account exports
+include both versions. A picture can be beautified once; further clicks do not
+create another paid edit. Uploads remain saved if an edit fails. Retry with the
+gallery's **Beautify** action. Beautification requires a connection and is
+unavailable in the static demo. Offline uploads keep their originals; they do
+not trigger a paid edit during sync replay.
+
+### Image-edit costs and PostHog
+
+Each provider request records its model, status, duration and usage in the AI
+request log. Image accounting remains available when prompt/response logging
+is disabled. It contains no picture content, prompt, or API credential.
+
+For the official `https://api.openai.com/v1` endpoint, the pricing snapshot
+`openai-gpt-image-1.5-2026-11-06` uses USD per million tokens:
+
+| Token class | Uncached | Cached |
+| --- | --- | --- |
+| Text input | $5.00 | $1.25 |
+| Image input | $8.00 | $2.00 |
+| Image output | $32.00 | Not applicable |
+
+The source is the [OpenAI model pricing page](https://developers.openai.com/api/docs/models/gpt-image-1.5).
+Costs use actual response usage, subtract cached tokens before pricing uncached
+input, and price image output separately. Missing or inconsistent usage, unknown
+cache modality, and custom-provider pricing produce an unknown cost, never an
+assumed zero. These are versioned list-price calculations, not invoice amounts;
+provider discounts, taxes and future price changes can differ.
+
+Optional server-side PostHog reporting is configured with:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `POSTHOG_PROJECT_KEY` | Unset | Enables image-edit AI analytics events |
+| `POSTHOG_HOST` | `https://eu.i.posthog.com` | HTTPS PostHog ingestion origin |
+
+Events use `$ai_generation` with actual token counts, explicit USD costs when
+known, latency, failure state, pricing version, and the journal owner identifier.
+No image bytes, label content, prompt, email, API key or provider error body goes
+to PostHog. Failed edits with returned usage retain that usage and its cost.
+A PostHog outage does not fail an edit. With no project key, no events are sent.
+Set these variables in the application container environment. Docker Compose
+passes them through. In Helm, set `posthog.existingSecret` to a Secret containing
+the project key under `project-key`, or override
+`posthog.existingSecretProjectKeyKey`. Set `posthog.host` for another region.

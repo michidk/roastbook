@@ -7,13 +7,17 @@ import { getControlDb } from '@/db/connection.server'
 import { type JournalIdentity, withJournal } from '@/db/journal-context.server'
 import { journalInsertValues, owned } from '@/db/journal-scope.server'
 import { authUsers, gear, gearImages } from '@/db/schema'
+import { setEntityImageThumbnail } from '@/journal/domain/entity-image-records'
 import { storeEntityImage } from '@/journal/domain/entity-image-store'
 import {
   imageStoragePolicy,
   loadImageStorageUsage,
 } from '@/journal/domain/image-storage'
 import { deleteEntityWithMedia } from '@/journal/domain/media-lifecycle'
+import { loadAppSettings, updateSettings } from '@/journal/domain/settings'
+import { deleteEntityImage, saveBeautifiedImage } from '@/journal/images'
 import { getStoredImagePaths } from '@/lib/image-path'
+import { prepareEntityImageBeautification } from '@/lib/server/image-beautification.server'
 import { getStorage } from '@/lib/storage'
 
 const suite = process.env.TEST_DATABASE_URL ? describe : describe.skip
@@ -148,6 +152,291 @@ suite('journal image storage', () => {
       expect((await loadImageStorageUsage()).totalBytes).toBe(0)
       await upload(otherItem)
       expect((await loadImageStorageUsage()).imageCount).toBe(1)
+    })
+  })
+})
+
+suite('beautified image storage', () => {
+  let owner: JournalIdentity
+  let stranger: JournalIdentity
+  let pictureId = 0
+  let gearId = 0
+  let originalPath = ''
+  let editPath = ''
+  let editId = 0
+  const scoped = <T>(work: () => Promise<T>) => withJournal(owner, work)
+  beforeAll(async () => {
+    owner = {
+      ...alice,
+      id: randomUUID(),
+      email: `${randomUUID()}@example.test`,
+    }
+    stranger = {
+      ...bob,
+      id: randomUUID(),
+      email: `${randomUUID()}@example.test`,
+    }
+    await getControlDb()
+      .insert(authUsers)
+      .values(
+        [owner, stranger].map((identity) => ({
+          id: identity.id,
+          email: identity.email,
+          emailVerified: true,
+          journalInitializedAt: new Date(),
+        })),
+      )
+    await scoped(async () => {
+      gearId = await item()
+      const picture = await storeEntityImage({
+        entityType: 'gear',
+        entityId: gearId,
+        filename: 'original.png',
+        mimeType: 'image/png',
+        binaryData: input,
+      })
+      pictureId = picture.id
+      originalPath = picture.storagePath
+    })
+  })
+  afterAll(async () => {
+    await scoped(() => deleteEntityWithMedia('gear', gearId))
+    for (const identity of [owner, stranger])
+      await getControlDb()
+        .delete(authUsers)
+        .where(eq(authUsers.id, identity.id))
+  })
+  const save = (imageId: number) =>
+    saveBeautifiedImage({
+      data: {
+        entityType: 'gear',
+        entityId: gearId,
+        imageId,
+        mimeType: 'image/png',
+        imageBase64: input.toString('base64'),
+      },
+    })
+  test('rejects another owner without touching the original', async () => {
+    await expect(withJournal(stranger, () => save(pictureId))).rejects.toThrow(
+      'Image not found',
+    )
+    expect(await getStorage().exists(originalPath)).toBe(true)
+  })
+  test('adds the copy as the thumbnail, keeps the original, and prevents repeated edits', async () => {
+    await scoped(async () => {
+      const before = await loadImageStorageUsage()
+      const edited = await save(pictureId)
+      editPath = edited.storagePath
+      editId = edited.id
+      expect(edited.beautifiedFromImageId).toBe(pictureId)
+      expect(editPath).not.toBe(originalPath)
+      const rows = await db
+        .select()
+        .from(gearImages)
+        .where(owned(gearImages, eq(gearImages.gearId, gearId)))
+      expect(rows.map((row) => [row.id, row.isThumbnail]).sort()).toEqual(
+        [
+          [pictureId, false],
+          [editId, true],
+        ].sort(),
+      )
+      const objects = await Promise.all(
+        getStoredImagePaths([originalPath, editPath]).map((path) =>
+          getStorage().stat(path),
+        ),
+      )
+      expect(objects.every(Boolean)).toBe(true)
+      const usage = await loadImageStorageUsage()
+      expect(usage.totalBytes).toBe(
+        objects.reduce((sum, object) => sum + (object?.sizeBytes ?? 0), 0),
+      )
+      expect(usage.imageCount).toBe(before.imageCount + 1)
+      await expect(save(pictureId)).rejects.toThrow('already beautified')
+      await expect(save(editId)).rejects.toThrow('already beautified')
+    })
+  })
+  test('copies do not count toward the per-item picture limit', async () => {
+    await scoped(async () => {
+      const { maxImagesPerItem } = imageStoragePolicy()
+      for (let index = 1; index < maxImagesPerItem; index++)
+        await upload(gearId)
+      await expect(upload(gearId)).rejects.toThrow('at most')
+    })
+  })
+  test('deleting pictures cleans original and edited files', async () => {
+    await scoped(async () => {
+      for (const imageId of [pictureId, editId])
+        await deleteEntityImage({
+          data: { entityType: 'gear', entityId: gearId, imageId },
+        })
+      for (const path of getStoredImagePaths([originalPath, editPath]))
+        expect(await getStorage().exists(path)).toBe(false)
+    })
+  })
+})
+
+suite('automatic image beautification selection', () => {
+  const identity = {
+    ...alice,
+    id: randomUUID(),
+    email: `${randomUUID()}@example.test`,
+  }
+  let id = 0
+  let firstImage: Awaited<ReturnType<typeof upload>>
+  let secondImage: Awaited<ReturnType<typeof upload>>
+  let edits = 0
+  const edit = async () => {
+    edits++
+    return { binaryData: input, mimeType: 'image/png' as const }
+  }
+  const scope = <T>(work: () => Promise<T>) => withJournal(identity, work)
+  beforeAll(async () => {
+    await getControlDb().insert(authUsers).values({
+      id: identity.id,
+      email: identity.email,
+      emailVerified: true,
+      journalInitializedAt: new Date(),
+    })
+    await scope(async () => {
+      id = await item()
+      firstImage = await upload(id)
+      secondImage = await upload(id)
+    })
+  })
+  afterAll(async () => {
+    await scope(() => deleteEntityWithMedia('gear', id))
+    await getControlDb().delete(authUsers).where(eq(authUsers.id, identity.id))
+  })
+  test('remembers the preference and edits only the designated primary', async () => {
+    const selection = (imageId: number) => ({
+      entityType: 'gear' as const,
+      entityId: id,
+      imageId,
+      automatic: true,
+    })
+    await scope(async () => {
+      expect(
+        await prepareEntityImageBeautification(selection(firstImage.id), edit),
+      ).toBeNull()
+      expect(edits).toBe(0)
+      await updateSettings({ beautifyImages: true }, 'Failed to save')
+    })
+    await scope(async () => {
+      const result = await prepareEntityImageBeautification(
+        selection(firstImage.id),
+        edit,
+      )
+      expect(result?.beautifiedFromImageId).toBe(firstImage.id)
+      expect(
+        await prepareEntityImageBeautification(selection(secondImage.id), edit),
+      ).toBeNull()
+      expect(edits).toBe(1)
+      await setEntityImageThumbnail({
+        entityType: 'gear',
+        entityId: id,
+        imageId: secondImage.id,
+      })
+    })
+    await scope(async () => {
+      expect(
+        await prepareEntityImageBeautification(selection(firstImage.id), edit),
+      ).toBeNull()
+      expect(
+        await prepareEntityImageBeautification(selection(secondImage.id), edit),
+      ).not.toBeNull()
+      expect(edits).toBe(2)
+      expect((await loadAppSettings()).beautifyImages).toBe(true)
+    })
+  })
+  test('manual editing works with automatic beautification off and preserves state on provider failure', async () => {
+    await scope(async () => {
+      await updateSettings({ beautifyImages: false }, 'Failed to save')
+      const manualItem = await item()
+      const picture = await upload(manualItem)
+      const data = {
+        entityType: 'gear' as const,
+        entityId: manualItem,
+        imageId: picture.id,
+        automatic: false,
+      }
+      await expect(
+        prepareEntityImageBeautification(data, async () => {
+          throw new Error('Provider unavailable')
+        }),
+      ).rejects.toThrow('Provider unavailable')
+      const [record] = await db
+        .select()
+        .from(gearImages)
+        .where(owned(gearImages, eq(gearImages.id, picture.id)))
+      expect(record?.storagePath).toBe(picture.storagePath)
+      const edited = await prepareEntityImageBeautification(data, edit)
+      expect(edited?.beautifiedFromImageId).toBe(picture.id)
+      const paths = getStoredImagePaths([
+        picture.storagePath,
+        edited?.storagePath ?? '',
+      ])
+      await deleteEntityWithMedia('gear', manualItem)
+      for (const path of paths)
+        expect(await getStorage().exists(path)).toBe(false)
+    })
+  })
+  test('serializes simultaneous edits so a picture incurs one provider call', async () => {
+    const concurrentItem = await scope(item)
+    const picture = await scope(() => upload(concurrentItem))
+    let calls = 0
+    const data = {
+      entityType: 'gear' as const,
+      entityId: concurrentItem,
+      imageId: picture.id,
+      automatic: false,
+    }
+    const results = await Promise.all(
+      [1, 2].map(() =>
+        scope(() =>
+          prepareEntityImageBeautification(data, async () => {
+            calls++
+            return { binaryData: input, mimeType: 'image/png' }
+          }),
+        ),
+      ),
+    )
+    expect(calls).toBe(1)
+    expect(results.filter(Boolean)).toHaveLength(1)
+    await scope(() => deleteEntityWithMedia('gear', concurrentItem))
+  })
+  test('rejects quota overflow without changing the picture or leaving new objects', async () => {
+    await scope(async () => {
+      const quotaImage = await upload(id)
+      const limit = imageStoragePolicy().limitBytes
+      if (limit === null) throw new Error('Test requires quota')
+      await db
+        .update(gearImages)
+        .set({ storageBytes: limit })
+        .where(owned(gearImages, eq(gearImages.id, quotaImage.id)))
+      const before = await getStorage().listObjects(`gear/${id}`)
+      await expect(
+        saveBeautifiedImage({
+          data: {
+            entityType: 'gear',
+            entityId: id,
+            imageId: quotaImage.id,
+            imageBase64: input.toString('base64'),
+            mimeType: 'image/png',
+          },
+        }),
+      ).rejects.toThrow('storage allowance')
+      expect(await getStorage().listObjects(`gear/${id}`)).toEqual(before)
+      await expect(
+        prepareEntityImageBeautification(
+          {
+            entityType: 'gear',
+            entityId: id,
+            imageId: quotaImage.id,
+            automatic: false,
+          },
+          edit,
+        ),
+      ).rejects.toThrow('storage is full')
     })
   })
 })

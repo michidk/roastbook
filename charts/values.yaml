@@ -189,6 +189,12 @@ openai:
   # Request log: store prompts and responses only for short diagnostics.
   telemetryStorePayloads: false
 
+# Optional server-side image-edit cost analytics. No picture content is sent.
+posthog:
+  existingSecret: ""
+  existingSecretProjectKeyKey: "project-key"
+  host: "https://eu.i.posthog.com"
+
 hodor:
   enabled: true
   existingSecret: ""

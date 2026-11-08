@@ -8,7 +8,7 @@ import {
   mediaCleanupJobs,
   shotImages,
 } from '../src/db/schema'
-import { getThumbnailPath } from '../src/lib/image-path'
+import { getStoredImagePaths, getThumbnailPath } from '../src/lib/image-path'
 import { getStorage } from '../src/lib/storage'
 
 const connectionString = process.env.DATABASE_URL
@@ -39,7 +39,7 @@ try {
     imageSelections.flat().map((image) => image.storagePath),
   )
   const thumbnails = new Set([...originals].map(getThumbnailPath))
-  const referenced = new Set([...originals, ...thumbnails])
+  const referenced = new Set(getStoredImagePaths([...originals]))
   const pendingCleanup = new Set(cleanupJobs.map((job) => job.storagePath))
   const stored = new Set(await getStorage().list())
 

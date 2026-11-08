@@ -50,6 +50,8 @@ const archiveState = () => ({
 
 const imageFile = () => ({
   storagePath: text('storage_path').notNull(),
+  /** Set on an AI-retouched copy; its source stays as a separate picture. */
+  beautifiedFromImageId: integer('beautified_from_image_id'),
   originalFilename: text('original_filename'),
   mimeType: text('mime_type'),
   sizeBytes: integer('size_bytes'),
@@ -70,6 +72,7 @@ export const settings = pgTable(
   {
     ownerId: journalOwner(),
     id: integer('id').notNull().default(1),
+    beautifyImages: boolean('beautify_images').default(false).notNull(),
     defaultCurrency: text('default_currency').default('EUR').notNull(),
     dateFormat: text('date_format').default('day-month-year-slash').notNull(),
     numberFormat: text('number_format').default('decimal-point').notNull(),
@@ -308,6 +311,7 @@ export const aiRequestLogs = pgTable(
     status: text('status').default('in_progress').notNull(),
     requestPayload: jsonb('request_payload').$type<JsonValue>().notNull(),
     responsePayload: jsonb('response_payload').$type<JsonValue>(),
+    imageAccounting: jsonb('image_accounting').$type<JsonValue>(),
     errorMessage: text('error_message'),
     promptTokens: integer('prompt_tokens').default(0).notNull(),
     cachedPromptTokens: integer('cached_prompt_tokens').default(0).notNull(),

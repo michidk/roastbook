@@ -1,3 +1,5 @@
+import { z } from 'zod'
+import { isBeautified } from '@/journal/domain/beautified-image'
 import {
   entityImageSelection,
   setEntityImageThumbnail,
@@ -10,6 +12,7 @@ import {
 } from '@/journal/domain/media-lifecycle'
 import { journalRead, journalWrite } from '@/journal/function'
 import { db, runJournalMutations } from '@/journal/platform/database'
+import { decodeBase64 } from '@/lib/base64'
 import { parseEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
 import {
   entityImageIdSchema,
@@ -67,3 +70,35 @@ export const deleteEntityImage = journalWrite('images/deleteEntityImage')
 export const getImageUploadPolicy = journalRead(
   'images/getImageUploadPolicy',
 ).handler(() => imageStoragePolicy())
+
+export const saveBeautifiedImage = journalWrite('images/saveBeautifiedImage')
+  .validator(
+    entityImageIdSchema.extend({
+      imageBase64: z
+        .string()
+        .min(1)
+        .max(16 * 1024 * 1024),
+      mimeType: z.enum(['image/png', 'image/jpeg', 'image/webp']),
+    }),
+  )
+  .handler(async ({ data: { imageBase64, imageId, ...data } }) => {
+    const { image: source, beautified } = await isBeautified({
+      ...data,
+      imageId,
+    })
+    if (beautified) throw new Error('This picture is already beautified')
+    // The copy becomes the main picture; the source stays as a regular one.
+    const image = await storeEntityImage({
+      ...data,
+      filename: source.originalFilename ?? 'beautified.webp',
+      binaryData: decodeBase64(imageBase64),
+      beautifiedFromImageId: imageId,
+    })
+    if (data.entityType === 'bean-purchases' || data.entityType === 'gear')
+      await setEntityImageThumbnail({
+        entityType: data.entityType,
+        entityId: data.entityId,
+        imageId: image.id,
+      })
+    return image
+  })
