@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { isBeautified } from '@/journal/domain/beautified-image'
 import {
+  ensureEntityImageThumbnail,
   entityImageSelection,
   setEntityImageThumbnail,
 } from '@/journal/domain/entity-image-records'
@@ -62,6 +63,7 @@ export const deleteEntityImage = journalWrite('images/deleteEntityImage')
         expectedChanges: 1,
         conflictMessage: 'Image changed. Reload and try again.',
       },
+      ...ensureEntityImageThumbnail(data.entityType, data.entityId),
       ...queueMediaCleanup([image.storagePath]),
     ])
     await drainMediaCleanupQueue()

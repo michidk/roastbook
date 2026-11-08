@@ -1,4 +1,4 @@
-import { and, count, eq, isNull } from 'drizzle-orm'
+import { and, count, eq, isNull, sql } from 'drizzle-orm'
 import type { z } from 'zod'
 import {
   beanImages,
@@ -133,4 +133,21 @@ export async function setEntityImageThumbnail(
       conflictMessage: 'Image not found',
     },
   ])
+}
+
+/** Keep an explicit choice, or select the oldest remaining picture. */
+export function ensureEntityImageThumbnail(
+  entityType: EntityType,
+  entityId: number,
+) {
+  if (entityType !== 'bean-purchases' && entityType !== 'gear') return []
+  const { table, foreignKey } = entityImageTarget(entityType)
+  return [
+    {
+      statement: sql`update ${table} set is_thumbnail = true
+      where ${owned(table, eq(foreignKey, entityId))}
+        and id = (select id from ${table} where ${owned(table, eq(foreignKey, entityId))} order by created_at, id limit 1)
+        and not exists (select 1 from ${table} where ${owned(table, eq(foreignKey, entityId))} and is_thumbnail = true)`,
+    },
+  ]
 }

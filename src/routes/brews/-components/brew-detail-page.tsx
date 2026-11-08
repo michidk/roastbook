@@ -8,7 +8,6 @@ import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { DeleteConfirmation } from '@/components/delete-confirmation'
-import { EntityImageGallery } from '@/components/entity-image-gallery'
 import { EntityNotFound } from '@/components/entity-not-found'
 import { Page, PageHeader } from '@/components/page-layout'
 import { AiRecommendationDialog } from '@/components/shots/ai-recommendation-dialog'
@@ -261,13 +260,6 @@ export function BrewDetailPage() {
             />
           </>
         }
-      />
-
-      <EntityImageGallery
-        entityType="shots"
-        entityId={shot.id}
-        images={shot.images}
-        editable
       />
 
       {isEditing && editData ? (

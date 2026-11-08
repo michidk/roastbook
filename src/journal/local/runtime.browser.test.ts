@@ -616,3 +616,64 @@ test('a synced journal takes every identifier from its reservation', async () =>
   const roaster = await createRoaster({ data: { name: 'Reserved roaster' } })
   expect(roaster.id).toBe(950)
 })
+
+test('pictures keep a main image through uploads, user selection, and deletion', async () => {
+  const { commitEntityImage } = await import(
+    '@/journal/domain/entity-image-store'
+  )
+  const { deleteEntityImage, setImageAsThumbnail } = await import(
+    '@/journal/images'
+  )
+  const journal = await openJournal(true)
+  await journal.client.query(
+    "insert into roastbook_local.id_pool (table_name, id) values ('beans', 501), ('bean_purchases', 701), ('bean_images', 801), ('bean_images', 802), ('bean_images', 803)",
+  )
+  await createBean({ data: { name: 'Pictures', weight: '250' } })
+  const upload = async (name: string) =>
+    journal.run(
+      {
+        name: 'test/uploadPreparedPicture',
+        kind: 'write',
+        execute: async () =>
+          commitEntityImage({
+            entityType: 'bean-purchases',
+            entityId: 701,
+            filename: name,
+            storagePath: `beans/701/${name}.webp`,
+            prepared: { files: [], sizeBytes: 0, storageBytes: 0 },
+          }),
+      },
+      undefined,
+    )
+  const main = async () =>
+    (
+      await journal.client.query<{ id: number }>(
+        'select id from bean_images where bean_purchase_id = 701 and is_thumbnail = true',
+      )
+    ).rows.map((row) => row.id)
+  await upload('first')
+  expect(await main()).toEqual([801])
+  // Older uploads may have no persisted choice yet.
+  await journal.client.query(
+    'update bean_images set is_thumbnail = false where id = 801',
+  )
+  await upload('second')
+  expect(await main()).toEqual([801])
+  await setImageAsThumbnail({
+    data: { entityType: 'bean-purchases', entityId: 701, imageId: 802 },
+  })
+  await upload('third')
+  expect(await main()).toEqual([802])
+  await deleteEntityImage({
+    data: { entityType: 'bean-purchases', entityId: 701, imageId: 802 },
+  })
+  expect(await main()).toEqual([801])
+  await deleteEntityImage({
+    data: { entityType: 'bean-purchases', entityId: 701, imageId: 801 },
+  })
+  expect(await main()).toEqual([803])
+  await deleteEntityImage({
+    data: { entityType: 'bean-purchases', entityId: 701, imageId: 803 },
+  })
+  expect(await main()).toEqual([])
+})

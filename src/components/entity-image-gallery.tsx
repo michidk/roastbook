@@ -67,7 +67,7 @@ interface EntityImageAction {
 }
 
 interface EntityImageGalleryProps {
-  readonly entityType: 'bean-purchases' | 'gear' | 'shots'
+  readonly entityType: 'bean-purchases' | 'gear'
   readonly entityId: number
   readonly images: readonly EntityImage[]
   readonly imageAction?: EntityImageAction
@@ -167,7 +167,6 @@ export function EntityImageGallery({
       : entityId
 
   const handleSetThumbnail = async (image: EntityImage) => {
-    if (entityType === 'shots') return
     setGalleryError(null)
     setIsSettingThumbnail(image.id)
     try {
@@ -234,12 +233,13 @@ export function EntityImageGallery({
     }
   }
 
-  const entityLabel =
-    entityType === 'bean-purchases'
-      ? 'Coffee'
-      : entityType === 'gear'
-        ? 'Gear'
-        : 'Brew'
+  const entityLabel = entityType === 'bean-purchases' ? 'Coffee' : 'Gear'
+  const mainImage = images.find((image) => image.isThumbnail) ?? images[0]
+  const isMainImage = (image: EntityImage) => image.id === mainImage?.id
+  const canBeautifyImage = (image: EntityImage) =>
+    canBeautify &&
+    image.beautifiedFromImageId == null &&
+    !images.some((copy) => copy.beautifiedFromImageId === image.id)
   const lightboxImage =
     lightboxIndex === null ? undefined : images[lightboxIndex]
 
@@ -304,39 +304,34 @@ export function EntityImageGallery({
                   </button>
                   {editable && (
                     <div className="pointer-events-none absolute inset-0 rounded-lg opacity-100 transition-colors [@media(hover:hover)]:group-hover:bg-foreground/55">
-                      {entityType !== 'shots' ? (
-                        <Button
-                          size="icon"
-                          variant={image.isThumbnail ? 'default' : 'secondary'}
-                          className="pointer-events-auto absolute left-1 top-1 size-7 after:absolute after:-inset-2 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary"
-                          onClick={() => handleSetThumbnail(image)}
-                          disabled={
-                            isSettingThumbnail === image.id || image.isThumbnail
-                          }
-                          aria-label={
-                            image.isThumbnail
-                              ? 'Current thumbnail'
-                              : `Set picture ${index + 1} as thumbnail`
-                          }
-                          title={
-                            image.isThumbnail
-                              ? 'Current thumbnail'
-                              : 'Set as thumbnail'
-                          }
-                        >
-                          <Star
-                            className={cn(
-                              'size-3.5',
-                              image.isThumbnail && 'fill-current',
-                            )}
-                          />
-                        </Button>
-                      ) : null}
-                      {canBeautify &&
-                      image.beautifiedFromImageId == null &&
-                      !images.some(
-                        (copy) => copy.beautifiedFromImageId === image.id,
-                      ) ? (
+                      <Button
+                        size="icon"
+                        variant={isMainImage(image) ? 'default' : 'secondary'}
+                        className="pointer-events-auto absolute left-1 top-1 size-7 after:absolute after:-inset-2 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary"
+                        onClick={() => handleSetThumbnail(image)}
+                        disabled={
+                          isSettingThumbnail === image.id || isMainImage(image)
+                        }
+                        aria-pressed={isMainImage(image)}
+                        aria-label={
+                          isMainImage(image)
+                            ? 'Main image'
+                            : `Use picture ${index + 1} as main image`
+                        }
+                        title={
+                          isMainImage(image)
+                            ? 'Main image'
+                            : 'Use as main image'
+                        }
+                      >
+                        <Star
+                          className={cn(
+                            'size-3.5',
+                            isMainImage(image) && 'fill-current',
+                          )}
+                        />
+                      </Button>
+                      {canBeautifyImage(image) ? (
                         <Button
                           size="icon"
                           variant="secondary"
@@ -433,16 +428,10 @@ export function EntityImageGallery({
             prompt={
               entityType === 'bean-purchases'
                 ? 'Add pictures of this coffee'
-                : entityType === 'gear'
-                  ? 'Add equipment pictures'
-                  : 'Add pictures of this brew'
+                : 'Add equipment pictures'
             }
             previewAltPrefix={
-              entityType === 'bean-purchases'
-                ? 'Coffee'
-                : entityType === 'gear'
-                  ? 'Gear'
-                  : 'Brew'
+              entityType === 'bean-purchases' ? 'Coffee' : 'Gear'
             }
             isBusy={isUploading || beautifyingImage !== null}
             statusText={isUploading ? 'Saving pictures…' : undefined}
@@ -525,8 +514,59 @@ export function EntityImageGallery({
                 key={lightboxImage.id}
                 src={imageUrl(lightboxImage.storagePath)}
                 alt={`${entityLabel} picture ${lightboxIndex + 1}`}
-                className="max-h-[80dvh] w-auto max-w-full rounded-xl object-contain"
+                className="max-h-[65dvh] w-auto max-w-full rounded-xl object-contain"
               />
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                <Button
+                  variant={isMainImage(lightboxImage) ? 'default' : 'secondary'}
+                  disabled={
+                    isMainImage(lightboxImage) || isSettingThumbnail !== null
+                  }
+                  aria-pressed={isMainImage(lightboxImage)}
+                  onClick={() => void handleSetThumbnail(lightboxImage)}
+                >
+                  <Star
+                    className={cn(isMainImage(lightboxImage) && 'fill-current')}
+                  />
+                  {isMainImage(lightboxImage)
+                    ? 'Main image'
+                    : 'Use as main image'}
+                </Button>
+                {canBeautifyImage(lightboxImage) && (
+                  <Button
+                    variant="secondary"
+                    disabled={
+                      beautifying.has(
+                        beautifyKey(entityType, lightboxImage.id),
+                      ) ||
+                      beautifyingImage !== null ||
+                      isUploading ||
+                      isDeletingImage !== null
+                    }
+                    aria-busy={beautifying.has(
+                      beautifyKey(entityType, lightboxImage.id),
+                    )}
+                    onClick={() => void handleBeautify(lightboxImage)}
+                  >
+                    {beautifying.has(
+                      beautifyKey(entityType, lightboxImage.id),
+                    ) ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <WandSparkles />
+                    )}
+                    Beautify with AI
+                  </Button>
+                )}
+                {galleryError && (
+                  <p
+                    role="alert"
+                    className="w-full text-center text-sm text-destructive-text"
+                  >
+                    {galleryError}
+                  </p>
+                )}
+              </div>
               {images.length > 1 && (
                 <div className="flex items-center justify-center gap-3 pt-2">
                   <Button

@@ -226,9 +226,12 @@ Chart defaults live in `charts/values.yaml`, validated by
 The **Beautify image** upload switch is off initially and remembers the last
 choice in the journal database. When enabled, uploads automatically beautify
 only the primary picture. The first picture is primary until a thumbnail is
-explicitly selected. Selecting another thumbnail also applies the remembered
-choice. Each unedited gallery picture has a **Beautify** action for individual
-edits. The switch and actions appear only while the AI provider is connected.
+explicitly selected. Deleting the main image selects the oldest remaining
+picture. The gallery and full-size viewer both show the main image with a
+filled star and let you choose another. Selecting another thumbnail also
+applies the remembered choice. Each unedited gallery picture has a **Beautify**
+action for individual edits, including in the full-size viewer. The switch and
+beautify actions appear only while the AI provider is connected.
 
 Beautification uses the configured user's endpoint and API key with
 `POST /images/edits`, independently of the selected chat API format. The provider

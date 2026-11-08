@@ -97,7 +97,9 @@ own OpenAI-compatible endpoint in **Settings → AI**. See
 [AI configuration](docs/configuration.md).
 
 - **Picture beautification** — remember an upload toggle to retouch the primary
-  picture, or beautify individual pictures. Originals remain available, and
+  picture, or beautify individual pictures in the gallery or full-size viewer.
+  The first upload is the main image until you choose another with the star.
+  Originals remain available, and
   the request log shows image-edit usage and cost when pricing is known.
 - **Label scanning** — extract bean details from up to six pictures of a bag.
 - **Bean, roaster, and machine research** — fill in origin, process, tasting

@@ -1,6 +1,7 @@
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import { beanPurchases } from '@/db/schema'
 import {
+  ensureEntityImageThumbnail,
   entityImageTarget,
   requireEntityImageCapacity,
 } from '@/journal/domain/entity-image-records'
@@ -130,6 +131,7 @@ export async function commitEntityImage(
         conflictMessage:
           'This item changed or its picture or storage limit was reached. Reload and try again.',
       },
+      ...ensureEntityImageThumbnail(data.entityType, data.entityId),
     ])
   } catch (error) {
     await cleanupUncommittedUpload(storagePath)
