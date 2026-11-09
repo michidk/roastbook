@@ -1,5 +1,5 @@
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { and, eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
@@ -18,6 +18,11 @@ import {
 
 const STORAGE_BASE = process.env.STORAGE_PATH || './uploads'
 
+const isPathInside = (baseDir: string, targetPath: string) => {
+  const rel = relative(resolve(baseDir), resolve(targetPath))
+  return !(rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel))
+}
+
 async function exists(path: string) {
   try {
     await stat(path)
@@ -31,6 +36,11 @@ async function processOne(storagePath: string) {
   const fullOriginal = join(STORAGE_BASE, storagePath)
   const fullThumb = join(STORAGE_BASE, getThumbnailPath(storagePath))
   const fullSmallThumb = join(STORAGE_BASE, getSmallThumbnailPath(storagePath))
+  for (const candidate of [fullOriginal, fullThumb, fullSmallThumb]) {
+    if (!isPathInside(STORAGE_BASE, candidate)) {
+      throw new Error('Invalid file path')
+    }
+  }
 
   const [hasThumb, hasSmallThumb] = await Promise.all([
     exists(fullThumb),
