@@ -51,11 +51,16 @@ import {
 } from '@/lib/theme'
 import { cn } from '@/lib/utils'
 
+const isAccountlessPath = (pathname: string) =>
+  pathname === '/login' ||
+  pathname === '/offline-shell' ||
+  pathname === '/oauth/consent'
+
 export const Route = createRootRoute({
   ssr: ({ location }) =>
     !DEMO_MODE &&
     (location.pathname === '/login' || location.pathname === '/oauth/consent'),
-  beforeLoad: ({ location }) => {
+  beforeLoad: async ({ location, preload }) => {
     if (
       DEMO_MODE &&
       (location.pathname === '/login' ||
@@ -64,22 +69,18 @@ export const Route = createRootRoute({
         location.pathname === '/settings/account')
     )
       throw redirect({ to: '/settings' })
+    if (DEMO_MODE || preload || isAccountlessPath(location.pathname)) return
+    // Switch the local journal to the signed-in account before any page loader
+    // opens it; loaders run in parallel, so doing this in the loader raced them.
+    try {
+      const state = await getCurrentAccount()
+      await selectOfflineOwner(state.ownerId)
+    } catch (error) {
+      if (!(error instanceof TypeError)) throw error
+    }
   },
   loader: async ({ location }) => {
-    if (
-      location.pathname === '/login' ||
-      location.pathname === '/offline-shell' ||
-      location.pathname === '/oauth/consent'
-    )
-      return DEFAULT_APP_SETTINGS
-    if (!DEMO_MODE) {
-      try {
-        const state = await getCurrentAccount()
-        await selectOfflineOwner(state.ownerId)
-      } catch (error) {
-        if (!(error instanceof TypeError)) throw error
-      }
-    }
+    if (isAccountlessPath(location.pathname)) return DEFAULT_APP_SETTINGS
     try {
       // The journal runtime loads in its own chunk.
       const { getAppSettings } = await import('@/journal/app-settings')
