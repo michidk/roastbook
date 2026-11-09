@@ -150,6 +150,25 @@ async function snapshotView(
   })
 }
 
+function buildValidatedUrl(baseUrl: string): string {
+  try {
+    if (baseUrl.includes('/../') || /\/%2e%2e\//i.test(baseUrl)) {
+      throw new Error('Invalid path')
+    }
+    const url = new URL(baseUrl)
+    const allowedDomains = ['localhost']
+    if (!allowedDomains.includes(url.hostname)) {
+      throw new Error('Invalid host')
+    }
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      throw new Error('Invalid protocol')
+    }
+    return url.href
+  } catch {
+    throw new Error('Invalid URL')
+  }
+}
+
 const imageCache = new Map<string, Promise<Uint8Array | null>>()
 function loadImage(url: string) {
   let cached = imageCache.get(url)
@@ -160,7 +179,8 @@ function loadImage(url: string) {
             Buffer.from(url.slice(url.indexOf(',') + 1), 'base64'),
           ),
         )
-      : fetch(url)
+      : Promise.resolve()
+          .then(() => fetch(buildValidatedUrl(url)))
           .then(async (response) =>
             response.ok ? new Uint8Array(await response.arrayBuffer()) : null,
           )
