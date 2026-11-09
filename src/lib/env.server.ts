@@ -70,21 +70,7 @@ const serverSchema = {
     )
     .optional(),
   POSTHOG_PROJECT_KEY: optionalString,
-  POSTHOG_HOST: z
-    .url()
-    .default('https://eu.i.posthog.com')
-    .refine((value) => {
-      const url = new URL(value)
-      return (
-        url.protocol === 'https:' &&
-        !url.username &&
-        !url.password &&
-        !url.search &&
-        !url.hash &&
-        url.pathname === '/'
-      )
-    }, 'Use an HTTPS PostHog origin')
-    .transform((value) => value.replace(/\/$/, '')),
+  POSTHOG_HOST: optionalString,
   AI_ALLOWED_PRIVATE_ORIGINS: optionalString,
   AI_TELEMETRY_STORE_PAYLOADS: booleanString,
   MCP_ALLOWED_HOSTS: optionalString,

@@ -83,7 +83,9 @@
     "zod": "^4.4.3",
     "zustand": "^5.0.14",
     "@roastbook/ui": "github:roastbook/ui#c8436c26408f6fe9ae497a44d7ec98a1f76106cb",
-    "@base-ui/react": "^1.5.0"
+    "@base-ui/react": "^1.5.0",
+    "posthog-js": "^1.407.2",
+    "posthog-node": "^5.46.1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.5",

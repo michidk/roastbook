@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from '@roastbook/ui/dialog'
 import { StarRating } from '@roastbook/ui/star-rating'
+import { usePostHog } from 'posthog-js/react'
 import { History } from 'lucide-react'
 import {
   type ReactElement,
@@ -196,6 +197,7 @@ export function NewShotForm({ data, initialBean, onSaved }: NewShotFormProps) {
     defaultBrewedAt,
   } = data
   const tasteProfile = useTasteProfile()
+  const posthog = usePostHog()
   const isOnline = useOnlineStatus()
   const [values, setValues] = useState<ShotFormValues>(() => {
     const brewingMethodId = brewingMethodSuggestions[0]
@@ -420,6 +422,12 @@ export function NewShotForm({ data, initialBean, onSaved }: NewShotFormProps) {
             })
           ).shot
         : await createShot({ data: baseData })
+      posthog.capture('brew_created', {
+        saved_with_recipe: targetRecipe !== null,
+        has_bean: Boolean(submittedValues.beanId),
+        has_timer: hasShotTimer,
+        taste_tag_count: selectedTags.length,
+      })
       setIsDirty(false)
       if (shouldTaste) setTasting({ id: shot.id, values: submittedValues })
       else await onSaved()
@@ -446,6 +454,11 @@ export function NewShotForm({ data, initialBean, onSaved }: NewShotFormProps) {
       )
 
       await updateShot({ data: { id: tasting.id, ...data } })
+      posthog.capture('brew_tasting_saved', {
+        has_rating: values.rating > 0,
+        has_notes: Boolean(values.notes.trim()),
+        taste_tag_count: selectedTags.length,
+      })
       await onSaved()
     } catch (error) {
       toast.error(

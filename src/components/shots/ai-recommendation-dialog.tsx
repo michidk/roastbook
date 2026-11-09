@@ -27,6 +27,7 @@ import {
   RefreshCw,
   Sparkles,
 } from 'lucide-react'
+import { usePostHog } from 'posthog-js/react'
 import { useState } from 'react'
 import { AiThinking } from '@/components/ai-thinking'
 import {
@@ -78,6 +79,7 @@ export function AiRecommendationDialog({
    */
   readonly showDisabledReason?: boolean
 }) {
+  const posthog = usePostHog()
   const availability = useFeatureAvailability('ai', enabled)
   const [options, setOptions] = useState<
     Awaited<ReturnType<typeof getShotRecommendationOptions>>
@@ -119,7 +121,17 @@ export function AiRecommendationDialog({
     setResult(null)
     setMobilePane('recommendation')
     try {
-      setResult(await getShotRecommendation({ data }))
+      const recommendationResult = await getShotRecommendation({ data })
+      setResult(recommendationResult)
+      posthog.capture('ai_recommendation_generated', {
+        recommendation_mode: isFocusedShotRecommendationRequest(data)
+          ? 'focused_brew'
+          : 'next_brew',
+        diagnosis: recommendationResult.recommendation.diagnosis,
+        change_count: recommendationResult.recommendation.changes.length,
+        history_included: recommendationResult.basis.historyIncluded,
+        history_truncated: recommendationResult.basis.historyTruncated,
+      })
     } catch (caught) {
       setError(getErrorMessage(caught, 'Could not generate a recommendation'))
     } finally {

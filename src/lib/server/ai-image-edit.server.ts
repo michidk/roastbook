@@ -111,11 +111,13 @@ export async function beautifyImageBytes(bytes: Uint8Array, mimeType: string) {
       durationMs: Date.now() - startedAt,
     })
     await persistAccounting(logId, accounting)
-    await reportImageEdit({
+    reportImageEdit({
       logId,
       accounting,
       durationMs: Date.now() - startedAt,
       failed: false,
+      prompt: BEAUTIFY_IMAGE_PROMPT,
+      baseURL: config.baseURL,
     })
     return { binaryData: new Uint8Array(image.bytes), mimeType: image.mimeType }
   } catch (cause) {
@@ -134,11 +136,13 @@ export async function beautifyImageBytes(bytes: Uint8Array, mimeType: string) {
       durationMs: Date.now() - startedAt,
     })
     await persistAccounting(logId, accounting)
-    await reportImageEdit({
+    reportImageEdit({
       logId,
       accounting,
       durationMs: Date.now() - startedAt,
       failed: true,
+      prompt: BEAUTIFY_IMAGE_PROMPT,
+      baseURL: config.baseURL,
     })
     throw error
   }

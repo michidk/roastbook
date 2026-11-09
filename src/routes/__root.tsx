@@ -10,7 +10,12 @@ import {
   useRouterState,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { useEffect } from 'react'
+import {
+  PostHogErrorBoundary,
+  PostHogProvider,
+  usePostHog,
+} from 'posthog-js/react'
+import { useEffect, useRef } from 'react'
 import { JournalSyncStatus } from '@/components/journal-sync-status'
 import { AppExtensions } from '@/extension-points/app-extensions'
 
@@ -194,27 +199,98 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           settings?.backgroundTextureEnabled === false && 'texture-disabled',
         )}
       >
-        <SettingsHydrator />
-        <PwaManager />
-        {children}
-        {import.meta.env.DEV ? (
-          <TanStackDevtools
-            config={{
-              hideUntilHover: true,
-              position: 'middle-right',
-            }}
-            plugins={[
-              {
-                name: 'Tanstack Router',
-                render: <TanStackRouterDevtoolsPanel />,
-              },
-            ]}
-          />
-        ) : null}
+        <PostHogRoot>
+          <PostHogIdentity />
+          <PostHogErrorBoundary
+            fallback={
+              <RootErrorComponent
+                error={new Error('Unexpected application error')}
+              />
+            }
+          >
+            <SettingsHydrator />
+            <PwaManager />
+            {children}
+            {import.meta.env.DEV ? (
+              <TanStackDevtools
+                config={{
+                  hideUntilHover: true,
+                  position: 'middle-right',
+                }}
+                plugins={[
+                  {
+                    name: 'Tanstack Router',
+                    render: <TanStackRouterDevtoolsPanel />,
+                  },
+                ]}
+              />
+            ) : null}
+          </PostHogErrorBoundary>
+        </PostHogRoot>
         <Scripts />
       </body>
     </html>
   )
+}
+
+function PostHogRoot({ children }: { children: React.ReactNode }) {
+  const apiKey = import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN
+  const apiHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST
+
+  if (!apiKey || !apiHost) {
+    if (import.meta.env.DEV && typeof window !== 'undefined') {
+      const variable = apiKey
+        ? 'VITE_PUBLIC_POSTHOG_HOST'
+        : 'VITE_PUBLIC_POSTHOG_PROJECT_TOKEN'
+      throw new Error(
+        `${variable} variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once ${variable} is configured`,
+      )
+    }
+    return children
+  }
+
+  return (
+    <PostHogProvider
+      apiKey={apiKey}
+      options={{
+        api_host: apiHost,
+        capture_exceptions: true,
+        defaults: '2025-05-24',
+        debug: import.meta.env.DEV,
+        tracing_headers:
+          typeof window !== 'undefined' ? [window.location.hostname] : [],
+      }}
+    >
+      {children}
+    </PostHogProvider>
+  )
+}
+
+function PostHogIdentity() {
+  const posthog = usePostHog()
+  const account = Route.useLoaderData()?.account
+  const identifiedAccountId = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!account) {
+      if (identifiedAccountId.current) {
+        posthog.reset()
+        identifiedAccountId.current = null
+      }
+      return
+    }
+
+    if (identifiedAccountId.current === account.id) return
+    if (identifiedAccountId.current) posthog.reset()
+
+    posthog.identify(account.id, {
+      email: account.email,
+      role: account.role,
+    })
+    identifiedAccountId.current = account.id
+  }, [account, posthog])
+
+  return null
 }
 
 function SettingsHydrator() {

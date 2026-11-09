@@ -1,3 +1,4 @@
+import { usePostHog } from 'posthog-js/react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { EntityForm } from '@/components/form/form-shell'
@@ -44,6 +45,7 @@ export function RecipeForm({
   onCreated,
   onCancel,
 }: RecipeFormProps) {
+  const posthog = usePostHog()
   const [name, setName] = useState('')
   const [values, setValues] = useState<ShotFormValues>(EMPTY_SHOT_FORM_VALUES)
   const [fieldErrors, setFieldErrors] = useState<
@@ -77,6 +79,16 @@ export function RecipeForm({
     submit: async () => {
       const recipe = await createRecipe({
         data: { name, ...recipePayload(values) },
+      })
+      posthog.capture('recipe_created', {
+        has_bean: Boolean(values.beanId),
+        has_gear_setup: Boolean(
+          values.machineId ||
+            values.grinderId ||
+            values.basketId ||
+            values.accessoryGearIds.length,
+        ),
+        has_drink_type: Boolean(values.drinkTypeId),
       })
       toast.success('Recipe created')
       await onCreated(recipe)

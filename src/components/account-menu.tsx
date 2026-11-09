@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@roastbook/ui/dropdown-menu'
 import { Link } from '@tanstack/react-router'
+import { usePostHog } from 'posthog-js/react'
 import {
   LoaderCircle,
   LogOut,
@@ -34,6 +35,7 @@ export function AccountMenu({
     null,
   )
   const [busy, setBusy] = useState(false)
+  const posthog = usePostHog()
   const currentAccount = demoMode ? null : account
   const email = currentAccount?.email
   const name = email ?? (demoMode ? 'demo user' : 'default user')
@@ -66,6 +68,7 @@ export function AccountMenu({
     setBusy(true)
     try {
       await signOutOfAccount()
+      posthog.reset()
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Could not sign out.',

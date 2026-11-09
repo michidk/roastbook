@@ -1,4 +1,5 @@
 import { Button } from '@roastbook/ui/button'
+import { usePostHog } from 'posthog-js/react'
 import { Loader2, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
@@ -60,6 +61,7 @@ export function BeanForm({
   isArchived = false,
 }: BeanFormProps) {
   const { defaultCurrency } = useAppSettings()
+  const posthog = usePostHog()
   const isOnline = useOnlineStatus()
   const [isExtracting, setIsExtracting] = useState(false)
   const [visionEnabled, setVisionEnabled] = useState(false)
@@ -166,6 +168,11 @@ export function BeanForm({
     submit: async () => {
       const bean = await createBean({
         data: beanCreatePayload(form.values, { isArchived }),
+      })
+      posthog.capture('bean_created', {
+        has_roaster: Boolean(form.values.roasterId),
+        image_count: images.length,
+        is_archived: isArchived,
       })
 
       const uploadResult = await uploadEntityImages(

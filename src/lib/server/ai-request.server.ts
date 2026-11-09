@@ -8,7 +8,9 @@ import type { webSearchTool } from '@tanstack/ai-openai/tools'
 import type { z } from 'zod'
 import * as defaultRecorder from '@/extension-points/ai-request-recorder.server'
 import { addAiTokenUsage, EMPTY_AI_TOKEN_TOTALS } from '@/lib/ai-token-usage'
+import { captureAiGeneration } from './ai-observability.server'
 import { AiProviderRequestError } from './ai-provider-fetch.server'
+import { logAiRequestOutcome } from './posthog-logs.server'
 import { type AiProviderConfig, createAiAdapter } from './ai-runtime.server'
 
 export type AiRequestRecorder = Pick<
@@ -53,6 +55,7 @@ export async function runAiRequest<T>(
   const abortController = new AbortController()
   const timeout = setTimeout(() => abortController.abort(), options.timeoutMs)
   let usage = EMPTY_AI_TOKEN_TOTALS
+  let generationInput: (AiInput & { tools?: unknown }) | undefined
   let terminalError: Error | undefined
   let transportError: AiProviderRequestError | undefined
   const middleware: ChatMiddleware = {
@@ -133,6 +136,7 @@ export async function runAiRequest<T>(
     }
     const result = await options.execute({
       async generateText(input) {
+        generationInput = input
         const modelOptions =
           input.format === 'json-object'
             ? config.api === 'responses'
@@ -154,6 +158,7 @@ export async function runAiRequest<T>(
         return text
       },
       async generateObject(input) {
+        generationInput = input
         const value = await chat({
           ...input,
           ...common,
@@ -164,13 +169,24 @@ export async function runAiRequest<T>(
       },
     })
     assertComplete()
+    const durationMs = Date.now() - startedAt
     await recorder.completeAiRequestLog({
       logId,
       model,
       usage,
       responsePayload: options.recordContent ? result : { completed: true },
-      durationMs: Date.now() - startedAt,
+      durationMs,
     })
+    captureAiGeneration({
+      model,
+      requestType: options.requestType,
+      baseURL: config.baseURL,
+      durationMs,
+      usage,
+      input: generationInput,
+      output: result,
+    })
+    logAiRequestOutcome('completed', options.requestType, durationMs)
     console.info('[AI request] completed', {
       requestLogId: logId,
       requestType: options.requestType,
@@ -187,14 +203,25 @@ export async function runAiRequest<T>(
             new AiOutputError(
               'AI request failed or returned invalid output. Check the provider, API format, and model capabilities in Settings > AI.',
             ))
+    const durationMs = Date.now() - startedAt
     await recorder.failAiRequestLog({
       logId,
       model,
       error: safeError,
       usage,
       aborted: abortController.signal.aborted,
-      durationMs: Date.now() - startedAt,
+      durationMs,
     })
+    captureAiGeneration({
+      model,
+      requestType: options.requestType,
+      baseURL: config.baseURL,
+      durationMs,
+      usage,
+      input: generationInput,
+      error: safeError,
+    })
+    logAiRequestOutcome('failed', options.requestType, durationMs)
     console.error('[AI request] failed', {
       requestLogId: logId,
       requestType: options.requestType,
