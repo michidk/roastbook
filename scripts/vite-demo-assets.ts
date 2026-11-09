@@ -7,11 +7,7 @@ import { pictureSizes } from '../src/lib/picture-sizes'
 async function loadDemoAssets() {
   const assets = new Map<string, Uint8Array>()
   for (const filename of [
-    'kraft-orange.webp',
-    'forest-botanical.webp',
-    'cobalt-sunburst.webp',
-    'plum-orbit.webp',
-    'teal-contours.webp',
+    ...(await readdir(resolve('scripts/seed-assets/bean-packaging'))),
     ...(await readdir(resolve('scripts/seed-assets/gear'))).map(
       (name) => `gear/${name}`,
     ),

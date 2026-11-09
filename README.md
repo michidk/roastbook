@@ -101,6 +101,16 @@ own OpenAI-compatible endpoint in **Settings → AI**. See
   The first upload is the main image until you choose another with the star.
   Originals remain available, and
   the request log shows image-edit usage and cost when pricing is known.
+
+  <p align="center">
+    <img src="scripts/seed-assets/bean-packaging/hilltop-guji-photo.webp"
+      alt="Phone photo of a crumpled coffee bag held over a cluttered kitchen counter"
+      width="300">
+    <img src="scripts/seed-assets/bean-packaging/hilltop-guji-beautified.webp"
+      alt="The same bag beautified: smooth, upright, on a soft green studio backdrop"
+      width="300">
+  </p>
+
 - **Label scanning** — extract bean details from up to six pictures of a bag.
 - **Bean, roaster, and machine research** — fill in origin, process, tasting
   notes, a roaster's website and location, or a machine's sourced capabilities

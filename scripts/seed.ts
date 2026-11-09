@@ -6,20 +6,15 @@ import { generateAndUploadThumbnail } from '../src/lib/server/thumbnails.server'
 import { getStorage } from '../src/lib/storage'
 import { client, db } from './database'
 
-const DEMO_BEAN_PACKAGE_IMAGES = [
-  'kraft-orange.webp',
-  'forest-botanical.webp',
-  'cobalt-sunburst.webp',
-  'plum-orbit.webp',
-  'teal-contours.webp',
-] as const
-
 async function installDemoImages(): Promise<void> {
   const storage = getStorage()
   const gearImages = await readdir(new URL('seed-assets/gear', import.meta.url))
+  const beanImages = await readdir(
+    new URL('seed-assets/bean-packaging', import.meta.url),
+  )
 
   for (const [source, storagePath] of [
-    ...DEMO_BEAN_PACKAGE_IMAGES.map((filename): [string, string] => [
+    ...beanImages.map((filename): [string, string] => [
       `seed-assets/bean-packaging/${filename}`,
       `demo/${filename}`,
     ]),

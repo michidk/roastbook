@@ -74,6 +74,7 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
         ['Juniper & Coil', 'Northmere', 'Demo Republic'],
         ['Northstar Roastworks', 'Bellweather', 'Sample Isles'],
         ['Paper Crane Coffee', 'Alderwick', 'Demo Republic'],
+        ['Hilltop Roasters', 'Lumen Bay', 'Sample Isles'],
       ].map(([name, location, country]) => ({
         name: required(name, 'Roaster name missing'),
         location,
@@ -126,6 +127,14 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
       'Pulped Natural',
       'medium_dark',
     ],
+    [
+      'Ethiopia Guji',
+      'Hilltop Roasters',
+      'Ethiopia',
+      'Guji',
+      'Washed',
+      'light',
+    ],
   ] as const
   const beans = await database
     .insert(schema.beans)
@@ -169,13 +178,12 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
     'plum-orbit.webp',
     'teal-contours.webp',
   ]
+  const purchaseId = (beanId: number) =>
+    required(purchaseIdByBeanId.get(beanId), 'Bean purchase missing')
   await database.insert(schema.beanImages).values(
-    beans.map((bean, index) => ({
+    beans.slice(0, packageNames.length).map((bean, index) => ({
       beanId: bean.id,
-      beanPurchaseId: required(
-        purchaseIdByBeanId.get(bean.id),
-        'Bean purchase missing',
-      ),
+      beanPurchaseId: purchaseId(bean.id),
       storagePath: `demo/${packageNames[index % packageNames.length]}`,
       originalFilename: required(
         packageNames[index % packageNames.length],
@@ -186,6 +194,25 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
       isThumbnail: true,
     })),
   )
+  // The last bean shows picture beautification: a phone photo and its edit.
+  const beautifiedBean = required(beans.at(-1), 'Beautified bean missing')
+  const pictureOf = (filename: string) => ({
+    beanId: beautifiedBean.id,
+    beanPurchaseId: purchaseId(beautifiedBean.id),
+    storagePath: `demo/${filename}`,
+    originalFilename: filename,
+    mimeType: 'image/webp',
+    sizeBytes: 1,
+  })
+  const [photo] = await database
+    .insert(schema.beanImages)
+    .values(pictureOf('hilltop-guji-photo.webp'))
+    .returning()
+  await database.insert(schema.beanImages).values({
+    ...pictureOf('hilltop-guji-beautified.webp'),
+    isThumbnail: true,
+    beautifiedFromImageId: required(photo, 'Demo photo missing').id,
+  })
 
   const gearSeeds = [
     {

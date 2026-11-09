@@ -237,8 +237,9 @@ Beautification uses the configured user's endpoint and API key with
 `POST /images/edits`, independently of the selected chat API format. The provider
 must support `gpt-image-1.5` image edits. Each request creates one medium-quality
 1024 × 1024 WebP image with a fixed product-photography prompt. The prompt asks
-the model to preserve packaging and label text, reduce artifacts, even the
-lighting, and replace clutter with a softly blurred warm cafe background.
+the model to preserve packaging and label text, remove hands and clutter, smooth
+creases, and stand the bag on a seamless studio set tinted to its main color,
+lit softly and cropped so the bag fills most of the frame.
 AI can still alter details, so compare the result with **View original** in the
 full-size picture viewer.
 

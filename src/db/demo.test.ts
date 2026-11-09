@@ -49,6 +49,22 @@ describe('demo database', () => {
     }
   })
 
+  test('shows a bundled beautified bean picture next to its original', async () => {
+    const images = await database.query.beanImages.findMany()
+    const bundled = new Set(
+      await readdir(resolve('scripts/seed-assets/bean-packaging')),
+    )
+    for (const image of images)
+      expect(bundled.has(image.storagePath.replace('demo/', ''))).toBe(true)
+    const copy = images.find((image) => image.beautifiedFromImageId !== null)
+    const original = images.find(
+      (image) => image.id === copy?.beautifiedFromImageId,
+    )
+    expect(copy?.isThumbnail).toBe(true)
+    expect(original?.beanId).toBe(copy?.beanId)
+    expect(original?.isThumbnail).toBe(false)
+  })
+
   test('includes reusable gear sets with their equipment', async () => {
     const gearSets = await database.query.gearSets.findMany({
       orderBy: (gearSet, { asc }) => [asc(gearSet.name)],
