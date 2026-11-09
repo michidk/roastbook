@@ -364,7 +364,14 @@ suite('private account lifecycle', () => {
     if (!job?.storagePath || !directory)
       throw new Error('Export did not complete')
     exportedPath = job.storagePath
-    const response = await asSecond(() => downloadAccountExport(job.id))
+    // Downloading needs its own confirmation, not just the session.
+    expect(
+      (await asSecond(() => downloadAccountExport(job.id, undefined))).status,
+    ).toBe(403)
+    const response = await confirmed(second, 'download-export', (token) =>
+      downloadAccountExport(job.id, token),
+    )
+    expect(response.status).toBe(200)
     const zip = join(directory, 'export.zip')
     await Bun.write(zip, await response.arrayBuffer())
     const listing = Bun.spawnSync(['unzip', '-Z1', zip])
@@ -399,9 +406,13 @@ suite('private account lifecycle', () => {
         `images/${imagePath}`,
       ]).stdout.toString(),
     ).toBe('Original bean image')
-    expect((await asFirst(() => downloadAccountExport(job.id))).status).toBe(
-      404,
-    )
+    expect(
+      (
+        await confirmed(first, 'download-export', (token) =>
+          downloadAccountExport(job.id, token),
+        )
+      ).status,
+    ).toBe(404)
     await expect(
       confirmed(second, 'export-account', requestAccountExport),
     ).rejects.toThrow('one export per hour')

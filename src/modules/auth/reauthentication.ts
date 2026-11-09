@@ -12,6 +12,7 @@ export const REAUTHENTICATION_ACTIONS = {
   'change-permissions': 'change what a key or application may do',
   'save-ai-credentials': 'save your AI provider key',
   'export-account': 'export your journal',
+  'download-export': 'download your journal export',
   'delete-account': 'delete your account',
   'change-user-role': 'change a user’s role',
   'delete-user': 'delete a user',

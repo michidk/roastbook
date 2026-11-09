@@ -22,6 +22,21 @@ import {
 import { signOutOfAccount } from '@/lib/sign-out'
 import type { ReauthenticationAction } from '@/modules/auth/reauthentication'
 
+/** Posts the confirmation in a form so the browser streams the ZIP to disk. */
+function downloadExport(jobId: string, reauthToken: string | undefined) {
+  const form = document.createElement('form')
+  form.method = 'POST'
+  form.action = `/api/account/exports/${encodeURIComponent(jobId)}`
+  const input = document.createElement('input')
+  input.type = 'hidden'
+  input.name = 'reauthToken'
+  input.value = reauthToken ?? ''
+  form.append(input)
+  document.body.append(form)
+  form.submit()
+  form.remove()
+}
+
 export const Route = createFileRoute('/settings/account')({
   pendingComponent: PanelPending,
   loader: () => getCurrentAccount(),
@@ -234,12 +249,20 @@ function AccountPage() {
                 {formatDateTime(job.createdAt)} · {job.status}
               </span>
               {job.status === 'ready' ? (
-                <a
-                  className="text-link underline"
-                  href={`/api/account/exports/${job.id}`}
+                <Button
+                  variant="link"
+                  disabled={busy}
+                  onClick={() =>
+                    void action(
+                      async (reauthToken) =>
+                        downloadExport(job.id, reauthToken),
+                      'Download started.',
+                      'download-export',
+                    )
+                  }
                 >
                   Download ZIP
-                </a>
+                </Button>
               ) : null}
             </div>
           ))}

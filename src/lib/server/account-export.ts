@@ -2,10 +2,27 @@ import { and, eq, gt } from 'drizzle-orm'
 import { getControlDb } from '@/db/connection.server'
 import { requireIdentity } from '@/db/journal-context.server'
 import { accountJobs } from '@/db/schema'
+import {
+  consumeReauthentication,
+  ReauthenticationRequiredError,
+} from '@/lib/server/auth/reauthentication.server'
 import { getStorage } from '@/lib/storage'
 
-export async function downloadAccountExport(id: string) {
+/** Streams a ready export, only right after the owner confirmed it's them. */
+export async function downloadAccountExport(
+  id: string,
+  reauthToken: string | undefined,
+) {
   const identity = requireIdentity()
+  try {
+    await consumeReauthentication('download-export', reauthToken)
+  } catch (error) {
+    if (!(error instanceof ReauthenticationRequiredError)) throw error
+    return new Response('Confirm it’s you to download this export', {
+      status: 403,
+      headers: { 'Cache-Control': 'no-store' },
+    })
+  }
   const [job] = await getControlDb()
     .select()
     .from(accountJobs)
