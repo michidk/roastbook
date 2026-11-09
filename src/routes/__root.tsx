@@ -31,7 +31,7 @@ import { AppPending } from '@/components/route-pending'
 import { Toaster } from '@/components/toaster'
 import { useOnlineStatus } from '@/hooks/use-online-status'
 import { DEMO_MODE, PREFERENCES_STORAGE_KEY } from '@/lib/build-mode'
-import { isConnectionOnline } from '@/lib/connection-status'
+import { checkConnection, isConnectionOnline } from '@/lib/connection-status'
 import { DEFAULT_APP_SETTINGS } from '@/lib/default-app-settings'
 import { getErrorDisplayState } from '@/lib/error-display'
 import {
@@ -355,13 +355,13 @@ function RootComponent() {
     let hiddenAt: number | undefined
     const reload = () => {
       if (document.visibilityState === 'hidden') hiddenAt = Date.now()
-      else if (
-        hiddenAt !== undefined &&
-        Date.now() - hiddenAt > 30_000 &&
-        isConnectionOnline()
-      ) {
+      else if (hiddenAt !== undefined && Date.now() - hiddenAt > 30_000) {
         hiddenAt = undefined
-        void router.invalidate()
+        // After sleep the network can lag the tab; a failed reload would
+        // replace the page with an error, so confirm the server first.
+        void checkConnection().then(() => {
+          if (isConnectionOnline()) void router.invalidate()
+        })
       }
     }
     document.addEventListener('visibilitychange', reload)

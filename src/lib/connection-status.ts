@@ -20,7 +20,7 @@ function setReachable(value: boolean) {
   for (const listener of listeners) listener()
 }
 
-async function checkConnection(): Promise<void> {
+export async function checkConnection(): Promise<void> {
   if (navigator.onLine === false) {
     setReachable(false)
     return
