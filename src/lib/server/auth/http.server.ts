@@ -1,4 +1,5 @@
 import '@tanstack/react-start/server-only'
+import { authPlugins } from '@/extension-points/auth-plugins.server'
 import { getServerEnv } from '@/lib/env.server'
 import { getAuth } from './auth.server'
 import { handleEmailSignInRequest } from './email-sign-in-flow.server'
@@ -35,6 +36,12 @@ const allowed = new Set([
   '/passkey/delete-passkey',
   '/passkey/update-passkey',
 ])
+// Plugins added by a build extension bring their own endpoints.
+const extensionPaths = new Set(
+  authPlugins().flatMap((plugin) =>
+    Object.values(plugin.endpoints ?? {}).map((endpoint) => endpoint.path),
+  ),
+)
 
 export async function handleAuthRequest(
   request: Request,
@@ -45,7 +52,7 @@ export async function handleAuthRequest(
   if (!getServerEnv().AUTH_ENABLED)
     return new Response('Not found', { status: 404 })
   const endpoint = path.slice('/api/auth'.length)
-  if (!discovery && !allowed.has(endpoint))
+  if (!discovery && !allowed.has(endpoint) && !extensionPaths.has(endpoint))
     return new Response('Not found', { status: 404 })
   const response = await (endpoint === '/oauth2/token'
     ? handleOAuthTokenRequest(request)

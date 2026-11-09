@@ -6,6 +6,7 @@ import { emailOTP } from 'better-auth/plugins'
 import { and, eq, isNull } from 'drizzle-orm'
 import { getControlDb } from '@/db/connection.server'
 import { authUsers, instanceIdentity } from '@/db/schema'
+import { authPlugins } from '@/extension-points/auth-plugins.server'
 import { signUpPolicy } from '@/extension-points/sign-up.server'
 import { renderAccountEmail } from '@/lib/account-email'
 import { getServerEnv } from '@/lib/env.server'
@@ -240,6 +241,7 @@ function createAuth() {
           userVerification: 'required',
         },
       }),
+      ...authPlugins(),
     ],
   })
 }
