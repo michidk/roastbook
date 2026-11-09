@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
+import type { ReauthenticationAction } from '@/modules/auth/reauthentication'
 import type { AdminUser } from '@/routes/admin/-components/admin-user-actions'
 
 export interface AdminUserColumn {
@@ -20,7 +21,12 @@ export interface AdminUserAction {
   form: (context: {
     user: AdminUser
     busy: boolean
-    run: (work: () => Promise<unknown>, message: string) => Promise<void>
+    /** With `confirm`, the admin signs in again and `work` gets the token. */
+    run: (
+      work: (reauthToken: string | undefined) => Promise<unknown>,
+      message: string,
+      confirm?: ReauthenticationAction,
+    ) => Promise<void>
     close: () => void
   }) => ReactNode
 }

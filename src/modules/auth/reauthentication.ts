@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { extensionReauthenticationActions } from '@/extension-points/reauthentication-actions'
 
 /**
  * Sensitive actions that each need their own confirmation: the owner signs in
@@ -16,6 +17,7 @@ export const REAUTHENTICATION_ACTIONS = {
   'delete-user': 'delete a user',
   'change-email': 'change your email address',
   'manage-passkeys': 'change your passkeys',
+  ...extensionReauthenticationActions,
 } as const
 
 /**
