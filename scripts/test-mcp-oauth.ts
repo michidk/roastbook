@@ -691,6 +691,11 @@ try {
   await control
     .delete(schema.authRateLimits)
     .where(inArray(schema.authRateLimits.key, rateLimitKeys(first.id)))
+  // Limits count in fixed minute windows. Start the burst well inside one so
+  // the request below is checked in the same window, not a fresh one.
+  const untilNextMinute = 60_000 - (Date.now() % 60_000)
+  if (untilNextMinute < 15_000)
+    await new Promise((resolve) => setTimeout(resolve, untilNextMinute + 100))
   const limits = await Promise.all(
     Array.from({ length: 125 }, () =>
       consumeIntegrationRequest(first.id, 'rate-limit-test'),
