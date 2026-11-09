@@ -12,6 +12,7 @@ import {
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { useEffect } from 'react'
 import { JournalSyncStatus } from '@/components/journal-sync-status'
+import { AppBanner } from '@/extension-points/app-banner'
 import { AppExtensions } from '@/extension-points/app-extensions'
 
 import '../styles.css'
@@ -413,6 +414,7 @@ function RootComponent() {
     <TooltipProvider>
       <NavigationProgress />
       <div className="flex h-[100dvh] flex-col overflow-hidden">
+        <AppBanner userId={settings.account?.id ?? null} />
         <AppNavbar demoMode={settings.demoMode} account={settings.account} />
         {settings.demoMode ? null : <JournalSyncStatus />}
         <OfflineBanner isOnline={isOnline} demoMode={settings.demoMode} />
