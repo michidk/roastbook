@@ -106,7 +106,7 @@
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
     "drizzle-kit": "0.31.11",
-    "knip": "6.44.1",
+    "knip": "6.44.2",
     "markdownlint-cli2": "0.24.0",
     "nitro": "3.0.261103-rc",
     "storybook": "10.6.6",
