@@ -94,7 +94,7 @@
     "@storybook/addon-themes": "10.6.6",
     "@storybook/react-vite": "10.6.6",
     "@tanstack/devtools-vite": "0.8.6",
-    "@tanstack/router-cli": "1.167.46",
+    "@tanstack/router-cli": "1.168.0",
     "@types/archiver": "8.0.0",
     "@types/bun": "1.4.4",
     "@types/geojson": "7946.0.16",
