@@ -223,15 +223,23 @@ Chart defaults live in `charts/values.yaml`, validated by
 
 ## Picture beautification
 
-The **Beautify image** upload switch is off initially and remembers the last
-choice in the journal database. When enabled, uploads automatically beautify
-only the primary picture. The first picture is primary until a thumbnail is
-explicitly selected. Deleting the main image selects the oldest remaining
-picture. The gallery and full-size viewer both show the main image with a
-filled star and let you choose another. Selecting another thumbnail also
-applies the remembered choice. Each unedited gallery picture has a **Beautify**
-action for individual edits, including in the full-size viewer. The switch and
-beautify actions appear only while the AI provider is connected.
+Choose **Beautify with AI** on an unedited picture in the gallery or full-size
+viewer. Its tooltip and the viewer's visible help explain that AI creates a
+copy, makes it the main image, and keeps the original. Provider charges may
+apply. The action appears while the AI provider is connected.
+
+Uploads and main-image selection never trigger an AI edit. The previous upload
+switch is removed, and saved automatic-beautification preferences no longer
+start edits. The first picture is the main image until you choose another with
+the star. Deleting the main image selects the oldest remaining picture.
+
+During an edit, the picture shows **Beautifying…** and a spinner. A Sonner
+notification changes from loading to success or failure. You can navigate
+within Roastbook and upload other pictures while it runs. Keep the tab open;
+status tracking does not survive a reload or closing the tab. No percentage is
+shown because the provider does not report intermediate progress. If the edit
+succeeds but local refresh fails, the notification asks you to refresh rather
+than pay for another edit.
 
 Beautification uses the configured user's endpoint and API key with
 `POST /images/edits`, independently of the selected chat API format. The provider
@@ -240,15 +248,18 @@ must support `gpt-image-1.5` image edits. Each request creates one medium-qualit
 the model to preserve packaging and label text, remove hands and clutter, smooth
 creases, and stand the bag on a seamless studio set tinted to its main color,
 lit softly and cropped so the bag fills most of the frame.
-AI can still alter details, so compare the result with **View original** in the
-full-size picture viewer.
+AI can still alter details, so compare the result with the original picture
+kept in the gallery.
 
-The uploaded picture remains stored. The edited version becomes the displayed
-picture and supplies its thumbnails, without consuming another gallery slot.
-Both versions and their generated sizes count toward the storage allowance.
-Deleting the picture or its parent deletes both versions. Account exports
-include both versions. A picture can be beautified once; further clicks do not
-create another paid edit. Uploads remain saved if an edit fails. Retry with the
+The uploaded picture remains stored. The edited copy becomes the main picture
+without consuming another gallery slot. Both pictures and their generated
+sizes count toward the storage allowance. You can delete pictures individually;
+deleting their parent removes both. Account exports include both pictures.
+A picture can be beautified once; further clicks do not
+create another paid edit. Edited copies show a **Beautified** badge in the
+gallery and full-size viewer. The Beautify action is hidden for edited copies
+and originals that already have an edited copy.
+Uploads remain saved if an edit fails. Retry with the
 gallery's **Beautify** action. Beautification requires a connection and is
 unavailable in the static demo. Offline uploads keep their originals; they do
 not trigger a paid edit during sync replay.

@@ -96,9 +96,11 @@ AI is optional; everything else works without it. Each user connects their
 own OpenAI-compatible endpoint in **Settings → AI**. See
 [AI configuration](docs/configuration.md).
 
-- **Picture beautification** — remember an upload toggle to retouch the primary
-  picture, or beautify individual pictures in the gallery or full-size viewer.
+- **Picture beautification** — choose **Beautify with AI** on a picture in the
+  gallery or full-size viewer. A spinner and notification track the edit while
+  you keep using Roastbook. Uploads and main-image selection never start an edit.
   The first upload is the main image until you choose another with the star.
+  Beautified pictures are labeled and hide the Beautify action.
   Originals remain available, and
   the request log shows image-edit usage and cost when pricing is known.
 

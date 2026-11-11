@@ -1,3 +1,4 @@
+import { Badge } from '@roastbook/ui/badge'
 import { Button } from '@roastbook/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@roastbook/ui/card'
 import {
@@ -21,16 +22,13 @@ import {
   Loader2,
   Sparkles,
   Star,
-  WandSparkles,
   X,
 } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
-import {
-  BeautifyImageToggle,
-  useBeautifyAvailable,
-} from '@/components/beautify-image-toggle'
+import { BeautifyImageButton } from '@/components/beautify-image-button'
 import { ImageWithFallback } from '@/components/image-with-fallback'
 import { PictureUploader } from '@/components/picture-uploader'
+import { useBeautifyAvailable } from '@/hooks/use-beautify-available'
 import { useImageUpload } from '@/hooks/use-image-upload'
 import {
   deleteEntityImage,
@@ -40,7 +38,6 @@ import {
 import {
   beautifyEntityImage,
   beautifyKey,
-  beautifyUploadedImage,
   useBeautifyingImages,
 } from '@/lib/client/beautify-image'
 import { createEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
@@ -52,7 +49,7 @@ import { cn } from '@/lib/utils'
 
 export interface EntityImage {
   readonly id: number
-  readonly beautifiedFromImageId?: number | null
+  readonly beautifiedFromImageId: number | null
   readonly storagePath: string
   readonly isThumbnail?: boolean
   readonly beanPurchaseId?: number
@@ -85,7 +82,6 @@ export function EntityImageGallery({
     null,
   )
   const [isDeletingImage, setIsDeletingImage] = useState<number | null>(null)
-  const [beautifyingImage, setBeautifyingImage] = useState<number | null>(null)
   const canBeautify = useBeautifyAvailable() && editable
   const beautifying = useBeautifyingImages()
   const [isUploading, setIsUploading] = useState(false)
@@ -130,18 +126,13 @@ export function EntityImageGallery({
     try {
       for (const picture of pictures) {
         try {
-          const saved = await uploadEntityImage({
+          await uploadEntityImage({
             data: createEntityImageUploadFormData(
               entityType,
               entityId,
               picture.file,
               picture,
             ),
-          })
-          beautifyUploadedImage({
-            entityType,
-            entityId,
-            imageId: saved.id,
           })
           uploaded.push(picture)
         } catch (error) {
@@ -178,11 +169,6 @@ export function EntityImageGallery({
             imageId: image.id,
           },
         })
-        beautifyUploadedImage({
-          entityType,
-          entityId: entityIdForImage(image),
-          imageId: image.id,
-        })
       } catch (error) {
         setGalleryError(getErrorMessage(error, 'Failed to set thumbnail'))
       }
@@ -191,29 +177,18 @@ export function EntityImageGallery({
     }
   }
 
-  const handleBeautify = async (image: EntityImage) => {
-    setGalleryError(null)
-    setBeautifyingImage(image.id)
-    try {
-      await beautifyEntityImage({
-        entityType,
-        entityId: entityIdForImage(image),
-        imageId: image.id,
-      })
-    } catch (error) {
-      setGalleryError(
-        getErrorMessage(
-          error,
-          'Could not beautify this picture. Your original is safe.',
-        ),
-      )
-    } finally {
-      setBeautifyingImage(null)
-    }
+  const handleBeautify = (image: EntityImage) => {
+    if (!canBeautifyImage(image)) return
+    void beautifyEntityImage({
+      entityType,
+      entityId: entityIdForImage(image),
+      imageId: image.id,
+    })
   }
 
   const handleDeleteImage = async (image: EntityImage) => {
     setGalleryError(null)
+    if (beautifying.has(beautifyKey(entityType, image.id))) return
     setIsDeletingImage(image.id)
     try {
       try {
@@ -302,6 +277,25 @@ export function EntityImageGallery({
                       className="aspect-square w-full rounded-lg object-cover"
                     />
                   </button>
+                  {image.beautifiedFromImageId !== null && (
+                    <Badge
+                      variant="secondary"
+                      className="pointer-events-none absolute bottom-1 left-1 z-10"
+                    >
+                      <Sparkles aria-hidden="true" />
+                      Beautified
+                    </Badge>
+                  )}
+                  {isBeautifying && (
+                    <Badge
+                      variant="secondary"
+                      className="pointer-events-none absolute bottom-1 left-1 z-10"
+                      role="status"
+                    >
+                      <Loader2 aria-hidden="true" className="animate-spin" />
+                      Beautifying…
+                    </Badge>
+                  )}
                   {editable && (
                     <div className="pointer-events-none absolute inset-0 rounded-lg opacity-100 transition-colors [@media(hover:hover)]:group-hover:bg-foreground/55">
                       <Button
@@ -331,42 +325,24 @@ export function EntityImageGallery({
                           )}
                         />
                       </Button>
-                      {canBeautifyImage(image) ? (
-                        <Button
-                          size="icon"
-                          variant="secondary"
-                          className="pointer-events-auto absolute bottom-1 left-1 size-7 after:absolute after:-inset-2 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary"
-                          disabled={
-                            isBeautifying ||
-                            beautifyingImage !== null ||
-                            isUploading ||
-                            isDeletingImage !== null
-                          }
-                          aria-busy={isBeautifying}
-                          aria-label={
-                            isBeautifying
-                              ? `Beautifying picture ${index + 1}…`
-                              : `Beautify picture ${index + 1}`
-                          }
-                          title={
-                            isBeautifying ? 'Beautifying…' : 'Beautify with AI'
-                          }
-                          onClick={() => void handleBeautify(image)}
-                        >
-                          {isBeautifying ? (
-                            <Loader2 className="size-3.5 animate-spin" />
-                          ) : (
-                            <WandSparkles className="size-3.5" />
-                          )}
-                        </Button>
-                      ) : null}
+                      {canBeautifyImage(image) && !isBeautifying && (
+                        <BeautifyImageButton
+                          compact
+                          isBeautifying={false}
+                          disabled={isUploading || isDeletingImage === image.id}
+                          label={`Beautify picture ${index + 1} with AI`}
+                          onClick={() => handleBeautify(image)}
+                        />
+                      )}
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
                             size="icon"
                             variant="destructive"
                             className="pointer-events-auto absolute right-1 top-1 size-7 after:absolute after:-inset-2 focus-visible:!outline-2 focus-visible:!outline-offset-2 focus-visible:!outline-solid focus-visible:!outline-primary"
-                            disabled={isDeletingImage === image.id}
+                            disabled={
+                              isDeletingImage === image.id || isBeautifying
+                            }
                             aria-label={`Delete picture ${index + 1}`}
                           >
                             <X className="size-3.5" />
@@ -433,7 +409,7 @@ export function EntityImageGallery({
             previewAltPrefix={
               entityType === 'bean-purchases' ? 'Coffee' : 'Gear'
             }
-            isBusy={isUploading || beautifyingImage !== null}
+            isBusy={isUploading}
             statusText={isUploading ? 'Saving pictures…' : undefined}
             imageErrors={uploadFailures.map(({ image, error }) => ({
               preview: image.preview,
@@ -444,11 +420,6 @@ export function EntityImageGallery({
               ),
             }))}
             onRetryImages={uploadPictures}
-          />
-        )}
-        {editable && (
-          <BeautifyImageToggle
-            disabled={isUploading || beautifyingImage !== null}
           />
         )}
         {editable && imageAction && (
@@ -517,6 +488,12 @@ export function EntityImageGallery({
                 className="max-h-[65dvh] w-auto max-w-full rounded-xl object-contain"
               />
               <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                {lightboxImage.beautifiedFromImageId !== null && (
+                  <Badge variant="secondary">
+                    <Sparkles aria-hidden="true" />
+                    Beautified
+                  </Badge>
+                )}
                 <Button
                   variant={isMainImage(lightboxImage) ? 'default' : 'secondary'}
                   disabled={
@@ -533,30 +510,15 @@ export function EntityImageGallery({
                     : 'Use as main image'}
                 </Button>
                 {canBeautifyImage(lightboxImage) && (
-                  <Button
-                    variant="secondary"
+                  <BeautifyImageButton
+                    isBeautifying={beautifying.has(
+                      beautifyKey(entityType, lightboxImage.id),
+                    )}
                     disabled={
-                      beautifying.has(
-                        beautifyKey(entityType, lightboxImage.id),
-                      ) ||
-                      beautifyingImage !== null ||
-                      isUploading ||
-                      isDeletingImage !== null
+                      isUploading || isDeletingImage === lightboxImage.id
                     }
-                    aria-busy={beautifying.has(
-                      beautifyKey(entityType, lightboxImage.id),
-                    )}
-                    onClick={() => void handleBeautify(lightboxImage)}
-                  >
-                    {beautifying.has(
-                      beautifyKey(entityType, lightboxImage.id),
-                    ) ? (
-                      <Loader2 className="animate-spin" />
-                    ) : (
-                      <WandSparkles />
-                    )}
-                    Beautify with AI
-                  </Button>
+                    onClick={() => handleBeautify(lightboxImage)}
+                  />
                 )}
                 {galleryError && (
                   <p

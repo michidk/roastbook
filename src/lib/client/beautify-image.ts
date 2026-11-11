@@ -6,6 +6,7 @@ import {
   hasUnsyncedChanges,
   keepsDeviceCopy,
 } from '@/journal/local/device-copy'
+import { getSyncStatus } from '@/journal/local/sync-status'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { isConnectionOnline } from '@/lib/connection-status'
 import { getErrorMessage } from '@/lib/error-message'
@@ -39,22 +40,47 @@ export function useBeautifyingImages() {
   )
 }
 
-export async function beautifyEntityImage(
-  data: ImageSelection,
-  automatic = false,
-) {
+export async function beautifyEntityImage(data: ImageSelection) {
   const key = beautifyKey(data.entityType, data.imageId)
+  if (beautifying.has(key)) return
   markBeautifying(key, true)
+  const toastId = toast.loading('Beautifying picture…', {
+    description: 'You can keep using Roastbook. Keep this tab open.',
+  })
   try {
-    await runBeautify(data, automatic)
+    const result = await runBeautify(data)
+    if (result === 'already-beautified') {
+      toast.info('This picture is already beautified.', {
+        id: toastId,
+        description: 'Your original is still available.',
+      })
+    } else if (result === 'sync-pending') {
+      toast.warning('Picture beautified. Refresh to see the result.', {
+        id: toastId,
+        description:
+          'Your edit is saved on the server. No need to beautify again.',
+      })
+    } else {
+      toast.success('Picture beautified.', {
+        id: toastId,
+        description: 'Your original is still available.',
+      })
+    }
+  } catch (error) {
+    toast.error('Couldn’t beautify this picture. Your original is safe.', {
+      id: toastId,
+      description: getErrorMessage(
+        error,
+        'Try again from the picture gallery.',
+      ),
+    })
   } finally {
     markBeautifying(key, false)
   }
 }
 
-async function runBeautify(data: ImageSelection, automatic: boolean) {
+async function runBeautify(data: ImageSelection) {
   if (DEMO_MODE || !isConnectionOnline()) {
-    if (automatic) return
     throw new Error('Connect to the server to beautify this picture')
   }
   if (keepsDeviceCopy() && hasUnsyncedChanges()) {
@@ -67,26 +93,18 @@ async function runBeautify(data: ImageSelection, automatic: boolean) {
         'Picture saved on this device. Finish syncing, then use Beautify in the gallery.',
       )
   }
-  const edited = await prepareBeautifiedImage({ data: { ...data, automatic } })
-  if (!edited) return
-  if (keepsDeviceCopy()) {
-    const { synchronizeEditionJournal } = await import(
-      '@/journal/local/edition'
-    )
-    await synchronizeEditionJournal()
+  const edited = await prepareBeautifiedImage({ data })
+  try {
+    if (keepsDeviceCopy()) {
+      const { synchronizeEditionJournal } = await import(
+        '@/journal/local/edition'
+      )
+      await synchronizeEditionJournal()
+      if (getSyncStatus().error || !isConnectionOnline()) return 'sync-pending'
+    }
+    await notifyLocalChange('write')
+    return edited ? 'updated' : 'already-beautified'
+  } catch {
+    return 'sync-pending'
   }
-  await notifyLocalChange('write')
-}
-
-/** Runs in the background: an edit can take a minute, so the save never waits
- *  for it, and upload success stays success even when the optional edit fails. */
-export function beautifyUploadedImage(data: ImageSelection) {
-  void beautifyEntityImage(data, true).catch((error: unknown) => {
-    toast.error(
-      getErrorMessage(
-        error,
-        'Picture saved. Beautification failed. Retry from the picture gallery.',
-      ),
-    )
-  })
 }

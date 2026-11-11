@@ -1,5 +1,4 @@
 import { type EntityType, uploadEntityImage } from '@/journal/images'
-import { beautifyUploadedImage } from '@/lib/client/beautify-image'
 import { createEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
 import type { ImageFile } from '@/lib/image-file'
 
@@ -48,14 +47,5 @@ export function uploadEntityImages(
   entityId: number,
   images: readonly ImageFile[],
 ): Promise<EntityImageUploadResult> {
-  return uploadEntityImagesWith(
-    async (input) => {
-      const saved = await uploadEntityImage(input)
-      beautifyUploadedImage({ entityType, entityId, imageId: saved.id })
-      return saved
-    },
-    entityType,
-    entityId,
-    images,
-  )
+  return uploadEntityImagesWith(uploadEntityImage, entityType, entityId, images)
 }

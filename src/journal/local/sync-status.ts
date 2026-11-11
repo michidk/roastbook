@@ -33,10 +33,10 @@ function subscribe(listener: () => void) {
   }
 }
 
+export function getSyncStatus() {
+  return status
+}
+
 export function useSyncStatus() {
-  return useSyncExternalStore(
-    subscribe,
-    () => status,
-    () => status,
-  )
+  return useSyncExternalStore(subscribe, getSyncStatus, getSyncStatus)
 }

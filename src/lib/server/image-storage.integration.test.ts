@@ -275,7 +275,7 @@ suite('beautified image storage', () => {
   })
 })
 
-suite('automatic image beautification selection', () => {
+suite('explicit image beautification', () => {
   const identity = {
     ...alice,
     id: randomUUID(),
@@ -307,44 +307,28 @@ suite('automatic image beautification selection', () => {
     await scope(() => deleteEntityWithMedia('gear', id))
     await getControlDb().delete(authUsers).where(eq(authUsers.id, identity.id))
   })
-  test('remembers the preference and edits only the designated primary', async () => {
-    const selection = (imageId: number) => ({
-      entityType: 'gear' as const,
-      entityId: id,
-      imageId,
-      automatic: true,
-    })
+  test('ignores legacy automatic requests even with the saved preference enabled', async () => {
     await scope(async () => {
-      expect(
-        await prepareEntityImageBeautification(selection(firstImage.id), edit),
-      ).toBeNull()
-      expect(edits).toBe(0)
       await updateSettings({ beautifyImages: true }, 'Failed to save')
-    })
-    await scope(async () => {
-      const result = await prepareEntityImageBeautification(
-        selection(firstImage.id),
-        edit,
-      )
-      expect(result?.beautifiedFromImageId).toBe(firstImage.id)
-      expect(
-        await prepareEntityImageBeautification(selection(secondImage.id), edit),
-      ).toBeNull()
-      expect(edits).toBe(1)
       await setEntityImageThumbnail({
         entityType: 'gear',
         entityId: id,
         imageId: secondImage.id,
       })
-    })
-    await scope(async () => {
-      expect(
-        await prepareEntityImageBeautification(selection(firstImage.id), edit),
-      ).toBeNull()
-      expect(
-        await prepareEntityImageBeautification(selection(secondImage.id), edit),
-      ).not.toBeNull()
-      expect(edits).toBe(2)
+      for (const image of [firstImage, secondImage]) {
+        expect(
+          await prepareEntityImageBeautification(
+            {
+              entityType: 'gear',
+              entityId: id,
+              imageId: image.id,
+              automatic: true,
+            },
+            edit,
+          ),
+        ).toBeNull()
+      }
+      expect(edits).toBe(0)
       expect((await loadAppSettings()).beautifyImages).toBe(true)
     })
   })

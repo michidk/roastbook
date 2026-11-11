@@ -111,9 +111,8 @@ export const updateBackgroundGrainEnabled = journalWrite(
     saveSettings({ backgroundGrainEnabled }, 'Could not save background grain'),
   )
 
-export const updateBeautifyImages = journalWrite(
-  'settings/updateBeautifyImages',
-)
+// Replay queued preferences from clients that still had the upload toggle.
+journalWrite('settings/updateBeautifyImages')
   .validator(z.boolean())
   .handler(({ data: beautifyImages }) =>
     saveSettings({ beautifyImages }, 'Could not save the image setting'),

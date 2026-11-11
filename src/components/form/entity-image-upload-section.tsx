@@ -1,6 +1,5 @@
 import { Button } from '@roastbook/ui/button'
 import type { ComponentProps } from 'react'
-import { BeautifyImageToggle } from '@/components/beautify-image-toggle'
 import { FormSection } from '@/components/form/form-shell'
 import { PictureUploader } from '@/components/picture-uploader'
 import type { useImageUpload } from '@/hooks/use-image-upload'
@@ -41,7 +40,6 @@ export function EntityImageUploadSection({
         onOpenFilePicker={upload.openFilePicker}
         {...displayProps}
       />
-      <BeautifyImageToggle disabled={displayProps.isBusy} />
     </FormSection>
   )
 }
