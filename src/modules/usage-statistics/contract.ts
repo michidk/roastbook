@@ -1,6 +1,22 @@
 import { z } from 'zod'
 
+export const browserUsageEventSchema = z.enum([
+  'pwa_install_prompt_opened',
+  'pwa_install_prompt_accepted',
+  'pwa_install_prompt_dismissed',
+  'pwa_installed',
+  'pwa_install_hint_dismissed',
+])
+
 export const usageEventSchema = z.enum([
+  ...browserUsageEventSchema.options,
+  'ai_key_saved',
+  'integration_credential_created',
+  'integration_credential_updated',
+  'integration_credential_revoked',
+  'account_deletion_requested',
+  'account_deletion_confirmed',
+  'account_export_requested',
   'bean_created',
   'brew_created',
   'ai_recommendation_created',

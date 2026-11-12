@@ -320,8 +320,12 @@ Declining or dismissing the prompt sends nothing. Change the preference under
 shared journals, rather than to an account. Browsers that send Do Not Track
 remain opted out.
 
-Only `bean_created`, `brew_created` and `ai_recommendation_created` are sent,
-with a random browser identifier, the application revision and
+Explicit event names cover beans and brews created, AI recommendations created,
+AI keys saved, integration credentials created/updated/revoked, account deletion
+requested/confirmed, account exports requested, and PWA install prompts opened,
+accepted or dismissed, successful installations and install hints dismissed.
+No credential values, names, scopes or providers are sent. Events include a
+random browser identifier, the application revision and
 `deployment_type: self_hosted`. No journal contents, account IDs, email,
 private URLs, recordings, prompts or images are included. The server sends the
 events to `https://eu.i.posthog.com`; it does not forward browser headers or IP
@@ -336,7 +340,11 @@ cookies leave collection disabled unless the browser already has a saved consent
 
 Offline writes, sync replays, API/MCP requests and the demo are excluded. Events
 are not queued or backfilled. Delivery failures do not interrupt journal work.
-Counts are approximate and are not an authoritative record of activity.
+Installation completion uses the browser’s `appinstalled` event where supported;
+accepting a prompt is counted separately and does not prove installation. Manual
+iOS installations cannot be observed. Browser actions before consent or while
+offline are discarded. Counts are approximate and are not an authoritative
+record of activity.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |

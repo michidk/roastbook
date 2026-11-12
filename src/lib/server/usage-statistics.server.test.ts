@@ -15,8 +15,10 @@ import * as context from '@/db/journal-context.server'
 import { withRecordedValues } from '@/db/journal-replay.server'
 import * as environment from '@/lib/env.server'
 import {
+  browserUsageEventSchema,
   parseUsageConsent,
   USAGE_CONSENT_COOKIE,
+  usageEventSchema,
 } from '@/modules/usage-statistics/contract'
 import {
   loadUsagePreference,
@@ -85,23 +87,20 @@ describe('optional usage statistics', () => {
       'email@example.test',
       'not-a-uuid',
     ]) {
-      await request(() => recordUsageEvent('brew_created'), cookie)
+      for (const event of usageEventSchema.options)
+        await request(() => recordUsageEvent(event), cookie)
     }
     expect(sent).toEqual([])
   })
 
   test('sends only the approved metadata without request headers or account identity', async () => {
-    for (const event of [
-      'bean_created',
-      'brew_created',
-      'ai_recommendation_created',
-    ]) {
+    for (const event of usageEventSchema.options) {
       await request(() => recordUsageEvent(event), id)
     }
-    expect(sent).toHaveLength(3)
+    expect(sent).toHaveLength(usageEventSchema.options.length)
     expect(sent[0]?.body).toEqual({
       api_key: 'phc_pfUW8sFdRJVqHQHcFyYDP3hhJBspGfXgr5C5QkrvLqVu',
-      event: 'bean_created',
+      event: usageEventSchema.options[0],
       distinct_id: `self_hosted:${id}`,
       properties: {
         deployment_type: 'self_hosted',
@@ -117,7 +116,7 @@ describe('optional usage statistics', () => {
 
   test('rejects unapproved events and payload objects', async () => {
     for (const event of [
-      'ai_key_saved',
+      'unknown_event',
       '$pageview',
       '$ai_generation',
       { event: 'brew_created', prompt: 'secret' },
@@ -125,6 +124,21 @@ describe('optional usage statistics', () => {
       await request(() => recordUsageEvent(event), id)
     }
     expect(sent).toEqual([])
+  })
+
+  test('restricts browser event payloads to installation actions without properties', () => {
+    expect(browserUsageEventSchema.safeParse('pwa_installed').success).toBe(
+      true,
+    )
+    expect(browserUsageEventSchema.safeParse('bean_created').success).toBe(
+      false,
+    )
+    expect(
+      browserUsageEventSchema.safeParse({
+        event: 'pwa_installed',
+        url: 'private',
+      }).success,
+    ).toBe(false)
   })
 
   test('administrator opt-out and Do Not Track override saved consent', async () => {

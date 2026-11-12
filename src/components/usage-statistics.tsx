@@ -16,12 +16,15 @@ import { PanelSection } from '@/components/section-layout'
 import { DEMO_MODE } from '@/lib/build-mode'
 import {
   getUsagePreference,
+  sendBrowserUsageEvent,
   setUsagePreference,
 } from '@/lib/server/usage-statistics'
+import { browserUsageEvent } from '@/modules/usage-statistics/browser'
+import { browserUsageEventSchema } from '@/modules/usage-statistics/contract'
 
 const preferenceChanged = 'roastbook-usage-preference-changed'
 const description =
-  'Share counts of beans added, brews logged and AI recommendations with Roastbook’s maintainers through PostHog in the EU. Includes a random browser identifier, application version and deployment type. No journal content, email addresses, private URLs or recordings are sent.'
+  'Share counts of journal activity, AI key setup and recommendations, integration key management, account export and deletion actions, and app installation with Roastbook’s maintainers through PostHog in the EU. Includes a random browser identifier, application version and deployment type. No journal content, email addresses, private URLs or recordings are sent.'
 
 function useUsagePreference() {
   const [state, setState] = useState<Awaited<
@@ -75,6 +78,18 @@ function useUsagePreference() {
 
 export function UsageConsentPrompt() {
   const { state, busy, error, save } = useUsagePreference()
+  useEffect(() => {
+    if (!state?.available || state.blocked || state.preference !== 'granted')
+      return
+    const receive = (event: Event) => {
+      if (!(event instanceof CustomEvent) || !navigator.onLine) return
+      const parsed = browserUsageEventSchema.safeParse(event.detail)
+      if (parsed.success)
+        void sendBrowserUsageEvent({ data: parsed.data }).catch(() => {})
+    }
+    window.addEventListener(browserUsageEvent, receive)
+    return () => window.removeEventListener(browserUsageEvent, receive)
+  }, [state])
   const [checked, setChecked] = useState(false)
   const [dismissed, setDismissed] = useState(false)
   if (
