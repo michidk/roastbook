@@ -154,3 +154,11 @@ name and still works.
 Set `replicaCount=0` to stop application writers during database maintenance.
 The database and migration Job still run. Restore the desired replica count
 after verifying the database and schema migration.
+
+### Optional usage statistics
+
+Set `usageStatistics.disabled: true` to disable maintainer usage statistics for
+all browsers. Otherwise each browser must explicitly opt in before any events
+are sent. See [configuration](../docs/configuration.md#optional-usage-statistics)
+for the payload and privacy controls. This setting is separate from `posthog`,
+which configures operator-owned image-edit cost reporting.

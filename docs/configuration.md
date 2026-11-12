@@ -310,3 +310,40 @@ Set these variables in the application container environment. Docker Compose
 passes them through. In Helm, set `posthog.existingSecret` to a Secret containing
 the project key under `project-key`, or override
 `posthog.existingSecretProjectKeyKey`. Set `posthog.host` for another region.
+
+## Optional usage statistics
+
+On first use, Roastbook asks whether this browser may share usage statistics
+with Roastbook's maintainers through PostHog EU. The checkbox starts unchecked.
+Declining or dismissing the prompt sends nothing. Change the preference under
+**Settings > General > Usage statistics**. It applies to the browser, including
+shared journals, rather than to an account. Browsers that send Do Not Track
+remain opted out.
+
+Only `bean_created`, `brew_created` and `ai_recommendation_created` are sent,
+with a random browser identifier, the application revision and
+`deployment_type: self_hosted`. No journal contents, account IDs, email,
+private URLs, recordings, prompts or images are included. The server sends the
+events to `https://eu.i.posthog.com`; it does not forward browser headers or IP
+addresses. PostHog can see the server's network address. No browser analytics
+SDK is loaded and no request is sent to PostHog before consent.
+
+A first-party HttpOnly cookie, `roastbook_usage_v1`, remembers the choice for
+one year. Only acceptance creates an identifier. Turning statistics off replaces
+the identifier with a denial; accepting again creates a new identifier. Previously
+sent events are not deleted. Requests already in progress may finish. Blocked
+cookies leave collection disabled unless the browser already has a saved consent.
+
+Offline writes, sync replays, API/MCP requests and the demo are excluded. Events
+are not queued or backfilled. Delivery failures do not interrupt journal work.
+Counts are approximate and are not an authoritative record of activity.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `USAGE_STATISTICS_DISABLED` | `false` | Disable collection for all browsers |
+
+Docker Compose passes this setting from `.env`. Helm exposes it as
+`usageStatistics.disabled`. Restart the application after changing it. The
+public PostHog ingestion token is included with Roastbook; no PostHog account
+or administrator API key is required. This feature does not use the separate
+`POSTHOG_PROJECT_KEY` image-edit cost exporter described above.

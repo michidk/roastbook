@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import { CurrencyField, SelectField } from '@/components/form/form-field'
 import { TimeZoneField } from '@/components/form/time-zone-field'
 import { PanelSection } from '@/components/section-layout'
+import { UsageStatisticsSettings } from '@/components/usage-statistics'
 import { useAppSettings } from '@/hooks/use-app-settings'
 import { useSettingMutation } from '@/hooks/use-setting-mutation'
 import {
@@ -110,6 +111,7 @@ export function GeneralSettings() {
 
   return (
     <>
+      <UsageStatisticsSettings />
       <PanelSection
         title="Default currency"
         description="Used when adding beans, gear, and café visits."

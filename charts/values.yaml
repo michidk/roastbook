@@ -189,6 +189,10 @@ openai:
   # Request log: store prompts and responses only for short diagnostics.
   telemetryStorePayloads: false
 
+# Optional maintainer usage statistics still require each browser's consent.
+usageStatistics:
+  disabled: false
+
 # Optional server-side image-edit cost analytics. No picture content is sent.
 posthog:
   existingSecret: ""

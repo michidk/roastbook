@@ -1,4 +1,5 @@
 import '@tanstack/react-start/server-only'
+import { recordUsageEvent } from '@/lib/server/usage-statistics.server'
 
 export type AnalyticsEvent =
   | 'bean_created'
@@ -6,5 +7,6 @@ export type AnalyticsEvent =
   | 'ai_recommendation_created'
   | 'ai_key_saved'
 
-// Default: self-hosted instances record no product analytics.
-export function trackEvent(_event: AnalyticsEvent) {}
+export function trackEvent(event: AnalyticsEvent) {
+  void recordUsageEvent(event)
+}
