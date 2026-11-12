@@ -15,10 +15,7 @@ import { Input } from '@roastbook/ui/input'
 import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import {
-  EnableButton,
-  RemoveOrDisable,
-} from '@/components/settings/built-in-item-actions'
+import { ItemAvailability } from '@/components/settings/built-in-item-actions'
 import {
   createTasteTag,
   deleteTasteTag,
@@ -100,8 +97,8 @@ export function TasteTagSettings({
         <DialogHeader>
           <DialogTitle>Manage taste tags</DialogTitle>
           <DialogDescription>
-            Built-in tags follow the SCA Coffee Taster's Flavor Wheel. Disable
-            the ones you don't use, or add and delete your own custom tags.
+            Built-in tags follow the SCA Coffee Taster's Flavor Wheel. Switch
+            off the ones you don't use, or add and delete your own custom tags.
           </DialogDescription>
         </DialogHeader>
         <DialogBody>
@@ -146,28 +143,26 @@ export function TasteTagSettings({
                           </span>
                         ) : null}
                       </span>
-                      {tag.isArchived ? (
-                        <EnableButton
-                          onClick={async () => {
-                            try {
-                              await enableTasteTag({ data: tag.id })
-                            } catch (error) {
-                              reportError(error, 'Could not enable this tag')
-                            }
-                          }}
-                        />
-                      ) : (
-                        <RemoveOrDisable
+                      <div className="flex w-12 shrink-0 justify-center">
+                        <ItemAvailability
                           name={tag.name}
                           isBuiltIn={scaFlavorCategory(tag.name) !== undefined}
+                          enabled={!tag.isArchived}
+                          onEnabledChange={async (enabled) => {
+                            try {
+                              await (enabled
+                                ? enableTasteTag
+                                : disableTasteTag)({ data: tag.id })
+                            } catch (error) {
+                              reportError(error, 'Could not update this tag')
+                            }
+                          }}
                           deleteDescription="This removes the tag from every brew and café visit that uses it. This action cannot be undone."
-                          onRemove={async () => {
-                            await (scaFlavorCategory(tag.name)
-                              ? disableTasteTag({ data: tag.id })
-                              : deleteTasteTag({ data: tag.id }))
+                          onDelete={async () => {
+                            await deleteTasteTag({ data: tag.id })
                           }}
                         />
-                      )}
+                      </div>
                     </li>
                   ))}
                 </ul>
