@@ -82,7 +82,7 @@
     "tslib": "^2.9.1",
     "zod": "^4.4.3",
     "zustand": "^5.0.14",
-    "@roastbook/ui": "github:roastbook/ui#c8436c26408f6fe9ae497a44d7ec98a1f76106cb",
+    "@roastbook/ui": "github:roastbook/ui#0e2451c7bcf9bcd1db59ef6030d7b717d88ba0b8",
     "@base-ui/react": "^1.5.0"
   },
   "devDependencies": {
