@@ -221,5 +221,5 @@ export function createAiProviderFetch(
       outgoing.end(body)
     })
   }
-  return Object.assign(providerFetch, { preconnect: fetch.preconnect })
+  return Object.assign(providerFetch, fetch)
 }

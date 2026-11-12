@@ -125,7 +125,24 @@ pictures), `gear`, `places`, or `visits`. Reading uses `:read`, the rest
 - `GET /images` (`get_image`), `POST /images` (`upload_image`),
   `DELETE /images/{entityType}/{entityId}/{imageId}` (`delete_image`),
   `POST /images/{entityType}/{entityId}/{imageId}/thumbnail`
-  (`set_image_thumbnail`).
+  (`set_image_thumbnail`),
+  `POST /images/{entityType}/{entityId}/{imageId}/beautify` (`beautify_image`),
+  `DELETE /images/{entityType}/{entityId}/{imageId}/beautified`
+  (`delete_beautified_image`).
+
+`beautify_image` accepts `entityType`, `entityId`, and `imageId`, like deletion.
+It uses the owner's configured AI provider, may incur a charge, and waits for
+the result. It returns `{ status, image }`, with `status` equal to `beautified`
+or `already_beautified`. The picture keeps its ID; `storagePath` is the displayed
+version and `originalStoragePath` retains the upload. `get_image` can download
+either path, with the same owner and read-permission checks. Existing edits do
+not start another provider request.
+
+`delete_beautified_image` restores the original and returns the updated picture.
+It preserves the picture ID and main-image selection, removes only the edited
+files, and allows a new deliberate edit. Without an edited version it returns
+the picture unchanged. A legacy edited copy whose original was previously
+deleted cannot be restored.
 
 `GET /api/v1`, `GET /api/v1/rate-limit`, and `GET /api/v1/openapi.json` need
 no particular scope. `GET /api/v1/openapi.json` and `GET /api/v1/docs` need

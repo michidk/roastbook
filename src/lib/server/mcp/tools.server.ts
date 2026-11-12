@@ -29,8 +29,11 @@ function annotations(operation: IntegrationOperation) {
   return {
     readOnlyHint: false,
     destructiveHint: destructive,
-    idempotentHint: destructive || operation.name.startsWith('update_'),
-    openWorldHint: false,
+    idempotentHint:
+      destructive ||
+      operation.name.startsWith('update_') ||
+      operation.name === 'beautify_image',
+    openWorldHint: operation.name === 'beautify_image',
   } as const
 }
 

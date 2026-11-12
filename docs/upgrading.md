@@ -1,5 +1,18 @@
 # Upgrading to the multi-user release
 
+## Beautified picture records
+
+Migration `0088` folds existing original/edited picture pairs into the
+original picture's ID. It preserves both stored files, thumbnail selection, and
+storage accounting. The extra edited gallery row is removed. Edited pictures
+whose originals had already been deleted remain available as standalone
+pictures. No uploaded files are removed during the migration.
+
+New edits update the existing picture record. The viewer can show either
+version and delete only the edited version to restore the original. API and
+MCP clients should keep the returned picture ID and use `originalStoragePath`
+to access the retained upload; `beautifiedFromImageId` is removed.
+
 ## AI provider requests
 
 Image extraction now uses the API format selected in Settings > AI, as

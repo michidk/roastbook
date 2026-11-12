@@ -205,14 +205,13 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
     mimeType: 'image/webp',
     sizeBytes: 1,
   })
-  const [photo] = await database
-    .insert(schema.beanImages)
-    .values(pictureOf('hilltop-guji-photo.webp'))
-    .returning()
   await database.insert(schema.beanImages).values({
     ...pictureOf('hilltop-guji-beautified.webp'),
+    originalStoragePath: 'demo/hilltop-guji-photo.webp',
+    originalMimeType: 'image/webp',
+    originalSizeBytes: 1,
     isThumbnail: true,
-    beautifiedFromImageId: required(photo, 'Demo photo missing').id,
+    beautifiedAt: new Date('2026-01-01T00:00:00Z'),
   })
 
   const gearSeeds = [

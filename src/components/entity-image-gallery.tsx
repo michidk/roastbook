@@ -31,6 +31,7 @@ import { PictureUploader } from '@/components/picture-uploader'
 import { useBeautifyAvailable } from '@/hooks/use-beautify-available'
 import { useImageUpload } from '@/hooks/use-image-upload'
 import {
+  deleteBeautifiedImage,
   deleteEntityImage,
   setImageAsThumbnail,
   uploadEntityImage,
@@ -49,7 +50,8 @@ import { cn } from '@/lib/utils'
 
 export interface EntityImage {
   readonly id: number
-  readonly beautifiedFromImageId: number | null
+  readonly beautifiedAt: Date | null
+  readonly originalStoragePath: string | null
   readonly storagePath: string
   readonly isThumbnail?: boolean
   readonly beanPurchaseId?: number
@@ -89,6 +91,10 @@ export function EntityImageGallery({
     readonly EntityImageUploadFailure[]
   >([])
   const [galleryError, setGalleryError] = useState<string | null>(null)
+  const [viewOriginal, setViewOriginal] = useState(false)
+  const [isDeletingBeautified, setIsDeletingBeautified] = useState<
+    number | null
+  >(null)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const {
     maxImages,
@@ -100,11 +106,9 @@ export function EntityImageGallery({
     removeImages,
     openFilePicker,
   } = useImageUpload({
-    // Beautified copies do not use up the per-item picture limit.
     existingImageCount: images.filter(
       (image) =>
-        image.beautifiedFromImageId == null &&
-        (entityType !== 'bean-purchases' || image.beanPurchaseId === entityId),
+        entityType !== 'bean-purchases' || image.beanPurchaseId === entityId,
     ).length,
   })
 
@@ -208,18 +212,38 @@ export function EntityImageGallery({
     }
   }
 
+  const handleDeleteBeautified = async (image: EntityImage) => {
+    setGalleryError(null)
+    setIsDeletingBeautified(image.id)
+    try {
+      await deleteBeautifiedImage({
+        data: {
+          entityType,
+          entityId: entityIdForImage(image),
+          imageId: image.id,
+        },
+      })
+      setViewOriginal(false)
+    } catch (error) {
+      setGalleryError(
+        getErrorMessage(error, 'Could not delete the beautified version'),
+      )
+    } finally {
+      setIsDeletingBeautified(null)
+    }
+  }
+
   const entityLabel = entityType === 'bean-purchases' ? 'Coffee' : 'Gear'
   const mainImage = images.find((image) => image.isThumbnail) ?? images[0]
   const isMainImage = (image: EntityImage) => image.id === mainImage?.id
   const canBeautifyImage = (image: EntityImage) =>
-    canBeautify &&
-    image.beautifiedFromImageId == null &&
-    !images.some((copy) => copy.beautifiedFromImageId === image.id)
+    canBeautify && image.beautifiedAt === null
   const lightboxImage =
     lightboxIndex === null ? undefined : images[lightboxIndex]
 
   const stepLightbox = (offset: number) => {
     if (lightboxIndex === null || images.length < 2) return
+    setViewOriginal(false)
     setLightboxIndex((lightboxIndex + offset + images.length) % images.length)
   }
 
@@ -264,7 +288,10 @@ export function EntityImageGallery({
                   <button
                     type="button"
                     className="block w-full cursor-zoom-in rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    onClick={() => setLightboxIndex(index)}
+                    onClick={() => {
+                      setViewOriginal(false)
+                      setLightboxIndex(index)
+                    }}
                     aria-label={`View ${entityLabel.toLowerCase()} picture ${index + 1} in full size`}
                   >
                     <ImageWithFallback
@@ -277,7 +304,7 @@ export function EntityImageGallery({
                       className="aspect-square w-full rounded-lg object-cover"
                     />
                   </button>
-                  {image.beautifiedFromImageId !== null && (
+                  {image.beautifiedAt !== null && (
                     <Badge
                       variant="secondary"
                       className="pointer-events-none absolute bottom-1 left-1 z-10"
@@ -354,7 +381,9 @@ export function EntityImageGallery({
                               Delete this picture?
                             </AlertDialogTitle>
                             <AlertDialogDescription>
-                              This action cannot be undone.
+                              {image.originalStoragePath
+                                ? 'This deletes the original and beautified version. This action cannot be undone.'
+                                : 'This action cannot be undone.'}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -483,12 +512,16 @@ export function EntityImageGallery({
               </DialogTitle>
               <ImageWithFallback
                 key={lightboxImage.id}
-                src={imageUrl(lightboxImage.storagePath)}
-                alt={`${entityLabel} picture ${lightboxIndex + 1}`}
+                src={imageUrl(
+                  viewOriginal && lightboxImage.originalStoragePath
+                    ? lightboxImage.originalStoragePath
+                    : lightboxImage.storagePath,
+                )}
+                alt={`${entityLabel} picture ${lightboxIndex + 1}${viewOriginal ? ' (original)' : ''}`}
                 className="max-h-[65dvh] w-auto max-w-full rounded-xl object-contain"
               />
               <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-                {lightboxImage.beautifiedFromImageId !== null && (
+                {lightboxImage.beautifiedAt !== null && (
                   <Badge variant="secondary">
                     <Sparkles aria-hidden="true" />
                     Beautified
@@ -509,6 +542,51 @@ export function EntityImageGallery({
                     ? 'Main image'
                     : 'Use as main image'}
                 </Button>
+                {lightboxImage.originalStoragePath && (
+                  <Button
+                    variant="secondary"
+                    aria-pressed={viewOriginal}
+                    onClick={() => setViewOriginal(!viewOriginal)}
+                  >
+                    {viewOriginal ? 'View beautified' : 'View original'}
+                  </Button>
+                )}
+                {editable && lightboxImage.originalStoragePath && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        disabled={isDeletingBeautified === lightboxImage.id}
+                      >
+                        {isDeletingBeautified === lightboxImage.id && (
+                          <Loader2 className="animate-spin" />
+                        )}
+                        Delete beautified version
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Delete the beautified version?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Your original picture will be restored. You can
+                          beautify it again later.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() =>
+                            void handleDeleteBeautified(lightboxImage)
+                          }
+                        >
+                          Delete beautified version
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
                 {canBeautifyImage(lightboxImage) && (
                   <BeautifyImageButton
                     isBeautifying={beautifying.has(

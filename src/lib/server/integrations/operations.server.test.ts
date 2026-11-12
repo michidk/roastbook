@@ -26,6 +26,11 @@ import {
 
 const ajv = new Ajv2020({ strict: false, allowUnionTypes: true })
 addFormats(ajv)
+const responseDocumentId = 'https://coffee.example/openapi-test'
+ajv.addSchema(
+  buildOpenApiDocument('https://coffee.example'),
+  responseDocumentId,
+)
 
 function at(value: unknown, ...keys: string[]): unknown {
   return keys.reduce<unknown>((node, key) => {
@@ -35,12 +40,9 @@ function at(value: unknown, ...keys: string[]): unknown {
 }
 
 function responseValidator(path: string, method: string, status: number) {
-  const document = buildOpenApiDocument('https://coffee.example')
   const pointer = path.replaceAll('~', '~0').replaceAll('/', '~1')
   return ajv.compile({
-    components: document.components,
-    paths: document.paths,
-    $ref: `#/paths/${pointer}/${method}/responses/${status}/content/application~1json/schema`,
+    $ref: `${responseDocumentId}#/paths/${pointer}/${method}/responses/${status}/content/application~1json/schema`,
   })
 }
 

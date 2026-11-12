@@ -21,14 +21,35 @@ const database = drizzle(client)
 
 try {
   const imageSelections = await Promise.all([
-    database.select({ storagePath: beanImages.storagePath }).from(beanImages),
-    database.select({ storagePath: gearImages.storagePath }).from(gearImages),
     database
-      .select({ storagePath: coffeeShopImages.storagePath })
+      .select({
+        storagePath: beanImages.storagePath,
+        originalStoragePath: beanImages.originalStoragePath,
+      })
+      .from(beanImages),
+    database
+      .select({
+        storagePath: gearImages.storagePath,
+        originalStoragePath: gearImages.originalStoragePath,
+      })
+      .from(gearImages),
+    database
+      .select({
+        storagePath: coffeeShopImages.storagePath,
+        originalStoragePath: coffeeShopImages.originalStoragePath,
+      })
       .from(coffeeShopImages),
-    database.select({ storagePath: shotImages.storagePath }).from(shotImages),
     database
-      .select({ storagePath: cafeVisitImages.storagePath })
+      .select({
+        storagePath: shotImages.storagePath,
+        originalStoragePath: shotImages.originalStoragePath,
+      })
+      .from(shotImages),
+    database
+      .select({
+        storagePath: cafeVisitImages.storagePath,
+        originalStoragePath: cafeVisitImages.originalStoragePath,
+      })
       .from(cafeVisitImages),
   ])
   const cleanupJobs = await database
@@ -36,7 +57,12 @@ try {
     .from(mediaCleanupJobs)
 
   const originals = new Set(
-    imageSelections.flat().map((image) => image.storagePath),
+    imageSelections
+      .flat()
+      .flatMap((image) => [
+        image.storagePath,
+        ...(image.originalStoragePath ? [image.originalStoragePath] : []),
+      ]),
   )
   const thumbnails = new Set([...originals].map(getThumbnailPath))
   const referenced = new Set(getStoredImagePaths([...originals]))

@@ -1,4 +1,4 @@
-import { and, eq, isNull, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { beanPurchases } from '@/db/schema'
 import {
   ensureEntityImageThumbnail,
@@ -36,21 +36,23 @@ type EntityImageData = {
   binaryData: Uint8Array
   /** Thumbnails the browser encoded with the stored picture. */
   sizes?: PreparedSizes
-  /** Marks an AI-retouched copy of another picture of the same item. */
-  beautifiedFromImageId?: number
 }
 
 export async function storeEntityImage(data: EntityImageData) {
+  await requireEntityImageCapacity(
+    data.entityType,
+    data.entityId,
+    imageStoragePolicy().maxImagesPerItem,
+  )
+  const upload = await prepareEntityImageUpload(data)
+  return commitEntityImage({ ...data, ...upload })
+}
+
+export async function prepareEntityImageUpload(
+  data: Omit<EntityImageData, 'filename'>,
+) {
   const { storageType } = entityImageTarget(data.entityType)
   const policy = imageStoragePolicy()
-  // Beautified copies do not use up the per-item picture limit.
-  if (data.beautifiedFromImageId === undefined)
-    await requireEntityImageCapacity(
-      data.entityType,
-      data.entityId,
-      policy.maxImagesPerItem,
-    )
-
   await measureLegacyImageStorage()
   const usage = await loadImageStorageUsage()
   if (policy.limitBytes !== null && usage.unmeasuredImages)
@@ -80,7 +82,7 @@ export async function storeEntityImage(data: EntityImageData) {
     throw new Error(
       'This compressed picture would exceed your image storage allowance. Remove pictures to free up space.',
     )
-  return commitEntityImage({ ...data, storagePath, prepared })
+  return { storagePath, prepared }
 }
 
 export async function commitEntityImage(
@@ -99,14 +101,7 @@ export async function commitEntityImage(
     policy.limitBytes === null
       ? sql`true`
       : sql`(${imageStorageMeasuredSql()}) and (${imageStorageBytesSql()}) + ${prepared.storageBytes} <= ${policy.limitBytes}`
-  const capacity =
-    data.beautifiedFromImageId === undefined
-      ? sql`and (select count(*) from ${table} where ${owned(table, and(eq(foreignKey, data.entityId), isNull(table.beautifiedFromImageId)))}) < ${policy.maxImagesPerItem}`
-      : sql``
-  const beautified =
-    data.beautifiedFromImageId === undefined
-      ? sql``
-      : sql`, ${data.beautifiedFromImageId}`
+  const capacity = sql`and (select count(*) from ${table} where ${owned(table, eq(foreignKey, data.entityId))}) < ${policy.maxImagesPerItem}`
   const beanColumn =
     data.entityType === 'bean-purchases' ? sql`, bean_id` : sql``
   const beanValue =
@@ -122,8 +117,8 @@ export async function commitEntityImage(
       )
     await runJournalMutations([
       {
-        statement: sql`insert into ${table} (id, owner_id, created_at, storage_path, original_filename, mime_type, size_bytes, storage_bytes, ${sql.identifier(foreignKey.name)}${beanColumn}${data.beautifiedFromImageId === undefined ? sql`` : sql`, beautified_from_image_id`})
-        select ${id}, ${journalOwnerId()}, ${sql.param(journalNow(), table.createdAt)}, ${storagePath}, ${data.filename}, 'image/webp', ${prepared.sizeBytes}, ${prepared.storageBytes}, ${data.entityId}${beanValue}${beautified}
+        statement: sql`insert into ${table} (id, owner_id, created_at, storage_path, original_filename, mime_type, size_bytes, storage_bytes, ${sql.identifier(foreignKey.name)}${beanColumn})
+        select ${id}, ${journalOwnerId()}, ${sql.param(journalNow(), table.createdAt)}, ${storagePath}, ${data.filename}, 'image/webp', ${prepared.sizeBytes}, ${prepared.storageBytes}, ${data.entityId}${beanValue}
         where exists(select 1 from ${parent} where ${owned(parent, eq(parent.id, data.entityId))})
           ${capacity}
           and (${quota})`,

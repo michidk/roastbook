@@ -1,4 +1,4 @@
-import { and, count, eq, isNull, sql } from 'drizzle-orm'
+import { and, count, eq, sql } from 'drizzle-orm'
 import type { z } from 'zod'
 import {
   beanImages,
@@ -76,12 +76,7 @@ export async function requireEntityImageCapacity(
   const [current] = await db
     .select({ images: count() })
     .from(table)
-    .where(
-      owned(
-        table,
-        and(eq(foreignKey, entityId), isNull(table.beautifiedFromImageId)),
-      ),
-    )
+    .where(owned(table, eq(foreignKey, entityId)))
   if (Number(current?.images ?? 0) >= maxImagesPerItem)
     throw new Error(
       `Each item can have at most ${maxImagesPerItem} pictures. Remove a picture before adding another.`,

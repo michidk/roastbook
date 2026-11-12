@@ -77,17 +77,23 @@ async function main() {
         id: table.id,
         ownerId: table.ownerId,
         storagePath: table.storagePath,
+        originalStoragePath: table.originalStoragePath,
       })
       .from(table)
     console.log(`[${name}] ${rows.length} rows`)
-    for (const row of rows) {
+    for (const row of rows.flatMap((image) => [
+      image,
+      ...(image.originalStoragePath
+        ? [{ ...image, storagePath: image.originalStoragePath }]
+        : []),
+    ])) {
       try {
         const result = await processOne(row.storagePath)
         counts[result.status]++
         if (result.status === 'wrote') {
           await db
             .update(table)
-            .set({ storageBytes: null })
+            .set({ storageBytes: null, originalStorageBytes: null })
             .where(and(eq(table.id, row.id), eq(table.ownerId, row.ownerId)))
           process.stdout.write(
             `  + ${row.storagePath} (${result.bytes} bytes)\n`,

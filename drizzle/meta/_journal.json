@@ -617,6 +617,13 @@
       "when": 1794497632013,
       "tag": "0087_sca-taste-tags",
       "breakpoints": true
+    },
+    {
+      "idx": 88,
+      "version": "7",
+      "when": 1794501038723,
+      "tag": "0088_tiny_puck",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,8 @@
 import { z } from 'zod'
-import { isBeautified } from '@/journal/domain/beautified-image'
+import {
+  removeBeautifiedEntityImage,
+  storeBeautifiedEntityImage,
+} from '@/journal/domain/beautified-image'
 import {
   ensureEntityImageThumbnail,
   entityImageSelection,
@@ -49,7 +52,10 @@ export const deleteEntityImage = journalWrite('images/deleteEntityImage')
   .handler(async ({ data }) => {
     const { table, where } = entityImageSelection(data)
     const [image] = await db
-      .select({ storagePath: table.storagePath })
+      .select({
+        storagePath: table.storagePath,
+        originalStoragePath: table.originalStoragePath,
+      })
       .from(table)
       .where(where)
       .limit(1)
@@ -64,7 +70,10 @@ export const deleteEntityImage = journalWrite('images/deleteEntityImage')
         conflictMessage: 'Image changed. Reload and try again.',
       },
       ...ensureEntityImageThumbnail(data.entityType, data.entityId),
-      ...queueMediaCleanup([image.storagePath]),
+      ...queueMediaCleanup([
+        image.storagePath,
+        ...(image.originalStoragePath ? [image.originalStoragePath] : []),
+      ]),
     ])
     await drainMediaCleanupQueue()
   })
@@ -84,17 +93,10 @@ export const saveBeautifiedImage = journalWrite('images/saveBeautifiedImage')
     }),
   )
   .handler(async ({ data: { imageBase64, imageId, ...data } }) => {
-    const { image: source, beautified } = await isBeautified({
+    const image = await storeBeautifiedEntityImage({
       ...data,
       imageId,
-    })
-    if (beautified) throw new Error('This picture is already beautified')
-    // The copy becomes the main picture; the source stays as a regular one.
-    const image = await storeEntityImage({
-      ...data,
-      filename: source.originalFilename ?? 'beautified.webp',
       binaryData: decodeBase64(imageBase64),
-      beautifiedFromImageId: imageId,
     })
     if (data.entityType === 'bean-purchases' || data.entityType === 'gear')
       await setEntityImageThumbnail({
@@ -104,3 +106,9 @@ export const saveBeautifiedImage = journalWrite('images/saveBeautifiedImage')
       })
     return image
   })
+
+export const deleteBeautifiedImage = journalWrite(
+  'images/deleteBeautifiedImage',
+)
+  .validator(entityImageIdSchema)
+  .handler(({ data }) => removeBeautifiedEntityImage(data))

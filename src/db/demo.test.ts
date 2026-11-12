@@ -49,20 +49,24 @@ describe('demo database', () => {
     }
   })
 
-  test('shows a bundled beautified bean picture next to its original', async () => {
+  test('keeps a beautified bean picture and its original on one record', async () => {
     const images = await database.query.beanImages.findMany()
     const bundled = new Set(
       await readdir(resolve('scripts/seed-assets/bean-packaging')),
     )
-    for (const image of images)
+    for (const image of images) {
       expect(bundled.has(image.storagePath.replace('demo/', ''))).toBe(true)
-    const copy = images.find((image) => image.beautifiedFromImageId !== null)
-    const original = images.find(
-      (image) => image.id === copy?.beautifiedFromImageId,
-    )
-    expect(copy?.isThumbnail).toBe(true)
-    expect(original?.beanId).toBe(copy?.beanId)
-    expect(original?.isThumbnail).toBe(false)
+      if (image.originalStoragePath)
+        expect(
+          bundled.has(image.originalStoragePath.replace('demo/', '')),
+        ).toBe(true)
+    }
+    const edited = images.find((image) => image.beautifiedAt !== null)
+    expect(edited?.isThumbnail).toBe(true)
+    expect(edited?.originalStoragePath).toBe('demo/hilltop-guji-photo.webp')
+    expect(
+      images.filter((image) => image.beanId === edited?.beanId),
+    ).toHaveLength(1)
   })
 
   test('includes reusable gear sets with their equipment', async () => {

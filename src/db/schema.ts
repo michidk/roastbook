@@ -50,8 +50,12 @@ const archiveState = () => ({
 
 const imageFile = () => ({
   storagePath: text('storage_path').notNull(),
-  /** Set on an AI-retouched copy; its source stays as a separate picture. */
-  beautifiedFromImageId: integer('beautified_from_image_id'),
+  /** The displayed file can be replaced while retaining its original. */
+  originalStoragePath: text('original_storage_path'),
+  originalMimeType: text('original_mime_type'),
+  originalSizeBytes: integer('original_size_bytes'),
+  originalStorageBytes: integer('original_storage_bytes'),
+  beautifiedAt: timestamp('beautified_at'),
   originalFilename: text('original_filename'),
   mimeType: text('mime_type'),
   sizeBytes: integer('size_bytes'),

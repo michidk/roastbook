@@ -15,7 +15,11 @@ import {
 } from '@/journal/domain/image-storage'
 import { deleteEntityWithMedia } from '@/journal/domain/media-lifecycle'
 import { loadAppSettings, updateSettings } from '@/journal/domain/settings'
-import { deleteEntityImage, saveBeautifiedImage } from '@/journal/images'
+import {
+  deleteBeautifiedImage,
+  deleteEntityImage,
+  saveBeautifiedImage,
+} from '@/journal/images'
 import { getStoredImagePaths } from '@/lib/image-path'
 import { prepareEntityImageBeautification } from '@/lib/server/image-beautification.server'
 import { getStorage } from '@/lib/storage'
@@ -222,24 +226,23 @@ suite('beautified image storage', () => {
     )
     expect(await getStorage().exists(originalPath)).toBe(true)
   })
-  test('adds the copy as the thumbnail, keeps the original, and prevents repeated edits', async () => {
+  test('updates one picture, keeps its original, and prevents repeated edits', async () => {
     await scoped(async () => {
       const before = await loadImageStorageUsage()
       const edited = await save(pictureId)
       editPath = edited.storagePath
       editId = edited.id
-      expect(edited.beautifiedFromImageId).toBe(pictureId)
+      expect(edited.id).toBe(pictureId)
+      expect(edited.originalStoragePath).toBe(originalPath)
+      expect(edited.beautifiedAt).not.toBeNull()
       expect(editPath).not.toBe(originalPath)
       const rows = await db
         .select()
         .from(gearImages)
         .where(owned(gearImages, eq(gearImages.gearId, gearId)))
-      expect(rows.map((row) => [row.id, row.isThumbnail]).sort()).toEqual(
-        [
-          [pictureId, false],
-          [editId, true],
-        ].sort(),
-      )
+      expect(rows.map((row) => [row.id, row.isThumbnail])).toEqual([
+        [pictureId, true],
+      ])
       const objects = await Promise.all(
         getStoredImagePaths([originalPath, editPath]).map((path) =>
           getStorage().stat(path),
@@ -250,7 +253,7 @@ suite('beautified image storage', () => {
       expect(usage.totalBytes).toBe(
         objects.reduce((sum, object) => sum + (object?.sizeBytes ?? 0), 0),
       )
-      expect(usage.imageCount).toBe(before.imageCount + 1)
+      expect(usage.imageCount).toBe(before.imageCount)
       await expect(save(pictureId)).rejects.toThrow('already beautified')
       await expect(save(editId)).rejects.toThrow('already beautified')
     })
@@ -263,12 +266,29 @@ suite('beautified image storage', () => {
       await expect(upload(gearId)).rejects.toThrow('at most')
     })
   })
-  test('deleting pictures cleans original and edited files', async () => {
+  test('removing only the edit restores the original and allows another edit', async () => {
     await scoped(async () => {
-      for (const imageId of [pictureId, editId])
-        await deleteEntityImage({
-          data: { entityType: 'gear', entityId: gearId, imageId },
-        })
+      const restored = await deleteBeautifiedImage({
+        data: { entityType: 'gear', entityId: gearId, imageId: pictureId },
+      })
+      expect(restored.storagePath).toBe(originalPath)
+      expect(restored.originalStoragePath).toBeNull()
+      expect(restored.beautifiedAt).toBeNull()
+      expect('isThumbnail' in restored && restored.isThumbnail).toBe(true)
+      for (const path of getStoredImagePaths([editPath]))
+        expect(await getStorage().exists(path)).toBe(false)
+      for (const path of getStoredImagePaths([originalPath]))
+        expect(await getStorage().exists(path)).toBe(true)
+      const edited = await save(pictureId)
+      editPath = edited.storagePath
+      expect(edited.id).toBe(pictureId)
+    })
+  })
+  test('deleting a picture cleans both original and edited files', async () => {
+    await scoped(async () => {
+      await deleteEntityImage({
+        data: { entityType: 'gear', entityId: gearId, imageId: pictureId },
+      })
       for (const path of getStoredImagePaths([originalPath, editPath]))
         expect(await getStorage().exists(path)).toBe(false)
     })
@@ -354,7 +374,8 @@ suite('explicit image beautification', () => {
         .where(owned(gearImages, eq(gearImages.id, picture.id)))
       expect(record?.storagePath).toBe(picture.storagePath)
       const edited = await prepareEntityImageBeautification(data, edit)
-      expect(edited?.beautifiedFromImageId).toBe(picture.id)
+      expect(edited?.id).toBe(picture.id)
+      expect(edited?.originalStoragePath).toBe(picture.storagePath)
       const paths = getStoredImagePaths([
         picture.storagePath,
         edited?.storagePath ?? '',

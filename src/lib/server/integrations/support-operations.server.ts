@@ -32,6 +32,8 @@ import { tasteTagCreateSchema } from '@/lib/server-validation'
 import { shottimerShotRequestSchema } from '@/lib/shottimer'
 import { loadShottimerTarget, recordShottimerShot } from '../shottimer.server'
 import {
+  beautifyIntegrationImage,
+  deleteIntegrationBeautifiedImage,
   deleteIntegrationImage,
   imageCallResource,
   imageDeleteSchema,
@@ -283,6 +285,32 @@ export const SUPPORT_OPERATIONS = [
     path: '/images/{entityType}/{entityId}/{imageId}/thumbnail',
     input: imageThumbnailSchema,
     run: setIntegrationImageThumbnail,
+  }),
+  operation({
+    name: 'beautify_image',
+    title: 'Beautify picture with AI',
+    description:
+      "Retouch an existing picture with the owner's configured AI provider. May incur a charge and take a minute. Keeps the same picture ID, retains its original, and uses the edit as the main image for bags and gear. Returns the picture and a beautified or already_beautified status; an existing edit never starts another paid request.",
+    access: 'write',
+    resources: ['brews', 'beans', 'gear', 'places', 'visits'],
+    resourceFor: imageCallResource,
+    method: 'POST',
+    path: '/images/{entityType}/{entityId}/{imageId}/beautify',
+    input: imageDeleteSchema,
+    run: beautifyIntegrationImage,
+  }),
+  operation({
+    name: 'delete_beautified_image',
+    title: 'Delete beautified version',
+    description:
+      'Remove only the AI-retouched version of a picture and restore its original, keeping the same picture ID and main-image selection. After removal, beautify_image can create a new edit. If no edited version exists, returns the unchanged picture.',
+    access: 'write',
+    resources: ['brews', 'beans', 'gear', 'places', 'visits'],
+    resourceFor: imageCallResource,
+    method: 'DELETE',
+    path: '/images/{entityType}/{entityId}/{imageId}/beautified',
+    input: imageDeleteSchema,
+    run: deleteIntegrationBeautifiedImage,
   }),
   operation({
     name: 'delete_image',

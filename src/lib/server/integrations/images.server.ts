@@ -1,6 +1,6 @@
 import '@tanstack/react-start/server-only'
 
-import { eq } from 'drizzle-orm'
+import { eq, or } from 'drizzle-orm'
 import { z } from 'zod'
 import {
   beanImages,
@@ -9,7 +9,9 @@ import {
   gearImages,
   shotImages,
 } from '@/db/schema'
+import { loadEntityImage } from '@/journal/domain/beautified-image'
 import {
+  deleteBeautifiedImage,
   deleteEntityImage,
   setImageAsThumbnail,
   uploadEntityImage,
@@ -22,6 +24,7 @@ import { createEntityImageUploadFormData } from '@/lib/entity-image-upload-form'
 import { getSmallThumbnailPath, getThumbnailPath } from '@/lib/image-path'
 import { imageFilenameSchema, positiveIdSchema } from '@/lib/server-validation'
 import type { IntegrationResource } from '@/modules/integrations/scopes'
+import { prepareEntityImageBeautification } from '../image-beautification.server'
 import type { IntegrationContext } from './operation.server'
 
 /** Public entity names use journal vocabulary ("brews", "places"). */
@@ -123,7 +126,12 @@ async function imageResource(
     const [row] = await db
       .select({ storagePath: table.storagePath })
       .from(table)
-      .where(owned(table, eq(table.storagePath, path)))
+      .where(
+        owned(
+          table,
+          or(eq(table.storagePath, path), eq(table.originalStoragePath, path)),
+        ),
+      )
       .limit(1)
     if (row) return resource
   }
@@ -202,6 +210,34 @@ export async function deleteIntegrationImage(
   const target = IMAGE_ENTITIES[data.entityType]
   context.require(target.resource, 'write')
   return deleteEntityImage({
+    data: { ...data, entityType: target.entityType },
+  })
+}
+
+export async function beautifyIntegrationImage(
+  input: z.input<typeof imageDeleteSchema>,
+  context: IntegrationContext,
+) {
+  const data = imageDeleteSchema.parse(input)
+  const target = IMAGE_ENTITIES[data.entityType]
+  context.require(target.resource, 'write')
+  const selection = { ...data, entityType: target.entityType }
+  const image = await prepareEntityImageBeautification({
+    ...selection,
+    automatic: false,
+  })
+  const status = image ? 'beautified' : 'already_beautified'
+  return { status, image: image ?? (await loadEntityImage(selection)) }
+}
+
+export async function deleteIntegrationBeautifiedImage(
+  input: z.input<typeof imageDeleteSchema>,
+  context: IntegrationContext,
+) {
+  const data = imageDeleteSchema.parse(input)
+  const target = IMAGE_ENTITIES[data.entityType]
+  context.require(target.resource, 'write')
+  return deleteBeautifiedImage({
     data: { ...data, entityType: target.entityType },
   })
 }

@@ -150,3 +150,84 @@ test('publishes journal branding with an icon on the configured instance', async
     await connected.close()
   }
 })
+
+test('beautification tools require write access, describe provider use, and return structured results', async () => {
+  expect(await names({ scopes: ['gear:read'] })).not.toContain('beautify_image')
+  expect(await names({ scopes: ['gear:read'] })).not.toContain(
+    'delete_beautified_image',
+  )
+  expect(
+    await names({
+      scopes: ['gear:write'],
+      disabledTools: new Set(['beautify_image']),
+    }),
+  ).not.toContain('beautify_image')
+  const calls: unknown[] = []
+  const connected = await connect({
+    scopes: ['gear:write'],
+    run: async (operation, input) => {
+      calls.push({ name: operation.name, input })
+      return {
+        status: 'beautified',
+        image: {
+          id: 7,
+          storagePath: 'gear/1/edit.webp',
+          originalStoragePath: 'gear/1/original.webp',
+        },
+      }
+    },
+  })
+  try {
+    const tools = (await connected.client.listTools()).tools
+    const tool = tools.find((tool) => tool.name === 'beautify_image')
+    expect(tool?.description).toContain('May incur a charge')
+    expect(tool?.annotations).toMatchObject({
+      readOnlyHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    })
+    const response = await connected.client.callTool({
+      name: 'beautify_image',
+      arguments: { entityType: 'gear', entityId: 1, imageId: 7 },
+    })
+    expect(response.isError).not.toBe(true)
+    expect(response.structuredContent).toMatchObject({
+      data: { status: 'beautified', image: { id: 7 } },
+    })
+    await connected.client.callTool({
+      name: 'delete_beautified_image',
+      arguments: { entityType: 'gear', entityId: 1, imageId: 7 },
+    })
+    expect(calls).toEqual([
+      {
+        name: 'beautify_image',
+        input: { entityType: 'gear', entityId: 1, imageId: 7 },
+      },
+      {
+        name: 'delete_beautified_image',
+        input: { entityType: 'gear', entityId: 1, imageId: 7 },
+      },
+    ])
+  } finally {
+    await connected.close()
+  }
+})
+
+test.each(['beautify_image', 'delete_beautified_image'])(
+  '%s checks the target entity scope before accessing its picture',
+  async (name) => {
+    const connected = await connect({ scopes: ['beans:write'] })
+    try {
+      const denied = await connected.client.callTool({
+        name,
+        arguments: { entityType: 'gear', entityId: 1, imageId: 2 },
+      })
+      expect(denied.isError).toBe(true)
+      expect(denied.structuredContent).toMatchObject({
+        error: { code: 'insufficient_scope', scope: 'gear:write' },
+      })
+    } finally {
+      await connected.close()
+    }
+  },
+)

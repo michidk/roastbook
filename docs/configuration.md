@@ -225,7 +225,8 @@ Chart defaults live in `charts/values.yaml`, validated by
 
 Choose **Beautify with AI** on an unedited picture in the gallery or full-size
 viewer. Its tooltip and the viewer's visible help explain that AI creates a
-copy, makes it the main image, and keeps the original. Provider charges may
+version on the same picture record, makes it the main image, and keeps the
+original. Provider charges may
 apply. The action appears while the AI provider is connected.
 
 Uploads and main-image selection never trigger an AI edit. The previous upload
@@ -248,21 +249,28 @@ must support `gpt-image-1.5` image edits. Each request creates one medium-qualit
 the model to preserve packaging and label text, remove hands and clutter, smooth
 creases, and stand the bag on a seamless studio set tinted to its main color,
 lit softly and cropped so the bag fills most of the frame.
-AI can still alter details, so compare the result with the original picture
-kept in the gallery.
+AI can still alter details. Use **View original** in the full-size viewer to
+compare it with the upload, and **View beautified** to switch back.
 
-The uploaded picture remains stored. The edited copy becomes the main picture
-without consuming another gallery slot. Both pictures and their generated
-sizes count toward the storage allowance. You can delete pictures individually;
-deleting their parent removes both. Account exports include both pictures.
-A picture can be beautified once; further clicks do not
-create another paid edit. Edited copies show a **Beautified** badge in the
-gallery and full-size viewer. The Beautify action is hidden for edited copies
-and originals that already have an edited copy.
-Uploads remain saved if an edit fails. Retry with the
-gallery's **Beautify** action. Beautification requires a connection and is
-unavailable in the static demo. Offline uploads keep their originals; they do
-not trigger a paid edit during sync replay.
+A picture keeps the same ID and gallery position after beautification. Its
+`storagePath` references the displayed file, and `originalStoragePath` retains
+the upload. Both versions and their generated sizes count toward the storage
+allowance, but they use one gallery slot. Account exports include both files.
+
+The **Beautified** badge identifies an active edit and its Beautify action is
+hidden. **Delete beautified version** removes only that version and restores
+the original, including its thumbnails. Beautify becomes available again for
+another deliberate edit. Deleting the whole picture or its parent removes both
+versions. Older edited copies whose originals had already been deleted remain
+available, but cannot restore an absent original.
+
+MCP clients can use `beautify_image` and `delete_beautified_image` with the
+record's write permission. These use the same owner, storage, and repeat-edit
+checks as the UI; see [API picture tools](api.md#permission-reference).
+
+Uploads remain saved if an edit fails. Retry with the gallery's **Beautify**
+action. Beautification requires a connection and is unavailable in the static
+demo. Offline uploads never trigger a paid edit during sync replay.
 
 ### Image-edit costs and PostHog
 

@@ -79,7 +79,7 @@ async function exportJournal(job: Job) {
         { name: 'ai-provider.json' },
       )
     archive.append(
-      'Each data/*.jsonl file contains one JSON object per line. Image storage_path fields refer to images/<storage_path>. Authentication credentials and integration secrets are excluded.\n',
+      'Each data/*.jsonl file contains one JSON object per line. Image storage_path and original_storage_path fields refer to images/<storage_path>. Authentication credentials and integration secrets are excluded.\n',
       { name: 'README.txt' },
     )
     for (const table of journalTables) {
@@ -112,7 +112,7 @@ async function exportJournal(job: Job) {
     }
     for (const table of imageTables) {
       const rows = await db.execute(
-        sql`select storage_path from ${sql.identifier(table)}`,
+        sql`select storage_path from ${sql.identifier(table)} union select original_storage_path as storage_path from ${sql.identifier(table)} where original_storage_path is not null`,
       )
       for (const row of rows) {
         const path = String(row.storage_path)
@@ -172,7 +172,7 @@ async function deleteJournal(job: Job) {
   const storage = getStorage()
   for (const table of imageTables) {
     const rows = await db.execute(
-      sql`select storage_path from ${sql.identifier(table)}`,
+      sql`select storage_path from ${sql.identifier(table)} union select original_storage_path as storage_path from ${sql.identifier(table)} where original_storage_path is not null`,
     )
     for (const row of rows)
       for (const path of getStoredImagePaths([String(row.storage_path)]))

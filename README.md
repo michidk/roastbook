@@ -101,8 +101,9 @@ own OpenAI-compatible endpoint in **Settings → AI**. See
   you keep using Roastbook. Uploads and main-image selection never start an edit.
   The first upload is the main image until you choose another with the star.
   Beautified pictures are labeled and hide the Beautify action.
-  Originals remain available, and
-  the request log shows image-edit usage and cost when pricing is known.
+  View the original or delete only the beautified version to restore it.
+  Each picture keeps one gallery entry. MCP supports the same beautify and
+  restore actions. The request log shows usage and cost when pricing is known.
 
   <p align="center">
     <img src="scripts/seed-assets/bean-packaging/hilltop-guji-photo.webp"
