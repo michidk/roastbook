@@ -6,20 +6,25 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Coffee, Milk, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { DeleteConfirmation } from '@/components/delete-confirmation'
 import { PanelPending } from '@/components/route-pending'
 import { PanelSection } from '@/components/section-layout'
+import {
+  EnableButton,
+  RemoveOrDisable,
+} from '@/components/settings/built-in-item-actions'
 import {
   archiveDrinkOptionValue,
   archiveDrinkType,
   createDrinkOptionValue,
-  getDrinkConfiguration,
+  getDrinkSettings,
+  restoreDrinkOptionValue,
+  restoreDrinkType,
   saveDrinkType,
 } from '@/journal/drink-options'
 
 export const Route = createFileRoute('/settings/drinks')({
   pendingComponent: PanelPending,
-  loader: () => getDrinkConfiguration(),
+  loader: () => getDrinkSettings(),
   component: DrinkSettings,
 })
 
@@ -87,59 +92,73 @@ function DrinkSettings() {
         action={<Coffee className="size-5 text-link" aria-hidden="true" />}
       >
         <ul className="max-h-96 divide-y divide-border overflow-y-auto overscroll-contain rounded-xl border border-border">
-          {configuration.drinkTypes.map((drinkType) => {
-            const usesMilk = milkGroup
-              ? drinkType.optionGroupIds.includes(milkGroup.id)
-              : false
-            return (
-              <li
-                key={drinkType.id}
-                className="flex min-h-14 items-center justify-between gap-4 px-3 py-2"
-              >
-                <span className="min-w-0 truncate font-medium">
-                  {drinkType.name}
-                </span>
-                <div className="flex shrink-0 items-center gap-4">
-                  {milkGroup ? (
-                    <div className="flex items-center gap-2">
-                      <Label htmlFor={`drink-milk-${drinkType.id}`}>
-                        Uses milk
-                      </Label>
-                      <Switch
-                        id={`drink-milk-${drinkType.id}`}
-                        checked={usesMilk}
-                        onCheckedChange={async (enabled) => {
-                          const optionGroupIds = enabled
-                            ? [...drinkType.optionGroupIds, milkGroup.id]
-                            : drinkType.optionGroupIds.filter(
-                                (id) => id !== milkGroup.id,
-                              )
+          {[...configuration.drinkTypes]
+            .sort((a, b) => Number(a.isArchived) - Number(b.isArchived))
+            .map((drinkType) => {
+              const usesMilk = milkGroup
+                ? drinkType.optionGroupIds.includes(milkGroup.id)
+                : false
+              return (
+                <li
+                  key={drinkType.id}
+                  className={`flex min-h-14 items-center justify-between gap-4 px-3 py-2 ${drinkType.isArchived ? 'bg-muted text-muted-foreground' : ''}`}
+                >
+                  <span className="min-w-0 truncate font-medium">
+                    {drinkType.name}
+                  </span>
+                  <div className="flex shrink-0 items-center gap-4">
+                    {milkGroup && !drinkType.isArchived ? (
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor={`drink-milk-${drinkType.id}`}>
+                          Uses milk
+                        </Label>
+                        <Switch
+                          id={`drink-milk-${drinkType.id}`}
+                          checked={usesMilk}
+                          onCheckedChange={async (enabled) => {
+                            const optionGroupIds = enabled
+                              ? [...drinkType.optionGroupIds, milkGroup.id]
+                              : drinkType.optionGroupIds.filter(
+                                  (id) => id !== milkGroup.id,
+                                )
+                            try {
+                              await saveDrinkType({
+                                data: {
+                                  id: drinkType.id,
+                                  name: drinkType.name,
+                                  optionGroupIds,
+                                },
+                              })
+                            } catch (error) {
+                              reportError(error, 'Could not update this type')
+                            }
+                          }}
+                        />
+                      </div>
+                    ) : null}
+                    {drinkType.isArchived ? (
+                      <EnableButton
+                        onClick={async () => {
                           try {
-                            await saveDrinkType({
-                              data: {
-                                id: drinkType.id,
-                                name: drinkType.name,
-                                optionGroupIds,
-                              },
-                            })
+                            await restoreDrinkType({ data: drinkType.id })
                           } catch (error) {
-                            reportError(error, 'Could not update this type')
+                            reportError(error, 'Could not enable this type')
                           }
                         }}
                       />
-                    </div>
-                  ) : null}
-                  <DeleteConfirmation
-                    title={`Remove "${drinkType.name}"?`}
-                    description="Existing brews and visits keep this type, but it will no longer be offered for new entries."
-                    onConfirm={async () => {
-                      await archiveDrinkType({ data: drinkType.id })
-                    }}
-                  />
-                </div>
-              </li>
-            )
-          })}
+                    ) : (
+                      <RemoveOrDisable
+                        name={drinkType.name}
+                        isBuiltIn={drinkType.isBuiltIn}
+                        onRemove={async () => {
+                          await archiveDrinkType({ data: drinkType.id })
+                        }}
+                      />
+                    )}
+                  </div>
+                </li>
+              )
+            })}
         </ul>
         <AddItemForm
           id="new-drink-type"
@@ -162,21 +181,35 @@ function DrinkSettings() {
           action={<Milk className="size-5 text-link" aria-hidden="true" />}
         >
           <ul className="max-h-96 divide-y divide-border overflow-y-auto overscroll-contain rounded-xl border border-border">
-            {milkGroup.values.map((value) => (
-              <li
-                key={value.id}
-                className="flex min-h-14 items-center justify-between gap-3 px-3 py-2"
-              >
-                <span className="font-medium">{value.name}</span>
-                <DeleteConfirmation
-                  title={`Remove "${value.name}"?`}
-                  description="Existing entries keep this value, but it will no longer be offered for new entries."
-                  onConfirm={async () => {
-                    await archiveDrinkOptionValue({ data: value.id })
-                  }}
-                />
-              </li>
-            ))}
+            {[...milkGroup.values]
+              .sort((a, b) => Number(a.isArchived) - Number(b.isArchived))
+              .map((value) => (
+                <li
+                  key={value.id}
+                  className={`flex min-h-14 items-center justify-between gap-3 px-3 py-2 ${value.isArchived ? 'bg-muted text-muted-foreground' : ''}`}
+                >
+                  <span className="font-medium">{value.name}</span>
+                  {value.isArchived ? (
+                    <EnableButton
+                      onClick={async () => {
+                        try {
+                          await restoreDrinkOptionValue({ data: value.id })
+                        } catch (error) {
+                          reportError(error, 'Could not enable this milk type')
+                        }
+                      }}
+                    />
+                  ) : (
+                    <RemoveOrDisable
+                      name={value.name}
+                      isBuiltIn={value.isBuiltIn}
+                      onRemove={async () => {
+                        await archiveDrinkOptionValue({ data: value.id })
+                      }}
+                    />
+                  )}
+                </li>
+              ))}
           </ul>
           <AddItemForm
             id="new-milk-type"

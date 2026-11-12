@@ -11,6 +11,11 @@ import {
   tasteTags,
 } from '@/db/schema'
 import { DEFAULT_BREWING_METHODS } from '@/lib/brewing-methods'
+import {
+  BUILT_IN_DRINK_TYPE_NAMES,
+  BUILT_IN_MILK_NAMES,
+} from '@/lib/drink-options'
+import { BUILT_IN_TASTE_TAG_NAMES } from '@/lib/taste-tags'
 
 type Transaction = Parameters<
   Parameters<ReturnType<typeof getControlDb>['transaction']>[0]
@@ -20,26 +25,7 @@ export async function createJournalDefaults(tx: Transaction, userId: string) {
   await tx.execute(sql`select set_config('roastbook.user_id', ${userId}, true)`)
   const drinks = await tx
     .insert(drinkTypes)
-    .values(
-      [
-        'Espresso',
-        'Doppio',
-        'Ristretto',
-        'Lungo',
-        'Americano',
-        'Latte',
-        'Cappuccino',
-        'Flat White',
-        'Cortado',
-        'Macchiato',
-        'Mocha',
-        'Filter',
-        'Iced Coffee',
-        'Tea',
-        'Hot Chocolate',
-        'Other',
-      ].map((name) => ({ name })),
-    )
+    .values(BUILT_IN_DRINK_TYPE_NAMES.map((name) => ({ name })))
     .returning()
   const methods = await tx
     .insert(brewingMethods)
@@ -70,16 +56,7 @@ export async function createJournalDefaults(tx: Transaction, userId: string) {
   if (milk) {
     await tx
       .insert(drinkOptionValues)
-      .values(
-        [
-          'Whole milk',
-          'Semi-skimmed milk',
-          'Skimmed milk',
-          'Oat milk',
-          'Soy milk',
-          'Almond milk',
-        ].map((name) => ({ name, groupId: milk.id })),
-      )
+      .values(BUILT_IN_MILK_NAMES.map((name) => ({ name, groupId: milk.id })))
     const milkDrinks = drinks.filter((d) =>
       [
         'Latte',
@@ -100,19 +77,5 @@ export async function createJournalDefaults(tx: Transaction, userId: string) {
   }
   await tx
     .insert(tasteTags)
-    .values(
-      [
-        'Chocolate',
-        'Caramel',
-        'Nutty',
-        'Fruity',
-        'Floral',
-        'Citrus',
-        'Berry',
-        'Spicy',
-        'Earthy',
-        'Smoky',
-        'Burnt',
-      ].map((name) => ({ name })),
-    )
+    .values(BUILT_IN_TASTE_TAG_NAMES.map((name) => ({ name })))
 }

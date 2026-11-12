@@ -125,7 +125,7 @@
     "archive_drink_option": { "type": "null" },
     "list_taste_tags": {
       "type": "array",
-      "items": { "$ref": "#/components/schemas/Response_6aae1f2dd92aa0aa" }
+      "items": { "$ref": "#/components/schemas/Response_b4757bbb4ba00b31" }
     },
     "create_taste_tag": {
       "anyOf": [
@@ -397,7 +397,7 @@
         },
         "tasteTags": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_f9623f0483a8431c" }
+          "items": { "$ref": "#/components/schemas/Response_017bb638a732a83f" }
         },
         "accessoryGearIds": { "type": "array", "items": { "type": "number" } }
       },
@@ -751,23 +751,24 @@
         "supersededAt"
       ]
     },
-    "Response_f9623f0483a8431c": {
+    "Response_017bb638a732a83f": {
       "type": "object",
       "properties": {
         "ownerId": { "type": "string" },
         "id": { "type": "number" },
         "shotId": { "type": "number" },
         "tasteTagId": { "type": "number" },
-        "tasteTag": { "$ref": "#/components/schemas/Response_6eccfc608e5d9b3d" }
+        "tasteTag": { "$ref": "#/components/schemas/Response_f8c4f27eed5d7e40" }
       },
       "required": ["id", "ownerId", "shotId", "tasteTag", "tasteTagId"]
     },
-    "Response_6eccfc608e5d9b3d": {
+    "Response_f8c4f27eed5d7e40": {
       "type": "object",
       "properties": {
         "name": { "type": "string" },
         "ownerId": { "type": "string" },
         "id": { "type": "number" },
+        "isArchived": { "type": "boolean" },
         "category": { "type": ["null", "string"] },
         "extractionAxis": { "type": ["null", "string"] },
         "strengthAxis": { "type": ["null", "string"] },
@@ -778,6 +779,7 @@
         "extractionAxis",
         "hint",
         "id",
+        "isArchived",
         "name",
         "ownerId",
         "strengthAxis"
@@ -3000,12 +3002,12 @@
         "totalPages": { "type": "number" },
         "items": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_d3758c39dc803d76" }
+          "items": { "$ref": "#/components/schemas/Response_2e0ca2d6d008e21b" }
         }
       },
       "required": ["items", "page", "pageSize", "totalItems", "totalPages"]
     },
-    "Response_d3758c39dc803d76": {
+    "Response_2e0ca2d6d008e21b": {
       "type": "object",
       "properties": {
         "ownerId": { "type": "string" },
@@ -3040,7 +3042,7 @@
         },
         "tasteTags": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_9970bd2fa3bfe549" }
+          "items": { "$ref": "#/components/schemas/Response_d5161bb1af99b2b2" }
         }
       },
       "required": [
@@ -3103,14 +3105,14 @@
         "website"
       ]
     },
-    "Response_9970bd2fa3bfe549": {
+    "Response_d5161bb1af99b2b2": {
       "type": "object",
       "properties": {
         "ownerId": { "type": "string" },
         "id": { "type": "number" },
         "tasteTagId": { "type": "number" },
         "cafeVisitId": { "type": "number" },
-        "tasteTag": { "$ref": "#/components/schemas/Response_6eccfc608e5d9b3d" }
+        "tasteTag": { "$ref": "#/components/schemas/Response_f8c4f27eed5d7e40" }
       },
       "required": ["cafeVisitId", "id", "ownerId", "tasteTag", "tasteTagId"]
     },
@@ -3157,7 +3159,7 @@
         },
         "tasteTags": {
           "type": "array",
-          "items": { "$ref": "#/components/schemas/Response_cd049fac6c7c8ddc" }
+          "items": { "$ref": "#/components/schemas/Response_cc7bebfd17d9366e" }
         }
       },
       "required": [
@@ -3250,14 +3252,14 @@
         "updatedAt"
       ]
     },
-    "Response_cd049fac6c7c8ddc": {
+    "Response_cc7bebfd17d9366e": {
       "type": "object",
       "properties": {
         "ownerId": { "type": "string" },
         "id": { "type": "number" },
         "tasteTagId": { "type": "number" },
         "cafeVisitId": { "type": "number" },
-        "tasteTag": { "$ref": "#/components/schemas/Response_6eccfc608e5d9b3d" }
+        "tasteTag": { "$ref": "#/components/schemas/Response_f8c4f27eed5d7e40" }
       },
       "required": ["cafeVisitId", "id", "ownerId", "tasteTag", "tasteTagId"]
     },
@@ -3520,12 +3522,13 @@
         "updatedAt"
       ]
     },
-    "Response_6aae1f2dd92aa0aa": {
+    "Response_b4757bbb4ba00b31": {
       "type": "object",
       "properties": {
         "name": { "type": "string" },
         "ownerId": { "type": "string" },
         "id": { "type": "number" },
+        "isArchived": { "type": "boolean" },
         "category": { "type": ["null", "string"] },
         "extractionAxis": { "type": ["null", "string"] },
         "strengthAxis": { "type": ["null", "string"] },
@@ -3536,6 +3539,7 @@
         "extractionAxis",
         "hint",
         "id",
+        "isArchived",
         "name",
         "ownerId",
         "strengthAxis"
@@ -3547,6 +3551,7 @@
         "name": { "type": "string" },
         "ownerId": { "type": "string" },
         "id": { "type": "number" },
+        "isArchived": { "type": "boolean" },
         "category": { "type": ["null", "string"] },
         "extractionAxis": { "type": ["null", "string"] },
         "strengthAxis": { "type": ["null", "string"] },
@@ -3557,6 +3562,7 @@
         "extractionAxis",
         "hint",
         "id",
+        "isArchived",
         "name",
         "ownerId",
         "strengthAxis"

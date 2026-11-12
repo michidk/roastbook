@@ -610,6 +610,13 @@
       "when": 1794092662085,
       "tag": "0086_bright_the_fury",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1794497632013,
+      "tag": "0087_sca-taste-tags",
+      "breakpoints": true
     }
   ]
 }

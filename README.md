@@ -164,13 +164,16 @@ online research requires Responses with hosted web search.
 
 - Switch the overall rating, each sensory factor, flavor tags, and tasting
   notes on or off, or use a single sour-to-bitter scale.
+- Built-in flavor tags from the SCA Coffee Taster's Flavor Wheel; disable the
+  ones you skip and add your own.
 
 ### Your coffee world
 
 - Coffees with bag history, roasters, brewing methods, coffee shops, typed
   gear, and reusable gear sets.
 - Café visits on a map and a Places list from favorites to wishlist.
-- Configurable drink and milk types per brewing method.
+- Built-in drink and milk types you can disable, plus your own, per brewing
+  method.
 
 <p align="center">
   <img src=".github/images/beans-desktop.png"

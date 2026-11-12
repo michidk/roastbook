@@ -1,3 +1,30 @@
+// Built-in types can be disabled but never deleted; anything else is custom.
+export const BUILT_IN_DRINK_TYPE_NAMES = [
+  'Espresso',
+  'Doppio',
+  'Ristretto',
+  'Lungo',
+  'Americano',
+  'Latte',
+  'Cappuccino',
+  'Flat White',
+  'Cortado',
+  'Macchiato',
+  'Mocha',
+  'Filter',
+  'Iced Coffee',
+  'Hot Chocolate',
+] as const
+
+export const BUILT_IN_MILK_NAMES = [
+  'Whole milk',
+  'Semi-skimmed milk',
+  'Skimmed milk',
+  'Oat milk',
+  'Soy milk',
+  'Almond milk',
+] as const
+
 export type DrinkTypeOption = {
   readonly id: number
   readonly name: string

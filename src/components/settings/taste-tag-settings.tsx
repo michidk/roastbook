@@ -15,15 +15,44 @@ import { Input } from '@roastbook/ui/input'
 import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { DeleteConfirmation } from '@/components/delete-confirmation'
-import { createTasteTag, deleteTasteTag } from '@/journal/taste-tags'
-import { isNegativeTasteTag } from '@/lib/taste-tags'
+import {
+  EnableButton,
+  RemoveOrDisable,
+} from '@/components/settings/built-in-item-actions'
+import {
+  createTasteTag,
+  deleteTasteTag,
+  disableTasteTag,
+  enableTasteTag,
+} from '@/journal/taste-tags'
+import {
+  isNegativeTasteTag,
+  SCA_FLAVOR_WHEEL,
+  scaFlavorCategory,
+} from '@/lib/taste-tags'
 
 type TasteTag = {
   readonly id: number
   readonly name: string
   readonly category: string | null
   readonly hint: string | null
+  readonly isArchived: boolean
+}
+
+/** SCA categories in wheel order, then custom tags, then disabled tags. */
+function groupTasteTags(tags: readonly TasteTag[]) {
+  const active = tags.filter((tag) => !tag.isArchived)
+  return [
+    ...Object.keys(SCA_FLAVOR_WHEEL).map((category) => ({
+      title: category,
+      tags: active.filter((tag) => scaFlavorCategory(tag.name) === category),
+    })),
+    {
+      title: 'Custom',
+      tags: active.filter((tag) => !scaFlavorCategory(tag.name)),
+    },
+    { title: 'Disabled', tags: tags.filter((tag) => tag.isArchived) },
+  ].filter((group) => group.tags.length > 0)
 }
 
 export function TasteTagSettings({
@@ -33,6 +62,9 @@ export function TasteTagSettings({
 }) {
   const [newTagName, setNewTagName] = useState('')
   const [isAdding, setIsAdding] = useState(false)
+  const enabledCount = tags.filter((tag) => !tag.isArchived).length
+  const reportError = (error: unknown, fallback: string) =>
+    toast.error(error instanceof Error ? error.message : fallback)
 
   const handleAdd = async () => {
     const name = newTagName.trim()
@@ -55,9 +87,9 @@ export function TasteTagSettings({
     <Dialog>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
-          {tags.length === 0
-            ? 'No taste tags configured.'
-            : `${tags.length} taste ${tags.length === 1 ? 'tag' : 'tags'} configured.`}
+          {enabledCount === 0
+            ? 'No taste tags enabled.'
+            : `${enabledCount} taste ${enabledCount === 1 ? 'tag' : 'tags'} enabled.`}
         </p>
         <DialogTrigger render={<Button type="button" variant="outline" />}>
           Manage taste tags
@@ -68,46 +100,80 @@ export function TasteTagSettings({
         <DialogHeader>
           <DialogTitle>Manage taste tags</DialogTitle>
           <DialogDescription>
-            Add tags offered when rating shots and café visits, or remove tags
-            you no longer use.
+            Built-in tags follow the SCA Coffee Taster's Flavor Wheel. Disable
+            the ones you don't use, or add and delete your own custom tags.
           </DialogDescription>
         </DialogHeader>
         <DialogBody>
-          <ul className="space-y-1">
-            {tags.map((tag) => (
-              <li
-                key={tag.id}
-                className="flex min-h-11 items-center justify-between gap-3 rounded-md px-2 py-1"
+          {tags.length === 0 ? (
+            <p className="px-2 py-1 text-sm text-muted-foreground">
+              No taste tags yet. Add your first tag below.
+            </p>
+          ) : null}
+          <div className="space-y-4">
+            {groupTasteTags(tags).map((group) => (
+              <section
+                key={group.title}
+                aria-labelledby={`taste-group-${group.title}`}
               >
-                <span className="flex min-w-0 items-center gap-2">
-                  <Badge
-                    variant={
-                      isNegativeTasteTag(tag) ? 'destructive' : 'default'
-                    }
-                  >
-                    {tag.name}
-                  </Badge>
-                  {tag.hint ? (
-                    <span className="truncate text-xs text-muted-foreground">
-                      {tag.hint}
-                    </span>
-                  ) : null}
-                </span>
-                <DeleteConfirmation
-                  title={`Delete the "${tag.name}" tag?`}
-                  description="This removes the tag from every shot and café visit that uses it. This action cannot be undone."
-                  onConfirm={async () => {
-                    await deleteTasteTag({ data: tag.id })
-                  }}
-                />
-              </li>
+                <h3
+                  id={`taste-group-${group.title}`}
+                  className="mb-1 px-2 text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                >
+                  {group.title}
+                </h3>
+                <ul className="space-y-1">
+                  {group.tags.map((tag) => (
+                    <li
+                      key={tag.id}
+                      className={`flex min-h-11 items-center justify-between gap-3 rounded-md px-2 py-1 ${tag.isArchived ? 'bg-muted text-muted-foreground' : ''}`}
+                    >
+                      <span className="flex min-w-0 items-center gap-2">
+                        <Badge
+                          variant={
+                            tag.isArchived
+                              ? 'outline'
+                              : isNegativeTasteTag(tag)
+                                ? 'destructive'
+                                : 'default'
+                          }
+                        >
+                          {tag.name}
+                        </Badge>
+                        {tag.hint ? (
+                          <span className="truncate text-xs text-muted-foreground">
+                            {tag.hint}
+                          </span>
+                        ) : null}
+                      </span>
+                      {tag.isArchived ? (
+                        <EnableButton
+                          onClick={async () => {
+                            try {
+                              await enableTasteTag({ data: tag.id })
+                            } catch (error) {
+                              reportError(error, 'Could not enable this tag')
+                            }
+                          }}
+                        />
+                      ) : (
+                        <RemoveOrDisable
+                          name={tag.name}
+                          isBuiltIn={scaFlavorCategory(tag.name) !== undefined}
+                          deleteDescription="This removes the tag from every brew and café visit that uses it. This action cannot be undone."
+                          onRemove={async () => {
+                            await (scaFlavorCategory(tag.name)
+                              ? disableTasteTag({ data: tag.id })
+                              : deleteTasteTag({ data: tag.id }))
+                          }}
+                        />
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
             ))}
-            {tags.length === 0 ? (
-              <li className="px-2 py-1 text-sm text-muted-foreground">
-                No taste tags yet. Add your first tag below.
-              </li>
-            ) : null}
-          </ul>
+          </div>
         </DialogBody>
         <DialogFooter className="sm:items-end sm:justify-between">
           <DialogClose render={<Button type="button" variant="outline" />}>

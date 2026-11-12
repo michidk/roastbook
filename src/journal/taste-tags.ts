@@ -8,6 +8,7 @@ import {
   owned,
 } from '@/journal/platform/database'
 import { positiveIdSchema, tasteTagCreateSchema } from '@/lib/server-validation'
+import { scaFlavorCategory } from '@/lib/taste-tags'
 
 export const getTasteTags = journalRead('taste-tags/getTasteTags').handler(
   async () => {
@@ -24,6 +25,14 @@ export const createTasteTag = journalWrite('taste-tags/createTasteTag')
     const existing = await db.query.tasteTags.findFirst({
       where: owned(tasteTags, eq(tasteTags.name, data.name)),
     })
+    if (existing?.isArchived) {
+      const [restored] = await db
+        .update(tasteTags)
+        .set({ isArchived: false })
+        .where(owned(tasteTags, eq(tasteTags.id, existing.id)))
+        .returning()
+      return restored
+    }
     if (existing) throw new Error(`A tag named "${data.name}" already exists`)
     const [id] = await allocateJournalIds(tasteTags)
     const [tag] = await db
@@ -33,8 +42,33 @@ export const createTasteTag = journalWrite('taste-tags/createTasteTag')
     return tag
   })
 
+/** Only custom tags can be deleted; built-in tags are disabled instead. */
 export const deleteTasteTag = journalWrite('taste-tags/deleteTasteTag')
   .validator(positiveIdSchema)
   .handler(async ({ data: id }) => {
+    const tag = await db.query.tasteTags.findFirst({
+      where: owned(tasteTags, eq(tasteTags.id, id)),
+    })
+    if (tag && scaFlavorCategory(tag.name)) {
+      throw new Error('Built-in taste tags can be disabled, not deleted')
+    }
     await db.delete(tasteTags).where(owned(tasteTags, eq(tasteTags.id, id)))
+  })
+
+export const disableTasteTag = journalWrite('taste-tags/disableTasteTag')
+  .validator(positiveIdSchema)
+  .handler(async ({ data: id }) => {
+    await db
+      .update(tasteTags)
+      .set({ isArchived: true })
+      .where(owned(tasteTags, eq(tasteTags.id, id)))
+  })
+
+export const enableTasteTag = journalWrite('taste-tags/enableTasteTag')
+  .validator(positiveIdSchema)
+  .handler(async ({ data: id }) => {
+    await db
+      .update(tasteTags)
+      .set({ isArchived: false })
+      .where(owned(tasteTags, eq(tasteTags.id, id)))
   })

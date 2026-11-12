@@ -68,7 +68,7 @@ function TasteProfileSection() {
 
       <PanelSection
         title="Taste tags"
-        description="Choose whether rating a brew or café visit offers taste tags, then manage the list. Removing a tag also removes it from existing entries."
+        description="Choose whether rating a brew or café visit offers taste tags, then manage the list. Built-in tags are based on the SCA Coffee Taster's Flavor Wheel."
         action={
           tasteProfileMutation.isSaving ? (
             <Loader2 className="size-5 animate-spin text-link" />

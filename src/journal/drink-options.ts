@@ -19,6 +19,10 @@ import {
   owned,
   runJournalMutations,
 } from '@/journal/platform/database'
+import {
+  BUILT_IN_DRINK_TYPE_NAMES,
+  BUILT_IN_MILK_NAMES,
+} from '@/lib/drink-options'
 import { positiveIdSchema } from '@/lib/server-validation'
 
 export const getDrinkConfiguration = journalRead(
@@ -49,6 +53,64 @@ export const getDrinkConfiguration = journalRead(
     optionGroups: groups,
   }
 })
+
+const isBuiltInType = (name: string) =>
+  (BUILT_IN_DRINK_TYPE_NAMES as readonly string[]).includes(name)
+const isBuiltInMilk = (name: string) =>
+  (BUILT_IN_MILK_NAMES as readonly string[]).includes(name)
+
+// Settings view: active items plus disabled built-ins (archived custom items count as deleted).
+export const getDrinkSettings = journalRead(
+  'drink-options/getDrinkSettings',
+).handler(async () => {
+  const [types, groups] = await Promise.all([
+    db.query.drinkTypes.findMany({
+      where: owned(drinkTypes),
+      orderBy: [asc(drinkTypes.name)],
+      with: { optionGroupLinks: true },
+    }),
+    db.query.drinkOptionGroups.findMany({
+      where: owned(drinkOptionGroups, eq(drinkOptionGroups.isArchived, false)),
+      orderBy: [asc(drinkOptionGroups.name)],
+      with: { values: { orderBy: [asc(drinkOptionValues.name)] } },
+    }),
+  ])
+  return {
+    drinkTypes: types
+      .map(({ optionGroupLinks, ...type }) => ({
+        ...type,
+        isBuiltIn: isBuiltInType(type.name),
+        optionGroupIds: optionGroupLinks.map((link) => link.optionGroupId),
+      }))
+      .filter((type) => !type.isArchived || type.isBuiltIn),
+    optionGroups: groups.map((group) => ({
+      ...group,
+      values: group.values
+        .map((value) => ({ ...value, isBuiltIn: isBuiltInMilk(value.name) }))
+        .filter((value) => !value.isArchived || value.isBuiltIn),
+    })),
+  }
+})
+
+export const restoreDrinkType = journalWrite('drink-options/restoreDrinkType')
+  .validator(positiveIdSchema)
+  .handler(async ({ data: id }) => {
+    await db
+      .update(drinkTypes)
+      .set({ isArchived: false, updatedAt: journalNow() })
+      .where(owned(drinkTypes, eq(drinkTypes.id, id)))
+  })
+
+export const restoreDrinkOptionValue = journalWrite(
+  'drink-options/restoreDrinkOptionValue',
+)
+  .validator(positiveIdSchema)
+  .handler(async ({ data: id }) => {
+    await db
+      .update(drinkOptionValues)
+      .set({ isArchived: false, updatedAt: journalNow() })
+      .where(owned(drinkOptionValues, eq(drinkOptionValues.id, id)))
+  })
 
 export const saveDrinkType = journalWrite('drink-options/saveDrinkType')
   .validator(drinkTypeWriteSchema)

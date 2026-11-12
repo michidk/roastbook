@@ -1805,6 +1805,7 @@ export const tasteTags = pgTable(
     extractionAxis: decimal('extraction_axis', { precision: 3, scale: 2 }),
     strengthAxis: decimal('strength_axis', { precision: 3, scale: 2 }),
     hint: text('hint').default('').notNull(),
+    isArchived: boolean('is_archived').default(false).notNull(),
   },
   (table) => [
     uniqueIndex('taste_tags_name_unique').on(table.ownerId, table.name),

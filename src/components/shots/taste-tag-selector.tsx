@@ -7,6 +7,7 @@ type TasteTag = {
   readonly id: number
   readonly name: string
   readonly hint?: string | null
+  readonly isArchived?: boolean
 }
 
 type TasteTagSelectorProps = {
@@ -52,12 +53,16 @@ export function getVisibleTasteTags(
 
 export function TasteTagSelector({
   label,
-  tags,
+  tags: allTags,
   selected,
   onToggle,
   featuredIds,
 }: TasteTagSelectorProps) {
   const [showAll, setShowAll] = useState(false)
+  // Disabled tags stay visible only where an entry already uses them.
+  const tags = allTags.filter(
+    (tag) => !tag.isArchived || selected.includes(tag.id),
+  )
   if (tags.length === 0) return null
 
   const featured = featuredIds ? new Set(featuredIds) : null

@@ -2,6 +2,7 @@ import '@tanstack/react-start/server-only'
 import type { PgliteDatabase } from 'drizzle-orm/pglite'
 import { DEFAULT_BREWING_METHODS } from '@/lib/brewing-methods'
 import { gearName } from '@/lib/gear-name'
+import { BUILT_IN_TASTE_TAG_NAMES } from '@/lib/taste-tags'
 import * as schema from './schema'
 
 type Database = PgliteDatabase<typeof schema>
@@ -732,16 +733,11 @@ export async function seedDemoDatabase(database: Database): Promise<void> {
 
   await database
     .insert(schema.tasteTags)
-    .values([
-      { name: 'Chocolate', category: 'Flavor' },
-      { name: 'Fruity', category: 'Flavor' },
-      { name: 'Floral', category: 'Flavor' },
-      { name: 'Nutty', category: 'Flavor' },
-    ])
+    .values(BUILT_IN_TASTE_TAG_NAMES.map((name) => ({ name })))
     .onConflictDoNothing()
   const tags = await database.query.tasteTags.findMany({
     where: (tag, { inArray }) =>
-      inArray(tag.name, ['Chocolate', 'Fruity', 'Floral', 'Nutty']),
+      inArray(tag.name, ['Cocoa', 'Berry', 'Floral', 'Nutty']),
   })
   await database.insert(schema.shotTasteTags).values(
     shots.map((shot, index) => ({
