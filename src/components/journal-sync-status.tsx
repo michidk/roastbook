@@ -17,9 +17,11 @@ import { getErrorMessage } from '@/lib/error-message'
 
 // The journal runtime loads in its own chunk.
 async function loadSync() {
+  // knip 6.45 loses members of a module destructured straight from Promise.all.
+  const syncModule = import('@/journal/local/sync')
   const [{ openEditionJournal }, sync] = await Promise.all([
     import('@/journal/local/edition'),
-    import('@/journal/local/sync'),
+    syncModule,
   ])
   return { journal: await openEditionJournal(), sync }
 }
