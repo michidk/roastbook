@@ -6,6 +6,7 @@ import { DEMO_INSTALL_MESSAGE } from '@/lib/app-capabilities'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { usePreferencesStore } from '@/lib/preferences-store'
 import { isStandalone } from '@/lib/standalone'
+import { reportBrowserUsage } from '@/modules/usage-statistics/browser'
 
 // Chromium-only event; not in the DOM typings.
 interface BeforeInstallPromptEvent extends Event {
@@ -43,7 +44,10 @@ export function InstallAppHint() {
       event.preventDefault()
       setInstallPrompt(event as BeforeInstallPromptEvent)
     }
-    const handleInstalled = () => setInstallPrompt(null)
+    const handleInstalled = () => {
+      setInstallPrompt(null)
+      reportBrowserUsage('pwa_installed')
+    }
     window.addEventListener('beforeinstallprompt', handlePrompt)
     window.addEventListener('appinstalled', handleInstalled)
     return () => {
@@ -67,7 +71,13 @@ export function InstallAppHint() {
     }
     if (!installPrompt) return
     await installPrompt.prompt()
+    reportBrowserUsage('pwa_install_prompt_opened')
     const { outcome } = await installPrompt.userChoice
+    reportBrowserUsage(
+      outcome === 'accepted'
+        ? 'pwa_install_prompt_accepted'
+        : 'pwa_install_prompt_dismissed',
+    )
     // A prompt event can only be used once.
     setInstallPrompt(null)
     if (outcome === 'accepted') dismiss()
@@ -103,7 +113,10 @@ export function InstallAppHint() {
           size="icon-xs"
           variant="ghost"
           aria-label="Dismiss install hint"
-          onClick={dismiss}
+          onClick={() => {
+            if (!DEMO_MODE) reportBrowserUsage('pwa_install_hint_dismissed')
+            dismiss()
+          }}
         >
           <X />
         </Button>

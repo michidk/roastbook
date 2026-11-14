@@ -762,6 +762,13 @@
         }
       }
     },
+    "usageStatistics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "disabled": { "type": "boolean" }
+      }
+    },
     "posthog": {
       "type": "object",
       "additionalProperties": false,

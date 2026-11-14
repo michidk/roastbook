@@ -23,6 +23,7 @@ import {
   roasters,
   shots,
 } from '@/db/schema'
+import { trackEvent } from '@/extension-points/analytics.server'
 import { renderAccountEmail } from '@/lib/account-email'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { getServerEnv } from '@/lib/env.server'
@@ -363,6 +364,7 @@ export async function requestAccountDeletion(reauthToken?: string) {
     identity.email,
     await renderAccountEmail({ kind: 'delete-account', url: url.href }),
   )
+  trackEvent('account_deletion_requested')
 }
 export async function confirmAccountDeletion(token: string) {
   const identity = accountIdentity()
@@ -383,6 +385,7 @@ export async function confirmAccountDeletion(token: string) {
     if (!used) throw new Error('This confirmation is invalid or expired')
     await scheduleDeletion(tx, identity.id, identity.id)
   })
+  trackEvent('account_deletion_confirmed')
 }
 export async function requestAccountExport(reauthToken?: string) {
   const identity = accountIdentity()
@@ -407,4 +410,5 @@ export async function requestAccountExport(reauthToken?: string) {
       .insert(accountJobs)
       .values({ id: randomUUID(), userId: identity.id, kind: 'export' })
   })
+  trackEvent('account_export_requested')
 }
