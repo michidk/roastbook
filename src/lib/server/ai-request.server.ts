@@ -1,9 +1,4 @@
-import {
-  type ChatMiddleware,
-  chat,
-  fromSpecTokenUsage,
-  type ModelMessage,
-} from '@tanstack/ai'
+import { type ChatMiddleware, chat, type ModelMessage } from '@tanstack/ai'
 import type { webSearchTool } from '@tanstack/ai-openai/tools'
 import type { z } from 'zod'
 import * as defaultRecorder from '@/extension-points/ai-request-recorder.server'
@@ -62,12 +57,6 @@ export async function runAiRequest<T>(
     },
     onChunk: (_context, chunk) => {
       if (chunk.type === 'RUN_ERROR') {
-        if (chunk.usage) {
-          const next = Array.isArray(chunk.usage)
-            ? fromSpecTokenUsage(chunk.usage)
-            : chunk.usage
-          if (next) usage = addAiTokenUsage(usage, next)
-        }
         terminalError = new AiOutputError(
           'The AI provider could not complete the response. Check the selected model and try again.',
         )
