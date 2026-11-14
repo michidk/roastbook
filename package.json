@@ -124,8 +124,5 @@
   },
   "workspaces": [
     "packages/*"
-  ],
-  "patchedDependencies": {
-    "@tanstack/openai-base@1.0.0": "patches/@tanstack%2Fopenai-base@1.0.0.patch"
-  }
+  ]
 }
