@@ -10,6 +10,10 @@ const replay = new AsyncLocalStorage<{
   uploaded: Set<string>
 }>()
 
+export function isReplayingJournal() {
+  return replay.getStore() !== undefined
+}
+
 /** Runs a replayed write so generated identifiers and paths match the browser. */
 export function withRecordedValues<T>(values: RecordedValues, work: () => T) {
   return replay.run(

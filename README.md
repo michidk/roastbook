@@ -322,3 +322,11 @@ The app imports shadcn primitives and theme tokens from
 `package.json` and `bun.lock`. Add shared primitives in that repository.
 The app keeps its feature components, preferences and document layout locally.
 The existing UI stories render the shared package components.
+
+### Optional usage statistics
+
+Roastbook asks before sharing feature-usage counts with its maintainers. Sharing
+is off until you accept and can be turned off in Settings > General. Journal
+contents and recordings are never included in these statistics. Administrators
+can disable collection for the whole installation. See
+[usage statistics](docs/configuration.md#optional-usage-statistics).

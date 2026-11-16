@@ -11,6 +11,8 @@ env:
   {{- end }}
   - name: AUTH_ENABLED
     value: {{ .Values.auth.enabled | quote }}
+  - name: USAGE_STATISTICS_DISABLED
+    value: {{ .Values.usageStatistics.disabled | quote }}
   - name: DATABASE_URL
     {{- if .Values.postgresql.existingSecret }}
     valueFrom:

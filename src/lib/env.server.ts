@@ -28,6 +28,7 @@ const serverSchema = {
     .regex(/^[a-f0-9]{40}$/)
     .optional(),
   AUTH_ENABLED: booleanString,
+  USAGE_STATISTICS_DISABLED: booleanString,
   DEPLOYMENT_MODE: z.enum(['self-hosted', 'hosted']).default('self-hosted'),
   PUBLIC_URL: z.url().optional(),
   AUTH_SECRET: z.string().min(32).optional(),
@@ -146,6 +147,7 @@ export function parseServerEnv(
     runtimeEnvStrict: {
       ROASTBOOK_SOURCE_REVISION: runtimeEnvironment.ROASTBOOK_SOURCE_REVISION,
       AUTH_ENABLED: runtimeEnvironment.AUTH_ENABLED,
+      USAGE_STATISTICS_DISABLED: runtimeEnvironment.USAGE_STATISTICS_DISABLED,
       DEPLOYMENT_MODE: runtimeEnvironment.DEPLOYMENT_MODE,
       // AUTH_URL is the former name, still accepted.
       PUBLIC_URL: runtimeEnvironment.PUBLIC_URL ?? runtimeEnvironment.AUTH_URL,

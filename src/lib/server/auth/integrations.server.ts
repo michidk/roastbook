@@ -4,6 +4,7 @@ import { and, count, desc, eq, gt, isNull, lt, or, sql } from 'drizzle-orm'
 import { getControlDb } from '@/db/connection.server'
 import { requireIdentity } from '@/db/journal-context.server'
 import { authUsers, integrationTokens } from '@/db/schema'
+import { trackEvent } from '@/extension-points/analytics.server'
 import { consumeReauthentication } from '@/lib/server/auth/reauthentication.server'
 import {
   type IntegrationScope,
@@ -73,6 +74,7 @@ export async function createIntegrationCredential(input: {
       expiresAt: input.expiresAt,
     })
   })
+  trackEvent('integration_credential_created')
   return token
 }
 
@@ -97,6 +99,7 @@ export async function updateIntegrationCredential(input: {
     )
     .returning({ id: integrationTokens.id })
   if (!updated) throw new Error('Key not found')
+  trackEvent('integration_credential_updated')
 }
 
 export async function revokeIntegrationCredential(id: string) {
@@ -110,7 +113,10 @@ export async function revokeIntegrationCredential(id: string) {
       ),
     )
     .returning({ id: integrationTokens.id })
-  if (deleted) await forgetCredentialUsage(identity.id, deleted.id)
+  if (deleted) {
+    await forgetCredentialUsage(identity.id, deleted.id)
+    trackEvent('integration_credential_revoked')
+  }
 }
 
 export async function listIntegrationCredentials(kind: CredentialKind) {

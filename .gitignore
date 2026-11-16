@@ -44,3 +44,6 @@ logs/
 # Private build extension overlay
 /extension/
 .wrangler
+
+# Local planning documents
+/docs/superpowers/
