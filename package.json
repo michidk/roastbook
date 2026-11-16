@@ -55,7 +55,7 @@
     "@better-auth/passkey": "1.7.22",
     "@modelcontextprotocol/server": "^2.4.0",
     "@roastbook/open-coffee-schema": "0.4.0",
-    "@scalar/api-reference": "1.78.0",
+    "@scalar/api-reference": "1.78.1",
     "@simplewebauthn/server": "14.1.0",
     "@t3-oss/env-core": "^0.13.11",
     "@tailwindcss/vite": "^4.1.18",
