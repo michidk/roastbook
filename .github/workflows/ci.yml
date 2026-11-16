@@ -147,7 +147,7 @@ jobs:
 
   image:
     needs: checks
-    uses: michidk/workflows/.github/workflows/container-image.yml@ef94cf4110740722d120d36d1baa86af07aaa0cf # main
+    uses: michidk/workflows/.github/workflows/container-image.yml@f44c0a5eb5b7bb908bc28084f390195102308b46 # main
     permissions:
       contents: read
       packages: write
