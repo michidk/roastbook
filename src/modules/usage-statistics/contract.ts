@@ -8,8 +8,7 @@ export const browserUsageEventSchema = z.enum([
   'pwa_install_hint_dismissed',
 ])
 
-export const usageEventSchema = z.enum([
-  ...browserUsageEventSchema.options,
+export const serverUsageEventSchema = z.enum([
   'ai_key_saved',
   'integration_credential_created',
   'integration_credential_updated',
@@ -21,6 +20,14 @@ export const usageEventSchema = z.enum([
   'brew_created',
   'ai_recommendation_created',
 ])
+export const usageEventSchema = z.enum([
+  ...browserUsageEventSchema.options,
+  ...serverUsageEventSchema.options,
+])
+
+export type BrowserUsageEvent = z.infer<typeof browserUsageEventSchema>
+export type ServerUsageEvent = z.infer<typeof serverUsageEventSchema>
+
 export const USAGE_CONSENT_COOKIE = 'roastbook_usage_v1'
 
 export function parseUsageConsent(value: string | undefined) {
