@@ -8,6 +8,8 @@ test('posts JSON with a deadline, refuses redirects, and cancels the response st
   if (!response.body) throw new Error('Expected a response stream')
   const cancel = spyOn(response.body, 'cancel')
   const fetch = spyOn(globalThis, 'fetch').mockResolvedValue(response)
+  const signal = new AbortController().signal
+  const timeout = spyOn(AbortSignal, 'timeout').mockReturnValue(signal)
   await deliverAnalytics({
     endpoint: 'https://example.test/events',
     body: { event: 'bean_created' },
@@ -18,7 +20,9 @@ test('posts JSON with a deadline, refuses redirects, and cancels the response st
   expect(endpoint).toBe('https://example.test/events')
   expect(options?.method).toBe('POST')
   expect(options?.redirect).toBe('error')
-  expect(options?.signal).toBeInstanceOf(AbortSignal)
+  expect(timeout).toHaveBeenCalledTimes(1)
+  expect(timeout).toHaveBeenCalledWith(3000)
+  expect(options?.signal).toBe(signal)
   expect(Object.fromEntries(new Headers(options?.headers))).toEqual({
     authorization: 'Bearer token',
     'content-type': 'application/json',
