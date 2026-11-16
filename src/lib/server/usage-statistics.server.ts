@@ -9,11 +9,13 @@ import { requireIdentity } from '@/db/journal-context.server'
 import { isReplayingJournal } from '@/db/journal-replay.server'
 import { DEMO_MODE } from '@/lib/build-mode'
 import { getServerEnv, type ServerEnv } from '@/lib/env.server'
+import { deliverAnalytics } from '@/lib/server/analytics-delivery.server'
 import {
   parseUsageConsent,
   USAGE_CONSENT_COOKIE,
   usageEventSchema,
 } from '@/modules/usage-statistics/contract'
+import { postHogEvent } from '@/modules/usage-statistics/posthog'
 
 // Public ingestion configuration, deliberately distributed with the application.
 const projectToken = 'phc_pfUW8sFdRJVqHQHcFyYDP3hhJBspGfXgr5C5QkrvLqVu'
@@ -64,17 +66,15 @@ function usagePayload(
   const parsed = usageEventSchema.safeParse(event)
   const consent = parseUsageConsent(cookie)
   if (!parsed.success || !consent.id) return null
-  return {
-    api_key: projectToken,
+  return postHogEvent({
+    projectToken,
     event: parsed.data,
-    distinct_id: `self_hosted:${consent.id}`,
-    properties: {
-      deployment_type: 'self_hosted',
-      release: release ?? 'unknown',
-      $process_person_profile: false,
-      $geoip_disable: true,
-    },
-  }
+    distinctId: `self_hosted:${consent.id}`,
+    deploymentType: 'self_hosted',
+    release,
+    personProfile: false,
+    properties: { $geoip_disable: true },
+  })
 }
 
 /** Best effort, without a queue: unavailable telemetry never delays journal work. */
@@ -96,14 +96,7 @@ export async function recordUsageEvent(event: unknown) {
     if (!payload) return
     inFlight += 1
     try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        redirect: 'error',
-        signal: AbortSignal.timeout(3_000),
-      })
-      await response.body?.cancel()
+      await deliverAnalytics({ endpoint, body: payload, timeoutMs: 3_000 })
     } finally {
       inFlight -= 1
     }

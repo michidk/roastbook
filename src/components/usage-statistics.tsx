@@ -19,8 +19,7 @@ import {
   sendBrowserUsageEvent,
   setUsagePreference,
 } from '@/lib/server/usage-statistics'
-import { browserUsageEvent } from '@/modules/usage-statistics/browser'
-import { browserUsageEventSchema } from '@/modules/usage-statistics/contract'
+import { subscribeBrowserUsage } from '@/modules/usage-statistics/browser'
 
 const preferenceChanged = 'roastbook-usage-preference-changed'
 const description =
@@ -81,14 +80,9 @@ export function UsageConsentPrompt() {
   useEffect(() => {
     if (!state?.available || state.blocked || state.preference !== 'granted')
       return
-    const receive = (event: Event) => {
-      if (!(event instanceof CustomEvent) || !navigator.onLine) return
-      const parsed = browserUsageEventSchema.safeParse(event.detail)
-      if (parsed.success)
-        void sendBrowserUsageEvent({ data: parsed.data }).catch(() => {})
-    }
-    window.addEventListener(browserUsageEvent, receive)
-    return () => window.removeEventListener(browserUsageEvent, receive)
+    return subscribeBrowserUsage((event) => {
+      void sendBrowserUsageEvent({ data: event }).catch(() => {})
+    })
   }, [state])
   const [checked, setChecked] = useState(false)
   const [dismissed, setDismissed] = useState(false)
