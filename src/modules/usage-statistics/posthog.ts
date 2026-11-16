@@ -1,12 +1,14 @@
+type AnalyticsContext = {
+  deploymentType: string
+  release: string | undefined
+  properties?: object
+}
+
 export function analyticsProperties({
   deploymentType,
   release,
   properties = {},
-}: {
-  deploymentType: string
-  release: string | undefined
-  properties?: object
-}) {
+}: AnalyticsContext) {
   return {
     ...properties,
     deployment_type: deploymentType,
@@ -20,7 +22,7 @@ export function postHogEvent({
   distinctId,
   personProfile,
   ...context
-}: Parameters<typeof analyticsProperties>[0] & {
+}: AnalyticsContext & {
   projectToken: string
   event: string
   distinctId: string
