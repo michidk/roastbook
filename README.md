@@ -5,9 +5,8 @@
 </h1>
 
 <p align="center">
-  <strong>The AI-native coffee journal you actually own.</strong><br>
-  Photograph the bag. Log the brew. Keep every gram of data on your own
-  infrastructure.
+  <strong>A self-hosted coffee journal with optional AI assistance.</strong><br>
+  Track beans, brews, recipes, and equipment on your own infrastructure.
 </p>
 
 <p align="center">
@@ -25,15 +24,14 @@
 <img alt="Checks and Build" src="https://github.com/michidk/roastbook/actions/workflows/ci.yml/badge.svg"></a>
 <a href="https://app.codacy.com/gh/michidk/roastbook/dashboard">
 <img alt="Codacy grade" src="https://app.codacy.com/project/badge/Grade/dcbf6d1e94c244efaee4b19b86f2d771"></a>
-<img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg">
-<img alt="Self-hosted" src="https://img.shields.io/badge/self--hosted-yes-8B5E34.svg">
+<a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
 </p>
 
 <p align="center">
   <a href="https://roastbook.coffee/">
     <img src="public/media/roastbook-coffee-journal.webp"
       alt="A saved Roastbook coffee recipe beside an espresso setup"
-      width="1000">
+      width="800">
   </a><br>
   <sub>Real app screen with sample data, set in an AI-generated coffee scene.</sub>
 </p>
@@ -56,7 +54,7 @@ roasters, brewing methods, and gear. Website:
 <p align="center">
   <img src=".github/images/overview-desktop.png"
     alt="Roastbook overview with recent brews and quick actions"
-    width="1200">
+    width="800">
 </p>
 
 - 🎚️ **Simple first, deep when you ask.** Each brewing method shows only its
@@ -87,7 +85,7 @@ roasters, brewing methods, and gear. Website:
   <img src=".github/images/new-brew-desktop.png"
     alt="Logging a new espresso brew with method suggestions, taste controls,
     a selected coffee, and the brew timer"
-    width="900">
+    width="800">
 </p>
 
 ## 🧠 AI features
@@ -128,7 +126,7 @@ own OpenAI-compatible endpoint in **Settings → AI**. See
   <img src=".github/images/ai-opinion-desktop.png"
     alt="AI opinion on a logged brew with a confidence rating, a comparison
     with earlier brews, and a follow-up chat"
-    width="1000">
+    width="800">
 </p>
 
 AI calls run server-side only and are rate-limited, schema-validated, and
@@ -179,7 +177,7 @@ online research requires Responses with hosted web search.
 <p align="center">
   <img src=".github/images/beans-desktop.png"
     alt="Roastbook bean collection with coffee bags on the shelf"
-    width="1200">
+    width="800">
 </p>
 
 ### Insight and navigation
@@ -217,8 +215,8 @@ online research requires Responses with hosted web search.
 
 ## 🚀 Quick start
 
-Docker Compose starts PostgreSQL, applies migrations, and serves Roastbook
-behind Hodor.
+From a checkout of this repository, Docker Compose starts PostgreSQL, applies
+migrations, and serves Roastbook behind Hodor.
 
 ```bash
 cp .env.example .env
