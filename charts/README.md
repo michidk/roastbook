@@ -2,10 +2,13 @@
 
 Deploys Roastbook, an optional Hodor sidecar, a migration Job, and an external
 or bundled PostgreSQL database. Values are documented in `values.yaml` and
-validated by `values.schema.json`. Variables and the security boundary are
-described in `docs/configuration.md` and `docs/deployment.md`.
+validated by [`values.schema.json`](values.schema.json). See
+[Configuration](../docs/configuration.md) for variables and
+[Deployment](../docs/deployment.md) for the security boundary.
 
 ## Install
+
+Run these commands from the repository root.
 
 External PostgreSQL (the default):
 
