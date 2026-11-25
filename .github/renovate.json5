@@ -10,7 +10,7 @@
         "docker"
       ],
       "matchPackageNames": [
-        "ghcr.io/michidk/roastbook"
+        "ghcr.io/roastbook/app"
       ],
       "matchUpdateTypes": [
         "pinDigest",
