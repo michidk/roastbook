@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   notify:
-    if: github.repository == 'michidk/roastbook'
+    if: github.repository == 'roastbook/app'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

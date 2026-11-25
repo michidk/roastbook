@@ -2,7 +2,7 @@ import { Bug, CodeXml, Scale } from 'lucide-react'
 import { PanelSection } from '@/components/section-layout'
 import { AboutLink } from '@/components/settings/about-link'
 
-const projectUrl = 'https://github.com/michidk/roastbook'
+const projectUrl = 'https://github.com/roastbook/app'
 
 export function AboutSettings() {
   return (

@@ -20,8 +20,8 @@
 </p>
 
 <p align="center">
-<a href="https://github.com/michidk/roastbook/actions/workflows/ci.yml">
-<img alt="Checks and Build" src="https://github.com/michidk/roastbook/actions/workflows/ci.yml/badge.svg"></a>
+<a href="https://github.com/roastbook/app/actions/workflows/ci.yml">
+<img alt="Checks and Build" src="https://github.com/roastbook/app/actions/workflows/ci.yml/badge.svg"></a>
 <a href="https://app.codacy.com/gh/michidk/roastbook/dashboard">
 <img alt="Codacy grade" src="https://app.codacy.com/project/badge/Grade/dcbf6d1e94c244efaee4b19b86f2d771"></a>
 <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>

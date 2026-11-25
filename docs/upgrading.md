@@ -1,5 +1,13 @@
 # Upgrading to the multi-user release
 
+## Container image location
+
+New container builds are published as `ghcr.io/roastbook/app`. Update any
+explicit `ghcr.io/michidk/roastbook` image reference before selecting a new
+release. The Helm chart uses the new repository by default; deployments with
+an `image.repository` override must update that value too. Keep the version
+tag or digest pinned to the release you intend to deploy.
+
 ## Beautified picture records
 
 Migration `0088` folds existing original/edited picture pairs into the

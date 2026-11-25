@@ -4,10 +4,10 @@ description: A self-hosted coffee journal with Hodor authentication
 type: application
 version: 0.1.0
 appVersion: "0.1.0"
-home: https://github.com/michidk/roastbook
-icon: https://raw.githubusercontent.com/michidk/roastbook/main/public/logo512.png
+home: https://github.com/roastbook/app
+icon: https://raw.githubusercontent.com/roastbook/app/main/public/logo512.png
 sources:
-  - https://github.com/michidk/roastbook
+  - https://github.com/roastbook/app
 maintainers:
   - name: michidk
     url: https://github.com/michidk
