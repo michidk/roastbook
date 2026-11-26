@@ -98,6 +98,8 @@ own OpenAI-compatible endpoint in **Settings → AI**. See
   gallery or full-size viewer. A spinner and notification track the edit while
   you keep using Roastbook. Uploads and main-image selection never start an edit.
   The first upload is the main image until you choose another with the star.
+  The edit preserves label details and reconstructs the likely bag shape and
+  color from the photo, with consistent pastel studio staging.
   Beautified pictures are labeled and hide the Beautify action.
   View the original or delete only the beautified version to restore it.
   Each picture keeps one gallery entry. MCP supports the same beautify and
